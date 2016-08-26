@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SignUpRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Auth</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="sign_up.html">SignUpRequest</a></li></ul><h1>SignUpRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+auth.signUp#aac7b717 flags:# no_joined_notifications:flags.0?<a href="../../index.html#true">true</a> phone_number:<a href="../../index.html#string">string</a> phone_code_hash:<a href="../../index.html#string">string</a> first_name:<a href="../../index.html#string">string</a> last_name:<a href="../../index.html#string">string</a> = <a href="../../types/auth/authorization.html">auth.Authorization</a></pre><button onclick="cp('from telethon.tl.functions.auth import SignUpRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/auth/authorization.html">auth.Authorization</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/auth/authorization.html">Authorization</a></td><td><a href="../../constructors/auth/authorization_sign_up_required.html">AuthorizationSignUpRequired</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>phone_number</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>phone_code_hash</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>first_name</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>last_name</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>no_joined_notifications</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 9 known errors:</p><table><tr><td><code>FirstNameInvalidError</code></td><td>The first name is invalid.</td></tr><tr><td><code>MemberOccupyPrimaryLocFailedError</code></td><td>Occupation of primary member location failed.</td></tr><tr><td><code>PhoneCodeEmptyError</code></td><td>The phone code is missing.</td></tr><tr><td><code>PhoneCodeExpiredError</code></td><td>The confirmation code has expired.</td></tr><tr><td><code>PhoneCodeInvalidError</code></td><td>The phone code entered was invalid.</td></tr><tr><td><code>PhoneNumberFloodError</code></td><td>You asked for the code too many times..</td></tr><tr><td><code>PhoneNumberInvalidError</code></td><td>The phone number is invalid.</td></tr><tr><td><code>PhoneNumberOccupiedError</code></td><td>The phone number is already in use.</td></tr><tr><td><code>RegIdGenerateFailedError</code></td><td>Failure while generating registration ID.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.auth.SignUpRequest(
+        phone_number=<em>'some string here'</em>,
+        phone_code_hash=<em>'some string here'</em>,
+        first_name=<em>'some string here'</em>,
+        last_name=<em>'some string here'</em>,
+        no_joined_notifications=<strong>True</strong>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>ThemeSettings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../index.html">API</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="index.html">Constructors</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="theme_settings.html">ThemeSettings</a></li></ul><h1>ThemeSettings</h1><pre>---types---
+themeSettings#fa58b6d4 flags:# message_colors_animated:flags.2?<a href="../index.html#true">true</a> base_theme:<a href="../types/base_theme.html">BaseTheme</a> accent_color:<a href="../index.html#int">int</a> outbox_accent_color:flags.3?<a href="../index.html#int">int</a> message_colors:flags.0?<a href="../index.html#vector">Vector</a>&lt;<a href="../index.html#int">int</a>&gt; wallpaper:flags.1?<a href="../types/wall_paper.html">WallPaper</a> = <a href="../types/theme_settings.html">ThemeSettings</a></pre><button onclick="cp('from telethon.tl.types import ThemeSettings');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../types/theme_settings.html">ThemeSettings</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="theme_settings.html">ThemeSettings</a></td></tr></table><h3>Members</h3><table><tr><td><b>base_theme</b></td><td style="text-align:center"><a href="../types/base_theme.html">BaseTheme</a></td><td></td></tr><tr><td><b>accent_color</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td></td></tr><tr><td><b>message_colors_animated</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>outbox_accent_color</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>message_colors</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>wallpaper</b></td><td style="text-align:center"><a href="../types/wall_paper.html">WallPaper</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../";</script><script src="../js/search.js"></script></body></html>

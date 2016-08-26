@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetCdnFileRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Upload</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_cdn_file.html">GetCdnFileRequest</a></li></ul><h1>GetCdnFileRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+upload.getCdnFile#395f69da file_token:<a href="../../index.html#bytes">bytes</a> offset:<a href="../../index.html#long">long</a> limit:<a href="../../index.html#int">int</a> = <a href="../../types/upload/cdn_file.html">upload.CdnFile</a></pre><button onclick="cp('from telethon.tl.functions.upload import GetCdnFileRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/upload/cdn_file.html">upload.CdnFile</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/upload/cdn_file.html">CdnFile</a></td><td><a href="../../constructors/upload/cdn_file_reupload_needed.html">CdnFileReuploadNeeded</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>file_token</b></td><td style="text-align:center"><a href="../../index.html#bytes">bytes</a></td><td></td></tr><tr><td><b>offset</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td></td></tr><tr><td><b>limit</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>UnknownMethodError</code></td><td>The method you tried to call cannot be called on non-CDN DCs.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.upload.GetCdnFileRequest(
+        file_token=<em>b'arbitrary\x7f data \xfa here'</em>,
+        offset=-12398745604826,
+        limit=100
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

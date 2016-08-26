@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetExportedChatInviteRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_exported_chat_invite.html">GetExportedChatInviteRequest</a></li></ul><h1>GetExportedChatInviteRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.getExportedChatInvite#73746f5c peer:<a href="../../types/input_peer.html">InputPeer</a> link:<a href="../../index.html#string">string</a> = <a href="../../types/messages/exported_chat_invite.html">messages.ExportedChatInvite</a></pre><button onclick="cp('from telethon.tl.functions.messages import GetExportedChatInviteRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/messages/exported_chat_invite.html">messages.ExportedChatInvite</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/messages/exported_chat_invite.html">ExportedChatInvite</a></td><td><a href="../../constructors/messages/exported_chat_invite_replaced.html">ExportedChatInviteReplaced</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>link</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.GetExportedChatInviteRequest(
+        peer=<em>'username'</em>,
+        link=<em>'some string here'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetAllStoriesRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Stories</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_all_stories.html">GetAllStoriesRequest</a></li></ul><h1>GetAllStoriesRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+stories.getAllStories#eeb0d625 flags:# next:flags.1?<a href="../../index.html#true">true</a> hidden:flags.2?<a href="../../index.html#true">true</a> state:flags.0?<a href="../../index.html#string">string</a> = <a href="../../types/stories/all_stories.html">stories.AllStories</a></pre><button onclick="cp('from telethon.tl.functions.stories import GetAllStoriesRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/stories/all_stories.html">stories.AllStories</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/stories/all_stories.html">AllStories</a></td><td><a href="../../constructors/stories/all_stories_not_modified.html">AllStoriesNotModified</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>next</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>hidden</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>state</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.stories.GetAllStoriesRequest(
+        next=<strong>True</strong>,
+        hidden=<strong>True</strong>,
+        state=<em>'some string here'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

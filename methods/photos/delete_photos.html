@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>DeletePhotosRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Photos</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="delete_photos.html">DeletePhotosRequest</a></li></ul><h1>DeletePhotosRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+photos.deletePhotos#87cf7f2f id:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/input_photo.html">InputPhoto</a>&gt; = <a href="../../index.html#vector">Vector</a>&lt;<a href="../../index.html#long">long</a>&gt;</pre><button onclick="cp('from telethon.tl.functions.photos import DeletePhotosRequest');">Copy import to the clipboard</button><h3>Returns</h3><p>A list of the following type is returned.</p><table><tr><td><a href="../../index.html#long">long</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>id</b></td><td style="text-align:center"><a href="../../types/input_photo.html">InputPhoto</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.photos.DeletePhotosRequest(
+        id=[types.InputPhoto(
+            id=-12398745604826,
+            access_hash=-12398745604826,
+            file_reference=<em>b'arbitrary\x7f data \xfa here'</em>
+        )]
+    ))
+    <strong>for</strong> x <strong>in</strong> result:
+        print(x)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SetPrivacyRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Account</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="set_privacy.html">SetPrivacyRequest</a></li></ul><h1>SetPrivacyRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+account.setPrivacy#c9f81ce8 key:<a href="../../types/input_privacy_key.html">InputPrivacyKey</a> rules:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/input_privacy_rule.html">InputPrivacyRule</a>&gt; = <a href="../../types/account/privacy_rules.html">account.PrivacyRules</a></pre><button onclick="cp('from telethon.tl.functions.account import SetPrivacyRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/account/privacy_rules.html">account.PrivacyRules</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/account/privacy_rules.html">PrivacyRules</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>key</b></td><td style="text-align:center"><a href="../../types/input_privacy_key.html">InputPrivacyKey</a></td><td></td></tr><tr><td><b>rules</b></td><td style="text-align:center"><a href="../../types/input_privacy_rule.html">InputPrivacyRule</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>PrivacyKeyInvalidError</code></td><td>The privacy key is invalid.</td></tr><tr><td><code>PrivacyTooLongError</code></td><td>Cannot add that many entities in a single request.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.account.SetPrivacyRequest(
+        key=types.InputPrivacyKeyStatusTimestamp(),
+        rules=[types.InputPrivacyValueAllowContacts()]
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

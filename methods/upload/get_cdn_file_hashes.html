@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetCdnFileHashesRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Upload</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_cdn_file_hashes.html">GetCdnFileHashesRequest</a></li></ul><h1>GetCdnFileHashesRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+upload.getCdnFileHashes#91dc3f31 file_token:<a href="../../index.html#bytes">bytes</a> offset:<a href="../../index.html#long">long</a> = <a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/file_hash.html">FileHash</a>&gt;</pre><button onclick="cp('from telethon.tl.functions.upload import GetCdnFileHashesRequest');">Copy import to the clipboard</button><h3>Returns</h3><p>A list of the following type is returned.</p><table><tr><td><a href="../../types/file_hash.html">FileHash</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/file_hash.html">FileHash</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>file_token</b></td><td style="text-align:center"><a href="../../index.html#bytes">bytes</a></td><td></td></tr><tr><td><b>offset</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>CdnMethodInvalidError</code></td><td>This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods.</td></tr><tr><td><code>RsaDecryptFailedError</code></td><td>Internal RSA decryption failed.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.upload.GetCdnFileHashesRequest(
+        file_token=<em>b'arbitrary\x7f data \xfa here'</em>,
+        offset=-12398745604826
+    ))
+    <strong>for</strong> x <strong>in</strong> result:
+        print(x)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

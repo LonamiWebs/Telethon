@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>DeleteMessagesRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Channels</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="delete_messages.html">DeleteMessagesRequest</a></li></ul><h1>DeleteMessagesRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+channels.deleteMessages#84c1fd4e channel:<a href="../../types/input_channel.html">InputChannel</a> id:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../index.html#int">int</a>&gt; = <a href="../../types/messages/affected_messages.html">messages.AffectedMessages</a></pre><button onclick="cp('from telethon.tl.functions.channels import DeleteMessagesRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/messages/affected_messages.html">messages.AffectedMessages</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/messages/affected_messages.html">AffectedMessages</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>channel</b></td><td style="text-align:center"><a href="../../types/input_channel.html">InputChannel</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 3 known errors:</p><table><tr><td><code>ChannelInvalidError</code></td><td>Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited.</td></tr><tr><td><code>ChannelPrivateError</code></td><td>The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it.</td></tr><tr><td><code>MessageDeleteForbiddenError</code></td><td>You can't delete one of the messages you tried to delete, most likely because it is a service message..</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><p>Please refer to the documentation of <a href="https://docs.telethon.dev/en/stable/modules/client.html#telethon.client.messages.MessageMethods.delete_messages"><code>client.delete_messages()</code></a> to learn about the parameters and see several code examples on how to use it.</p><p>The method above is the recommended way to do it. If you need more control over the parameters or want to learn how it is implemented, open the details by clicking on the "Details" text.</p><details><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.channels.DeleteMessagesRequest(
+        channel=<em>'username'</em>,
+        id=[42]
+    ))
+    print(result.stringify())</pre></details><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>
