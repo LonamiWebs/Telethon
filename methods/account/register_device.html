@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>RegisterDeviceRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Account</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="register_device.html">RegisterDeviceRequest</a></li></ul><h1>RegisterDeviceRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+account.registerDevice#ec86017a flags:# no_muted:flags.0?<a href="../../index.html#true">true</a> token_type:<a href="../../index.html#int">int</a> token:<a href="../../index.html#string">string</a> app_sandbox:<a href="../../index.html#bool">Bool</a> secret:<a href="../../index.html#bytes">bytes</a> other_uids:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../index.html#long">long</a>&gt; = <a href="../../index.html#bool">Bool</a></pre><button onclick="cp('from telethon.tl.functions.account import RegisterDeviceRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../index.html#bool">Bool</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>token_type</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>token</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>app_sandbox</b></td><td style="text-align:center"><a href="../../index.html#bool">Bool</a></td><td></td></tr><tr><td><b>secret</b></td><td style="text-align:center"><a href="../../index.html#bytes">bytes</a></td><td></td></tr><tr><td><b>other_uids</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>no_muted</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>TokenInvalidError</code></td><td>The provided token is invalid.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.account.RegisterDeviceRequest(
+        token_type=42,
+        token=<em>'some string here'</em>,
+        app_sandbox=<strong>False</strong>,
+        secret=<em>b'arbitrary\x7f data \xfa here'</em>,
+        other_uids=[-12398745604826],
+        no_muted=<strong>True</strong>
+    ))
+    print(result)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

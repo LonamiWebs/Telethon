@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>EditStoryRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Stories</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="edit_story.html">EditStoryRequest</a></li></ul><h1>EditStoryRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+stories.editStory#b583ba46 flags:# peer:<a href="../../types/input_peer.html">InputPeer</a> id:<a href="../../index.html#int">int</a> media:flags.0?<a href="../../types/input_media.html">InputMedia</a> media_areas:flags.3?<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/media_area.html">MediaArea</a>&gt; caption:flags.1?<a href="../../index.html#string">string</a> entities:flags.1?<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/message_entity.html">MessageEntity</a>&gt; privacy_rules:flags.2?<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/input_privacy_rule.html">InputPrivacyRule</a>&gt; = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.stories import EditStoryRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>media</b></td><td style="text-align:center"><a href="../../types/input_media.html">InputMedia</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>media_areas</b></td><td style="text-align:center"><a href="../../types/media_area.html">MediaArea</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>caption</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>entities</b></td><td style="text-align:center"><a href="../../types/message_entity.html">MessageEntity</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>privacy_rules</b></td><td style="text-align:center"><a href="../../types/input_privacy_rule.html">InputPrivacyRule</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.stories.EditStoryRequest(
+        peer=<em>'username'</em>,
+        id=42,
+        media=types.InputMediaUploadedPhoto(
+            file=client.upload_file(<em>'/path/to/file.jpg'</em>),
+            spoiler=<strong>True</strong>,
+            stickers=[types.InputDocument(
+                id=-12398745604826,
+                access_hash=-12398745604826,
+                file_reference=<em>b'arbitrary\x7f data \xfa here'</em>
+            )],
+            ttl_seconds=42
+        ),
+        media_areas=[types.MediaAreaVenue(
+            coordinates=types.MediaAreaCoordinates(
+                x=7.13,
+                y=7.13,
+                w=7.13,
+                h=7.13,
+                rotation=7.13,
+                radius=7.13
+            ),
+            geo=types.GeoPoint(
+                long=7.13,
+                lat=7.13,
+                access_hash=-12398745604826,
+                accuracy_radius=42
+            ),
+            title=<em>'My awesome title'</em>,
+            address=<em>'some string here'</em>,
+            provider=<em>'some string here'</em>,
+            venue_id=<em>'some string here'</em>,
+            venue_type=<em>'some string here'</em>
+        )],
+        caption=<em>'some string here'</em>,
+        privacy_rules=[types.InputPrivacyValueAllowContacts()]
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>InitConnectionRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../index.html">API</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="index.html">Methods</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="init_connection.html">InitConnectionRequest</a></li></ul><h1>InitConnectionRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+initConnection#c1cd5ea9 {X:Type} flags:# api_id:<a href="../index.html#int">int</a> device_model:<a href="../index.html#string">string</a> system_version:<a href="../index.html#string">string</a> app_version:<a href="../index.html#string">string</a> system_lang_code:<a href="../index.html#string">string</a> lang_pack:<a href="../index.html#string">string</a> lang_code:<a href="../index.html#string">string</a> proxy:flags.0?<a href="../types/input_client_proxy.html">InputClientProxy</a> params:flags.1?<a href="../types/json_value.html">JSONValue</a> query:!X = X</pre><button onclick="cp('from telethon.tl.functions import InitConnectionRequest');">Copy import to the clipboard</button><h3>Returns</h3><p>This request returns the result of whatever the result from invoking the request passed through <i>query</i> is.</p><h3>Parameters</h3><table><tr><td><b>api_id</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td></td></tr><tr><td><b>device_model</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>system_version</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>app_version</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>system_lang_code</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>lang_pack</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>lang_code</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td></td></tr><tr><td><b>query</b></td><td style="text-align:center">!X</td><td>A different Request must be supplied for this argument.</td></tr><tr><td><b>proxy</b></td><td style="text-align:center"><a href="../types/input_client_proxy.html">InputClientProxy</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>params</b></td><td style="text-align:center"><a href="../types/json_value.html">JSONValue</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>ConnectionLayerInvalidError</code></td><td>The very first request must always be InvokeWithLayerRequest.</td></tr><tr><td><code>InputFetchFailError</code></td><td>Failed deserializing TL payload.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.InitConnectionRequest(
+        api_id=42,
+        device_model=<em>'ASUS Laptop'</em>,
+        system_version=<em>'Arch Linux'</em>,
+        app_version=<em>'1.0'</em>,
+        system_lang_code=<em>'en'</em>,
+        lang_pack=<em>''</em>,
+        lang_code=<em>'en'</em>,
+        query=other_request,
+        proxy=types.InputClientProxy(
+            address=<em>'some string here'</em>,
+            port=42
+        ),
+        params=types.JsonNull()
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../";</script><script src="../js/search.js"></script></body></html>

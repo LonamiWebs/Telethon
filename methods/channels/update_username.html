@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>UpdateUsernameRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Channels</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="update_username.html">UpdateUsernameRequest</a></li></ul><h1>UpdateUsernameRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+channels.updateUsername#3514b3de channel:<a href="../../types/input_channel.html">InputChannel</a> username:<a href="../../index.html#string">string</a> = <a href="../../index.html#bool">Bool</a></pre><button onclick="cp('from telethon.tl.functions.channels import UpdateUsernameRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../index.html#bool">Bool</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>channel</b></td><td style="text-align:center"><a href="../../types/input_channel.html">InputChannel</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>username</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 6 known errors:</p><table><tr><td><code>ChannelsAdminPublicTooMuchError</code></td><td>You're admin of too many public channels, make some channels private to change the username of this channel.</td></tr><tr><td><code>ChannelInvalidError</code></td><td>Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited.</td></tr><tr><td><code>ChatAdminRequiredError</code></td><td>Chat admin privileges are required to do that in the specified chat (for example, to send a message in a channel which is not yours), or invalid permissions used for the channel or group.</td></tr><tr><td><code>UsernameInvalidError</code></td><td>Nobody is using this username, or the username is unacceptable. If the latter, it must match r"[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]".</td></tr><tr><td><code>UsernameOccupiedError</code></td><td>The username is already taken.</td></tr><tr><td><code>UsernamePurchaseAvailableError</code></td><td>.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.channels.UpdateUsernameRequest(
+        channel=<em>'username'</em>,
+        username=<em>'some string here'</em>
+    ))
+    print(result)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetBotCallbackAnswerRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_bot_callback_answer.html">GetBotCallbackAnswerRequest</a></li></ul><h1>GetBotCallbackAnswerRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.getBotCallbackAnswer#9342ca07 flags:# game:flags.1?<a href="../../index.html#true">true</a> peer:<a href="../../types/input_peer.html">InputPeer</a> msg_id:<a href="../../index.html#int">int</a> data:flags.0?<a href="../../index.html#bytes">bytes</a> password:flags.2?<a href="../../types/input_check_password_srp.html">InputCheckPasswordSRP</a> = <a href="../../types/messages/bot_callback_answer.html">messages.BotCallbackAnswer</a></pre><button onclick="cp('from telethon.tl.functions.messages import GetBotCallbackAnswerRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/messages/bot_callback_answer.html">messages.BotCallbackAnswer</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/messages/bot_callback_answer.html">BotCallbackAnswer</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>msg_id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>game</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>data</b></td><td style="text-align:center"><a href="../../index.html#bytes">bytes</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>password</b></td><td style="text-align:center"><a href="../../types/input_check_password_srp.html">InputCheckPasswordSRP</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 6 known errors:</p><table><tr><td><code>BotResponseTimeoutError</code></td><td>The bot did not answer to the callback query in time.</td></tr><tr><td><code>ChannelInvalidError</code></td><td>Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited.</td></tr><tr><td><code>DataInvalidError</code></td><td>Encrypted data invalid.</td></tr><tr><td><code>MessageIdInvalidError</code></td><td>The specified message ID is invalid or you can't do that operation on such message.</td></tr><tr><td><code>PeerIdInvalidError</code></td><td>An invalid Peer was used. Make sure to pass the right peer type and that the value is valid (for instance, bots cannot start conversations).</td></tr><tr><td><code>TimeoutError</code></td><td>A timeout occurred while fetching data from the worker.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.GetBotCallbackAnswerRequest(
+        peer=<em>'username'</em>,
+        msg_id=42,
+        game=<strong>True</strong>,
+        data=<em>b'arbitrary\x7f data \xfa here'</em>,
+        password=types.InputCheckPasswordSRP(
+            srp_id=-12398745604826,
+            A=<em>b'arbitrary\x7f data \xfa here'</em>,
+            M1=<em>b'arbitrary\x7f data \xfa here'</em>
+        )
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

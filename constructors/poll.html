@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Poll</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../index.html">API</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="index.html">Constructors</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="poll.html">Poll</a></li></ul><h1>Poll</h1><pre>---types---
+poll#58747131 id:<a href="../index.html#long">long</a> flags:# closed:flags.0?<a href="../index.html#true">true</a> public_voters:flags.1?<a href="../index.html#true">true</a> multiple_choice:flags.2?<a href="../index.html#true">true</a> quiz:flags.3?<a href="../index.html#true">true</a> question:<a href="../types/text_with_entities.html">TextWithEntities</a> answers:<a href="../index.html#vector">Vector</a>&lt;<a href="../types/poll_answer.html">PollAnswer</a>&gt; close_period:flags.4?<a href="../index.html#int">int</a> close_date:flags.5?<a href="../index.html#date">date</a> = <a href="../types/poll.html">Poll</a></pre><button onclick="cp('from telethon.tl.types import Poll');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../types/poll.html">Poll</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="poll.html">Poll</a></td></tr></table><h3>Members</h3><table><tr><td><b>id</b></td><td style="text-align:center"><a href="../index.html#long">long</a></td><td></td></tr><tr><td><b>question</b></td><td style="text-align:center"><a href="../types/text_with_entities.html">TextWithEntities</a></td><td></td></tr><tr><td><b>answers</b></td><td style="text-align:center"><a href="../types/poll_answer.html">PollAnswer</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>closed</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>public_voters</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>multiple_choice</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>quiz</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>close_period</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>close_date</b></td><td style="text-align:center"><a href="../index.html#date">date</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../";</script><script src="../js/search.js"></script></body></html>

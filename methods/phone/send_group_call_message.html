@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SendGroupCallMessageRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Phone</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="send_group_call_message.html">SendGroupCallMessageRequest</a></li></ul><h1>SendGroupCallMessageRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+phone.sendGroupCallMessage#87893014 call:<a href="../../types/input_group_call.html">InputGroupCall</a> random_id:<a href="../../index.html#long">long</a> message:<a href="../../types/text_with_entities.html">TextWithEntities</a> = <a href="../../index.html#bool">Bool</a></pre><button onclick="cp('from telethon.tl.functions.phone import SendGroupCallMessageRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../index.html#bool">Bool</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>call</b></td><td style="text-align:center"><a href="../../types/input_group_call.html">InputGroupCall</a></td><td></td></tr><tr><td><b>message</b></td><td style="text-align:center"><a href="../../types/text_with_entities.html">TextWithEntities</a></td><td></td></tr><tr><td><b>random_id</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td>If left unspecified, it will be inferred automatically.</td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.phone.SendGroupCallMessageRequest(
+        call=types.InputGroupCall(
+            id=-12398745604826,
+            access_hash=-12398745604826
+        ),
+        message=types.TextWithEntities(
+            text=<em>'some string here'</em>,
+            entities=[types.MessageEntityUnknown(
+                offset=42,
+                length=42
+            )]
+        )
+    ))
+    print(result)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

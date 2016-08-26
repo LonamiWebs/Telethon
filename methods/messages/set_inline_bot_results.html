@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SetInlineBotResultsRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="set_inline_bot_results.html">SetInlineBotResultsRequest</a></li></ul><h1>SetInlineBotResultsRequest</h1><p><strong>Only bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.setInlineBotResults#bb12a419 flags:# gallery:flags.0?<a href="../../index.html#true">true</a> private:flags.1?<a href="../../index.html#true">true</a> query_id:<a href="../../index.html#long">long</a> results:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/input_bot_inline_result.html">InputBotInlineResult</a>&gt; cache_time:<a href="../../index.html#int">int</a> next_offset:flags.2?<a href="../../index.html#string">string</a> switch_pm:flags.3?<a href="../../types/inline_bot_switch_pm.html">InlineBotSwitchPM</a> switch_webview:flags.4?<a href="../../types/inline_bot_web_view.html">InlineBotWebView</a> = <a href="../../index.html#bool">Bool</a></pre><button onclick="cp('from telethon.tl.functions.messages import SetInlineBotResultsRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../index.html#bool">Bool</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>query_id</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td></td></tr><tr><td><b>results</b></td><td style="text-align:center"><a href="../../types/input_bot_inline_result.html">InputBotInlineResult</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>cache_time</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>gallery</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>private</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>next_offset</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>switch_pm</b></td><td style="text-align:center"><a href="../../types/inline_bot_switch_pm.html">InlineBotSwitchPM</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>switch_webview</b></td><td style="text-align:center"><a href="../../types/inline_bot_web_view.html">InlineBotWebView</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 26 known errors:</p><table><tr><td><code>ArticleTitleEmptyError</code></td><td>The title of the article is empty.</td></tr><tr><td><code>AudioContentUrlEmptyError</code></td><td>The remote URL specified in the content field is empty.</td></tr><tr><td><code>AudioTitleEmptyError</code></td><td>The title attribute of the audio must be non-empty.</td></tr><tr><td><code>ButtonDataInvalidError</code></td><td>The provided button data is invalid.</td></tr><tr><td><code>ButtonTypeInvalidError</code></td><td>The type of one of the buttons you provided is invalid.</td></tr><tr><td><code>ButtonUrlInvalidError</code></td><td>Button URL invalid.</td></tr><tr><td><code>DocumentInvalidError</code></td><td>The document file was invalid and can't be used in inline mode.</td></tr><tr><td><code>FileContentTypeInvalidError</code></td><td>File content-type is invalid.</td></tr><tr><td><code>FileTitleEmptyError</code></td><td>An empty file title was specified.</td></tr><tr><td><code>GifContentTypeInvalidError</code></td><td>GIF content-type invalid.</td></tr><tr><td><code>MessageEmptyError</code></td><td>Empty or invalid UTF-8 message was sent.</td></tr><tr><td><code>NextOffsetInvalidError</code></td><td>The value for next_offset is invalid. Check that it has normal characters and is not too long.</td></tr><tr><td><code>PhotoContentTypeInvalidError</code></td><td>Photo mime-type invalid.</td></tr><tr><td><code>PhotoContentUrlEmptyError</code></td><td>The content from the URL used as a photo appears to be empty or has caused another HTTP error.</td></tr><tr><td><code>PhotoThumbUrlEmptyError</code></td><td>The URL used as a thumbnail appears to be empty or has caused another HTTP error.</td></tr><tr><td><code>QueryIdInvalidError</code></td><td>The query ID is invalid.</td></tr><tr><td><code>ReplyMarkupInvalidError</code></td><td>The provided reply markup is invalid.</td></tr><tr><td><code>ResultTypeInvalidError</code></td><td>Result type invalid.</td></tr><tr><td><code>SendMessageMediaInvalidError</code></td><td>The message media was invalid or not specified.</td></tr><tr><td><code>SendMessageTypeInvalidError</code></td><td>The message type is invalid.</td></tr><tr><td><code>StartParamInvalidError</code></td><td>Start parameter invalid.</td></tr><tr><td><code>StickerDocumentInvalidError</code></td><td>The sticker file was invalid (this file has failed Telegram internal checks, make sure to use the correct format and comply with https://core.telegram.org/animated_stickers).</td></tr><tr><td><code>UserBotInvalidError</code></td><td>This method can only be called by a bot.</td></tr><tr><td><code>VideoTitleEmptyError</code></td><td>The specified video title is empty.</td></tr><tr><td><code>WebdocumentMimeInvalidError</code></td><td>Invalid webdocument mime type provided.</td></tr><tr><td><code>WebdocumentUrlInvalidError</code></td><td>The given URL cannot be used.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.SetInlineBotResultsRequest(
+        query_id=-12398745604826,
+        results=[types.InputBotInlineResult(
+            id=<em>'some string here'</em>,
+            type=<em>'some string here'</em>,
+            send_message=types.InputBotInlineMessageMediaAuto(
+                message=<em>'Hello there!'</em>,
+                invert_media=<strong>True</strong>
+            ),
+            title=<em>'My awesome title'</em>,
+            description=<em>'some string here'</em>,
+            url=<em>'some string here'</em>,
+            thumb=types.InputWebDocument(
+                url=<em>'some string here'</em>,
+                size=42,
+                mime_type=<em>'some string here'</em>,
+                attributes=[types.DocumentAttributeImageSize(
+                    w=42,
+                    h=42
+                )]
+            ),
+            content=types.InputWebDocument(
+                url=<em>'some string here'</em>,
+                size=42,
+                mime_type=<em>'some string here'</em>,
+                attributes=[types.DocumentAttributeImageSize(
+                    w=42,
+                    h=42
+                )]
+            )
+        )],
+        cache_time=42,
+        gallery=<strong>True</strong>,
+        private=<strong>True</strong>,
+        next_offset=<em>'some string here'</em>,
+        switch_pm=types.InlineBotSwitchPM(
+            text=<em>'some string here'</em>,
+            start_param=<em>'some string here'</em>
+        ),
+        switch_webview=types.InlineBotWebView(
+            text=<em>'some string here'</em>,
+            url=<em>'some string here'</em>
+        )
+    ))
+    print(result)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>AuthorizationForm</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Constructors</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Account</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="authorization_form.html">AuthorizationForm</a></li></ul><h1>AuthorizationForm</h1><pre>---types---
+account.authorizationForm#ad2e1cd8 flags:# required_types:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/secure_required_type.html">SecureRequiredType</a>&gt; values:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/secure_value.html">SecureValue</a>&gt; errors:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/secure_value_error.html">SecureValueError</a>&gt; users:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/user.html">User</a>&gt; privacy_policy_url:flags.0?<a href="../../index.html#string">string</a> = <a href="../../types/account/authorization_form.html">account.AuthorizationForm</a></pre><button onclick="cp('from telethon.tl.types.account import AuthorizationForm');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../../types/account/authorization_form.html">account.AuthorizationForm</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="authorization_form.html">AuthorizationForm</a></td></tr></table><h3>Members</h3><table><tr><td><b>required_types</b></td><td style="text-align:center"><a href="../../types/secure_required_type.html">SecureRequiredType</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>values</b></td><td style="text-align:center"><a href="../../types/secure_value.html">SecureValue</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>errors</b></td><td style="text-align:center"><a href="../../types/secure_value_error.html">SecureValueError</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>users</b></td><td style="text-align:center"><a href="../../types/user.html">User</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>privacy_policy_url</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

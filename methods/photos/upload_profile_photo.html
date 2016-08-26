@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>UploadProfilePhotoRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Photos</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="upload_profile_photo.html">UploadProfilePhotoRequest</a></li></ul><h1>UploadProfilePhotoRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+photos.uploadProfilePhoto#0388a3b5 flags:# fallback:flags.3?<a href="../../index.html#true">true</a> bot:flags.5?<a href="../../types/input_user.html">InputUser</a> file:flags.0?<a href="../../types/input_file.html">InputFile</a> video:flags.1?<a href="../../types/input_file.html">InputFile</a> video_start_ts:flags.2?<a href="../../index.html#double">double</a> video_emoji_markup:flags.4?<a href="../../types/video_size.html">VideoSize</a> = <a href="../../types/photos/photo.html">photos.Photo</a></pre><button onclick="cp('from telethon.tl.functions.photos import UploadProfilePhotoRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/photos/photo.html">photos.Photo</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/photos/photo.html">Photo</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>fallback</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>bot</b></td><td style="text-align:center"><a href="../../types/input_user.html">InputUser</a></td><td>This argument defaults to <code>None</code> and can be omitted. Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>file</b></td><td style="text-align:center"><a href="../../types/input_file.html">InputFile</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>video</b></td><td style="text-align:center"><a href="../../types/input_file.html">InputFile</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>video_start_ts</b></td><td style="text-align:center"><a href="../../index.html#double">double</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>video_emoji_markup</b></td><td style="text-align:center"><a href="../../types/video_size.html">VideoSize</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 7 known errors:</p><table><tr><td><code>AlbumPhotosTooManyError</code></td><td>Too many photos were included in the album.</td></tr><tr><td><code>FilePartsInvalidError</code></td><td>The number of file parts is invalid.</td></tr><tr><td><code>ImageProcessFailedError</code></td><td>Failure while processing image.</td></tr><tr><td><code>PhotoCropSizeSmallError</code></td><td>Photo is too small.</td></tr><tr><td><code>PhotoExtInvalidError</code></td><td>The extension of the photo is invalid.</td></tr><tr><td><code>StickerMimeInvalidError</code></td><td>Make sure to pass a valid image file for the right InputFile parameter.</td></tr><tr><td><code>VideoFileInvalidError</code></td><td>The given video cannot be used.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.photos.UploadProfilePhotoRequest(
+        fallback=<strong>True</strong>,
+        bot=<em>'username'</em>,
+        file=client.upload_file(<em>'/path/to/file.jpg'</em>),
+        video=client.upload_file(<em>'/path/to/file.mp4'</em>),
+        video_start_ts=7.13,
+        video_emoji_markup=types.VideoSize(
+            type=<em>'some string here'</em>,
+            w=42,
+            h=42,
+            size=42,
+            video_start_ts=7.13
+        )
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>
