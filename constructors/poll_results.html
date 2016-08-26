@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>PollResults</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../index.html">API</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="index.html">Constructors</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="poll_results.html">PollResults</a></li></ul><h1>PollResults</h1><pre>---types---
+pollResults#7adf2420 flags:# min:flags.0?<a href="../index.html#true">true</a> results:flags.1?<a href="../index.html#vector">Vector</a>&lt;<a href="../types/poll_answer_voters.html">PollAnswerVoters</a>&gt; total_voters:flags.2?<a href="../index.html#int">int</a> recent_voters:flags.3?<a href="../index.html#vector">Vector</a>&lt;<a href="../types/peer.html">Peer</a>&gt; solution:flags.4?<a href="../index.html#string">string</a> solution_entities:flags.4?<a href="../index.html#vector">Vector</a>&lt;<a href="../types/message_entity.html">MessageEntity</a>&gt; = <a href="../types/poll_results.html">PollResults</a></pre><button onclick="cp('from telethon.tl.types import PollResults');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../types/poll_results.html">PollResults</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="poll_results.html">PollResults</a></td></tr></table><h3>Members</h3><table><tr><td><b>min</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>results</b></td><td style="text-align:center"><a href="../types/poll_answer_voters.html">PollAnswerVoters</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>total_voters</b></td><td style="text-align:center"><a href="../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>recent_voters</b></td><td style="text-align:center"><a href="../types/peer.html">Peer</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>solution</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>solution_entities</b></td><td style="text-align:center"><a href="../types/message_entity.html">MessageEntity</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../";</script><script src="../js/search.js"></script></body></html>

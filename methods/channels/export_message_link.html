@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>ExportMessageLinkRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Channels</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="export_message_link.html">ExportMessageLinkRequest</a></li></ul><h1>ExportMessageLinkRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+channels.exportMessageLink#e63fadeb flags:# grouped:flags.0?<a href="../../index.html#true">true</a> thread:flags.1?<a href="../../index.html#true">true</a> channel:<a href="../../types/input_channel.html">InputChannel</a> id:<a href="../../index.html#int">int</a> = <a href="../../types/exported_message_link.html">ExportedMessageLink</a></pre><button onclick="cp('from telethon.tl.functions.channels import ExportMessageLinkRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/exported_message_link.html">ExportedMessageLink</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/exported_message_link.html">ExportedMessageLink</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>channel</b></td><td style="text-align:center"><a href="../../types/input_channel.html">InputChannel</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>grouped</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>thread</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>ChannelInvalidError</code></td><td>Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.channels.ExportMessageLinkRequest(
+        channel=<em>'username'</em>,
+        id=42,
+        thread=<strong>True</strong>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>CreateChannelRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Channels</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="create_channel.html">CreateChannelRequest</a></li></ul><h1>CreateChannelRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+channels.createChannel#91006707 flags:# broadcast:flags.0?<a href="../../index.html#true">true</a> megagroup:flags.1?<a href="../../index.html#true">true</a> for_import:flags.3?<a href="../../index.html#true">true</a> forum:flags.5?<a href="../../index.html#true">true</a> title:<a href="../../index.html#string">string</a> about:<a href="../../index.html#string">string</a> geo_point:flags.2?<a href="../../types/input_geo_point.html">InputGeoPoint</a> address:flags.2?<a href="../../index.html#string">string</a> ttl_period:flags.4?<a href="../../index.html#int">int</a> = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.channels import CreateChannelRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>title</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>about</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>broadcast</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>megagroup</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>for_import</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>forum</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>geo_point</b></td><td style="text-align:center"><a href="../../types/input_geo_point.html">InputGeoPoint</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>address</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>ttl_period</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>ChatTitleEmptyError</code></td><td>No chat title provided.</td></tr><tr><td><code>UserRestrictedError</code></td><td>You're spamreported, you can't create channels or chats..</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.channels.CreateChannelRequest(
+        title=<em>'My awesome title'</em>,
+        about=<em>'some string here'</em>,
+        megagroup=<strong>True</strong>,
+        for_import=<strong>True</strong>,
+        forum=<strong>True</strong>,
+        geo_point=types.InputGeoPoint(
+            lat=7.13,
+            long=7.13,
+            accuracy_radius=42
+        ),
+        address=<em>'some string here'</em>,
+        ttl_period=42
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

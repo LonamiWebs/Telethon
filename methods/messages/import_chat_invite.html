@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>ImportChatInviteRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="import_chat_invite.html">ImportChatInviteRequest</a></li></ul><h1>ImportChatInviteRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.importChatInvite#6c50051c hash:<a href="../../index.html#string">string</a> = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.messages import ImportChatInviteRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>hash</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 8 known errors:</p><table><tr><td><code>ChannelsTooMuchError</code></td><td>You have joined too many channels/supergroups.</td></tr><tr><td><code>InviteHashEmptyError</code></td><td>The invite hash is empty.</td></tr><tr><td><code>InviteHashExpiredError</code></td><td>The chat the user tried to join has expired and is not valid anymore.</td></tr><tr><td><code>InviteHashInvalidError</code></td><td>The invite hash is invalid.</td></tr><tr><td><code>InviteRequestSentError</code></td><td>You have successfully requested to join this chat or channel.</td></tr><tr><td><code>SessionPasswordNeededError</code></td><td>Two-steps verification is enabled and a password is required.</td></tr><tr><td><code>UsersTooMuchError</code></td><td>The maximum number of users has been exceeded (to create a chat, for example).</td></tr><tr><td><code>UserAlreadyParticipantError</code></td><td>The authenticated user is already a participant of the chat.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.ImportChatInviteRequest(
+        hash=<em>'A4LmkR23G0IGxBE71zZfo1'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

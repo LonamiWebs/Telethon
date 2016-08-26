@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>ChannelParticipantAdmin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../index.html">API</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="index.html">Constructors</a></li><img src="../img/arrow.svg" alt="/" /><li><a href="channel_participant_admin.html">ChannelParticipantAdmin</a></li></ul><h1>ChannelParticipantAdmin</h1><pre>---types---
+channelParticipantAdmin#34c3bb53 flags:# can_edit:flags.0?<a href="../index.html#true">true</a> is_self:flags.1?<a href="../index.html#true">true</a> user_id:<a href="../index.html#long">long</a> inviter_id:flags.1?<a href="../index.html#long">long</a> promoted_by:<a href="../index.html#long">long</a> date:<a href="../index.html#date">date</a> admin_rights:<a href="../types/chat_admin_rights.html">ChatAdminRights</a> rank:flags.2?<a href="../index.html#string">string</a> = <a href="../types/channel_participant.html">ChannelParticipant</a></pre><button onclick="cp('from telethon.tl.types import ChannelParticipantAdmin');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../types/channel_participant.html">ChannelParticipant</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="channel_participant.html">ChannelParticipant</a></td><td><a href="channel_participant_admin.html">ChannelParticipantAdmin</a></td></tr><tr><td><a href="channel_participant_banned.html">ChannelParticipantBanned</a></td><td><a href="channel_participant_creator.html">ChannelParticipantCreator</a></td></tr><tr><td><a href="channel_participant_left.html">ChannelParticipantLeft</a></td><td><a href="channel_participant_self.html">ChannelParticipantSelf</a></td></tr></table><h3>Members</h3><table><tr><td><b>user_id</b></td><td style="text-align:center"><a href="../index.html#long">long</a></td><td></td></tr><tr><td><b>promoted_by</b></td><td style="text-align:center"><a href="../index.html#long">long</a></td><td></td></tr><tr><td><b>date</b></td><td style="text-align:center"><a href="../index.html#date">date</a></td><td></td></tr><tr><td><b>admin_rights</b></td><td style="text-align:center"><a href="../types/chat_admin_rights.html">ChatAdminRights</a></td><td></td></tr><tr><td><b>can_edit</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>is_self</b></td><td style="text-align:center"><a href="../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>inviter_id</b></td><td style="text-align:center"><a href="../index.html#long">long</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>rank</b></td><td style="text-align:center"><a href="../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../";</script><script src="../js/search.js"></script></body></html>

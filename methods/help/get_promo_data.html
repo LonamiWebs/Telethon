@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetPromoDataRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Help</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_promo_data.html">GetPromoDataRequest</a></li></ul><h1>GetPromoDataRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+help.getPromoData#c0977421 = <a href="../../types/help/promo_data.html">help.PromoData</a></pre><button onclick="cp('from telethon.tl.functions.help import GetPromoDataRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/help/promo_data.html">help.PromoData</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/help/promo_data.html">PromoData</a></td><td><a href="../../constructors/help/promo_data_empty.html">PromoDataEmpty</a></td></tr></table><h3>Parameters</h3><p>This request takes no input parameters.</p><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.help.GetPromoDataRequest())
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetWebPagePreviewRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_web_page_preview.html">GetWebPagePreviewRequest</a></li></ul><h1>GetWebPagePreviewRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.getWebPagePreview#8b68b0cc flags:# message:<a href="../../index.html#string">string</a> entities:flags.3?<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/message_entity.html">MessageEntity</a>&gt; = <a href="../../types/message_media.html">MessageMedia</a></pre><button onclick="cp('from telethon.tl.functions.messages import GetWebPagePreviewRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/message_media.html">MessageMedia</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/message_media_contact.html">MessageMediaContact</a></td><td><a href="../../constructors/message_media_dice.html">MessageMediaDice</a></td></tr><tr><td><a href="../../constructors/message_media_document.html">MessageMediaDocument</a></td><td><a href="../../constructors/message_media_empty.html">MessageMediaEmpty</a></td></tr><tr><td><a href="../../constructors/message_media_game.html">MessageMediaGame</a></td><td><a href="../../constructors/message_media_geo.html">MessageMediaGeo</a></td></tr><tr><td><a href="../../constructors/message_media_geo_live.html">MessageMediaGeoLive</a></td><td><a href="../../constructors/message_media_giveaway.html">MessageMediaGiveaway</a></td></tr><tr><td><a href="../../constructors/message_media_giveaway_results.html">MessageMediaGiveawayResults</a></td><td><a href="../../constructors/message_media_invoice.html">MessageMediaInvoice</a></td></tr><tr><td><a href="../../constructors/message_media_paid_media.html">MessageMediaPaidMedia</a></td><td><a href="../../constructors/message_media_photo.html">MessageMediaPhoto</a></td></tr><tr><td><a href="../../constructors/message_media_poll.html">MessageMediaPoll</a></td><td><a href="../../constructors/message_media_story.html">MessageMediaStory</a></td></tr><tr><td><a href="../../constructors/message_media_unsupported.html">MessageMediaUnsupported</a></td><td><a href="../../constructors/message_media_venue.html">MessageMediaVenue</a></td></tr><tr><td><a href="../../constructors/message_media_web_page.html">MessageMediaWebPage</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>message</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>entities</b></td><td style="text-align:center"><a href="../../types/message_entity.html">MessageEntity</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>EntityBoundsInvalidError</code></td><td>Some of provided entities have invalid bounds (length is zero or out of the boundaries of the string).</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.GetWebPagePreviewRequest(
+        message=<em>'Hello there!'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

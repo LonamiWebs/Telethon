@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetMessagesReactionsRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_messages_reactions.html">GetMessagesReactionsRequest</a></li></ul><h1>GetMessagesReactionsRequest</h1><p>Both users and bots <strong>may</strong> be able to use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.getMessagesReactions#8bba90e6 peer:<a href="../../types/input_peer.html">InputPeer</a> id:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../index.html#int">int</a>&gt; = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.messages import GetMessagesReactionsRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can't cause any RPC error as far as we know.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.GetMessagesReactionsRequest(
+        peer=<em>'username'</em>,
+        id=[42]
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

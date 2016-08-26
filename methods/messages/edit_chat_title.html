@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>EditChatTitleRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="edit_chat_title.html">EditChatTitleRequest</a></li></ul><h1>EditChatTitleRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.editChatTitle#73783ffd chat_id:<a href="../../index.html#long">long</a> title:<a href="../../index.html#string">string</a> = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.messages import EditChatTitleRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>chat_id</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td></td></tr><tr><td><b>title</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>ChatIdInvalidError</code></td><td>Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead.</td></tr><tr><td><code>NeedChatInvalidError</code></td><td>The provided chat is invalid.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.EditChatTitleRequest(
+        chat_id=-12398745604826,
+        title=<em>'My awesome title'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

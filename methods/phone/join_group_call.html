@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>JoinGroupCallRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Phone</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="join_group_call.html">JoinGroupCallRequest</a></li></ul><h1>JoinGroupCallRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+phone.joinGroupCall#b132ff7b flags:# muted:flags.0?<a href="../../index.html#true">true</a> video_stopped:flags.2?<a href="../../index.html#true">true</a> call:<a href="../../types/input_group_call.html">InputGroupCall</a> join_as:<a href="../../types/input_peer.html">InputPeer</a> invite_hash:flags.1?<a href="../../index.html#string">string</a> params:<a href="../../types/data_json.html">DataJSON</a> = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.phone import JoinGroupCallRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>call</b></td><td style="text-align:center"><a href="../../types/input_group_call.html">InputGroupCall</a></td><td></td></tr><tr><td><b>join_as</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>params</b></td><td style="text-align:center"><a href="../../types/data_json.html">DataJSON</a></td><td></td></tr><tr><td><b>muted</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>video_stopped</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>invite_hash</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 2 known errors:</p><table><tr><td><code>GroupcallAddParticipantsFailedError</code></td><td>.</td></tr><tr><td><code>GroupcallSsrcDuplicateMuchError</code></td><td>The app needs to retry joining the group call with a new SSRC value.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.phone.JoinGroupCallRequest(
+        call=types.InputGroupCall(
+            id=-12398745604826,
+            access_hash=-12398745604826
+        ),
+        join_as=<em>'username'</em>,
+        params=types.DataJSON(
+            data=<em>'some string here'</em>
+        ),
+        muted=<strong>True</strong>,
+        video_stopped=<strong>True</strong>,
+        invite_hash=<em>'some string here'</em>
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

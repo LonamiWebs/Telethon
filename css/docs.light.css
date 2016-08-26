@@ -1,0 +1,182 @@
+body {
+    font-family: 'Nunito', sans-serif;
+    color: #333;
+    background-color:#eee;
+    font-size: 16px;
+}
+
+a {
+    color: #329add;
+    text-decoration: none;
+}
+
+pre {
+    font-family: 'Source Code Pro', monospace;
+    padding: 8px;
+    color: #567;
+    background: #e0e4e8;
+    border-radius: 0;
+    overflow-x: auto;
+}
+
+a:hover {
+    color: #64bbdd;
+    text-decoration: underline;
+}
+
+table {
+    width: 100%;
+    max-width: 100%;
+}
+
+table td {
+    border-top: 1px solid #ddd;
+    padding: 8px;
+}
+
+.horizontal {
+    margin-bottom: 16px;
+    list-style: none;
+    background: #e0e4e8;
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+
+.horizontal li {
+    display: inline-block;
+    margin: 0 8px 0 0;
+}
+
+.horizontal img {
+    display: inline-block;
+    margin: 0 8px -2px 0;
+}
+
+h1, summary.title {
+    font-size: 24px;
+}
+
+h3 {
+    font-size: 20px;
+}
+
+#main_div {
+  padding: 20px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+pre::-webkit-scrollbar {
+    visibility: visible;
+    display: block;
+    height: 12px;
+}
+
+pre::-webkit-scrollbar-track:horizontal {
+    background: #def;
+    border-radius: 0;
+    height: 12px;
+}
+
+pre::-webkit-scrollbar-thumb:horizontal {
+    background: #bdd;
+    border-radius: 0;
+    height: 12px;
+}
+
+:target {
+    border: 2px solid #f8f800;
+    background: #f8f8f8;
+    padding: 4px;
+}
+
+/* 'sh' stands for Syntax Highlight */
+span.sh1 {
+    color: #f70;
+}
+
+span.tooltip {
+    border-bottom: 1px dashed #444;
+}
+
+#searchBox {
+    width: 100%;
+    border: none;
+    height: 20px;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 2px;
+    border: 2px solid #ddd;
+}
+
+#searchBox:placeholder-shown {
+    font-style: italic;
+}
+
+button {
+    border-radius: 2px;
+    font-size: 16px;
+    padding: 8px;
+    color: #000;
+    background-color: #f7f7f7;
+    border: 2px solid #329add;
+    transition-duration: 300ms;
+}
+
+button:hover {
+    background-color: #329add;
+    color: #f7f7f7;
+}
+
+/* https://www.w3schools.com/css/css_navbar.asp */
+ul.together {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+ul.together li {
+    float: left;
+}
+
+ul.together li a {
+    display: block;
+    border-radius: 8px;
+    background: #e0e4e8;
+    padding: 4px 8px;
+    margin: 8px;
+}
+
+/* https://stackoverflow.com/a/30810322 */
+.invisible {
+    left: 0;
+    top: -99px;
+    padding: 0;
+    width: 2em;
+    height: 2em;
+    border: none;
+    outline: none;
+    position: fixed;
+    box-shadow: none;
+    color: transparent;
+    background: transparent;
+}
+
+@media (max-width: 640px) {
+    h1, summary.title {
+        font-size: 18px;
+    }
+    h3 {
+        font-size: 16px;
+    }
+
+    #dev_page_content_wrap {
+        padding-top: 12px;
+    }
+
+    #dev_page_title {
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+}

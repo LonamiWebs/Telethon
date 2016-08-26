@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>GetDifferenceRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Updates</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="get_difference.html">GetDifferenceRequest</a></li></ul><h1>GetDifferenceRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+updates.getDifference#19c2f763 flags:# pts:<a href="../../index.html#int">int</a> pts_limit:flags.1?<a href="../../index.html#int">int</a> pts_total_limit:flags.0?<a href="../../index.html#int">int</a> date:<a href="../../index.html#date">date</a> qts:<a href="../../index.html#int">int</a> qts_limit:flags.2?<a href="../../index.html#int">int</a> = <a href="../../types/updates/difference.html">updates.Difference</a></pre><button onclick="cp('from telethon.tl.functions.updates import GetDifferenceRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates/difference.html">updates.Difference</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/updates/difference.html">Difference</a></td><td><a href="../../constructors/updates/difference_empty.html">DifferenceEmpty</a></td></tr><tr><td><a href="../../constructors/updates/difference_slice.html">DifferenceSlice</a></td><td><a href="../../constructors/updates/difference_too_long.html">DifferenceTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>pts</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>date</b></td><td style="text-align:center"><a href="../../index.html#date">date</a></td><td></td></tr><tr><td><b>qts</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>pts_limit</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>pts_total_limit</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>qts_limit</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 9 known errors:</p><table><tr><td><code>AuthKeyPermEmptyError</code></td><td>The method is unavailable for temporary authorization key, not bound to permanent.</td></tr><tr><td><code>CdnMethodInvalidError</code></td><td>This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods.</td></tr><tr><td><code>DateEmptyError</code></td><td>Date empty.</td></tr><tr><td><code>NeedMemberInvalidError</code></td><td>The provided member is invalid or does not exist (for example a thumb size).</td></tr><tr><td><code>PersistentTimestampEmptyError</code></td><td>Persistent timestamp empty.</td></tr><tr><td><code>PersistentTimestampInvalidError</code></td><td>Persistent timestamp invalid.</td></tr><tr><td><code>SessionPasswordNeededError</code></td><td>Two-steps verification is enabled and a password is required.</td></tr><tr><td><code>StoreInvalidScalarTypeError</code></td><td>.</td></tr><tr><td><code>TimeoutError</code></td><td>A timeout occurred while fetching data from the worker.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><p>Please refer to the documentation of <a href="https://docs.telethon.dev/en/stable/modules/client.html#telethon.client.updates.UpdateMethods.catch_up"><code>client.catch_up()</code></a> to learn about the parameters and see several code examples on how to use it.</p><p>The method above is the recommended way to do it. If you need more control over the parameters or want to learn how it is implemented, open the details by clicking on the "Details" text.</p><details><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.updates.GetDifferenceRequest(
+        pts=42,
+        date=datetime.datetime(2018, 6, 25),
+        qts=42,
+        pts_limit=42,
+        pts_total_limit=42,
+        qts_limit=42
+    ))
+    print(result.stringify())</pre></details><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

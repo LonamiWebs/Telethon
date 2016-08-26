@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SaveGifRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="save_gif.html">SaveGifRequest</a></li></ul><h1>SaveGifRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.saveGif#327a30cb id:<a href="../../types/input_document.html">InputDocument</a> unsave:<a href="../../index.html#bool">Bool</a> = <a href="../../index.html#bool">Bool</a></pre><button onclick="cp('from telethon.tl.functions.messages import SaveGifRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../index.html#bool">Bool</a></td></tr></table><p>This type has no instances available.</p><table></table><h3>Parameters</h3><table><tr><td><b>id</b></td><td style="text-align:center"><a href="../../types/input_document.html">InputDocument</a></td><td></td></tr><tr><td><b>unsave</b></td><td style="text-align:center"><a href="../../index.html#bool">Bool</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>GifIdInvalidError</code></td><td>The provided GIF ID is invalid.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.SaveGifRequest(
+        id=types.InputDocument(
+            id=-12398745604826,
+            access_hash=-12398745604826,
+            file_reference=<em>b'arbitrary\x7f data \xfa here'</em>
+        ),
+        unsave=<strong>False</strong>
+    ))
+    print(result)</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

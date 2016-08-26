@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>DiscussionMessage</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Constructors</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="discussion_message.html">DiscussionMessage</a></li></ul><h1>DiscussionMessage</h1><pre>---types---
+messages.discussionMessage#a6341782 flags:# messages:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/message.html">Message</a>&gt; max_id:flags.0?<a href="../../index.html#int">int</a> read_inbox_max_id:flags.1?<a href="../../index.html#int">int</a> read_outbox_max_id:flags.2?<a href="../../index.html#int">int</a> unread_count:<a href="../../index.html#int">int</a> chats:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/chat.html">Chat</a>&gt; users:<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/user.html">User</a>&gt; = <a href="../../types/messages/discussion_message.html">messages.DiscussionMessage</a></pre><button onclick="cp('from telethon.tl.types.messages import DiscussionMessage');">Copy import to the clipboard</button><h3>Belongs to</h3><table><tr><td><a href="../../types/messages/discussion_message.html">messages.DiscussionMessage</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="discussion_message.html">DiscussionMessage</a></td></tr></table><h3>Members</h3><table><tr><td><b>messages</b></td><td style="text-align:center"><a href="../../types/message.html">Message</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>unread_count</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td></td></tr><tr><td><b>chats</b></td><td style="text-align:center"><a href="../../types/chat.html">Chat</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>users</b></td><td style="text-align:center"><a href="../../types/user.html">User</a></td><td>A <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr><tr><td><b>max_id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>read_inbox_max_id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>read_outbox_max_id</b></td><td style="text-align:center"><a href="../../index.html#int">int</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

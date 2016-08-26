@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>AcceptCallRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Phone</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="accept_call.html">AcceptCallRequest</a></li></ul><h1>AcceptCallRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+phone.acceptCall#3bd2b4a0 peer:<a href="../../types/input_phone_call.html">InputPhoneCall</a> g_b:<a href="../../index.html#bytes">bytes</a> protocol:<a href="../../types/phone_call_protocol.html">PhoneCallProtocol</a> = <a href="../../types/phone/phone_call.html">phone.PhoneCall</a></pre><button onclick="cp('from telethon.tl.functions.phone import AcceptCallRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/phone/phone_call.html">phone.PhoneCall</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/phone/phone_call.html">PhoneCall</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_phone_call.html">InputPhoneCall</a></td><td></td></tr><tr><td><b>g_b</b></td><td style="text-align:center"><a href="../../index.html#bytes">bytes</a></td><td></td></tr><tr><td><b>protocol</b></td><td style="text-align:center"><a href="../../types/phone_call_protocol.html">PhoneCallProtocol</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 5 known errors:</p><table><tr><td><code>CallAlreadyAcceptedError</code></td><td>The call was already accepted.</td></tr><tr><td><code>CallAlreadyDeclinedError</code></td><td>The call was already declined.</td></tr><tr><td><code>CallOccupyFailedError</code></td><td>The call failed because the user is already making another call.</td></tr><tr><td><code>CallPeerInvalidError</code></td><td>The provided call peer object is invalid.</td></tr><tr><td><code>CallProtocolFlagsInvalidError</code></td><td>Call protocol flags invalid.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.phone.AcceptCallRequest(
+        peer=types.InputPhoneCall(
+            id=-12398745604826,
+            access_hash=-12398745604826
+        ),
+        g_b=<em>b'arbitrary\x7f data \xfa here'</em>,
+        protocol=types.PhoneCallProtocol(
+            min_layer=42,
+            max_layer=42,
+            library_versions=[<em>'some string here'</em>],
+            udp_p2p=<strong>True</strong>,
+            udp_reflector=<strong>True</strong>
+        )
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

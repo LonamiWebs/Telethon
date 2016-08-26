@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SignInRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Auth</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="sign_in.html">SignInRequest</a></li></ul><h1>SignInRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+auth.signIn#8d52a951 flags:# phone_number:<a href="../../index.html#string">string</a> phone_code_hash:<a href="../../index.html#string">string</a> phone_code:flags.0?<a href="../../index.html#string">string</a> email_verification:flags.1?<a href="../../types/email_verification.html">EmailVerification</a> = <a href="../../types/auth/authorization.html">auth.Authorization</a></pre><button onclick="cp('from telethon.tl.functions.auth import SignInRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/auth/authorization.html">auth.Authorization</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/auth/authorization.html">Authorization</a></td><td><a href="../../constructors/auth/authorization_sign_up_required.html">AuthorizationSignUpRequired</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>phone_number</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>phone_code_hash</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>phone_code</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>email_verification</b></td><td style="text-align:center"><a href="../../types/email_verification.html">EmailVerification</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 6 known errors:</p><table><tr><td><code>PhoneCodeEmptyError</code></td><td>The phone code is missing.</td></tr><tr><td><code>PhoneCodeExpiredError</code></td><td>The confirmation code has expired.</td></tr><tr><td><code>PhoneCodeInvalidError</code></td><td>The phone code entered was invalid.</td></tr><tr><td><code>PhoneNumberInvalidError</code></td><td>The phone number is invalid.</td></tr><tr><td><code>PhoneNumberUnoccupiedError</code></td><td>The phone number is not yet being used.</td></tr><tr><td><code>SessionPasswordNeededError</code></td><td>Two-steps verification is enabled and a password is required.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><p>Please refer to the documentation of <a href="https://docs.telethon.dev/en/stable/modules/client.html#telethon.client.auth.AuthMethods.sign_in"><code>client.sign_in()</code></a> to learn about the parameters and see several code examples on how to use it.</p><p>The method above is the recommended way to do it. If you need more control over the parameters or want to learn how it is implemented, open the details by clicking on the "Details" text.</p><details><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.auth.SignInRequest(
+        phone_number=<em>'some string here'</em>,
+        phone_code_hash=<em>'some string here'</em>,
+        phone_code=<em>'some string here'</em>,
+        email_verification=types.EmailVerificationCode(
+            code=<em>'some string here'</em>
+        )
+    ))
+    print(result.stringify())</pre></details><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

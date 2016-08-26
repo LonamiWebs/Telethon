@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>ResolveUsernameRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Contacts</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="resolve_username.html">ResolveUsernameRequest</a></li></ul><h1>ResolveUsernameRequest</h1><p><strong>Both users and bots</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+contacts.resolveUsername#f93ccba3 username:<a href="../../index.html#string">string</a> = <a href="../../types/contacts/resolved_peer.html">contacts.ResolvedPeer</a></pre><button onclick="cp('from telethon.tl.functions.contacts import ResolveUsernameRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/contacts/resolved_peer.html">contacts.ResolvedPeer</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/contacts/resolved_peer.html">ResolvedPeer</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>username</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr></table><h1>Known RPC errors</h1><p>This request can cause 4 known errors:</p><table><tr><td><code>AuthKeyPermEmptyError</code></td><td>The method is unavailable for temporary authorization key, not bound to permanent.</td></tr><tr><td><code>SessionPasswordNeededError</code></td><td>Two-steps verification is enabled and a password is required.</td></tr><tr><td><code>UsernameInvalidError</code></td><td>Nobody is using this username, or the username is unacceptable. If the latter, it must match r"[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]".</td></tr><tr><td><code>UsernameNotOccupiedError</code></td><td>The username is not in use by anyone else yet.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><p>Please refer to the documentation of <a href="https://docs.telethon.dev/en/stable/modules/client.html#telethon.client.users.UserMethods.get_entity"><code>client.get_entity()</code></a> to learn about the parameters and see several code examples on how to use it.</p><p>The method above is the recommended way to do it. If you need more control over the parameters or want to learn how it is implemented, open the details by clicking on the "Details" text.</p><details><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.contacts.ResolveUsernameRequest(
+        username=<em>'some string here'</em>
+    ))
+    print(result.stringify())</pre></details><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

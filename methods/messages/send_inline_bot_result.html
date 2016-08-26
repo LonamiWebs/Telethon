@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>SendInlineBotResultRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Messages</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="send_inline_bot_result.html">SendInlineBotResultRequest</a></li></ul><h1>SendInlineBotResultRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+messages.sendInlineBotResult#3ebee86a flags:# silent:flags.5?<a href="../../index.html#true">true</a> background:flags.6?<a href="../../index.html#true">true</a> clear_draft:flags.7?<a href="../../index.html#true">true</a> hide_via:flags.11?<a href="../../index.html#true">true</a> peer:<a href="../../types/input_peer.html">InputPeer</a> reply_to:flags.0?<a href="../../types/input_reply_to.html">InputReplyTo</a> random_id:<a href="../../index.html#long">long</a> query_id:<a href="../../index.html#long">long</a> id:<a href="../../index.html#string">string</a> schedule_date:flags.10?<a href="../../index.html#date">date</a> send_as:flags.13?<a href="../../types/input_peer.html">InputPeer</a> quick_reply_shortcut:flags.17?<a href="../../types/input_quick_reply_shortcut.html">InputQuickReplyShortcut</a> = <a href="../../types/updates.html">Updates</a></pre><button onclick="cp('from telethon.tl.functions.messages import SendInlineBotResultRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/updates.html">Updates</a></td></tr></table><p>This type can be an instance of either:</p><table><tr><td><a href="../../constructors/update_short.html">UpdateShort</a></td><td><a href="../../constructors/update_short_chat_message.html">UpdateShortChatMessage</a></td></tr><tr><td><a href="../../constructors/update_short_message.html">UpdateShortMessage</a></td><td><a href="../../constructors/update_short_sent_message.html">UpdateShortSentMessage</a></td></tr><tr><td><a href="../../constructors/updates.html">Updates</a></td><td><a href="../../constructors/updates_combined.html">UpdatesCombined</a></td></tr><tr><td><a href="../../constructors/updates_too_long.html">UpdatesTooLong</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>peer</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>query_id</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td></td></tr><tr><td><b>id</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>silent</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>background</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>clear_draft</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>hide_via</b></td><td style="text-align:center"><a href="../../index.html#true">flag</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>reply_to</b></td><td style="text-align:center"><a href="../../types/input_reply_to.html">InputReplyTo</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>random_id</b></td><td style="text-align:center"><a href="../../index.html#long">long</a></td><td>If left unspecified, it will be inferred automatically.</td></tr><tr><td><b>schedule_date</b></td><td style="text-align:center"><a href="../../index.html#date">date</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>send_as</b></td><td style="text-align:center"><a href="../../types/input_peer.html">InputPeer</a></td><td>This argument defaults to <code>None</code> and can be omitted. Anything entity-like will work if the library can find its <code>Input</code> version (e.g., usernames, <code>Peer</code>, <code>User</code> or <code>Channel</code> objects, etc.).</td></tr><tr><td><b>quick_reply_shortcut</b></td><td style="text-align:center"><a href="../../types/input_quick_reply_shortcut.html">InputQuickReplyShortcut</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 11 known errors:</p><table><tr><td><code>ChatSendInlineForbiddenError</code></td><td>You cannot send inline results in this chat.</td></tr><tr><td><code>ChatWriteForbiddenError</code></td><td>You can't write in this chat.</td></tr><tr><td><code>EntityBoundsInvalidError</code></td><td>Some of provided entities have invalid bounds (length is zero or out of the boundaries of the string).</td></tr><tr><td><code>InlineResultExpiredError</code></td><td>The inline query expired.</td></tr><tr><td><code>PeerIdInvalidError</code></td><td>An invalid Peer was used. Make sure to pass the right peer type and that the value is valid (for instance, bots cannot start conversations).</td></tr><tr><td><code>QueryIdEmptyError</code></td><td>The query ID is empty.</td></tr><tr><td><code>ScheduleDateTooLateError</code></td><td>The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours).</td></tr><tr><td><code>ScheduleTooMuchError</code></td><td>You cannot schedule more messages in this chat (last known limit of 100 per chat).</td></tr><tr><td><code>TopicDeletedError</code></td><td>The topic was deleted.</td></tr><tr><td><code>WebpageCurlFailedError</code></td><td>Failure while fetching the webpage with cURL.</td></tr><tr><td><code>WebpageMediaEmptyError</code></td><td>Webpage media empty.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.messages.SendInlineBotResultRequest(
+        peer=<em>'username'</em>,
+        query_id=-12398745604826,
+        id=<em>'some string here'</em>,
+        hide_via=<strong>True</strong>,
+        reply_to=types.InputReplyToMessage(
+            reply_to_msg_id=42,
+            top_msg_id=42,
+            reply_to_peer_id=<em>'username'</em>,
+            quote_text=<em>'some string here'</em>,
+            quote_entities=[types.MessageEntityUnknown(
+                offset=42,
+                length=42
+            )],
+            quote_offset=42
+        ),
+        schedule_date=datetime.datetime(2018, 6, 25),
+        send_as=<em>'username'</em>,
+        quick_reply_shortcut=types.InputQuickReplyShortcut(
+            shortcut=<em>'some string here'</em>
+        )
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>

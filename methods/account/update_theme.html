@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>UpdateThemeRequest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link id="style" href="../../css/docs.dark.css" rel="stylesheet">
+    <script>
+    document.getElementById("style").href = "../../css/docs."
+        + (localStorage.getItem("theme") || "light")
+        + ".css";
+    </script>
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
+          rel="stylesheet">
+</head>
+<body>
+<div id="main_div"><ul class="horizontal"><li><a href="../../index.html">API</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="../index.html">Methods</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="index.html">Account</a></li><img src="../../img/arrow.svg" alt="/" /><li><a href="update_theme.html">UpdateThemeRequest</a></li></ul><h1>UpdateThemeRequest</h1><p><strong>Only users</strong> can use this request. <a href="#examples">See code examples.</a></p><pre>---functions---
+account.updateTheme#2bf40ccc flags:# format:<a href="../../index.html#string">string</a> theme:<a href="../../types/input_theme.html">InputTheme</a> slug:flags.0?<a href="../../index.html#string">string</a> title:flags.1?<a href="../../index.html#string">string</a> document:flags.2?<a href="../../types/input_document.html">InputDocument</a> settings:flags.3?<a href="../../index.html#vector">Vector</a>&lt;<a href="../../types/input_theme_settings.html">InputThemeSettings</a>&gt; = <a href="../../types/theme.html">Theme</a></pre><button onclick="cp('from telethon.tl.functions.account import UpdateThemeRequest');">Copy import to the clipboard</button><h3>Returns</h3><table><tr><td><a href="../../types/theme.html">Theme</a></td></tr></table><p>This type can only be an instance of:</p><table><tr><td><a href="../../constructors/theme.html">Theme</a></td></tr></table><h3>Parameters</h3><table><tr><td><b>format</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td></td></tr><tr><td><b>theme</b></td><td style="text-align:center"><a href="../../types/input_theme.html">InputTheme</a></td><td></td></tr><tr><td><b>slug</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>title</b></td><td style="text-align:center"><a href="../../index.html#string">string</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>document</b></td><td style="text-align:center"><a href="../../types/input_document.html">InputDocument</a></td><td>This argument defaults to <code>None</code> and can be omitted.</td></tr><tr><td><b>settings</b></td><td style="text-align:center"><a href="../../types/input_theme_settings.html">InputThemeSettings</a></td><td>This argument defaults to <code>None</code> and can be omitted. Otherwise, a <span class="tooltip" title="Any iterable that supports len() will work too">list</span> must be supplied.</td></tr></table><h1>Known RPC errors</h1><p>This request can cause 1 known error:</p><table><tr><td><code>ThemeInvalidError</code></td><td>Theme invalid.</td></tr></table><p>You can import these from <code>telethon.errors</code>.</p><h1 id="examples">Example</h1><pre><strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(functions.account.UpdateThemeRequest(
+        format=<em>'some string here'</em>,
+        theme=types.InputTheme(
+            id=-12398745604826,
+            access_hash=-12398745604826
+        ),
+        slug=<em>'some string here'</em>,
+        title=<em>'My awesome title'</em>,
+        document=types.InputDocument(
+            id=-12398745604826,
+            access_hash=-12398745604826,
+            file_reference=<em>b'arbitrary\x7f data \xfa here'</em>
+        ),
+        settings=[types.InputThemeSettings(
+            base_theme=types.BaseThemeClassic(),
+            accent_color=42,
+            message_colors_animated=<strong>True</strong>,
+            outbox_accent_color=42,
+            message_colors=[42],
+            wallpaper=types.InputWallPaper(
+                id=-12398745604826,
+                access_hash=-12398745604826
+            ),
+            wallpaper_settings=types.WallPaperSettings(
+                blur=<strong>True</strong>,
+                motion=<strong>True</strong>,
+                background_color=42,
+                second_background_color=42,
+                third_background_color=42,
+                fourth_background_color=42,
+                intensity=42,
+                rotation=42,
+                emoticon=<em>'some string here'</em>
+            )
+        )]
+    ))
+    print(result.stringify())</pre><textarea id="c" class="invisible"></textarea><script>function cp(t){var c=document.getElementById("c");c.value=t;c.select();try{document.execCommand("copy")}catch(e){}}</script></div><script>prependPath = "../../";</script><script src="../../js/search.js"></script></body></html>
