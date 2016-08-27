@@ -1,4 +1,5 @@
 from io import BytesIO, BufferedReader
+from tl.all_tlobjects import tlobjects
 import os
 
 
@@ -24,6 +25,9 @@ class BinaryReader:
 
     def read_long(self, signed=True):
         return int.from_bytes(self.reader.read(8), signed=signed, byteorder='big')
+
+    def read_large_int(self, bits):
+        return int.from_bytes(self.reader.read(bits // 8), byteorder='big')
 
     def read(self, length):
         return self.reader.read(length)
@@ -53,6 +57,19 @@ class BinaryReader:
 
     def tgread_string(self):
         return str(self.tgread_bytes(), encoding='utf-8')
+
+    def tgread_object(self):
+        """Reads a Telegram object"""
+        id = self.read_int()
+        clazz = tlobjects.get(id, None)
+        if clazz is None:
+            raise ImportError('Could not find a matching ID for the TLObject that was supposed to be read. '
+                              'Found ID: {}'.format(hex(id)))
+
+        # Instantiate the class and return the result
+        result = clazz()
+        result.on_response(self)
+        return result
 
     # endregion
 

@@ -94,7 +94,10 @@ class TLArg:
         :param generic_definition: Is the argument a generic definition?
                                    (i.e. {X:Type})
         """
-        self.name = name
+        if name == 'self':  # This very only name is restricted
+            self.name = 'is_self'
+        else:
+            self.name = name
 
         # Default values
         self.is_vector = False

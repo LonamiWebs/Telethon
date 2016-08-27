@@ -24,5 +24,6 @@ In order to make sure that all the generated files will work, please make sure t
 // vector#1cb5c415 {t:Type} # [ t ] = Vector t;
 ```
 
+Also please make sure to rename `updates#74ae4240 ...` to `updates_tg#74ae4240 ...` or similar to avoid confusion between the updates folder and the updates.py file!
 
  
