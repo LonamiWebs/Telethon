@@ -1,8 +1,5 @@
-from parser.tl_parser import TLParser
+import tlobjects_generator
 
 
 if __name__ == '__main__':
-
-    parser = TLParser()
-    for tlobject in parser.parse_file('parser/scheme.tl'):
-        print(tlobject)
+    tlobjects_generator.generate_tlobjecs()

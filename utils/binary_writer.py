@@ -17,18 +17,31 @@ class BinaryWriter:
 
     # region Writing
 
-    def write_byte(self, byte):
-        self.writer.write(pack('B', byte))
+    def write_byte(self, value):
+        self.writer.write(pack('B', value))
 
-    def write_int(self, integer, signed=True):
-        if not signed:
-            integer &= 0xFFFFFFFF  # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
-        self.writer.write(pack('I', integer))
+    def write_int(self, value, signed=True):
+        if signed:
+            self.writer.write(pack('i', value))
+        else:
+            value &= 0xFFFFFFFF  # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
+            self.writer.write(pack('I', value))
 
-    def write_long(self, long, signed=True):
-        if not signed:
-            long &= 0xFFFFFFFFFFFFFFFF
-        self.writer.write(pack('Q', long))
+    def write_long(self, value, signed=True):
+        if signed:
+            self.writer.write(pack('q', value))
+        else:
+            value &= 0xFFFFFFFFFFFFFFFF
+            self.writer.write(pack('Q', value))
+
+    def write_float(self, value):
+        self.writer.write(pack('f', value))
+
+    def write_double(self, value):
+        self.writer.write(pack('d', value))
+
+    def write_large_int(self, value, bits):
+        self.writer.write(pack('{}B'.format(bits // 8), value))
 
     def write(self, data):
         self.writer.write(data)
@@ -70,6 +83,10 @@ class BinaryWriter:
 
     def tgwrite_string(self, string):
         return self.tgwrite_bytes(string.encode('utf-8'))
+
+    def tgwrite_bool(self, bool):
+        #                     boolTrue                boolFalse
+        return self.write_int(0x997275b5 if bool else 0xbc799737, signed=False)
 
     # endregion
 

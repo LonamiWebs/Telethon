@@ -50,7 +50,7 @@ class MtProtoSender:
             # TODO Is there any difference with unsigned long and long?
             writer.write_long(self._session.salt, signed=False)
             writer.write_long(self._session.id, signed=False)
-            writer.write_long(request.message_id)
+            writer.write_long(request.msg_id)
             writer.write_int(self.generate_sequence(request.confirmed))
             writer.write_int(len(packet))
             writer.write(packet)

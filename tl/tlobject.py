@@ -96,7 +96,8 @@ class TLArg:
         """
         self.name = name
 
-        # Default flag values
+        # Default values
+        self.is_vector = False
         self.is_flag = False
         self.flag_index = -1
 
@@ -119,15 +120,27 @@ class TLArg:
                 self.flag_index = int(flag_match.group(1))
                 self.type = flag_match.group(2)  # Update the type to match the exact type, not the "flagged" one
 
+            # Then check if the type is a Vector<REAL_TYPE>
+            vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)
+            if vector_match:
+                self.is_vector = True
+                self.type = vector_match.group(1)  # Update the type to match the one inside the vector
+
         self.generic_definition = generic_definition
 
     def __str__(self):
-        type = ('!{}'.format(self.type) if self.is_generic
-                else
-                ('flags.{}?{}'.format(self.flag_index, self.type) if self.is_flag
-                                      else self.type))
+        # Find the real type representation by updating it as required
+        real_type = self.type
+        if self.is_vector:
+            real_type = 'Vector<{}>'.format(real_type)
+
+        if self.is_generic:
+            real_type = '!{}'.format(real_type)
+
+        if self.is_flag:
+            real_type = 'flags.{}?{}'.format(self.flag_index, real_type)
 
         if self.generic_definition:
-            return '{{{}:{}}}'.format(self.name, type)
+            return '{{{}:{}}}'.format(self.name, real_type)
         else:
-            return '{}:{}'.format(self.name, type)
+            return '{}:{}'.format(self.name, real_type)

@@ -1,5 +1,9 @@
 // Core types (no need to gen)
 
+// We handle some types in a special way
+//boolFalse#bc799737 = Bool;
+//boolTrue#997275b5 = Bool;
+//true#3fedd339 = True;
 //vector#1cb5c415 {t:Type} # [ t ] = Vector t;
 
 ///////////////////////////////
@@ -118,11 +122,6 @@ contest.saveDeveloperInfo#9a5f6e95 vk_id:int name:string phone_number:string age
 ///////////////////////////////
 
 ---types---
-
-boolFalse#bc799737 = Bool;
-boolTrue#997275b5 = Bool;
-
-true#3fedd339 = True;
 
 error#c4b9f9bb code:int text:string = Error;
 
