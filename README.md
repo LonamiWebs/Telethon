@@ -10,6 +10,7 @@ to make them entirely different.
 This project requires the following Python modules, which can be installed by issuing `sudo -H pip install <module>` on a
 Linux terminal:
 - `pyaes` ([GitHub](https://github.com/ricmoo/pyaes), [package index](https://pypi.python.org/pypi/pyaes))
+- `rsa` ([GitHub](https://github.com/sybrenstuvel/python-rsa), [package index](https://pypi.python.org/pypi/rsa))
 
 ### We need your help!
 As of now, the project is fully **untested** and with many pending things to do. If you know both Python and C#, please don't

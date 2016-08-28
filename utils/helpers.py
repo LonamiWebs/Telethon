@@ -59,3 +59,40 @@ def calc_msg_key_offset(data, offset, limit):
     # TODO untested, may not be offset like this
     # In the original code it was as parameters for the sha function, not slicing the array
     return sha1(data[offset:offset + limit])[4:20]
+
+
+def generate_key_data_from_nonces(serverNonce, newNonce):
+    # TODO unsure that this works
+    nonces = [0] * 48
+
+    nonces[00:32] = newNonce
+    nonces[32:48] = serverNonce
+    hash1 = hash(bytes(nonces))
+
+    nonces[00:16] = serverNonce
+    nonces[16:32] = newNonce
+    hash2 = hash(bytes(nonces))
+
+    nonces = [0] * 64
+    nonces[00:32] = newNonce
+    nonces[32:64] = newNonce
+    hash2 = hash(bytes(nonces))
+
+    with BinaryWriter() as keyBuffer:
+        with BinaryWriter() as ivBuffer:
+            """
+                using (var keyBuffer = new MemoryStream(32))
+                using (var ivBuffer = new MemoryStream(32))
+                {
+                    keyBuffer.Write(hash1, 0, hash1.Length);
+                    keyBuffer.Write(hash2, 0, 12);
+
+                    ivBuffer.Write(hash2, 12, 8);
+                    ivBuffer.Write(hash3, 0, hash3.Length);
+                    ivBuffer.Write(newNonce, 0, 4);
+
+                    return new AESKeyData(keyBuffer.ToArray(), ivBuffer.ToArray());
+                }
+            """
+            # TODO implement
+            raise NotImplementedError()
