@@ -1,17 +1,36 @@
 import os
 import re
+import shutil
 from parser.tl_parser import TLParser
 from parser.source_builder import SourceBuilder
 
 
-def generate_tlobjecs():
+def tlobjects_exist():
+    """Determines whether the TLObjects were previously generated (hence exist) or not"""
+    return os.path.isfile('tl/all_tlobjects.py')
+
+
+def clean_tlobjects():
+    """Cleans the automatically generated TLObjects from disk"""
+    if os.path.isdir('tl/functions'):
+        shutil.rmtree('tl/functions')
+
+    if os.path.isdir('tl/types'):
+        shutil.rmtree('tl/types')
+
+    if os.path.isfile('tl/all_tlobjects.py'):
+        os.remove('tl/all_tlobjects.py')
+
+
+def generate_tlobjects(scheme_file):
     """Generates all the TLObjects from scheme.tl to tl/functions and tl/types"""
 
     # First ensure that the required parent directories exist
     os.makedirs('tl/functions', exist_ok=True)
     os.makedirs('tl/types', exist_ok=True)
 
-    tlobjects = tuple(TLParser.parse_file('scheme.tl'))
+    # Store the parsed file in a tuple for iterating it more than once
+    tlobjects = tuple(TLParser.parse_file(scheme_file))
     for tlobject in tlobjects:
         # Determine the output directory and create it
         out_dir = os.path.join('tl',
@@ -23,12 +42,12 @@ def generate_tlobjecs():
 
         os.makedirs(out_dir, exist_ok=True)
 
-        init_py = os.path.join(out_dir, '__init__.py')
         # Also create __init__.py
+        init_py = os.path.join(out_dir, '__init__.py')
         if not os.path.isfile(init_py):
             open(init_py, 'a').close()
 
-        # Create the file
+        # Create the file for this TLObject
         filename = os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
         with open(filename, 'w', encoding='utf-8') as file:
             # Let's build the source code!
@@ -83,12 +102,12 @@ def generate_tlobjecs():
                 if tlobject.is_function:
                     builder.writeln('self.result = None')
 
-                # Leave an empty line if there are any args
+                # Set the arguments
                 if args:
+                    # Leave an empty line if there are any args
                     builder.writeln()
-
-                for arg in args:
-                    builder.writeln('self.{0} = {0}'.format(arg.name))
+                    for arg in args:
+                        builder.writeln('self.{0} = {0}'.format(arg.name))
                 builder.end_block()
 
                 # Write the on_send(self, writer) function
@@ -110,6 +129,7 @@ def generate_tlobjecs():
                         for arg in tlobject.args:
                             write_onresponse_code(builder, arg, tlobject.args)
                     else:
+                        # If there were no arguments, we still need an on_response method, and hence "pass" if empty
                         builder.writeln('pass')
                 builder.end_block()
 
@@ -129,18 +149,18 @@ def generate_tlobjecs():
             builder.writeln('tlobjects = {')
             builder.current_indent += 1
 
+            # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
             for tlobject in tlobjects:
-                builder.writeln('{}: {}.{},'.format(
-                    hex(tlobject.id),
-                    get_full_file_name(tlobject),
-                    get_class_name(tlobject)
-                ))
+                builder.writeln('{}: {}.{},'
+                                .format(hex(tlobject.id), get_full_file_name(tlobject), get_class_name(tlobject)))
 
             builder.current_indent -= 1
             builder.writeln('}')
 
 
 def get_class_name(tlobject):
+    """Gets the class name following the Python style guidelines, in ThisClassFormat"""
+
     # Courtesy of http://stackoverflow.com/a/31531797/4759433
     # Also, '_' could be replaced for ' ', then use .title(), and then remove ' '
     result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), tlobject.name)
@@ -148,6 +168,8 @@ def get_class_name(tlobject):
 
 
 def get_full_file_name(tlobject):
+    """Gets the full file name for the given TLObject (tl.type.full.path)"""
+
     fullname = get_file_name(tlobject, add_extension=False)
     if tlobject.namespace is not None:
         fullname = '{}.{}'.format(tlobject.namespace, fullname)
@@ -159,6 +181,8 @@ def get_full_file_name(tlobject):
 
 
 def get_file_name(tlobject, add_extension):
+    """Gets the file name in file_name_format.py for the given TLObject"""
+
     # Courtesy of http://stackoverflow.com/a/1176023/4759433
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', tlobject.name)
     result = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
@@ -324,5 +348,6 @@ def write_onresponse_code(builder, arg, args, name=None):
         builder.end_block()
 
 
-def get_code(tg_type, stream_name, arg_name):
-    function_name = 'write' if stream_name == 'writer' else 'read'
+if __name__ == '__main__':
+    clean_tlobjects()
+    generate_tlobjects('scheme.tl')

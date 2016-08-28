@@ -1,5 +1,7 @@
-import tlobjects_generator
-
+import tl.generator
 
 if __name__ == '__main__':
-    tlobjects_generator.generate_tlobjecs()
+    if not tl.generator.tlobjects_exist():
+        print('Please run tl/generator.py at least once before continuing')
+    else:
+        pass

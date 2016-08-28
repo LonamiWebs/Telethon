@@ -1,4 +1,7 @@
 .idea
+tl/functions/
+tl/types/
+tl/all_tlobjects.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
