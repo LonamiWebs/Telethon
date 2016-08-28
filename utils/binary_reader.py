@@ -21,18 +21,23 @@ class BinaryReader:
     # region Reading
 
     def read_int(self, signed=True):
+        """Reads an integer (4 bytes) value"""
         return int.from_bytes(self.reader.read(4), signed=signed, byteorder='big')
 
     def read_long(self, signed=True):
+        """Reads a long integer (8 bytes) value"""
         return int.from_bytes(self.reader.read(8), signed=signed, byteorder='big')
 
     def read_large_int(self, bits):
+        """Reads a n-bits long integer value"""
         return int.from_bytes(self.reader.read(bits // 8), byteorder='big')
 
     def read(self, length):
+        """Read the given amount of bytes"""
         return self.reader.read(length)
 
     def get_bytes(self):
+        """Gets the byte array representing the current buffer as a whole"""
         return self.stream.getbuffer()
 
     # endregion
@@ -40,6 +45,7 @@ class BinaryReader:
     # region Telegram custom reading
 
     def tgread_bytes(self):
+        """Reads a Telegram-encoded byte array, without the need of specifying its length"""
         first_byte = self.read(1)
         if first_byte == 254:
             length = self.read(1) | (self.read(1) << 8) | (self.read(1) << 16)
@@ -56,6 +62,7 @@ class BinaryReader:
         return data
 
     def tgread_string(self):
+        """Reads a Telegram-encoded string"""
         return str(self.tgread_bytes(), encoding='utf-8')
 
     def tgread_object(self):

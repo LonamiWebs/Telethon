@@ -1,4 +1,5 @@
-
+# This file is based on TLSharp
+# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpMessage.cs
 from zlib import crc32
 
 from utils.binary_writer import BinaryWriter
@@ -6,7 +7,6 @@ from utils.binary_reader import BinaryReader
 
 
 class TcpMessage:
-
     def __init__(self, seq_number, body):
         """
         :param seq_number: Sequence number
@@ -19,6 +19,7 @@ class TcpMessage:
         self.body = body
 
     def encode(self):
+        """Returns the bytes of the this message encoded, following Telegram's guidelines"""
         with BinaryWriter() as writer:
             ''' https://core.telegram.org/mtproto#tcp-transport
 
@@ -38,7 +39,9 @@ class TcpMessage:
 
             return writer.get_bytes()
 
-    def decode(self, body):
+    @staticmethod
+    def decode(body):
+        """Returns a TcpMessage from the given encoded bytes, decoding them previously"""
         if body is None:
             raise ValueError('body cannot be None')
 

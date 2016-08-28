@@ -18,9 +18,11 @@ class BinaryWriter:
     # region Writing
 
     def write_byte(self, value):
+        """Writes a single byte value"""
         self.writer.write(pack('B', value))
 
     def write_int(self, value, signed=True):
+        """Writes an integer value (4 bytes), which can or cannot be signed"""
         if signed:
             self.writer.write(pack('i', value))
         else:
@@ -28,6 +30,7 @@ class BinaryWriter:
             self.writer.write(pack('I', value))
 
     def write_long(self, value, signed=True):
+        """Writes a long integer value (8 bytes), which can or cannot be signed"""
         if signed:
             self.writer.write(pack('q', value))
         else:
@@ -35,15 +38,19 @@ class BinaryWriter:
             self.writer.write(pack('Q', value))
 
     def write_float(self, value):
+        """Writes a floating point value (4 bytes)"""
         self.writer.write(pack('f', value))
 
     def write_double(self, value):
+        """Writes a floating point value (8 bytes)"""
         self.writer.write(pack('d', value))
 
     def write_large_int(self, value, bits):
+        """Writes a n-bits long integer value"""
         self.writer.write(pack('{}B'.format(bits // 8), value))
 
     def write(self, data):
+        """Writes the given bytes array"""
         self.writer.write(data)
 
     # endregion
@@ -51,7 +58,7 @@ class BinaryWriter:
     # region Telegram custom writing
 
     def tgwrite_bytes(self, data):
-
+        """Write bytes by using Telegram guidelines"""
         if len(data) < 254:
             padding = (len(data) + 1) % 4
             if padding != 0:
@@ -71,7 +78,6 @@ class BinaryWriter:
             self.write(bytes([(len(data) >> 8) % 256]))
             self.write(bytes([(len(data) >> 16) % 256]))
             self.write(data)
-
             """ Original:
                     binaryWriter.Write((byte)254);
                     binaryWriter.Write((byte)(bytes.Length));
@@ -82,22 +88,27 @@ class BinaryWriter:
         self.write(bytes(padding))
 
     def tgwrite_string(self, string):
+        """Write a string by using Telegram guidelines"""
         return self.tgwrite_bytes(string.encode('utf-8'))
 
     def tgwrite_bool(self, bool):
+        """Write a boolean value by using Telegram guidelines"""
         #                     boolTrue                boolFalse
         return self.write_int(0x997275b5 if bool else 0xbc799737, signed=False)
 
     # endregion
 
     def flush(self):
+        """Flush the current stream to "update" changes"""
         self.writer.flush()
 
     def close(self):
+        """Close the current stream"""
         self.writer.close()
         # TODO Do I need to close the underlying stream?
 
     def get_bytes(self, flush=True):
+        """Get the current bytes array content from the buffer, optionally flushing first"""
         if flush:
             self.writer.flush()
         self.stream.getbuffer()

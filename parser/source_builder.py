@@ -1,23 +1,18 @@
-from io import StringIO
-
-
 class SourceBuilder:
     """This class should be used to build .py source files"""
 
-    def __init__(self, out_stream=None, indent_size=4):
+    def __init__(self, out_stream, indent_size=4):
         self.current_indent = 0
         self.on_new_line = False
         self.indent_size = indent_size
-
-        if out_stream is None:
-            self.out_stream = StringIO()
-        else:
-            self.out_stream = out_stream
+        self.out_stream = out_stream
 
     def indent(self):
+        """Indents the current source code line by the current indentation level"""
         self.write(' ' * (self.current_indent * self.indent_size))
 
     def write(self, string):
+        """Writes a string into the source code, applying indentation if required"""
         if self.on_new_line:
             self.on_new_line = False  # We're not on a new line anymore
             if string.strip():  # If the string was not empty, indent; Else it probably was a new line
@@ -26,6 +21,7 @@ class SourceBuilder:
         self.out_stream.write(string)
 
     def writeln(self, string=''):
+        """Writes a string into the source code _and_ appends a new line, applying indentation if required"""
         self.write(string + '\n')
         self.on_new_line = True
 
@@ -34,6 +30,7 @@ class SourceBuilder:
             self.current_indent += 1
 
     def end_block(self):
+        """Ends an indentation block, leaving an empty line afterwards"""
         self.current_indent -= 1
         self.writeln()
 

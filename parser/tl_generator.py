@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+
 from parser.tl_parser import TLParser
 from parser.source_builder import SourceBuilder
 
@@ -52,7 +53,7 @@ def generate_tlobjects(scheme_file):
         with open(filename, 'w', encoding='utf-8') as file:
             # Let's build the source code!
             with SourceBuilder(file) as builder:
-                builder.writeln('from requests.mtproto_request import MTProtoRequest')
+                builder.writeln('from tl.mtproto_request import MTProtoRequest')
                 builder.writeln()
                 builder.writeln()
                 builder.writeln('class {}(MTProtoRequest):'.format(get_class_name(tlobject)))
@@ -346,8 +347,3 @@ def write_onresponse_code(builder, arg, args, name=None):
 
     if arg.is_flag:
         builder.end_block()
-
-
-if __name__ == '__main__':
-    clean_tlobjects()
-    generate_tlobjects('scheme.tl')
