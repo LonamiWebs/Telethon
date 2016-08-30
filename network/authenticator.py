@@ -9,7 +9,6 @@ from utils.binary_writer import BinaryWriter
 from utils.binary_reader import BinaryReader
 from utils.factorizator import Factorizator
 from utils.auth_key import AuthKey
-from hashlib import sha1
 import utils.helpers as utils
 import time
 import pyaes
@@ -27,8 +26,9 @@ def do_authentication(transport):
         sender.send(writer.get_bytes())
 
     # Step 1 response: PQ Request
+    pq, pq_bytes, server_nonce, fingerprints = None, None, None, []
     with BinaryReader(sender.receive()) as reader:
-        response_code = reader.read_int()
+        response_code = reader.read_int(signed=False)
         if response_code != 0x05162463:
             raise AssertionError('Invalid response code: {}'.format(hex(response_code)))
 
@@ -55,15 +55,14 @@ def do_authentication(transport):
     p, q = Factorizator.factorize(pq)
     with BinaryWriter() as pq_inner_data_writer:
         pq_inner_data_writer.write_int(0x83c95aec)  # PQ Inner Data
-        pq_inner_data_writer.tgwrite_bytes(pq_bytes)
-        # TODO, CHANGE TO_BYTE_ARRAY TO PACK(...); But idk size. And down too.
-        pq_inner_data_writer.tgwrite_bytes(min(p, q).to_byte_array_unsigned())
-        pq_inner_data_writer.tgwrite_bytes(max(p, q).to_byte_array_unsigned())
+        pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(pq, signed=False))
+        pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(min(p, q), signed=False))
+        pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(max(p, q), signed=False))
         pq_inner_data_writer.write(nonce)
         pq_inner_data_writer.write(server_nonce)
         pq_inner_data_writer.write(new_nonce)
 
-        cipher_text = None
+        cipher_text, target_fingerprint = None, None
         for fingerprint in fingerprints:
             cipher_text = rsa.encrypt(str(fingerprint, encoding='utf-8').replace('-', ''),
                                       pq_inner_data_writer.get_bytes())
@@ -80,16 +79,18 @@ def do_authentication(transport):
             req_dh_params_writer.write_int(0xd712e4be)  # Req DH Params
             req_dh_params_writer.write(nonce)
             req_dh_params_writer.write(server_nonce)
-            req_dh_params_writer.tgwrite_bytes(min(p, q).to_byte_array_unsigned())
-            req_dh_params_writer.tgwrite_bytes(max(p, q).to_byte_array_unsigned())
-            req_dh_params_writer.Write(target_fingerprint);
+            req_dh_params_writer.tgwrite_bytes(utils.get_byte_array(min(p, q), signed=False))
+            req_dh_params_writer.tgwrite_bytes(utils.get_byte_array(max(p, q), signed=False))
+            req_dh_params_writer.Write(target_fingerprint)
             req_dh_params_writer.tgwrite_bytes(cipher_text)
 
-            req_dh_params_bytes = req_dh_params_writer.get_bytes();
+            req_dh_params_bytes = req_dh_params_writer.get_bytes()
+            sender.send(req_dh_params_bytes)
 
     # Step 2 response: DH Exchange
+    encrypted_answer = None
     with BinaryReader(sender.receive()) as reader:
-        response_code = reader.read_int()
+        response_code = reader.read_int(signed=False)
 
         if response_code == 0x79cb045d:
             raise AssertionError('Server DH params fail: TODO')
@@ -98,26 +99,21 @@ def do_authentication(transport):
             raise AssertionError('Invalid response code: {}'.format(hex(response_code)))
 
         nonce_from_server = reader.read(16)
-        # TODO:
-        """
         if nonce_from_server != nonce:
-            print('Invalid nonce from server')
-            return None
-        """
+            raise NotImplementedError('Invalid nonce from server')
 
         server_nonce_from_server = reader.read(16)
-        # TODO:
-        """
         if server_nonce_from_server != server_nonce:
-            print('Invalid server nonce from server')
-            return None
-        """
+            raise NotImplementedError('Invalid server nonce from server')
+
         encrypted_answer = reader.tgread_bytes()
 
     # Step 3 sending: Complete DH Exchange
     key, iv = utils.generate_key_data_from_nonces(server_nonce, new_nonce)
     aes = pyaes.AESModeOfOperationCFB(key, iv, 16)
     plain_text_answer = aes.decrypt(encrypted_answer)
+
+    g, dh_prime, ga, time_offset = None, None, None, None
     with BinaryReader(plain_text_answer.encode('ascii')) as dh_inner_data_reader:
         hashsum = dh_inner_data_reader.read(20)
         code = dh_inner_data_reader.read_int(signed=False)
@@ -133,15 +129,15 @@ def do_authentication(transport):
             raise AssertionError('Invalid server nonce in encrypted answer')
 
         g = dh_inner_data_reader.read_int()
-        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big')
-        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big')
+        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
+        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
 
         server_time = dh_inner_data_reader.read_int()
-        time_offset = server_time - int(time.time())
+        time_offset = server_time - int(time.time() * 1000)  # Multiply by 1000 to get milliseconds
 
     b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='big')
-    gb = pow(g, b, dh_prime)  # BigInteger.ValueOf(g).ModPow(b, dhPrime)
-    gab = pow(ga, b, dh_prime)  # ga.ModPow(b, dhPrime)
+    gb = pow(g, b, dh_prime)
+    gab = pow(ga, b, dh_prime)
 
     # Prepare client DH Inner Data
     with BinaryWriter() as client_dh_inner_data_writer:
@@ -149,10 +145,10 @@ def do_authentication(transport):
         client_dh_inner_data_writer.write(nonce)
         client_dh_inner_data_writer.write(server_nonce)
         client_dh_inner_data_writer.write_long(0)  # TODO retry_id
-        client_dh_inner_data_writer.tgwrite_bytes(gb.to_byte_array_unsigned())
+        client_dh_inner_data_writer.tgwrite_bytes(utils.get_byte_array(gb, signed=False))
 
         with BinaryWriter() as client_dh_inner_data_with_hash_writer:
-            client_dh_inner_data_with_hash_writer.write(sha1(client_dh_inner_data_writer.get_bytes()))
+            client_dh_inner_data_with_hash_writer.write(utils.sha1(client_dh_inner_data_writer.get_bytes()))
             client_dh_inner_data_with_hash_writer.write(client_dh_inner_data_writer.get_bytes())
             client_dh_inner_data_bytes = client_dh_inner_data_with_hash_writer.get_bytes()
 
@@ -172,22 +168,15 @@ def do_authentication(transport):
     # Step 3 response: Complete DH Exchange
     with BinaryReader(sender.receive()) as reader:
         code = reader.read_int(signed=False)
-        if code == 0x3bcbf734:
+        if code == 0x3bcbf734:  # DH Gen OK
             nonce_from_server = reader.read(16)
-            # TODO:
-            """
             if nonce_from_server != nonce:
-                print('Invalid nonce from server')
-                return None
-            """
+                raise NotImplementedError('Invalid nonce from server')
 
             server_nonce_from_server = reader.read(16)
-            # TODO:
-            """
             if server_nonce_from_server != server_nonce:
-                print('Invalid server nonce from server')
-                return None
-            """
+                raise NotImplementedError('Invalid server nonce from server')
+
             new_nonce_hash1 = reader.read(16)
             auth_key = AuthKey(gab)
 

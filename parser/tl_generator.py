@@ -297,8 +297,8 @@ def write_onresponse_code(builder, arg, args, name=None):
     if arg.is_vector:
         builder.writeln("reader.read_int()  # Vector's constructor ID")
         builder.writeln('{} = []  # Initialize an empty list'.format(name))
-        builder.writeln('{}_len = reader.read_int()'.format(name))
-        builder.writeln('for _ in range({}_len):'.format(name))
+        builder.writeln('{}_len = reader.read_int()'.format(arg.name))
+        builder.writeln('for _ in range({}_len):'.format(arg.name))
         # Temporary disable .is_vector, not to enter this if again
         arg.is_vector = False
         write_onresponse_code(builder, arg, args, name='{}_item'.format(arg.name))
