@@ -1,24 +1,16 @@
-import random
+import os
 from utils.binary_writer import BinaryWriter
 from hashlib import sha1
 
 
 def generate_random_long(signed=True):
     """Generates a random long integer (8 bytes), which is optionally signed"""
-    result = random.getrandbits(64)
-    if not signed:
-        result &= 0xFFFFFFFFFFFFFFFF  # Ensure it's unsigned
-
-    return result
+    return int.from_bytes(os.urandom(8), signed=signed)
 
 
 def generate_random_bytes(count):
     """Generates a random bytes array"""
-    with BinaryWriter() as writer:
-        for _ in range(count):
-            writer.write(random.getrandbits(8))
-
-    return writer.get_bytes()
+    return os.urandom(count)
 
 
 def calc_key(shared_key, msg_key, client):

@@ -23,31 +23,28 @@ class BinaryWriter:
 
     def write_int(self, value, signed=True):
         """Writes an integer value (4 bytes), which can or cannot be signed"""
-        if signed:
-            self.writer.write(pack('i', value))
-        else:
+        if not signed:
             value &= 0xFFFFFFFF  # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
-            self.writer.write(pack('I', value))
+        self.writer.write(int.to_bytes(value, length=4, byteorder='big', signed=signed))
 
     def write_long(self, value, signed=True):
         """Writes a long integer value (8 bytes), which can or cannot be signed"""
-        if signed:
-            self.writer.write(pack('q', value))
-        else:
+        if not signed:
             value &= 0xFFFFFFFFFFFFFFFF
-            self.writer.write(pack('Q', value))
+        self.writer.write(int.to_bytes(value, length=8, byteorder='big', signed=signed))
 
+    # Network is always big-endian, this is, '>' when packing
     def write_float(self, value):
         """Writes a floating point value (4 bytes)"""
-        self.writer.write(pack('f', value))
+        self.writer.write(pack('>f', value))
 
     def write_double(self, value):
         """Writes a floating point value (8 bytes)"""
-        self.writer.write(pack('d', value))
+        self.writer.write(pack('>d', value))
 
-    def write_large_int(self, value, bits):
+    def write_large_int(self, value, bits, signed=True):
         """Writes a n-bits long integer value"""
-        self.writer.write(pack('{}B'.format(bits // 8), value))
+        self.writer.write(int.to_bytes(value, length=bits // 8, byteorder='big', signed=signed))
 
     def write(self, data):
         """Writes the given bytes array"""
@@ -111,7 +108,7 @@ class BinaryWriter:
         """Get the current bytes array content from the buffer, optionally flushing first"""
         if flush:
             self.writer.flush()
-        self.stream.getbuffer()
+        return self.stream.getvalue()
 
     # with block
     def __enter__(self):

@@ -21,4 +21,4 @@ class TcpClient:
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""
-        self.socket.recv(buffer_size)
+        return self.socket.recv(buffer_size)

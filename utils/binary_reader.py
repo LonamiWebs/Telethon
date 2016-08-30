@@ -1,5 +1,6 @@
 from io import BytesIO, BufferedReader
 from tl.all_tlobjects import tlobjects
+from struct import unpack
 import os
 
 
@@ -20,17 +21,30 @@ class BinaryReader:
 
     # region Reading
 
+    def read_byte(self):
+        """Reads a single byte value"""
+        return self.reader.read(1)[0]
+
     def read_int(self, signed=True):
         """Reads an integer (4 bytes) value"""
-        return int.from_bytes(self.reader.read(4), signed=signed, byteorder='big')
+        return int.from_bytes(self.reader.read(4), byteorder='big', signed=signed)
 
     def read_long(self, signed=True):
         """Reads a long integer (8 bytes) value"""
-        return int.from_bytes(self.reader.read(8), signed=signed, byteorder='big')
+        return int.from_bytes(self.reader.read(8), byteorder='big', signed=signed)
 
-    def read_large_int(self, bits):
+    # Network is always big-endian, this is, '>'
+    def read_float(self):
+        """Reads a real floating point (4 bytes) value"""
+        return unpack('>f', self.reader.read(4))[0]
+
+    def read_double(self):
+        """Reads a real floating point (8 bytes) value"""
+        return unpack('>d', self.reader.read(8))[0]
+
+    def read_large_int(self, bits, signed=True):
         """Reads a n-bits long integer value"""
-        return int.from_bytes(self.reader.read(bits // 8), byteorder='big')
+        return int.from_bytes(self.reader.read(bits // 8), byteorder='big', signed=signed)
 
     def read(self, length):
         """Read the given amount of bytes"""
@@ -38,7 +52,7 @@ class BinaryReader:
 
     def get_bytes(self):
         """Gets the byte array representing the current buffer as a whole"""
-        return self.stream.getbuffer()
+        return self.stream.getvalue()
 
     # endregion
 
@@ -46,9 +60,9 @@ class BinaryReader:
 
     def tgread_bytes(self):
         """Reads a Telegram-encoded byte array, without the need of specifying its length"""
-        first_byte = self.read(1)
+        first_byte = self.read_byte()
         if first_byte == 254:
-            length = self.read(1) | (self.read(1) << 8) | (self.read(1) << 16)
+            length = self.read_byte() | (self.read_byte() << 8) | (self.read_byte() << 16)
             padding = length % 4
         else:
             length = first_byte
