@@ -39,7 +39,9 @@ def do_authentication(transport):
         server_nonce = reader.read(16)
 
         pq_bytes = reader.tgread_bytes()
-        pq = int.from_bytes(pq_bytes, byteorder='little')
+        # "string pq is a representation of a natural number (in binary big endian format)"
+        # See https://core.telegram.org/mtproto/auth_key#dh-exchange-initiation
+        pq = int.from_bytes(pq_bytes, byteorder='big')
 
         vector_id = reader.read_int()
         if vector_id != 0x1cb5c415:
@@ -88,7 +90,6 @@ def do_authentication(transport):
 
     # Step 2 response: DH Exchange
     encrypted_answer = None
-    # TODO, there is no data to read? What's going on?
     with BinaryReader(sender.receive()) as reader:
         response_code = reader.read_int(signed=False)
 
@@ -110,7 +111,8 @@ def do_authentication(transport):
 
     # Step 3 sending: Complete DH Exchange
     key, iv = utils.generate_key_data_from_nonces(server_nonce, new_nonce)
-    aes = pyaes.AESModeOfOperationCFB(key, iv, 16)
+    # TODO ValueError: initialization vector must be 16 bytes
+    aes = pyaes.AESModeOfOperationCFB(key, iv, len(key))
     plain_text_answer = aes.decrypt(encrypted_answer)
 
     g, dh_prime, ga, time_offset = None, None, None, None
@@ -129,13 +131,15 @@ def do_authentication(transport):
             raise AssertionError('Invalid server nonce in encrypted answer')
 
         g = dh_inner_data_reader.read_int()
-        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='little', signed=True)
-        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='little', signed=True)
+        # "current value of dh_prime equals (in big-endian byte order)
+        # See https://core.telegram.org/mtproto/auth_key#presenting-proof-of-work-server-authentication
+        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
+        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
 
         server_time = dh_inner_data_reader.read_int()
         time_offset = server_time - int(time.time() * 1000)  # Multiply by 1000 to get milliseconds
 
-    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='little')
+    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='big', signed=True)
     gb = pow(g, b, dh_prime)
     gab = pow(ga, b, dh_prime)
 

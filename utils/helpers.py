@@ -60,7 +60,7 @@ def generate_key_data_from_nonces(server_nonce, new_nonce):
 
             iv_buffer.write(hash2[12:20])
             iv_buffer.write(hash3)
-            iv_buffer.write_byte(new_nonce[:4])
+            iv_buffer.write(new_nonce[:4])
 
             return key_buffer.get_bytes(), iv_buffer.get_bytes()
 
