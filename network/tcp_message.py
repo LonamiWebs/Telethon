@@ -34,7 +34,8 @@ class TcpMessage:
             writer.write(self.body)
             writer.flush()  # Flush so we can get the buffer in the CRC
 
-            crc = crc32(writer.get_bytes()[0:8 + len(self.body)])
+            # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
+            crc = crc32(writer.get_bytes()[0:8 + len(self.body)]) & 0xFFFFFFFF
             writer.write_int(crc, signed=False)
 
             return writer.get_bytes()
@@ -49,7 +50,7 @@ class TcpMessage:
             raise ValueError('Wrong size of input packet')
 
         with BinaryReader(body) as reader:
-            packet_len = int.from_bytes(reader.read(4), byteorder='big')
+            packet_len = int.from_bytes(reader.read(4), byteorder='little')
             if packet_len < 12:
                 raise ValueError('Invalid packet length: {}'.format(packet_len))
 
@@ -57,7 +58,8 @@ class TcpMessage:
             packet = reader.read(packet_len - 12)
             checksum = reader.read_int()
 
-            valid_checksum = crc32(body[:packet_len - 4])
+            # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
+            valid_checksum = crc32(body[:packet_len - 4]) & 0xFFFFFFFF
             if checksum != valid_checksum:
                 raise ValueError('Invalid checksum, skip')
 

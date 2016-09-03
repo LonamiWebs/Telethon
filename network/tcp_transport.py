@@ -29,18 +29,19 @@ class TcpTransport:
 
         # First read everything
         packet_length_bytes = self._tcp_client.read(4)
-        packet_length = int.from_bytes(packet_length_bytes, byteorder='big')
+        packet_length = int.from_bytes(packet_length_bytes, byteorder='little')
 
         seq_bytes = self._tcp_client.read(4)
-        seq = int.from_bytes(seq_bytes, byteorder='big')
+        seq = int.from_bytes(seq_bytes, byteorder='little')
 
         body = self._tcp_client.read(packet_length - 12)
 
-        checksum = int.from_bytes(self._tcp_client.read(4), byteorder='big')
+        checksum = int.from_bytes(self._tcp_client.read(4), byteorder='little')
 
         # Then perform the checks
         rv = packet_length_bytes + seq_bytes + body
-        valid_checksum = crc32(rv) & 0xFFFFFFFF  # Ensure it's unsigned (http://stackoverflow.com/a/30092291/4759433)
+        # Ensure it's unsigned (http://stackoverflow.com/a/30092291/4759433)
+        valid_checksum = crc32(rv) & 0xFFFFFFFF
 
         if checksum != valid_checksum:
             raise ValueError('Invalid checksum, skip')

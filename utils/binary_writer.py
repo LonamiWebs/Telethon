@@ -17,34 +17,30 @@ class BinaryWriter:
 
     # region Writing
 
+    # "All numbers are written as little endian." |> Source: https://core.telegram.org/mtproto
     def write_byte(self, value):
         """Writes a single byte value"""
         self.writer.write(pack('B', value))
 
     def write_int(self, value, signed=True):
         """Writes an integer value (4 bytes), which can or cannot be signed"""
-        if not signed:
-            value &= 0xFFFFFFFF  # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
-        self.writer.write(int.to_bytes(value, length=4, byteorder='big', signed=signed))
+        self.writer.write(int.to_bytes(value, length=4, byteorder='little', signed=signed))
 
     def write_long(self, value, signed=True):
         """Writes a long integer value (8 bytes), which can or cannot be signed"""
-        if not signed:
-            value &= 0xFFFFFFFFFFFFFFFF
-        self.writer.write(int.to_bytes(value, length=8, byteorder='big', signed=signed))
+        self.writer.write(int.to_bytes(value, length=8, byteorder='little', signed=signed))
 
-    # Network is always big-endian, this is, '>' when packing
     def write_float(self, value):
         """Writes a floating point value (4 bytes)"""
-        self.writer.write(pack('>f', value))
+        self.writer.write(pack('<f', value))
 
     def write_double(self, value):
         """Writes a floating point value (8 bytes)"""
-        self.writer.write(pack('>d', value))
+        self.writer.write(pack('<d', value))
 
     def write_large_int(self, value, bits, signed=True):
         """Writes a n-bits long integer value"""
-        self.writer.write(int.to_bytes(value, length=bits // 8, byteorder='big', signed=signed))
+        self.writer.write(int.to_bytes(value, length=bits // 8, byteorder='little', signed=signed))
 
     def write(self, data):
         """Writes the given bytes array"""

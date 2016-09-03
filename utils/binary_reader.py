@@ -21,34 +21,38 @@ class BinaryReader:
 
     # region Reading
 
+    # "All numbers are written as little endian." |> Source: https://core.telegram.org/mtproto
     def read_byte(self):
         """Reads a single byte value"""
-        return self.reader.read(1)[0]
+        return self.read(1)[0]
 
     def read_int(self, signed=True):
         """Reads an integer (4 bytes) value"""
-        return int.from_bytes(self.reader.read(4), byteorder='big', signed=signed)
+        return int.from_bytes(self.read(4), byteorder='little', signed=signed)
 
     def read_long(self, signed=True):
         """Reads a long integer (8 bytes) value"""
-        return int.from_bytes(self.reader.read(8), byteorder='big', signed=signed)
+        return int.from_bytes(self.read(8), byteorder='little', signed=signed)
 
-    # Network is always big-endian, this is, '>'
     def read_float(self):
         """Reads a real floating point (4 bytes) value"""
-        return unpack('>f', self.reader.read(4))[0]
+        return unpack('<f', self.read(4))[0]
 
     def read_double(self):
         """Reads a real floating point (8 bytes) value"""
-        return unpack('>d', self.reader.read(8))[0]
+        return unpack('<d', self.read(8))[0]
 
     def read_large_int(self, bits, signed=True):
         """Reads a n-bits long integer value"""
-        return int.from_bytes(self.reader.read(bits // 8), byteorder='big', signed=signed)
+        return int.from_bytes(self.read(bits // 8), byteorder='little', signed=signed)
 
     def read(self, length):
         """Read the given amount of bytes"""
-        return self.reader.read(length)
+        result = self.reader.read(length)
+        if len(result) != length:
+            raise BufferError('Trying to read outside the data bounds (no more data left to read)')
+        
+        return result
 
     def get_bytes(self):
         """Gets the byte array representing the current buffer as a whole"""

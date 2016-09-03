@@ -1,7 +1,6 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/Factorizator.cs
 from random import randint
-from math import gcd
 
 
 class Factorizator:
@@ -10,7 +9,7 @@ class Factorizator:
         g = 0
         for i in range(3):
             q = (randint(0, 127) & 15) + 17
-            x = randint(1000000000) + 1
+            x = randint(0, 1000000000) + 1
             y = x
             lim = 1 << (i + 18)
             for j in range(1, lim):
@@ -27,7 +26,7 @@ class Factorizator:
 
                 x = c
                 z = y - x if x < y else x - y
-                g = gcd(z, what)
+                g = Factorizator.gcd(z, what)
                 if g != 1:
                     break
 
@@ -39,6 +38,22 @@ class Factorizator:
 
         p = what // g
         return min(p, g)
+
+    @staticmethod
+    def gcd(a, b):
+        while a != 0 and b != 0:
+            while b & 1 == 0:
+                b >>= 1
+
+            while a & 1 == 0:
+                a >>= 1
+
+            if a > b:
+                a -= b
+            else:
+                b -= a
+
+        return a if b == 0 else b
 
     @staticmethod
     def factorize(pq):

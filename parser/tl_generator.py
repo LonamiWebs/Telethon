@@ -113,7 +113,7 @@ def generate_tlobjects(scheme_file):
 
                 # Write the on_send(self, writer) function
                 builder.writeln('def on_send(self, writer):')
-                builder.writeln("writer.write_int({})  # {}'s constructor ID"
+                builder.writeln("writer.write_int({}, signed=False)  # {}'s constructor ID"
                                 .format(hex(tlobject.id), tlobject.name))
 
                 for arg in tlobject.args:
@@ -214,7 +214,7 @@ def write_onsend_code(builder, arg, args, name=None):
         builder.writeln('if {} is not None:'.format(name))
 
     if arg.is_vector:
-        builder.writeln("writer.write_int(0x1cb5c415)  # Vector's constructor ID")
+        builder.writeln("writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
         builder.writeln('writer.write_int(len({}))'.format(name))
         builder.writeln('for {}_item in {}:'.format(arg.name, name))
         # Temporary disable .is_vector, not to enter this if again

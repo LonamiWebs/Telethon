@@ -17,7 +17,7 @@ class MtProtoPlainSender:
         """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""
         with BinaryWriter() as writer:
             writer.write_long(0)
-            writer.write_int(self.get_new_msg_id())
+            writer.write_long(self.get_new_msg_id())
             writer.write_int(len(data))
             writer.write(data)
 

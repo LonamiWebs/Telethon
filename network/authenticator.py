@@ -12,7 +12,7 @@ from utils.auth_key import AuthKey
 import utils.helpers as utils
 import time
 import pyaes
-import rsa
+from utils.rsa import RSA
 
 
 def do_authentication(transport):
@@ -21,7 +21,7 @@ def do_authentication(transport):
     # Step 1 sending: PQ Request
     nonce = utils.generate_random_bytes(16)
     with BinaryWriter() as writer:
-        writer.write_int(0x60469778)  # Constructor number
+        writer.write_int(0x60469778, signed=False)  # Constructor number
         writer.write(nonce)
         sender.send(writer.get_bytes())
 
@@ -39,7 +39,7 @@ def do_authentication(transport):
         server_nonce = reader.read(16)
 
         pq_bytes = reader.tgread_bytes()
-        pq = int.from_bytes(pq_bytes, byteorder='big')
+        pq = int.from_bytes(pq_bytes, byteorder='little')
 
         vector_id = reader.read_int()
         if vector_id != 0x1cb5c415:
@@ -54,7 +54,7 @@ def do_authentication(transport):
     new_nonce = utils.generate_random_bytes(32)
     p, q = Factorizator.factorize(pq)
     with BinaryWriter() as pq_inner_data_writer:
-        pq_inner_data_writer.write_int(0x83c95aec)  # PQ Inner Data
+        pq_inner_data_writer.write_int(0x83c95aec, signed=False)  # PQ Inner Data
         pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(pq, signed=False))
         pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(min(p, q), signed=False))
         pq_inner_data_writer.tgwrite_bytes(utils.get_byte_array(max(p, q), signed=False))
@@ -64,8 +64,7 @@ def do_authentication(transport):
 
         cipher_text, target_fingerprint = None, None
         for fingerprint in fingerprints:
-            cipher_text = rsa.encrypt(str(fingerprint, encoding='utf-8').replace('-', ''),
-                                      pq_inner_data_writer.get_bytes())
+            cipher_text = RSA.encrypt(get_fingerprint_text(fingerprint), pq_inner_data_writer.get_bytes())
 
             if cipher_text is not None:
                 target_fingerprint = fingerprint
@@ -73,15 +72,15 @@ def do_authentication(transport):
 
         if cipher_text is None:
             raise AssertionError('Could not find a valid key for fingerprints: {}'
-                                 .format(', '.join([str(f, encoding='utf-8') for f in fingerprints])))
+                                 .format(', '.join([get_fingerprint_text(f) for f in fingerprints])))
 
         with BinaryWriter() as req_dh_params_writer:
-            req_dh_params_writer.write_int(0xd712e4be)  # Req DH Params
+            req_dh_params_writer.write_int(0xd712e4be, signed=False)  # Req DH Params
             req_dh_params_writer.write(nonce)
             req_dh_params_writer.write(server_nonce)
             req_dh_params_writer.tgwrite_bytes(utils.get_byte_array(min(p, q), signed=False))
             req_dh_params_writer.tgwrite_bytes(utils.get_byte_array(max(p, q), signed=False))
-            req_dh_params_writer.Write(target_fingerprint)
+            req_dh_params_writer.write(target_fingerprint)
             req_dh_params_writer.tgwrite_bytes(cipher_text)
 
             req_dh_params_bytes = req_dh_params_writer.get_bytes()
@@ -89,6 +88,7 @@ def do_authentication(transport):
 
     # Step 2 response: DH Exchange
     encrypted_answer = None
+    # TODO, there is no data to read? What's going on?
     with BinaryReader(sender.receive()) as reader:
         response_code = reader.read_int(signed=False)
 
@@ -129,19 +129,19 @@ def do_authentication(transport):
             raise AssertionError('Invalid server nonce in encrypted answer')
 
         g = dh_inner_data_reader.read_int()
-        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
-        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
+        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='little', signed=True)
+        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='little', signed=True)
 
         server_time = dh_inner_data_reader.read_int()
         time_offset = server_time - int(time.time() * 1000)  # Multiply by 1000 to get milliseconds
 
-    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='big')
+    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='little')
     gb = pow(g, b, dh_prime)
     gab = pow(ga, b, dh_prime)
 
     # Prepare client DH Inner Data
     with BinaryWriter() as client_dh_inner_data_writer:
-        client_dh_inner_data_writer.write_int(0x6643b654)  # Client DH Inner Data
+        client_dh_inner_data_writer.write_int(0x6643b654, signed=False)  # Client DH Inner Data
         client_dh_inner_data_writer.write(nonce)
         client_dh_inner_data_writer.write(server_nonce)
         client_dh_inner_data_writer.write_long(0)  # TODO retry_id
@@ -157,7 +157,7 @@ def do_authentication(transport):
 
     # Prepare Set client DH params
     with BinaryWriter() as set_client_dh_params_writer:
-        set_client_dh_params_writer.write_int(0xf5045f1f)
+        set_client_dh_params_writer.write_int(0xf5045f1f, signed=False)
         set_client_dh_params_writer.write(nonce)
         set_client_dh_params_writer.write(server_nonce)
         set_client_dh_params_writer.tgwrite_bytes(client_dh_inner_data_encrypted_bytes)
@@ -194,3 +194,8 @@ def do_authentication(transport):
 
         else:
             raise AssertionError('DH Gen unknown: {}'.format(hex(code)))
+
+
+def get_fingerprint_text(fingerprint):
+    """Gets a fingerprint text in 01-23-45-67-89-AB-CD-EF format (no hyphens)"""
+    return ''.join(hex(b)[2:].rjust(2, '0').upper() for b in fingerprint)

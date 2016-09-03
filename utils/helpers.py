@@ -8,7 +8,7 @@ bits_per_byte = 8
 
 def generate_random_long(signed=True):
     """Generates a random long integer (8 bytes), which is optionally signed"""
-    return int.from_bytes(os.urandom(8), signed=signed, byteorder='big')
+    return int.from_bytes(os.urandom(8), signed=signed, byteorder='little')
 
 
 def generate_random_bytes(count):
@@ -19,6 +19,7 @@ def generate_random_bytes(count):
 def get_byte_array(integer, signed):
     bits = integer.bit_length()
     byte_length = (bits + bits_per_byte - 1) // bits_per_byte
+    # For some strange reason, this has to be big!
     return int.to_bytes(integer, length=byte_length, byteorder='big', signed=signed)
 
 
@@ -65,6 +66,6 @@ def generate_key_data_from_nonces(server_nonce, new_nonce):
 
 
 def sha1(data):
-    sha = hashlib.sha1
+    sha = hashlib.sha1()
     sha.update(data)
     return sha.digest()
