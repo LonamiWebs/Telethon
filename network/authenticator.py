@@ -11,8 +11,8 @@ from utils.factorizator import Factorizator
 from utils.auth_key import AuthKey
 import utils.helpers as utils
 import time
-import pyaes
 from utils.rsa import RSA
+from utils.aes import AES
 
 
 def do_authentication(transport):
@@ -111,12 +111,10 @@ def do_authentication(transport):
 
     # Step 3 sending: Complete DH Exchange
     key, iv = utils.generate_key_data_from_nonces(server_nonce, new_nonce)
-    # TODO ValueError: initialization vector must be 16 bytes
-    aes = pyaes.AESModeOfOperationCFB(key, iv, len(key))
-    plain_text_answer = aes.decrypt(encrypted_answer)
+    plain_text_answer = AES.decrypt_ige(encrypted_answer, key, iv)
 
     g, dh_prime, ga, time_offset = None, None, None, None
-    with BinaryReader(plain_text_answer.encode('ascii')) as dh_inner_data_reader:
+    with BinaryReader(plain_text_answer) as dh_inner_data_reader:
         hashsum = dh_inner_data_reader.read(20)
         code = dh_inner_data_reader.read_int(signed=False)
         if code != 0xb5890dba:
@@ -131,15 +129,15 @@ def do_authentication(transport):
             raise AssertionError('Invalid server nonce in encrypted answer')
 
         g = dh_inner_data_reader.read_int()
-        # "current value of dh_prime equals (in big-endian byte order)
+        # "current value of dh_prime equals (in big-endian byte order)"
         # See https://core.telegram.org/mtproto/auth_key#presenting-proof-of-work-server-authentication
-        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
-        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=True)
+        dh_prime = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=False)
+        ga = int.from_bytes(dh_inner_data_reader.tgread_bytes(), byteorder='big', signed=False)
 
         server_time = dh_inner_data_reader.read_int()
-        time_offset = server_time - int(time.time() * 1000)  # Multiply by 1000 to get milliseconds
+        time_offset = server_time - int(time.time())
 
-    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='big', signed=True)
+    b = int.from_bytes(utils.generate_random_bytes(2048), byteorder='big', signed=False)
     gb = pow(g, b, dh_prime)
     gab = pow(ga, b, dh_prime)
 
@@ -157,7 +155,7 @@ def do_authentication(transport):
             client_dh_inner_data_bytes = client_dh_inner_data_with_hash_writer.get_bytes()
 
     # Encryption
-    client_dh_inner_data_encrypted_bytes = aes.encrypt(client_dh_inner_data_bytes)
+    client_dh_inner_data_encrypted_bytes = AES.encrypt_ige(client_dh_inner_data_bytes, key, iv)
 
     # Prepare Set client DH params
     with BinaryWriter() as set_client_dh_params_writer:
@@ -170,6 +168,7 @@ def do_authentication(transport):
         sender.send(set_client_dh_params_bytes)
 
     # Step 3 response: Complete DH Exchange
+    # TODO, no more data, why did it stop again?!
     with BinaryReader(sender.receive()) as reader:
         code = reader.read_int(signed=False)
         if code == 0x3bcbf734:  # DH Gen OK
