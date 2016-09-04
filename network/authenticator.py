@@ -5,15 +5,10 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step3_CompleteDHExchange.cs
 
 import time
-
-import utils.helpers as utils
-from crypto.aes import AES
-from crypto.auth_key import AuthKey
-from crypto.factorizator import Factorizator
-from crypto.rsa import RSA
-from network.mtproto_plain_sender import MtProtoPlainSender
-from utils.binary_reader import BinaryReader
-from utils.binary_writer import BinaryWriter
+import utils
+from utils import BinaryWriter, BinaryReader
+from crypto import AES, AuthKey, Factorizator, RSA
+from network import MtProtoPlainSender
 
 
 def do_authentication(transport):

@@ -1,8 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoPlainSender.cs
 import time
-from utils.binary_writer import BinaryWriter
-from utils.binary_reader import BinaryReader
+from utils import BinaryWriter, BinaryReader
 
 
 class MtProtoPlainSender:

@@ -1,8 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpTransport.cs
 from zlib import crc32
-from network.tcp_message import TcpMessage
-from network.tcp_client import TcpClient
+from network import TcpMessage, TcpClient
 
 
 class TcpTransport:

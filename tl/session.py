@@ -3,7 +3,7 @@
 from os.path import isfile as file_exists
 import time
 import pickle
-import utils.helpers as utils
+import utils
 
 
 class Session:

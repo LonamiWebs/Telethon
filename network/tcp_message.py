@@ -2,8 +2,7 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpMessage.cs
 from zlib import crc32
 
-from utils.binary_writer import BinaryWriter
-from utils.binary_reader import BinaryReader
+from utils import BinaryWriter, BinaryReader
 
 
 class TcpMessage:

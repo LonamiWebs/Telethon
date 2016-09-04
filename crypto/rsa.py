@@ -1,7 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/RSA.cs
-from utils.binary_writer import BinaryWriter
-import utils.helpers as utils
+import utils
+from utils import BinaryWriter
 
 
 class RSAServerKey:

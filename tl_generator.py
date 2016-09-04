@@ -2,8 +2,8 @@ import os
 import re
 import shutil
 
-from parser.tl_parser import TLParser
-from parser.source_builder import SourceBuilder
+from parser import TLParser
+from parser import SourceBuilder
 
 
 def tlobjects_exist():
@@ -43,10 +43,12 @@ def generate_tlobjects(scheme_file):
 
         os.makedirs(out_dir, exist_ok=True)
 
-        # Also create __init__.py
+        # Also add this object to __init__.py, so we can import the whole packet at once
         init_py = os.path.join(out_dir, '__init__.py')
-        if not os.path.isfile(init_py):
-            open(init_py, 'a').close()
+        with open(init_py, 'a', encoding='utf-8') as file:
+            with SourceBuilder(file) as builder:
+                builder.writeln('from {} import {}'.format(
+                    get_full_file_name(tlobject), get_class_name(tlobject)))
 
         # Create the file for this TLObject
         filename = os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
@@ -165,7 +167,11 @@ def get_class_name(tlobject):
     # Courtesy of http://stackoverflow.com/a/31531797/4759433
     # Also, '_' could be replaced for ' ', then use .title(), and then remove ' '
     result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), tlobject.name)
-    return result[:1].upper() + result[1:].replace('_', '')  # Replace again to fully ensure!
+    result = result[:1].upper() + result[1:].replace('_', '')  # Replace again to fully ensure!
+    # If it's a function, let it end with "Request" to identify them more easily
+    if tlobject.is_function:
+        result += 'Request'
+    return result
 
 
 def get_full_file_name(tlobject):

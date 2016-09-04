@@ -1,5 +1,5 @@
 import re
-from tl.tlobject import TLObject
+from tl import TLObject
 
 
 class TLParser:

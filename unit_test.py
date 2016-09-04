@@ -2,15 +2,19 @@ import random
 import socket
 import threading
 import unittest
+import os
+import platform
 
-import utils.helpers as utils
-from crypto.aes import AES
-from crypto.factorizator import Factorizator
-from network.authenticator import do_authentication
-from network.tcp_client import TcpClient
-from network.tcp_transport import TcpTransport
-from utils.binary_reader import BinaryReader
-from utils.binary_writer import BinaryWriter
+import utils
+import network.authenticator
+
+from crypto import AES, Factorizator
+from network import TcpTransport, TcpClient, MtProtoSender
+from utils import BinaryWriter, BinaryReader
+
+from tl import Session
+from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
+from tl.functions.help import GetConfigRequest
 
 host = 'localhost'
 port = random.randint(50000, 60000)  # Arbitrary non-privileged port
@@ -218,7 +222,7 @@ class UnitTest(unittest.TestCase):
     @staticmethod
     def test_authenticator():
         transport = TcpTransport('149.154.167.91', 443)
-        auth_key, time_offset = do_authentication(transport)
+        network.authenticator.do_authentication(transport)
         transport.dispose()
 
 if __name__ == '__main__':

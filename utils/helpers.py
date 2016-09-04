@@ -1,5 +1,5 @@
 import os
-from utils.binary_writer import BinaryWriter
+from utils import BinaryWriter
 import hashlib
 
 

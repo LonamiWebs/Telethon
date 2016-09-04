@@ -1,29 +1,25 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
-from network.mtproto_sender import MtProtoSender
-from network.tcp_transport import TcpTransport
-import network.authenticator as authenticator
-from tl.session import Session
-import utils.helpers as utils
-import platform
 import re
+import platform
 
-from tl.functions.invoke_with_layer import InvokeWithLayer
-from tl.functions.init_connection import InitConnection
-from tl.functions.help.get_config import GetConfig
-from tl.functions.auth.check_phone import CheckPhone
-from tl.functions.auth.send_code import SendCode
-from tl.functions.auth.sign_in import SignIn
-from tl.functions.contacts.get_contacts import GetContacts
-from tl.types.input_peer_user import InputPeerUser
-from tl.functions.messages.send_message import SendMessage
+import utils
+import network.authenticator
+from network import MtProtoSender, TcpTransport
+
+from tl import Session
+from tl.types import InputPeerUser
+from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
+from tl.functions.help import GetConfigRequest
+from tl.functions.auth import CheckPhoneRequest, SendCodeRequest, SignInRequest
+from tl.functions.contacts import GetContactsRequest
+from tl.functions.messages import SendMessageRequest
 
 
 class TelegramClient:
-
     def __init__(self, session_user_id, layer, api_id=None, api_hash=None):
         if api_id is None or api_hash is None:
-            raise PermissionError('Your API ID or Hash are invalid. Make sure to obtain yours in http://my.telegram.org')
+            raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.md')
 
         self.api_id = api_id
         self.api_hash = api_hash
@@ -32,23 +28,26 @@ class TelegramClient:
 
         self.session = Session.try_load_or_create_new(session_user_id)
         self.transport = TcpTransport(self.session.server_address, self.session.port)
+
+        # These will be set later
         self.dc_options = None
+        self.sender = None
 
     # TODO Should this be async?
     def connect(self, reconnect=False):
-        if self.session.auth_key is None or reconnect:
-            self.session.auth_key, self.session.time_offset= authenticator.do_authentication(self.transport)
+        if not self.session.auth_key or reconnect:
+            self.session.auth_key, self.session.time_offset = network.authenticator.do_authentication(self.transport)
 
         self.sender = MtProtoSender(self.transport, self.session)
 
         if not reconnect:
-            request = InvokeWithLayer(layer=self.layer,
-                                      query=InitConnection(api_id=self.api_id,
-                                                           device_model=platform.node(),
-                                                           system_version=platform.system(),
-                                                           app_version='0.1',
-                                                           lang_code='en',
-                                                           query=GetConfig()))
+            request = InvokeWithLayerRequest(layer=self.layer,
+                                             query=InitConnectionRequest(api_id=self.api_id,
+                                                                         device_model=platform.node(),
+                                                                         system_version=platform.system(),
+                                                                         app_version='0.1',
+                                                                         lang_code='en',
+                                                                         query=GetConfigRequest()))
 
             self.sender.send(request)
             self.sender.receive(request)
@@ -77,22 +76,15 @@ class TelegramClient:
     def is_phone_registered(self, phone_number):
         assert self.sender is not None, 'Not connected!'
 
-        request = CheckPhone(phone_number)
+        request = CheckPhoneRequest(phone_number)
         self.sender.send(request)
         self.sender.receive(request)
 
         # Result is an Auth.CheckedPhone
         return request.result.phone_registered
 
-    def send_code_request(self, phone_number, destination='code'):
-        if destination == 'code':
-            destination = 5
-        elif destination == 'sms':
-            destination = 0
-        else:
-            raise ValueError('Destination must be either "code" or "sms"')
-
-        request = SendCode(phone_number, self.api_id, self.api_hash)
+    def send_code_request(self, phone_number):
+        request = SendCodeRequest(phone_number, self.api_id, self.api_hash)
         completed = False
         while not completed:
             try:
@@ -109,7 +101,7 @@ class TelegramClient:
         return request.result.phone_code_hash
 
     def make_auth(self, phone_number, phone_code_hash, code):
-        request = SignIn(phone_number, phone_code_hash, code)
+        request = SignInRequest(phone_number, phone_code_hash, code)
         self.sender.send(request)
         self.sender.receive(request)
 
@@ -120,14 +112,14 @@ class TelegramClient:
         return self.session.user
 
     def import_contacts(self, phone_code_hash):
-        request = GetContacts(phone_code_hash)
+        request = GetContactsRequest(phone_code_hash)
         self.sender.send(request)
         self.sender.receive(request)
         return request.result.contacts, request.result.users
 
     def send_message(self, user, message):
         peer = InputPeerUser(user.id, user.access_hash)
-        request = SendMessage(peer, message, utils.generate_random_long())
+        request = SendMessageRequest(peer, message, utils.generate_random_long())
 
         self.sender.send(request)
         self.sender.send(request)

@@ -4,11 +4,10 @@ import re
 import zlib
 from time import sleep
 
-from crypto.aes import AES
-from utils.binary_writer import BinaryWriter
-from utils.binary_reader import BinaryReader
-from tl.types.msgs_ack import MsgsAck
-import utils.helpers as helpers
+import utils
+from crypto import AES
+from utils import BinaryWriter, BinaryReader
+from tl.types import MsgsAck
 
 
 class MtProtoSender:
@@ -74,9 +73,9 @@ class MtProtoSender:
             writer.write_int(len(packet))
             writer.write(packet)
 
-            msg_key = helpers.calc_msg_key(writer.get_bytes())
+            msg_key = utils.calc_msg_key(writer.get_bytes())
 
-            key, iv = helpers.calc_key(self.session.auth_key.key, msg_key, True)
+            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
             cipher_text = AES.encrypt_ige(writer.get_bytes(), key, iv)
 
         # And then finally send the packet
@@ -101,7 +100,7 @@ class MtProtoSender:
             remote_auth_key_id = reader.read_long()
             msg_key = reader.read(16)
 
-            key, iv = helpers.calc_key(self.session.auth_key.data, msg_key, False)
+            key, iv = utils.calc_key(self.session.auth_key.data, msg_key, False)
             plain_text = AES.decrypt_ige(reader.read(len(body) - reader.tell_position()), key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
