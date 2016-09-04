@@ -17,7 +17,6 @@ class Session:
         self.salt = 0  # Unsigned long
         self.time_offset = 0
         self.last_message_id = 0  # Long
-        self.session_expires = 0
         self.user = None
 
     def save(self):
@@ -26,13 +25,13 @@ class Session:
             pickle.dump(self, file)
 
     @staticmethod
-    def try_load_or_create_new(self, session_user_id):
+    def try_load_or_create_new(session_user_id):
         """Loads a saved session_user_id session, or creates a new one if none existed before"""
-        filepath = '{}.session'.format(self.session_user_id)
+        filepath = '{}.session'.format(session_user_id)
 
         if file_exists(filepath):
             with open(filepath, 'rb') as file:
-                return pickle.load(self)
+                return pickle.load(file)
         else:
             return Session(session_user_id)
 
@@ -40,7 +39,7 @@ class Session:
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
         new_msg_id = int(self.time_offset + time.time() * 1000)
-        if self._last_msg_id >= new_msg_id:
+        if self.last_message_id >= new_msg_id:
             new_msg_id = self._last_msg_id + 4
 
         self._last_msg_id = new_msg_id

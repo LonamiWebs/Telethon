@@ -6,6 +6,7 @@ from random import randint
 class Factorizator:
     @staticmethod
     def find_small_multiplier_lopatin(what):
+        """Finds the small multiplier by using Lopatin's method"""
         g = 0
         for i in range(3):
             q = (randint(0, 127) & 15) + 17
@@ -41,6 +42,7 @@ class Factorizator:
 
     @staticmethod
     def gcd(a, b):
+        """Calculates the greatest common divisor"""
         while a != 0 and b != 0:
             while b & 1 == 0:
                 b >>= 1
@@ -57,5 +59,6 @@ class Factorizator:
 
     @staticmethod
     def factorize(pq):
+        """Factorizes the given number and returns both the divisor and the number divided by the divisor"""
         divisor = Factorizator.find_small_multiplier_lopatin(pq)
         return divisor, pq // divisor

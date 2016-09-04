@@ -2,9 +2,9 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoSender.cs
 import re
 import zlib
-import pyaes
 from time import sleep
 
+from crypto.aes import AES
 from utils.binary_writer import BinaryWriter
 from utils.binary_reader import BinaryReader
 from tl.types.msgs_ack import MsgsAck
@@ -76,13 +76,12 @@ class MtProtoSender:
 
             msg_key = helpers.calc_msg_key(writer.get_bytes())
 
-            key, iv = helpers.calc_key(self.session.auth_key.data, msg_key, True)
-            aes = pyaes.AESModeOfOperationCFB(key, iv, 16)
-            cipher_text = aes.encrypt(writer.get_bytes())
+            key, iv = helpers.calc_key(self.session.auth_key.key, msg_key, True)
+            cipher_text = AES.encrypt_ige(writer.get_bytes(), key, iv)
 
         # And then finally send the packet
         with BinaryWriter() as writer:
-            writer.write_long(self.session.auth_key.id, signed=False)
+            writer.write_long(self.session.auth_key.key_id, signed=False)
             writer.write(msg_key)
             writer.write(cipher_text)
 
@@ -96,15 +95,14 @@ class MtProtoSender:
 
         with BinaryReader(body) as reader:
             if len(body) < 8:
-                raise BufferError("Can't decode packet")
+                raise BufferError("Can't decode packet ({})".format(body))
 
             # TODO Check for both auth key ID and msg_key correctness
             remote_auth_key_id = reader.read_long()
             msg_key = reader.read(16)
 
             key, iv = helpers.calc_key(self.session.auth_key.data, msg_key, False)
-            aes = pyaes.AESModeOfOperationCFB(key, iv, 16)
-            plain_text = aes.decrypt(reader.read(len(body) - reader.tell_position()))
+            plain_text = AES.decrypt_ige(reader.read(len(body) - reader.tell_position()), key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
                 remote_salt = plain_text_reader.read_long()
@@ -278,7 +276,7 @@ class MtProtoSender:
 
             elif error_msg.startswith('PHONE_MIGRATE_'):
                 dc_index = int(re.search(r'\d+', error_msg).group(0))
-                raise ConnectionError('Your phone number registered to {} dc. Please update settings. '
+                raise ConnectionError('Your phone number is registered to {} DC. Please update settings. '
                                       'See https://github.com/sochix/TLSharp#i-get-an-error-migrate_x '
                                       'for details.'.format(dc_index))
             else:

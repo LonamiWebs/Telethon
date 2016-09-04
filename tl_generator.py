@@ -263,7 +263,7 @@ def write_onsend_code(builder, arg, args, name=None):
 
     else:
         # Else it may be a custom type
-        builder.writeln('{}.write(writer)'.format(name))
+        builder.writeln('{}.on_send(writer)'.format(name))
 
     # End vector and flag blocks if required (if we opened them before)
     if arg.is_vector:
@@ -347,3 +347,12 @@ def write_onresponse_code(builder, arg, args, name=None):
 
     if arg.is_flag:
         builder.end_block()
+
+if __name__ == '__main__':
+    if tlobjects_exist():
+        print('Detected previous TLObjects. Cleaning...')
+        clean_tlobjects()
+
+    print('Generating TLObjects...')
+    generate_tlobjects('scheme.tl')
+    print('Done.')

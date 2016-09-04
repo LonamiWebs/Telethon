@@ -1,17 +1,21 @@
-import parser.tl_generator
+import tl_generator
+from tl.telegram_client import TelegramClient
+from utils.helpers import load_settings
 
-from network.tcp_transport import TcpTransport
-from network.authenticator import do_authentication
 
 if __name__ == '__main__':
-    if not parser.tl_generator.tlobjects_exist():
-        print('First run. Generating TLObjects...')
-        parser.tl_generator.generate_tlobjects('scheme.tl')
-        print('Done.')
+    if not tl_generator.tlobjects_exist():
+        print('Please run `python3 tl_generator.py` first!')
 
-    transport = TcpTransport('149.154.167.91', 443)
-    auth_key, time_offset = do_authentication(transport)
-    print(auth_key.aux_hash)
-    print(auth_key.key)
-    print(auth_key.key_id)
-    print(time_offset)
+    else:
+        settings = load_settings()
+        client = TelegramClient(session_user_id=settings.get('session_name', 'anonymous'),
+                                layer=54,
+                                api_id=settings['api_id'],
+                                api_hash=settings['api_hash'])
+
+        client.connect()
+        if not client.is_user_authorized():
+            phone_code_hash = client.send_code_request(settings['user_phone'])
+            code = input('Enter the code you just received: ')
+            client.make_auth(settings['user_phone'], phone_code_hash, code)

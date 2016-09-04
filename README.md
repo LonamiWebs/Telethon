@@ -11,9 +11,14 @@ This project requires the following Python modules, which can be installed by is
 Linux terminal:
 - `pyaes` ([GitHub](https://github.com/ricmoo/pyaes), [package index](https://pypi.python.org/pypi/pyaes))
 
-### We need your help!
-As of now, the project is fully **untested** and with many pending things to do. If you know both Python and C#, please don't
-think it twice and help us (me)!
+Also, you need to obtain your both [API ID and Hash](my.telegram.org). Once you have them, head to `api/` and create a copy of
+the `settings_example` file, naming it `settings` (lowercase!). Then fill the file with the corresponding values (your `api_id`,
+`api_hash` and phone number in international format). Now it is when you're ready to go!
+
+### Plans for the future
+If everything works well, this probably ends up being a Python package :)
+
+But as of now, and until that happens, help is highly appreciated!
 
 ### Code generator limitations
 The current code generator is not complete, yet adding the missing features would only over-complicate an already hard-to-read code.

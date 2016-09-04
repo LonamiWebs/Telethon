@@ -1,5 +1,5 @@
 # This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Authenticator.cs
+# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/RSA.cs
 from utils.binary_writer import BinaryWriter
 import utils.helpers as utils
 
@@ -11,6 +11,7 @@ class RSAServerKey:
         self.e = e
 
     def encrypt(self, data, offset=None, length=None):
+        """Encrypts the given data with the current key"""
         if offset is None:
             offset = 0
         if length is None:
@@ -37,8 +38,6 @@ class RSAServerKey:
                 return padding + cipher_text
 
 
-
-
 class RSA:
     _server_keys = {
         '216be86c022bb4c3':
@@ -55,6 +54,7 @@ class RSA:
 
     @staticmethod
     def encrypt(fingerprint, data, offset=None, length=None):
+        """Encrypts the given data given a fingerprint"""
         if fingerprint.lower() not in RSA._server_keys:
             return None
 

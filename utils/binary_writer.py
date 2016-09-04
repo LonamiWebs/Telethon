@@ -65,18 +65,11 @@ class BinaryWriter:
             if padding != 0:
                 padding = 4 - padding
 
-            # TODO ensure that _this_ is right (it appears to be)
             self.write(bytes([254]))
             self.write(bytes([len(data) % 256]))
             self.write(bytes([(len(data) >> 8) % 256]))
             self.write(bytes([(len(data) >> 16) % 256]))
             self.write(data)
-            """ Original:
-                    binaryWriter.Write((byte)254);
-                    binaryWriter.Write((byte)(bytes.Length));
-                    binaryWriter.Write((byte)(bytes.Length >> 8));
-                    binaryWriter.Write((byte)(bytes.Length >> 16));
-            """
 
         self.write(bytes(padding))
 
@@ -84,10 +77,10 @@ class BinaryWriter:
         """Write a string by using Telegram guidelines"""
         return self.tgwrite_bytes(string.encode('utf-8'))
 
-    def tgwrite_bool(self, bool):
+    def tgwrite_bool(self, boolean):
         """Write a boolean value by using Telegram guidelines"""
         #                     boolTrue                boolFalse
-        return self.write_int(0x997275b5 if bool else 0xbc799737, signed=False)
+        return self.write_int(0x997275b5 if boolean else 0xbc799737, signed=False)
 
     # endregion
 
@@ -98,7 +91,6 @@ class BinaryWriter:
     def close(self):
         """Close the current stream"""
         self.writer.close()
-        # TODO Do I need to close the underlying stream?
 
     def get_bytes(self, flush=True):
         """Get the current bytes array content from the buffer, optionally flushing first"""

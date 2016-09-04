@@ -1,9 +1,12 @@
+# This file is based on TLSharp
+# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/AES.cs
 import pyaes
 
 
 class AES:
     @staticmethod
     def decrypt_ige(cipher_text, key, iv):
+        """Decrypts the given text in 16-bytes blocks by using the given key and 32-bytes initialization vector"""
         iv1 = iv[:len(iv)//2]
         iv2 = iv[len(iv)//2:]
 
@@ -31,6 +34,7 @@ class AES:
 
     @staticmethod
     def encrypt_ige(plain_text, key, iv):
+        """Encrypts the given text in 16-bytes blocks by using the given key and 32-bytes initialization vector"""
         # TODO: Random padding
         padding = bytes(16 - len(plain_text) % 16)
         plain_text += padding

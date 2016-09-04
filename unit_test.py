@@ -1,15 +1,16 @@
-import unittest
+import random
 import socket
 import threading
-import random
-import utils.helpers as utils
+import unittest
 
+import utils.helpers as utils
+from crypto.aes import AES
+from crypto.factorizator import Factorizator
+from network.authenticator import do_authentication
 from network.tcp_client import TcpClient
+from network.tcp_transport import TcpTransport
 from utils.binary_reader import BinaryReader
 from utils.binary_writer import BinaryWriter
-from utils.factorizator import Factorizator
-from utils.aes import AES
-
 
 host = 'localhost'
 port = random.randint(50000, 60000)  # Arbitrary non-privileged port
@@ -213,6 +214,12 @@ class UnitTest(unittest.TestCase):
         real = get_bytes('57-A9-1C-BB-4A-B5-C7-B1-51-9E-A9-24-15-94-4B-63-CB-2F-50-93-B7-54-11-D8-F1-77-13-AE-DE-58-12-AF-C2-E1-10-1D-2C-38-7D-DD-A2-BD-6B-43-84-7E-B1-E5-51-69-62-36-A1-86-8D-02-25-B9-AA-0B-E2-32-13-2A-0F-D1-58-67-47-07-C9-FE-E0-0F-EE-EC-92-B8-65-BD-C4-69-31-B6-10-4E-8F-20-B6-8F-72-79-A0-A3-8F-63-37-4B-95-5F-A4-B0-E6-EE-49-BE-76-47-3E-F9-FF-AA-F6-B7-16-CD-24-09-B1-63-26-02-13-B8-99-BD-19-7F-E2-A5-91-BE-52-86-FF-EA-C9-05-3C-D6-19-AE-E6-D1-25-7F-38-AF-66-CF-F8-B7-E6-53-E3-F6-98-0D-EF-A8-BA-97-6F-20-09-69-29-73-12-5E-0F-77-10-DC-22-BB-23-25-1D-53-A6-10-26-EB-EB-5E-C4-86-04-F5-30-5B-BA-53-AE-EA-84-28-34-91-75-B8-F2-0B-74-D1-00-3A-7E-FE-F0-B5-BE-0E-86-21-61-5F-81-75-23-49-45-CB-07-57-78-AB-9B-80-A2-0A-46-DB-35-49-6A-08-5B-8B-55-4E-6E-1B-E0-E0-3E-E7-2A-06-A0-5D-4F-EA-71-1A-24-F4-F4-AF-95-4B-F2-9A-C5-FD-7F-6A-DD-61-2D-B3-29-DB-5B-D9-A8-CF-60-8F-36-85-04-B5-85-3F-78-EB-09-0C-B4-F4-2D-B8-67-71-2A-4B-1B-08-0C-18-A2-9E-30-13-0C-23-18-7A-43-73-D3-DC-38-F5-9A-4A-08-28-BD-A2-DC-A8-70-33-63-9E-A9-72-DF-72-A5-43-AB-A2')
         assert  cipher_text == real, 'Decrypted text does not equal the real value (expected "{}", got "{}")'\
             .format(get_representation(real), get_representation(cipher_text))
+
+    @staticmethod
+    def test_authenticator():
+        transport = TcpTransport('149.154.167.91', 443)
+        auth_key, time_offset = do_authentication(transport)
+        transport.dispose()
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,18 +4,21 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step2_DHExchange.cs
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step3_CompleteDHExchange.cs
 
-from network.mtproto_plain_sender import MtProtoPlainSender
-from utils.binary_writer import BinaryWriter
-from utils.binary_reader import BinaryReader
-from utils.factorizator import Factorizator
-from utils.auth_key import AuthKey
-import utils.helpers as utils
 import time
-from utils.rsa import RSA
-from utils.aes import AES
+
+import utils.helpers as utils
+from crypto.aes import AES
+from crypto.auth_key import AuthKey
+from crypto.factorizator import Factorizator
+from crypto.rsa import RSA
+from network.mtproto_plain_sender import MtProtoPlainSender
+from utils.binary_reader import BinaryReader
+from utils.binary_writer import BinaryWriter
 
 
 def do_authentication(transport):
+    """Executes the authentication process with the Telegram servers.
+    If no error is rose, returns both the authorization key and the time offset"""
     sender = MtProtoPlainSender(transport)
 
     # Step 1 sending: PQ Request

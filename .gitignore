@@ -3,6 +3,10 @@ tl/functions/
 tl/types/
 tl/all_tlobjects.py
 
+# User session
+*.session
+api/settings
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

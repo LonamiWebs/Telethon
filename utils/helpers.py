@@ -17,6 +17,7 @@ def generate_random_bytes(count):
 
 
 def get_byte_array(integer, signed):
+    """Gets the arbitrary-length byte array corresponding to the given integer"""
     bits = integer.bit_length()
     byte_length = (bits + bits_per_byte - 1) // bits_per_byte
     # For some strange reason, this has to be big!
@@ -49,6 +50,7 @@ def calc_msg_key_offset(data, offset, limit):
 
 
 def generate_key_data_from_nonces(server_nonce, new_nonce):
+    """Generates the key data corresponding to the given nonces"""
     hash1 = sha1(bytes(new_nonce + server_nonce))
     hash2 = sha1(bytes(server_nonce + new_nonce))
     hash3 = sha1(bytes(new_nonce + new_nonce))
@@ -66,6 +68,23 @@ def generate_key_data_from_nonces(server_nonce, new_nonce):
 
 
 def sha1(data):
+    """Calculates the SHA1 digest for the given data"""
     sha = hashlib.sha1()
     sha.update(data)
     return sha.digest()
+
+
+def load_settings():
+    """Loads the user settings located under `api/`"""
+    settings = {}
+    with open('api/settings', 'r', encoding='utf-8') as file:
+        for line in file:
+            value_pair = line.split('=')
+            left = value_pair[0].strip()
+            right = value_pair[1].strip()
+            if right.isnumeric():
+                settings[left] = int(right)
+            else:
+                settings[left] = right
+
+    return settings
