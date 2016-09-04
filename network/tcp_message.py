@@ -1,8 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpMessage.cs
-from zlib import crc32
-
 from utils import BinaryWriter, BinaryReader
+from binascii import crc32
 
 
 class TcpMessage:
@@ -31,10 +30,8 @@ class TcpMessage:
             writer.write_int(len(self.body) + 12)
             writer.write_int(self.sequence_number)
             writer.write(self.body)
-            writer.flush()  # Flush so we can get the buffer in the CRC
 
-            # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
-            crc = crc32(writer.get_bytes()[0:8 + len(self.body)]) & 0xFFFFFFFF
+            crc = crc32(writer.get_bytes())
             writer.write_int(crc, signed=False)
 
             return writer.get_bytes()
@@ -55,10 +52,9 @@ class TcpMessage:
 
             seq = reader.read_int()
             packet = reader.read(packet_len - 12)
-            checksum = reader.read_int()
+            checksum = reader.read_int(signed=False)
 
-            # Ensure it's unsigned (see http://stackoverflow.com/a/30092291/4759433)
-            valid_checksum = crc32(body[:packet_len - 4]) & 0xFFFFFFFF
+            valid_checksum = crc32(body[:packet_len - 4])
             if checksum != valid_checksum:
                 raise ValueError('Invalid checksum, skip')
 

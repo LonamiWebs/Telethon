@@ -1,6 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoPlainSender.cs
 import time
+import random
 from utils import BinaryWriter, BinaryReader
 
 
@@ -36,7 +37,11 @@ class MtProtoPlainSender:
 
     def get_new_msg_id(self):
         """Generates a new message ID based on the current time (in ms) since epoch"""
-        new_msg_id = int(self._time_offset + time.time() * 1000)  # Multiply by 1000 to get milliseconds
+        # See https://core.telegram.org/mtproto/description#message-identifier-msg-id
+        ms_time = int(time.time() * 1000)
+        new_msg_id = (((ms_time // 1000) << 32) |  # "must approximately equal unixtime*2^32"
+                      ((ms_time % 1000) << 22) |  # "approximate moment in time the message was created"
+                      random.randint(0, 524288) << 2)  # "message identifiers are divisible by 4"
 
         # Ensure that we always return a message ID which is higher than the previous one
         if self._last_msg_id >= new_msg_id:

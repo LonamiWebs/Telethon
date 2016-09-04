@@ -84,6 +84,16 @@ class BinaryReader:
         """Reads a Telegram-encoded string"""
         return str(self.tgread_bytes(), encoding='utf-8')
 
+    def tgread_bool(self):
+        """Reads a Telegram boolean value"""
+        value = self.read_int(signed=False)
+        if value == 0x997275b5:  # boolTrue
+            return True
+        elif value == 0xbc799737:  # boolFalse
+            return False
+        else:
+            raise ValueError('Invalid boolean code {}'.format(hex(value)))
+
     def tgread_object(self):
         """Reads a Telegram object"""
         constructor_id = self.read_int()

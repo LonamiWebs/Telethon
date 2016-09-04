@@ -100,7 +100,7 @@ class MtProtoSender:
             remote_auth_key_id = reader.read_long()
             msg_key = reader.read(16)
 
-            key, iv = utils.calc_key(self.session.auth_key.data, msg_key, False)
+            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
             plain_text = AES.decrypt_ige(reader.read(len(body) - reader.tell_position()), key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
@@ -262,6 +262,8 @@ class MtProtoSender:
 
         if request_id == mtproto_request.msg_id:
             mtproto_request.confirm_received = True
+        else:
+            print('We did not get the ID we expected. Got {}, but it should have been {}'.format(request_id, mtproto_request.msg_id))
 
         inner_code = reader.read_int(signed=False)
         if inner_code == 0x2144ca19:  # RPC Error

@@ -5,16 +5,16 @@ import unittest
 import os
 import platform
 
-import utils
-import network.authenticator
+from tl import Session
+from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
+from tl.functions.help import GetConfigRequest
 
 from crypto import AES, Factorizator
 from network import TcpTransport, TcpClient, MtProtoSender
 from utils import BinaryWriter, BinaryReader
 
-from tl import Session
-from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
-from tl.functions.help import GetConfigRequest
+import utils
+import network.authenticator
 
 host = 'localhost'
 port = random.randint(50000, 60000)  # Arbitrary non-privileged port
@@ -218,6 +218,50 @@ class UnitTest(unittest.TestCase):
         real = get_bytes('57-A9-1C-BB-4A-B5-C7-B1-51-9E-A9-24-15-94-4B-63-CB-2F-50-93-B7-54-11-D8-F1-77-13-AE-DE-58-12-AF-C2-E1-10-1D-2C-38-7D-DD-A2-BD-6B-43-84-7E-B1-E5-51-69-62-36-A1-86-8D-02-25-B9-AA-0B-E2-32-13-2A-0F-D1-58-67-47-07-C9-FE-E0-0F-EE-EC-92-B8-65-BD-C4-69-31-B6-10-4E-8F-20-B6-8F-72-79-A0-A3-8F-63-37-4B-95-5F-A4-B0-E6-EE-49-BE-76-47-3E-F9-FF-AA-F6-B7-16-CD-24-09-B1-63-26-02-13-B8-99-BD-19-7F-E2-A5-91-BE-52-86-FF-EA-C9-05-3C-D6-19-AE-E6-D1-25-7F-38-AF-66-CF-F8-B7-E6-53-E3-F6-98-0D-EF-A8-BA-97-6F-20-09-69-29-73-12-5E-0F-77-10-DC-22-BB-23-25-1D-53-A6-10-26-EB-EB-5E-C4-86-04-F5-30-5B-BA-53-AE-EA-84-28-34-91-75-B8-F2-0B-74-D1-00-3A-7E-FE-F0-B5-BE-0E-86-21-61-5F-81-75-23-49-45-CB-07-57-78-AB-9B-80-A2-0A-46-DB-35-49-6A-08-5B-8B-55-4E-6E-1B-E0-E0-3E-E7-2A-06-A0-5D-4F-EA-71-1A-24-F4-F4-AF-95-4B-F2-9A-C5-FD-7F-6A-DD-61-2D-B3-29-DB-5B-D9-A8-CF-60-8F-36-85-04-B5-85-3F-78-EB-09-0C-B4-F4-2D-B8-67-71-2A-4B-1B-08-0C-18-A2-9E-30-13-0C-23-18-7A-43-73-D3-DC-38-F5-9A-4A-08-28-BD-A2-DC-A8-70-33-63-9E-A9-72-DF-72-A5-43-AB-A2')
         assert  cipher_text == real, 'Decrypted text does not equal the real value (expected "{}", got "{}")'\
             .format(get_representation(real), get_representation(cipher_text))
+
+    @staticmethod
+    def test_calc_key():
+        shared_key = get_bytes('BC-D2-6D-B7-CA-76-F4-5D-5B-88-83-27-20-F3-11-8A-73-D0-34-94-31-AE-2A-4F-03-86-9A-2F-48-23-1A-8C-B5-6A-E9-24-E0-49-76-43-6D-5E-E7-30-1A-35-43-09-16-03-D2-9D-A9-89-D6-CE-08-50-0F-64-72-A0-B3-EB-FE-63-76-1A-DF-4A-14-96-98-16-A3-47-AB-04-14-21-5C-EB-0A-BC-6E-DF-C4-25-C6-09-B7-16-14-9C-27-81-15-3D-B0-AF-0E-0B-52-AA-04-36-36-73-F0-CF-B7-B8-3E-2C-44-94-78-D7-F8-E0-84-CB-25-D3-05-B2-E8-95-4D-72-3F-A2-E8-49-6E-F9-0B-5B-45-9B-AA-0C-58-7F-0E-69-DE-EE-64-1D-78-2F-4A-CE-EA-5E-7D-30-3B-A8-33-42-BB-52-A1-BF-65-04-B9-1E-A1-22-66-3D-A5-4D-40-9E-DD-81-80-C9-A5-FB-FC-67-DD-15-03-70-21-0F-66-44-16-89-32-EA-CA-B1-41-99-4F-A9-34-50-A9-A2-C6-3B-B2-43-39-1D-43-35-D2-0D-EC-4C-D9-AB-77-2D-03-0D-79-C2-76-17-5D-02-15-0C-42-61-97-CE-A5-B1-E4-5D-8E-E0-2C-CF-43-7B-6F-FA-99-66-A4-70-4D-00')
+        msg_keys = [
+            'BA-1A-CF-DA-A8-5E-43-62-6C-FA-B6-0C-3A-9B-B0-FC',
+            '86-6D-92-69-CF-8B-93-AA-86-4B-1F-69-D0-34-83-5D',
+            'A1-2F-C0-61-6F-60-1A-B0-33-8F-7D-27-08-C8-EA-15',
+            '3A-56-52-0F-B7-89-D7-80-F6-18-72-CD-09-B5-A8-8A',
+            '06-F7-84-F3-91-CC-8D-DC-7D-92-41-7A-7E-84-25-E4',
+            '78-4D-FC-AE-F4-C4-55-81-6D-DD-99-A7-DB-B8-A3-88'
+        ]
+        are_client = [
+            True,
+            False,
+            True,
+            True,
+            False,
+            False
+        ]
+
+        valid_keys = [
+            'AF-E3-84-51-6D-E0-21-0C-D9-31-E4-9A-A0-76-5F-67-63-78-A1-B0-C9-BC-16-27-76-CF-2C-9D-4D-AE-C6-A5',
+            'DD-30-58-B6-93-8E-C9-79-EF-83-F8-8C-6A-A7-68-03-E2-C6-B1-36-C5-BB-FC-E7-DF-D6-B1-67-F7-75-CF-6B',
+            '70-3F-66-AF-FE-0A-F3-1E-95-C3-25-48-8D-0F-A7-95-59-53-BF-DD-35-97-6E-7A-C0-5E-79-9C-9D-09-3B-7B',
+            '20-9F-82-E3-95-3F-9D-1E-EE-3E-F3-82-B0-8D-6E-76-26-5B-94-27-DD-7D-61-C3-AC-EB-FA-71-FF-0D-8F-08',
+            'AE-06-BF-F1-89-88-22-66-98-48-76-E6-BD-D9-39-36-2D-36-4E-CF-FD-47-D2-87-D7-49-F8-93-22-2E-66-02',
+            'D9-6B-43-D0-89-F7-C5-75-A2-4A-F2-2F-F0-17-5C-95-AE-FA-46-A5-95-AA-C3-B9-76-B0-3A-A8-0E-7B-EA-5D'
+        ]
+
+        valid_ivs = [
+            'B8-51-F3-C5-A3-5D-C6-DF-9E-E0-51-BD-22-8D-13-09-0E-9A-9D-5E-38-A2-F8-E7-00-77-D9-C1-A7-A0-F7-0F',
+            'DC-4C-C2-18-01-4A-22-58-86-6C-62-B6-B5-34-37-FD-E2-61-34-B6-AF-7D-46-53-D7-5B-E0-4E-0D-19-FB-BC',
+            '68-BB-BA-7F-55-B9-EF-86-EE-20-5A-1A-45-4E-70-C3-48-56-A2-E9-2F-91-AD-74-23-FE-54-06-E5-68-04-E9',
+            '79-31-8D-F0-DC-31-60-D7-09-BC-66-F1-AB-0D-7C-CB-2A-AF-74-32-64-C5-B3-18-C4-ED-55-D9-F6-39-DD-F3',
+            '1F-51-66-06-05-54-B9-E0-52-6A-88-6A-70-0C-DA-8D-2B-CD-BF-8A-67-5E-1A-A7-DD-EA-1C-CE-4C-D4-34-3D',
+            '8E-00-97-5E-B7-A1-F7-3D-1C-16-03-CA-B3-ED-EA-80-64-8F-77-A6-C4-34-5B-B5-DC-5D-C9-EC-B7-F8-F4-76'
+        ]
+
+        for msg_key, is_client, valid_key, valid_iv in zip(msg_keys, are_client, valid_keys, valid_ivs):
+            msg_key = get_bytes(msg_key)
+            key, iv = utils.calc_key(shared_key, msg_key, is_client)
+            assert get_representation(key) == valid_key
+            assert get_representation(iv) == valid_iv
 
     @staticmethod
     def test_authenticator():

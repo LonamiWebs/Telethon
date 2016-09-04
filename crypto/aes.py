@@ -36,8 +36,9 @@ class AES:
     def encrypt_ige(plain_text, key, iv):
         """Encrypts the given text in 16-bytes blocks by using the given key and 32-bytes initialization vector"""
         # TODO: Random padding
-        padding = bytes(16 - len(plain_text) % 16)
-        plain_text += padding
+        if len(plain_text) % 16 != 0:  # Add padding if and only if it's not evenly divisible by 16 already
+            padding = bytes(16 - len(plain_text) % 16)
+            plain_text += padding
 
         iv1 = iv[:len(iv)//2]
         iv2 = iv[len(iv)//2:]

@@ -4,6 +4,7 @@ from os.path import isfile as file_exists
 import time
 import pickle
 import utils
+import random
 
 
 class Session:
@@ -38,9 +39,13 @@ class Session:
     def get_new_msg_id(self):
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
-        new_msg_id = int(self.time_offset + time.time() * 1000)
-        if self.last_message_id >= new_msg_id:
-            new_msg_id = self._last_msg_id + 4
+        ms_time = int(time.time() * 1000)
+        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32) |  # "must approximately equal unixtime*2^32"
+                      ((ms_time % 1000) << 22) |  # "approximate moment in time the message was created"
+                      random.randint(0, 524288) << 2)  # "message identifiers are divisible by 4"
 
-        self._last_msg_id = new_msg_id
+        if self.last_message_id >= new_msg_id:
+            new_msg_id = self.last_message_id + 4
+
+        self.last_message_id = new_msg_id
         return new_msg_id

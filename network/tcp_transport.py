@@ -1,7 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpTransport.cs
-from zlib import crc32
 from network import TcpMessage, TcpClient
+from binascii import crc32
 
 
 class TcpTransport:
@@ -35,12 +35,11 @@ class TcpTransport:
 
         body = self._tcp_client.read(packet_length - 12)
 
-        checksum = int.from_bytes(self._tcp_client.read(4), byteorder='little')
+        checksum = int.from_bytes(self._tcp_client.read(4), byteorder='little', signed=False)
 
         # Then perform the checks
         rv = packet_length_bytes + seq_bytes + body
-        # Ensure it's unsigned (http://stackoverflow.com/a/30092291/4759433)
-        valid_checksum = crc32(rv) & 0xFFFFFFFF
+        valid_checksum = crc32(rv)
 
         if checksum != valid_checksum:
             raise ValueError('Invalid checksum, skip')
