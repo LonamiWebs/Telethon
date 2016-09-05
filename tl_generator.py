@@ -137,6 +137,15 @@ def generate_tlobjects(scheme_file):
                         builder.writeln('pass')
                 builder.end_block()
 
+                # Write the __repr__(self) and __str__(self) functions
+                builder.writeln('def __repr__(self):')
+                builder.writeln("return '{}'".format(repr(tlobject)))
+                builder.end_block()
+
+                builder.writeln('def __str__(self):')
+                builder.writeln("return {}".format(str(tlobject)))
+                # builder.end_block()  # There is no need to end the last block
+
     # Once all the objects have been generated, we can now group them in a single file
     filename = os.path.join('tl', 'all_tlobjects.py')
     with open(filename, 'w', encoding='utf-8') as file:

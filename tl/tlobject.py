@@ -73,7 +73,7 @@ class TLObject:
                         result=match.group(3),
                         is_function=is_function)
 
-    def __str__(self):
+    def __repr__(self):
         fullname = ('{}.{}'.format(self.namespace, self.name) if self.namespace is not None
                     else self.name)
 
@@ -83,6 +83,23 @@ class TLObject:
                                       hex_id,
                                       ' '.join([str(arg) for arg in self.args]),
                                       self.result)
+
+    def __str__(self):
+        fullname = ('{}.{}'.format(self.namespace, self.name) if self.namespace is not None
+                    else self.name)
+
+        # Some arguments are not valid for being represented, such as the flag indicator or generic definition
+        # (these have no explicit values until used)
+        valid_args = [arg for arg in self.args
+                if not arg.flag_indicator and not arg.generic_definition]
+
+        args = ', '.join(['{} = {{}}'.format(arg.name) for arg in valid_args])
+        args_format = ', '.join(['self.{}'.format(arg.name) for arg in valid_args])
+
+        return ("'({} (ID: {}) = ({}))'.format({})"
+                .format(fullname, hex(self.id), args, args_format))
+
+
 
 
 class TLArg:

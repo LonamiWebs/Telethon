@@ -7,6 +7,9 @@ class SourceBuilder:
         self.indent_size = indent_size
         self.out_stream = out_stream
 
+        # Was a new line added automatically before? If so, avoid it
+        self.auto_added_line = False
+
     def indent(self):
         """Indents the current source code line by the current indentation level"""
         self.write(' ' * (self.current_indent * self.indent_size))
@@ -29,10 +32,17 @@ class SourceBuilder:
         if string and string[-1] == ':':
             self.current_indent += 1
 
+        # Clear state after the user adds a new line
+        self.auto_added_line = False
+
     def end_block(self):
         """Ends an indentation block, leaving an empty line afterwards"""
         self.current_indent -= 1
-        self.writeln()
+
+        # If we did not add a new line automatically yet, now it's the time!
+        if not self.auto_added_line:
+            self.writeln()
+            self.auto_added_line = True
 
     def __str__(self):
         self.out_stream.seek(0)
