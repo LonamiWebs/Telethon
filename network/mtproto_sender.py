@@ -1,7 +1,8 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoSender.cs
 import re
-import zlib
+import gzip
+from errors import *
 from time import sleep
 
 import utils
@@ -64,27 +65,26 @@ class MtProtoSender:
         """Sends the given packet bytes with the additional information of the original request"""
         request.msg_id = self.session.get_new_msg_id()
 
-        # First calculate the ciphered bit
-        with BinaryWriter() as writer:
-            writer.write_long(self.session.salt, signed=False)
-            writer.write_long(self.session.id, signed=False)
-            writer.write_long(request.msg_id)
-            writer.write_int(self.generate_sequence(request.confirmed))
-            writer.write_int(len(packet))
-            writer.write(packet)
+        # First calculate plain_text to encrypt it
+        with BinaryWriter() as plain_writer:
+            plain_writer.write_long(self.session.salt, signed=False)
+            plain_writer.write_long(self.session.id, signed=False)
+            plain_writer.write_long(request.msg_id)
+            plain_writer.write_int(self.generate_sequence(request.confirmed))
+            plain_writer.write_int(len(packet))
+            plain_writer.write(packet)
 
-            msg_key = utils.calc_msg_key(writer.get_bytes())
+            msg_key = utils.calc_msg_key(plain_writer.get_bytes())
 
             key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
-            cipher_text = AES.encrypt_ige(writer.get_bytes(), key, iv)
+            cipher_text = AES.encrypt_ige(plain_writer.get_bytes(), key, iv)
 
-        # And then finally send the packet
-        with BinaryWriter() as writer:
-            writer.write_long(self.session.auth_key.key_id, signed=False)
-            writer.write(msg_key)
-            writer.write(cipher_text)
-
-            self.transport.send(writer.get_bytes())
+        # And then finally send the encrypted packet
+        with BinaryWriter() as cipher_writer:
+            cipher_writer.write_long(self.session.auth_key.key_id, signed=False)
+            cipher_writer.write(msg_key)
+            cipher_writer.write(cipher_text)
+            self.transport.send(cipher_writer.get_bytes())
 
     def decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -125,7 +125,7 @@ class MtProtoSender:
             return self.handle_container(msg_id, sequence, reader, request)
         if code == 0x7abe77ec:  # Ping
             return self.handle_ping(msg_id, sequence, reader)
-        if code == 0x347773c5:  # pong
+        if code == 0x347773c5:  # Pong
             return self.handle_pong(msg_id, sequence, reader)
         if code == 0xae500895:  # future_salts
             return self.handle_future_salts(msg_id, sequence, reader)
@@ -174,8 +174,13 @@ class MtProtoSender:
                 if not self.process_msg(inner_msg_id, sequence, reader, request):
                     reader.set_position(begin_position + inner_length)
 
-            except:
-                reader.set_position(begin_position + inner_length)
+            except Exception as error:
+                if error is InvalidDCError:
+                    print('Re-raise {}'.format(error))
+                    raise error
+                else:
+                    print('Error while handling container {}: {}'.format(type(error), error))
+                    reader.set_position(begin_position + inner_length)
 
         return False
 
@@ -216,42 +221,9 @@ class MtProtoSender:
         code = reader.read_int(signed=False)
         request_id = reader.read_long(signed=False)
         request_sequence = reader.read_int()
+
         error_code = reader.read_int()
-
-        if error_code == 16:
-            raise RuntimeError("msg_id too low (most likely, client time is wrong it would be worthwhile to "
-                               "synchronize it using msg_id notifications and re-send the original message "
-                               "with the “correct” msg_id or wrap it in a container with a new msg_id if the "
-                               "original message had waited too long on the client to be transmitted)")
-        if error_code == 17:
-            raise RuntimeError("msg_id too high (similar to the previous case, the client time has to be "
-                               "synchronized, and the message re-sent with the correct msg_id)")
-        if error_code == 18:
-            raise RuntimeError("Incorrect two lower order msg_id bits (the server expects client message msg_id "
-                               "to be divisible by 4)")
-        if error_code == 19:
-            raise RuntimeError("Container msg_id is the same as msg_id of a previously received message "
-                               "(this must never happen)")
-        if error_code == 20:
-            raise RuntimeError("Message too old, and it cannot be verified whether the server has received a "
-                               "message with this msg_id or not")
-        if error_code == 32:
-            raise RuntimeError("msg_seqno too low (the server has already received a message with a lower "
-                               "msg_id but with either a higher or an equal and odd seqno)")
-        if error_code == 33:
-            raise RuntimeError("msg_seqno too high (similarly, there is a message with a higher msg_id but with "
-                               "either a lower or an equal and odd seqno)")
-        if error_code == 34:
-            raise RuntimeError("An even msg_seqno expected (irrelevant message), but odd received")
-        if error_code == 35:
-            raise RuntimeError("Odd msg_seqno expected (relevant message), but even received")
-        if error_code == 48:
-            raise RuntimeError("Incorrect server salt (in this case, the bad_server_salt response is received with "
-                               "the correct salt, and the message is to be re-sent with it)")
-        if error_code == 64:
-            raise RuntimeError("Invalid container")
-
-        raise NotImplementedError('This should never happen!')
+        raise BadMessageError(error_code)
 
     def hangle_msg_detailed_info(self, msg_id, sequence, reader):
         return False
@@ -262,8 +234,6 @@ class MtProtoSender:
 
         if request_id == mtproto_request.msg_id:
             mtproto_request.confirm_received = True
-        else:
-            print('We did not get the ID we expected. Got {}, but it should have been {}'.format(request_id, mtproto_request.msg_id))
 
         inner_code = reader.read_int(signed=False)
         if inner_code == 0x2144ca19:  # RPC Error
@@ -277,21 +247,14 @@ class MtProtoSender:
 
             elif error_msg.startswith('PHONE_MIGRATE_'):
                 dc_index = int(re.search(r'\d+', error_msg).group(0))
-                raise ConnectionError('Your phone number is registered to {} DC. Please update settings. '
-                                      'See https://github.com/sochix/TLSharp#i-get-an-error-migrate_x '
-                                      'for details.'.format(dc_index))
+                raise InvalidDCError(dc_index)
             else:
-                raise ValueError(error_msg)
+                raise RPCError(error_msg)
 
         elif inner_code == 0x3072cfa1:  # GZip packed
-            try:
-                packed_data = reader.tgread_bytes()
-                unpacked_data = zlib.decompress(packed_data)
-
-                with BinaryReader(unpacked_data) as compressed_reader:
-                    mtproto_request.on_response(compressed_reader)
-            except:
-                pass
+            unpacked_data = gzip.decompress(reader.tgread_bytes())
+            with BinaryReader(unpacked_data) as compressed_reader:
+                mtproto_request.on_response(compressed_reader)
 
         else:
             reader.seek(-4)
@@ -300,7 +263,7 @@ class MtProtoSender:
     def handle_gzip_packed(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)
         packed_data = reader.tgread_bytes()
-        unpacked_data = zlib.decompress(packed_data)
+        unpacked_data = gzip.decompress(packed_data)
 
         with BinaryReader(unpacked_data) as compressed_reader:
             self.process_msg(msg_id, sequence, compressed_reader, mtproto_request)

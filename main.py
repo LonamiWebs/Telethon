@@ -16,6 +16,9 @@ if __name__ == '__main__':
 
         client.connect()
         if not client.is_user_authorized():
-            phone_code_hash = client.send_code_request(settings['user_phone'])
+            phone_code_hash = None
+            while phone_code_hash is None:
+                phone_code_hash = client.send_code_request(settings['user_phone'])
+
             code = input('Enter the code you just received: ')
             client.make_auth(settings['user_phone'], phone_code_hash, code)

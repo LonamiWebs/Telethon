@@ -101,9 +101,10 @@ def generate_tlobjects(scheme_file):
                     builder.writeln('"""')
 
                 builder.writeln('super().__init__()')
-                # Functions have a result object
+                # Functions have a result object and are confirmed by default
                 if tlobject.is_function:
                     builder.writeln('self.result = None')
+                    builder.writeln('self.confirmed = True  # Confirmed by default')
 
                 # Set the arguments
                 if args:
@@ -215,9 +216,13 @@ def write_onsend_code(builder, arg, args, name=None):
     if name is None:
         name = 'self.{}'.format(arg.name)
 
-    # The argument may be a flag, only write if it's not None!
+    # The argument may be a flag, only write if it's not None AND if it's not a True type
+    # True types are not actually sent, but instead only used to determine the flags
     if arg.is_flag:
-        builder.writeln('if {} is not None:'.format(name))
+        if arg.type == 'true':
+            return  # Exit, since True type is never written
+        else:
+            builder.writeln('if {} is not None:'.format(name))
 
     if arg.is_vector:
         builder.writeln("writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
@@ -262,7 +267,7 @@ def write_onsend_code(builder, arg, args, name=None):
         builder.writeln('writer.tgwrite_bool({})'.format(name))
 
     elif 'true' == arg.type:  # Awkwardly enough, Telegram has both bool and "true", used in flags
-        builder.writeln('writer.write_int(0x3fedd339)  # true')
+        pass  # These are actually NOT written! Only used for flags
 
     elif 'bytes' == arg.type:
         builder.writeln('writer.write({})'.format(name))
@@ -297,8 +302,12 @@ def write_onresponse_code(builder, arg, args, name=None):
         name = 'self.{}'.format(arg.name)
 
     # The argument may be a flag, only write that flag was given!
+    was_flag = False
     if arg.is_flag:
+        was_flag = True
         builder.writeln('if (flags & (1 << {})) != 0:'.format(arg.flag_index))
+        # Temporary disable .is_flag not to enter this if again when calling the method recursively
+        arg.is_flag = False
 
     if arg.is_vector:
         builder.writeln("reader.read_int()  # Vector's constructor ID")
@@ -338,21 +347,23 @@ def write_onresponse_code(builder, arg, args, name=None):
         builder.writeln('{} = reader.tgread_bool()'.format(name))
 
     elif 'true' == arg.type:  # Awkwardly enough, Telegram has both bool and "true", used in flags
-        builder.writeln('{} = reader.read_int() == 0x3fedd339  # true'.format(name))
+        builder.writeln('{} = True  # Arbitrary not-None value, no need to read since it is a flag'.format(name))
 
     elif 'bytes' == arg.type:
         builder.writeln('{} = reader.read()'.format(name))
 
     else:
         # Else it may be a custom type
-        builder.writeln('{} = reader.tgread_object(reader)'.format(name))
+        builder.writeln('{} = reader.tgread_object()'.format(name))
 
     # End vector and flag blocks if required (if we opened them before)
     if arg.is_vector:
         builder.end_block()
 
-    if arg.is_flag:
+    if was_flag:
         builder.end_block()
+        # Restore .is_flag
+        arg.is_flag = True
 
 if __name__ == '__main__':
     if tlobjects_exist():

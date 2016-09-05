@@ -6,13 +6,13 @@ import platform
 import utils
 import network.authenticator
 from network import MtProtoSender, TcpTransport
+from errors import *
 
 from tl import Session
 from tl.types import InputPeerUser
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
 from tl.functions.auth import CheckPhoneRequest, SendCodeRequest, SignInRequest
-from tl.functions.contacts import GetContactsRequest
 from tl.functions.messages import SendMessageRequest
 
 
@@ -84,6 +84,7 @@ class TelegramClient:
         return request.result.phone_registered
 
     def send_code_request(self, phone_number):
+        """May return None if an error occured!"""
         request = SendCodeRequest(phone_number, self.api_id, self.api_hash)
         completed = False
         while not completed:
@@ -91,14 +92,14 @@ class TelegramClient:
                 self.sender.send(request)
                 self.sender.receive(request)
                 completed = True
-            except ConnectionError as error:
-                if str(error).startswith('Your phone number is registered to'):
-                    dc = int(re.search(r'\d+', str(error)).group(0))
-                    self.reconnect_to_dc(dc)
-                else:
-                    raise error
+            except InvalidDCError as error:
+                self.reconnect_to_dc(error.new_dc)
 
-        return request.result.phone_code_hash
+        if request.result is None:
+            return None
+        else:
+            return request.result.phone_code_hash
+
 
     def make_auth(self, phone_number, phone_code_hash, code):
         request = SignInRequest(phone_number, phone_code_hash, code)
@@ -110,12 +111,6 @@ class TelegramClient:
         self.session.save()
 
         return self.session.user
-
-    def import_contacts(self, phone_code_hash):
-        request = GetContactsRequest(phone_code_hash)
-        self.sender.send(request)
-        self.sender.receive(request)
-        return request.result.contacts, request.result.users
 
     def send_message(self, user, message):
         peer = InputPeerUser(user.id, user.access_hash)

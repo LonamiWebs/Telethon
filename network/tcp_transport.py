@@ -2,6 +2,7 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpTransport.cs
 from network import TcpMessage, TcpClient
 from binascii import crc32
+from errors import *
 
 
 class TcpTransport:
@@ -42,7 +43,7 @@ class TcpTransport:
         valid_checksum = crc32(rv)
 
         if checksum != valid_checksum:
-            raise ValueError('Invalid checksum, skip')
+            raise InvalidChecksumError(checksum, valid_checksum)
 
         # If we passed the tests, we can then return a valid TcpMessage
         return TcpMessage(seq, body)

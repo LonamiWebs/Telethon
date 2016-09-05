@@ -1,6 +1,7 @@
 from io import BytesIO, BufferedReader
 from tl import tlobjects
 from struct import unpack
+from errors import *
 import inspect
 import os
 
@@ -16,7 +17,7 @@ class BinaryReader:
         elif stream:
             self.stream = stream
         else:
-            raise ValueError("Either bytes or a stream must be provided")
+            raise InvalidParameterError("Either bytes or a stream must be provided")
 
         self.reader = BufferedReader(self.stream)
 
@@ -96,11 +97,10 @@ class BinaryReader:
 
     def tgread_object(self):
         """Reads a Telegram object"""
-        constructor_id = self.read_int()
+        constructor_id = self.read_int(signed=False)
         clazz = tlobjects.get(constructor_id, None)
         if clazz is None:
-            raise ImportError('Could not find a matching ID for the TLObject that was supposed to be read. '
-                              'Found ID: {}'.format(hex(constructor_id)))
+            raise TypeNotFoundError(constructor_id)
 
         # Now we need to determine the number of parameters of the class, so we can
         # instantiate it with all of them set to None, and still, no need to write

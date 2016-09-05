@@ -1,6 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/AuthKey.cs
 import utils
+from errors import *
 from utils import BinaryWriter, BinaryReader
 
 
@@ -11,7 +12,7 @@ class AuthKey:
         elif data:
             self.key = data
         else:
-            raise AssertionError('Either a gab integer or data bytes array must be provided')
+            raise InvalidParameterError('Either a gab integer or data bytes array must be provided')
 
         with BinaryReader(utils.sha1(self.key)) as reader:
             self.aux_hash = reader.read_long(signed=False)

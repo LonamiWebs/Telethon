@@ -19,7 +19,7 @@ class TcpClient:
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
-        self.socket.send(data)
+        self.socket.sendall(data)
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""

@@ -2,6 +2,7 @@
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpMessage.cs
 from utils import BinaryWriter, BinaryReader
 from binascii import crc32
+from errors import *
 
 
 class TcpMessage:
@@ -11,7 +12,7 @@ class TcpMessage:
         :param body: Message body byte array
         """
         if body is None:
-            raise ValueError('body cannot be None')
+            raise InvalidParameterError('body cannot be None')
 
         self.sequence_number = seq_number
         self.body = body
@@ -40,15 +41,15 @@ class TcpMessage:
     def decode(body):
         """Returns a TcpMessage from the given encoded bytes, decoding them previously"""
         if body is None:
-            raise ValueError('body cannot be None')
+            raise InvalidParameterError('body cannot be None')
 
         if len(body) < 12:
-            raise ValueError('Wrong size of input packet')
+            raise InvalidParameterError('Wrong size of input packet')
 
         with BinaryReader(body) as reader:
             packet_len = int.from_bytes(reader.read(4), byteorder='little')
             if packet_len < 12:
-                raise ValueError('Invalid packet length: {}'.format(packet_len))
+                raise InvalidParameterError('Invalid packet length in body: {}'.format(packet_len))
 
             seq = reader.read_int()
             packet = reader.read(packet_len - 12)
@@ -56,6 +57,6 @@ class TcpMessage:
 
             valid_checksum = crc32(body[:packet_len - 4])
             if checksum != valid_checksum:
-                raise ValueError('Invalid checksum, skip')
+                raise InvalidChecksumError(checksum, valid_checksum)
 
             return TcpMessage(seq, packet)
