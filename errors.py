@@ -1,3 +1,6 @@
+import re
+
+
 class InvalidParameterError(Exception):
     """Occurs when an invalid parameter is given, for example,
     when either A or B are required but none is given"""
@@ -19,7 +22,7 @@ class InvalidDCError(Exception):
     def __init__(self, new_dc):
         super().__init__(self,  'Your phone number is registered to #{} DC. '
                                 'This should have been handled automatically; '
-                                'if it has not, please restart the app.')
+                                'if it has not, please restart the app.'.format(new_dc))
 
         self.new_dc = new_dc
 
@@ -34,9 +37,126 @@ class InvalidChecksumError(Exception):
 
 
 class RPCError(Exception):
-    def __init__(self, message):
-        super().__init__(self, message)
+
+    CodeMessages = {
+        303: ('ERROR_SEE_OTHER', 'The request must be repeated, but directed to a different data center.'),
+
+        400: ('BAD_REQUEST', 'The query contains errors. In the event that a request was created using a '
+                             'form and contains user generated data, the user should be notified that the '
+                             'data must be corrected before the query is repeated.'),
+
+        401: ('UNAUTHORIZED', 'There was an unauthorized attempt to use functionality available only to '
+                              'authorized users.'),
+
+        403: ('FORBIDDEN', 'Privacy violation. For example, an attempt to write a message to someone who '
+                           'has blacklisted the current user.'),
+
+        404: ('NOT_FOUND', 'An attempt to invoke a non-existent object, such as a method.'),
+
+        420: ('FLOOD', 'The maximum allowed number of attempts to invoke the given method with '
+                       'the given input parameters has been exceeded. For example, in an attempt '
+                       'to request a large number of text messages (SMS) for the same phone number.'),
+
+        500: ('INTERNAL', 'An internal server error occurred while a request was being processed; '
+                          'for example, there was a disruption while accessing a database or file storage.')
+    }
+
+    ErrorMessages = {
+        # 303 ERROR_SEE_OTHER
+        'FILE_MIGRATE_(\d+)': 'The file to be accessed is currently stored in a different data center (#{}).',
+
+        'PHONE_MIGRATE_(\d+)': 'The phone number a user is trying to use for authorization is associated '
+                               'with a different data center (#{}).',
+
+        'NETWORK_MIGRATE_(\d+)': 'The source IP address is associated with a different data center (#{}, '
+                                 'for registration).',
+
+        'USER_MIGRATE_(\d+)': 'The user whose identity is being used to execute queries is associated with '
+                              'a different data center  (#{} for registration).',
+
+        # 400 BAD_REQUEST
+        'FIRSTNAME_INVALID': 'The first name is invalid.',
+
+        'LASTNAME_INVALID': 'The last name is invalid.',
+
+        'PHONE_NUMBER_INVALID': 'The phone number is invalid.',
+
+        'PHONE_CODE_HASH_EMPTY': 'phone_code_hash is missing.',
+
+        'PHONE_CODE_EMPTY': 'phone_code is missing.',
+
+        'PHONE_CODE_EXPIRED': 'The confirmation code has expired.',
+
+        'API_ID_INVALID': 'The api_id/api_hash combination is invalid.',
+
+        'PHONE_NUMBER_OCCUPIED': 'The phone number is already in use.',
+
+        'PHONE_NUMBER_UNOCCUPIED': 'The phone number is not yet being used.',
+
+        'USERS_TOO_FEW': 'Not enough users (to create a chat, for example).',
+
+        'USERS_TOO_MUCH': 'The maximum number of users has been exceeded (to create a chat, for example).',
+
+        'TYPE_CONSTRUCTOR_INVALID': 'The type constructor is invalid.',
+
+        'FILE_PART_INVALID': 'The file part number is invalid.',
+
+        'FILE_PARTS_INVALID': 'The number of file parts is invalid.',
+
+        'FILE_PART_(\d+)_MISSING': 'Part {} of the file is missing from storage.',
+
+        'MD5_CHECKSUM_INVALID': 'The MD5 checksums do not match.',
+
+        'PHOTO_INVALID_DIMENSIONS': 'The photo dimensions are invalid.',
+
+        'FIELD_NAME_INVALID': 'The field with the name FIELD_NAME is invalid.',
+
+        'FIELD_NAME_EMPTY': 'The field with the name FIELD_NAME is missing.',
+
+        'MSG_WAIT_FAILED': 'A waiting call returned an error.',
+
+        # 401 UNAUTHORIZED
+        'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
+
+        'AUTH_KEY_INVALID': 'The key is invalid.',
+
+        'USER_DEACTIVATED': 'The user has been deleted/deactivated.',
+
+        'SESSION_REVOKED': 'The authorization has been invalidated, because of the user terminating all sessions.',
+
+        'SESSION_EXPIRED': 'The authorization has expired.',
+
+        'ACTIVE_USER_REQUIRED': 'The method is only available to already activated users.',
+
+        'AUTH_KEY_PERM_EMPTY': 'The method is unavailable for temporary authorization key, not bound to permanent.',
+
+        # 420 FLOOD
+        'FLOOD_WAIT_(\d+)': 'A wait of {} seconds is required.'
+    }
+
+    def __init__(self, code, message):
+        self.code = code
+        self.code_meaning = RPCError.CodeMessages[code]
+
         self.message = message
+        self.must_resend = code == 303  # ERROR_SEE_OTHER, "The request must be repeated"
+
+        called_super = False
+        for key, error_msg in RPCError.ErrorMessages.items():
+            match = re.match(key, message)
+            if match:
+                # Get additional_data, if any
+                if match.groups():
+                    self.additional_data = int(match.group(1))
+                else:
+                    self.additional_data = None
+
+                super().__init__(self, error_msg)
+                called_super = True
+                break
+
+        if not called_super:
+            super().__init__(self, 'Unknown error message with code {}: {}'.format(code, message))
 
 
 class BadMessageError(Exception):

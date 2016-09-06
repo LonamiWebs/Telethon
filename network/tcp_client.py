@@ -23,4 +23,11 @@ class TcpClient:
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""
-        return self.socket.recv(buffer_size)
+        # TODO improve (don't cast to list, use a mutable byte list instead or similar, see recv_into)
+        result = []
+        while len(result) < buffer_size:
+            left_data = buffer_size - len(result)
+            partial = self.socket.recv(left_data)
+            result.extend(list(partial))
+
+        return bytes(result)

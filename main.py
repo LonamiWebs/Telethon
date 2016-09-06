@@ -10,15 +10,17 @@ if __name__ == '__main__':
     else:
         settings = load_settings()
         client = TelegramClient(session_user_id=settings.get('session_name', 'anonymous'),
-                                layer=54,
+                                layer=55,
                                 api_id=settings['api_id'],
                                 api_hash=settings['api_hash'])
 
         client.connect()
+        input('You should now be connected. Press enter when you are ready to continue.')
         if not client.is_user_authorized():
-            phone_code_hash = None
-            while phone_code_hash is None:
-                phone_code_hash = client.send_code_request(settings['user_phone'])
+            client.send_code_request(str(settings['user_phone']))
 
             code = input('Enter the code you just received: ')
-            client.make_auth(settings['user_phone'], phone_code_hash, code)
+            client.make_auth(settings['user_phone'], code)
+
+        else:
+            client.get_dialogs()

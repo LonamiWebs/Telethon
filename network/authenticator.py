@@ -166,7 +166,6 @@ def do_authentication(transport):
         sender.send(set_client_dh_params_bytes)
 
     # Step 3 response: Complete DH Exchange
-    # TODO, no more data, why did it stop again?!
     with BinaryReader(sender.receive()) as reader:
         code = reader.read_int(signed=False)
         if code == 0x3bcbf734:  # DH Gen OK

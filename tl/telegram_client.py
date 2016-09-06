@@ -1,6 +1,5 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
-import re
 import platform
 
 import utils
@@ -9,11 +8,11 @@ from network import MtProtoSender, TcpTransport
 from errors import *
 
 from tl import Session
-from tl.types import InputPeerUser
+from tl.types import InputPeerUser, InputPeerEmpty
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
 from tl.functions.auth import CheckPhoneRequest, SendCodeRequest, SignInRequest
-from tl.functions.messages import SendMessageRequest
+from tl.functions.messages import GetDialogsRequest, SendMessageRequest
 
 
 class TelegramClient:
@@ -32,28 +31,32 @@ class TelegramClient:
         # These will be set later
         self.dc_options = None
         self.sender = None
+        self.phone_code_hash = None
 
-    # TODO Should this be async?
     def connect(self, reconnect=False):
         if not self.session.auth_key or reconnect:
             self.session.auth_key, self.session.time_offset = network.authenticator.do_authentication(self.transport)
+            self.session.save()
 
         self.sender = MtProtoSender(self.transport, self.session)
+        self.sender.add_update_handler(self.on_update)
 
-        if not reconnect:
-            request = InvokeWithLayerRequest(layer=self.layer,
-                                             query=InitConnectionRequest(api_id=self.api_id,
-                                                                         device_model=platform.node(),
-                                                                         system_version=platform.system(),
-                                                                         app_version='0.1',
-                                                                         lang_code='en',
-                                                                         query=GetConfigRequest()))
+        # Always init connection by using the latest layer, not only when not reconnecting (as in original TLSharp's)
+        # Otherwise, the server thinks that were using the oldest layer!
+        # (Note that this is mainly untested, but it seems like it since some errors point in that direction)
+        request = InvokeWithLayerRequest(layer=self.layer,
+                                         query=InitConnectionRequest(api_id=self.api_id,
+                                                                     device_model=platform.node(),
+                                                                     system_version=platform.system(),
+                                                                     app_version='0.1',
+                                                                     lang_code='en',
+                                                                     query=GetConfigRequest()))
 
-            self.sender.send(request)
-            self.sender.receive(request)
+        self.sender.send(request)
+        self.sender.receive(request)
 
-            # Result is a Config TLObject
-            self.dc_options = request.result.dc_options
+        # Result is a Config TLObject
+        self.dc_options = request.result.dc_options
 
         return True
 
@@ -64,9 +67,11 @@ class TelegramClient:
         # dc is a DcOption TLObject
         dc = next(dc for dc in self.dc_options if dc.id == dc_id)
 
+        self.transport.close()
         self.transport = TcpTransport(dc.ip_address, dc.port)
         self.session.server_address = dc.ip_address
         self.session.port = dc.port
+        self.session.save()
 
         self.connect(reconnect=True)
 
@@ -84,7 +89,6 @@ class TelegramClient:
         return request.result.phone_registered
 
     def send_code_request(self, phone_number):
-        """May return None if an error occured!"""
         request = SendCodeRequest(phone_number, self.api_id, self.api_hash)
         completed = False
         while not completed:
@@ -92,17 +96,17 @@ class TelegramClient:
                 self.sender.send(request)
                 self.sender.receive(request)
                 completed = True
+                if request.result:
+                    self.phone_code_hash = request.result.phone_code_hash
+
             except InvalidDCError as error:
                 self.reconnect_to_dc(error.new_dc)
 
-        if request.result is None:
-            return None
-        else:
-            return request.result.phone_code_hash
+    def make_auth(self, phone_number, code):
+        if not self.phone_code_hash:
+            raise ValueError('Please make sure you have called send_code_request first!')
 
-
-    def make_auth(self, phone_number, phone_code_hash, code):
-        request = SignInRequest(phone_number, phone_code_hash, code)
+        request = SignInRequest(phone_number, self.phone_code_hash, code)
         self.sender.send(request)
         self.sender.receive(request)
 
@@ -112,9 +116,25 @@ class TelegramClient:
 
         return self.session.user
 
+    def get_dialogs(self):
+        request = GetDialogsRequest(offset_date=0,
+                                    offset_id=0,
+                                    offset_peer=InputPeerEmpty(),
+                                    limit=20)
+
+        self.sender.send(request)
+        self.sender.receive(request)
+
+        print(request.result)
+
     def send_message(self, user, message):
         peer = InputPeerUser(user.id, user.access_hash)
         request = SendMessageRequest(peer, message, utils.generate_random_long())
 
         self.sender.send(request)
-        self.sender.send(request)
+        self.sender.receive(request)
+
+    def on_update(self, tlobject):
+        """This method is fired when there are updates from Telegram.
+        Add your own implementation below, or simply override it!"""
+        print('We have an update: {}'.format(str(tlobject)))

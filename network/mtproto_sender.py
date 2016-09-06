@@ -17,6 +17,12 @@ class MtProtoSender:
         self.transport = transport
         self.session = session
         self.need_confirmation = []  # Message IDs that need confirmation
+        self.on_update_handlers = []
+
+    def add_update_handler(self, handler):
+        """Adds an update handler (a method with one argument, the received TLObject)
+        that is fired when there are updates available"""
+        self.on_update_handlers.append(handler)
 
     def generate_sequence(self, confirmed):
         """Generates the next sequence number, based on whether it was confirmed yet or not"""
@@ -29,7 +35,6 @@ class MtProtoSender:
 
     # region Send and receive
 
-    # TODO In TLSharp, this was async. Should this be?
     def send(self, request):
         """Sends the specified MTProtoRequest, previously sending any message which needed confirmation"""
 
@@ -56,6 +61,7 @@ class MtProtoSender:
 
             with BinaryReader(message) as reader:
                 self.process_msg(remote_msg_id, remote_sequence, reader, request)
+
 
     # endregion
 
@@ -144,12 +150,9 @@ class MtProtoSender:
         if code == 0x3072cfa1:  # gzip_packed
             return self.handle_gzip_packed(msg_id, sequence, reader, request)
 
-        if (code == 0xe317af7e or
-            code == 0xd3f45784 or
-            code == 0x2b2fbd4e or
-            code == 0x78d4dec1 or
-            code == 0x725b04c3 or
-                code == 0x74ae4240):
+        # TODO do not check by hand, keep another list of which are updates (from the .tl definition)
+        updates = [0xe317af7e, 0x914fbf11, 0x16812688, 0x78d4dec1, 0x725b04c3, 0x74ae4240, 0x11f1331c]
+        if code in updates:
             return self.handle_update(msg_id, sequence, reader)
 
         print('Unknown message: {}'.format(hex(msg_id)))
@@ -160,6 +163,10 @@ class MtProtoSender:
     # region Message handling
 
     def handle_update(self, msg_id, sequence, reader):
+        tlobject = reader.tgread_object()
+        for handler in self.on_update_handlers:
+            handler(tlobject)
+
         return False
 
     def handle_container(self, msg_id, sequence, reader, request):
@@ -170,17 +177,9 @@ class MtProtoSender:
             inner_sequence = reader.read_int()
             inner_length = reader.read_int()
             begin_position = reader.tell_position()
-            try:
-                if not self.process_msg(inner_msg_id, sequence, reader, request):
-                    reader.set_position(begin_position + inner_length)
 
-            except Exception as error:
-                if error is InvalidDCError:
-                    print('Re-raise {}'.format(error))
-                    raise error
-                else:
-                    print('Error while handling container {}: {}'.format(type(error), error))
-                    reader.set_position(begin_position + inner_length)
+            if not self.process_msg(inner_msg_id, sequence, reader, request):
+                reader.set_position(begin_position + inner_length)
 
         return False
 
@@ -231,34 +230,35 @@ class MtProtoSender:
     def handle_rpc_result(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)
         request_id = reader.read_long(signed=False)
+        inner_code = reader.read_int(signed=False)
 
         if request_id == mtproto_request.msg_id:
             mtproto_request.confirm_received = True
 
-        inner_code = reader.read_int(signed=False)
         if inner_code == 0x2144ca19:  # RPC Error
-            error_code = reader.read_int()
-            error_msg = reader.tgread_string()
+            error = RPCError(code=reader.read_int(), message=reader.tgread_string())
+            if error.must_resend:
+                mtproto_request.confirm_received = False
 
-            if error_msg.startswith('FLOOD_WAIT_'):
-                seconds = int(re.search(r'\d+', error_msg).group(0))
-                print('Should wait {}s. Sleeping until then.')
-                sleep(seconds)
+            if error.message.startswith('FLOOD_WAIT_'):
+                print('Should wait {}s. Sleeping until then.'.format(error.additional_data))
+                sleep(error.additional_data)
 
-            elif error_msg.startswith('PHONE_MIGRATE_'):
-                dc_index = int(re.search(r'\d+', error_msg).group(0))
-                raise InvalidDCError(dc_index)
+            elif error.message.startswith('PHONE_MIGRATE_'):
+                raise InvalidDCError(error.additional_data)
+
             else:
-                raise RPCError(error_msg)
-
-        elif inner_code == 0x3072cfa1:  # GZip packed
-            unpacked_data = gzip.decompress(reader.tgread_bytes())
-            with BinaryReader(unpacked_data) as compressed_reader:
-                mtproto_request.on_response(compressed_reader)
+                raise error
 
         else:
-            reader.seek(-4)
-            mtproto_request.on_response(reader)
+            if inner_code == 0x3072cfa1:  # GZip packed
+                unpacked_data = gzip.decompress(reader.tgread_bytes())
+                with BinaryReader(unpacked_data) as compressed_reader:
+                    mtproto_request.on_response(compressed_reader)
+
+            else:
+                reader.seek(-4)
+                mtproto_request.on_response(reader)
 
     def handle_gzip_packed(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)

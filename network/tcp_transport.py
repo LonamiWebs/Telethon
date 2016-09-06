@@ -20,7 +20,6 @@ class TcpTransport:
         # Get a TcpMessage which contains the given packet
         tcp_message = TcpMessage(self._send_counter, packet)
 
-        # TODO In TLSharp, this is async; Should both send and receive be here too?
         self._tcp_client.write(tcp_message.encode())
         self._send_counter += 1
 
@@ -48,6 +47,6 @@ class TcpTransport:
         # If we passed the tests, we can then return a valid TcpMessage
         return TcpMessage(seq, body)
 
-    def dispose(self):
+    def close(self):
         if self._tcp_client.connected:
             self._tcp_client.close()

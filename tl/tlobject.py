@@ -93,8 +93,8 @@ class TLObject:
         valid_args = [arg for arg in self.args
                 if not arg.flag_indicator and not arg.generic_definition]
 
-        args = ', '.join(['{} = {{}}'.format(arg.name) for arg in valid_args])
-        args_format = ', '.join(['self.{}'.format(arg.name) for arg in valid_args])
+        args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
+        args_format = ', '.join(['str(self.{})'.format(arg.name) for arg in valid_args])
 
         return ("'({} (ID: {}) = ({}))'.format({})"
                 .format(fullname, hex(self.id), args, args_format))

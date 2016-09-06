@@ -267,7 +267,7 @@ class UnitTest(unittest.TestCase):
     def test_authenticator():
         transport = TcpTransport('149.154.167.91', 443)
         network.authenticator.do_authentication(transport)
-        transport.dispose()
+        transport.close()
 
 if __name__ == '__main__':
     unittest.main()
