@@ -1,6 +1,5 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoSender.cs
-import re
 import gzip
 from errors import *
 from time import sleep
@@ -9,6 +8,7 @@ import utils
 from crypto import AES
 from utils import BinaryWriter, BinaryReader
 from tl.types import MsgsAck
+from tl.all_tlobjects import tlobjects
 
 
 class MtProtoSender:
@@ -127,35 +127,25 @@ class MtProtoSender:
         code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        if code == 0x73f1f8dc:  # Container
-            return self.handle_container(msg_id, sequence, reader, request)
-        if code == 0x7abe77ec:  # Ping
-            return self.handle_ping(msg_id, sequence, reader)
-        if code == 0x347773c5:  # Pong
-            return self.handle_pong(msg_id, sequence, reader)
-        if code == 0xae500895:  # future_salts
-            return self.handle_future_salts(msg_id, sequence, reader)
-        if code == 0x9ec20908:  # new_session_created
-            return self.handle_new_session_created(msg_id, sequence, reader)
-        if code == 0x62d6b459:  # msgs_ack
-            return self.handle_msgs_ack(msg_id, sequence, reader)
-        if code == 0xedab447b:  # bad_server_salt
-            return self.handle_bad_server_salt(msg_id, sequence, reader, request)
-        if code == 0xa7eff811:  # bad_msg_notification
-            return self.handle_bad_msg_notification(msg_id, sequence, reader)
-        if code == 0x276d3ec6:  # msg_detailed_info
-            return self.hangle_msg_detailed_info(msg_id, sequence, reader)
+        # The following codes are "parsed manually"
         if code == 0xf35c6d01:  # rpc_result
             return self.handle_rpc_result(msg_id, sequence, reader, request)
-        if code == 0x3072cfa1:  # gzip_packed
+        elif code == 0x73f1f8dc:  # msg_container
+            return self.handle_container(msg_id, sequence, reader, request)
+        elif code == 0x3072cfa1:  # gzip_packed
             return self.handle_gzip_packed(msg_id, sequence, reader, request)
+        elif code == 0xedab447b:  # bad_server_salt
+            return self.handle_bad_server_salt(msg_id, sequence, reader, request)
+        elif code == 0xa7eff811:  # bad_msg_notification
+            return self.handle_bad_msg_notification(msg_id, sequence, reader)
+        else:
+            # If the code is not parsed manually, then it was parsed by the code generator!
+            # In this case, we will simply treat the incoming TLObject as an Update,
+            # if we can first find a matching TLObject
+            if code in tlobjects.keys():
+                return self.handle_update(msg_id, sequence, reader)
 
-        # TODO do not check by hand, keep another list of which are updates (from the .tl definition)
-        updates = [0xe317af7e, 0x914fbf11, 0x16812688, 0x78d4dec1, 0x725b04c3, 0x74ae4240, 0x11f1331c]
-        if code in updates:
-            return self.handle_update(msg_id, sequence, reader)
-
-        print('Unknown message: {}'.format(hex(msg_id)))
+        print('Unknown message: {}'.format(hex(code)))
         return False
 
     # endregion
@@ -183,25 +173,6 @@ class MtProtoSender:
 
         return False
 
-    def handle_ping(self, msg_id, sequence, reader):
-        return False
-
-    def handle_pong(self, msg_id, sequence, reader):
-        return False
-
-    def handle_future_salts(self, msg_id, sequence, reader):
-        code = reader.read_int(signed=False)
-        request_id = reader.read_long(signed=False)
-        reader.seek(-12)
-
-        raise NotImplementedError("Handle future server salts function isn't implemented.")
-
-    def handle_new_session_created(self, msg_id, sequence, reader):
-        return False
-
-    def handle_msgs_ack(self, msg_id, sequence, reader):
-        return False
-
     def handle_bad_server_salt(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)
         bad_msg_id = reader.read_long(signed=False)
@@ -223,9 +194,6 @@ class MtProtoSender:
 
         error_code = reader.read_int()
         raise BadMessageError(error_code)
-
-    def hangle_msg_detailed_info(self, msg_id, sequence, reader):
-        return False
 
     def handle_rpc_result(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)
