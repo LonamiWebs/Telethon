@@ -1,5 +1,6 @@
 # Python rough implementation of a C# TCP client
 import socket
+from utils import BinaryWriter
 
 
 class TcpClient:
@@ -23,11 +24,12 @@ class TcpClient:
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""
-        # TODO improve (don't cast to list, use a mutable byte list instead or similar, see recv_into)
-        result = []
-        while len(result) < buffer_size:
-            left_data = buffer_size - len(result)
-            partial = self.socket.recv(left_data)
-            result.extend(list(partial))
+        with BinaryWriter() as writer:
+            while writer.written_count < buffer_size:
+                # When receiving from the socket, we may not receive all the data at once
+                # This is why we need to keep checking to make sure that we receive it all
+                left_count = buffer_size - writer.written_count
+                partial = self.socket.recv(left_count)
+                writer.write(partial)
 
-        return bytes(result)
+            return writer.get_bytes()

@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     else:
         print('Loading interactive example...')
-        
+
         # First, initialize our TelegramClient and connect
         settings = load_settings()
         client = TelegramClient(session_user_id=settings.get('session_name', 'anonymous'),
