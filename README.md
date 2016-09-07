@@ -6,16 +6,27 @@ on the top of the file. Also don't forget to have a look to the original project
 The files without the previously mentioned notice are no longer part of TLSharp itself, or have enough modifications
 to make them entirely different.
 
-### Requirements
+## Requirements
+### Python modules
 This project requires the following Python modules, which can be installed by issuing `sudo -H pip3 install <module>` on a
 Linux terminal:
 - `pyaes` ([GitHub](https://github.com/ricmoo/pyaes), [package index](https://pypi.python.org/pypi/pyaes))
 
-Also, you need to obtain your both [API ID and Hash](my.telegram.org). Once you have them, head to `api/` and create a copy of
-the `settings_example` file, naming it `settings` (lowercase!). Then fill the file with the corresponding values (your `api_id`,
-`api_hash` and phone number in international format). Now it is when you're ready to go!
+### Obtaining your `API ID` and `Hash`
+1. Follow [this link](https://my.telegram.org) and login with your phone number.
+2. Click under `API Development tools`.
+3. A `Create new application` window will appear. Fill in your application details.
+There is no need to enter any `URL`, and only the first two fields (`App title` and `Short name`)
+can be changed later as long as I'm aware.
+4. Click on `Create application` at the end. Now that you have the `API ID` and `Hash`,
+head to `api/` directory and create a copy of the `settings_example` file, naming it `settings` (lowercase!).
+Then fill the file with the corresponding values (your `api_id`, `api_hash` and phone number in international format).
 
-### How to add more functions to TelegramClient
+### Running Telethon
+First of all, you need to run the `tl_generator.py` by issuing `python3 tl_generator.py`. This will generate all the
+TLObjects from the given `scheme.tl` file. When it's done, you can run `python3 main.py` to start the interactive example.
+
+## How to add more functions to TelegramClient
 As of now, you cannot call any Telegram function unless you first write it by hand under `tl/telegram_client.py`. Why?
 Every Telegram function (or _request_) work in its own way. In some, you may only be interested in a single result field,
 and in others you may need to format the result in a different way. However, a plan for the future is to be able to call
@@ -44,12 +55,12 @@ open the file and see what the result will look like. Alternatively, you can sim
 Be warned that there may be more than one different type on the results. This is due to Telegram's polymorphism,
 for example, a message may or not be empty, etc.
 
-### Plans for the future
+## Plans for the future
 If everything works well, this probably ends up being a Python package :)
 
 But as of now, and until that happens, help is highly appreciated!
 
-### Code generator limitations
+## Code generator limitations
 The current code generator is not complete, yet adding the missing features would only over-complicate an already hard-to-read code.
 Some parts of the `.tl` file _should_ be omitted, because they're "built-in" in the generated code (such as writing booleans, etc.).
 

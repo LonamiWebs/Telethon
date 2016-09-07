@@ -38,7 +38,7 @@ def generate_tlobjects(scheme_file):
                                'functions' if tlobject.is_function
                                else 'types')
 
-        if tlobject.namespace is not None:
+        if tlobject.namespace:
             out_dir = os.path.join(out_dir, tlobject.namespace)
 
         os.makedirs(out_dir, exist_ok=True)
@@ -188,7 +188,7 @@ def get_full_file_name(tlobject):
     """Gets the full file name for the given TLObject (tl.type.full.path)"""
 
     fullname = get_file_name(tlobject, add_extension=False)
-    if tlobject.namespace is not None:
+    if tlobject.namespace:
         fullname = '{}.{}'.format(tlobject.namespace, fullname)
 
     if tlobject.is_function:
@@ -231,7 +231,7 @@ def write_onsend_code(builder, arg, args, name=None):
         if arg.type == 'true':
             return  # Exit, since True type is never written
         else:
-            builder.writeln('if {} is not None:'.format(name))
+            builder.writeln('if {}:'.format(name))
 
     if arg.is_vector:
         builder.writeln("writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
@@ -248,7 +248,7 @@ def write_onsend_code(builder, arg, args, name=None):
         builder.writeln('flags = 0')
         for flag in args:
             if flag.is_flag:
-                builder.writeln('flags |= (1 << {}) if {} is not None else 0'
+                builder.writeln('flags |= (1 << {}) if {} else 0'
                                 .format(flag.flag_index, 'self.{}'.format(flag.name)))
 
         builder.writeln('writer.write_int(flags)')

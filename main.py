@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     else:
         print('Loading interactive example...')
-
+        
         # First, initialize our TelegramClient and connect
         settings = load_settings()
         client = TelegramClient(session_user_id=settings.get('session_name', 'anonymous'),
@@ -49,6 +49,6 @@ if __name__ == '__main__':
             msg = input('Enter a message: ')
             if msg == '!q':
                 break
-            client.send_message(input_peer, msg)
+            client.send_message(input_peer, msg, markdown=True, no_web_page=True)
 
         print('Thanks for trying the interactive example! Exiting.')

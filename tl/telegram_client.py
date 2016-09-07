@@ -1,7 +1,7 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
 import platform
-import datetime
+from parser.markdown_parser import parse_message_entities
 
 import utils
 import network.authenticator
@@ -149,9 +149,18 @@ class TelegramClient:
                  TelegramClient.find_input_peer_name(dialog.peer, result.users, result.chats))
                 for dialog in result.dialogs]
 
-    def send_message(self, input_peer, message):
+    def send_message(self, input_peer, message, markdown=False, no_web_page=False):
         """Sends a message to the given input peer"""
-        request = SendMessageRequest(input_peer, message, utils.generate_random_long())
+        if markdown:
+            msg, entities = parse_message_entities(message)
+        else:
+            msg, entities = message, []
+
+        request = SendMessageRequest(peer=input_peer,
+                                     message=msg,
+                                     random_id=utils.generate_random_long(),
+                                     entities=entities,
+                                     no_webpage=no_web_page)
 
         self.sender.send(request)
         self.sender.receive(request)
