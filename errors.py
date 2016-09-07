@@ -115,6 +115,9 @@ class RPCError(Exception):
 
         'MSG_WAIT_FAILED': 'A waiting call returned an error.',
 
+        'CHAT_ADMIN_REQUIRED': 'Chat admin privileges are required to do that in the specified chat '
+                               '(for example, to send a message in a channel which is not yours).',
+
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
 

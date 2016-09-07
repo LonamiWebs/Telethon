@@ -13,9 +13,11 @@ from tl.all_tlobjects import tlobjects
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
-    def __init__(self, transport, session):
+    def __init__(self, transport, session, swallow_errors=True):
         self.transport = transport
         self.session = session
+        self.swallow_errors = swallow_errors
+
         self.need_confirmation = []  # Message IDs that need confirmation
         self.on_update_handlers = []
 
@@ -57,10 +59,17 @@ class MtProtoSender:
     def receive(self, request):
         """Receives the specified MTProtoRequest ("fills in it" the received data)"""
         while not request.confirm_received:
-            message, remote_msg_id, remote_sequence = self.decode_msg(self.transport.receive().body)
+            try:
+                message, remote_msg_id, remote_sequence = self.decode_msg(self.transport.receive().body)
 
-            with BinaryReader(message) as reader:
-                self.process_msg(remote_msg_id, remote_sequence, reader, request)
+                with BinaryReader(message) as reader:
+                    self.process_msg(remote_msg_id, remote_sequence, reader, request)
+
+            except RPCError as error:
+                if self.swallow_errors:
+                    print('A RPC error occurred when decoding a message: {}'.format(error))
+                else:
+                    raise error
 
 
     # endregion

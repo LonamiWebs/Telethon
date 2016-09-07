@@ -94,7 +94,11 @@ class TLObject:
                 if not arg.flag_indicator and not arg.generic_definition]
 
         args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
-        args_format = ', '.join(['str(self.{})'.format(arg.name) for arg in valid_args])
+
+        # Since Python's default representation for lists is using repr(), we need to str() manually on every item
+        args_format = ', '.join(['str(self.{})'.format(arg.name) if not arg.is_vector else
+                                 'None if not self.{0} else [str(_) for _ in self.{0}]'.format(arg.name)
+                                 for arg in valid_args])
 
         return ("'({} (ID: {}) = ({}))'.format({})"
                 .format(fullname, hex(self.id), args, args_format))

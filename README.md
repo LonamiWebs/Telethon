@@ -34,9 +34,10 @@ def my_function(self, my_arguments):
     
     return request.result
 ```
-5. To determine how the result will look like, simply look at the original `.tl` definition. After the `=`,
+To determine how the result will look like, simply look at the original `.tl` definition. After the `=`,
 you will see the type. Let's see an example:
 `stickerPack#12b299d4 emoticon:string documents:Vector<long> = StickerPack;`
+
 As it turns out, the result is going to be an `StickerPack`. Without a second doubt, head into `tl/types/` and find it;
 open the file and see what the result will look like. Alternatively, you can simply `print(str(request.result))`!
 
