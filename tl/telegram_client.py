@@ -1,4 +1,4 @@
-# This file is based on TLSharp
+# This file structure is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
 import platform
 from parser.markdown_parser import parse_message_entities
@@ -12,8 +12,8 @@ from tl import Session
 from tl.types import PeerUser, PeerChat, PeerChannel, InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
-from tl.functions.auth import CheckPhoneRequest, SendCodeRequest, SignInRequest
-from tl.functions.messages import GetDialogsRequest, SendMessageRequest
+from tl.functions.auth import SendCodeRequest, SignInRequest
+from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest
 
 
 class TelegramClient:
@@ -126,16 +126,8 @@ class TelegramClient:
         return self.session.user
 
     def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
-        """Returns 'count' dialogs in a (dialog, display, input_peer) list format"""
-
-        # Telegram wants the offset_date in an unix-timestamp format, not Python's datetime
-        # However that's not very comfortable, so calculate the correct value here
-        if offset_date is None:
-            offset_date = 0
-        else:
-            offset_date = int(offset_date.timestamp())
-
-        request = GetDialogsRequest(offset_date=offset_date,
+        """Returns a tuple of lists ([dialogs], [displays], [input_peers]) with 'count' items each"""
+        request = GetDialogsRequest(offset_date=TelegramClient.get_tg_date(offset_date),
                                     offset_id=offset_id,
                                     offset_peer=offset_peer,
                                     limit=count)
@@ -143,11 +135,10 @@ class TelegramClient:
         self.sender.send(request)
         self.sender.receive(request)
 
-        result = request.result
-        return [(dialog,
-                 TelegramClient.find_display_name(dialog.peer, result.users, result.chats),
-                 TelegramClient.find_input_peer_name(dialog.peer, result.users, result.chats))
-                for dialog in result.dialogs]
+        r = request.result
+        return (r.dialogs,
+                [self.find_display_name(d.peer, r.users, r.chats) for d in r.dialogs],
+                [self.find_input_peer(d.peer, r.users, r.chats) for d in r.dialogs])
 
     def send_message(self, input_peer, message, markdown=False, no_web_page=False):
         """Sends a message to the given input peer"""
@@ -165,9 +156,54 @@ class TelegramClient:
         self.sender.send(request)
         self.sender.receive(request)
 
+    def get_message_history(self, input_peer, limit=20,
+                            offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0):
+        """
+        Gets the message history for the specified InputPeer
+
+        :param input_peer:  The InputPeer from whom to retrieve the message history
+        :param limit:       Number of messages to be retrieved
+        :param offset_date: Offset date (messages *previous* to this date will be retrieved)
+        :param offset_id:   Offset message ID (only messages *previous* to the given ID will be retrieved)
+        :param max_id:      All the messages with a higher (newer) ID or equal to this will be excluded
+        :param min_id:      All the messages with a lower (older) ID or equal to this will be excluded
+        :param add_offset:  Additional message offset (all of the specified offsets + this offset = older messages)
+
+        :return: A tuple containing total message count and two more lists ([messages], [senders]).
+                 Note that the sender can be null if it was not found!
+        """
+        request = GetHistoryRequest(input_peer,
+                                    limit=limit,
+                                    offset_date=self.get_tg_date(offset_date),
+                                    offset_id=offset_id,
+                                    max_id=max_id,
+                                    min_id=min_id,
+                                    add_offset=add_offset)
+
+        self.sender.send(request)
+        self.sender.receive(request)
+
+        result = request.result
+        # The result may be a messages slice (not all messages were retrieved) or
+        # simply a messages TLObject. In the later case, no "count" attribute is specified:
+        # the total messages count is retrieved by counting all the retrieved messages
+        total_messages = getattr(result, 'count', len(result.messages))
+
+        return (total_messages,
+                result.messages,
+                [usr  # Create a list with the users...
+                 if usr.id == msg.from_id else None  # ...whose ID equals the current message ID...
+                 for msg in result.messages  # ...from all the messages...
+                 for usr in result.users])  # ...from all of the available users
+
     # endregion
 
     # region Utilities
+
+    @staticmethod
+    def get_tg_date(datetime):
+        """Parses a datetime Python object to Telegram's required integer Unix timestamp"""
+        return 0 if datetime is None else int(datetime.timestamp())
 
     @staticmethod
     def find_display_name(peer, users, chats):
@@ -192,7 +228,7 @@ class TelegramClient:
         return None
 
     @staticmethod
-    def find_input_peer_name(peer, users, chats):
+    def find_input_peer(peer, users, chats):
         """Searches the given peer in both users and chats and returns an InputPeer for it.
            Returns None if it was not found"""
         try:

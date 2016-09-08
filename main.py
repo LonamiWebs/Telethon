@@ -2,6 +2,8 @@ import tl_generator
 from tl.telegram_client import TelegramClient
 from utils.helpers import load_settings
 
+from datetime import datetime
+
 
 if __name__ == '__main__':
     if not tl_generator.tlobjects_exist():
@@ -27,28 +29,51 @@ if __name__ == '__main__':
             code = input('Enter the code you just received: ')
             client.make_auth(settings['user_phone'], code)
 
-        # After that, load the top dialogs and show a list
-        # We use zip(*list_of_tuples) to pair all the elements together,
-        # hence being able to return a new list of each triple pair!
-        # See http://stackoverflow.com/a/12974504/4759433 for a better explanation
-        dialogs, displays, inputs = zip(*client.get_dialogs(8))
-
-        for i, display in enumerate(displays):
-            i += 1  # 1-based index for normies
-            print('{}. {}'.format(i, display))
-
-        # Let the user decide who they want to talk to
-        i = int(input('Who do you want to send messages to?: ')) - 1
-        dialog = dialogs[i]
-        display = displays[i]
-        input_peer = inputs[i]
-
-        # And start a while loop!
-        print('You are now sending messages to "{}". Type "!q" when you want to exit.'.format(display))
+        # Enter a while loop to chat as long as the user wants
         while True:
-            msg = input('Enter a message: ')
-            if msg == '!q':
+            # Retrieve the top dialogs
+            dialogs, displays, inputs = client.get_dialogs(8)
+
+            # Display them so the user can choose
+            for i, display in enumerate(displays):
+                i += 1  # 1-based index for normies
+                print('{}. {}'.format(i, display))
+
+            # Let the user decide who they want to talk to
+            i = int(input('Who do you want to send messages to (0 to exit)?: ')) - 1
+            if i == -1:
                 break
-            client.send_message(input_peer, msg, markdown=True, no_web_page=True)
+
+            # Retrieve the selected user
+            dialog = dialogs[i]
+            display = displays[i]
+            input_peer = inputs[i]
+
+            # Show some information
+            print('You are now sending messages to "{}". Available commands:'.format(display))
+            print('  !q: Quits the current chat.')
+            print('  !h: prints the latest messages (message History) of the chat.')
+
+            # And start a while loop to chat
+            while True:
+                msg = input('Enter a message: ')
+                # Quit
+                if msg == '!q':
+                    break
+
+                # History
+                elif msg == '!h':
+                    # First retrieve the messages and some information
+                    total_count, messages, senders = client.get_message_history(input_peer, limit=10)
+                    # Iterate over all (in reverse order so the latest appears the last in the console)
+                    # and print them in "[hh:mm] Sender: Message" text format
+                    for msg, sender in zip(reversed(messages), reversed(senders)):
+                        name = sender.first_name if sender else '???'
+                        date = datetime.fromtimestamp(msg.date)
+                        print('[{}:{}] {}: {}'.format(date.hour, date.minute, name, msg.message))
+
+                # Send chat message
+                else:
+                    client.send_message(input_peer, msg, markdown=True, no_web_page=True)
 
         print('Thanks for trying the interactive example! Exiting.')
