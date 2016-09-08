@@ -1,12 +1,13 @@
 # This file structure is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
 import platform
-from parser.markdown_parser import parse_message_entities
 
 import utils
 import network.authenticator
-from network import MtProtoSender, TcpTransport
+
 from errors import *
+from network import MtProtoSender, TcpTransport
+from parser.markdown_parser import parse_message_entities
 
 from tl import Session
 from tl.types import PeerUser, PeerChat, PeerChannel, InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty

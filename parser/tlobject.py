@@ -91,7 +91,7 @@ class TLObject:
         # Some arguments are not valid for being represented, such as the flag indicator or generic definition
         # (these have no explicit values until used)
         valid_args = [arg for arg in self.args
-                if not arg.flag_indicator and not arg.generic_definition]
+                      if not arg.flag_indicator and not arg.generic_definition]
 
         args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
 
@@ -102,8 +102,6 @@ class TLObject:
 
         return ("'({} (ID: {}) = ({}))'.format({})"
                 .format(fullname, hex(self.id), args, args_format))
-
-
 
 
 class TLArg:

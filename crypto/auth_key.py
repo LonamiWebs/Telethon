@@ -1,6 +1,5 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/AuthKey.cs
-from errors import *
 from utils import BinaryWriter, BinaryReader
 import utils
 

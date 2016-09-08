@@ -1,6 +1,12 @@
 import re
 
 
+class TLGeneratorNotRan(Exception):
+    """Occurs when you should've ran `tl_generator.py`, but you haven't"""
+    def __init__(self):
+        super().__init__(self, 'You must run `python3 tl_generator.py` first. #ReadTheDocs!')
+
+
 class InvalidParameterError(Exception):
     """Occurs when an invalid parameter is given, for example,
     when either A or B are required but none is given"""

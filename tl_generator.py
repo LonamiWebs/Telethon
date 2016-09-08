@@ -2,8 +2,7 @@ import os
 import re
 import shutil
 
-from parser.tl_parser import TLParser
-from parser.source_builder import SourceBuilder
+from parser import SourceBuilder, TLParser
 
 
 def tlobjects_exist():
