@@ -26,16 +26,13 @@ class RSAServerKey:
             if length < 235:
                 writer.write(utils.generate_random_bytes(235 - length))
 
-            cipher_text = utils.get_byte_array(
-                pow(int.from_bytes(writer.get_bytes(), byteorder='big'), self.e, self.m),
-                signed=False)
+            result = int.from_bytes(writer.get_bytes(), byteorder='big')
+            result = pow(result, self.e, self.m)
 
-            if len(cipher_text) == 256:
-                return cipher_text
-
-            else:
-                padding = bytes(256 - len(cipher_text))
-                return padding + cipher_text
+            # If the result byte count is less than 256, since the byte order is big,
+            # the non-used bytes on the left will be 0 and act as padding,
+            # without need of any additional checks
+            return int.to_bytes(result, length=256, byteorder='big', signed=False)
 
 
 class RSA:

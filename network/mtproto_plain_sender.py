@@ -26,8 +26,8 @@ class MtProtoPlainSender:
 
     def receive(self):
         """Receives a plain packet, returning the body of the response"""
-        result = self._transport.receive()
-        with BinaryReader(result.body) as reader:
+        seq, body = self._transport.receive()
+        with BinaryReader(body) as reader:
             auth_key_id = reader.read_long()
             msg_id = reader.read_long()
             message_length = reader.read_int()

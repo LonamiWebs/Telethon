@@ -1,41 +1,49 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpTransport.cs
-from network import TcpMessage, TcpClient
+from network import TcpClient
 from binascii import crc32
 from errors import *
+from utils import BinaryWriter
 
 
 class TcpTransport:
     def __init__(self, ip_address, port):
-        self._tcp_client = TcpClient()
-        self._send_counter = 0
+        self.tcp_client = TcpClient()
+        self.send_counter = 0
 
-        self._tcp_client.connect(ip_address, port)
+        self.tcp_client.connect(ip_address, port)
 
+    # Original reference: https://core.telegram.org/mtproto#tcp-transport
+    # The packets are encoded as: total length, sequence number, packet and checksum (CRC32)
     def send(self, packet):
         """Sends the given packet (bytes array) to the connected peer"""
-        if not self._tcp_client.connected:
+        if not self.tcp_client.connected:
             raise ConnectionError('Client not connected to server.')
 
-        # Get a TcpMessage which contains the given packet
-        tcp_message = TcpMessage(self._send_counter, packet)
+        with BinaryWriter() as writer:
+            writer.write_int(len(packet) + 12)  # 12 = size_of (integer) * 3
+            writer.write_int(self.send_counter)
+            writer.write(packet)
 
-        self._tcp_client.write(tcp_message.encode())
-        self._send_counter += 1
+            crc = crc32(writer.get_bytes())
+            writer.write_int(crc, signed=False)
+
+            self.tcp_client.write(writer.get_bytes())
+            self.send_counter += 1
 
     def receive(self):
-        """Receives a TcpMessage from the connected peer"""
+        """Receives a TCP message (tuple(sequence number, body)) from the connected peer"""
 
-        # First read everything
-        packet_length_bytes = self._tcp_client.read(4)
+        # First read everything we need
+        packet_length_bytes = self.tcp_client.read(4)
         packet_length = int.from_bytes(packet_length_bytes, byteorder='little')
 
-        seq_bytes = self._tcp_client.read(4)
+        seq_bytes = self.tcp_client.read(4)
         seq = int.from_bytes(seq_bytes, byteorder='little')
 
-        body = self._tcp_client.read(packet_length - 12)
+        body = self.tcp_client.read(packet_length - 12)
 
-        checksum = int.from_bytes(self._tcp_client.read(4), byteorder='little', signed=False)
+        checksum = int.from_bytes(self.tcp_client.read(4), byteorder='little', signed=False)
 
         # Then perform the checks
         rv = packet_length_bytes + seq_bytes + body
@@ -44,9 +52,9 @@ class TcpTransport:
         if checksum != valid_checksum:
             raise InvalidChecksumError(checksum, valid_checksum)
 
-        # If we passed the tests, we can then return a valid TcpMessage
-        return TcpMessage(seq, body)
+        # If we passed the tests, we can then return a valid TCP message
+        return seq, body
 
     def close(self):
-        if self._tcp_client.connected:
-            self._tcp_client.close()
+        if self.tcp_client.connected:
+            self.tcp_client.close()

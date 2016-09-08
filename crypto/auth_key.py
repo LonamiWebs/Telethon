@@ -1,18 +1,13 @@
 # This file is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/AuthKey.cs
-import utils
 from errors import *
 from utils import BinaryWriter, BinaryReader
+import utils
 
 
 class AuthKey:
-    def __init__(self, gab=None, data=None):
-        if gab:
-            self.key = utils.get_byte_array(gab, signed=False)
-        elif data:
-            self.key = data
-        else:
-            raise InvalidParameterError('Either a gab integer or data bytes array must be provided')
+    def __init__(self, data):
+        self.key = data
 
         with BinaryReader(utils.sha1(self.key)) as reader:
             self.aux_hash = reader.read_long(signed=False)
@@ -26,5 +21,5 @@ class AuthKey:
             writer.write_byte(number)
             writer.write_long(self.aux_hash, signed=False)
 
-            new_nonce_hash = utils.sha1(writer.get_bytes())[4:20]
+            new_nonce_hash = utils.calc_msg_key(writer.get_bytes())
             return new_nonce_hash

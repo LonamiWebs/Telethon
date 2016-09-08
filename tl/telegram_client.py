@@ -45,30 +45,34 @@ class TelegramClient:
         """Connects to the Telegram servers, executing authentication if required.
            Note that authenticating to the Telegram servers is not the same as authenticating
            the app, which requires to send a code first."""
+        try:
+            if not self.session.auth_key or reconnect:
+                self.session.auth_key, self.session.time_offset = \
+                    network.authenticator.do_authentication(self.transport)
 
-        if not self.session.auth_key or reconnect:
-            self.session.auth_key, self.session.time_offset = network.authenticator.do_authentication(self.transport)
-            self.session.save()
+                self.session.save()
 
-        self.sender = MtProtoSender(self.transport, self.session)
-        self.sender.add_update_handler(self.on_update)
+            self.sender = MtProtoSender(self.transport, self.session)
+            self.sender.add_update_handler(self.on_update)
 
-        # Always init connection by using the latest layer, not only when not reconnecting (as in original TLSharp's)
-        # Otherwise, the server thinks that were using the oldest layer!
-        # (Note that this is mainly untested, but it seems like it since some errors point in that direction)
-        request = InvokeWithLayerRequest(layer=self.layer,
-                                         query=InitConnectionRequest(api_id=self.api_id,
-                                                                     device_model=platform.node(),
-                                                                     system_version=platform.system(),
-                                                                     app_version='0.2',
-                                                                     lang_code='en',
-                                                                     query=GetConfigRequest()))
+            # Now it's time to send an InitConnectionRequest
+            # This must always be invoked with the layer we'll be using
+            request = InvokeWithLayerRequest(layer=self.layer,
+                                             query=InitConnectionRequest(api_id=self.api_id,
+                                                                         device_model=platform.node(),
+                                                                         system_version=platform.system(),
+                                                                         app_version='0.2',
+                                                                         lang_code='en',
+                                                                         query=GetConfigRequest()))
 
-        self.sender.send(request)
-        self.sender.receive(request)
+            self.sender.send(request)
+            self.sender.receive(request)
 
-        self.dc_options = request.result.dc_options
-        return True
+            self.dc_options = request.result.dc_options
+            return True
+        except RPCError as error:
+            print('Could not stabilise initial connection: {}'.format(error))
+            return False
 
     def reconnect_to_dc(self, dc_id):
         """Reconnects to the specified DC ID. This is automatically called after an InvalidDCError is raised"""

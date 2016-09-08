@@ -1,5 +1,5 @@
 from io import BytesIO, BufferedReader
-from tl import tlobjects
+from tl.all_tlobjects import tlobjects
 from struct import unpack
 from errors import *
 import inspect

@@ -22,19 +22,25 @@ class Session:
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
-        with open('{}.session'.format(self.session_user_id), 'wb') as file:
-            pickle.dump(self, file)
+        if self.session_user_id:
+            with open('{}.session'.format(self.session_user_id), 'wb') as file:
+                pickle.dump(self, file)
 
     @staticmethod
     def try_load_or_create_new(session_user_id):
-        """Loads a saved session_user_id session, or creates a new one if none existed before"""
-        filepath = '{}.session'.format(session_user_id)
+        """Loads a saved session_user_id session, or creates a new one if none existed before.
+           If the given session_user_id is None, we assume that it is for testing purposes"""
+        if session_user_id is None:
+            return Session(None)
 
-        if file_exists(filepath):
-            with open(filepath, 'rb') as file:
-                return pickle.load(file)
         else:
-            return Session(session_user_id)
+            filepath = '{}.session'.format(session_user_id)
+
+            if file_exists(filepath):
+                with open(filepath, 'rb') as file:
+                    return pickle.load(file)
+            else:
+                return Session(session_user_id)
 
     def get_new_msg_id(self):
         """Generates a new message ID based on the current time (in ms) since epoch"""

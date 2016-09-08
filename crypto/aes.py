@@ -35,7 +35,7 @@ class AES:
     @staticmethod
     def encrypt_ige(plain_text, key, iv):
         """Encrypts the given text in 16-bytes blocks by using the given key and 32-bytes initialization vector"""
-        # TODO: Random padding
+        # TODO: Random padding?
         if len(plain_text) % 16 != 0:  # Add padding if and only if it's not evenly divisible by 16 already
             padding = bytes(16 - len(plain_text) % 16)
             plain_text += padding

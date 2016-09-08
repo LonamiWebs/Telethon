@@ -2,8 +2,7 @@ import os
 from utils import BinaryWriter
 import hashlib
 
-
-bits_per_byte = 8
+# region Multiple utilities
 
 
 def generate_random_long(signed=True):
@@ -16,12 +15,24 @@ def generate_random_bytes(count):
     return os.urandom(count)
 
 
-def get_byte_array(integer, signed):
-    """Gets the arbitrary-length byte array corresponding to the given integer"""
-    bits = integer.bit_length()
-    byte_length = (bits + bits_per_byte - 1) // bits_per_byte
-    # For some strange reason, this has to be big!
-    return int.to_bytes(integer, length=byte_length, byteorder='big', signed=signed)
+def load_settings(path='api/settings'):
+    """Loads the user settings located under `api/`"""
+    settings = {}
+    with open(path, 'r', encoding='utf-8') as file:
+        for line in file:
+            value_pair = line.split('=')
+            left = value_pair[0].strip()
+            right = value_pair[1].strip()
+            if right.isnumeric():
+                settings[left] = int(right)
+            else:
+                settings[left] = right
+
+    return settings
+
+# endregion
+
+# region Cryptographic related utils
 
 
 def calc_key(shared_key, msg_key, client):
@@ -42,11 +53,6 @@ def calc_key(shared_key, msg_key, client):
 def calc_msg_key(data):
     """Calculates the message key from the given data"""
     return sha1(data)[4:20]
-
-
-def calc_msg_key_offset(data, offset, limit):
-    """Calculates the message key from offset given data, with an optional offset and limit"""
-    return sha1(data[offset:offset + limit])[4:20]
 
 
 def generate_key_data_from_nonces(server_nonce, new_nonce):
@@ -73,18 +79,4 @@ def sha1(data):
     sha.update(data)
     return sha.digest()
 
-
-def load_settings():
-    """Loads the user settings located under `api/`"""
-    settings = {}
-    with open('api/settings', 'r', encoding='utf-8') as file:
-        for line in file:
-            value_pair = line.split('=')
-            left = value_pair[0].strip()
-            right = value_pair[1].strip()
-            if right.isnumeric():
-                settings[left] = int(right)
-            else:
-                settings[left] = right
-
-    return settings
+# endregion
