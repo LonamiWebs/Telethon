@@ -9,12 +9,16 @@ from errors import *
 from network import MtProtoSender, TcpTransport
 from parser.markdown_parser import parse_message_entities
 
+# For sending and receiving requests
 from tl import Session
 from tl.types import PeerUser, PeerChat, PeerChannel, InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
 from tl.functions.auth import SendCodeRequest, SignInRequest
 from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest
+
+# For working with updates
+from tl.types import UpdateShortMessage
 
 
 class TelegramClient:
@@ -89,6 +93,11 @@ class TelegramClient:
         self.session.save()
 
         self.connect(reconnect=True)
+
+    def disconnect(self):
+        """Disconnects from the Telegram server **and pauses all the spawned threads**"""
+        if self.sender:
+            self.sender.disconnect()
 
     # endregion
 
@@ -261,6 +270,10 @@ class TelegramClient:
     def on_update(self, tlobject):
         """This method is fired when there are updates from Telegram.
         Add your own implementation below, or simply override it!"""
-        print('We have an update: {}'.format(str(tlobject)))
+
+        # Only show incoming messages
+        if type(tlobject) is UpdateShortMessage:
+            if not tlobject.out:
+                print('> User with ID {} said "{}"'.format(tlobject.user_id, tlobject.message))
 
     # endregion

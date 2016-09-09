@@ -54,6 +54,7 @@ def generate_tlobjects(scheme_file):
         with open(filename, 'w', encoding='utf-8') as file:
             # Let's build the source code!
             with SourceBuilder(file) as builder:
+                # Both types and functions inherit from MTProtoRequest so they all can be sent
                 builder.writeln('from tl.mtproto_request import MTProtoRequest')
                 builder.writeln()
                 builder.writeln()
@@ -105,6 +106,9 @@ def generate_tlobjects(scheme_file):
                     builder.writeln('self.result = None')
                     builder.writeln('self.confirmed = True  # Confirmed by default')
 
+                # Create an attribute that stores the TLObject's constructor ID
+                builder.writeln('self.constructor_id = {}'.format(hex(tlobject.id)))
+
                 # Set the arguments
                 if args:
                     # Leave an empty line if there are any args
@@ -115,7 +119,7 @@ def generate_tlobjects(scheme_file):
 
                 # Write the on_send(self, writer) function
                 builder.writeln('def on_send(self, writer):')
-                builder.writeln("writer.write_int({}, signed=False)  # {}'s constructor ID"
+                builder.writeln('writer.write_int(self.constructor_id, signed=False)'
                                 .format(hex(tlobject.id), tlobject.name))
 
                 for arg in tlobject.args:

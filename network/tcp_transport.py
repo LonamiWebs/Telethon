@@ -58,3 +58,12 @@ class TcpTransport:
     def close(self):
         if self.tcp_client.connected:
             self.tcp_client.close()
+
+    def cancel_receive(self):
+        """Cancels (stops) trying to receive from the remote peer and
+           stops the current thread until it's cancelled"""
+        self.tcp_client.cancel_read()
+
+    def get_client_delay(self):
+        """Gets the client read delay"""
+        return self.tcp_client.delay

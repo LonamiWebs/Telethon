@@ -3,6 +3,7 @@
 import gzip
 from errors import *
 from time import sleep
+from threading import Thread
 
 import utils
 from crypto import AES
@@ -20,13 +21,27 @@ class MtProtoSender:
         self.need_confirmation = []  # Message IDs that need confirmation
         self.on_update_handlers = []
 
+        # Set up updates thread
+        self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
+        self.updates_thread_running = True
+        self.updates_thread_paused = True
+
+        self.updates_thread.start()
+
+    def disconnect(self):
+        """Disconnects and **stops all the running threads**"""
+        self.updates_thread_running = False
+        self.transport.cancel_receive()
+        self.transport.close()
+
     def add_update_handler(self, handler):
-        """Adds an update handler (a method with one argument, the received TLObject)
-        that is fired when there are updates available"""
+        """Adds an update handler (a method with one argument, the received
+           TLObject) that is fired when there are updates available"""
         self.on_update_handlers.append(handler)
 
     def generate_sequence(self, confirmed):
-        """Generates the next sequence number, based on whether it was confirmed yet or not"""
+        """Generates the next sequence number, based on whether it
+           was confirmed yet or not"""
         if confirmed:
             result = self.session.sequence * 2 + 1
             self.session.sequence += 1
@@ -37,32 +52,42 @@ class MtProtoSender:
     # region Send and receive
 
     def send(self, request):
-        """Sends the specified MTProtoRequest, previously sending any message which needed confirmation"""
+        """Sends the specified MTProtoRequest, previously sending any message
+           which needed confirmation. This also pauses the updates thread"""
 
-        # First check if any message needs confirmation, if this is the case, send an "AckRequest"
+        # Pause the updates thread: we cannot use self.transport at the same time!
+        self.pause_updates_thread()
+
+        # If any message needs confirmation send an AckRequest first
         if self.need_confirmation:
-            msgs_ack = MsgsAck(self.need_confirmation)
-            with BinaryWriter() as writer:
-                msgs_ack.on_send(writer)
-                self.send_packet(writer.get_bytes(), msgs_ack)
-                del self.need_confirmation[:]
+            msgs_ack = MsgsAck(self.need_confirmation[:])
+            del self.need_confirmation[:]
+            self.send(msgs_ack)
 
-        # Then send our packed request
+        # Finally send our packed request
         with BinaryWriter() as writer:
             request.on_send(writer)
             self.send_packet(writer.get_bytes(), request)
 
         # And update the saved session
         self.session.save()
+        # Don't resume the updates thread yet,
+        # since every send() is preceded by a receive()
 
     def receive(self, request):
-        """Receives the specified MTProtoRequest ("fills in it" the received data)"""
+        """Receives the specified MTProtoRequest ("fills in it"
+           the received data). This also restores the updates thread"""
+
+        # Don't stop receiving until we get the request we wanted
         while not request.confirm_received:
             seq, body = self.transport.receive()
             message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
             with BinaryReader(message) as reader:
                 self.process_msg(remote_msg_id, remote_sequence, reader, request)
+
+        # Once we have our request, restore the updates thread
+        self.restore_updates_thread()
 
     # endregion
 
@@ -120,31 +145,34 @@ class MtProtoSender:
 
         return message, remote_msg_id, remote_sequence
 
-    def process_msg(self, msg_id, sequence, reader, request):
-        """Processes and handles a Telegram message"""
+    def process_msg(self, msg_id, sequence, reader, request, only_updates=False):
+        """Processes and handles a Telegram message. Optionally, this
+           function will only check for updates (hence the request can be None)"""
+
         # TODO Check salt, session_id and sequence_number
         self.need_confirmation.append(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        # The following codes are "parsed manually"
-        if code == 0xf35c6d01:  # rpc_result
-            return self.handle_rpc_result(msg_id, sequence, reader, request)
-        elif code == 0x73f1f8dc:  # msg_container
-            return self.handle_container(msg_id, sequence, reader, request)
-        elif code == 0x3072cfa1:  # gzip_packed
-            return self.handle_gzip_packed(msg_id, sequence, reader, request)
-        elif code == 0xedab447b:  # bad_server_salt
-            return self.handle_bad_server_salt(msg_id, sequence, reader, request)
-        elif code == 0xa7eff811:  # bad_msg_notification
-            return self.handle_bad_msg_notification(msg_id, sequence, reader)
-        else:
-            # If the code is not parsed manually, then it was parsed by the code generator!
-            # In this case, we will simply treat the incoming TLObject as an Update,
-            # if we can first find a matching TLObject
-            if code in tlobjects.keys():
-                return self.handle_update(msg_id, sequence, reader)
+        # The following codes are "parsed manually" (and do not refer to an update)
+        if not only_updates:
+            if code == 0xf35c6d01:  # rpc_result
+                return self.handle_rpc_result(msg_id, sequence, reader, request)
+            if code == 0x73f1f8dc:  # msg_container
+                return self.handle_container(msg_id, sequence, reader, request)
+            if code == 0x3072cfa1:  # gzip_packed
+                return self.handle_gzip_packed(msg_id, sequence, reader, request)
+            if code == 0xedab447b:  # bad_server_salt
+                return self.handle_bad_server_salt(msg_id, sequence, reader, request)
+            if code == 0xa7eff811:  # bad_msg_notification
+                return self.handle_bad_msg_notification(msg_id, sequence, reader)
+
+        # If the code is not parsed manually, then it was parsed by the code generator!
+        # In this case, we will simply treat the incoming TLObject as an Update,
+        # if we can first find a matching TLObject
+        if code in tlobjects.keys():
+            return self.handle_update(msg_id, sequence, reader)
 
         print('Unknown message: {}'.format(hex(code)))
         return False
@@ -196,18 +224,22 @@ class MtProtoSender:
         error_code = reader.read_int()
         raise BadMessageError(error_code)
 
-    def handle_rpc_result(self, msg_id, sequence, reader, mtproto_request):
+    def handle_rpc_result(self, msg_id, sequence, reader, request):
         code = reader.read_int(signed=False)
         request_id = reader.read_long(signed=False)
         inner_code = reader.read_int(signed=False)
 
-        if request_id == mtproto_request.msg_id:
-            mtproto_request.confirm_received = True
+        if not request:
+            raise ValueError('Cannot handle RPC results if no request was specified. '
+                             'This should only happen when the updates thread does not work properly.')
+
+        if request_id == request.msg_id:
+            request.confirm_received = True
 
         if inner_code == 0x2144ca19:  # RPC Error
             error = RPCError(code=reader.read_int(), message=reader.tgread_string())
             if error.must_resend:
-                mtproto_request.confirm_received = False
+                request.confirm_received = False
 
             if error.message.startswith('FLOOD_WAIT_'):
                 print('Should wait {}s. Sleeping until then.'.format(error.additional_data))
@@ -223,11 +255,11 @@ class MtProtoSender:
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
                 with BinaryReader(unpacked_data) as compressed_reader:
-                    mtproto_request.on_response(compressed_reader)
+                    request.on_response(compressed_reader)
 
             else:
                 reader.seek(-4)
-                mtproto_request.on_response(reader)
+                request.on_response(reader)
 
     def handle_gzip_packed(self, msg_id, sequence, reader, mtproto_request):
         code = reader.read_int(signed=False)
@@ -238,4 +270,30 @@ class MtProtoSender:
             self.process_msg(msg_id, sequence, compressed_reader, mtproto_request)
 
     # endregion
-    pass
+
+    def pause_updates_thread(self):
+        """Pauses the updates thread and sleeps until it's safe to continue"""
+        if not self.updates_thread_paused:
+            self.updates_thread_paused = True
+            self.transport.cancel_receive()
+
+    def restore_updates_thread(self):
+        """Restores the updates thread"""
+        self.updates_thread_paused = False
+
+    # TODO avoid, if possible using sleeps; Use thread locks instead
+    def updates_thread_method(self):
+        """This method will run until specified and listen for incoming updates"""
+        while self.updates_thread_running:
+            if not self.updates_thread_paused:
+                try:
+                    seq, body = self.transport.receive()
+                    message, remote_msg_id, remote_sequence = self.decode_msg(body)
+
+                    with BinaryReader(message) as reader:
+                        self.process_msg(remote_msg_id, remote_sequence, reader, request=None, only_updates=True)
+
+                except ReadCancelledError:
+                    pass
+
+            sleep(self.transport.get_client_delay())

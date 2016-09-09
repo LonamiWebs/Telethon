@@ -1,6 +1,12 @@
 import re
 
 
+class ReadCancelledError(Exception):
+    """Occurs when a read operation was cancelled"""
+    def __init__(self):
+        super().__init__(self, 'You must run `python3 tl_generator.py` first. #ReadTheDocs!')
+
+
 class TLGeneratorNotRan(Exception):
     """Occurs when you should've ran `tl_generator.py`, but you haven't"""
     def __init__(self):

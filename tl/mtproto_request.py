@@ -15,6 +15,7 @@ class MTProtoRequest:
         self.confirm_received = False
 
         # These should be overrode
+        self.constructor_id = 0
         self.confirmed = False
         self.responded = False
 

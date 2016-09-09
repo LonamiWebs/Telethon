@@ -78,4 +78,5 @@ if __name__ == '__main__':
             else:
                 client.send_message(input_peer, msg, markdown=True, no_web_page=True)
 
-    print('Thanks for trying the interactive example! Exiting.')
+    print('Thanks for trying the interactive example! Exiting...')
+    client.disconnect()
