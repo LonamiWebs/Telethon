@@ -10,6 +10,7 @@ from network import MtProtoSender, TcpTransport
 from parser.markdown_parser import parse_message_entities
 
 # For sending and receiving requests
+from tl import MTProtoRequest
 from tl import Session
 from tl.types import PeerUser, PeerChat, PeerChannel, InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
@@ -62,18 +63,22 @@ class TelegramClient:
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
-            request = InvokeWithLayerRequest(layer=self.layer,
-                                             query=InitConnectionRequest(api_id=self.api_id,
-                                                                         device_model=platform.node(),
-                                                                         system_version=platform.system(),
-                                                                         app_version='0.2',
-                                                                         lang_code='en',
-                                                                         query=GetConfigRequest()))
+            query = InitConnectionRequest(api_id=self.api_id,
+                                          device_model=platform.node(),
+                                          system_version=platform.system(),
+                                          app_version='0.3',
+                                          lang_code='en',
+                                          query=GetConfigRequest())
 
-            self.sender.send(request)
-            self.sender.receive(request)
+            result = self.invoke(InvokeWithLayerRequest(layer=self.layer, query=query))
 
-            self.dc_options = request.result.dc_options
+            # Only listen for updates if we're authorized
+            if self.is_user_authorized():
+                self.sender.set_listen_for_updates(True)
+
+            # We're only interested in the DC options,
+            # although many other options are available!
+            self.dc_options = result.dc_options
             return True
         except RPCError as error:
             print('Could not stabilise initial connection: {}'.format(error))
@@ -114,11 +119,9 @@ class TelegramClient:
         completed = False
         while not completed:
             try:
-                self.sender.send(request)
-                self.sender.receive(request)
+                result = self.invoke(request)
+                self.phone_code_hashes[phone_number] = result.phone_code_hash
                 completed = True
-                if request.result:
-                    self.phone_code_hashes[phone_number] = request.result.phone_code_hash
 
             except InvalidDCError as error:
                 self.reconnect_to_dc(error.new_dc)
@@ -137,19 +140,19 @@ class TelegramClient:
         self.session.user = request.result.user
         self.session.save()
 
+        # Now that we're authorized, we can listen for incoming updates
+        self.sender.set_listen_for_updates(True)
+
         return self.session.user
 
     def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [displays], [input_peers]) with 'count' items each"""
-        request = GetDialogsRequest(offset_date=TelegramClient.get_tg_date(offset_date),
-                                    offset_id=offset_id,
-                                    offset_peer=offset_peer,
-                                    limit=count)
 
-        self.sender.send(request)
-        self.sender.receive(request)
+        r = self.invoke(GetDialogsRequest(offset_date=TelegramClient.get_tg_date(offset_date),
+                                               offset_id=offset_id,
+                                               offset_peer=offset_peer,
+                                               limit=count))
 
-        r = request.result
         return (r.dialogs,
                 [self.find_display_name(d.peer, r.users, r.chats) for d in r.dialogs],
                 [self.find_input_peer(d.peer, r.users, r.chats) for d in r.dialogs])
@@ -161,14 +164,11 @@ class TelegramClient:
         else:
             msg, entities = message, []
 
-        request = SendMessageRequest(peer=input_peer,
-                                     message=msg,
-                                     random_id=utils.generate_random_long(),
-                                     entities=entities,
-                                     no_webpage=no_web_page)
-
-        self.sender.send(request)
-        self.sender.receive(request)
+        self.invoke(SendMessageRequest(peer=input_peer,
+                                       message=msg,
+                                       random_id=utils.generate_random_long(),
+                                       entities=entities,
+                                       no_webpage=no_web_page))
 
     def get_message_history(self, input_peer, limit=20,
                             offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0):
@@ -186,29 +186,35 @@ class TelegramClient:
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        request = GetHistoryRequest(input_peer,
-                                    limit=limit,
-                                    offset_date=self.get_tg_date(offset_date),
-                                    offset_id=offset_id,
-                                    max_id=max_id,
-                                    min_id=min_id,
-                                    add_offset=add_offset)
+        result = self.invoke(GetHistoryRequest(input_peer,
+                                               limit=limit,
+                                               offset_date=self.get_tg_date(offset_date),
+                                               offset_id=offset_id,
+                                               max_id=max_id,
+                                               min_id=min_id,
+                                               add_offset=add_offset))
 
-        self.sender.send(request)
-        self.sender.receive(request)
-
-        result = request.result
         # The result may be a messages slice (not all messages were retrieved) or
         # simply a messages TLObject. In the later case, no "count" attribute is specified:
         # the total messages count is retrieved by counting all the retrieved messages
         total_messages = getattr(result, 'count', len(result.messages))
-
+        
         return (total_messages,
                 result.messages,
                 [usr  # Create a list with the users...
                  if usr.id == msg.from_id else None  # ...whose ID equals the current message ID...
                  for msg in result.messages  # ...from all the messages...
                  for usr in result.users])  # ...from all of the available users
+
+    def invoke(self, request):
+        """Invokes an MTProtoRequest and returns its results"""
+        if not issubclass(type(request), MTProtoRequest):
+            raise ValueError('You can only invoke MtProtoRequests')
+
+        self.sender.send(request)
+        self.sender.receive(request)
+
+        return request.result
 
     # endregion
 

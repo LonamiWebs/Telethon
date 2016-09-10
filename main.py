@@ -42,7 +42,13 @@ if __name__ == '__main__':
             print('{}. {}'.format(i, display))
 
         # Let the user decide who they want to talk to
-        i = int(input('Who do you want to send messages to (0 to exit)?: ')) - 1
+        i = None
+        while i is None:
+            try:
+                i = int(input('Who do you want to send messages to (0 to exit)?: ')) - 1
+            except ValueError:
+                pass
+
         if i == -1:
             break
 

@@ -14,7 +14,7 @@ from tl.all_tlobjects import tlobjects
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
-    def __init__(self, transport, session, check_updates=True):
+    def __init__(self, transport, session):
         self.transport = transport
         self.session = session
 
@@ -24,17 +24,13 @@ class MtProtoSender:
         # Store a Lock instance to make this class safely multi-threaded
         self.lock = Lock()
 
-        if check_updates:
-            self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
-            self.updates_thread_running = True
-            self.updates_thread_receiving = False
-
-            self.updates_thread.start()
+        self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
+        self.updates_thread_running = False
+        self.updates_thread_receiving = False
 
     def disconnect(self):
         """Disconnects and **stops all the running threads** if any"""
-        self.updates_thread_running = False
-        self.transport.cancel_receive()
+        self.set_listen_for_updates(enabled=False)
         self.transport.close()
 
     def add_update_handler(self, handler):
@@ -54,7 +50,7 @@ class MtProtoSender:
 
     # region Send and receive
 
-    def send(self, request):
+    def send(self, request, resend=False):
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation. This also pauses the updates thread"""
 
@@ -64,8 +60,9 @@ class MtProtoSender:
         if self.updates_thread_receiving:
             self.transport.cancel_receive()
 
-        # Now only us can be using this method
-        self.lock.acquire()
+        # Now only us can be using this method if we're not resending
+        if not resend:
+            self.lock.acquire()
 
         # If any message needs confirmation send an AckRequest first
         if self.need_confirmation:
@@ -161,9 +158,8 @@ class MtProtoSender:
 
         return message, remote_msg_id, remote_sequence
 
-    def process_msg(self, msg_id, sequence, reader, request, only_updates=False):
-        """Processes and handles a Telegram message. Optionally, this
-           function will only check for updates (hence the request can be None)"""
+    def process_msg(self, msg_id, sequence, reader, request=None):
+        """Processes and handles a Telegram message"""
 
         # TODO Check salt, session_id and sequence_number
         self.need_confirmation.append(msg_id)
@@ -171,18 +167,18 @@ class MtProtoSender:
         code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        # The following codes are "parsed manually" (and do not refer to an update)
-        if not only_updates:
-            if code == 0xf35c6d01:  # rpc_result
-                return self.handle_rpc_result(msg_id, sequence, reader, request)
-            if code == 0x73f1f8dc:  # msg_container
-                return self.handle_container(msg_id, sequence, reader, request)
-            if code == 0x3072cfa1:  # gzip_packed
-                return self.handle_gzip_packed(msg_id, sequence, reader, request)
-            if code == 0xedab447b:  # bad_server_salt
-                return self.handle_bad_server_salt(msg_id, sequence, reader, request)
-            if code == 0xa7eff811:  # bad_msg_notification
-                return self.handle_bad_msg_notification(msg_id, sequence, reader)
+        # The following codes are "parsed manually"
+        if code == 0xf35c6d01:  # rpc_result, (response of an RPC call, i.e., we sent a request)
+            return self.handle_rpc_result(msg_id, sequence, reader, request)
+
+        if code == 0x73f1f8dc:  # msg_container
+            return self.handle_container(msg_id, sequence, reader, request)
+        if code == 0x3072cfa1:  # gzip_packed
+            return self.handle_gzip_packed(msg_id, sequence, reader, request)
+        if code == 0xedab447b:  # bad_server_salt
+            return self.handle_bad_server_salt(msg_id, sequence, reader, request)
+        if code == 0xa7eff811:  # bad_msg_notification
+            return self.handle_bad_msg_notification(msg_id, sequence, reader)
 
         # If the code is not parsed manually, then it was parsed by the code generator!
         # In this case, we will simply treat the incoming TLObject as an Update,
@@ -218,7 +214,7 @@ class MtProtoSender:
 
         return False
 
-    def handle_bad_server_salt(self, msg_id, sequence, reader, mtproto_request):
+    def handle_bad_server_salt(self, msg_id, sequence, reader, request):
         code = reader.read_int(signed=False)
         bad_msg_id = reader.read_long(signed=False)
         bad_msg_seq_no = reader.read_int()
@@ -227,8 +223,11 @@ class MtProtoSender:
 
         self.session.salt = new_salt
 
+        if request is None:
+            raise ValueError('Tried to handle a bad server salt with no request specified')
+
         # Resend
-        self.send(mtproto_request)
+        self.send(request, resend=True)
 
         return True
 
@@ -241,13 +240,12 @@ class MtProtoSender:
         raise BadMessageError(error_code)
 
     def handle_rpc_result(self, msg_id, sequence, reader, request):
+        if not request:
+            raise ValueError('RPC results should only happen after a request was sent')
+
         code = reader.read_int(signed=False)
         request_id = reader.read_long(signed=False)
         inner_code = reader.read_int(signed=False)
-
-        if not request:
-            raise ValueError('Cannot handle RPC results if no request was specified. '
-                             'This should only happen when the updates thread does not work properly.')
 
         if request_id == request.msg_id:
             request.confirm_received = True
@@ -266,26 +264,36 @@ class MtProtoSender:
 
             else:
                 raise error
-
         else:
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
                 with BinaryReader(unpacked_data) as compressed_reader:
                     request.on_response(compressed_reader)
-
             else:
                 reader.seek(-4)
                 request.on_response(reader)
 
-    def handle_gzip_packed(self, msg_id, sequence, reader, mtproto_request):
+    def handle_gzip_packed(self, msg_id, sequence, reader, request):
         code = reader.read_int(signed=False)
         packed_data = reader.tgread_bytes()
         unpacked_data = gzip.decompress(packed_data)
 
         with BinaryReader(unpacked_data) as compressed_reader:
-            self.process_msg(msg_id, sequence, compressed_reader, mtproto_request)
+            return self.process_msg(msg_id, sequence, compressed_reader, request)
 
     # endregion
+
+    def set_listen_for_updates(self, enabled):
+        if enabled:
+            if not self.updates_thread_running:
+                self.updates_thread_running = True
+                self.updates_thread_receiving = False
+
+                self.updates_thread.start()
+        else:
+            self.updates_thread_running = False
+            if self.updates_thread_receiving:
+                self.transport.cancel_receive()
 
     def updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
@@ -297,7 +305,7 @@ class MtProtoSender:
                     message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
                     with BinaryReader(message) as reader:
-                        self.process_msg(remote_msg_id, remote_sequence, reader, request=None, only_updates=True)
+                        self.process_msg(remote_msg_id, remote_sequence, reader)
 
                 except ReadCancelledError:
                     pass
