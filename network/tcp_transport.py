@@ -60,8 +60,8 @@ class TcpTransport:
             self.tcp_client.close()
 
     def cancel_receive(self):
-        """Cancels (stops) trying to receive from the remote peer and
-           stops the current thread until it's cancelled"""
+        """Cancels (stops) trying to receive from the
+        remote peer and raises a ReadCancelledError"""
         self.tcp_client.cancel_read()
 
     def get_client_delay(self):

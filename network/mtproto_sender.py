@@ -14,22 +14,27 @@ from tl.all_tlobjects import tlobjects
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
-    def __init__(self, transport, session):
+    def __init__(self, transport, session, check_updates_delay=0.1):
+        """If check_updates_delay is None, no updates will be checked.
+           Otherwise, specifies every how often updates should be checked"""
+
         self.transport = transport
         self.session = session
 
         self.need_confirmation = []  # Message IDs that need confirmation
         self.on_update_handlers = []
 
-        # Set up updates thread
-        self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
-        self.updates_thread_running = True
-        self.updates_thread_paused = True
+        # Set up updates thread, if the delay is not None
+        self.check_updates_delay = check_updates_delay
+        if check_updates_delay:
+            self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
+            self.updates_thread_running = True
+            self.updates_thread_paused = True
 
-        self.updates_thread.start()
+            self.updates_thread.start()
 
     def disconnect(self):
-        """Disconnects and **stops all the running threads**"""
+        """Disconnects and **stops all the running threads** if any"""
         self.updates_thread_running = False
         self.transport.cancel_receive()
         self.transport.close()
