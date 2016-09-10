@@ -74,8 +74,8 @@ if __name__ == '__main__':
                     date = datetime.fromtimestamp(msg.date)
                     print('[{}:{}] {}: {}'.format(date.hour, date.minute, name, msg.message))
 
-            # Send chat message
-            else:
+            # Send chat message (if any)
+            elif msg:
                 client.send_message(input_peer, msg, markdown=True, no_web_page=True)
 
     print('Thanks for trying the interactive example! Exiting...')
