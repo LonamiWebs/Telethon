@@ -148,10 +148,10 @@ class TelegramClient:
     def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [displays], [input_peers]) with 'count' items each"""
 
-        r = self.invoke(GetDialogsRequest(offset_date=TelegramClient.get_tg_date(offset_date),
-                                               offset_id=offset_id,
-                                               offset_peer=offset_peer,
-                                               limit=count))
+        r = self.invoke(GetDialogsRequest(offset_date=offset_date,
+                                          offset_id=offset_id,
+                                          offset_peer=offset_peer,
+                                          limit=count))
 
         return (r.dialogs,
                 [self.find_display_name(d.peer, r.users, r.chats) for d in r.dialogs],
@@ -188,7 +188,7 @@ class TelegramClient:
         """
         result = self.invoke(GetHistoryRequest(input_peer,
                                                limit=limit,
-                                               offset_date=self.get_tg_date(offset_date),
+                                               offset_date=offset_date,
                                                offset_id=offset_id,
                                                max_id=max_id,
                                                min_id=min_id,
@@ -198,7 +198,7 @@ class TelegramClient:
         # simply a messages TLObject. In the later case, no "count" attribute is specified:
         # the total messages count is retrieved by counting all the retrieved messages
         total_messages = getattr(result, 'count', len(result.messages))
-        
+
         return (total_messages,
                 result.messages,
                 [usr  # Create a list with the users...
@@ -219,11 +219,6 @@ class TelegramClient:
     # endregion
 
     # region Utilities
-
-    @staticmethod
-    def get_tg_date(datetime):
-        """Parses a datetime Python object to Telegram's required integer Unix timestamp"""
-        return 0 if datetime is None else int(datetime.timestamp())
 
     @staticmethod
     def find_display_name(peer, users, chats):

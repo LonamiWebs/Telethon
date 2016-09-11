@@ -130,8 +130,8 @@ class TLArg:
             self.is_generic = False
         else:
             self.flag_indicator = False
-            self.type = type.lstrip('!')  # Strip the exclamation mark always to have only the name
             self.is_generic = type.startswith('!')
+            self.type = type.lstrip('!')  # Strip the exclamation mark always to have only the name
 
             # The type may be a flag (flags.IDX?REAL_TYPE)
             # Note that «flags» is NOT the flags name; this is determined by a previous argument
@@ -147,6 +147,12 @@ class TLArg:
             if vector_match:
                 self.is_vector = True
                 self.type = vector_match.group(1)  # Update the type to match the one inside the vector
+
+            # The name may contain "date" in it, if this is the case and the type is "int",
+            # we can safely assume that this should be treated as a "date" object.
+            # Note that this is not a valid Telegram object, but it's easier to work with
+            if re.search(r'(\b|_)date\b', name) and self.type == 'int':
+                self.type = 'date'
 
         self.generic_definition = generic_definition
 

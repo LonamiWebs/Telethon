@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import BytesIO, BufferedReader
 from tl.all_tlobjects import tlobjects
 from struct import unpack
@@ -94,6 +95,11 @@ class BinaryReader:
             return False
         else:
             raise ValueError('Invalid boolean code {}'.format(hex(value)))
+
+    def tgread_date(self):
+        """Reads and converts Unix time (used by Telegram) into a Python datetime object"""
+        value = self.read_int()
+        return None if value == 0 else datetime.fromtimestamp(value)
 
     def tgread_object(self):
         """Reads a Telegram object"""

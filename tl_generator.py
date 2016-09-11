@@ -284,6 +284,9 @@ def write_onsend_code(builder, arg, args, name=None):
     elif 'bytes' == arg.type:
         builder.writeln('writer.write({})'.format(name))
 
+    elif 'date' == arg.type:  # Custom format
+        builder.writeln('writer.tgwrite_date({})'.format(name))
+
     else:
         # Else it may be a custom type
         builder.writeln('{}.on_send(writer)'.format(name))
@@ -363,6 +366,9 @@ def write_onresponse_code(builder, arg, args, name=None):
 
     elif 'bytes' == arg.type:
         builder.writeln('{} = reader.tgread_bytes()'.format(name))
+
+    elif 'date' == arg.type:  # Custom format
+        builder.writeln('{} = reader.tgread_date()'.format(name))
 
     else:
         # Else it may be a custom type

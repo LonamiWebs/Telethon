@@ -83,12 +83,17 @@ class BinaryWriter:
 
     def tgwrite_string(self, string):
         """Write a string by using Telegram guidelines"""
-        return self.tgwrite_bytes(string.encode('utf-8'))
+        self.tgwrite_bytes(string.encode('utf-8'))
 
     def tgwrite_bool(self, boolean):
         """Write a boolean value by using Telegram guidelines"""
         #                     boolTrue                boolFalse
-        return self.write_int(0x997275b5 if boolean else 0xbc799737, signed=False)
+        self.write_int(0x997275b5 if boolean else 0xbc799737, signed=False)
+
+    def tgwrite_date(self, datetime):
+        """Converts a Python datetime object into Unix time (used by Telegram) and writes it"""
+        value = 0 if datetime is None else int(datetime.timestamp())
+        self.write_int(value)
 
     # endregion
 
