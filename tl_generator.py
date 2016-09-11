@@ -282,7 +282,7 @@ def write_onsend_code(builder, arg, args, name=None):
         pass  # These are actually NOT written! Only used for flags
 
     elif 'bytes' == arg.type:
-        builder.writeln('writer.write({})'.format(name))
+        builder.writeln('writer.tgwrite_bytes({})'.format(name))
 
     elif 'date' == arg.type:  # Custom format
         builder.writeln('writer.tgwrite_date({})'.format(name))

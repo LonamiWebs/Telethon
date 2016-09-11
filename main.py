@@ -61,6 +61,7 @@ if __name__ == '__main__':
         print('You are now sending messages to "{}". Available commands:'.format(display))
         print('  !q: Quits the current chat.')
         print('  !h: prints the latest messages (message History) of the chat.')
+        print('  !p <path>: sends a Photo located at the given path')
 
         # And start a while loop to chat
         while True:
@@ -79,6 +80,17 @@ if __name__ == '__main__':
                     name = sender.first_name if sender else '???'
                     date = datetime.fromtimestamp(msg.date)
                     print('[{}:{}] {}: {}'.format(date.hour, date.minute, name, msg.message))
+
+            # Send photo
+            elif msg.startswith('!p '):
+                file_path = msg[len('!p '):]  # Slice the message to get the path
+
+                print('Uploading {}...'.format(file_path))
+                input_file = client.upload_file(file_path)
+
+                # After we have the handle to the uploaded file, send it to our peer
+                client.send_photo_file(input_file, input_peer)
+                print('Media sent!')
 
             # Send chat message (if any)
             elif msg:

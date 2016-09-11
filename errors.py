@@ -163,10 +163,11 @@ class RPCError(Exception):
                 # Get additional_data, if any
                 if match.groups():
                     self.additional_data = int(match.group(1))
+                    super().__init__(self, error_msg.format(self.additional_data))
                 else:
                     self.additional_data = None
+                    super().__init__(self, error_msg)
 
-                super().__init__(self, error_msg)
                 called_super = True
                 break
 

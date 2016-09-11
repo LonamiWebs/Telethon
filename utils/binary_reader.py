@@ -106,6 +106,15 @@ class BinaryReader:
         constructor_id = self.read_int(signed=False)
         clazz = tlobjects.get(constructor_id, None)
         if clazz is None:
+            # The class was None, but there's still a
+            # chance of it being a manually parsed value like bool!
+            value = constructor_id
+            if value == 0x997275b5:  # boolTrue
+                return True
+            elif value == 0xbc799737:  # boolFalse
+                return False
+
+            # If there was still no luck, give up
             raise TypeNotFoundError(constructor_id)
 
         # Now we need to determine the number of parameters of the class, so we can

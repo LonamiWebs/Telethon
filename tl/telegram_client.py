@@ -1,6 +1,9 @@
 # This file structure is based on TLSharp
 # https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
 import platform
+from datetime import datetime
+from hashlib import md5
+from os import path
 
 import utils
 import network.authenticator
@@ -12,11 +15,18 @@ from parser.markdown_parser import parse_message_entities
 # For sending and receiving requests
 from tl import MTProtoRequest
 from tl import Session
-from tl.types import PeerUser, PeerChat, PeerChannel, InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty
+
+# The Requests and types that we'll be using
+from tl.types import \
+    PeerUser, PeerChat, PeerChannel, \
+    InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
+    InputFile, InputMediaUploadedPhoto
+
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
 from tl.functions.auth import SendCodeRequest, SignInRequest
-from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest
+from tl.functions.upload import SaveFilePartRequest
+from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest, SendMediaRequest
 
 
 class TelegramClient:
@@ -197,6 +207,66 @@ class TelegramClient:
                  if usr.id == msg.from_id else None  # ...whose ID equals the current message ID...
                  for msg in result.messages  # ...from all the messages...
                  for usr in result.users])  # ...from all of the available users
+
+    # TODO Handle media downloading/uploading in a different session:
+    #  "It is recommended that large queries (upload.getFile, upload.saveFilePart)
+    #   be handled through a separate session and a separate connection"
+    def upload_file(self, file_path, part_size_kb=64, file_name=None):
+        """Uploads the specified media with the given chunk (part) size, in KB.
+           If no custom file name is specified, the real file name will be used.
+           This method will fail when trying to upload files larger than 10MB!"""
+
+        part_size = int(part_size_kb * 1024)
+        if part_size % 1024 != 0:
+            raise ValueError('The part size must be evenly divisible by 1024')
+
+        # Multiply the datetime timestamp by 10^6 to get the ticks
+        # This is high likely going to be unique
+        file_id = int(datetime.now().timestamp() * (10 ** 6))
+        part_index = 0
+        hash_md5 = md5()
+
+        with open(file_path, 'rb') as file:
+            while True:
+                # Read the file by in chunks of size part_size
+                part = file.read(part_size)
+
+                print('Sending {}'.format(len(part)))
+
+                # If we have read no data (0 bytes), the file is over
+                # So there is nothing left to upload
+                if not part:
+                    break
+
+                # Invoke the file upload and increment both the part index and MD5 checksum
+                result = self.invoke(SaveFilePartRequest(file_id, part_index, part))
+                if result:
+                    part_index += 1
+                    hash_md5.update(part)
+                else:
+                    raise ValueError('Could not upload file part #{}'.format(part_index))
+
+        # Set a default file name if None was specified
+        if not file_name:
+            file_name = path.basename(file_path)
+
+        # After the file has been uploaded, we can return a handle pointing to it
+        return InputFile(id=file_id,
+                         parts = part_index,
+                         name=file_name,
+                         md5_checksum=hash_md5.hexdigest())
+
+    def send_photo_file(self, input_file, input_peer, caption=''):
+        """Sends a previously uploaded input_file
+           (which should be a photo) to an input_peer"""
+        self.send_media_file(
+            InputMediaUploadedPhoto(input_file, caption), input_peer)
+
+    def send_media_file(self, input_media, input_peer):
+        """Sends any input_media (contact, document, photo...) to an input_peer"""
+        self.invoke(SendMediaRequest(peer=input_peer,
+                                     media=input_media,
+                                     random_id=utils.generate_random_long()))
 
     def invoke(self, request):
         """Invokes an MTProtoRequest and returns its results"""
