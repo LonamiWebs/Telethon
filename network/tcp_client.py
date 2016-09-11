@@ -45,7 +45,12 @@ class TcpClient:
             self.cancelled = False
 
             with BinaryWriter() as writer:
-                while writer.written_count < buffer_size and not self.cancelled:
+                while writer.written_count < buffer_size:
+                    # Only do cancel if no data was read yet
+                    # Otherwise, carry on reading and finish
+                    if self.cancelled and writer.written_count == 0:
+                        raise ReadCancelledError()
+
                     try:
                         # When receiving from the socket, we may not receive all the data at once
                         # This is why we need to keep checking to make sure that we receive it all
@@ -57,20 +62,10 @@ class TcpClient:
                         # There was no data available for us to read. Sleep a bit
                         time.sleep(self.delay)
 
-                # If the operation was cancelled *but* data was read,
-                # this will result on data loss so raise an exception
-                # TODO this could be solved by using an internal FIFO buffer (first in, first out)
-                if self.cancelled:
-                    if writer.written_count == 0:
-                        raise ReadCancelledError()
-                    else:
-                        raise NotImplementedError('The read operation was cancelled when some data '
-                                                  'was already read. This has not yet implemented '
-                                                  'an internal buffer, so cannot continue.')
-
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()
 
     def cancel_read(self):
-        """Cancels the read operation raising a ReadCancelledError"""
+        """Cancels the read operation IF it hasn't yet
+           started, raising a ReadCancelledError"""
         self.cancelled = True

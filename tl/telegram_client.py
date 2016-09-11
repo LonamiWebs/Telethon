@@ -18,9 +18,6 @@ from tl.functions.help import GetConfigRequest
 from tl.functions.auth import SendCodeRequest, SignInRequest
 from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest
 
-# For working with updates
-from tl.types import UpdateShortMessage
-
 
 class TelegramClient:
 
@@ -59,7 +56,6 @@ class TelegramClient:
                 self.session.save()
 
             self.sender = MtProtoSender(self.transport, self.session)
-            self.sender.add_update_handler(self.on_update)
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
@@ -71,10 +67,6 @@ class TelegramClient:
                                           query=GetConfigRequest())
 
             result = self.invoke(InvokeWithLayerRequest(layer=self.layer, query=query))
-
-            # Only listen for updates if we're authorized
-            if self.is_user_authorized():
-                self.sender.set_listen_for_updates(True)
 
             # We're only interested in the DC options,
             # although many other options are available!
@@ -260,21 +252,18 @@ class TelegramClient:
                 return InputPeerChannel(channel.id, channel.access_hash)
 
         except StopIteration:
-            pass
-
-        return None
+            return None
 
     # endregion
 
     # region Updates handling
 
-    def on_update(self, tlobject):
-        """This method is fired when there are updates from Telegram.
-        Add your own implementation below, or simply override it!"""
+    def add_update_handler(self, handler):
+        """Adds an update handler (a function which takes a TLObject,
+          an update, as its parameter) and listens for updates"""
+        self.sender.add_update_handler(handler)
 
-        # Only show incoming messages
-        if type(tlobject) is UpdateShortMessage:
-            if not tlobject.out:
-                print('> User with ID {} said "{}"'.format(tlobject.user_id, tlobject.message))
+    def remove_update_handler(self, handler):
+        self.sender.remove_update_handler(handler)
 
     # endregion

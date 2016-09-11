@@ -123,9 +123,8 @@ def parse_message_entities(msg):
                 # Second case, both inside: so*me_th*in_g.
                 # In this case, the current entity length is decreased by one,
                 # and all the subentities offset and length decrease 1
-                elif (subentity.offset > entity.offset and
-                      subentity.offset < entity.offset + entity.length and
-                          subentity.offset + subentity.length > entity.offset + entity.length):
+                elif (entity.offset < subentity.offset < entity.offset + entity.length and
+                      subentity.offset + subentity.length > entity.offset + entity.length):
                     entity.length -= 1
                     subentity.offset -= 1
                     subentity.length -= 1

@@ -36,7 +36,21 @@ class MtProtoSender:
     def add_update_handler(self, handler):
         """Adds an update handler (a method with one argument, the received
            TLObject) that is fired when there are updates available"""
+
+        first_handler = not self.on_update_handlers
         self.on_update_handlers.append(handler)
+
+        # If this is the first added handler,
+        # we must start the thread to receive updates
+        if first_handler:
+            self.set_listen_for_updates(enabled=True)
+
+    def remove_update_handler(self, handler):
+        self.on_update_handlers.remove(handler)
+
+        # If there are no more update handlers, stop the thread
+        if not self.on_update_handlers:
+            self.set_listen_for_updates(False)
 
     def generate_sequence(self, confirmed):
         """Generates the next sequence number, based on whether it
