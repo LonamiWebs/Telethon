@@ -13,9 +13,10 @@ to make them entirely different.
   - [Obtaining your `API ID` and `Hash`](#obtaining-your-api-id-and-hash)
 - [Running Telethon](#running-telethon)
 - [Advanced uses](#advanced-uses)
-  - [How to add more functions to `TelegramClient`](#how-to-add-more-functions-to-telegramclient)
+  - [Using more than just `TelegramClient`](#using-more-than-just-telegramclient)
   - [Tips for porting Telethon](#tips-for-porting-telethon)
   - [Code generator limitations](#code-generator-limitations)
+  - [Updating the `scheme.tl`](#updating-the-schemetl)
 - [Plans for the future](#plans-for-the-future)
 
 ## Why Telethon?
@@ -54,36 +55,43 @@ First of all, you need to run the `tl_generator.py` by issuing `python3 tl_gener
 TLObjects from the given `scheme.tl` file. When it's done, you can run `python3 main.py` to start the interactive example.
 
 ## Advanced uses
-### How to add more functions to `TelegramClient`
-As of now, you cannot call any Telegram function unless you first write it by hand under `tl/telegram_client.py`. Why?
-Every Telegram function (or _Request_) work in its own way. In some, you may only be interested in a single result field,
-and in others you may need to format the result in a different way. However, a plan for the future is to be able to call
-any function by giving its `namespace.name` and passing the arguments. But until that happens, to add a new function do:
+### Using more than just `TelegramClient`
+The `TelegramClient` class should be used to provide a quick, well-documented and simplified starting point.
+It is **not** meant to be a place for _all_ the available Telegram `Request`'s, because there are simply too many.
 
-1. Have a look under `tl/functions/` and find the `Request` that suits your needs.
-2. Have a look inside that `Request` you chose, and find what arguments and in what order you'll need to call it.
-3. Import it in `tl/telegram_client.py` by using `from tl.functions import SomeTelegramRequest`.
-4. Add a new method, or function, that looks as follows:
+However, this doesn't mean that you cannot `invoke` all the power of Telegram's API. Whenever you need to `invoke`
+a Telegram `Request`, all you need to do is the following:
 ```python
-def my_function(self, my_arguments):
-    request = SomeTelegramRequest(my_arguments)
-
-    self.sender.send(request)
-    self.sender.receive(request)
-    
-    return request.result
+result = client.invoke(SomeRequest(...))
 ```
-To determine how the result will look like, simply look at the original `.tl` definition. After the `=`,
-you will see the type. Let's see an example:
-`stickerPack#12b299d4 emoticon:string documents:Vector<long> = StickerPack;`
 
-As it turns out, the result is going to be an `StickerPack`. Without a second doubt, head into `tl/types/` and find it;
-open the file and see what the result will look like. Alternatively, you can simply `print(str(request.result))`!
+You have just `invoke`'d `SomeRequest` and retrieved its `result`! That wasn't hard at all, was it? Now you may wonder,
+what's the deal with _all the power of Telegram's API_? Have a look under `tl/functions/`.
+That is _everything_ you can do. You have **over 200 API `Request`'s** at your disposal.
 
-Be warned that there may be more than one different type on the results. This is due to Telegram's polymorphism,
-for example, a message may or not be empty, etc.
+However, we don't pretty know _how_ that `result` looks like. Easy. `print(str(result))` should give you a quick overview.
+Nevertheless, there may be more than a single `result`! Let's have a look at this seemingly innocent `TL` definition:
 
-_Hint: You could even write your own class based on `TelegramClient` and add more features._
+`messages.getWebPagePreview#25223e24 message:string = MessageMedia;`
+
+Focusing on the end, we can see that the `result` of invoking `GetWebPagePreviewRequest` is `MessageMedia`. But how
+can `MessageMedia` exactly look like? It's time to have another look, but this time under `tl/types/`:
+```sh
+$ tree -P "message_media_*"
+.
+├── tl
+│   └── types
+│       ├── message_media_contact.py
+│       ├── message_media_document.py
+│       ├── message_media_empty.py
+│       ├── message_media_geo.py
+│       ├── message_media_photo.py
+│       ├── message_media_unsupported.py
+│       ├── message_media_venue.py
+│       └── message_media_web_page.py
+```
+Those are _eight_ different types! How do we know what exact type it is to determine its properties? A simple
+`if type(result) == MessageMediaContact:` or similar will do. Now you're ready to take advantage of Telegram's polymorphism.
 
 ### Tips for porting Telethon
 First of all, you need to understand how the `scheme.tl` (`TL` language) works. Every object definition is written as follows:
@@ -121,7 +129,16 @@ In order to make sure that all the generated files will work, please make sure t
 ```
 
 Also please make sure to rename `updates#74ae4240 ...` to `updates_tg#74ae4240 ...` or similar to avoid confusion between
-the `updates` folder and the `updates.py` file!
+the `updates` folder and the `updates.py` file! Note that depending on the name, it may break things somewhere else. So
+please stick with the suggested name or give one which is still descriptive enough and easy to remember.
+
+### Updating the `scheme.tl`
+Have you found a more updated version of the `scheme.tl` file? Those are great news! Updating is as simple as grabbing the
+[latest version](https://github.com/telegramdesktop/tdesktop/blob/master/Telegram/SourceFiles/mtproto/scheme.tl) and
+replacing the one you can find in this same directory by the updated one. Don't forget to run `python3 tl_generator.py`
+afterwards and specifying the new layer number to be used when creating the `TelegramClient`.
+
+If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
 
 ## Plans for the future
 If everything works well, this probably ends up being a Python package :)
