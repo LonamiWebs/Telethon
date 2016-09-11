@@ -20,12 +20,12 @@ from tl import Session
 from tl.types import \
     PeerUser, PeerChat, PeerChannel, \
     InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
-    InputFile, InputMediaUploadedPhoto
+    InputFile, InputFileLocation, InputMediaUploadedPhoto
 
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
 from tl.functions.auth import SendCodeRequest, SignInRequest
-from tl.functions.upload import SaveFilePartRequest
+from tl.functions.upload import SaveFilePartRequest, GetFileRequest
 from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest, SendMediaRequest
 
 
@@ -110,6 +110,18 @@ class TelegramClient:
 
     # region Telegram requests functions
 
+    def invoke(self, request):
+        """Invokes a MTProtoRequest (sends and receives it) and returns its result"""
+        if not issubclass(type(request), MTProtoRequest):
+            raise ValueError('You can only invoke MtProtoRequests')
+
+        self.sender.send(request)
+        self.sender.receive(request)
+
+        return request.result
+
+    # region Authorization requests
+
     def is_user_authorized(self):
         """Has the user been authorized yet (code request sent and confirmed)?
            Note that this will NOT yield the correct result if the session was revoked by another client!"""
@@ -147,6 +159,10 @@ class TelegramClient:
 
         return self.session.user
 
+    # endregion
+
+    # region Dialogs ("chats") requests
+
     def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [displays], [input_peers]) with 'count' items each"""
 
@@ -158,6 +174,10 @@ class TelegramClient:
         return (r.dialogs,
                 [self.find_display_name(d.peer, r.users, r.chats) for d in r.dialogs],
                 [self.find_input_peer(d.peer, r.users, r.chats) for d in r.dialogs])
+
+    # endregion
+
+    # region Message requests
 
     def send_message(self, input_peer, message, markdown=False, no_web_page=False):
         """Sends a message to the given input peer"""
@@ -208,7 +228,11 @@ class TelegramClient:
                  for msg in result.messages  # ...from all the messages...
                  for usr in result.users])  # ...from all of the available users
 
-    # TODO Handle media downloading/uploading in a different session:
+    # endregion
+
+    # region Uploading/downloading media requests
+
+    # TODO Handle media downloading/uploading in a different session?
     #  "It is recommended that large queries (upload.getFile, upload.saveFilePart)
     #   be handled through a separate session and a separate connection"
     def upload_file(self, file_path, part_size_kb=64, file_name=None):
@@ -231,8 +255,6 @@ class TelegramClient:
                 # Read the file by in chunks of size part_size
                 part = file.read(part_size)
 
-                print('Sending {}'.format(len(part)))
-
                 # If we have read no data (0 bytes), the file is over
                 # So there is nothing left to upload
                 if not part:
@@ -252,7 +274,7 @@ class TelegramClient:
 
         # After the file has been uploaded, we can return a handle pointing to it
         return InputFile(id=file_id,
-                         parts = part_index,
+                         parts=part_index,
                          name=file_name,
                          md5_checksum=hash_md5.hexdigest())
 
@@ -268,15 +290,41 @@ class TelegramClient:
                                      media=input_media,
                                      random_id=utils.generate_random_long()))
 
-    def invoke(self, request):
-        """Invokes an MTProtoRequest and returns its results"""
-        if not issubclass(type(request), MTProtoRequest):
-            raise ValueError('You can only invoke MtProtoRequests')
+    def download_photo(self, message_media_photo, file_path):
+        """Downloads a message_media_photo largest size into the desired file_path"""
+        # Determine the photo and its largest size
+        photo = message_media_photo.photo
+        largest_size = photo.sizes[-1].location
 
-        self.sender.send(request)
-        self.sender.receive(request)
+        # Download the media with the largest size input file location
+        self.download_media(InputFileLocation(volume_id=largest_size.volume_id,
+                                              local_id=largest_size.local_id,
+                                              secret=largest_size.secret), file_path)
 
-        return request.result
+    def download_media(self, input_file_location, file_path, part_size_kb=64):
+        """Downloads media from the given input_file_location to the specified file_path"""
+
+        part_size = int(part_size_kb * 1024)
+        if part_size % 1024 != 0:
+            raise ValueError('The part size must be evenly divisible by 1024')
+
+        # Start with an offset index of 0
+        offset_index = 0
+        with open(file_path, 'wb') as file:
+            while True:
+                # The current offset equals the offset_index multiplied by the part size
+                offset = offset_index * part_size
+                result = self.invoke(GetFileRequest(input_file_location, offset, part_size))
+                offset_index += 1
+
+                # If we have received no data (0 bytes), the file is over
+                # So there is nothing left to download and write
+                if not result.bytes:
+                    return result.type  # Return some extra information
+
+                file.write(result.bytes)
+
+    # endregion
 
     # endregion
 

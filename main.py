@@ -78,8 +78,7 @@ if __name__ == '__main__':
                 # and print them in "[hh:mm] Sender: Message" text format
                 for msg, sender in zip(reversed(messages), reversed(senders)):
                     name = sender.first_name if sender else '???'
-                    date = datetime.fromtimestamp(msg.date)
-                    print('[{}:{}] {}: {}'.format(date.hour, date.minute, name, msg.message))
+                    print('[{}:{}] {}: {}'.format(msg.date.hour, msg.date.minute, name, msg.message))
 
             # Send photo
             elif msg.startswith('!p '):
