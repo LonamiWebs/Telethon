@@ -5,6 +5,7 @@ tl/all_tlobjects.py
 
 # User session
 *.session
+*.jpg
 api/settings
 
 # Byte-compiled / optimized / DLL files

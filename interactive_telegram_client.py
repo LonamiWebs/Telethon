@@ -1,4 +1,5 @@
 import tl_generator
+from tl.types import MessageMediaPhoto
 from tl.types import UpdateShortChatMessage
 from tl.types import UpdateShortMessage
 
@@ -37,6 +38,10 @@ class InteractiveTelegramClient(TelegramClient):
 
         print('Initializing interactive example...')
         super().__init__(session_user_id, layer, api_id, api_hash)
+
+        # Store all the found media in memory here,
+        # so it can be downloaded if the user wants
+        self.found_media = set()
 
         print('Connecting to Telegram servers...')
         self.connect()
@@ -92,6 +97,7 @@ class InteractiveTelegramClient(TelegramClient):
             print('  !q: Quits the current chat.')
             print('  !h: prints the latest messages (message History) of the chat.')
             print('  !p <path>: sends a Photo located at the given path')
+            print('  !d <msg-id>: Downloads the given message media (if any)')
 
             # And start a while loop to chat
             while True:
@@ -112,6 +118,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                         # Format the message content
                         if msg.media:
+                            self.found_media.add(msg)
                             content = '<{}> {}'.format(  # The media may or may not have a caption
                                 msg.media.__class__.__name__, getattr(msg.media, 'caption', ''))
                         else:
@@ -131,6 +138,27 @@ class InteractiveTelegramClient(TelegramClient):
                     # After we have the handle to the uploaded file, send it to our peer
                     self.send_photo_file(input_file, input_peer)
                     print('Media sent!')
+
+                # Download media
+                elif msg.startswith('!d '):
+                    msg_media_id = msg[len('!d '):]  # Slice the message to get message ID
+                    try:
+                        # The user may have entered a non-integer string!
+                        msg_media_id = int(msg_media_id)
+
+                        # Search the message ID and ensure the media is a Photo
+                        for msg in self.found_media:
+                            if (msg.id == msg_media_id and
+                                    type(msg.media) == MessageMediaPhoto):
+
+                                # Retrieve the output and download the photo
+                                output = '{}.jpg'.format(str(msg_media_id))
+                                print('Downloading to {}...'.format(output))
+                                self.download_photo(msg.media, file_path=output)
+                                print('Photo downloaded to {}!'.format(output))
+
+                    except ValueError:
+                        print('Invalid media ID given!')
 
                 # Send chat message (if any)
                 elif msg:
