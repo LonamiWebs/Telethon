@@ -33,7 +33,7 @@ class TelegramClient:
 
     # region Initialization
 
-    def __init__(self, session_user_id, layer, api_id=None, api_hash=None):
+    def __init__(self, session_user_id, layer, api_id, api_hash):
         if api_id is None or api_hash is None:
             raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.md')
 
@@ -72,7 +72,7 @@ class TelegramClient:
             query = InitConnectionRequest(api_id=self.api_id,
                                           device_model=platform.node(),
                                           system_version=platform.system(),
-                                          app_version='0.3',
+                                          app_version='0.4',
                                           lang_code='en',
                                           query=GetConfigRequest())
 
@@ -221,12 +221,16 @@ class TelegramClient:
         # the total messages count is retrieved by counting all the retrieved messages
         total_messages = getattr(result, 'count', len(result.messages))
 
-        return (total_messages,
-                result.messages,
-                [usr  # Create a list with the users...
-                 if usr.id == msg.from_id else None  # ...whose ID equals the current message ID...
-                 for msg in result.messages  # ...from all the messages...
-                 for usr in result.users])  # ...from all of the available users
+        # Iterate over all the messages and find the sender User
+        users = []
+        for msg in result.messages:
+            for usr in result.users:
+                if msg.from_id == usr.id:
+                    users.append(usr)
+                    break
+
+        return total_messages, result.messages, users
+
 
     # endregion
 
