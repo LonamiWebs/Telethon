@@ -1,5 +1,3 @@
-# This file structure is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/TelegramClient.cs
 import platform
 from datetime import datetime
 from hashlib import md5

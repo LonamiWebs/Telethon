@@ -50,7 +50,7 @@ class UtilsTests(unittest.TestCase):
         with BinaryWriter() as writer:
             writer.write_int(0x60469778)
             buffer = writer.get_bytes()
-            valid = b'\x78\x97\x46\x60'  # Tested written bytes using TLSharp and C#'s MemoryStream
+            valid = b'\x78\x97\x46\x60'  # Tested written bytes using C#'s MemoryStream
 
             assert buffer == valid, "Written type should be {} but is {}".format(list(valid), list(buffer))
 

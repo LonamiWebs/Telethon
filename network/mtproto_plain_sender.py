@@ -1,5 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/MtProtoPlainSender.cs
 import time
 import random
 from utils import BinaryWriter, BinaryReader

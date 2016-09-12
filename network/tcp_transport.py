@@ -1,5 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Network/TcpTransport.cs
 from network import TcpClient
 from binascii import crc32
 from errors import *

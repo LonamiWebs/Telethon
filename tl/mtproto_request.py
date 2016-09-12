@@ -1,5 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Requests/MTProtoRequest.cs
 from datetime import datetime, timedelta
 
 

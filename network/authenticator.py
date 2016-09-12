@@ -1,9 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Authenticator.cs
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step1_PQRequest.cs
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step2_DHExchange.cs
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Auth/Step3_CompleteDHExchange.cs
-
 import time
 import utils
 from utils import BinaryWriter, BinaryReader

@@ -1,5 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/MTProto/Crypto/Factorizator.cs
 from random import randint
 
 

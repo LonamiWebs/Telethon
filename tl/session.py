@@ -1,5 +1,3 @@
-# This file is based on TLSharp
-# https://github.com/sochix/TLSharp/blob/master/TLSharp.Core/Session.cs
 from os.path import isfile as file_exists
 import time
 import pickle

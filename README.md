@@ -1,10 +1,6 @@
 # Telethon
-**Telethon** is Telegram client implementation in Python. This project's _core_ is **completely based** on
-[TLSharp](https://github.com/sochix/TLSharp). All the files which are fully based on it will have a notice
-on the top of the file. Also don't forget to have a look to the original project.
-
-The files without the previously mentioned notice are no longer part of TLSharp itself, or have enough modifications
-to make them entirely different.
+**Telethon** is Telegram client implementation in Python which uses the latest available API of Telegram.
+The project's **core only** is based on TLSharp, a C# Telegram client implementation.
 
 # Table of contents
 - [Why Telethon?](#why-telethon)
@@ -20,19 +16,20 @@ to make them entirely different.
 - [Plans for the future](#plans-for-the-future)
 
 ## Why Telethon?
-> Why should I bother with Telethon? You already mentioned [TLSharp](https://github.com/sochix/TLSharp).
-> [telegram-cli](https://github.com/vysheng/tg) has also been around for a long while. And we have the
+> Why should I bother with Telethon? There are more mature projects already, such as
+> [telegram-cli](https://github.com/vysheng/tg) with even (limited) Python support. And we have the
 > [official](https://github.com/telegramdesktop/tdesktop) [clients](https://github.com/DrKLO/Telegram)!
 
 With Telethon you don't really need to know anything before using it. Create a client with your settings.
 Connect. You're ready to go.
 
-Being written on Python, Telethon can run as a script under any environment you wish, (yes,
+Being written **entirely** on Python, Telethon can run as a script under any environment you wish, (yes,
 [Android too](https://f-droid.org/repository/browse/?fdfilter=termux&fdid=com.termux)). You can schedule it,
 or use it in any other script you have. Want to send a message to someone when you're available? Write a script.
 Do you want check for new messages at a given time and find relevant ones? Write a script.
 
-An official client has a feature which Telethon doesn't? [Implement it easily](#how-to-add-more-functions-to-telegramclient).
+Hungry for more API calls which the `TelegramClient` class doesn't _seem_ to have implemented?
+Please read [this section](#using-more-than-just-telegramclient).
 
 ## Requirements
 ### Python modules
