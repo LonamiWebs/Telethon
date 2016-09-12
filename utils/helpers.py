@@ -1,4 +1,5 @@
 import os
+import shutil
 from utils import BinaryWriter
 import hashlib
 
@@ -29,6 +30,14 @@ def load_settings(path='api/settings'):
                 settings[left] = right
 
     return settings
+
+
+def ensure_parent_dir_exists(file_path):
+    """Ensures that the parent directory exists"""
+    parent = os.path.dirname(file_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
 
 # endregion
 

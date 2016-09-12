@@ -34,7 +34,18 @@ class TcpClient:
 
         # Ensure that only one thread can send data at once
         with self.lock:
-            self.socket.sendall(data)
+            # Do not use .sendall:
+            # "on error, an exception is raised, and there is no way to
+            #  determine how much data, if any, was successfully sent."
+            while data:
+                try:
+                    sent = self.socket.send(data)
+                    data = data[sent:]
+                except BlockingIOError as e:
+                    if 'Errno 11' in str(e):  # Error #11: Resource temporary unavailable
+                        time.sleep(0.1)  # Sleep a bit waiting for the resource to be available
+                    else:
+                        raise e
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""
@@ -64,6 +75,7 @@ class TcpClient:
 
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()
+
 
     def cancel_read(self):
         """Cancels the read operation IF it hasn't yet

@@ -2,6 +2,7 @@ import platform
 from datetime import datetime
 from hashlib import md5
 from os import path
+from mimetypes import guess_extension, guess_type
 
 import utils
 import network.authenticator
@@ -18,7 +19,9 @@ from tl import Session
 from tl.types import \
     PeerUser, PeerChat, PeerChannel, \
     InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
-    InputFile, InputFileLocation, InputMediaUploadedPhoto
+    InputFile, InputFileLocation, InputMediaUploadedPhoto, InputMediaUploadedDocument, \
+    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto, \
+    DocumentAttributeAudio, DocumentAttributeFilename, InputDocumentFileLocation
 
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
@@ -143,10 +146,16 @@ class TelegramClient:
         if phone_number not in self.phone_code_hashes:
             raise ValueError('Please make sure you have called send_code_request first.')
 
-        # TODO Handle invalid code
-        request = SignInRequest(phone_number, self.phone_code_hashes[phone_number], code)
-        self.sender.send(request)
-        self.sender.receive(request)
+        try:
+            request = SignInRequest(phone_number, self.phone_code_hashes[phone_number], code)
+            self.sender.send(request)
+            self.sender.receive(request)
+        except RPCError as error:
+            if error.message.startswith('PHONE_CODE_'):
+                print(error)
+                return False
+            else:
+                raise error
 
         # Result is an Auth.Authorization TLObject
         self.session.user = request.result.user
@@ -155,7 +164,7 @@ class TelegramClient:
         # Now that we're authorized, we can listen for incoming updates
         self.sender.set_listen_for_updates(True)
 
-        return self.session.user
+        return True
 
     # endregion
 
@@ -229,14 +238,13 @@ class TelegramClient:
 
         return total_messages, result.messages, users
 
-
     # endregion
-
-    # region Uploading/downloading media requests
 
     # TODO Handle media downloading/uploading in a different session?
     #  "It is recommended that large queries (upload.getFile, upload.saveFilePart)
     #   be handled through a separate session and a separate connection"
+    # region Uploading media requests
+
     def upload_file(self, file_path, part_size_kb=64, file_name=None):
         """Uploads the specified media with the given chunk (part) size, in KB.
            If no custom file name is specified, the real file name will be used.
@@ -262,6 +270,8 @@ class TelegramClient:
                 if not part:
                     break
 
+                print('I read {} out of {}'.format(len(part), part_size))
+
                 # Invoke the file upload and increment both the part index and MD5 checksum
                 result = self.invoke(SaveFilePartRequest(file_id, part_index, part))
                 if result:
@@ -286,29 +296,128 @@ class TelegramClient:
         self.send_media_file(
             InputMediaUploadedPhoto(input_file, caption), input_peer)
 
+    def send_document_file(self, input_file, input_peer, caption=''):
+        """Sends a previously uploaded input_file
+           (which should be a document) to an input_peer"""
+
+        # Determine mime-type and attributes
+        # Take the first element by using [0] since it returns a tuple
+        mime_type = guess_type(input_file.name)[0]
+        attributes = [
+            DocumentAttributeFilename(input_file.name)
+            # TODO If the input file is an audio, find out:
+            # Performer and song title and add DocumentAttributeAudio
+        ]
+        self.send_media_file(InputMediaUploadedDocument(file=input_file,
+                                                        mime_type=mime_type,
+                                                        attributes=attributes,
+                                                        caption=caption), input_peer)
+
     def send_media_file(self, input_media, input_peer):
         """Sends any input_media (contact, document, photo...) to an input_peer"""
         self.invoke(SendMediaRequest(peer=input_peer,
                                      media=input_media,
                                      random_id=utils.generate_random_long()))
 
-    def download_photo(self, message_media_photo, file_path):
-        """Downloads a message_media_photo largest size into the desired file_path"""
+    # endregion
+
+    # region Downloading media requests
+
+    def download_msg_media(self, message_media, file_path, add_extension=True):
+        """Downloads the given MessageMedia (Photo, Document or Contact)
+           into the desired file_path, optionally finding its extension automatically"""
+        if type(message_media) == MessageMediaPhoto:
+            return self.download_photo(message_media, file_path, add_extension)
+
+        elif type(message_media) == MessageMediaDocument:
+            return self.download_document(message_media, file_path, add_extension)
+
+        elif type(message_media) == MessageMediaContact:
+            return self.download_contact(message_media, file_path, add_extension)
+
+    def download_photo(self, message_media_photo, file_path, add_extension=False):
+        """Downloads MessageMediaPhoto's largest size into the desired
+           file_path, optionally finding its extension automatically"""
         # Determine the photo and its largest size
         photo = message_media_photo.photo
         largest_size = photo.sizes[-1].location
 
-        # Download the media with the largest size input file location
-        self.download_media(InputFileLocation(volume_id=largest_size.volume_id,
-                                              local_id=largest_size.local_id,
-                                              secret=largest_size.secret), file_path)
+        # Photos are always compressed into a .jpg by Telegram
+        if add_extension:
+            file_path += '.jpg'
 
-    def download_media(self, input_file_location, file_path, part_size_kb=64):
+        # Download the media with the largest size input file location
+        self.download_file_loc(InputFileLocation(volume_id=largest_size.volume_id,
+                                                 local_id=largest_size.local_id,
+                                                 secret=largest_size.secret), file_path)
+        return file_path
+
+    def download_document(self, message_media_document, file_path=None, add_extension=True):
+        """Downloads the given MessageMediaDocument into the desired
+           file_path, optionally finding its extension automatically.
+           If no file_path is given, it will _try_ to be guessed from the document"""
+        document = message_media_document.document
+
+        # If no file path was given, try to guess it from the attributes
+        if file_path is None:
+            for attr in document.attributes:
+                if type(attr) == DocumentAttributeFilename:
+                    file_path = attr.file_name
+                    break  # This attribute has higher preference
+
+                elif type(attr) == DocumentAttributeAudio:
+                    file_path = '{} - {}'.format(attr.performer, attr.title)
+
+            if file_path is None:
+                print('Could not determine a filename for the document')
+
+        # Guess the extension based on the mime_type
+        if add_extension:
+            ext = guess_extension(document.mime_type)
+            if ext is not None:
+                file_path += ext
+
+        self.download_file_loc(InputDocumentFileLocation(id=document.id,
+                                                         access_hash=document.access_hash,
+                                                         version=document.version), file_path)
+
+        return file_path
+
+    @staticmethod
+    def download_contact(message_media_contact, file_path, add_extension=True):
+        """Downloads a media contact using the vCard 4.0 format"""
+
+        first_name = message_media_contact.first_name
+        last_name = message_media_contact.last_name
+        phone_number = message_media_contact.phone_number
+
+        # The only way we can save a contact in an understandable
+        # way by phones is by using the .vCard format
+        if add_extension:
+            file_path += '.vcard'
+
+        # Ensure that we'll be able to download the contact
+        utils.ensure_parent_dir_exists(file_path)
+
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write('BEGIN:VCARD\n')
+            file.write('VERSION:4.0\n')
+            file.write('N:{};{};;;\n'.format(first_name, last_name if last_name else ''))
+            file.write('FN:{}\n'.format(' '.join((first_name, last_name))))
+            file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(phone_number))
+            file.write('END:VCARD\n')
+
+        return file_path
+
+    def download_file_loc(self, input_location, file_path, part_size_kb=64):
         """Downloads media from the given input_file_location to the specified file_path"""
 
         part_size = int(part_size_kb * 1024)
         if part_size % 1024 != 0:
             raise ValueError('The part size must be evenly divisible by 1024')
+
+        # Ensure that we'll be able to download the media
+        utils.ensure_parent_dir_exists(file_path)
 
         # Start with an offset index of 0
         offset_index = 0
@@ -316,7 +425,7 @@ class TelegramClient:
             while True:
                 # The current offset equals the offset_index multiplied by the part size
                 offset = offset_index * part_size
-                result = self.invoke(GetFileRequest(input_file_location, offset, part_size))
+                result = self.invoke(GetFileRequest(input_location, offset, part_size))
                 offset_index += 1
 
                 # If we have received no data (0 bytes), the file is over

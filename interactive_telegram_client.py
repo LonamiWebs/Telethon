@@ -1,5 +1,4 @@
 import tl_generator
-from tl.types import MessageMediaPhoto
 from tl.types import UpdateShortChatMessage
 from tl.types import UpdateShortMessage
 
@@ -12,12 +11,8 @@ else:
 
 from telegram_client import TelegramClient
 from utils.helpers import load_settings
-
-# For pretty printing, thanks to http://stackoverflow.com/a/37501797/4759433
-import sys
-import readline
-from time import sleep
 import shutil
+import traceback
 
 # Get the (current) number of lines in the terminal
 cols, rows = shutil.get_terminal_size()
@@ -51,8 +46,10 @@ class InteractiveTelegramClient(TelegramClient):
             print('First run. Sending code request...')
             self.send_code_request(user_phone)
 
-            code = input('Enter the code you just received: ')
-            self.make_auth(user_phone, code)
+            code_ok = False
+            while not code_ok:
+                code = input('Enter the code you just received: ')
+                code_ok = self.make_auth(user_phone, code)
 
     def run(self):
         # Listen for updates
@@ -95,9 +92,11 @@ class InteractiveTelegramClient(TelegramClient):
             print_title('Chat with "{}"'.format(display))
             print('Available commands:'.format(display))
             print('  !q: Quits the current chat.')
+            print('  !Q: Quits the current chat and exits.')
             print('  !h: prints the latest messages (message History) of the chat.')
-            print('  !p <path>: sends a Photo located at the given path')
-            print('  !d <msg-id>: Downloads the given message media (if any)')
+            print('  !p <path>: sends a Photo located at the given path.')
+            print('  !f <path>: sends a File document located at the given path.')
+            print('  !d <msg-id>: Downloads the given message media (if any).')
 
             # And start a while loop to chat
             while True:
@@ -105,6 +104,8 @@ class InteractiveTelegramClient(TelegramClient):
                 # Quit
                 if msg == '!q':
                     break
+                elif msg == '!Q':
+                    return
 
                 # History
                 elif msg == '!h':
@@ -130,39 +131,55 @@ class InteractiveTelegramClient(TelegramClient):
 
                 # Send photo
                 elif msg.startswith('!p '):
-                    file_path = msg[len('!p '):]  # Slice the message to get the path
+                    # Slice the message to get the path
+                    self.send_photo(path=msg[len('!p '):], peer=input_peer)
 
-                    print('Uploading {}...'.format(file_path))
-                    input_file = self.upload_file(file_path)
-
-                    # After we have the handle to the uploaded file, send it to our peer
-                    self.send_photo_file(input_file, input_peer)
-                    print('Media sent!')
+                # Send file (document)
+                elif msg.startswith('!f '):
+                    # Slice the message to get the path
+                    self.send_document(path=msg[len('!f '):], peer=input_peer)
 
                 # Download media
                 elif msg.startswith('!d '):
-                    msg_media_id = msg[len('!d '):]  # Slice the message to get message ID
-                    try:
-                        # The user may have entered a non-integer string!
-                        msg_media_id = int(msg_media_id)
-
-                        # Search the message ID and ensure the media is a Photo
-                        for msg in self.found_media:
-                            if (msg.id == msg_media_id and
-                                    type(msg.media) == MessageMediaPhoto):
-
-                                # Retrieve the output and download the photo
-                                output = '{}.jpg'.format(str(msg_media_id))
-                                print('Downloading to {}...'.format(output))
-                                self.download_photo(msg.media, file_path=output)
-                                print('Photo downloaded to {}!'.format(output))
-
-                    except ValueError:
-                        print('Invalid media ID given!')
+                    # Slice the message to get message ID
+                    self.download_media(msg[len('!d '):])
 
                 # Send chat message (if any)
                 elif msg:
                     self.send_message(input_peer, msg, markdown=True, no_web_page=True)
+
+    def send_photo(self, path, peer):
+        print('Uploading {}...'.format(path))
+        input_file = self.upload_file(path)
+
+        # After we have the handle to the uploaded file, send it to our peer
+        self.send_photo_file(input_file, peer)
+        print('Photo sent!')
+
+    def send_document(self, path, peer):
+        print('Uploading {}...'.format(path))
+        input_file = self.upload_file(path)
+
+        # After we have the handle to the uploaded file, send it to our peer
+        self.send_document_file(input_file, peer)
+        print('Document sent!')
+
+    def download_media(self, media_id):
+        try:
+            # The user may have entered a non-integer string!
+            msg_media_id = int(media_id)
+
+            # Search the message ID
+            for msg in self.found_media:
+                if msg.id == msg_media_id:
+                    # Let the output be the message ID
+                    output = str('usermedia/{}'.format(msg_media_id))
+                    print('Downloading media with name {}...'.format(output))
+                    output = self.download_msg_media(msg.media, file_path=output)
+                    print('Media downloaded to {}!'.format(output))
+
+        except ValueError:
+            print('Invalid media ID given!')
 
     @staticmethod
     def update_handler(update_object):
@@ -189,7 +206,7 @@ if __name__ == '__main__':
         client.run()
 
     except Exception as e:
-        print('Unexpected error ({}), will not continue: {}'.format(type(e), e))
+        print('Unexpected error ({}): {} at\n{}', type(e), e, traceback.format_exc())
 
     finally:
         print_title('Exit')

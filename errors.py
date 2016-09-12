@@ -93,9 +93,11 @@ class RPCError(Exception):
 
         'PHONE_NUMBER_INVALID': 'The phone number is invalid.',
 
-        'PHONE_CODE_HASH_EMPTY': 'phone_code_hash is missing.',
+        'PHONE_CODE_HASH_EMPTY': 'The phone code hash is missing.',
 
-        'PHONE_CODE_EMPTY': 'phone_code is missing.',
+        'PHONE_CODE_EMPTY': 'The phone code is missing.',
+
+        'PHONE_CODE_INVALID': 'The phone code entered was invalid.',
 
         'PHONE_CODE_EXPIRED': 'The confirmation code has expired.',
 
