@@ -1,6 +1,5 @@
+import os
 import unittest
-
-import utils
 from utils import BinaryReader, BinaryWriter
 
 
@@ -56,11 +55,11 @@ class UtilsTests(unittest.TestCase):
 
     @staticmethod
     def test_binary_tgwriter_tgreader():
-        small_data = utils.generate_random_bytes(33)
-        small_data_padded = utils.generate_random_bytes(19)  # +1 byte for length = 20 (evenly divisible by 4)
+        small_data = os.urandom(33)
+        small_data_padded = os.urandom(19)  # +1 byte for length = 20 (evenly divisible by 4)
 
-        large_data = utils.generate_random_bytes(999)
-        large_data_padded = utils.generate_random_bytes(1024)
+        large_data = os.urandom(999)
+        large_data_padded = os.urandom(1024)
 
         data = (small_data, small_data_padded, large_data, large_data_padded)
         string = 'Testing Telegram strings, this should work properly!'

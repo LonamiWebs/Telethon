@@ -11,11 +11,6 @@ def generate_random_long(signed=True):
     return int.from_bytes(os.urandom(8), signed=signed, byteorder='little')
 
 
-def generate_random_bytes(count):
-    """Generates a random bytes array"""
-    return os.urandom(count)
-
-
 def load_settings(path='api/settings'):
     """Loads the user settings located under `api/`"""
     settings = {}

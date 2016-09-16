@@ -1,5 +1,6 @@
 import utils
 from utils import BinaryWriter
+import os
 
 
 class RSAServerKey:
@@ -22,7 +23,7 @@ class RSAServerKey:
             writer.write(data[offset:offset+length])
             # Add padding if required
             if length < 235:
-                writer.write(utils.generate_random_bytes(235 - length))
+                writer.write(os.urandom(235 - length))
 
             result = int.from_bytes(writer.get_bytes(), byteorder='big')
             result = pow(result, self.e, self.m)

@@ -1,3 +1,4 @@
+import os
 import pyaes
 
 
@@ -10,7 +11,7 @@ class AES:
 
         aes = pyaes.AES(key)
 
-        plain_text = [0] * len(cipher_text)
+        plain_text = []
         blocks_count = len(cipher_text) // 16
 
         cipher_text_block = [0] * 16
@@ -24,27 +25,28 @@ class AES:
                 plain_text_block[i] ^= iv1[i]
 
             iv1 = cipher_text[block_index * 16:block_index * 16 + 16]
-            iv2 = plain_text_block[0:16]
+            iv2 = plain_text_block[:]
 
-            plain_text[block_index * 16:block_index * 16 + 16] = plain_text_block[:16]
+            plain_text.extend(plain_text_block[:])
 
         return bytes(plain_text)
 
     @staticmethod
     def encrypt_ige(plain_text, key, iv):
         """Encrypts the given text in 16-bytes blocks by using the given key and 32-bytes initialization vector"""
-        # TODO: Random padding?
-        if len(plain_text) % 16 != 0:  # Add padding if and only if it's not evenly divisible by 16 already
-            padding = bytes(16 - len(plain_text) % 16)
-            plain_text += padding
+
+        # Add random padding if and only if it's not evenly divisible by 16 already
+        if len(plain_text) % 16 != 0:
+            padding_count = 16 - len(plain_text) % 16
+            plain_text += os.urandom(padding_count)
 
         iv1 = iv[:len(iv)//2]
         iv2 = iv[len(iv)//2:]
 
         aes = pyaes.AES(key)
 
+        cipher_text = []
         blocks_count = len(plain_text) // 16
-        cipher_text = [0] * len(plain_text)
 
         for block_index in range(blocks_count):
             plain_text_block = list(plain_text[block_index * 16:block_index * 16 + 16])
@@ -56,9 +58,9 @@ class AES:
             for i in range(16):
                 cipher_text_block[i] ^= iv2[i]
 
-            iv1 = cipher_text_block[0:16]
+            iv1 = cipher_text_block[:]
             iv2 = plain_text[block_index * 16:block_index * 16 + 16]
 
-            cipher_text[block_index * 16:block_index * 16 + 16] = cipher_text_block[:16]
+            cipher_text.extend(cipher_text_block[:])
 
         return bytes(cipher_text)

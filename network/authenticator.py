@@ -1,3 +1,4 @@
+import os
 import time
 import utils
 from utils import BinaryWriter, BinaryReader
@@ -11,7 +12,7 @@ def do_authentication(transport):
     sender = MtProtoPlainSender(transport)
 
     # Step 1 sending: PQ Request
-    nonce = utils.generate_random_bytes(16)
+    nonce = os.urandom(16)
     with BinaryWriter() as writer:
         writer.write_int(0x60469778, signed=False)  # Constructor number
         writer.write(nonce)
@@ -43,7 +44,7 @@ def do_authentication(transport):
             fingerprints.append(reader.read(8))
 
     # Step 2 sending: DH Exchange
-    new_nonce = utils.generate_random_bytes(32)
+    new_nonce = os.urandom(32)
     p, q = Factorizator.factorize(pq)
     with BinaryWriter() as pq_inner_data_writer:
         pq_inner_data_writer.write_int(0x83c95aec, signed=False)  # PQ Inner Data
@@ -125,7 +126,7 @@ def do_authentication(transport):
         server_time = dh_inner_data_reader.read_int()
         time_offset = server_time - int(time.time())
 
-    b = get_int(utils.generate_random_bytes(2048), signed=False)
+    b = get_int(os.urandom(2048), signed=False)
     gb = pow(g, b, dh_prime)
     gab = pow(ga, b, dh_prime)
 

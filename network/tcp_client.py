@@ -76,7 +76,6 @@ class TcpClient:
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()
 
-
     def cancel_read(self):
         """Cancels the read operation IF it hasn't yet
            started, raising a ReadCancelledError"""
