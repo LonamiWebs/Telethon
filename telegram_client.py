@@ -16,6 +16,7 @@ from tl import MTProtoRequest
 from tl import Session
 
 # The Requests and types that we'll be using
+from tl.functions.upload import SaveBigFilePartRequest
 from tl.types import \
     PeerUser, PeerChat, PeerChannel, \
     InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
@@ -270,35 +271,41 @@ class TelegramClient:
 
     def upload_file(self, file_path, part_size_kb=64, file_name=None):
         """Uploads the specified media with the given chunk (part) size, in KB.
-           If no custom file name is specified, the real file name will be used.
-           This method will fail when trying to upload files larger than 10MB!"""
+           If no custom file name is specified, the real file name will be used"""
+
+        if part_size_kb > 512:
+            raise ValueError('The part size must be less or equal to 512KB')
 
         part_size = int(part_size_kb * 1024)
         if part_size % 1024 != 0:
             raise ValueError('The part size must be evenly divisible by 1024')
 
+        # Determine whether the file is too big (over 10MB) or not
+        # Telegram does make a distinction between smaller or larger files
+        file_size = path.getsize(file_path)
+        is_large = file_size > 10 * 1024 * 1024
+        part_count = (file_size + part_size - 1) // part_size
+
         # Multiply the datetime timestamp by 10^6 to get the ticks
         # This is high likely going to be unique
         file_id = int(datetime.now().timestamp() * (10 ** 6))
-        part_index = 0
         hash_md5 = md5()
 
         with open(file_path, 'rb') as file:
-            while True:
+            for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
                 part = file.read(part_size)
 
-                # If we have read no data (0 bytes), the file is over
-                # So there is nothing left to upload
-                if not part:
-                    break
-
-                print('I read {} out of {}'.format(len(part), part_size))
+                # The SavePartRequest is different depending on whether
+                # the file is too large or not (over or less than 10MB)
+                if is_large:
+                    request = SaveBigFilePartRequest(file_id, part_index, part_count, part)
+                else:
+                    request = SaveFilePartRequest(file_id, part_index, part)
 
                 # Invoke the file upload and increment both the part index and MD5 checksum
-                result = self.invoke(SaveFilePartRequest(file_id, part_index, part))
+                result = self.invoke(request)
                 if result:
-                    part_index += 1
                     hash_md5.update(part)
                 else:
                     raise ValueError('Could not upload file part #{}'.format(part_index))
@@ -309,7 +316,7 @@ class TelegramClient:
 
         # After the file has been uploaded, we can return a handle pointing to it
         return InputFile(id=file_id,
-                         parts=part_index,
+                         parts=part_count,
                          name=file_name,
                          md5_checksum=hash_md5.hexdigest())
 
@@ -331,6 +338,10 @@ class TelegramClient:
             # TODO If the input file is an audio, find out:
             # Performer and song title and add DocumentAttributeAudio
         ]
+        # Ensure we have a mime type, any; but it cannot be None
+        # «The "octet-stream" subtype is used to indicate that a body contains arbitrary binary data.»
+        if not mime_type:
+            mime_type = 'application/octet-stream'
         self.send_media_file(InputMediaUploadedDocument(file=input_file,
                                                         mime_type=mime_type,
                                                         attributes=attributes,

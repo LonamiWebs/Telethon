@@ -21,7 +21,6 @@ class TcpClient:
         """Connects to the specified IP and port number"""
         self.socket.connect((ip, port))
         self.connected = True
-        self.socket.setblocking(False)
 
     def close(self):
         """Closes the connection"""
@@ -34,18 +33,9 @@ class TcpClient:
 
         # Ensure that only one thread can send data at once
         with self.lock:
-            # Do not use .sendall:
-            # "on error, an exception is raised, and there is no way to
-            #  determine how much data, if any, was successfully sent."
-            while data:
-                try:
-                    sent = self.socket.send(data)
-                    data = data[sent:]
-                except BlockingIOError as e:
-                    if 'Errno 11' in str(e):  # Error #11: Resource temporary unavailable
-                        time.sleep(0.1)  # Sleep a bit waiting for the resource to be available
-                    else:
-                        raise e
+            # Set blocking so it doesn't error
+            self.socket.setblocking(True)
+            self.socket.sendall(data)
 
     def read(self, buffer_size):
         """Reads (receives) the specified bytes from the connected peer"""
@@ -54,6 +44,9 @@ class TcpClient:
         with self.lock:
             # Ensure it is not cancelled at first, so we can enter the loop
             self.cancelled = False
+
+            # Set non-blocking so it can be cancelled
+            self.socket.setblocking(False)
 
             with BinaryWriter() as writer:
                 while writer.written_count < buffer_size:

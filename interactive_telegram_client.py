@@ -216,7 +216,7 @@ if __name__ == '__main__':
         client.run()
 
     except Exception as e:
-        print('Unexpected error ({}): {} at\n{}', type(e), e, traceback.format_exc())
+        print('Unexpected error ({}): {} at\n{}'.format(type(e), e, traceback.format_exc()))
 
     finally:
         print_title('Exit')
