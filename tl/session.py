@@ -1,4 +1,5 @@
 from os.path import isfile as file_exists
+import os
 import time
 import pickle
 import utils
@@ -23,6 +24,14 @@ class Session:
         if self.session_user_id:
             with open('{}.session'.format(self.session_user_id), 'wb') as file:
                 pickle.dump(self, file)
+
+    def delete(self):
+        """Deletes the current session file"""
+        try:
+            os.remove('{}.session'.format(self.session_user_id))
+            return True
+        except:
+            return False
 
     @staticmethod
     def try_load_or_create_new(session_user_id):

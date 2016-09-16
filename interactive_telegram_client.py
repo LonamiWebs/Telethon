@@ -49,7 +49,7 @@ class InteractiveTelegramClient(TelegramClient):
             code_ok = False
             while not code_ok:
                 code = input('Enter the code you just received: ')
-                code_ok = self.make_auth(user_phone, code)
+                code_ok = self.sign_in(user_phone, code)
 
     def run(self):
         # Listen for updates
@@ -72,8 +72,17 @@ class InteractiveTelegramClient(TelegramClient):
                         print('{}. {}'.format(i, display))
 
                     # Let the user decide who they want to talk to
-                    i = input('Who do you want to send messages to ("!q" to exit)?: ')
+                    print()
+                    print('> Who do you want to send messages to?')
+                    print('> Available commands:')
+                    print('  !q: Quits the dialogs window and exits.')
+                    print('  !l: Logs out, terminating this session.')
+                    print()
+                    i = input('Enter dialog ID or a command: ')
                     if i == '!q':
+                        return
+                    if i == '!l':
+                        self.log_out()
                         return
 
                     i = int(i if i else 0) - 1
@@ -90,13 +99,14 @@ class InteractiveTelegramClient(TelegramClient):
 
             # Show some information
             print_title('Chat with "{}"'.format(display))
-            print('Available commands:'.format(display))
+            print('Available commands:')
             print('  !q: Quits the current chat.')
             print('  !Q: Quits the current chat and exits.')
             print('  !h: prints the latest messages (message History) of the chat.')
             print('  !p <path>: sends a Photo located at the given path.')
             print('  !f <path>: sends a File document located at the given path.')
             print('  !d <msg-id>: Downloads the given message media (if any).')
+            print()
 
             # And start a while loop to chat
             while True:

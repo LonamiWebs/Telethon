@@ -25,7 +25,7 @@ from tl.types import \
 
 from tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from tl.functions.help import GetConfigRequest
-from tl.functions.auth import SendCodeRequest, SignInRequest
+from tl.functions.auth import SendCodeRequest, SignInRequest, SignUpRequest, LogOutRequest
 from tl.functions.upload import SaveFilePartRequest, GetFileRequest
 from tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest, SendMediaRequest
 
@@ -141,15 +141,15 @@ class TelegramClient:
             except InvalidDCError as error:
                 self.reconnect_to_dc(error.new_dc)
 
-    def make_auth(self, phone_number, code):
+    def sign_in(self, phone_number, code):
         """Completes the authorization of a phone number by providing the received code"""
         if phone_number not in self.phone_code_hashes:
             raise ValueError('Please make sure you have called send_code_request first.')
 
         try:
-            request = SignInRequest(phone_number, self.phone_code_hashes[phone_number], code)
-            self.sender.send(request)
-            self.sender.receive(request)
+            result = self.invoke(SignInRequest(
+                phone_number, self.phone_code_hashes[phone_number], code))
+
         except RPCError as error:
             if error.message.startswith('PHONE_CODE_'):
                 print(error)
@@ -158,13 +158,36 @@ class TelegramClient:
                 raise error
 
         # Result is an Auth.Authorization TLObject
-        self.session.user = request.result.user
+        self.session.user = result.user
         self.session.save()
 
         # Now that we're authorized, we can listen for incoming updates
         self.sender.set_listen_for_updates(True)
-
         return True
+
+    def sign_up(self, phone_number, code, first_name, last_name=''):
+        """Signs up to Telegram. Make sure you sent a code request first!"""
+        result = self.invoke(SignUpRequest(phone_number=phone_number,
+                                           phone_code_hash=self.phone_code_hashes[phone_number],
+                                           phone_code=code,
+                                           first_name=first_name,
+                                           last_name=last_name))
+
+        self.session.user = result.user
+        self.session.save()
+
+    def log_out(self):
+        """Logs out and deletes the current session. Returns True if everything went OK"""
+        try:
+            # This request is a bit special. Nothing is received after
+            self.sender.send(LogOutRequest())
+            if not self.session.delete():
+                return False
+
+            self.session = None
+        except:
+            return False
+
 
     # endregion
 
