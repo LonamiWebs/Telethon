@@ -189,7 +189,6 @@ class TelegramClient:
         except:
             return False
 
-
     # endregion
 
     # region Dialogs ("chats") requests
@@ -269,9 +268,19 @@ class TelegramClient:
     #   be handled through a separate session and a separate connection"
     # region Uploading media requests
 
-    def upload_file(self, file_path, part_size_kb=64, file_name=None):
-        """Uploads the specified media with the given chunk (part) size, in KB.
-           If no custom file name is specified, the real file name will be used"""
+    def upload_file(self, file_path, part_size_kb=None, file_name=None, progress_callback=None):
+        """Uploads the specified file_path and returns a handle which can be later used
+
+        :param file_path: The file path of the file that will be uploaded
+        :param part_size_kb: The part size when uploading the file. None = Automatic
+        :param file_name: The name of the uploaded file. None = Automatic
+        :param progress_callback: A callback function which takes two parameters,
+                                  uploaded size (in bytes) and total file size (in bytes)
+                                  This is called every time a part is uploaded
+        """
+        file_size = path.getsize(file_path)
+        if not part_size_kb:
+            part_size_kb = self.find_appropiate_part_size(file_size)
 
         if part_size_kb > 512:
             raise ValueError('The part size must be less or equal to 512KB')
@@ -282,7 +291,6 @@ class TelegramClient:
 
         # Determine whether the file is too big (over 10MB) or not
         # Telegram does make a distinction between smaller or larger files
-        file_size = path.getsize(file_path)
         is_large = file_size > 10 * 1024 * 1024
         part_count = (file_size + part_size - 1) // part_size
 
@@ -307,6 +315,8 @@ class TelegramClient:
                 result = self.invoke(request)
                 if result:
                     hash_md5.update(part)
+                    if progress_callback:
+                        progress_callback(file.tell(), file_size)
                 else:
                     raise ValueError('Could not upload file part #{}'.format(part_index))
 
@@ -357,24 +367,34 @@ class TelegramClient:
 
     # region Downloading media requests
 
-    def download_msg_media(self, message_media, file_path, add_extension=True):
+    def download_msg_media(self, message_media, file_path, add_extension=True, progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
-           into the desired file_path, optionally finding its extension automatically"""
+           into the desired file_path, optionally finding its extension automatically
+           The progress_callback should be a callback function which takes two parameters,
+           uploaded size (in bytes) and total file size (in bytes).
+           This will be called every time a part is downloaded"""
         if type(message_media) == MessageMediaPhoto:
-            return self.download_photo(message_media, file_path, add_extension)
+            return self.download_photo(message_media, file_path, add_extension, progress_callback)
 
         elif type(message_media) == MessageMediaDocument:
-            return self.download_document(message_media, file_path, add_extension)
+            return self.download_document(message_media, file_path, add_extension, progress_callback)
 
         elif type(message_media) == MessageMediaContact:
             return self.download_contact(message_media, file_path, add_extension)
 
-    def download_photo(self, message_media_photo, file_path, add_extension=False):
+    def download_photo(self, message_media_photo, file_path, add_extension=False,
+                       progress_callback=None):
         """Downloads MessageMediaPhoto's largest size into the desired
-           file_path, optionally finding its extension automatically"""
+           file_path, optionally finding its extension automatically
+           The progress_callback should be a callback function which takes two parameters,
+           uploaded size (in bytes) and total file size (in bytes).
+           This will be called every time a part is downloaded"""
+
         # Determine the photo and its largest size
         photo = message_media_photo.photo
-        largest_size = photo.sizes[-1].location
+        largest_size = photo.sizes[-1]
+        file_size = largest_size.size
+        largest_size = largest_size.location
 
         # Photos are always compressed into a .jpg by Telegram
         if add_extension:
@@ -383,14 +403,20 @@ class TelegramClient:
         # Download the media with the largest size input file location
         self.download_file_loc(InputFileLocation(volume_id=largest_size.volume_id,
                                                  local_id=largest_size.local_id,
-                                                 secret=largest_size.secret), file_path)
+                                                 secret=largest_size.secret),
+                               file_path, file_size, progress_callback)
         return file_path
 
-    def download_document(self, message_media_document, file_path=None, add_extension=True):
+    def download_document(self, message_media_document, file_path=None, add_extension=True,
+                          progress_callback=None):
         """Downloads the given MessageMediaDocument into the desired
            file_path, optionally finding its extension automatically.
-           If no file_path is given, it will _try_ to be guessed from the document"""
+           If no file_path is given, it will try to be guessed from the document
+           The progress_callback should be a callback function which takes two parameters,
+           uploaded size (in bytes) and total file size (in bytes).
+           This will be called every time a part is downloaded"""
         document = message_media_document.document
+        file_size = document.size
 
         # If no file path was given, try to guess it from the attributes
         if file_path is None:
@@ -413,7 +439,8 @@ class TelegramClient:
 
         self.download_file_loc(InputDocumentFileLocation(id=document.id,
                                                          access_hash=document.access_hash,
-                                                         version=document.version), file_path)
+                                                         version=document.version),
+                               file_path, file_size, progress_callback)
 
         return file_path
 
@@ -443,8 +470,17 @@ class TelegramClient:
 
         return file_path
 
-    def download_file_loc(self, input_location, file_path, part_size_kb=64):
-        """Downloads media from the given input_file_location to the specified file_path"""
+    def download_file_loc(self, input_location, file_path, part_size_kb=64,
+                          file_size=None, progress_callback=None):
+        """Downloads media from the given input_file_location to the specified file_path.
+           If a progress_callback function is given, it will be called taking two
+           arguments (downloaded bytes count and total file size)"""
+
+        if not part_size_kb:
+            if not file_size:
+                raise ValueError('A part size value must be provided')
+            else:
+                part_size_kb = self.find_appropiate_part_size(file_size)
 
         part_size = int(part_size_kb * 1024)
         if part_size % 1024 != 0:
@@ -468,6 +504,8 @@ class TelegramClient:
                     return result.type  # Return some extra information
 
                 file.write(result.bytes)
+                if progress_callback:
+                    progress_callback(file.tell(), file_size)
 
     # endregion
 
@@ -516,6 +554,21 @@ class TelegramClient:
 
         except StopIteration:
             return None
+
+    @staticmethod
+    def find_appropiate_part_size(file_size):
+        if file_size <= 1048576:  # 1MB
+            return 32
+        if file_size <= 10485760:  # 10MB
+            return 64
+        if file_size <= 393216000:  # 375MB
+            return 128
+        if file_size <= 786432000:  # 750MB
+            return 256
+        if file_size <= 1572864000:  # 1500MB
+            return 512
+
+        raise ValueError('File size too large')
 
     # endregion
 

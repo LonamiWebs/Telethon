@@ -27,6 +27,16 @@ def print_title(title):
     print('└{}┘'.format('─' * available_cols))
 
 
+def bytes_to_string(byte_count):
+    """Converts a byte count to a string (in KB, MB...)"""
+    suffix_index = 0
+    while byte_count >= 1024:
+        byte_count /= 1024
+        suffix_index += 1
+
+    return '{:.2f}{}'.format(byte_count, [' bytes', 'KB', 'MB', 'GB', 'TB'][suffix_index])
+
+
 class InteractiveTelegramClient(TelegramClient):
     def __init__(self, session_user_id, user_phone, layer, api_id, api_hash):
         print_title('Initialization')
@@ -160,7 +170,7 @@ class InteractiveTelegramClient(TelegramClient):
 
     def send_photo(self, path, peer):
         print('Uploading {}...'.format(path))
-        input_file = self.upload_file(path)
+        input_file = self.upload_file(path, progress_callback=self.upload_progress_callback)
 
         # After we have the handle to the uploaded file, send it to our peer
         self.send_photo_file(input_file, peer)
@@ -168,7 +178,7 @@ class InteractiveTelegramClient(TelegramClient):
 
     def send_document(self, path, peer):
         print('Uploading {}...'.format(path))
-        input_file = self.upload_file(path)
+        input_file = self.upload_file(path, progress_callback=self.upload_progress_callback)
 
         # After we have the handle to the uploaded file, send it to our peer
         self.send_document_file(input_file, peer)
@@ -185,11 +195,29 @@ class InteractiveTelegramClient(TelegramClient):
                     # Let the output be the message ID
                     output = str('usermedia/{}'.format(msg_media_id))
                     print('Downloading media with name {}...'.format(output))
-                    output = self.download_msg_media(msg.media, file_path=output)
+                    output = self.download_msg_media(msg.media,
+                                                     file_path=output,
+                                                     progress_callback=self.download_progress_callback)
                     print('Media downloaded to {}!'.format(output))
 
         except ValueError:
             print('Invalid media ID given!')
+
+    @staticmethod
+    def download_progress_callback(downloaded_bytes, total_bytes):
+        InteractiveTelegramClient.print_progress('Downloaded', downloaded_bytes, total_bytes)
+
+    @staticmethod
+    def upload_progress_callback(uploaded_bytes, total_bytes):
+        InteractiveTelegramClient.print_progress('Uploaded', uploaded_bytes, total_bytes)
+
+    @staticmethod
+    def print_progress(progress_type, downloaded_bytes, total_bytes):
+        print('{} {} out of {} ({:.2%})'.format(
+            progress_type,
+            bytes_to_string(downloaded_bytes),
+            bytes_to_string(total_bytes),
+            downloaded_bytes / total_bytes))
 
     @staticmethod
     def update_handler(update_object):
