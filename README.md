@@ -48,9 +48,9 @@ head to `api/` directory and create a copy of the `settings_example` file, namin
 Then fill the file with the corresponding values (your `api_id`, `api_hash` and phone number in international format).
 
 ## Running Telethon
-First of all, you need to run the `tl_generator.py` by issuing `python3 tl_generator.py`. This will generate all the
-TLObjects from the given `scheme.tl` file. When it's done, you can run `python3 interactive_telegram_client.py` to
-start the interactive example.
+First of all, you need to run the `tl_generator.py` (located under `telethon-generator/`) by issuing
+`python3 tl_generator.py`. This will generate all the TLObjects from the given `scheme.tl` file.
+When it's done, you can run `python3 try_telethon.py` to start the interactive example.
 
 ## Advanced uses
 ### Using more than just `TelegramClient`
