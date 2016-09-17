@@ -29,20 +29,19 @@ import telethon.network.authenticator as authenticator
 from telethon.errors import *
 from telethon.network import MtProtoSender, TcpTransport
 from telethon.parser.markdown_parser import parse_message_entities
+from telethon.tl.all_tlobjects import layer
 
 
 class TelegramClient:
 
     # region Initialization
 
-    def __init__(self, session_user_id, layer, api_id, api_hash):
+    def __init__(self, session_user_id, api_id, api_hash):
         if api_id is None or api_hash is None:
             raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.md')
 
         self.api_id = api_id
         self.api_hash = api_hash
-
-        self.layer = layer
 
         self.session = Session.try_load_or_create_new(session_user_id)
         self.transport = TcpTransport(self.session.server_address, self.session.port)
@@ -78,7 +77,7 @@ class TelegramClient:
                                           lang_code='en',
                                           query=GetConfigRequest())
 
-            result = self.invoke(InvokeWithLayerRequest(layer=self.layer, query=query))
+            result = self.invoke(InvokeWithLayerRequest(layer=layer, query=query))
 
             # We're only interested in the DC options,
             # although many other options are available!

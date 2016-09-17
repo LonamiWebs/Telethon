@@ -25,7 +25,6 @@ if __name__ == '__main__':
     client = InteractiveTelegramClient(
         session_user_id=settings.get('session_name', 'anonymous'),
         user_phone=str(settings['user_phone']),
-        layer=55,
         api_id=settings['api_id'],
         api_hash=settings['api_hash'])
 

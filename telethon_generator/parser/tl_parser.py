@@ -29,3 +29,13 @@ class TLParser:
 
                     else:
                         yield TLObject.from_tl(line, is_function)
+
+    @staticmethod
+    def find_layer(file_path):
+        """Finds the layer used on the specified scheme.tl file"""
+        layer_regex = re.compile(r'^//\s*LAYER\s*(\d+)$')
+        with open(file_path, encoding='utf-8') as file:
+            for line in file:
+                match = layer_regex.match(line)
+                if match:
+                    return int(match.group(1))

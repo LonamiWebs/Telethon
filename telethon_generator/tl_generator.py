@@ -167,6 +167,10 @@ class TLGenerator:
                     builder.writeln('import {}'.format(TLGenerator.get_full_file_name(tlobject)))
                 builder.writeln()
 
+                # Create a variable to indicate which layer this is
+                builder.writeln('layer = {}  # Current generated layer'.format(TLParser.find_layer(scheme_file)))
+                builder.writeln()
+
                 # Then create the dictionary containing constructor_id: class
                 builder.writeln('tlobjects = {')
                 builder.current_indent += 1
