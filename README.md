@@ -4,9 +4,10 @@ The project's **core only** is based on TLSharp, a C# Telegram client implementa
 
 # Table of contents
 - [Why Telethon?](#why-telethon)
-- [Requirements](#requirements)
-  - [Python modules](#python-modules)
-  - [Obtaining your `API ID` and `Hash`](#obtaining-your-api-id-and-hash)
+- [Obtaining your Telegram `API ID` and `Hash`](#obtaining-your-telegram-api-id-and-hash)
+- [Installing Telethon](#installing-telethon)
+  - [Via `pip`](#installing-telethon-via-pip)
+  - [Manually](#installing-telethon-manually)
 - [Running Telethon](#running-telethon)
 - [Advanced uses](#advanced-uses)
   - [Using more than just `TelegramClient`](#using-more-than-just-telegramclient)
@@ -31,26 +32,58 @@ Do you want check for new messages at a given time and find relevant ones? Write
 Hungry for more API calls which the `TelegramClient` class doesn't _seem_ to have implemented?
 Please read [this section](#using-more-than-just-telegramclient).
 
-## Requirements
-### Python modules
-This project requires the following Python modules, which can be installed by issuing `sudo -H pip3 install <module>` on a
-Linux terminal:
-- `pyaes` ([GitHub](https://github.com/ricmoo/pyaes), [package index](https://pypi.python.org/pypi/pyaes))
-
-### Obtaining your `API ID` and `Hash`
+## Obtaining your Telegram `API ID` and `Hash`
+In order to use Telethon, you first need to obtain your very own API ID and Hash:
 1. Follow [this link](https://my.telegram.org) and login with your phone number.
 2. Click under `API Development tools`.
 3. A `Create new application` window will appear. Fill in your application details.
 There is no need to enter any `URL`, and only the first two fields (`App title` and `Short name`)
 can be changed later as long as I'm aware.
-4. Click on `Create application` at the end. Now that you have the `API ID` and `Hash`,
-head to `api/` directory and create a copy of the `settings_example` file, naming it `settings` (lowercase!).
-Then fill the file with the corresponding values (your `api_id`, `api_hash` and phone number in international format).
+4. Click on `Create application` at the end.
+
+Now that you know your `API ID` and `Hash`, you can continue installing Telethon.
+
+## Installing Telethon
+### Installing Telethon via `pip`
+On a terminal, issue the following command:
+```sh
+sudo -H pip install telethon
+```
+
+You're ready to go.
+
+### Installing Telethon manually
+1. Install the required `pyaes` module: `sudo -H pip install pyaes`
+   ([GitHub](https://github.com/ricmoo/pyaes), [package index](https://pypi.python.org/pypi/pyaes))
+2. Clone Telethon's GitHub repository: `git clone https://github.com/LonamiWebs/Telethon.git`
+3. Enter the cloned repository: `cd Telethon`
+4. Run the code generator: `python3 telethon_generator/tl_generator.py`
+5. Done!
 
 ## Running Telethon
-First of all, you need to run the `tl_generator.py` (located under `telethon-generator/`) by issuing
-`python3 tl_generator.py`. This will generate all the TLObjects from the given `scheme.tl` file.
-When it's done, you can run `python3 try_telethon.py` to start the interactive example.
+If you've installed Telethon via pip, launch an interactive python3 session and enter the following:
+```python
+>>> from telethon import InteractiveTelegramClient
+>>> # 'sessionid' can be 'yourname'. It'll be saved as yourname.session
+>>> # Also (obviously) replace the api_id and api_hash with your values
+...
+>>> client = InteractiveTelegramClient('sessionid', '+34600000000',
+...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef')
+
+┌───────────────────────────────────────────────────────────┐
+│                      Initialization                       │
+└───────────────────────────────────────────────────────────┘
+Initializing interactive example...
+Connecting to Telegram servers...
+>>> client.run()
+```
+
+
+If, on the other hand, you've installed Telethon manually, head to the `api/` directory and create a
+copy of the `settings_example` file, naming it `settings` (lowercase!). Then fill the file with the
+corresponding values (your `api_id`, `api_hash` and phone number in international format).
+
+Then, simply run `python3 try_telethon.py` to start the interactive example.
 
 ## Advanced uses
 ### Using more than just `TelegramClient`
@@ -137,8 +170,3 @@ replacing the one you can find in this same directory by the updated one. Don't 
 afterwards and specifying the new layer number to be used when creating the `TelegramClient`.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
-
-## Plans for the future
-If everything works well, this probably ends up being a Python package :)
-
-But as of now, and until that happens, help is highly appreciated!

@@ -176,7 +176,7 @@ class BadMessageError(Exception):
     ErrorMessages = {
         16: 'msg_id too low (most likely, client time is wrong it would be worthwhile to '
             'synchronize it using msg_id notifications and re-send the original message '
-            'with the “correct” msg_id or wrap it in a container with a new msg_id if the '
+            'with the "correct" msg_id or wrap it in a container with a new msg_id if the '
             'original message had waited too long on the client to be transmitted).',
 
         17: 'msg_id too high (similar to the previous case, the client time has to be '

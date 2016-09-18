@@ -211,7 +211,15 @@ class InteractiveTelegramClient(TelegramClient):
     @staticmethod
     def update_handler(update_object):
         if type(update_object) is UpdateShortMessage:
-            print('[User #{} sent {}]'.format(update_object.user_id, update_object.message))
+            if update_object.out:
+                print('You sent {} to user #{}'.format(update_object.message, update_object.user_id))
+            else:
+                print('[User #{} sent {}]'.format(update_object.user_id, update_object.message))
 
         elif type(update_object) is UpdateShortChatMessage:
-            print('[Chat #{} sent {}]'.format(update_object.chat_id, update_object.message))
+            if update_object.out:
+                print('You sent {} to chat #{}'.format(update_object.message, update_object.chat_id))
+            else:
+                print('[Chat #{}, user #{} sent {}]'.format(update_object.chat_id,
+                                                            update_object.from_id,
+                                                            update_object.message))

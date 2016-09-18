@@ -34,6 +34,9 @@ from telethon.tl.all_tlobjects import layer
 
 class TelegramClient:
 
+    # Current TelegramClient version
+    __version__ = '0.5'
+
     # region Initialization
 
     def __init__(self, session_user_id, api_id, api_hash):
@@ -73,7 +76,7 @@ class TelegramClient:
             query = InitConnectionRequest(api_id=self.api_id,
                                           device_model=platform.node(),
                                           system_version=platform.system(),
-                                          app_version='0.4',
+                                          app_version=self.__version__,
                                           lang_code='en',
                                           query=GetConfigRequest())
 
