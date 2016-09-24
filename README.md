@@ -166,7 +166,6 @@ please stick with the suggested name or give one which is still descriptive enou
 ### Updating the `scheme.tl`
 Have you found a more updated version of the `scheme.tl` file? Those are great news! Updating is as simple as grabbing the
 [latest version](https://github.com/telegramdesktop/tdesktop/blob/master/Telegram/SourceFiles/mtproto/scheme.tl) and
-replacing the one you can find in this same directory by the updated one. Don't forget to run `python3 tl_generator.py`
-afterwards and specifying the new layer number to be used when creating the `TelegramClient`.
+replacing the one you can find in this same directory by the updated one. Don't forget to run `python3 tl_generator.py`.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.

@@ -62,6 +62,7 @@ class TLGenerator:
                 with SourceBuilder(file) as builder:
                     # Both types and functions inherit from MTProtoRequest so they all can be sent
                     builder.writeln('from telethon.tl.mtproto_request import MTProtoRequest')
+                    builder.writeln('import json')
                     builder.writeln()
                     builder.writeln()
                     builder.writeln('class {}(MTProtoRequest):'.format(TLGenerator.get_class_name(tlobject)))
@@ -153,6 +154,42 @@ class TLGenerator:
 
                     builder.writeln('def __str__(self):')
                     builder.writeln("return {}".format(str(tlobject)))
+                    builder.end_block()
+
+                    # Write JSON encoding
+                    builder.writeln('def json_encode(self):')
+                    builder.writeln('return json.dumps({')
+                    builder.current_indent += 1
+
+                    for arg in args:
+                        if TLGenerator.is_tlobject(arg.type):
+                            builder.writeln("'{0}': self.{0}.json_encode(),".format(arg.name))
+                        else:
+                            builder.writeln("'{0}': self.{0},".format(arg.name))
+
+                    builder.current_indent -= 1
+                    builder.writeln('})')
+                    builder.end_block()
+
+                    # Write JSON decoding
+                    builder.writeln('@staticmethod')
+                    builder.writeln('def json_decode(json_string):')
+                    builder.writeln('# Create an empty instance which will be filled with the JSON values')
+                    builder.writeln('instance = {}({})'.format(
+                        TLGenerator.get_class_name(tlobject),
+                        ', '.join('None' for _ in range(len(args)))
+                    ))
+                    builder.writeln('dictionary = json.loads(json_string)')
+                    builder.writeln()
+                    for arg in args:
+                        if TLGenerator.is_tlobject(arg.type):
+                            builder.writeln("instance.{0} = dictionary['{0}'].json_decode() if '{0}' in dictionary "
+                                            "and dictionary['{0}'] is not None else None".format(arg.name))
+                        else:
+                            builder.writeln("instance.{0} = dictionary.get('{0}', None)".format(arg.name))
+
+                    builder.writeln()
+                    builder.writeln('return instance')
                     # builder.end_block()  # There is no need to end the last block
 
         # Once all the objects have been generated, we can now group them in a single file
@@ -222,6 +259,12 @@ class TLGenerator:
             return result + '.py'
         else:
             return result
+
+    @staticmethod
+    def is_tlobject(type):
+        """Determines whether the type is a "basic" type or another TLObject"""
+        return type not in ['int', 'long', 'int128', 'int256', 'double',
+                                'string', 'Bool', 'true', 'bytes', 'date']
 
     @staticmethod
     def write_onsend_code(builder, arg, args, name=None):
