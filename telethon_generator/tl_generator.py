@@ -133,6 +133,17 @@ class TLGenerator:
                         TLGenerator.write_onsend_code(builder, arg, tlobject.args)
                     builder.end_block()
 
+                    # Generate the empty() function, which returns an "empty"
+                    # instance, in which all attributes are set to None
+                    builder.writeln('@staticmethod')
+                    builder.writeln('def empty():')
+                    builder.writeln('"""Returns an "empty" instance (all attributes are None)"""')
+                    builder.writeln('return {}({})'.format(
+                        TLGenerator.get_class_name(tlobject),
+                        ', '.join('None' for _ in range(len(args)))
+                    ))
+                    builder.end_block()
+
                     # Write the on_response(self, reader) function
                     builder.writeln('def on_response(self, reader):')
                     # Do not read constructor's ID, since that's already been read somewhere else
@@ -163,7 +174,11 @@ class TLGenerator:
 
                     for arg in args:
                         if TLGenerator.is_tlobject(arg.type):
-                            builder.writeln("'{0}': self.{0}.json_encode(),".format(arg.name))
+                            if arg.is_vector:
+                                builder.writeln("'{0}': [{0}_item.json_encode() "
+                                                "for {0}_item in self.{0}],".format(arg.name))
+                            else:
+                                builder.writeln("'{0}': self.{0}.json_encode(),".format(arg.name))
                         else:
                             builder.writeln("'{0}': self.{0},".format(arg.name))
 
@@ -175,16 +190,17 @@ class TLGenerator:
                     builder.writeln('@staticmethod')
                     builder.writeln('def json_decode(json_string):')
                     builder.writeln('# Create an empty instance which will be filled with the JSON values')
-                    builder.writeln('instance = {}({})'.format(
-                        TLGenerator.get_class_name(tlobject),
-                        ', '.join('None' for _ in range(len(args)))
-                    ))
+                    builder.writeln('instance = {}.empty()'.format(TLGenerator.get_class_name(tlobject)))
                     builder.writeln('dictionary = json.loads(json_string)')
                     builder.writeln()
                     for arg in args:
                         if TLGenerator.is_tlobject(arg.type):
-                            builder.writeln("instance.{0} = dictionary['{0}'].json_decode() if '{0}' in dictionary "
-                                            "and dictionary['{0}'] is not None else None".format(arg.name))
+                            if arg.is_vector:
+                                builder.writeln("instance.{0} = [{0}_item.json_decode() "
+                                                "for {0}_item in dictionary['{0}']]".format(arg.name))
+                            else:
+                                builder.writeln("instance.{0} = dictionary['{0}'].json_decode() if '{0}' in dictionary "
+                                                "and dictionary['{0}'] is not None else None".format(arg.name))
                         else:
                             builder.writeln("instance.{0} = dictionary.get('{0}', None)".format(arg.name))
 
