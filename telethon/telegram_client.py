@@ -85,6 +85,9 @@ class TelegramClient:
             # We're only interested in the DC options,
             # although many other options are available!
             self.dc_options = result.dc_options
+
+            # We can now enable these (for such methods such as logout)
+            self.sender.ack_requests_confirm = True
             return True
         except RPCError as error:
             print('Could not stabilise initial connection: {}'.format(error))

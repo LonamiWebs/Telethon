@@ -132,6 +132,17 @@ class TLGenerator:
                         TLGenerator.write_onsend_code(builder, arg, tlobject.args)
                     builder.end_block()
 
+                    # Write the empty() function, which returns an "empty"
+                    # instance, in which all attributes are set to None
+                    builder.writeln('@staticmethod')
+                    builder.writeln('def empty():')
+                    builder.writeln('"""Returns an "empty" instance (all attributes are None)"""')
+                    builder.writeln('return {}({})'.format(
+                        TLGenerator.get_class_name(tlobject),
+                        ', '.join('None' for _ in range(len(args)))
+                    ))
+                    builder.end_block()
+
                     # Write the on_response(self, reader) function
                     builder.writeln('def on_response(self, reader):')
                     # Do not read constructor's ID, since that's already been read somewhere else

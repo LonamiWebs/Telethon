@@ -26,6 +26,12 @@ class MtProtoSender:
         self.updates_thread_running = False
         self.updates_thread_receiving = False
 
+        # Determine whether the received acknowledge request confirm
+        # our requests or not. This is not desired until we initialize
+        # our connection, because it breaks things when we call InvokeWithLayer
+        # TODO There might be a better way to handle msgs_ack requests
+        self.ack_requests_confirm = False
+
     def disconnect(self):
         """Disconnects and **stops all the running threads** if any"""
         self.set_listen_for_updates(enabled=False)
@@ -192,12 +198,9 @@ class MtProtoSender:
         if code == 0xa7eff811:  # bad_msg_notification
             return self.handle_bad_msg_notification(msg_id, sequence, reader)
 
-        if code == 0x62d6b459:  # msgs_ack, it may handle the request we wanted
+        # msgs_ack, it may handle the request we wanted
+        if self.ack_requests_confirm and code == 0x62d6b459:
             ack = reader.tgread_object()
-            for message_id in ack.msg_ids:
-                if message_id in self.need_confirmation:
-                    self.need_confirmation.remove(message_id)
-
             if request and request.msg_id in ack.msg_ids:
                 request.confirm_received = True
             return False
