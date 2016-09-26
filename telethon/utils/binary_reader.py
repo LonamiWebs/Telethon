@@ -117,8 +117,14 @@ class BinaryReader:
             # If there was still no luck, give up
             raise TypeNotFoundError(constructor_id)
 
-        # Create an empty instance of the class, and read its values
-        result = clazz.empty()
+        # Now we need to determine the number of parameters of the class, so we can
+        # instantiate it with all of them set to None, and still, no need to write
+        # the default =None in all the classes, thus forcing the user to provide a real value
+        sig = inspect.signature(clazz.__init__)
+        params = [None] * (len(sig.parameters) - 1)  # Subtract 1 (self)
+        result = clazz(*params)  # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+
+        # Finally, read the object and return the result
         result.on_response(self)
         return result
 
