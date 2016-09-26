@@ -1,7 +1,7 @@
 import platform
 from datetime import datetime
 from hashlib import md5
-from os import path, listdir
+from os import path
 from mimetypes import guess_extension, guess_type
 
 # For sending and receiving requests
@@ -35,7 +35,7 @@ from telethon.tl.all_tlobjects import layer
 class TelegramClient:
 
     # Current TelegramClient version
-    __version__ = '0.6'
+    __version__ = '0.5'
 
     # region Initialization
 
@@ -182,20 +182,14 @@ class TelegramClient:
     def log_out(self):
         """Logs out and deletes the current session. Returns True if everything went OK"""
         try:
-            self.invoke(LogOutRequest())
+            # This request is a bit special. Nothing is received after
+            self.sender.send(LogOutRequest())
             if not self.session.delete():
                 return False
 
             self.session = None
         except:
             return False
-
-    @staticmethod
-    def list_sessions():
-        """Lists all the sessions of the users who have ever connected
-           using this client and never logged out"""
-        return [path.splitext(path.basename(f))[0]  # splitext = split ext (not spli text!)
-                for f in listdir('.') if f.endswith('.session')]
 
     # endregion
 

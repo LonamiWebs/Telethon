@@ -192,16 +192,6 @@ class MtProtoSender:
         if code == 0xa7eff811:  # bad_msg_notification
             return self.handle_bad_msg_notification(msg_id, sequence, reader)
 
-        if code == 0x62d6b459:  # msgs_ack, it may handle the request we wanted
-            ack = reader.tgread_object()
-            for message_id in ack.msg_ids:
-                if message_id in self.need_confirmation:
-                    self.need_confirmation.remove(message_id)
-
-            if request and request.msg_id in ack.msg_ids:
-                request.confirm_received = True
-            return False
-
         # If the code is not parsed manually, then it was parsed by the code generator!
         # In this case, we will simply treat the incoming TLObject as an Update,
         # if we can first find a matching TLObject
