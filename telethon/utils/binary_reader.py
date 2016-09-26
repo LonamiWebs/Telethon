@@ -128,6 +128,14 @@ class BinaryReader:
         result.on_response(self)
         return result
 
+    def tgread_vector(self):
+        """Reads a vector (a list) of Telegram objects"""
+        if 0x1cb5c415 != self.read_int(signed=False):
+            raise ValueError('Invalid constructor code, vector was expected')
+
+        count = self.read_int()
+        return [self.tgread_object() for _ in range(count)]
+
     # endregion
 
     def close(self):

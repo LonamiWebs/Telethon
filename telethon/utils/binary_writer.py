@@ -95,6 +95,17 @@ class BinaryWriter:
         value = 0 if datetime is None else int(datetime.timestamp())
         self.write_int(value)
 
+    def tgwrite_object(self, tlobject):
+        """Writes a Telegram object"""
+        tlobject.on_send(self)
+
+    def tgwrite_vector(self, vector):
+        """Writes a vector of Telegram objects"""
+        self.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID
+        self.write_int(len(vector))
+        for item in vector:
+            self.tgwrite_object(item)
+
     # endregion
 
     def flush(self):
