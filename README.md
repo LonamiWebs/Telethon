@@ -14,7 +14,6 @@ The project's **core only** is based on TLSharp, a C# Telegram client implementa
   - [Tips for porting Telethon](#tips-for-porting-telethon)
   - [Code generator limitations](#code-generator-limitations)
   - [Updating the `scheme.tl`](#updating-the-schemetl)
-- [Plans for the future](#plans-for-the-future)
 
 ## Why Telethon?
 > Why should I bother with Telethon? There are more mature projects already, such as
