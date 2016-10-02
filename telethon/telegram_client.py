@@ -54,6 +54,9 @@ class TelegramClient:
         self.sender = None
         self.phone_code_hashes = {}
 
+        # We need to be signed in before we can listen for updates
+        self.signed_in = False
+
     # endregion
 
     # region Connecting
@@ -88,6 +91,9 @@ class TelegramClient:
 
             # We can now enable these (for such methods such as logout)
             self.sender.ack_requests_confirm = True
+
+            # We're signed in if we're authorized
+            self.signed_in = self.is_user_authorized()
             return True
         except RPCError as error:
             print('Could not stabilise initial connection: {}'.format(error))
@@ -167,8 +173,9 @@ class TelegramClient:
         self.session.user = result.user
         self.session.save()
 
-        # Now that we're authorized, we can listen for incoming updates
-        self.sender.set_listen_for_updates(True)
+        # Now that we're authorized, set the signed_in flag
+        # to True so update handlers can be added
+        self.signed_in = True
         return True
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
@@ -588,6 +595,9 @@ class TelegramClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
+        if not self.signed_in:
+            raise ValueError("You cannot add update handlers until you've signed in.")
+
         self.sender.add_update_handler(handler)
 
     def remove_update_handler(self, handler):
