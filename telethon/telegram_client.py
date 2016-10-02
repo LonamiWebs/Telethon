@@ -21,7 +21,10 @@ from telethon.tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from telethon.tl.functions.help import GetConfigRequest
 from telethon.tl.functions.auth import SendCodeRequest, SignInRequest, SignUpRequest, LogOutRequest
 from telethon.tl.functions.upload import SaveFilePartRequest, GetFileRequest
-from telethon.tl.functions.messages import GetDialogsRequest, GetHistoryRequest, SendMessageRequest, SendMediaRequest
+from telethon.tl.functions.messages import \
+    GetDialogsRequest, GetHistoryRequest, \
+    SendMessageRequest, SendMediaRequest, \
+    ReadHistoryRequest
 
 import telethon.helpers as utils
 import telethon.network.authenticator as authenticator
@@ -278,6 +281,25 @@ class TelegramClient:
                     break
 
         return total_messages, result.messages, users
+
+    def send_read_acknowledge(self, input_peer, messages=None, max_id=None):
+        """Sends a "read acknowledge" (i.e., notifying the given peer that we've
+           read their messages, also known as the "double check ✅✅").
+
+           Either a list of messages (or a single message) can be given,
+           or the maximum message ID (until which message we want to send the read acknowledge).
+
+           Returns an AffectedMessages TLObject"""
+        if max_id is None:
+            if not messages:
+                raise InvalidParameterError('Either a message list or a max_id must be provided.')
+
+            if isinstance(messages, list):
+                max_id = max(msg.id for msg in messages)
+            else:
+                max_id = messages.id
+
+        return self.invoke(ReadHistoryRequest(peer=input_peer, max_id=max_id))
 
     # endregion
 
