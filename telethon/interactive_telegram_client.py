@@ -58,7 +58,10 @@ class InteractiveTelegramClient(TelegramClient):
         while True:
             # Retrieve the top dialogs
             dialog_count = 10
-            dialogs, displays, inputs = self.get_dialogs(dialog_count)
+
+            # Entities represent the user, chat or channel
+            # corresponding to the dialog on the same index
+            dialogs, entities = self.get_dialogs(dialog_count)
 
             i = None
             while i is None:
@@ -66,9 +69,9 @@ class InteractiveTelegramClient(TelegramClient):
                     print_title('Dialogs window')
 
                     # Display them so the user can choose
-                    for i, display in enumerate(displays):
+                    for i, entity in enumerate(entities):
                         i += 1  # 1-based index for normies
-                        print('{}. {}'.format(i, display))
+                        print('{}. {}'.format(i, self.get_display_name(entity)))
 
                     # Let the user decide who they want to talk to
                     print()
@@ -92,19 +95,20 @@ class InteractiveTelegramClient(TelegramClient):
                 except ValueError:
                     pass
 
-            # Retrieve the selected user
-            display = displays[i]
-            input_peer = inputs[i]
+            # Retrieve the selected user (or chat, or channel)
+            entity = entities[i]
+            input_peer = self.get_input_peer(entity)
 
             # Show some information
-            print_title('Chat with "{}"'.format(display))
+            print_title('Chat with "{}"'.format(self.get_display_name(entity)))
             print('Available commands:')
             print('  !q: Quits the current chat.')
             print('  !Q: Quits the current chat and exits.')
             print('  !h: prints the latest messages (message History) of the chat.')
-            print('  !p <path>: sends a Photo located at the given path.')
-            print('  !f <path>: sends a File document located at the given path.')
-            print('  !d <msg-id>: Downloads the given message media (if any).')
+            print('  !up <path>: Uploads and sends a Photo located at the given path.')
+            print('  !uf <path>: Uploads and sends a File document located at the given path.')
+            print('  !dm <msg-id>: Downloads the given message Media (if any).')
+            print('  !dp: Downloads the current dialog Profile picture.')
             print()
 
             # And start a while loop to chat
@@ -139,19 +143,30 @@ class InteractiveTelegramClient(TelegramClient):
                             msg.date.hour, msg.date.minute, msg.id, name, content))
 
                 # Send photo
-                elif msg.startswith('!p '):
+                elif msg.startswith('!up '):
                     # Slice the message to get the path
                     self.send_photo(path=msg[len('!p '):], peer=input_peer)
 
                 # Send file (document)
-                elif msg.startswith('!f '):
+                elif msg.startswith('!uf '):
                     # Slice the message to get the path
                     self.send_document(path=msg[len('!f '):], peer=input_peer)
 
                 # Download media
-                elif msg.startswith('!d '):
+                elif msg.startswith('!dm '):
                     # Slice the message to get message ID
                     self.download_media(msg[len('!d '):])
+
+                # Download profile photo
+                elif msg == '!dp':
+                    output = str('usermedia/propic_{}'.format(entity.id))
+                    print('Downloading profile picture...')
+                    success = self.download_profile_photo(entity.photo, output)
+                    if success:
+                        print('Profile picture downloaded to {}'.format(output))
+                    else:
+                        print('"{}" does not seem to have a profile picture.'
+                              .format(self.get_display_name(entity)))
 
                 # Send chat message (if any)
                 elif msg:

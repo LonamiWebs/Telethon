@@ -11,8 +11,10 @@ from telethon.tl import Session
 # The Requests and types that we'll be using
 from telethon.tl.functions.upload import SaveBigFilePartRequest
 from telethon.tl.types import \
+    User, Chat, Channel, \
     PeerUser, PeerChat, PeerChannel, \
     InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
+    UserProfilePhotoEmpty, ChatPhotoEmpty, \
     InputFile, InputFileLocation, InputMediaUploadedPhoto, InputMediaUploadedDocument, \
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto, \
     DocumentAttributeAudio, DocumentAttributeFilename, InputDocumentFileLocation
@@ -217,33 +219,34 @@ class TelegramClient:
     # region Dialogs ("chats") requests
 
     def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
-        """Returns a tuple of lists ([dialogs], [displays], [input_peers]) with 'count' items each"""
+        """Returns a tuple of lists ([dialogs], [entities]) with 'count' items each.
+           The `entity` represents the user, chat or channel corresponding to that dialog"""
 
         r = self.invoke(GetDialogsRequest(offset_date=offset_date,
                                           offset_id=offset_id,
                                           offset_peer=offset_peer,
                                           limit=count))
-
         return (r.dialogs,
-                [self.find_display_name(d.peer, r.users, r.chats) for d in r.dialogs],
-                [self.find_input_peer(d.peer, r.users, r.chats) for d in r.dialogs])
+                [self.find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
 
     # endregion
 
     # region Message requests
 
     def send_message(self, input_peer, message, markdown=False, no_web_page=False):
-        """Sends a message to the given input peer"""
+        """Sends a message to the given input peer and returns the sent message ID"""
         if markdown:
             msg, entities = parse_message_entities(message)
         else:
             msg, entities = message, []
 
+        msg_id = utils.generate_random_long()
         self.invoke(SendMessageRequest(peer=input_peer,
                                        message=msg,
-                                       random_id=utils.generate_random_long(),
+                                       random_id=msg_id,
                                        entities=entities,
                                        no_webpage=no_web_page))
+        return msg_id
 
     def get_message_history(self, input_peer, limit=20,
                             offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0):
@@ -409,6 +412,32 @@ class TelegramClient:
 
     # region Downloading media requests
 
+    def download_profile_photo(self, profile_photo, file_path,
+                               add_extension=True, download_big=True):
+        """Downloads the profile photo for an user or a chat (including channels).
+           Returns False if no photo was providen, or if it was Empty"""
+
+        if (not profile_photo or
+            isinstance(profile_photo, UserProfilePhotoEmpty) or
+                isinstance(profile_photo, ChatPhotoEmpty)):
+            return False
+
+        # Photos are always compressed into a .jpg by Telegram
+        if add_extension:
+            file_path += '.jpg'
+
+        if download_big:
+            photo_location = profile_photo.photo_big
+        else:
+            photo_location = profile_photo.photo_small
+
+        # Download the media with the largest size input file location
+        self.download_file_loc(InputFileLocation(volume_id=photo_location.volume_id,
+                                                 local_id=photo_location.local_id,
+                                                 secret=photo_location.secret),
+                               file_path)
+        return True
+
     def download_msg_media(self, message_media, file_path, add_extension=True, progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
            into the desired file_path, optionally finding its extension automatically
@@ -556,43 +585,44 @@ class TelegramClient:
     # region Utilities
 
     @staticmethod
-    def find_display_name(peer, users, chats):
-        """Searches the display name for peer in both users and chats.
+    def get_display_name(entity):
+        """Gets the input peer for the given "entity" (user, chat or channel)
            Returns None if it was not found"""
-        try:
-            if type(peer) is PeerUser:
-                user = next(u for u in users if u.id == peer.user_id)
-                if user.last_name is not None:
-                    return '{} {}'.format(user.first_name, user.last_name)
-                return user.first_name
+        if isinstance(entity, User):
+            if entity.last_name is not None:
+                return '{} {}'.format(entity.first_name, entity.last_name)
+            return entity.first_name
 
-            elif type(peer) is PeerChat:
-                return next(c for c in chats if c.id == peer.chat_id).title
-
-            elif type(peer) is PeerChannel:
-                return next(c for c in chats if c.id == peer.channel_id).title
-
-        except StopIteration:
-            pass
-
-        return None
+        if isinstance(entity, Chat) or isinstance(entity, Channel):
+            return entity.title
 
     @staticmethod
-    def find_input_peer(peer, users, chats):
-        """Searches the given peer in both users and chats and returns an InputPeer for it.
+    def get_input_peer(entity):
+        """Gets the input peer for the given "entity" (user, chat or channel).
+           Returns None if it was not found"""
+        if isinstance(entity, User):
+            return InputPeerUser(entity.id, entity.access_hash)
+        if isinstance(entity, Chat):
+            return InputPeerChat(entity.id)
+        if isinstance(entity, Channel):
+            return InputPeerChannel(entity.id, entity.access_hash)
+
+    @staticmethod
+    def find_user_or_chat(peer, users, chats):
+        """Finds the corresponding user or chat given a peer.
            Returns None if it was not found"""
         try:
-            if type(peer) is PeerUser:
+            if isinstance(peer, PeerUser):
                 user = next(u for u in users if u.id == peer.user_id)
-                return InputPeerUser(user.id, user.access_hash)
+                return user
 
-            elif type(peer) is PeerChat:
+            elif isinstance(peer, PeerChat):
                 chat = next(c for c in chats if c.id == peer.chat_id)
-                return InputPeerChat(chat.id)
+                return chat
 
-            elif type(peer) is PeerChannel:
+            elif isinstance(peer, PeerChannel):
                 channel = next(c for c in chats if c.id == peer.channel_id)
-                return InputPeerChannel(channel.id, channel.access_hash)
+                return channel
 
         except StopIteration:
             return None
