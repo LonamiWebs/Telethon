@@ -134,14 +134,14 @@ and you know what arguments it has. It really isn't that hard to write a generat
 The generated code should also be able to _encode_ the `Request` into bytes, so they can be sent over the network.
 This isn't a big deal either, because you know how the `TLObject`'s are made.
 
-Once you have your own [code generator](tl_generator.py), start by looking at the
+Once you have your own [code generator](telethon_generator/tl_generator.py), start by looking at the
 [first release](https://github.com/LonamiWebs/Telethon/releases/tag/v0.1) of Telethon.
 The code there is simple to understand, easy to read and hence easy to port. No extra useless features.
 Only the bare bones. Perfect for starting a _new implementation_.
 
 P.S.: I may have lied a bit. The `TL` language is not that easy. But it's not that hard either.
 You're free to sniff the `parser/` files and learn how to parse other more complex lines.
-Or simply use that code and change the [SourceBuilder](parser/source_builder.py)!
+Or simply use that code and change the [SourceBuilder](telethon_generator/parser/source_builder.py)!
 
 ### Code generator limitations
 The current code generator is not complete, yet adding the missing features would only over-complicate an already hard-to-read code.
