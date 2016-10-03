@@ -1,6 +1,7 @@
 import gzip
 from telethon.errors import *
 from time import sleep
+from datetime import timedelta
 from threading import Thread, RLock
 
 import telethon.helpers as utils
@@ -104,14 +105,16 @@ class MtProtoSender:
             # And update the saved session
             self.session.save()
 
-    def receive(self, request):
+    def receive(self, request, timeout=timedelta(seconds=5)):
         """Receives the specified MTProtoRequest ("fills in it"
-           the received data). This also restores the updates thread"""
+           the received data). This also restores the updates thread.
+           An optional timeout can be specified to cancel the operation
+           if no data has been read after its time delta"""
 
         with self.lock:
             # Don't stop trying to receive until we get the request we wanted
             while not request.confirm_received:
-                seq, body = self.transport.receive()
+                seq, body = self.transport.receive(timeout)
                 message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
                 with BinaryReader(message) as reader:
@@ -326,19 +329,23 @@ class MtProtoSender:
 
     def updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
+
+        # Set a reasonable timeout when checking for updates
+        timeout = timedelta(minutes=1)
+
         while self.updates_thread_running:
             # Only try to receive updates if we're not waiting to receive a request
             if not self.waiting_receive:
                 with self.lock:
                     try:
                         self.updates_thread_receiving = True
-                        seq, body = self.transport.receive()
+                        seq, body = self.transport.receive(timeout)
                         message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
                         with BinaryReader(message) as reader:
                             self.process_msg(remote_msg_id, remote_sequence, reader)
 
-                    except ReadCancelledError:
+                    except (ReadCancelledError, TimeoutError):
                         pass
 
                 self.updates_thread_receiving = False

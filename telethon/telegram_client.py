@@ -1,5 +1,5 @@
 import platform
-from datetime import datetime
+from datetime import datetime, timedelta
 from hashlib import md5
 from os import path, listdir
 from mimetypes import guess_extension, guess_type
@@ -126,13 +126,15 @@ class TelegramClient:
 
     # region Telegram requests functions
 
-    def invoke(self, request):
-        """Invokes a MTProtoRequest (sends and receives it) and returns its result"""
+    def invoke(self, request, timeout=timedelta(seconds=5)):
+        """Invokes a MTProtoRequest (sends and receives it) and returns its result.
+           An optional timeout can be given to cancel the operation after the time delta.
+           Timeout can be set to None for no timeout"""
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
         self.sender.send(request)
-        self.sender.receive(request)
+        self.sender.receive(request, timeout)
 
         return request.result
 

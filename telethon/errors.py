@@ -4,7 +4,7 @@ import re
 class ReadCancelledError(Exception):
     """Occurs when a read operation was cancelled"""
     def __init__(self):
-        super().__init__(self, 'You must run `python3 tl_generator.py` first. #ReadTheDocs!')
+        super().__init__(self, 'The read operation was cancelled.')
 
 
 class InvalidParameterError(Exception):

@@ -1,4 +1,6 @@
 from binascii import crc32
+from datetime import timedelta
+
 from telethon.network import TcpClient
 from telethon.errors import *
 from telethon.utils import BinaryWriter
@@ -29,19 +31,23 @@ class TcpTransport:
             self.tcp_client.write(writer.get_bytes())
             self.send_counter += 1
 
-    def receive(self):
-        """Receives a TCP message (tuple(sequence number, body)) from the connected peer"""
+    def receive(self, timeout=timedelta(seconds=5)):
+        """Receives a TCP message (tuple(sequence number, body)) from the connected peer.
+           There is a default timeout of 5 seconds before the operation is cancelled.
+           Timeout can be set to None for no timeout"""
 
         # First read everything we need
-        packet_length_bytes = self.tcp_client.read(4)
+        packet_length_bytes = self.tcp_client.read(4, timeout)
         packet_length = int.from_bytes(packet_length_bytes, byteorder='little')
 
-        seq_bytes = self.tcp_client.read(4)
+        seq_bytes = self.tcp_client.read(4, timeout)
         seq = int.from_bytes(seq_bytes, byteorder='little')
 
-        body = self.tcp_client.read(packet_length - 12)
+        body = self.tcp_client.read(packet_length - 12, timeout)
 
-        checksum = int.from_bytes(self.tcp_client.read(4), byteorder='little', signed=False)
+        checksum = int.from_bytes(self.tcp_client.read(4, timeout),
+                                  byteorder='little',
+                                  signed=False)
 
         # Then perform the checks
         rv = packet_length_bytes + seq_bytes + body

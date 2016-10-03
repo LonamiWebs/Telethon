@@ -1,6 +1,7 @@
 # Python rough implementation of a C# TCP client
 import socket
 import time
+from datetime import datetime, timedelta
 from threading import Lock
 
 from telethon.errors import ReadCancelledError
@@ -37,8 +38,11 @@ class TcpClient:
             self.socket.setblocking(True)
             self.socket.sendall(data)
 
-    def read(self, buffer_size):
-        """Reads (receives) the specified bytes from the connected peer"""
+    def read(self, buffer_size, timeout=timedelta(seconds=5)):
+        """Reads (receives) the specified bytes from the connected peer.
+           A timeout can be specified, which will cancel the operation if no data
+           has been read in the specified time. If data was read and it's waiting
+           for more, the timeout will NOT cancel the operation. Set to None for no timeout"""
 
         # Ensure that only one thread can receive data at once
         with self.lock:
@@ -47,6 +51,10 @@ class TcpClient:
 
             # Set non-blocking so it can be cancelled
             self.socket.setblocking(False)
+
+            # Set the starting time so we can calculate whether the timeout should fire
+            if timeout:
+                start_time = datetime.now()
 
             with BinaryWriter() as writer:
                 while writer.written_count < buffer_size:
@@ -65,6 +73,12 @@ class TcpClient:
                     except BlockingIOError:
                         # There was no data available for us to read. Sleep a bit
                         time.sleep(self.delay)
+
+                        # Check if the timeout finished
+                        if timeout:
+                            time_passed = datetime.now() - start_time
+                            if time_passed > timeout:
+                                raise TimeoutError('The read operation exceeded the timeout.')
 
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()
