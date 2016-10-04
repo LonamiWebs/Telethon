@@ -72,6 +72,11 @@ class TLGenerator:
                     builder.writeln('{}"""'.format(repr(tlobject)))
                     builder.writeln()
 
+                    # Create an class-level variable that stores the TLObject's constructor ID
+                    builder.writeln("# Telegram's constructor ID (and unique identifier) for this class")
+                    builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
+                    builder.writeln()
+
                     # First sort the arguments so that those not being a flag come first
                     args = sorted([arg for arg in tlobject.args if not arg.flag_indicator],
                                   key=lambda x: x.is_flag)
@@ -112,9 +117,6 @@ class TLGenerator:
                         builder.writeln('self.result = None')
                         builder.writeln('self.confirmed = True  # Confirmed by default')
 
-                    # Create an attribute that stores the TLObject's constructor ID
-                    builder.writeln('self.constructor_id = {}'.format(hex(tlobject.id)))
-
                     # Set the arguments
                     if args:
                         # Leave an empty line if there are any args
@@ -125,8 +127,8 @@ class TLGenerator:
 
                     # Write the on_send(self, writer) function
                     builder.writeln('def on_send(self, writer):')
-                    builder.writeln('writer.write_int(self.constructor_id, signed=False)'
-                                    .format(hex(tlobject.id), tlobject.name))
+                    builder.writeln('writer.write_int({}.constructor_id, signed=False)'
+                                    .format(TLGenerator.get_class_name(tlobject)))
 
                     for arg in tlobject.args:
                         TLGenerator.write_onsend_code(builder, arg, tlobject.args)
