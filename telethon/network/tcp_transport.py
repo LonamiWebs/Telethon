@@ -27,9 +27,9 @@ class TcpTransport:
 
             crc = crc32(writer.get_bytes())
             writer.write_int(crc, signed=False)
-
-            self.tcp_client.write(writer.get_bytes())
+            
             self.send_counter += 1
+            self.tcp_client.write(writer.get_bytes())
 
     def receive(self, timeout=timedelta(seconds=5)):
         """Receives a TCP message (tuple(sequence number, body)) from the connected peer.
