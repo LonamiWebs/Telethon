@@ -474,7 +474,7 @@ class TelegramClient:
         self.download_file_loc(InputFileLocation(volume_id=largest_size.volume_id,
                                                  local_id=largest_size.local_id,
                                                  secret=largest_size.secret),
-                               file_path, file_size, progress_callback)
+                               file_path, file_size=file_size, progress_callback=progress_callback)
         return file_path
 
     def download_document(self, message_media_document, file_path=None, add_extension=True,
@@ -507,8 +507,7 @@ class TelegramClient:
         self.download_file_loc(InputDocumentFileLocation(id=document.id,
                                                          access_hash=document.access_hash,
                                                          version=document.version),
-                               file_path, file_size, progress_callback)
-
+                               file_path, file_size=file_size, progress_callback=progress_callback)
         return file_path
 
     @staticmethod
