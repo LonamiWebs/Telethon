@@ -2,7 +2,7 @@ import platform
 from datetime import datetime, timedelta
 from hashlib import md5
 from os import path, listdir
-from mimetypes import guess_extension, guess_type
+from mimetypes import guess_type
 
 # For sending and receiving requests
 from telethon.tl import MTProtoRequest
@@ -10,15 +10,6 @@ from telethon.tl import Session
 
 # The Requests and types that we'll be using
 from telethon.tl.functions.upload import SaveBigFilePartRequest
-from telethon.tl.types import \
-    User, Chat, Channel, \
-    PeerUser, PeerChat, PeerChannel, \
-    InputPeerUser, InputPeerChat, InputPeerChannel, InputPeerEmpty, \
-    UserProfilePhotoEmpty, ChatPhotoEmpty, \
-    InputFile, InputFileLocation, InputMediaUploadedPhoto, InputMediaUploadedDocument, \
-    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto, \
-    DocumentAttributeAudio, DocumentAttributeFilename, InputDocumentFileLocation
-
 from telethon.tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from telethon.tl.functions.help import GetConfigRequest
 from telethon.tl.functions.auth import SendCodeRequest, SignInRequest, SignUpRequest, LogOutRequest
@@ -28,8 +19,18 @@ from telethon.tl.functions.messages import \
     SendMessageRequest, SendMediaRequest, \
     ReadHistoryRequest
 
+# All the types we need to work with
+from telethon.tl.types import \
+    InputPeerEmpty, \
+    UserProfilePhotoEmpty, ChatPhotoEmpty, \
+    InputFile, InputFileLocation, InputMediaUploadedPhoto, InputMediaUploadedDocument, \
+    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto, \
+    DocumentAttributeAudio, DocumentAttributeFilename, InputDocumentFileLocation
+
+# Import some externalized utilities to work with the Telegram types and more
 import telethon.helpers as utils
 import telethon.network.authenticator as authenticator
+from telethon.utils import find_user_or_chat, get_appropiate_part_size, get_extension
 
 from telethon.errors import *
 from telethon.network import MtProtoSender, TcpTransport
@@ -227,7 +228,7 @@ class TelegramClient:
                                           offset_peer=offset_peer,
                                           limit=count))
         return (r.dialogs,
-                [self.find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
+                [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
 
     # endregion
 
@@ -325,7 +326,7 @@ class TelegramClient:
         """
         file_size = path.getsize(file_path)
         if not part_size_kb:
-            part_size_kb = self.find_appropiate_part_size(file_size)
+            part_size_kb = get_appropiate_part_size(file_size)
 
         if part_size_kb > 512:
             raise ValueError('The part size must be less or equal to 512KB')
@@ -422,9 +423,8 @@ class TelegramClient:
                 isinstance(profile_photo, ChatPhotoEmpty)):
             return False
 
-        # Photos are always compressed into a .jpg by Telegram
         if add_extension:
-            file_path += '.jpg'
+            file_path += get_extension(profile_photo)
 
         if download_big:
             photo_location = profile_photo.photo_big
@@ -467,9 +467,8 @@ class TelegramClient:
         file_size = largest_size.size
         largest_size = largest_size.location
 
-        # Photos are always compressed into a .jpg by Telegram
         if add_extension:
-            file_path += '.jpg'
+            file_path += get_extension(message_media_photo)
 
         # Download the media with the largest size input file location
         self.download_file_loc(InputFileLocation(volume_id=largest_size.volume_id,
@@ -502,11 +501,8 @@ class TelegramClient:
             if file_path is None:
                 print('Could not determine a filename for the document')
 
-        # Guess the extension based on the mime_type
         if add_extension:
-            ext = guess_extension(document.mime_type)
-            if ext is not None:
-                file_path += ext
+            file_path += get_extension(document.mime_type)
 
         self.download_file_loc(InputDocumentFileLocation(id=document.id,
                                                          access_hash=document.access_hash,
@@ -551,7 +547,7 @@ class TelegramClient:
             if not file_size:
                 raise ValueError('A part size value must be provided')
             else:
-                part_size_kb = self.find_appropiate_part_size(file_size)
+                part_size_kb = get_appropiate_part_size(file_size)
 
         part_size = int(part_size_kb * 1024)
         if part_size % 1024 != 0:
@@ -579,68 +575,6 @@ class TelegramClient:
                     progress_callback(file.tell(), file_size)
 
     # endregion
-
-    # endregion
-
-    # region Utilities
-
-    @staticmethod
-    def get_display_name(entity):
-        """Gets the input peer for the given "entity" (user, chat or channel)
-           Returns None if it was not found"""
-        if isinstance(entity, User):
-            if entity.last_name is not None:
-                return '{} {}'.format(entity.first_name, entity.last_name)
-            return entity.first_name
-
-        if isinstance(entity, Chat) or isinstance(entity, Channel):
-            return entity.title
-
-    @staticmethod
-    def get_input_peer(entity):
-        """Gets the input peer for the given "entity" (user, chat or channel).
-           Returns None if it was not found"""
-        if isinstance(entity, User):
-            return InputPeerUser(entity.id, entity.access_hash)
-        if isinstance(entity, Chat):
-            return InputPeerChat(entity.id)
-        if isinstance(entity, Channel):
-            return InputPeerChannel(entity.id, entity.access_hash)
-
-    @staticmethod
-    def find_user_or_chat(peer, users, chats):
-        """Finds the corresponding user or chat given a peer.
-           Returns None if it was not found"""
-        try:
-            if isinstance(peer, PeerUser):
-                user = next(u for u in users if u.id == peer.user_id)
-                return user
-
-            elif isinstance(peer, PeerChat):
-                chat = next(c for c in chats if c.id == peer.chat_id)
-                return chat
-
-            elif isinstance(peer, PeerChannel):
-                channel = next(c for c in chats if c.id == peer.channel_id)
-                return channel
-
-        except StopIteration:
-            return None
-
-    @staticmethod
-    def find_appropiate_part_size(file_size):
-        if file_size <= 1048576:  # 1MB
-            return 32
-        if file_size <= 10485760:  # 10MB
-            return 64
-        if file_size <= 393216000:  # 375MB
-            return 128
-        if file_size <= 786432000:  # 750MB
-            return 256
-        if file_size <= 1572864000:  # 1500MB
-            return 512
-
-        raise ValueError('File size too large')
 
     # endregion
 

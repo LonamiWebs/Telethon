@@ -1,6 +1,9 @@
 from telethon.tl.types import UpdateShortChatMessage
 from telethon.tl.types import UpdateShortMessage
 from telethon import TelegramClient
+
+from telethon.utils import get_display_name, get_input_peer
+
 import shutil
 
 # Get the (current) number of lines in the terminal
@@ -71,7 +74,7 @@ class InteractiveTelegramClient(TelegramClient):
                     # Display them so the user can choose
                     for i, entity in enumerate(entities):
                         i += 1  # 1-based index for normies
-                        print('{}. {}'.format(i, self.get_display_name(entity)))
+                        print('{}. {}'.format(i, get_display_name(entity)))
 
                     # Let the user decide who they want to talk to
                     print()
@@ -97,10 +100,10 @@ class InteractiveTelegramClient(TelegramClient):
 
             # Retrieve the selected user (or chat, or channel)
             entity = entities[i]
-            input_peer = self.get_input_peer(entity)
+            input_peer = get_input_peer(entity)
 
             # Show some information
-            print_title('Chat with "{}"'.format(self.get_display_name(entity)))
+            print_title('Chat with "{}"'.format(get_display_name(entity)))
             print('Available commands:')
             print('  !q: Quits the current chat.')
             print('  !Q: Quits the current chat and exits.')
@@ -166,7 +169,7 @@ class InteractiveTelegramClient(TelegramClient):
                         print('Profile picture downloaded to {}'.format(output))
                     else:
                         print('"{}" does not seem to have a profile picture.'
-                              .format(self.get_display_name(entity)))
+                              .format(get_display_name(entity)))
 
                 # Send chat message (if any)
                 elif msg:
