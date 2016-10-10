@@ -309,6 +309,7 @@ class MtProtoSender:
                 # Server send another same reply.
                 # So We ignore it and continue on updates thread
                 print('Cannot receive a request from inside an RPC result from the updates thread.')
+                return
 
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
