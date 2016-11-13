@@ -47,7 +47,7 @@ class TelegramClient:
 
     def __init__(self, session_user_id, api_id, api_hash):
         if api_id is None or api_hash is None:
-            raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.md')
+            raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.rst')
 
         self.api_id = api_id
         self.api_hash = api_hash
