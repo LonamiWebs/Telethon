@@ -2,7 +2,7 @@
    We have these because some TLObjects differ in very little things,
    for example, some may have an `user_id` attribute and other a `chat_id` but,
    after all, both are the same attribute, IDs."""
-from mimetypes import guess_extension
+from mimetypes import add_type, guess_extension
 
 from telethon.tl.types import \
     User, Chat, Channel, \
@@ -22,6 +22,9 @@ def get_display_name(entity):
 
     if isinstance(entity, Chat) or isinstance(entity, Channel):
         return entity.title
+
+# For some reason, .webp (stickers' format) is not registered
+add_type('image/webp', '.webp')
 
 
 def get_extension(media):
