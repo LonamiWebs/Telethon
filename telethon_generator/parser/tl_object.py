@@ -2,6 +2,9 @@ import re
 
 
 class TLObject:
+    """.tl core types IDs (such as vector, booleans, etc.)"""
+    CORE_TYPES = (0x1cb5c415, 0xbc799737, 0x997275b5, 0x3fedd339)
+
     def __init__(self, fullname, id, args, result, is_function):
         """
         Initializes a new TLObject, given its properties.
@@ -72,6 +75,11 @@ class TLObject:
                         args=args,
                         result=match.group(3),
                         is_function=is_function)
+
+    def is_core_type(self):
+        """Determines whether the TLObject is a "core type"
+           (and thus should be embedded in the generated code) or not"""
+        return self.id in TLObject.CORE_TYPES
 
     def __repr__(self):
         fullname = ('{}.{}'.format(self.namespace, self.name) if self.namespace is not None

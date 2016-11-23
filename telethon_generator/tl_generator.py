@@ -35,9 +35,30 @@ class TLGenerator:
         os.makedirs(get_output_path('functions'), exist_ok=True)
         os.makedirs(get_output_path('types'), exist_ok=True)
 
-        # Store the parsed file in a tuple for iterating it more than once
+        # Step 0: Store the parsed file in a tuple to avoid parsing it on each iteration
         tlobjects = tuple(TLParser.parse_file(scheme_file))
+
+        # Step 1: Ensure that no object has the same name as a namespace
+        # We must check this because Python will complain if it sees a
+        # file and a directory with the same name, which happens for example with "updates"
+        namespace_directories = set()
         for tlobject in tlobjects:
+            namespace_directories.add(tlobject.namespace)
+
+        for tlobject in tlobjects:
+            if TLGenerator.get_file_name(tlobject, add_extension=False) \
+                    in namespace_directories:
+                # If this TLObject isn't under the same directory as its name (i.e. "contacts"),
+                # append "_tg" to avoid confusion between the file and the directory (i.e. "updates")
+                if tlobject.namespace != tlobject.name:
+                    tlobject.name += '_tg'
+
+        # Step 2: Generate the actual code
+        for tlobject in tlobjects:
+            # Omit core types, these are embedded in the generated code
+            if tlobject.is_core_type():
+                continue
+
             # Determine the output directory and create it
             out_dir = get_output_path('functions' if tlobject.is_function
                                       else 'types')
@@ -168,7 +189,7 @@ class TLGenerator:
                     builder.writeln("return {}".format(str(tlobject)))
                     # builder.end_block()  # There is no need to end the last block
 
-        # Once all the objects have been generated, we can now group them in a single file
+        # Step 3: Once all the objects have been generated, we can now group them in a single file
         filename = os.path.join(get_output_path('all_tlobjects.py'))
         with open(filename, 'w', encoding='utf-8') as file:
             with SourceBuilder(file) as builder:
