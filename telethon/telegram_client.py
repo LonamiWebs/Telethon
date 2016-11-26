@@ -12,12 +12,18 @@ from telethon.tl import Session
 from telethon.tl.functions.upload import SaveBigFilePartRequest
 from telethon.tl.functions import InvokeWithLayerRequest, InitConnectionRequest
 from telethon.tl.functions.help import GetConfigRequest
-from telethon.tl.functions.auth import SendCodeRequest, SignInRequest, SignUpRequest, LogOutRequest
 from telethon.tl.functions.upload import SaveFilePartRequest, GetFileRequest
 from telethon.tl.functions.messages import \
     GetDialogsRequest, GetHistoryRequest, \
     SendMessageRequest, SendMediaRequest, \
     ReadHistoryRequest
+
+from telethon.tl.functions.auth import \
+    SendCodeRequest, CheckPasswordRequest, \
+    SignInRequest, SignUpRequest, LogOutRequest
+
+# The following is required to get the password salt
+from telethon.tl.functions.account import GetPasswordRequest
 
 # All the types we need to work with
 from telethon.tl.types import \
@@ -41,7 +47,7 @@ from telethon.tl.all_tlobjects import layer
 class TelegramClient:
 
     # Current TelegramClient version
-    __version__ = '0.6'
+    __version__ = '0.7'
 
     # region Initialization
 
@@ -161,21 +167,32 @@ class TelegramClient:
             except InvalidDCError as error:
                 self.reconnect_to_dc(error.new_dc)
 
-    def sign_in(self, phone_number, code):
-        """Completes the authorization of a phone number by providing the received code"""
-        if phone_number not in self.phone_code_hashes:
-            raise ValueError('Please make sure you have called send_code_request first.')
+    def sign_in(self, phone_number=None, code=None, password=None):
+        """Completes the authorization of a phone number by providing the received code.
 
-        try:
-            result = self.invoke(SignInRequest(
-                phone_number, self.phone_code_hashes[phone_number], code))
+           If no phone or code is provided, then the sole password will be used. The password
+           should be used after a normal authorization attempt has happened and an RPCError
+           with `.password_required = True` was raised"""
+        if phone_number and code:
+            if phone_number not in self.phone_code_hashes:
+                raise ValueError('Please make sure you have called send_code_request first.')
 
-        except RPCError as error:
-            if error.message.startswith('PHONE_CODE_'):
-                print(error)
-                return False
-            else:
-                raise error
+            try:
+                result = self.invoke(SignInRequest(
+                    phone_number, self.phone_code_hashes[phone_number], code))
+
+            except RPCError as error:
+                if error.message.startswith('PHONE_CODE_'):
+                    print(error)
+                    return False
+                else:
+                    raise error
+        elif password:
+            salt = self.invoke(GetPasswordRequest()).current_salt
+            result = self.invoke(CheckPasswordRequest(utils.get_password_hash(password, salt)))
+        else:
+            raise ValueError('You must provide a phone_number and a code for the first time, '
+                             'and a password only if an RPCError was raised before.')
 
         # Result is an Auth.Authorization TLObject
         self.session.user = result.user

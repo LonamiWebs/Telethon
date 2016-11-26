@@ -1,10 +1,11 @@
 from telethon.tl.types import UpdateShortChatMessage
 from telethon.tl.types import UpdateShortMessage
-from telethon import TelegramClient
+from telethon import TelegramClient, RPCError
 
 from telethon.utils import get_display_name, get_input_peer
 
 import shutil
+from getpass import getpass
 
 # Get the (current) number of lines in the terminal
 cols, rows = shutil.get_terminal_size()
@@ -51,7 +52,16 @@ class InteractiveTelegramClient(TelegramClient):
             code_ok = False
             while not code_ok:
                 code = input('Enter the code you just received: ')
-                code_ok = self.sign_in(user_phone, code)
+                try:
+                    code_ok = self.sign_in(user_phone, code)
+
+                # Two-step verification may be enabled
+                except RPCError as e:
+                    if e.password_required:
+                        pw = getpass('Two step verification is enabled. Please enter your password: ')
+                        code_ok = self.sign_in(password=pw)
+                    else:
+                        raise e
 
     def run(self):
         # Listen for updates

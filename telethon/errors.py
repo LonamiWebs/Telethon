@@ -126,6 +126,8 @@ class RPCError(Exception):
         'CHAT_ADMIN_REQUIRED': 'Chat admin privileges are required to do that in the specified chat '
                                '(for example, to send a message in a channel which is not yours).',
 
+        'PASSWORD_HASH_INVALID': 'The password (and thus its hash value) you entered is invalid.',
+
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
 
@@ -140,6 +142,8 @@ class RPCError(Exception):
         'ACTIVE_USER_REQUIRED': 'The method is only available to already activated users.',
 
         'AUTH_KEY_PERM_EMPTY': 'The method is unavailable for temporary authorization key, not bound to permanent.',
+
+        'SESSION_PASSWORD_NEEDED': 'Two-steps verification is enabled and a password is required.',
 
         # 420 FLOOD
         'FLOOD_WAIT_(\d+)': 'A wait of {} seconds is required.'
@@ -163,6 +167,10 @@ class RPCError(Exception):
                 else:
                     self.additional_data = None
                     super().__init__(self, error_msg)
+
+                    # Add another field to easily determine whether this error
+                    # should be handled as a password-required error
+                    self.password_required = message == 'SESSION_PASSWORD_NEEDED'
 
                 called_super = True
                 break

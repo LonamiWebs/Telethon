@@ -58,4 +58,24 @@ def sha1(data):
     sha.update(data)
     return sha.digest()
 
+
+def sha256(data):
+    """Calculates the SHA256 digest for the given data"""
+    sha = hashlib.sha256()
+    sha.update(data)
+    return sha.digest()
+
+
+def get_password_hash(pw, current_salt):
+    """Gets the password hash for the two-step verification.
+       curent_salt should be the byte array provided by invoking GetPasswordRequest()"""
+
+    # Passwords are encoded as UTF-8
+    # https://github.com/DrKLO/Telegram/blob/e31388/TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java#L2003
+    data = pw.encode('utf-8')
+
+    pw_hash = current_salt+data+current_salt
+    return sha256(pw_hash)
+
+
 # endregion
