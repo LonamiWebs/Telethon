@@ -1,5 +1,5 @@
-from telethon.utils import BinaryWriter, BinaryReader
 import telethon.helpers as utils
+from telethon.utils import BinaryReader, BinaryWriter
 
 
 class AuthKey:

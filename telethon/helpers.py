@@ -1,5 +1,5 @@
-import os
 import hashlib
+import os
 
 # region Multiple utilities
 
@@ -15,7 +15,6 @@ def ensure_parent_dir_exists(file_path):
     if parent:
         os.makedirs(parent, exist_ok=True)
 
-
 # endregion
 
 # region Cryptographic related utils
@@ -26,7 +25,8 @@ def calc_key(shared_key, msg_key, client):
     x = 0 if client else 8
 
     sha1a = sha1(msg_key + shared_key[x:x + 32])
-    sha1b = sha1(shared_key[x + 32:x + 48] + msg_key + shared_key[x + 48:x + 64])
+    sha1b = sha1(shared_key[x + 32:x + 48] + msg_key + shared_key[x + 48:x +
+                                                                  64])
     sha1c = sha1(shared_key[x + 64:x + 96] + msg_key)
     sha1d = sha1(msg_key + shared_key[x + 96:x + 128])
 
@@ -74,8 +74,7 @@ def get_password_hash(pw, current_salt):
     # https://github.com/DrKLO/Telegram/blob/e31388/TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java#L2003
     data = pw.encode('utf-8')
 
-    pw_hash = current_salt+data+current_salt
+    pw_hash = current_salt + data + current_salt
     return sha256(pw_hash)
-
 
 # endregion

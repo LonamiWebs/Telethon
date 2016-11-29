@@ -18,7 +18,8 @@ class SourceBuilder:
         """Writes a string into the source code, applying indentation if required"""
         if self.on_new_line:
             self.on_new_line = False  # We're not on a new line anymore
-            if string.strip():  # If the string was not empty, indent; Else it probably was a new line
+            if string.strip(
+            ):  # If the string was not empty, indent; Else it probably was a new line
                 self.indent()
 
         self.out_stream.write(string)

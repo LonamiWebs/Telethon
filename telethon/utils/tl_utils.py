@@ -4,12 +4,10 @@
    after all, both are the same attribute, IDs."""
 from mimetypes import add_type, guess_extension
 
-from telethon.tl.types import \
-    User, Chat, Channel, \
-    PeerUser, PeerChat, PeerChannel, \
-    InputPeerUser, InputPeerChat, InputPeerChannel, \
-    UserProfilePhoto, ChatPhoto, \
-    MessageMediaPhoto, MessageMediaDocument
+from telethon.tl.types import (
+    Channel, Chat, ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
+    MessageMediaDocument, MessageMediaPhoto, PeerChannel, PeerChat, PeerUser,
+    User, UserProfilePhoto)
 
 
 def get_display_name(entity):
@@ -31,8 +29,7 @@ def get_extension(media):
     """Gets the corresponding extension for any Telegram media"""
 
     # Photos are always compressed as .jpg by Telegram
-    if (isinstance(media, UserProfilePhoto) or
-        isinstance(media, ChatPhoto) or
+    if (isinstance(media, UserProfilePhoto) or isinstance(media, ChatPhoto) or
             isinstance(media, MessageMediaPhoto)):
         return '.jpg'
 

@@ -5,13 +5,14 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 
-from telethon import TelegramClient
-
-# Always prefer setuptools over distutils
-from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
+
+# Always prefer setuptools over distutils
+from setuptools import find_packages, setup
+
+from telethon import TelegramClient
 
 here = path.abspath(path.dirname(__file__))
 
@@ -24,7 +25,6 @@ setup(
 
     # Versions should comply with PEP440.
     version=TelegramClient.__version__,
-
     description="Python3 Telegram's client implementation with full access to its API",
     long_description=long_description,
 
@@ -63,15 +63,14 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='telegram api chat client mtproto',
+    keywords='Telegram API chat client MTProto',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=[
-                            'telethon_generator',
-                            'telethon_tests',
-                            'run_tests.py',
-                            'try_telethon.py']),
+        'telethon_generator', 'telethon_tests', 'run_tests.py',
+        'try_telethon.py'
+    ]),
 
     # List run-time dependencies here. These will be installed by pip when
     # your project is installed.
@@ -84,5 +83,4 @@ setup(
         'console_scripts': [
             'gen_tl = tl_generator:clean_and_generate',
         ],
-    }
-)
+    })

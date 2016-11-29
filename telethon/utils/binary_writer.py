@@ -1,4 +1,4 @@
-from io import BytesIO, BufferedWriter
+from io import BufferedWriter, BytesIO
 from struct import pack
 
 
@@ -26,12 +26,16 @@ class BinaryWriter:
 
     def write_int(self, value, signed=True):
         """Writes an integer value (4 bytes), which can or cannot be signed"""
-        self.writer.write(int.to_bytes(value, length=4, byteorder='little', signed=signed))
+        self.writer.write(
+            int.to_bytes(
+                value, length=4, byteorder='little', signed=signed))
         self.written_count += 4
 
     def write_long(self, value, signed=True):
         """Writes a long integer value (8 bytes), which can or cannot be signed"""
-        self.writer.write(int.to_bytes(value, length=8, byteorder='little', signed=signed))
+        self.writer.write(
+            int.to_bytes(
+                value, length=8, byteorder='little', signed=signed))
         self.written_count += 8
 
     def write_float(self, value):
@@ -46,7 +50,9 @@ class BinaryWriter:
 
     def write_large_int(self, value, bits, signed=True):
         """Writes a n-bits long integer value"""
-        self.writer.write(int.to_bytes(value, length=bits // 8, byteorder='little', signed=signed))
+        self.writer.write(
+            int.to_bytes(
+                value, length=bits // 8, byteorder='little', signed=signed))
         self.written_count += bits // 8
 
     def write(self, data):

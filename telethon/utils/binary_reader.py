@@ -1,10 +1,10 @@
-from datetime import datetime
-from io import BytesIO, BufferedReader
-from telethon.tl.all_tlobjects import tlobjects
-from struct import unpack
-from telethon.errors import *
-import inspect
 import os
+from datetime import datetime
+from io import BufferedReader, BytesIO
+from struct import unpack
+
+from telethon.errors import *
+from telethon.tl.all_tlobjects import tlobjects
 
 
 class BinaryReader:
@@ -12,13 +12,15 @@ class BinaryReader:
     Small utility class to read binary data.
     Also creates a "Memory Stream" if necessary
     """
+
     def __init__(self, data=None, stream=None):
         if data:
             self.stream = BytesIO(data)
         elif stream:
             self.stream = stream
         else:
-            raise InvalidParameterError("Either bytes or a stream must be provided")
+            raise InvalidParameterError(
+                'Either bytes or a stream must be provided')
 
         self.reader = BufferedReader(self.stream)
 
@@ -47,14 +49,16 @@ class BinaryReader:
 
     def read_large_int(self, bits, signed=True):
         """Reads a n-bits long integer value"""
-        return int.from_bytes(self.read(bits // 8), byteorder='little', signed=signed)
+        return int.from_bytes(
+            self.read(bits // 8), byteorder='little', signed=signed)
 
     def read(self, length):
         """Read the given amount of bytes"""
         result = self.reader.read(length)
         if len(result) != length:
-            raise BufferError('Trying to read outside the data bounds (no more data left to read)')
-        
+            raise BufferError(
+                'Trying to read outside the data bounds (no more data left to read)')
+
         return result
 
     def get_bytes(self):
@@ -69,7 +73,8 @@ class BinaryReader:
         """Reads a Telegram-encoded byte array, without the need of specifying its length"""
         first_byte = self.read_byte()
         if first_byte == 254:
-            length = self.read_byte() | (self.read_byte() << 8) | (self.read_byte() << 16)
+            length = self.read_byte() | (self.read_byte() << 8) | (
+                self.read_byte() << 16)
             padding = length % 4
         else:
             length = first_byte

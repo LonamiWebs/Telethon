@@ -5,13 +5,13 @@ class TLObject:
     """.tl core types IDs (such as vector, booleans, etc.)"""
     CORE_TYPES = (0x1cb5c415, 0xbc799737, 0x997275b5, 0x3fedd339)
 
-    def __init__(self, fullname, id, args, result, is_function):
+    def __init__(self, fullname, object_id, args, result, is_function):
         """
         Initializes a new TLObject, given its properties.
         Usually, this will be called from `from_tl` instead
         :param fullname: The fullname of the TL object (namespace.name)
                          The namespace can be omitted
-        :param id: The hexadecimal string representing the object ID
+        :param object_id: The hexadecimal string representing the object ID
         :param args: The arguments, if any, of the TL object
         :param result: The result type of the TL object
         :param is_function: Is the object a function or a type?
@@ -25,7 +25,7 @@ class TLObject:
             self.name = fullname
 
         # The ID should be an hexadecimal string
-        self.id = int(id, base=16)
+        self.id = int(object_id, base=16)
         self.args = args
         self.result = result
         self.is_function = is_function
@@ -67,14 +67,16 @@ class TLObject:
             ''', tl, re.IGNORECASE | re.VERBOSE)
 
         # Retrieve the matched arguments
-        args = [TLArg(name, type, brace != '') for brace, name, type, _ in args_match]
+        args = [TLArg(name, arg_type, brace != '')
+                for brace, name, arg_type, _ in args_match]
 
         # And initialize the TLObject
-        return TLObject(fullname=match.group(1),
-                        id=match.group(2),
-                        args=args,
-                        result=match.group(3),
-                        is_function=is_function)
+        return TLObject(
+            fullname=match.group(1),
+            object_id=match.group(2),
+            args=args,
+            result=match.group(3),
+            is_function=is_function)
 
     def is_core_type(self):
         """Determines whether the TLObject is a "core type"
@@ -82,19 +84,19 @@ class TLObject:
         return self.id in TLObject.CORE_TYPES
 
     def __repr__(self):
-        fullname = ('{}.{}'.format(self.namespace, self.name) if self.namespace is not None
-                    else self.name)
+        fullname = ('{}.{}'.format(self.namespace, self.name)
+                    if self.namespace is not None else self.name)
 
-        hex_id = hex(self.id)[2:].rjust(8, '0')  # Skip 0x and add 0's for padding
+        hex_id = hex(self.id)[2:].rjust(8,
+                                        '0')  # Skip 0x and add 0's for padding
 
-        return '{}#{} {} = {}'.format(fullname,
-                                      hex_id,
-                                      ' '.join([str(arg) for arg in self.args]),
-                                      self.result)
+        return '{}#{} {} = {}'.format(
+            fullname, hex_id, ' '.join([str(arg) for arg in self.args]),
+            self.result)
 
     def __str__(self):
-        fullname = ('{}.{}'.format(self.namespace, self.name) if self.namespace is not None
-                    else self.name)
+        fullname = ('{}.{}'.format(self.namespace, self.name)
+                    if self.namespace is not None else self.name)
 
         # Some arguments are not valid for being represented, such as the flag indicator or generic definition
         # (these have no explicit values until used)
@@ -104,20 +106,21 @@ class TLObject:
         args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
 
         # Since Python's default representation for lists is using repr(), we need to str() manually on every item
-        args_format = ', '.join(['str(self.{})'.format(arg.name) if not arg.is_vector else
-                                 'None if not self.{0} else [str(_) for _ in self.{0}]'.format(arg.name)
-                                 for arg in valid_args])
+        args_format = ', '.join(
+            ['str(self.{})'.format(arg.name) if not arg.is_vector else
+             'None if not self.{0} else [str(_) for _ in self.{0}]'.format(
+                 arg.name) for arg in valid_args])
 
         return ("'({} (ID: {}) = ({}))'.format({})"
                 .format(fullname, hex(self.id), args, args_format))
 
 
 class TLArg:
-    def __init__(self, name, type, generic_definition):
+    def __init__(self, name, arg_type, generic_definition):
         """
         Initializes a new .tl argument
         :param name: The name of the .tl argument
-        :param type: The type of the .tl argument
+        :param arg_type: The type of the .tl argument
         :param generic_definition: Is the argument a generic definition?
                                    (i.e. {X:Type})
         """
@@ -132,14 +135,15 @@ class TLArg:
         self.flag_index = -1
 
         # The type can be an indicator that other arguments will be flags
-        if type == '#':
+        if arg_type == '#':
             self.flag_indicator = True
             self.type = None
             self.is_generic = False
         else:
             self.flag_indicator = False
-            self.is_generic = type.startswith('!')
-            self.type = type.lstrip('!')  # Strip the exclamation mark always to have only the name
+            self.is_generic = arg_type.startswith('!')
+            self.type = arg_type.lstrip(
+                '!')  # Strip the exclamation mark always to have only the name
 
             # The type may be a flag (flags.IDX?REAL_TYPE)
             # Note that «flags» is NOT the flags name; this is determined by a previous argument
@@ -148,13 +152,15 @@ class TLArg:
             if flag_match:
                 self.is_flag = True
                 self.flag_index = int(flag_match.group(1))
-                self.type = flag_match.group(2)  # Update the type to match the exact type, not the "flagged" one
+                self.type = flag_match.group(
+                    2)  # Update the type to match the exact type, not the "flagged" one
 
             # Then check if the type is a Vector<REAL_TYPE>
             vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)
             if vector_match:
                 self.is_vector = True
-                self.type = vector_match.group(1)  # Update the type to match the one inside the vector
+                self.type = vector_match.group(
+                    1)  # Update the type to match the one inside the vector
 
             # The name may contain "date" in it, if this is the case and the type is "int",
             # we can safely assume that this should be treated as a "date" object.

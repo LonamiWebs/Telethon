@@ -1,10 +1,12 @@
-import time
 import random
-from telethon.utils import BinaryWriter, BinaryReader
+import time
+
+from telethon.utils import BinaryReader, BinaryWriter
 
 
 class MtProtoPlainSender:
     """MTProto Mobile Protocol plain sender (https://core.telegram.org/mtproto/description#unencrypted-messages)"""
+
     def __init__(self, transport):
         self._sequence = 0
         self._time_offset = 0
@@ -37,9 +39,12 @@ class MtProtoPlainSender:
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # See https://core.telegram.org/mtproto/description#message-identifier-msg-id
         ms_time = int(time.time() * 1000)
-        new_msg_id = (((ms_time // 1000) << 32) |  # "must approximately equal unixtime*2^32"
-                      ((ms_time % 1000) << 22) |  # "approximate moment in time the message was created"
-                      random.randint(0, 524288) << 2)  # "message identifiers are divisible by 4"
+        new_msg_id = (((ms_time // 1000) << 32)
+                      |  # "must approximately equal unixtime*2^32"
+                      ((ms_time % 1000) << 22)
+                      |  # "approximate moment in time the message was created"
+                      random.randint(0, 524288)
+                      << 2)  # "message identifiers are divisible by 4"
 
         # Ensure that we always return a message ID which is higher than the previous one
         if self._last_msg_id >= new_msg_id:

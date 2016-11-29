@@ -1,47 +1,40 @@
 import platform
 from datetime import datetime, timedelta
 from hashlib import md5
-from os import path, listdir
 from mimetypes import guess_type
-
-# For sending and receiving requests
-from telethon.tl import MTProtoRequest
-from telethon.tl import Session
-
-# The Requests and types that we'll be using
-from telethon.tl.functions.upload import SaveBigFilePartRequest
-from telethon.tl.functions import InvokeWithLayerRequest, InitConnectionRequest
-from telethon.tl.functions.help import GetConfigRequest
-from telethon.tl.functions.upload import SaveFilePartRequest, GetFileRequest
-from telethon.tl.functions.messages import \
-    GetDialogsRequest, GetHistoryRequest, \
-    SendMessageRequest, SendMediaRequest, \
-    ReadHistoryRequest
-
-from telethon.tl.functions.auth import \
-    SendCodeRequest, CheckPasswordRequest, \
-    SignInRequest, SignUpRequest, LogOutRequest
-
-# The following is required to get the password salt
-from telethon.tl.functions.account import GetPasswordRequest
-
-# All the types we need to work with
-from telethon.tl.types import \
-    InputPeerEmpty, \
-    UserProfilePhotoEmpty, ChatPhotoEmpty, \
-    InputFile, InputFileLocation, InputMediaUploadedPhoto, InputMediaUploadedDocument, \
-    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto, \
-    DocumentAttributeAudio, DocumentAttributeFilename, InputDocumentFileLocation
+from os import listdir, path
 
 # Import some externalized utilities to work with the Telegram types and more
 import telethon.helpers as utils
 import telethon.network.authenticator as authenticator
-from telethon.utils import find_user_or_chat, get_appropiate_part_size, get_extension
-
 from telethon.errors import *
 from telethon.network import MtProtoSender, TcpTransport
 from telethon.parser.markdown_parser import parse_message_entities
+# For sending and receiving requests
+from telethon.tl import MTProtoRequest, Session
 from telethon.tl.all_tlobjects import layer
+from telethon.tl.functions import InitConnectionRequest, InvokeWithLayerRequest
+# The following is required to get the password salt
+from telethon.tl.functions.account import GetPasswordRequest
+from telethon.tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
+                                        SendCodeRequest, SignInRequest,
+                                        SignUpRequest)
+from telethon.tl.functions.help import GetConfigRequest
+from telethon.tl.functions.messages import (
+    GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
+    SendMessageRequest)
+# The Requests and types that we'll be using
+from telethon.tl.functions.upload import (
+    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
+# All the types we need to work with
+from telethon.tl.types import (
+    ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
+    InputDocumentFileLocation, InputFile, InputFileLocation,
+    InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
+    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
+    UserProfilePhotoEmpty)
+from telethon.utils import (find_user_or_chat, get_appropiate_part_size,
+                            get_extension)
 
 
 class TelegramClient:
@@ -53,13 +46,15 @@ class TelegramClient:
 
     def __init__(self, session_user_id, api_id, api_hash):
         if api_id is None or api_hash is None:
-            raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.rst')
+            raise PermissionError(
+                'Your API ID or Hash are invalid. Please read "Requirements" on README.rst')
 
         self.api_id = api_id
         self.api_hash = api_hash
 
         self.session = Session.try_load_or_create_new(session_user_id)
-        self.transport = TcpTransport(self.session.server_address, self.session.port)
+        self.transport = TcpTransport(self.session.server_address,
+                                      self.session.port)
 
         # These will be set later
         self.dc_options = None
@@ -88,14 +83,17 @@ class TelegramClient:
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
-            query = InitConnectionRequest(api_id=self.api_id,
-                                          device_model=platform.node(),
-                                          system_version=platform.system(),
-                                          app_version=self.__version__,
-                                          lang_code='en',
-                                          query=GetConfigRequest())
+            query = InitConnectionRequest(
+                api_id=self.api_id,
+                device_model=platform.node(),
+                system_version=platform.system(),
+                app_version=self.__version__,
+                lang_code='en',
+                query=GetConfigRequest())
 
-            result = self.invoke(InvokeWithLayerRequest(layer=layer, query=query))
+            result = self.invoke(
+                InvokeWithLayerRequest(
+                    layer=layer, query=query))
 
             # We're only interested in the DC options,
             # although many other options are available!
@@ -114,7 +112,8 @@ class TelegramClient:
     def reconnect_to_dc(self, dc_id):
         """Reconnects to the specified DC ID. This is automatically called after an InvalidDCError is raised"""
         if self.dc_options is None or not self.dc_options:
-            raise ConnectionError("Can't reconnect. Stabilise an initial connection first.")
+            raise ConnectionError(
+                "Can't reconnect. Stabilise an initial connection first.")
 
         dc = next(dc for dc in self.dc_options if dc.id == dc_id)
 
@@ -175,11 +174,13 @@ class TelegramClient:
            with `.password_required = True` was raised"""
         if phone_number and code:
             if phone_number not in self.phone_code_hashes:
-                raise ValueError('Please make sure you have called send_code_request first.')
+                raise ValueError(
+                    'Please make sure you have called send_code_request first.')
 
             try:
-                result = self.invoke(SignInRequest(
-                    phone_number, self.phone_code_hashes[phone_number], code))
+                result = self.invoke(
+                    SignInRequest(phone_number, self.phone_code_hashes[
+                        phone_number], code))
 
             except RPCError as error:
                 if error.message.startswith('PHONE_CODE_'):
@@ -189,10 +190,12 @@ class TelegramClient:
                     raise error
         elif password:
             salt = self.invoke(GetPasswordRequest()).current_salt
-            result = self.invoke(CheckPasswordRequest(utils.get_password_hash(password, salt)))
+            result = self.invoke(
+                CheckPasswordRequest(utils.get_password_hash(password, salt)))
         else:
-            raise ValueError('You must provide a phone_number and a code for the first time, '
-                             'and a password only if an RPCError was raised before.')
+            raise ValueError(
+                'You must provide a phone_number and a code for the first time, '
+                'and a password only if an RPCError was raised before.')
 
         # Result is an Auth.Authorization TLObject
         self.session.user = result.user
@@ -205,11 +208,13 @@ class TelegramClient:
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        result = self.invoke(SignUpRequest(phone_number=phone_number,
-                                           phone_code_hash=self.phone_code_hashes[phone_number],
-                                           phone_code=code,
-                                           first_name=first_name,
-                                           last_name=last_name))
+        result = self.invoke(
+            SignUpRequest(
+                phone_number=phone_number,
+                phone_code_hash=self.phone_code_hashes[phone_number],
+                phone_code=code,
+                first_name=first_name,
+                last_name=last_name))
 
         self.session.user = result.user
         self.session.save()
@@ -229,29 +234,41 @@ class TelegramClient:
     def list_sessions():
         """Lists all the sessions of the users who have ever connected
            using this client and never logged out"""
-        return [path.splitext(path.basename(f))[0]  # splitext = split ext (not spli text!)
+        return [path.splitext(path.basename(f))[
+            0]  # splitext = split ext (not spli text!)
                 for f in listdir('.') if f.endswith('.session')]
 
     # endregion
 
     # region Dialogs ("chats") requests
 
-    def get_dialogs(self, count=10, offset_date=None, offset_id=0, offset_peer=InputPeerEmpty()):
+    def get_dialogs(self,
+                    count=10,
+                    offset_date=None,
+                    offset_id=0,
+                    offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [entities]) with 'count' items each.
            The `entity` represents the user, chat or channel corresponding to that dialog"""
 
-        r = self.invoke(GetDialogsRequest(offset_date=offset_date,
-                                          offset_id=offset_id,
-                                          offset_peer=offset_peer,
-                                          limit=count))
-        return (r.dialogs,
-                [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
+        r = self.invoke(
+            GetDialogsRequest(
+                offset_date=offset_date,
+                offset_id=offset_id,
+                offset_peer=offset_peer,
+                limit=count))
+        return (
+            r.dialogs,
+            [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
 
     # endregion
 
     # region Message requests
 
-    def send_message(self, input_peer, message, markdown=False, no_web_page=False):
+    def send_message(self,
+                     input_peer,
+                     message,
+                     markdown=False,
+                     no_web_page=False):
         """Sends a message to the given input peer and returns the sent message ID"""
         if markdown:
             msg, entities = parse_message_entities(message)
@@ -259,15 +276,23 @@ class TelegramClient:
             msg, entities = message, []
 
         msg_id = utils.generate_random_long()
-        self.invoke(SendMessageRequest(peer=input_peer,
-                                       message=msg,
-                                       random_id=msg_id,
-                                       entities=entities,
-                                       no_webpage=no_web_page))
+        self.invoke(
+            SendMessageRequest(
+                peer=input_peer,
+                message=msg,
+                random_id=msg_id,
+                entities=entities,
+                no_webpage=no_web_page))
         return msg_id
 
-    def get_message_history(self, input_peer, limit=20,
-                            offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0):
+    def get_message_history(self,
+                            input_peer,
+                            limit=20,
+                            offset_date=None,
+                            offset_id=0,
+                            max_id=0,
+                            min_id=0,
+                            add_offset=0):
         """
         Gets the message history for the specified InputPeer
 
@@ -282,13 +307,15 @@ class TelegramClient:
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        result = self.invoke(GetHistoryRequest(input_peer,
-                                               limit=limit,
-                                               offset_date=offset_date,
-                                               offset_id=offset_id,
-                                               max_id=max_id,
-                                               min_id=min_id,
-                                               add_offset=add_offset))
+        result = self.invoke(
+            GetHistoryRequest(
+                input_peer,
+                limit=limit,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                max_id=max_id,
+                min_id=min_id,
+                add_offset=add_offset))
 
         # The result may be a messages slice (not all messages were retrieved) or
         # simply a messages TLObject. In the later case, no "count" attribute is specified:
@@ -315,7 +342,8 @@ class TelegramClient:
            Returns an AffectedMessages TLObject"""
         if max_id is None:
             if not messages:
-                raise InvalidParameterError('Either a message list or a max_id must be provided.')
+                raise InvalidParameterError(
+                    'Either a message list or a max_id must be provided.')
 
             if isinstance(messages, list):
                 max_id = max(msg.id for msg in messages)
@@ -331,7 +359,11 @@ class TelegramClient:
     #   be handled through a separate session and a separate connection"
     # region Uploading media requests
 
-    def upload_file(self, file_path, part_size_kb=None, file_name=None, progress_callback=None):
+    def upload_file(self,
+                    file_path,
+                    part_size_kb=None,
+                    file_name=None,
+                    progress_callback=None):
         """Uploads the specified file_path and returns a handle which can be later used
 
         :param file_path: The file path of the file that will be uploaded
@@ -359,7 +391,7 @@ class TelegramClient:
 
         # Multiply the datetime timestamp by 10^6 to get the ticks
         # This is high likely going to be unique
-        file_id = int(datetime.now().timestamp() * (10 ** 6))
+        file_id = int(datetime.now().timestamp() * (10**6))
         hash_md5 = md5()
 
         with open(file_path, 'rb') as file:
@@ -370,7 +402,8 @@ class TelegramClient:
                 # The SavePartRequest is different depending on whether
                 # the file is too large or not (over or less than 10MB)
                 if is_large:
-                    request = SaveBigFilePartRequest(file_id, part_index, part_count, part)
+                    request = SaveBigFilePartRequest(file_id, part_index,
+                                                     part_count, part)
                 else:
                     request = SaveFilePartRequest(file_id, part_index, part)
 
@@ -381,17 +414,19 @@ class TelegramClient:
                     if progress_callback:
                         progress_callback(file.tell(), file_size)
                 else:
-                    raise ValueError('Could not upload file part #{}'.format(part_index))
+                    raise ValueError('Could not upload file part #{}'.format(
+                        part_index))
 
         # Set a default file name if None was specified
         if not file_name:
             file_name = path.basename(file_path)
 
         # After the file has been uploaded, we can return a handle pointing to it
-        return InputFile(id=file_id,
-                         parts=part_count,
-                         name=file_name,
-                         md5_checksum=hash_md5.hexdigest())
+        return InputFile(
+            id=file_id,
+            parts=part_count,
+            name=file_name,
+            md5_checksum=hash_md5.hexdigest())
 
     def send_photo_file(self, input_file, input_peer, caption=''):
         """Sends a previously uploaded input_file
@@ -415,28 +450,36 @@ class TelegramClient:
         # «The "octet-stream" subtype is used to indicate that a body contains arbitrary binary data.»
         if not mime_type:
             mime_type = 'application/octet-stream'
-        self.send_media_file(InputMediaUploadedDocument(file=input_file,
-                                                        mime_type=mime_type,
-                                                        attributes=attributes,
-                                                        caption=caption), input_peer)
+        self.send_media_file(
+            InputMediaUploadedDocument(
+                file=input_file,
+                mime_type=mime_type,
+                attributes=attributes,
+                caption=caption),
+            input_peer)
 
     def send_media_file(self, input_media, input_peer):
         """Sends any input_media (contact, document, photo...) to an input_peer"""
-        self.invoke(SendMediaRequest(peer=input_peer,
-                                     media=input_media,
-                                     random_id=utils.generate_random_long()))
+        self.invoke(
+            SendMediaRequest(
+                peer=input_peer,
+                media=input_media,
+                random_id=utils.generate_random_long()))
 
     # endregion
 
     # region Downloading media requests
 
-    def download_profile_photo(self, profile_photo, file_path,
-                               add_extension=True, download_big=True):
+    def download_profile_photo(self,
+                               profile_photo,
+                               file_path,
+                               add_extension=True,
+                               download_big=True):
         """Downloads the profile photo for an user or a chat (including channels).
            Returns False if no photo was providen, or if it was Empty"""
 
         if (not profile_photo or
-            isinstance(profile_photo, UserProfilePhotoEmpty) or
+                isinstance(profile_photo, UserProfilePhotoEmpty) or
                 isinstance(profile_photo, ChatPhotoEmpty)):
             return False
 
@@ -449,28 +492,40 @@ class TelegramClient:
             photo_location = profile_photo.photo_small
 
         # Download the media with the largest size input file location
-        self.download_file_loc(InputFileLocation(volume_id=photo_location.volume_id,
-                                                 local_id=photo_location.local_id,
-                                                 secret=photo_location.secret),
-                               file_path)
+        self.download_file_loc(
+            InputFileLocation(
+                volume_id=photo_location.volume_id,
+                local_id=photo_location.local_id,
+                secret=photo_location.secret),
+            file_path)
         return True
 
-    def download_msg_media(self, message_media, file_path, add_extension=True, progress_callback=None):
+    def download_msg_media(self,
+                           message_media,
+                           file_path,
+                           add_extension=True,
+                           progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
            into the desired file_path, optionally finding its extension automatically
            The progress_callback should be a callback function which takes two parameters,
            uploaded size (in bytes) and total file size (in bytes).
            This will be called every time a part is downloaded"""
         if type(message_media) == MessageMediaPhoto:
-            return self.download_photo(message_media, file_path, add_extension, progress_callback)
+            return self.download_photo(message_media, file_path, add_extension,
+                                       progress_callback)
 
         elif type(message_media) == MessageMediaDocument:
-            return self.download_document(message_media, file_path, add_extension, progress_callback)
+            return self.download_document(message_media, file_path,
+                                          add_extension, progress_callback)
 
         elif type(message_media) == MessageMediaContact:
-            return self.download_contact(message_media, file_path, add_extension)
+            return self.download_contact(message_media, file_path,
+                                         add_extension)
 
-    def download_photo(self, message_media_photo, file_path, add_extension=False,
+    def download_photo(self,
+                       message_media_photo,
+                       file_path,
+                       add_extension=False,
                        progress_callback=None):
         """Downloads MessageMediaPhoto's largest size into the desired
            file_path, optionally finding its extension automatically
@@ -488,13 +543,20 @@ class TelegramClient:
             file_path += get_extension(message_media_photo)
 
         # Download the media with the largest size input file location
-        self.download_file_loc(InputFileLocation(volume_id=largest_size.volume_id,
-                                                 local_id=largest_size.local_id,
-                                                 secret=largest_size.secret),
-                               file_path, file_size=file_size, progress_callback=progress_callback)
+        self.download_file_loc(
+            InputFileLocation(
+                volume_id=largest_size.volume_id,
+                local_id=largest_size.local_id,
+                secret=largest_size.secret),
+            file_path,
+            file_size=file_size,
+            progress_callback=progress_callback)
         return file_path
 
-    def download_document(self, message_media_document, file_path=None, add_extension=True,
+    def download_document(self,
+                          message_media_document,
+                          file_path=None,
+                          add_extension=True,
                           progress_callback=None):
         """Downloads the given MessageMediaDocument into the desired
            file_path, optionally finding its extension automatically.
@@ -521,10 +583,14 @@ class TelegramClient:
         if add_extension:
             file_path += get_extension(document.mime_type)
 
-        self.download_file_loc(InputDocumentFileLocation(id=document.id,
-                                                         access_hash=document.access_hash,
-                                                         version=document.version),
-                               file_path, file_size=file_size, progress_callback=progress_callback)
+        self.download_file_loc(
+            InputDocumentFileLocation(
+                id=document.id,
+                access_hash=document.access_hash,
+                version=document.version),
+            file_path,
+            file_size=file_size,
+            progress_callback=progress_callback)
         return file_path
 
     @staticmethod
@@ -546,15 +612,21 @@ class TelegramClient:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write('BEGIN:VCARD\n')
             file.write('VERSION:4.0\n')
-            file.write('N:{};{};;;\n'.format(first_name, last_name if last_name else ''))
+            file.write('N:{};{};;;\n'.format(first_name, last_name
+                                             if last_name else ''))
             file.write('FN:{}\n'.format(' '.join((first_name, last_name))))
-            file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(phone_number))
+            file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
+                phone_number))
             file.write('END:VCARD\n')
 
         return file_path
 
-    def download_file_loc(self, input_location, file_path, part_size_kb=64,
-                          file_size=None, progress_callback=None):
+    def download_file_loc(self,
+                          input_location,
+                          file_path,
+                          part_size_kb=64,
+                          file_size=None,
+                          progress_callback=None):
         """Downloads media from the given input_file_location to the specified file_path.
            If a progress_callback function is given, it will be called taking two
            arguments (downloaded bytes count and total file size)"""
@@ -578,7 +650,8 @@ class TelegramClient:
             while True:
                 # The current offset equals the offset_index multiplied by the part size
                 offset = offset_index * part_size
-                result = self.invoke(GetFileRequest(input_location, offset, part_size))
+                result = self.invoke(
+                    GetFileRequest(input_location, offset, part_size))
                 offset_index += 1
 
                 # If we have received no data (0 bytes), the file is over
@@ -600,7 +673,8 @@ class TelegramClient:
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
         if not self.signed_in:
-            raise ValueError("You cannot add update handlers until you've signed in.")
+            raise ValueError(
+                "You cannot add update handlers until you've signed in.")
 
         self.sender.add_update_handler(handler)
 

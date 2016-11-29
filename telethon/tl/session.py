@@ -1,8 +1,9 @@
-from os.path import isfile as file_exists
 import os
-import time
 import pickle
 import random
+import time
+from os.path import isfile as file_exists
+
 import telethon.helpers as utils
 
 
@@ -39,12 +40,11 @@ class Session:
            If the given session_user_id is None, we assume that it is for testing purposes"""
         if session_user_id is None:
             return Session(None)
-
         else:
-            filepath = '{}.session'.format(session_user_id)
+            path = '{}.session'.format(session_user_id)
 
-            if file_exists(filepath):
-                with open(filepath, 'rb') as file:
+            if file_exists(path):
+                with open(path, 'rb') as file:
                     return pickle.load(file)
             else:
                 return Session(session_user_id)
@@ -53,9 +53,12 @@ class Session:
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
         ms_time = int(time.time() * 1000)
-        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32) |  # "must approximately equal unixtime*2^32"
-                      ((ms_time % 1000) << 22) |  # "approximate moment in time the message was created"
-                      random.randint(0, 524288) << 2)  # "message identifiers are divisible by 4"
+        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
+                      |  # "must approximately equal unixtime*2^32"
+                      ((ms_time % 1000) << 22)
+                      |  # "approximate moment in time the message was created"
+                      random.randint(0, 524288)
+                      << 2)  # "message identifiers are divisible by 4"
 
         if self.last_message_id >= new_msg_id:
             new_msg_id = self.last_message_id + 4
