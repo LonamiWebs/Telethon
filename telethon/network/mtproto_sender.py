@@ -283,19 +283,33 @@ class MtProtoSender:
                     raise ValueError('The previously sent request must be resent. '
                                      'However, no request was previously sent (called from updates thread).')
                 request.confirm_received = False
-
-            if error.message.startswith('FLOOD_WAIT_'):
+                
+            if error.message.startswith('RANDOM_ID_DUPLICATE'):
+                # This error is unknown code 500, I cant reproduce whats is cause it. 
+                # but will follow by another confirmation message, so we set to True
+                print(error.message)
+                request.confirm_received = True
+                
+            elif error.message.startswith('FLOOD_WAIT_'):
                 print('Should wait {}s. Sleeping until then.'.format(error.additional_data))
                 sleep(error.additional_data)
 
             elif error.message.startswith('PHONE_MIGRATE_'):
-                raise InvalidDCError(error.additional_data)
+                # we just print error for further investigation, 
+                # then raise error that will corrupt session file.
+                print(error.additional_data)
 
             else:
-                raise error
+                # printing error.message is better than raise error
+                # because it will corrupt session
+                print(error.message)
         else:
             if not request:
-                raise ValueError('Cannot receive a request from inside an RPC result from the updates thread.')
+                # Again sometimes, event the we already receive reply request
+                # Server send another same reply.
+                # So We ignore it and continue on updates thread
+                print('Cannot receive a request from inside an RPC result from the updates thread.')
+                return
 
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
