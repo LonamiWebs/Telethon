@@ -51,14 +51,30 @@ class TelegramClient:
 
     # region Initialization
 
-    def __init__(self, session_user_id, api_id, api_hash):
+    def __init__(self, session, api_id, api_hash):
+        """Initializes the Telegram client with the specified API ID and Hash.
+
+           Session can either be a `str` object (the filename for the loaded/saved .session)
+           or it can be a `Session` instance (in which case list_sessions() would probably not work).
+           If you don't want any file to be saved, pass `None`
+
+           In the later case, you are free to override the `Session` class to provide different
+           .save() and .load() implementations to suit your needs."""
+
         if api_id is None or api_hash is None:
             raise PermissionError('Your API ID or Hash are invalid. Please read "Requirements" on README.rst')
 
         self.api_id = api_id
         self.api_hash = api_hash
 
-        self.session = Session.try_load_or_create_new(session_user_id)
+        # Determine what session object we have
+        if isinstance(session, str):
+            self.session = Session.try_load_or_create_new(session)
+        elif isinstance(session, Session):
+            self.session = session
+        else:
+            raise ValueError('The given session must either be a string or a Session instance.')
+
         self.transport = TcpTransport(self.session.server_address, self.session.port)
 
         # These will be set later
