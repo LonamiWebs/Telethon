@@ -1,8 +1,8 @@
 from binascii import crc32
 from datetime import timedelta
 
-from telethon.network import TcpClient
 from telethon.errors import *
+from telethon.network import TcpClient
 from telethon.utils import BinaryWriter
 
 
@@ -27,7 +27,7 @@ class TcpTransport:
 
             crc = crc32(writer.get_bytes())
             writer.write_int(crc, signed=False)
-            
+
             self.send_counter += 1
             self.tcp_client.write(writer.get_bytes())
 
@@ -45,9 +45,8 @@ class TcpTransport:
 
         body = self.tcp_client.read(packet_length - 12, timeout)
 
-        checksum = int.from_bytes(self.tcp_client.read(4, timeout),
-                                  byteorder='little',
-                                  signed=False)
+        checksum = int.from_bytes(
+            self.tcp_client.read(4, timeout), byteorder='little', signed=False)
 
         # Then perform the checks
         rv = packet_length_bytes + seq_bytes + body

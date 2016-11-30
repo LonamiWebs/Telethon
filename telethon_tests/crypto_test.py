@@ -1,8 +1,7 @@
 import unittest
 
-from telethon.crypto import AES
 import telethon.helpers as utils
-from telethon.crypto import Factorizator
+from telethon.crypto import AES, Factorizator
 
 
 class CryptoTests(unittest.TestCase):
@@ -38,14 +37,16 @@ class CryptoTests(unittest.TestCase):
              .format(value[:take], self.cipher_text[:take]))
 
         value = AES.encrypt_ige(self.plain_text_padded, self.key, self.iv)
-        assert value == self.cipher_text_padded, ('Ciphered text ("{}") does not equal expected ("{}")'
-                                                  .format(value, self.cipher_text_padded))
+        assert value == self.cipher_text_padded, (
+            'Ciphered text ("{}") does not equal expected ("{}")'
+            .format(value, self.cipher_text_padded))
 
     def test_aes_decrypt(self):
         # The ciphered text must always be padded
         value = AES.decrypt_ige(self.cipher_text_padded, self.key, self.iv)
-        assert value == self.plain_text_padded, ('Decrypted text ("{}") does not equal expected ("{}")'
-                                                 .format(value, self.plain_text_padded))
+        assert value == self.plain_text_padded, (
+            'Decrypted text ("{}") does not equal expected ("{}")'
+            .format(value, self.plain_text_padded))
 
     @staticmethod
     def test_calc_key():
@@ -69,8 +70,10 @@ class CryptoTests(unittest.TestCase):
         expected_key = b"\xaf\xe3\x84Qm\xe0!\x0c\xd91\xe4\x9a\xa0v_gcx\xa1\xb0\xc9\xbc\x16'v\xcf,\x9dM\xae\xc6\xa5"
         expected_iv = b'\xb8Q\xf3\xc5\xa3]\xc6\xdf\x9e\xe0Q\xbd"\x8d\x13\t\x0e\x9a\x9d^8\xa2\xf8\xe7\x00w\xd9\xc1\xa7\xa0\xf7\x0f'
 
-        assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(expected_key, key)
-        assert iv == expected_iv, 'Invalid IV (expected ("{}"), got ("{}"))'.format(expected_iv, iv)
+        assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(
+            expected_key, key)
+        assert iv == expected_iv, 'Invalid IV (expected ("{}"), got ("{}"))'.format(
+            expected_iv, iv)
 
         # Calculate key being the server
         msg_key = b'\x86m\x92i\xcf\x8b\x93\xaa\x86K\x1fi\xd04\x83]'
@@ -79,14 +82,17 @@ class CryptoTests(unittest.TestCase):
         expected_key = b'\xdd0X\xb6\x93\x8e\xc9y\xef\x83\xf8\x8cj\xa7h\x03\xe2\xc6\xb16\xc5\xbb\xfc\xe7\xdf\xd6\xb1g\xf7u\xcfk'
         expected_iv = b'\xdcL\xc2\x18\x01J"X\x86lb\xb6\xb547\xfd\xe2a4\xb6\xaf}FS\xd7[\xe0N\r\x19\xfb\xbc'
 
-        assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(expected_key, key)
-        assert iv == expected_iv, 'Invalid IV (expected ("{}"), got ("{}"))'.format(expected_iv, iv)
+        assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(
+            expected_key, key)
+        assert iv == expected_iv, 'Invalid IV (expected ("{}"), got ("{}"))'.format(
+            expected_iv, iv)
 
     @staticmethod
     def test_calc_msg_key():
         value = utils.calc_msg_key(b'Some random message')
         expected = b'\xdfAa\xfc\x10\xab\x89\xd2\xfe\x19C\xf1\xdd~\xbf\x81'
-        assert value == expected, 'Value ("{}") does not equal expected ("{}")'.format(value, expected)
+        assert value == expected, 'Value ("{}") does not equal expected ("{}")'.format(
+            value, expected)
 
     @staticmethod
     def test_generate_key_data_from_nonces():
@@ -97,8 +103,10 @@ class CryptoTests(unittest.TestCase):
         expected_key = b'?\xc4\xbd\xdf\rWU\x8a\xf5\x0f+V\xdc\x96up\x1d\xeeG\x00\x81|\x1eg\x8a\x8f{\xf0y\x80\xda\xde'
         expected_iv = b'Q\x9dpZ\xb7\xdd\xcb\x82_\xfa\xf4\x90\xecn\x10\x9cD\xd2\x01\x8d\x83\xa0\xa4^\xb8\x91,\x7fI am'
 
-        assert key == expected_key, 'Key ("{}") does not equal expected ("{}")'.format(key, expected_key)
-        assert iv == expected_iv, 'Key ("{}") does not equal expected ("{}")'.format(key, expected_iv)
+        assert key == expected_key, 'Key ("{}") does not equal expected ("{}")'.format(
+            key, expected_key)
+        assert iv == expected_iv, 'Key ("{}") does not equal expected ("{}")'.format(
+            key, expected_iv)
 
     @staticmethod
     def test_factorizator():

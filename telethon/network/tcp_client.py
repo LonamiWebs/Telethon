@@ -78,7 +78,8 @@ class TcpClient:
                         if timeout:
                             time_passed = datetime.now() - start_time
                             if time_passed > timeout:
-                                raise TimeoutError('The read operation exceeded the timeout.')
+                                raise TimeoutError(
+                                    'The read operation exceeded the timeout.')
 
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()

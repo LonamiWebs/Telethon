@@ -1,9 +1,10 @@
 import os
 import time
+
 import telethon.helpers as utils
-from telethon.utils import BinaryWriter, BinaryReader
-from telethon.crypto import AES, AuthKey, Factorizator, RSA
+from telethon.crypto import AES, RSA, AuthKey, Factorizator
 from telethon.network import MtProtoPlainSender
+from telethon.utils import BinaryReader, BinaryWriter
 
 
 def do_authentication(transport):
@@ -23,7 +24,8 @@ def do_authentication(transport):
     with BinaryReader(sender.receive()) as reader:
         response_code = reader.read_int(signed=False)
         if response_code != 0x05162463:
-            raise AssertionError('Invalid response code: {}'.format(hex(response_code)))
+            raise AssertionError('Invalid response code: {}'.format(
+                hex(response_code)))
 
         nonce_from_server = reader.read(16)
         if nonce_from_server != nonce:
@@ -36,7 +38,8 @@ def do_authentication(transport):
 
         vector_id = reader.read_int()
         if vector_id != 0x1cb5c415:
-            raise AssertionError('Invalid vector constructor ID: {}'.format(hex(response_code)))
+            raise AssertionError('Invalid vector constructor ID: {}'.format(
+                hex(response_code)))
 
         fingerprints = []
         fingerprint_count = reader.read_int()
@@ -47,32 +50,46 @@ def do_authentication(transport):
     new_nonce = os.urandom(32)
     p, q = Factorizator.factorize(pq)
     with BinaryWriter() as pq_inner_data_writer:
-        pq_inner_data_writer.write_int(0x83c95aec, signed=False)  # PQ Inner Data
+        pq_inner_data_writer.write_int(
+            0x83c95aec, signed=False)  # PQ Inner Data
         pq_inner_data_writer.tgwrite_bytes(get_byte_array(pq, signed=False))
-        pq_inner_data_writer.tgwrite_bytes(get_byte_array(min(p, q), signed=False))
-        pq_inner_data_writer.tgwrite_bytes(get_byte_array(max(p, q), signed=False))
+        pq_inner_data_writer.tgwrite_bytes(
+            get_byte_array(
+                min(p, q), signed=False))
+        pq_inner_data_writer.tgwrite_bytes(
+            get_byte_array(
+                max(p, q), signed=False))
         pq_inner_data_writer.write(nonce)
         pq_inner_data_writer.write(server_nonce)
         pq_inner_data_writer.write(new_nonce)
 
         cipher_text, target_fingerprint = None, None
         for fingerprint in fingerprints:
-            cipher_text = RSA.encrypt(get_fingerprint_text(fingerprint), pq_inner_data_writer.get_bytes())
+            cipher_text = RSA.encrypt(
+                get_fingerprint_text(fingerprint),
+                pq_inner_data_writer.get_bytes())
 
             if cipher_text is not None:
                 target_fingerprint = fingerprint
                 break
 
         if cipher_text is None:
-            raise AssertionError('Could not find a valid key for fingerprints: {}'
-                                 .format(', '.join([get_fingerprint_text(f) for f in fingerprints])))
+            raise AssertionError(
+                'Could not find a valid key for fingerprints: {}'
+                .format(', '.join([get_fingerprint_text(f)
+                                   for f in fingerprints])))
 
         with BinaryWriter() as req_dh_params_writer:
-            req_dh_params_writer.write_int(0xd712e4be, signed=False)  # Req DH Params
+            req_dh_params_writer.write_int(
+                0xd712e4be, signed=False)  # Req DH Params
             req_dh_params_writer.write(nonce)
             req_dh_params_writer.write(server_nonce)
-            req_dh_params_writer.tgwrite_bytes(get_byte_array(min(p, q), signed=False))
-            req_dh_params_writer.tgwrite_bytes(get_byte_array(max(p, q), signed=False))
+            req_dh_params_writer.tgwrite_bytes(
+                get_byte_array(
+                    min(p, q), signed=False))
+            req_dh_params_writer.tgwrite_bytes(
+                get_byte_array(
+                    max(p, q), signed=False))
             req_dh_params_writer.write(target_fingerprint)
             req_dh_params_writer.tgwrite_bytes(cipher_text)
 
@@ -88,7 +105,8 @@ def do_authentication(transport):
             raise AssertionError('Server DH params fail: TODO')
 
         if response_code != 0xd0e8075c:
-            raise AssertionError('Invalid response code: {}'.format(hex(response_code)))
+            raise AssertionError('Invalid response code: {}'.format(
+                hex(response_code)))
 
         nonce_from_server = reader.read(16)
         if nonce_from_server != nonce:
@@ -106,7 +124,6 @@ def do_authentication(transport):
 
     g, dh_prime, ga, time_offset = None, None, None, None
     with BinaryReader(plain_text_answer) as dh_inner_data_reader:
-        hashsum = dh_inner_data_reader.read(20)
         code = dh_inner_data_reader.read_int(signed=False)
         if code != 0xb5890dba:
             raise AssertionError('Invalid DH Inner Data code: {}'.format(code))
@@ -132,26 +149,34 @@ def do_authentication(transport):
 
     # Prepare client DH Inner Data
     with BinaryWriter() as client_dh_inner_data_writer:
-        client_dh_inner_data_writer.write_int(0x6643b654, signed=False)  # Client DH Inner Data
+        client_dh_inner_data_writer.write_int(
+            0x6643b654, signed=False)  # Client DH Inner Data
         client_dh_inner_data_writer.write(nonce)
         client_dh_inner_data_writer.write(server_nonce)
         client_dh_inner_data_writer.write_long(0)  # TODO retry_id
-        client_dh_inner_data_writer.tgwrite_bytes(get_byte_array(gb, signed=False))
+        client_dh_inner_data_writer.tgwrite_bytes(
+            get_byte_array(
+                gb, signed=False))
 
         with BinaryWriter() as client_dh_inner_data_with_hash_writer:
-            client_dh_inner_data_with_hash_writer.write(utils.sha1(client_dh_inner_data_writer.get_bytes()))
-            client_dh_inner_data_with_hash_writer.write(client_dh_inner_data_writer.get_bytes())
-            client_dh_inner_data_bytes = client_dh_inner_data_with_hash_writer.get_bytes()
+            client_dh_inner_data_with_hash_writer.write(
+                utils.sha1(client_dh_inner_data_writer.get_bytes()))
+            client_dh_inner_data_with_hash_writer.write(
+                client_dh_inner_data_writer.get_bytes())
+            client_dh_inner_data_bytes = client_dh_inner_data_with_hash_writer.get_bytes(
+            )
 
     # Encryption
-    client_dh_inner_data_encrypted_bytes = AES.encrypt_ige(client_dh_inner_data_bytes, key, iv)
+    client_dh_inner_data_encrypted_bytes = AES.encrypt_ige(
+        client_dh_inner_data_bytes, key, iv)
 
     # Prepare Set client DH params
     with BinaryWriter() as set_client_dh_params_writer:
         set_client_dh_params_writer.write_int(0xf5045f1f, signed=False)
         set_client_dh_params_writer.write(nonce)
         set_client_dh_params_writer.write(server_nonce)
-        set_client_dh_params_writer.tgwrite_bytes(client_dh_inner_data_encrypted_bytes)
+        set_client_dh_params_writer.tgwrite_bytes(
+            client_dh_inner_data_encrypted_bytes)
 
         set_client_dh_params_bytes = set_client_dh_params_writer.get_bytes()
         sender.send(set_client_dh_params_bytes)
@@ -171,7 +196,8 @@ def do_authentication(transport):
             new_nonce_hash1 = reader.read(16)
             auth_key = AuthKey(get_byte_array(gab, signed=False))
 
-            new_nonce_hash_calculated = auth_key.calc_new_nonce_hash(new_nonce, 1)
+            new_nonce_hash_calculated = auth_key.calc_new_nonce_hash(new_nonce,
+                                                                     1)
             if new_nonce_hash1 != new_nonce_hash_calculated:
                 raise AssertionError('Invalid new nonce hash')
 
@@ -200,7 +226,8 @@ def get_byte_array(integer, signed):
     """Gets the arbitrary-length byte array corresponding to the given integer"""
     bits = integer.bit_length()
     byte_length = (bits + 8 - 1) // 8  # 8 bits per byte
-    return int.to_bytes(integer, length=byte_length, byteorder='big', signed=signed)
+    return int.to_bytes(
+        integer, length=byte_length, byteorder='big', signed=signed)
 
 
 def get_int(byte_array, signed=True):
