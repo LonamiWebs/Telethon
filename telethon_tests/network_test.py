@@ -3,8 +3,8 @@ import socket
 import threading
 import unittest
 
-from telethon.network import TcpTransport, TcpClient
 import telethon.network.authenticator as authenticator
+from telethon.network import TcpClient, TcpTransport
 
 
 def run_server_echo_thread(port):
@@ -31,7 +31,8 @@ class NetworkTests(unittest.TestCase):
         client = TcpClient()
         client.connect('localhost', port)
         client.write(msg)
-        assert msg == client.read(16), 'Read message does not equal sent message'
+        assert msg == client.read(
+            16), 'Read message does not equal sent message'
         client.close()
 
     @staticmethod

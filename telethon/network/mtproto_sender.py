@@ -1,18 +1,19 @@
 import gzip
-from telethon.errors import *
-from time import sleep
 from datetime import timedelta
-from threading import Thread, RLock
+from threading import RLock, Thread
+from time import sleep
 
 import telethon.helpers as utils
 from telethon.crypto import AES
-from telethon.utils import BinaryWriter, BinaryReader
-from telethon.tl.types import MsgsAck
+from telethon.errors import *
 from telethon.tl.all_tlobjects import tlobjects
+from telethon.tl.types import MsgsAck
+from telethon.utils import BinaryReader, BinaryWriter
 
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
+
     def __init__(self, transport, session):
         self.transport = transport
         self.session = session
@@ -27,7 +28,8 @@ class MtProtoSender:
         # We need this to avoid using the updates thread if we're waiting to read
         self.waiting_receive = False
 
-        self.updates_thread = Thread(target=self.updates_thread_method, name='Updates thread')
+        self.updates_thread = Thread(
+            target=self.updates_thread_method, name='Updates thread')
         self.updates_thread_running = False
         self.updates_thread_receiving = False
 
@@ -118,7 +120,8 @@ class MtProtoSender:
                 message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
                 with BinaryReader(message) as reader:
-                    self.process_msg(remote_msg_id, remote_sequence, reader, request)
+                    self.process_msg(remote_msg_id, remote_sequence, reader,
+                                     request)
 
             # We can now set the flag to False thus resuming the updates thread
             self.waiting_receive = False
@@ -148,7 +151,8 @@ class MtProtoSender:
 
         # And then finally send the encrypted packet
         with BinaryWriter() as cipher_writer:
-            cipher_writer.write_long(self.session.auth_key.key_id, signed=False)
+            cipher_writer.write_long(
+                self.session.auth_key.key_id, signed=False)
             cipher_writer.write(msg_key)
             cipher_writer.write(cipher_text)
             self.transport.send(cipher_writer.get_bytes())
@@ -168,7 +172,8 @@ class MtProtoSender:
             msg_key = reader.read(16)
 
             key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
-            plain_text = AES.decrypt_ige(reader.read(len(body) - reader.tell_position()), key, iv)
+            plain_text = AES.decrypt_ige(
+                reader.read(len(body) - reader.tell_position()), key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
                 remote_salt = plain_text_reader.read_long()
@@ -198,7 +203,8 @@ class MtProtoSender:
         if code == 0x3072cfa1:  # gzip_packed
             return self.handle_gzip_packed(msg_id, sequence, reader, request)
         if code == 0xedab447b:  # bad_server_salt
-            return self.handle_bad_server_salt(msg_id, sequence, reader, request)
+            return self.handle_bad_server_salt(msg_id, sequence, reader,
+                                               request)
         if code == 0xa7eff811:  # bad_msg_notification
             return self.handle_bad_msg_notification(msg_id, sequence, reader)
 
@@ -253,7 +259,8 @@ class MtProtoSender:
         self.session.salt = new_salt
 
         if request is None:
-            raise ValueError('Tried to handle a bad server salt with no request specified')
+            raise ValueError(
+                'Tried to handle a bad server salt with no request specified')
 
         # Resend
         self.send(request)
@@ -277,15 +284,18 @@ class MtProtoSender:
             request.confirm_received = True
 
         if inner_code == 0x2144ca19:  # RPC Error
-            error = RPCError(code=reader.read_int(), message=reader.tgread_string())
+            error = RPCError(
+                code=reader.read_int(), message=reader.tgread_string())
             if error.must_resend:
                 if not request:
-                    raise ValueError('The previously sent request must be resent. '
-                                     'However, no request was previously sent (called from updates thread).')
+                    raise ValueError(
+                        'The previously sent request must be resent. '
+                        'However, no request was previously sent (called from updates thread).')
                 request.confirm_received = False
 
             if error.message.startswith('FLOOD_WAIT_'):
-                print('Should wait {}s. Sleeping until then.'.format(error.additional_data))
+                print('Should wait {}s. Sleeping until then.'.format(
+                    error.additional_data))
                 sleep(error.additional_data)
 
             elif error.message.startswith('PHONE_MIGRATE_'):
@@ -295,7 +305,8 @@ class MtProtoSender:
                 raise error
         else:
             if not request:
-                raise ValueError('Cannot receive a request from inside an RPC result from the updates thread.')
+                raise ValueError(
+                    'Cannot receive a request from inside an RPC result from the updates thread.')
 
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
@@ -311,7 +322,8 @@ class MtProtoSender:
         unpacked_data = gzip.decompress(packed_data)
 
         with BinaryReader(unpacked_data) as compressed_reader:
-            return self.process_msg(msg_id, sequence, compressed_reader, request)
+            return self.process_msg(msg_id, sequence, compressed_reader,
+                                    request)
 
     # endregion
 
@@ -340,10 +352,12 @@ class MtProtoSender:
                     try:
                         self.updates_thread_receiving = True
                         seq, body = self.transport.receive(timeout)
-                        message, remote_msg_id, remote_sequence = self.decode_msg(body)
+                        message, remote_msg_id, remote_sequence = self.decode_msg(
+                            body)
 
                         with BinaryReader(message) as reader:
-                            self.process_msg(remote_msg_id, remote_sequence, reader)
+                            self.process_msg(remote_msg_id, remote_sequence,
+                                             reader)
 
                     except (ReadCancelledError, TimeoutError):
                         pass

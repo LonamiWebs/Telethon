@@ -1,6 +1,5 @@
 import unittest
 
-
 if __name__ == '__main__':
     from telethon_tests import CryptoTests, ParserTests, TLTests, UtilsTests, NetworkTests
     test_classes = [CryptoTests, ParserTests, TLTests, UtilsTests]

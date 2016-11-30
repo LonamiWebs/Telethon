@@ -26,8 +26,9 @@ class MTProtoRequest:
         self.confirm_received = True
 
     def need_resend(self):
-        return self.dirty or (self.confirmed and not self.confirm_received and
-                              datetime.now() - self.send_time > timedelta(seconds=3))
+        return self.dirty or (
+            self.confirmed and not self.confirm_received and
+            datetime.now() - self.send_time > timedelta(seconds=3))
 
     # These should be overrode
     def on_send(self, writer):
