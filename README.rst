@@ -154,7 +154,7 @@ Only the bare bones. Perfect for starting a *new implementation*.
 
 P.S.: I may have lied a bit. The ``TL`` language is not that easy. But it's not that hard either.
 You're free to sniff the ``parser/`` files and learn how to parse other more complex lines.
-Or simply use that code and change the [SourceBuilder](telethon_generator/parser/source_builder.py)!
+Or simply use that code and change the `SourceBuilder <telethon_generator/parser/source_builder.py>`_!
 
 Notes about the code generator
 ------------------------------
@@ -166,7 +166,7 @@ Updating the ``scheme.tl``
 --------------------------
 Have you found a more updated version of the ``scheme.tl`` file? Those are great news! Updating is as simple
 as grabbing the
-`latest version <https://github.com/telegramdesktop/tdesktop/blob/master/Telegram/SourceFiles/mtproto/scheme.tl>`_
+`latest version <https://github.com/telegramdesktop/tdesktop/blob/dev/Telegram/SourceFiles/mtproto/scheme.tl>`_
 and replacing the one you can find in this same directory by the updated one.
 Don't forget to run ``python3 tl_generator.py``.
 
