@@ -168,7 +168,7 @@ class MtProtoSender:
                 raise BufferError("Can't decode packet ({})".format(body))
 
             # TODO Check for both auth key ID and msg_key correctness
-            remote_auth_key_id = reader.read_long()
+            reader.read_long()  # remote_auth_key_id
             msg_key = reader.read(16)
 
             key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
@@ -176,8 +176,8 @@ class MtProtoSender:
                 reader.read(len(body) - reader.tell_position()), key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
-                remote_salt = plain_text_reader.read_long()
-                remote_session_id = plain_text_reader.read_long()
+                plain_text_reader.read_long()  # remote_salt
+                plain_text_reader.read_long()  # remote_session_id
                 remote_msg_id = plain_text_reader.read_long()
                 remote_sequence = plain_text_reader.read_int()
                 msg_len = plain_text_reader.read_int()
@@ -236,11 +236,11 @@ class MtProtoSender:
         return False
 
     def handle_container(self, msg_id, sequence, reader, request):
-        code = reader.read_int(signed=False)
+        reader.read_int(signed=False)  # code
         size = reader.read_int()
         for _ in range(size):
             inner_msg_id = reader.read_long(signed=False)
-            inner_sequence = reader.read_int()
+            reader.read_int()  # inner_sequence
             inner_length = reader.read_int()
             begin_position = reader.tell_position()
 
@@ -250,10 +250,10 @@ class MtProtoSender:
         return False
 
     def handle_bad_server_salt(self, msg_id, sequence, reader, request):
-        code = reader.read_int(signed=False)
-        bad_msg_id = reader.read_long(signed=False)
-        bad_msg_seq_no = reader.read_int()
-        error_code = reader.read_int()
+        reader.read_int(signed=False)  # code
+        reader.read_long(signed=False)  # bad_msg_id
+        reader.read_int()  # bad_msg_seq_no
+        reader.read_int()  # error_code
         new_salt = reader.read_long(signed=False)
 
         self.session.salt = new_salt
@@ -268,15 +268,15 @@ class MtProtoSender:
         return True
 
     def handle_bad_msg_notification(self, msg_id, sequence, reader):
-        code = reader.read_int(signed=False)
-        request_id = reader.read_long(signed=False)
-        request_sequence = reader.read_int()
+        reader.read_int(signed=False)  # code
+        reader.read_long(signed=False)  # request_id
+        reader.read_int()  # request_sequence
 
         error_code = reader.read_int()
         raise BadMessageError(error_code)
 
     def handle_rpc_result(self, msg_id, sequence, reader, request):
-        code = reader.read_int(signed=False)
+        reader.read_int(signed=False)  # code
         request_id = reader.read_long(signed=False)
         inner_code = reader.read_int(signed=False)
 
@@ -317,7 +317,7 @@ class MtProtoSender:
                 request.on_response(reader)
 
     def handle_gzip_packed(self, msg_id, sequence, reader, request):
-        code = reader.read_int(signed=False)
+        reader.read_int(signed=False)  # code
         packed_data = reader.tgread_bytes()
         unpacked_data = gzip.decompress(packed_data)
 

@@ -124,6 +124,7 @@ def do_authentication(transport):
 
     g, dh_prime, ga, time_offset = None, None, None, None
     with BinaryReader(plain_text_answer) as dh_inner_data_reader:
+        dh_inner_data_reader.read(20)  # hashsum
         code = dh_inner_data_reader.read_int(signed=False)
         if code != 0xb5890dba:
             raise AssertionError('Invalid DH Inner Data code: {}'.format(code))
