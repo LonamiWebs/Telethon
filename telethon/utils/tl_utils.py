@@ -44,6 +44,11 @@ def get_extension(media):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        Returns None if it was not found"""
+    if (isinstance(entity, InputPeerUser) or
+        isinstance(entity, InputPeerChat) or
+            isinstance(entity, InputPeerChannel)):
+        return entity
+
     if isinstance(entity, User):
         return InputPeerUser(entity.id, entity.access_hash)
     if isinstance(entity, Chat):

@@ -3,7 +3,7 @@ from getpass import getpass
 
 from telethon import RPCError, TelegramClient
 from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
-from telethon.utils import get_display_name, get_input_peer
+from telethon.utils import get_display_name
 
 # Get the (current) number of lines in the terminal
 cols, rows = shutil.get_terminal_size()
@@ -106,11 +106,10 @@ class InteractiveTelegramClient(TelegramClient):
                         i = None
 
                 except ValueError:
-                    pass
+                    i = None
 
             # Retrieve the selected user (or chat, or channel)
             entity = entities[i]
-            input_peer = get_input_peer(entity)
 
             # Show some information
             print_title('Chat with "{}"'.format(get_display_name(entity)))
@@ -141,7 +140,7 @@ class InteractiveTelegramClient(TelegramClient):
                 elif msg == '!h':
                     # First retrieve the messages and some information
                     total_count, messages, senders = self.get_message_history(
-                        input_peer, limit=10)
+                        entity, limit=10)
                     # Iterate over all (in reverse order so the latest appears the last in the console)
                     # and print them in "[hh:mm] Sender: Message" text format
                     for msg, sender in zip(
@@ -166,17 +165,17 @@ class InteractiveTelegramClient(TelegramClient):
                 # Send photo
                 elif msg.startswith('!up '):
                     # Slice the message to get the path
-                    self.send_photo(path=msg[len('!p '):], peer=input_peer)
+                    self.send_photo(path=msg[len('!up '):], entity=entity)
 
                 # Send file (document)
                 elif msg.startswith('!uf '):
                     # Slice the message to get the path
-                    self.send_document(path=msg[len('!f '):], peer=input_peer)
+                    self.send_document(path=msg[len('!uf '):], entity=entity)
 
                 # Download media
                 elif msg.startswith('!dm '):
                     # Slice the message to get message ID
-                    self.download_media(msg[len('!d '):])
+                    self.download_media(msg[len('!dm '):])
 
                 # Download profile photo
                 elif msg == '!dp':
@@ -193,24 +192,24 @@ class InteractiveTelegramClient(TelegramClient):
                 # Send chat message (if any)
                 elif msg:
                     self.send_message(
-                        input_peer, msg, markdown=True, no_web_page=True)
+                        entity, msg, markdown=True, no_web_page=True)
 
-    def send_photo(self, path, peer):
+    def send_photo(self, path, entity):
         print('Uploading {}...'.format(path))
         input_file = self.upload_file(
             path, progress_callback=self.upload_progress_callback)
 
         # After we have the handle to the uploaded file, send it to our peer
-        self.send_photo_file(input_file, peer)
+        self.send_photo_file(input_file, entity)
         print('Photo sent!')
 
-    def send_document(self, path, peer):
+    def send_document(self, path, entity):
         print('Uploading {}...'.format(path))
         input_file = self.upload_file(
             path, progress_callback=self.upload_progress_callback)
 
         # After we have the handle to the uploaded file, send it to our peer
-        self.send_document_file(input_file, peer)
+        self.send_document_file(input_file, entity)
         print('Document sent!')
 
     def download_media(self, media_id):

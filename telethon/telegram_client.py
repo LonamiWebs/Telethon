@@ -33,8 +33,8 @@ from telethon.tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty)
-from telethon.utils import (find_user_or_chat, get_appropiate_part_size,
-                            get_extension)
+from telethon.utils import (find_user_or_chat, get_input_peer,
+                            get_appropiate_part_size, get_extension)
 
 
 class TelegramClient:
@@ -282,11 +282,11 @@ class TelegramClient:
     # region Message requests
 
     def send_message(self,
-                     input_peer,
+                     entity,
                      message,
                      markdown=False,
                      no_web_page=False):
-        """Sends a message to the given input peer and returns the sent message ID"""
+        """Sends a message to the given entity (or input peer) and returns the sent message ID"""
         if markdown:
             msg, entities = parse_message_entities(message)
         else:
@@ -295,7 +295,7 @@ class TelegramClient:
         msg_id = utils.generate_random_long()
         self.invoke(
             SendMessageRequest(
-                peer=input_peer,
+                peer=get_input_peer(entity),
                 message=msg,
                 random_id=msg_id,
                 entities=entities,
@@ -303,7 +303,7 @@ class TelegramClient:
         return msg_id
 
     def get_message_history(self,
-                            input_peer,
+                            entity,
                             limit=20,
                             offset_date=None,
                             offset_id=0,
@@ -311,9 +311,9 @@ class TelegramClient:
                             min_id=0,
                             add_offset=0):
         """
-        Gets the message history for the specified InputPeer
+        Gets the message history for the specified entity
 
-        :param input_peer:  The InputPeer from whom to retrieve the message history
+        :param entity:      The entity (or input peer) from whom to retrieve the message history
         :param limit:       Number of messages to be retrieved
         :param offset_date: Offset date (messages *previous* to this date will be retrieved)
         :param offset_id:   Offset message ID (only messages *previous* to the given ID will be retrieved)
@@ -326,7 +326,7 @@ class TelegramClient:
         """
         result = self.invoke(
             GetHistoryRequest(
-                input_peer,
+                get_input_peer(entity),
                 limit=limit,
                 offset_date=offset_date,
                 offset_id=offset_id,
@@ -349,7 +349,7 @@ class TelegramClient:
 
         return total_messages, result.messages, users
 
-    def send_read_acknowledge(self, input_peer, messages=None, max_id=None):
+    def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """Sends a "read acknowledge" (i.e., notifying the given peer that we've
            read their messages, also known as the "double check ✅✅").
 
@@ -367,7 +367,7 @@ class TelegramClient:
             else:
                 max_id = messages.id
 
-        return self.invoke(ReadHistoryRequest(peer=input_peer, max_id=max_id))
+        return self.invoke(ReadHistoryRequest(peer=get_input_peer(entity), max_id=max_id))
 
     # endregion
 
@@ -445,15 +445,15 @@ class TelegramClient:
             name=file_name,
             md5_checksum=hash_md5.hexdigest())
 
-    def send_photo_file(self, input_file, input_peer, caption=''):
+    def send_photo_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
-           (which should be a photo) to an input_peer"""
+           (which should be a photo) to the given entity (or input peer)"""
         self.send_media_file(
-            InputMediaUploadedPhoto(input_file, caption), input_peer)
+            InputMediaUploadedPhoto(input_file, caption), entity)
 
-    def send_document_file(self, input_file, input_peer, caption=''):
+    def send_document_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
-           (which should be a document) to an input_peer"""
+           (which should be a document) to the given entity (or input peer)"""
 
         # Determine mime-type and attributes
         # Take the first element by using [0] since it returns a tuple
@@ -473,13 +473,13 @@ class TelegramClient:
                 mime_type=mime_type,
                 attributes=attributes,
                 caption=caption),
-            input_peer)
+            entity)
 
-    def send_media_file(self, input_media, input_peer):
-        """Sends any input_media (contact, document, photo...) to an input_peer"""
+    def send_media_file(self, input_media, entity):
+        """Sends any input_media (contact, document, photo...) to the given entiy"""
         self.invoke(
             SendMediaRequest(
-                peer=input_peer,
+                peer=get_input_peer(entity),
                 media=input_media,
                 random_id=utils.generate_random_long()))
 
