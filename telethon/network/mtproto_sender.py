@@ -198,6 +198,8 @@ class MtProtoSender:
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call, i.e., we sent a request)
             return self.handle_rpc_result(msg_id, sequence, reader, request)
 
+        if code == 0x347773c5:  # pong
+            return self.handle_pong(msg_id, sequence, reader, request)
         if code == 0x73f1f8dc:  # msg_container
             return self.handle_container(msg_id, sequence, reader, request)
         if code == 0x3072cfa1:  # gzip_packed
@@ -232,6 +234,15 @@ class MtProtoSender:
         tlobject = reader.tgread_object()
         for handler in self.on_update_handlers:
             handler(tlobject)
+
+        return False
+
+    def handle_pong(self, msg_id, sequence, reader, request):
+        reader.read_int(signed=False)  # code
+        recv_msg_id = reader.read_long(signed=False)
+
+        if recv_msg_id == request.msg_id:
+            request.confirm_received = True
 
         return False
 
