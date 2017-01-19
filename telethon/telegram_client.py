@@ -598,7 +598,7 @@ class TelegramClient:
                 print('Could not determine a filename for the document')
 
         if add_extension:
-            file_path += get_extension(document.mime_type)
+            file_path += get_extension(message_media_document)
 
         self.download_file_loc(
             InputDocumentFileLocation(
