@@ -27,7 +27,6 @@ class TcpClient:
         """Closes the connection"""
         self.socket.close()
         self.connected = False
-        self.socket.setblocking(True)
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
