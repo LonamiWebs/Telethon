@@ -32,7 +32,7 @@ class NetworkTests(unittest.TestCase):
         client.connect('localhost', port)
         client.write(msg)
         assert msg == client.read(
-            16), 'Read message does not equal sent message'
+            15), 'Read message does not equal sent message'
         client.close()
 
     @staticmethod
