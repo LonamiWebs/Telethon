@@ -190,7 +190,7 @@ class TLGenerator:
                     builder.writeln('def on_response(self, reader):')
                     # Do not read constructor's ID, since that's already been read somewhere else
                     if tlobject.is_function:
-                        builder.writeln('self.result = reader.tgread_object()')
+                        TLGenerator.write_request_result_code(builder, tlobject)
                     else:
                         if tlobject.args:
                             for arg in tlobject.args:
@@ -464,6 +464,33 @@ class TLGenerator:
             builder.end_block()
             # Restore .is_flag
             arg.is_flag = True
+
+    @staticmethod
+    def write_request_result_code(builder, tlobject):
+        """
+        Writes the receive code for the given function
+
+        :param builder: The source code builder
+        :param tlobject: The TLObject for which the 'self.result = ' will be written
+        """
+        if tlobject.result.startswith('Vector<'):
+            # Vector results are a bit special since they can also be composed of
+            # integer values and such; however, the result of requests is not
+            # parsed as arguments are and it's a bit harder to tell which is which.
+            if tlobject.result == 'Vector<int>':
+                builder.writeln('reader.read_int()  # Vector id')
+                builder.writeln('count = reader.read_int()')
+                builder.writeln('self.result = [reader.read_int() for _ in range(count)]')
+
+            elif tlobject.result == 'Vector<long>':
+                builder.writeln('reader.read_int()  # Vector id')
+                builder.writeln('count = reader.read_long()')
+                builder.writeln('self.result = [reader.read_long() for _ in range(count)]')
+
+            else:
+                builder.writeln('self.result = reader.tgread_vector()')
+        else:
+            builder.writeln('self.result = reader.tgread_object()')
 
 
 if __name__ == '__main__':
