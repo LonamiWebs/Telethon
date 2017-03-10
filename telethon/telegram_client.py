@@ -90,7 +90,7 @@ class TelegramClient:
            Note that authenticating to the Telegram servers is not the same as authenticating
            the app, which requires to send a code first."""
         try:
-            if not self.session.auth_key or reconnect:
+            if not self.session.auth_key or (reconnect and self.sender is not None):
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(self.transport)
 
@@ -146,6 +146,7 @@ class TelegramClient:
         """Disconnects from the Telegram server **and pauses all the spawned threads**"""
         if self.sender:
             self.sender.disconnect()
+            self.sender = None
 
     # endregion
 
