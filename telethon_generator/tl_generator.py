@@ -2,7 +2,10 @@ import os
 import re
 import shutil
 
-from .parser import SourceBuilder, TLParser
+try:
+    from .parser import SourceBuilder, TLParser
+except (ImportError, SystemError):
+    from parser import SourceBuilder, TLParser
 
 
 def get_output_path(normal_path):

@@ -56,7 +56,7 @@ Installing Telethon manually
    (`GitHub <https://github.com/ricmoo/pyaes>`_, `package index <https://pypi.python.org/pypi/pyaes>`_)
 2. Clone Telethon's GitHub repository: ``git clone https://github.com/LonamiWebs/Telethon.git``
 3. Enter the cloned repository: ``cd Telethon``
-4. Run the code generator: ``python3 telethon_generator/tl_generator.py``
+4. Run the code generator: ``cd telethon_generator && python3 tl_generator.py``
 5. Done!
 
 Running Telethon
