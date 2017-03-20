@@ -7,8 +7,8 @@ from telethon.utils import BinaryWriter
 
 
 class TcpTransport:
-    def __init__(self, ip_address, port):
-        self.tcp_client = TcpClient()
+    def __init__(self, ip_address, port, proxy=None):
+        self.tcp_client = TcpClient(proxy)
         self.send_counter = 0
 
         self.tcp_client.connect(ip_address, port)
