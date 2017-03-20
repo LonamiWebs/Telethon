@@ -126,6 +126,9 @@ class RPCError(Exception):
         '(for example, to send a message in a channel which is not yours).',
         'PASSWORD_HASH_INVALID':
         'The password (and thus its hash value) you entered is invalid.',
+        'BOT_METHOD_INVALID':
+        'The API access for bot users is restricted. The method you tried '
+        'to invoke cannot be executed as a bot.',
 
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
