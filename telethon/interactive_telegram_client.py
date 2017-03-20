@@ -30,11 +30,11 @@ def bytes_to_string(byte_count):
 
 
 class InteractiveTelegramClient(TelegramClient):
-    def __init__(self, session_user_id, user_phone, api_id, api_hash):
+    def __init__(self, session_user_id, user_phone, api_id, api_hash, proxy=None):
         print_title('Initialization')
 
         print('Initializing interactive example...')
-        super().__init__(session_user_id, api_id, api_hash)
+        super().__init__(session_user_id, api_id, api_hash, proxy)
 
         # Store all the found media in memory here,
         # so it can be downloaded if the user wants

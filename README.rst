@@ -171,3 +171,19 @@ and replacing the one you can find in this same directory by the updated one.
 Don't forget to run ``python3 tl_generator.py``.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
+
+Using proxy
+-----------
+If you want to use Telethon via proxy, you have to install
+`PySocks (via pip or manual) <https://github.com/Anorov/PySocks#installation>`_
+and pass proxy settings to ``TelegramClient()`` like
+
+.. code:: python
+
+  >>> from telethon import InteractiveTelegramClient
+  >>> import socks
+  >>> client = InteractiveTelegramClient('sessionid', '+34600000000',
+  ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef', proxy=(socks.SOCKS5, "localhost", 4444))
+
+``proxy`` accept a tuple, which contains exactly the same parameters as
+`what a set_proxy method accepts <https://github.com/Anorov/PySocks#sockssocksocket>`_.

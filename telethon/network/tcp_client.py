@@ -9,9 +9,20 @@ from telethon.utils import BinaryWriter
 
 
 class TcpClient:
-    def __init__(self):
+    def __init__(self, proxy=None):
         self.connected = False
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if proxy:
+            try:
+                import socks
+                self.socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.set_proxy(*proxy)
+            except (ImportError, SystemError):
+                print("Can't import PySocks, fallback to vanilla socket. "
+                      "Proxy settings are ignored. "
+                      "Try to install PySocks via pip")
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Support for multi-threading advantages and safety
         self.cancelled = False  # Has the read operation been cancelled?

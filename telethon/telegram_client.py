@@ -45,7 +45,7 @@ class TelegramClient:
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash):
+    def __init__(self, session, api_id, api_hash, proxy=None):
         """Initializes the Telegram client with the specified API ID and Hash.
 
            Session can either be a `str` object (the filename for the loaded/saved .session)
@@ -72,7 +72,7 @@ class TelegramClient:
                 'The given session must either be a string or a Session instance.')
 
         self.transport = TcpTransport(self.session.server_address,
-                                      self.session.port)
+                                      self.session.port, proxy)
 
         # These will be set later
         self.dc_options = None
