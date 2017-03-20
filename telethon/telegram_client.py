@@ -19,6 +19,7 @@ from telethon.tl.functions.account import GetPasswordRequest
 from telethon.tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                         SendCodeRequest, SignInRequest,
                                         SignUpRequest)
+from telethon.tl.functions.auth import ImportBotAuthorizationRequest
 from telethon.tl.functions.help import GetConfigRequest
 from telethon.tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
@@ -187,12 +188,15 @@ class TelegramClient:
         result = self.invoke(SendCodeRequest(phone_number, self.api_id, self.api_hash))
         self.phone_code_hashes[phone_number] = result.phone_code_hash
 
-    def sign_in(self, phone_number=None, code=None, password=None):
+    def sign_in(self, phone_number=None, code=None, password=None, bot_token=None):
         """Completes the authorization of a phone number by providing the received code.
 
            If no phone or code is provided, then the sole password will be used. The password
            should be used after a normal authorization attempt has happened and an RPCError
-           with `.password_required = True` was raised"""
+           with `.password_required = True` was raised.
+
+           To login as a bot, only `bot_token` should be provided. This should equal to the
+           bot access hash provided by https://t.me/BotFather during your bot creation."""
         if phone_number and code:
             if phone_number not in self.phone_code_hashes:
                 raise ValueError(
@@ -213,6 +217,12 @@ class TelegramClient:
             salt = self.invoke(GetPasswordRequest()).current_salt
             result = self.invoke(
                 CheckPasswordRequest(utils.get_password_hash(password, salt)))
+        elif bot_token:
+            result = self.invoke(
+                ImportBotAuthorizationRequest(flags=0,
+                                              api_id=self.api_id,
+                                              api_hash=self.api_hash,
+                                              bot_auth_token=bot_token))
         else:
             raise ValueError(
                 'You must provide a phone_number and a code for the first time, '
