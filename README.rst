@@ -85,6 +85,21 @@ corresponding values (your ``api_id``, ``api_hash`` and phone number in internat
 
 Then, simply run ``python3 try_telethon.py`` to start the interactive example.
 
+Using Telethon
+==============
+If you really want to learn how to use Telethon, it is **highly adviced** that
+you take a look to the
+`InteractiveTelegramClient <telethon/interactive_telegram_client.py>`_ file
+and check how it works. This file contains everything you'll need to build
+your own application, since it shows, among other things:
+
+1. Authorizing the user for the first time.
+2. Support to enter the 2-steps-verification code.
+3. Retrieving dialogs (chats) and the messages history.
+4. Sending messages and files.
+5. Downloading files.
+6. Updates thread.
+
 Advanced uses
 =============
 
@@ -166,24 +181,25 @@ Updating the ``scheme.tl``
 --------------------------
 Have you found a more updated version of the ``scheme.tl`` file? Those are great news! Updating is as simple
 as grabbing the
-`latest version <https://github.com/telegramdesktop/tdesktop/blob/dev/Telegram/SourceFiles/mtproto/scheme.tl>`_
+`latest version <https://github.com/telegramdesktop/tdesktop/blob/dev/Telegram/Resources/scheme.tl>`_
 and replacing the one you can find in this same directory by the updated one.
 Don't forget to run ``python3 tl_generator.py``.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
 
-Using proxy
------------
+Using a proxy
+-------------
 If you want to use Telethon via proxy, you have to install
-`PySocks (via pip or manual) <https://github.com/Anorov/PySocks#installation>`_
-and pass proxy settings to ``TelegramClient()`` like
+`PySocks (via pip or manual) <https://github.com/Anorov/PySocks#installation>`_.
+Once this is done, pass the proxy settings to the ``TelegramClient`` constructor:
 
 .. code:: python
 
   >>> from telethon import InteractiveTelegramClient
   >>> import socks
   >>> client = InteractiveTelegramClient('sessionid', '+34600000000',
-  ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef', proxy=(socks.SOCKS5, "localhost", 4444))
+  ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
+  ...     proxy=(socks.SOCKS5, 'localhost', 4444))
 
-``proxy`` accept a tuple, which contains exactly the same parameters as
-`what a set_proxy method accepts <https://github.com/Anorov/PySocks#sockssocksocket>`_.
+The ``proxy=`` parameter should be a tuple consisting of
+``(type, 'ip address', port)``, as described `here <https://github.com/Anorov/PySocks#sockssocksocket>`_.
