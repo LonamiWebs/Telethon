@@ -152,17 +152,28 @@ class TelegramClient:
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5)):
+    def invoke(self, request, timeout=timedelta(seconds=5), throw_invalid_dc=False):
         """Invokes a MTProtoRequest (sends and receives it) and returns its result.
            An optional timeout can be given to cancel the operation after the time delta.
-           Timeout can be set to None for no timeout"""
+           Timeout can be set to None for no timeout.
+
+           If throw_invalid_dc is True, these errors won't be caught (useful to
+           avoid infinite recursion). This should not be set to True manually."""
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
-        self.sender.send(request)
-        self.sender.receive(request, timeout)
+        try:
+            self.sender.send(request)
+            self.sender.receive(request, timeout)
 
-        return request.result
+            return request.result
+
+        except InvalidDCError as error:
+            if throw_invalid_dc:
+                raise error
+
+            self.reconnect_to_dc(error.new_dc)
+            return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
 
     # region Authorization requests
 
@@ -173,16 +184,8 @@ class TelegramClient:
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
-        request = SendCodeRequest(phone_number, self.api_id, self.api_hash)
-        completed = False
-        while not completed:
-            try:
-                result = self.invoke(request)
-                self.phone_code_hashes[phone_number] = result.phone_code_hash
-                completed = True
-
-            except InvalidDCError as error:
-                self.reconnect_to_dc(error.new_dc)
+        result = self.invoke(SendCodeRequest(phone_number, self.api_id, self.api_hash))
+        self.phone_code_hashes[phone_number] = result.phone_code_hash
 
     def sign_in(self, phone_number=None, code=None, password=None):
         """Completes the authorization of a phone number by providing the received code.

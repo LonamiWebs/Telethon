@@ -328,7 +328,7 @@ class MtProtoSender:
                     error.additional_data))
                 sleep(error.additional_data)
 
-            elif error.message.startswith('PHONE_MIGRATE_'):
+            elif '_MIGRATE_' in error.message:
                 raise InvalidDCError(error.additional_data)
 
             else:
