@@ -30,7 +30,7 @@ from telethon.tl.functions.upload import (
 # All the types we need to work with
 from telethon.tl.types import (
     ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
-    InputDocumentFileLocation, InputFile, InputFileLocation,
+    InputDocumentFileLocation, InputFile, InputFileBig, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty)
@@ -422,7 +422,7 @@ class TelegramClient:
 
         # Multiply the datetime timestamp by 10^6 to get the ticks
         # This is high likely going to be unique
-        file_id = int(datetime.now().timestamp() * (10**6))
+        file_id = utils.generate_random_long()
         hash_md5 = md5()
 
         with open(file_path, 'rb') as file:
@@ -441,7 +441,10 @@ class TelegramClient:
                 # Invoke the file upload and increment both the part index and MD5 checksum
                 result = self.invoke(request)
                 if result:
-                    hash_md5.update(part)
+                    if not is_large:
+                        # No need to update the hash if it's a large file
+                        hash_md5.update(part)
+
                     if progress_callback:
                         progress_callback(file.tell(), file_size)
                 else:
@@ -453,11 +456,17 @@ class TelegramClient:
             file_name = path.basename(file_path)
 
         # After the file has been uploaded, we can return a handle pointing to it
-        return InputFile(
-            id=file_id,
-            parts=part_count,
-            name=file_name,
-            md5_checksum=hash_md5.hexdigest())
+        if is_large:
+            return InputFileBig(
+                id=file_id,
+                parts=part_count,
+                name=file_name)
+        else:
+            return InputFile(
+                id=file_id,
+                parts=part_count,
+                name=file_name,
+                md5_checksum=hash_md5.hexdigest())
 
     def send_photo_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
