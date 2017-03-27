@@ -721,4 +721,7 @@ class TelegramClient:
     def remove_update_handler(self, handler):
         self.sender.remove_update_handler(handler)
 
+    def list_update_handlers(self):
+        return [ handler.__name__ for handler in self.sender.on_update_handlers ]
+
     # endregion
