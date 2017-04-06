@@ -71,8 +71,8 @@ class TelegramClient:
             raise ValueError(
                 'The given session must either be a string or a Session instance.')
 
-        self.transport = TcpTransport(self.session.server_address,
-                                      self.session.port, proxy)
+        self.transport = None
+        self.proxy = proxy  # Will be used when a TcpTransport is created
 
         # These will be set later
         self.dc_options = None
@@ -90,6 +90,10 @@ class TelegramClient:
         """Connects to the Telegram servers, executing authentication if required.
            Note that authenticating to the Telegram servers is not the same as authenticating
            the app, which requires to send a code first."""
+        if self.transport is None:
+            self.transport = TcpTransport(self.session.server_address,
+                                          self.session.port, proxy=self.proxy)
+
         try:
             if not self.session.auth_key or (reconnect and self.sender is not None):
                 self.session.auth_key, self.session.time_offset = \
@@ -136,7 +140,7 @@ class TelegramClient:
         dc = next(dc for dc in self.dc_options if dc.id == dc_id)
 
         self.transport.close()
-        self.transport = TcpTransport(dc.ip_address, dc.port)
+        self.transport = None
         self.session.server_address = dc.ip_address
         self.session.port = dc.port
         self.session.save()
@@ -148,6 +152,9 @@ class TelegramClient:
         if self.sender:
             self.sender.disconnect()
             self.sender = None
+        if self.transport:
+            self.transport.close()
+            self.transport = None
 
     # endregion
 
