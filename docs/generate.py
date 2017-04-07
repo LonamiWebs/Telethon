@@ -69,13 +69,14 @@ def write_code(file, tlobject, filename):
 def get_class_name(tlobject):
     """Gets the class name following the Python style guidelines, in ThisClassFormat"""
     # Courtesy of http://stackoverflow.com/a/31531797/4759433
-    result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), tlobject.name)
+    name = tlobject.name if isinstance(tlobject, TLObject) else tlobject
+    result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
 
     # Replace '_' with '' once again to make sure it doesn't appear on the name
     result = result[:1].upper() + result[1:].replace('_', '')
 
     # If it's a function, let it end with "Request" to identify them more easily
-    if tlobject.is_function:
+    if isinstance(tlobject, TLObject) and tlobject.is_function:
         result += 'Request'
 
     return result
@@ -104,7 +105,7 @@ def get_create_path_for(tlobject):
        for the given 'tlobject', relative to nothing; only its local path"""
 
     # Determine the output directory
-    out_dir = 'functions' if tlobject.is_function else 'constructors'
+    out_dir = 'methods' if tlobject.is_function else 'constructors'
 
     if tlobject.namespace:
         out_dir = os.path.join(out_dir, tlobject.namespace)
@@ -116,7 +117,7 @@ def get_create_path_for(tlobject):
     return os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
 
 
-def get_path_for_type(type, relative_to):
+def get_path_for_type(type, relative_to='.'):
     """Similar to getting the path for a TLObject, it might not be possible
        to have the TLObject itself but rather its name (the type);
        this method works in the same way, returning a relative path"""
@@ -149,13 +150,13 @@ def get_relative_paths(original, relative_to):
 
 
 def generate_documentation(scheme_file):
-    """Generates the documentation HTML files from from scheme.tl to /functions and /types"""
+    """Generates the documentation HTML files from from scheme.tl to /methods and /constructors, etc."""
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
         'index_all': 'core/index.html',
         'index_types': 'types/index.html',
-        'index_functions': 'functions/index.html',
+        'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
     }
 
@@ -200,9 +201,9 @@ def generate_documentation(scheme_file):
             file.write('<img src="%s" />' % paths['arrow'])
 
             file.write('<li><a href="')
-            file.write(paths['index_functions'] if tlobject.is_function else paths['index_types'])
+            file.write(paths['index_methods'] if tlobject.is_function else paths['index_constructors'])
             file.write('">')
-            file.write('Functions' if tlobject.is_function else 'Types')
+            file.write('Methods' if tlobject.is_function else 'Constructors')
             file.write('</a></li>')
 
             file.write('<img src="%s" />' % paths['arrow'])
@@ -280,9 +281,143 @@ def generate_documentation(scheme_file):
             file.write('</div></body></html>')
 
     # TODO Explain the difference between functions, types and constructors
-    # TODO Write the available types, listing the available constructors for each
     # TODO Write index.html for every sub-folder (functions/, types/ and constructors/) as well as sub-namespaces
     # TODO Write the core/index.html containing the core types
+    #
+    # Find all the available types (which are not the same as the constructors)
+    # Each type has a list of constructors associated to it, so it should be a map
+    tltypes = {}
+    tlfunctions = {}
+    for tlobject in tlobjects:
+        # Select to which dictionary we want to store this type
+        dictionary = tlfunctions if tlobject.is_function else tltypes
+
+        if tlobject.result in dictionary:
+            dictionary[tlobject.result].append(tlobject)
+        else:
+            dictionary[tlobject.result] = [tlobject]
+
+    for tltype, constructors in tltypes.items():
+        filename = get_path_for_type(tltype)
+        out_dir = os.path.dirname(filename)
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Since we don't have access to the full TLObject, split the type into namespace.name
+        if '.' in tltype:
+            namespace, name = tltype.split('.')
+        else:
+            namespace, name = None, tltype
+
+        # Determine the relative paths for this file
+        paths = get_relative_paths(original_paths, relative_to=out_dir)
+
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write('''<!DOCTYPE html>
+        <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+            <title>''')
+
+            # Let the page title be the same as the class name for this TL type (using its name)
+            file.write(get_class_name(name))
+
+            file.write('''</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="''')
+
+            # Use a relative path for the CSS file
+            file.write(paths['css'])
+
+            file.write('''" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css?family=Nunito|Space+Mono" rel="stylesheet">
+        </head>
+        <body>
+        <div id="main_div">
+            <ul class="horizontal">''')
+
+            # Write the path to the current item
+            file.write('<li><a href="')
+            file.write(paths['index_all'])
+            file.write('">API</a></li>')
+
+            file.write('<img src="%s" />' % paths['arrow'])
+
+            file.write('<li><a href="%s">Types</a></li>' % paths['index_types'])
+
+            file.write('<img src="%s" />' % paths['arrow'])
+
+            if namespace:
+                file.write('<li><a href="index.html">')
+                file.write(namespace)
+                file.write('</a></li>')
+                file.write('<img src="%s" />' % paths['arrow'])
+
+            file.write('<li>%s</li>' % get_file_name(name))
+
+            file.write('</ul><h1>')
+
+            # Body title, again the class name
+            file.write(get_class_name(name))
+
+            # Write all the available constructors for this abstract type
+            file.write('</h1><h3>Available constructors</h3><p>')
+
+            if not constructors:
+                file.write('This type has no constructors available.')
+            elif len(constructors) == 1:
+                file.write('This type has one constructor available.')
+            else:
+                file.write('This type has %d constructors available.' % len(constructors))
+
+            file.write('</p><table>')
+            for constructor in constructors:
+                file.write('<tr>')
+
+                # Constructor full name
+                link = get_create_path_for(constructor)
+                link = get_relative_path(link, relative_to=filename)
+
+                file.write('<td align="center"><a href="%s">' % link)
+                file.write(get_class_name(constructor))
+                file.write('</a></td>')
+
+                # Description
+                file.write('<td></td>')
+                file.write('</tr>')
+
+            file.write('</table>')
+
+            # Write all the functions which return this abstract type
+            file.write('<h3>Methods returning this type</h3><p>')
+            functions = tlfunctions.get(tltype, [])
+
+            if not functions:
+                file.write('No method returns this type.')
+            elif len(functions) == 1:
+                file.write('Only the following method returns this type.')
+            else:
+                file.write('The following %d methods return this type as a result.' % len(functions))
+
+            file.write('</p><table>')
+            for function in functions:
+                file.write('<tr>')
+
+                # Constructor full name
+                link = get_create_path_for(function)
+                link = get_relative_path(link, relative_to=filename)
+
+                file.write('<td align="center"><a href="%s">' % link)
+                file.write(get_class_name(function))
+                file.write('</a></td>')
+
+                # Description
+                file.write('<td></td>')
+                file.write('</tr>')
+
+            file.write('</table>')
+            file.write('</div></body></html>')
+
+    # Done, written all functions, constructors and types
 
 
 if __name__ == '__main__':
