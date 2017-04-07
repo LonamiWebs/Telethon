@@ -1,0 +1,103 @@
+body {
+    font-family: 'Nunito', sans-serif;
+    color: #333;
+    background-color:#fff;
+    font-size: 16px;
+}
+
+a {
+    color: #42aaed;
+    text-decoration: none;
+}
+
+pre {
+    font-family: 'Space Mono', monospace;
+    padding: 8px;
+    color: #567;
+    background: #f0f4f8;
+    border-radius: 0;
+    overflow-x: auto;
+}
+
+a:hover {
+    color: #64bbdd;
+    text-decoration: underline;
+}
+
+table {
+    width: 100%;
+    max-width: 100%;
+}
+
+table td {
+    border-top: 1px solid #eee;
+    padding: 8px;
+}
+
+.horizontal {
+    margin-bottom: 16px;
+    list-style: none;
+    background: #f0f4f8;
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+
+.horizontal li {
+    display: inline-block;
+    margin: 0 8px 0 0;
+}
+
+.horizontal img {
+    display: inline-block;
+    margin: 0 8px -2px 0;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+h3 {
+    font-size: 20px;
+}
+
+#main_div {
+  padding: 20px 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+pre::-webkit-scrollbar {
+    visibility: visible;
+    display: block;
+    height: 12px;
+}
+
+pre::-webkit-scrollbar-track:horizontal {
+    background: #def;
+    border-radius: 0;
+    height: 12px;
+}
+
+pre::-webkit-scrollbar-thumb:horizontal {
+    background: #bdd;
+  border-radius: 0;
+  height: 12px;
+}
+
+@media (max-width: 640px) {
+    h1 {
+        font-size: 18px;
+    }
+    h3 {
+        font-size: 16px;
+    }
+
+    #dev_page_content_wrap {
+        padding-top: 12px;
+    }
+    
+    #dev_page_title {
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+}
