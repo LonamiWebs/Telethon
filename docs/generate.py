@@ -1,68 +1,12 @@
 import os
 import re
 import sys
+from docs.docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from telethon_generator.parser import TLParser, TLObject
-
-
-# TLObject -> hypertext formatted code
-def write_code(file, tlobject, filename):
-    """Writes the code for the given 'tlobject' to the 'file' handle with hyperlinks,
-       using 'filename' as the file from which the relative links should work"""
-
-    # Write the function or type and its ID
-    if tlobject.namespace:
-        file.write(tlobject.namespace)
-        file.write('.')
-
-    file.write(tlobject.name)
-    file.write('#')
-    file.write(hex(tlobject.id)[2:].rjust(8, '0'))
-
-    # Write all the arguments (or do nothing if there's none)
-    for arg in tlobject.args:
-        file.write(' ')
-
-        # "Opening" modifiers
-        if arg.generic_definition:
-            file.write('{')
-
-        # Argument name
-        file.write(arg.name)
-        file.write(':')
-
-        # "Opening" modifiers
-        if arg.is_flag:
-            file.write('flags.%d?' % arg.flag_index)
-
-        if arg.is_generic:
-            file.write('!')
-
-        if arg.is_vector:
-            file.write('<a href="%s">Vector</a>&lt;' % get_path_for_type('vector', relative_to=filename))
-
-        # Argument type
-        if arg.type:
-            file.write('<a href="')
-            file.write(get_path_for_type(arg.type, relative_to=filename))
-            file.write('">%s</a>' % arg.type)
-        else:
-            file.write('#')
-
-        # "Closing" modifiers
-        if arg.is_vector:
-            file.write('&gt;')
-
-        if arg.generic_definition:
-            file.write('}')
-
-    # Now write the resulting type (result from a function, or type for a constructor)
-    file.write(' = <a href="')
-    file.write(get_path_for_type(tlobject.result, relative_to=filename))
-    file.write('">%s</a>' % tlobject.result)
 
 
 # TLObject -> Python class name
@@ -169,72 +113,33 @@ def generate_documentation(scheme_file):
         # Determine the relative paths for this file
         paths = get_relative_paths(original_paths, relative_to=filename)
 
-        with open(filename, 'w', encoding='utf-8') as file:
-            file.write('''<!DOCTYPE html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>''')
+        with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
+            docs.write_head(
+                title=get_class_name(tlobject),
+                relative_css_path=paths['css'])
 
-            # Let the page title be the same as the class name for this object
-            file.write(get_class_name(tlobject))
+            # Create the menu (path to the current TLObject)
+            docs.set_menu_separator(paths['arrow'])
+            docs.add_menu('API',
+                          link=paths['index_all'])
 
-            file.write('''</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="''')
-
-            # Use a relative path for the CSS file
-            file.write(paths['css'])
-
-            file.write('''" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Nunito|Space+Mono" rel="stylesheet">
-</head>
-<body>
-<div id="main_div">
-    <ul class="horizontal">''')
-
-            # Write the path to the current item
-            file.write('<li><a href="')
-            file.write(paths['index_all'])
-            file.write('">API</a></li>')
-
-            file.write('<img src="%s" />' % paths['arrow'])
-
-            file.write('<li><a href="')
-            file.write(paths['index_methods'] if tlobject.is_function else paths['index_constructors'])
-            file.write('">')
-            file.write('Methods' if tlobject.is_function else 'Constructors')
-            file.write('</a></li>')
-
-            file.write('<img src="%s" />' % paths['arrow'])
+            docs.add_menu('Methods' if tlobject.is_function else 'Constructors',
+                          link=paths['index_methods'] if tlobject.is_function else paths['index_constructors'])
 
             if tlobject.namespace:
-                file.write('<li><a href="index.html">')
-                file.write(tlobject.namespace)
-                file.write('</a></li>')
-                file.write('<img src="%s" />' % paths['arrow'])
+                docs.add_menu(tlobject.namespace,
+                              link='index.html')
 
-            file.write('<li>%s</li>' % get_file_name(tlobject))
+            docs.add_menu(get_file_name(tlobject))
+            docs.end_menu()
 
-            file.write('</ul><h1>')
+            # Create the page title
+            docs.write_title(get_class_name(tlobject))
 
-            # Body title, again the class name
-            file.write(get_class_name(tlobject))
+            # Write the code definition for this TLObject
+            docs.write_code(tlobject)
 
-            file.write('</h1>')
-
-            # Is it listed under functions or under types?
-            file.write('<pre>---')
-            file.write('functions' if tlobject.is_function else 'types')
-            file.write('---\n')
-
-            write_code(file, tlobject, filename=filename)
-
-            file.write('</pre>')
-
-            file.write('<h3>')
-            file.write('Parameters' if tlobject.is_function else 'Members')
-            file.write('</h3>')
+            docs.write_title('Parameters' if tlobject.is_function else 'Members', level=3)
 
             # Sort the arguments in the same way they're sorted on the generated code (flags go last)
             args = sorted([a for a in tlobject.args if
@@ -242,43 +147,37 @@ def generate_documentation(scheme_file):
                           key=lambda a: a.is_flag)
             if args:
                 # Writing parameters
-                file.write('<table>')
+                docs.begin_table(column_count=3)
 
                 for arg in args:
-                    file.write('<tr>')
+                    # Name row
+                    docs.add_row(arg.name,
+                                 bold=True)
 
-                    # Name
-                    file.write('<td><b>')
-                    file.write(arg.name)
-                    file.write('</b></td>')
+                    # Type row
+                    docs.add_row(arg.type,
+                                 link=get_path_for_type(arg.type, relative_to=filename),
+                                 align='center')
 
-                    # Type
-                    file.write('<td align="center"><a href="')
-                    file.write(get_path_for_type(arg.type, relative_to=filename))
-                    file.write('">%s</a></td>' % arg.type)
-
-                    # Description
-                    file.write('<td>')
+                    # Create a description for this argument
+                    description = ''
                     if arg.is_vector:
-                        file.write('A list must be supplied for this argument. ')
-
+                        description += 'A list must be supplied for this argument. '
                     if arg.is_generic:
-                        file.write('A different MTProtoRequest must be supplied for this argument. ')
-
+                        description += 'A different MTProtoRequest must be supplied for this argument. '
                     if arg.is_flag:
-                        file.write('This argument can be omitted. ')
+                        description += 'This argument can be omitted. '
 
-                    file.write('</td>')
-                    file.write('</tr>')
+                    docs.add_row(description.strip())
 
-                file.write('</table>')
+                docs.end_table()
             else:
                 if tlobject.is_function:
-                    file.write('<p>This request takes no input parameters.</p>')
+                    docs.write_text('This request takes no input parameters.')
                 else:
-                    file.write('<p>This type has no members.</p>')
+                    docs.write_text('This type has no members.')
 
-            file.write('</div></body></html>')
+            docs.end_body()
 
     # TODO Explain the difference between functions, types and constructors
     # TODO Write index.html for every sub-folder (functions/, types/ and constructors/) as well as sub-namespaces
@@ -311,111 +210,64 @@ def generate_documentation(scheme_file):
         # Determine the relative paths for this file
         paths = get_relative_paths(original_paths, relative_to=out_dir)
 
-        with open(filename, 'w', encoding='utf-8') as file:
-            file.write('''<!DOCTYPE html>
-        <html>
-        <head>
-            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-            <title>''')
+        with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
+            docs.write_head(
+                title=get_class_name(name),
+                relative_css_path=paths['css'])
 
-            # Let the page title be the same as the class name for this TL type (using its name)
-            file.write(get_class_name(name))
+            docs.set_menu_separator(paths['arrow'])
+            docs.add_menu('API',
+                          link=paths['index_all'])
 
-            file.write('''</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="''')
-
-            # Use a relative path for the CSS file
-            file.write(paths['css'])
-
-            file.write('''" rel="stylesheet">
-            <link href="https://fonts.googleapis.com/css?family=Nunito|Space+Mono" rel="stylesheet">
-        </head>
-        <body>
-        <div id="main_div">
-            <ul class="horizontal">''')
-
-            # Write the path to the current item
-            file.write('<li><a href="')
-            file.write(paths['index_all'])
-            file.write('">API</a></li>')
-
-            file.write('<img src="%s" />' % paths['arrow'])
-
-            file.write('<li><a href="%s">Types</a></li>' % paths['index_types'])
-
-            file.write('<img src="%s" />' % paths['arrow'])
+            docs.add_menu('Types',
+                          link=paths['index_types'])
 
             if namespace:
-                file.write('<li><a href="index.html">')
-                file.write(namespace)
-                file.write('</a></li>')
-                file.write('<img src="%s" />' % paths['arrow'])
+                docs.add_menu(namespace,
+                              link='index.html')
 
-            file.write('<li>%s</li>' % get_file_name(name))
+            docs.add_menu(get_file_name(name))
+            docs.end_menu()
 
-            file.write('</ul><h1>')
+            # Main file title
+            docs.write_title(get_class_name(name))
 
-            # Body title, again the class name
-            file.write(get_class_name(name))
-
-            # Write all the available constructors for this abstract type
-            file.write('</h1><h3>Available constructors</h3><p>')
-
+            docs.write_title('Available constructors', level=3)
             if not constructors:
-                file.write('This type has no constructors available.')
+                docs.write_text('This type has no constructors available.')
             elif len(constructors) == 1:
-                file.write('This type has one constructor available.')
+                docs.write_text('This type has one constructor available.')
             else:
-                file.write('This type has %d constructors available.' % len(constructors))
+                docs.write_text('This type has %d constructors available.' % len(constructors))
 
-            file.write('</p><table>')
+            docs.begin_table(1)
             for constructor in constructors:
-                file.write('<tr>')
-
                 # Constructor full name
                 link = get_create_path_for(constructor)
                 link = get_relative_path(link, relative_to=filename)
+                docs.add_row(get_class_name(constructor),
+                             link=link,
+                             align='center')
+            docs.end_table()
 
-                file.write('<td align="center"><a href="%s">' % link)
-                file.write(get_class_name(constructor))
-                file.write('</a></td>')
-
-                # Description
-                file.write('<td></td>')
-                file.write('</tr>')
-
-            file.write('</table>')
-
-            # Write all the functions which return this abstract type
-            file.write('<h3>Methods returning this type</h3><p>')
+            docs.write_title('Methods returning this type', level=3)
             functions = tlfunctions.get(tltype, [])
-
             if not functions:
-                file.write('No method returns this type.')
+                docs.write_text('No method returns this type.')
             elif len(functions) == 1:
-                file.write('Only the following method returns this type.')
+                docs.write_text('Only the following method returns this type.')
             else:
-                file.write('The following %d methods return this type as a result.' % len(functions))
+                docs.write_text('The following %d methods return this type as a result.' % len(functions))
 
-            file.write('</p><table>')
+            docs.begin_table(1)
             for function in functions:
-                file.write('<tr>')
-
-                # Constructor full name
                 link = get_create_path_for(function)
                 link = get_relative_path(link, relative_to=filename)
-
-                file.write('<td align="center"><a href="%s">' % link)
-                file.write(get_class_name(function))
-                file.write('</a></td>')
-
-                # Description
-                file.write('<td></td>')
-                file.write('</tr>')
-
-            file.write('</table>')
-            file.write('</div></body></html>')
+                docs.add_row(get_class_name(function),
+                             link=link,
+                             align='center')
+            docs.end_table()
+            docs.end_body()
 
     # Done, written all functions, constructors and types
 
