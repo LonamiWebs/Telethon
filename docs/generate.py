@@ -93,6 +93,61 @@ def get_relative_paths(original, relative_to):
     return {k: get_relative_path(v, relative_to) for k, v in original.items()}
 
 
+# Generate a index.html file for the given folder
+def find_title(html_file):
+    """Finds the <title> for the given HTML file, returns (Unknown) if not found"""
+    with open(html_file) as handle:
+        for line in handle:
+            if '<title>' in line:
+                # + 7 to skip len('<title>')
+                return line[line.index('<title>') + 7:line.index('</title>')]
+
+    return '(Unknown)'
+
+
+def generate_index(folder, css_file):
+    """Generates the index file for the specified folder"""
+
+    # Determine the namespaces listed here (as subfolders)
+    # and the files (.html files) that we should link to
+    namespaces = []
+    files = []
+    for item in os.listdir(folder):
+        if os.path.isdir(os.path.join(folder, item)):
+            namespaces.append(item)
+        elif item != 'index.html':
+            files.append(item)
+
+    # We work with relative paths
+    relative_css_file = get_relative_path(css_file, relative_to=folder)
+
+    # Now that everything is setup, write the index.html file
+    with DocsWriter(os.path.join(folder, 'index.html'),
+                    type_to_path_function=get_path_for_type) as docs:
+        # Title should be the current folder name
+        docs.write_head(folder.title(), relative_css_path=relative_css_file)
+        docs.write_title(folder.title())
+
+        if namespaces:
+            docs.write_title('Namespaces', level=3)
+            docs.begin_table(2)
+            for namespace in namespaces:
+                # For every namespace, also write the index of it
+                generate_index(os.path.join(folder, namespace), css_file=css_file)
+                docs.add_row(namespace.title(),
+                             link=os.path.join(namespace, 'index.html'))
+
+            docs.end_table()
+
+        docs.write_title('Available items')
+        docs.begin_table(2)
+        for file in files:
+            docs.add_row(find_title(os.path.join(folder, file)),
+                         link=file)
+        docs.end_table()
+        docs.end_body()
+
+
 def generate_documentation(scheme_file):
     """Generates the documentation HTML files from from scheme.tl to /methods and /constructors, etc."""
     original_paths = {
@@ -106,7 +161,7 @@ def generate_documentation(scheme_file):
 
     tlobjects = tuple(TLParser.parse_file(scheme_file))
 
-    # First write the functions and the available constructors
+    print('Generating constructors and functions documentation...')
     for tlobject in tlobjects:
         filename = get_create_path_for(tlobject)
 
@@ -180,11 +235,11 @@ def generate_documentation(scheme_file):
             docs.end_body()
 
     # TODO Explain the difference between functions, types and constructors
-    # TODO Write index.html for every sub-folder (functions/, types/ and constructors/) as well as sub-namespaces
     # TODO Write the core/index.html containing the core types
     #
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, so it should be a map
+    print('Generating types documentation...')
     tltypes = {}
     tlfunctions = {}
     for tlobject in tlobjects:
@@ -269,10 +324,25 @@ def generate_documentation(scheme_file):
             docs.end_table()
             docs.end_body()
 
-    # Done, written all functions, constructors and types
+    # After everything's been written, generate an index.html file for every folder.
+    # This will be done automatically and not taking into account any additional
+    # information that we have available, simply a file listing all the others
+    # accessible by clicking on their title
+    print('Generating indices...')
+    for folder in ['types', 'methods', 'constructors']:
+        generate_index(folder, css_file=original_paths['css'])
+
+    # Everything done
+    print('Documentation generated.')
+
+
+    """
+import os
+def get_immediate_subdirectories(a_dir):
+    return [name for name in os.listdir(a_dir)
+            if os.path.isdir(os.path.join(a_dir, name))]
+    """
 
 
 if __name__ == '__main__':
-    print('Generating documentation...')
     generate_documentation('../telethon_generator/scheme.tl')
-    print('Done.')
