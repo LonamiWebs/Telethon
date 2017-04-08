@@ -295,14 +295,12 @@ def generate_documentation(scheme_file):
             else:
                 docs.write_text('This type has %d constructors available.' % len(constructors))
 
-            docs.begin_table(1)
+            docs.begin_table(2)
             for constructor in constructors:
                 # Constructor full name
                 link = get_create_path_for(constructor)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(constructor),
-                             link=link,
-                             align='center')
+                docs.add_row(get_class_name(constructor), link=link)
             docs.end_table()
 
             docs.write_title('Methods returning this type', level=3)
@@ -314,13 +312,11 @@ def generate_documentation(scheme_file):
             else:
                 docs.write_text('The following %d methods return this type as a result.' % len(functions))
 
-            docs.begin_table(1)
+            docs.begin_table(2)
             for function in functions:
                 link = get_create_path_for(function)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(function),
-                             link=link,
-                             align='center')
+                docs.add_row(get_class_name(function), link=link)
             docs.end_table()
             docs.end_body()
 

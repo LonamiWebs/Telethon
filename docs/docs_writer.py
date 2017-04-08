@@ -42,7 +42,7 @@ class DocsWriter:
         self.write(relative_css_path)
 
         self.write('''" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Nunito|Space+Mono" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro" rel="stylesheet">
 </head>
 <body>
 <div id="main_div">''')
