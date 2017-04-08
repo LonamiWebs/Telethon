@@ -107,6 +107,7 @@ class DocsWriter:
         # Write all the arguments (or do nothing if there's none)
         for arg in tlobject.args:
             self.write(' ')
+            add_link = not arg.generic_definition and not arg.is_generic
 
             # "Opening" modifiers
             if arg.generic_definition:
@@ -128,9 +129,11 @@ class DocsWriter:
 
             # Argument type
             if arg.type:
-                self.write('<a href="')
-                self.write(self.type_to_path(arg.type))
-                self.write('">%s</a>' % arg.type)
+                if add_link:
+                    self.write('<a href="%s">' % self.type_to_path(arg.type))
+                self.write(arg.type)
+                if add_link:
+                    self.write('</a>')
             else:
                 self.write('#')
 
@@ -142,9 +145,17 @@ class DocsWriter:
                 self.write('}')
 
         # Now write the resulting type (result from a function, or type for a constructor)
-        self.write(' = <a href="')
-        self.write(self.type_to_path(tlobject.result))
-        self.write('">%s</a>' % tlobject.result)
+        self.write(' = ')
+        generic_name = next((arg.name for arg in tlobject.args
+                             if arg.generic_definition), None)
+
+        if tlobject.result == generic_name:
+            # Generic results cannot have any link
+            self.write(tlobject.result)
+        else:
+            self.write('<a href="')
+            self.write(self.type_to_path(tlobject.result))
+            self.write('">%s</a>' % tlobject.result)
 
         self.write('</pre>')
 

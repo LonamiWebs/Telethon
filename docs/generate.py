@@ -221,9 +221,12 @@ def generate_documentation(scheme_file):
                                  bold=True)
 
                     # Type row
-                    docs.add_row(arg.type,
-                                 link=get_path_for_type(arg.type, relative_to=filename),
-                                 align='center')
+                    if arg.is_generic:
+                        docs.add_row('!' + arg.type, align='center')
+                    else:
+                        docs.add_row(arg.type,
+                                     link=get_path_for_type(arg.type, relative_to=filename),
+                                     align='center')
 
                     # Create a description for this argument
                     description = ''
