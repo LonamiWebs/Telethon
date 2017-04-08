@@ -227,7 +227,10 @@ class DocsWriter:
     # With block
     def __enter__(self):
         # Sanity check
-        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+        parent = os.path.dirname(self.filename)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+
         self.handle = open(self.filename, 'w', encoding='utf-8')
         return self
 

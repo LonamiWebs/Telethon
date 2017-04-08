@@ -15,7 +15,7 @@ def write_core_index(docs, tlobjects, layer):
     types.clear()
 
     # Write the head and the full HTML
-    docs.write_head('Telethon API', relative_css_path='../css/docs.css')
+    docs.write_head('Telethon API', relative_css_path='css/docs.css')
 
     # Welcome text, small explanation about this page
     docs.write('''<h1>Telethon API</h1>
@@ -31,7 +31,7 @@ be useful for any other Telegram library out there.</p>'''
                # Methods section
                '''<h3 id="methods">Methods</h3>
 <p>Currently there are <b>{methodcount} methods</b> available for the layer
-{layer}. The complete list can be seen <a href="../methods/index.html">here</a>.
+{layer}. The complete list can be seen <a href="methods/index.html">here</a>.
 <br />
 To invoke any of these methods (also called <i>requests</i>), you can do
 as shown on the following example:</p>'''
@@ -84,7 +84,7 @@ you're still able to invoke these methods manually.</p>'''
                # Types section
                '''<h3 id="types">Types</h3>
 <p>Currently there are <b>{typecount} types</b>. You can see the full
-list <a href="../types/index.html">here</a>.</p>
+list <a href="types/index.html">here</a>.</p>
 
 <p>The Telegram types are the <i>abstract</i> results that you receive
 after invoking a request. They are "abstract" because they can have
@@ -99,7 +99,7 @@ an instance of it by using one of its, possibly multiple, constructors.</p>'''
                # Constructors section
                '''<h3 id="constructors">Constructors</h3>
 <p>Currently there are <b>{constructorcount} constructors</b>. You can see
-the full list <a href="../constructors/index.html">here</a>.</p>
+the full list <a href="constructors/index.html">here</a>.</p>
 
 <p>Constructors are the way you can create instances of the abstract types
 described above, and also the instances which are actually returned from

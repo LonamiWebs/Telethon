@@ -70,7 +70,7 @@ def get_path_for_type(type, relative_to='.'):
        this method works in the same way, returning a relative path"""
     if type.lower() in {'int', 'long', 'int128', 'int256', 'double',
                         'vector', 'string', 'bool', 'true', 'bytes', 'date'}:
-        path = 'core/index.html#%s' % type.lower()
+        path = 'index.html#%s' % type.lower()
 
     elif '.' in type:
         # If it's not a core type, then it has to be a custom Telegram type
@@ -178,7 +178,7 @@ def generate_documentation(scheme_file):
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
-        'index_all': 'core/index.html',
+        'index_all': 'index.html',
         'index_types': 'types/index.html',
         'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
@@ -251,9 +251,6 @@ def generate_documentation(scheme_file):
 
             docs.end_body()
 
-    # TODO Explain the difference between functions, types and constructors
-    # TODO Write the core/index.html containing the core types
-    #
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, so it should be a map
     print('Generating types documentation...')
