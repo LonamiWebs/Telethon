@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import shutil
 from docs.docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
@@ -342,5 +343,16 @@ def generate_documentation(scheme_file):
     print('Documentation generated.')
 
 
+def copy_resources():
+    for d in ['css', 'img']:
+        os.makedirs(d, exist_ok=True)
+
+    shutil.copy('../res/arrow.svg', 'img')
+    shutil.copy('../res/docs.css', 'css')
+
+
 if __name__ == '__main__':
-    generate_documentation('../telethon_generator/scheme.tl')
+    os.makedirs('generated', exist_ok=True)
+    os.chdir('generated')
+    generate_documentation('../../telethon_generator/scheme.tl')
+    copy_resources()
