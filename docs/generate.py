@@ -105,7 +105,25 @@ def find_title(html_file):
     return '(Unknown)'
 
 
-def generate_index(folder, css_file):
+def build_menu(docs, filename, relative_main_index):
+    """Builds the menu using the given DocumentWriter up to 'filename',
+       which must be a file (it cannot be a directory)"""
+    # TODO Maybe this could be part of DocsWriter itself, "build path menu"
+    docs.add_menu('API', relative_main_index)
+
+    items = filename.split('/')
+    for i in range(len(items) - 1):
+        item = items[i]
+        link = '../' * (len(items) - (i + 2))
+        link += 'index.html'
+        docs.add_menu(item.title(), link=link)
+
+    if items[-1] != 'index.html':
+        docs.add_menu(os.path.splitext(items[-1])[0])
+    docs.end_menu()
+
+
+def generate_index(folder, original_paths):
     """Generates the index file for the specified folder"""
 
     # Determine the namespaces listed here (as subfolders)
@@ -119,21 +137,25 @@ def generate_index(folder, css_file):
             files.append(item)
 
     # We work with relative paths
-    relative_css_file = get_relative_path(css_file, relative_to=folder)
+    paths = get_relative_paths(original_paths, relative_to=folder)
 
     # Now that everything is setup, write the index.html file
-    with DocsWriter(os.path.join(folder, 'index.html'),
-                    type_to_path_function=get_path_for_type) as docs:
+    filename = os.path.join(folder, 'index.html')
+    with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
         # Title should be the current folder name
-        docs.write_head(folder.title(), relative_css_path=relative_css_file)
+        docs.write_head(folder.title(), relative_css_path=paths['css'])
+
+        docs.set_menu_separator(paths['arrow'])
+        build_menu(docs, filename, relative_main_index=paths['index_all'])
+
         docs.write_title(folder.title())
 
         if namespaces:
             docs.write_title('Namespaces', level=3)
-            docs.begin_table(2)
+            docs.begin_table(4)
             for namespace in namespaces:
                 # For every namespace, also write the index of it
-                generate_index(os.path.join(folder, namespace), css_file=css_file)
+                generate_index(os.path.join(folder, namespace), original_paths)
                 docs.add_row(namespace.title(),
                              link=os.path.join(namespace, 'index.html'))
 
@@ -175,18 +197,7 @@ def generate_documentation(scheme_file):
 
             # Create the menu (path to the current TLObject)
             docs.set_menu_separator(paths['arrow'])
-            docs.add_menu('API',
-                          link=paths['index_all'])
-
-            docs.add_menu('Methods' if tlobject.is_function else 'Constructors',
-                          link=paths['index_methods'] if tlobject.is_function else paths['index_constructors'])
-
-            if tlobject.namespace:
-                docs.add_menu(tlobject.namespace,
-                              link='index.html')
-
-            docs.add_menu(get_file_name(tlobject))
-            docs.end_menu()
+            build_menu(docs, filename, relative_main_index=paths['index_all'])
 
             # Create the page title
             docs.write_title(get_class_name(tlobject))
@@ -271,18 +282,7 @@ def generate_documentation(scheme_file):
                 relative_css_path=paths['css'])
 
             docs.set_menu_separator(paths['arrow'])
-            docs.add_menu('API',
-                          link=paths['index_all'])
-
-            docs.add_menu('Types',
-                          link=paths['index_types'])
-
-            if namespace:
-                docs.add_menu(namespace,
-                              link='index.html')
-
-            docs.add_menu(get_file_name(name))
-            docs.end_menu()
+            build_menu(docs, filename, relative_main_index=paths['index_all'])
 
             # Main file title
             docs.write_title(get_class_name(name))
@@ -330,18 +330,10 @@ def generate_documentation(scheme_file):
     # accessible by clicking on their title
     print('Generating indices...')
     for folder in ['types', 'methods', 'constructors']:
-        generate_index(folder, css_file=original_paths['css'])
+        generate_index(folder, original_paths)
 
     # Everything done
     print('Documentation generated.')
-
-
-    """
-import os
-def get_immediate_subdirectories(a_dir):
-    return [name for name in os.listdir(a_dir)
-            if os.path.isdir(os.path.join(a_dir, name))]
-    """
 
 
 if __name__ == '__main__':
