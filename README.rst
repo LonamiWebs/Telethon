@@ -100,6 +100,11 @@ your own application, since it shows, among other things:
 5. Downloading files.
 6. Updates thread.
 
+If you want a nicer way to see all the available requests and types at your
+disposal, please check the
+`official Telethon documentation <https://lonamiwebs.github.io/Telethon>`_.
+There you'll find a list of all the methods, types and available constructors.
+
 Advanced uses
 =============
 
