@@ -80,8 +80,32 @@ pre::-webkit-scrollbar-track:horizontal {
 
 pre::-webkit-scrollbar-thumb:horizontal {
     background: #bdd;
-  border-radius: 0;
-  height: 12px;
+    border-radius: 0;
+    height: 12px;
+}
+
+:target {
+    border: 2px solid #f8f800;
+    background: #f8f8f8;
+    padding: 4px;
+}
+
+/* 'sh' stands for Syntax Highlight */
+span.sh1 {
+    color: #f70;
+}
+
+span.sh2 {
+    color: #0c7;
+}
+
+span.sh3 {
+    color: #aaa;
+    font-style: italic;
+}
+
+span.sh4 {
+    color: #06c;
 }
 
 @media (max-width: 640px) {

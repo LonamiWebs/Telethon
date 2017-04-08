@@ -4,6 +4,8 @@ import sys
 from docs.docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
+from docs.generate_core import write_core_index
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from telethon_generator.parser import TLParser, TLObject
@@ -330,6 +332,11 @@ def generate_documentation(scheme_file):
     print('Generating indices...')
     for folder in ['types', 'methods', 'constructors']:
         generate_index(folder, original_paths)
+
+    # Write the final core index, the main index for the rest of files
+    layer = TLParser.find_layer(scheme_file)
+    with DocsWriter(original_paths['index_all'], type_to_path_function=get_path_for_type) as docs:
+        write_core_index(docs, tlobjects, layer)
 
     # Everything done
     print('Documentation generated.')
