@@ -388,6 +388,13 @@ class MtProtoSender:
         timeout = timedelta(minutes=1)
 
         while self.updates_thread_running:
+            # Always sleep a bit before each iteration to relax the CPU,
+            # since it's possible to early 'continue' the loop to reach
+            # the next iteration, but we still should to sleep.
+            if self.updates_thread_running:
+                # Longer sleep if we're not expecting any update (only pings)
+                sleep(0.1 if self.on_update_handlers else 1)
+
             # Only try to receive updates if we're not waiting to receive a request
             if not self.waiting_receive:
                 with self.lock:
@@ -423,10 +430,3 @@ class MtProtoSender:
 
                 Log.d('Updates thread released the lock')
                 self.updates_thread_receiving = False
-
-            # If we are here, it is because the read was cancelled
-            # Sleep a bit just to give enough time for the other thread
-            # to acquire the lock. No need to sleep if we're not running anymore
-            if self.updates_thread_running:
-                # Longer sleep if we're not expecting any update (only pings)
-                sleep(0.1 if self.on_update_handlers else 1)
