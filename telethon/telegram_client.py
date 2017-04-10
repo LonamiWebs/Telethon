@@ -160,7 +160,7 @@ class TelegramClient:
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5), throw_invalid_dc=False):
+    def invoke(self, request, timeout=timedelta(seconds=5), throw_invalid_dc=False, tries=3, expect_result=True):
         """Invokes a MTProtoRequest (sends and receives it) and returns its result.
            An optional timeout can be given to cancel the operation after the time delta.
            Timeout can be set to None for no timeout.
@@ -174,7 +174,14 @@ class TelegramClient:
             self.sender.send(request)
             self.sender.receive(request, timeout)
 
-            return request.result
+            if request.result is None and expect_result:
+                if tries == 0:
+                    raise ValueError('The result of the invoked request is always None')
+                else:
+                    return self.invoke(request, timeout, throw_invalid_dc, tries - 1, expect_result)
+            else:
+                # Either the result is not None or we don't expect it to be different
+                return request.result
 
         except InvalidDCError as error:
             if throw_invalid_dc:
@@ -260,7 +267,7 @@ class TelegramClient:
     def log_out(self):
         """Logs out and deletes the current session. Returns True if everything went OK"""
         try:
-            self.invoke(LogOutRequest())
+            self.invoke(LogOutRequest(), expect_result=False)
             if not self.session.delete():
                 return False
 
