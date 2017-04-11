@@ -228,11 +228,15 @@ class MtProtoSender:
             return self.handle_bad_msg_notification(msg_id, sequence, reader)
 
         # msgs_ack, it may handle the request we wanted
-        if self.ack_requests_confirm and code == 0x62d6b459:
+        if code == 0x62d6b459:
             ack = reader.tgread_object()
             if request and request.msg_id in ack.msg_ids:
-                Log.w('Message ack confirmed a request')
-                request.confirm_received = True
+                Log.w('Ack found for the current request ID')
+
+                if self.ack_requests_confirm:
+                    Log.w('Message ack confirmed a request')
+                    request.confirm_received = True
+
             return False
 
         # If the code is not parsed manually, then it was parsed by the code generator!

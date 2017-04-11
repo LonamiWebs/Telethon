@@ -121,9 +121,6 @@ class TelegramClient:
             # although many other options are available!
             self.dc_options = result.dc_options
 
-            # We can now enable these (for such methods such as logout)
-            self.sender.ack_requests_confirm = True
-
             # We're signed in if we're authorized
             self.signed_in = self.is_user_authorized()
             return True
@@ -259,6 +256,9 @@ class TelegramClient:
 
     def log_out(self):
         """Logs out and deletes the current session. Returns True if everything went OK"""
+        # Only the logout request is confirmed via an ack request
+        # TODO This is only a supposition, there has to be a better way to handle acks
+        self.sender.ack_requests_confirm = True
         try:
             self.invoke(LogOutRequest())
             if not self.session.delete():
@@ -266,6 +266,8 @@ class TelegramClient:
 
             self.session = None
         except:
+            # Something happened when logging out, restore the state back
+            self.sender.ack_requests_confirm = False
             return False
 
     @staticmethod

@@ -12,7 +12,7 @@ cols, rows = shutil.get_terminal_size()
 def print_title(title):
     # Clear previous window
     print('\n')
-    available_cols = cols - 2  # -2 sincewe omit '┌' and '┐'
+    available_cols = cols - 2  # -2 since we omit '┌' and '┐'
     print('┌{}┐'.format('─' * available_cols))
     print('│{}│'.format(title.center(available_cols)))
     print('└{}┘'.format('─' * available_cols))
