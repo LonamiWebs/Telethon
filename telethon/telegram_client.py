@@ -167,6 +167,9 @@ class TelegramClient:
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
+        if not self.sender:
+            raise ValueError('You must be connected to invoke requests!')
+
         try:
             self.sender.send(request)
             self.sender.receive(request, timeout)
