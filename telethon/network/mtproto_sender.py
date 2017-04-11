@@ -43,6 +43,9 @@ class MtProtoSender:
         self.updates_thread_running = False
         self.updates_thread_receiving = False
 
+        # Sleep amount on "must sleep" error for the updates thread to sleep too
+        self.updates_thread_sleep = None
+
         self.updates_thread = Thread(
             target=self.updates_thread_method, name='Updates thread')
 
@@ -336,6 +339,8 @@ class MtProtoSender:
                 request.confirm_received = False
 
             if error.message.startswith('FLOOD_WAIT_'):
+                self.updates_thread_sleep = error.additional_data
+
                 print('Should wait {}s. Sleeping until then.'.format(
                     error.additional_data))
                 sleep(error.additional_data)
@@ -396,8 +401,12 @@ class MtProtoSender:
             # since it's possible to early 'continue' the loop to reach
             # the next iteration, but we still should to sleep.
             if self.updates_thread_running:
-                # Longer sleep if we're not expecting any update (only pings)
-                sleep(0.1 if self.on_update_handlers else 1)
+                if self.updates_thread_sleep:
+                    sleep(self.updates_thread_sleep)
+                    self.updates_thread_sleep = None
+                else:
+                    # Longer sleep if we're not expecting updates (only pings)
+                    sleep(0.1 if self.on_update_handlers else 1)
 
             # Only try to receive updates if we're not waiting to receive a request
             if not self.waiting_receive:
