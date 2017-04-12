@@ -2,20 +2,29 @@ import sys
 import logging
 
 
+# Find the logging level
+level = logging.NOTSET
 for arg in sys.argv:
     if arg.startswith('--telethon-log='):
-        level = getattr(logging, arg.split('=')[1], None)
-        if not isinstance(level, int):
-            raise ValueError('Invalid log level: %s' % level)
-        print('Using log level', level, 'which is', arg.split('=')[1])
-        logging.basicConfig(level=level)
+        level = getattr(logging, arg.split('=')[1], logging.NOTSET)
+        break
 
+# "[Time/Thread] Level: Messages"
+formatter = logging.Formatter(
+    fmt='[%(asctime)s.%(msecs)03d/%(threadName)s] %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S')
 
-class Logger:
-    def __init__(self):
-        setattr(self, 'd', logging.debug)
-        setattr(self, 'i', logging.info)
-        setattr(self, 'w', logging.warning)
-        setattr(self, 'e', logging.error)
+# Create our logger
+Log = logging.getLogger('TelethonLogger')
+Log.setLevel(level)
 
-Log = Logger()
+console = logging.StreamHandler()
+console.setFormatter(formatter)
+
+Log.addHandler(console)
+
+# Use shorter function names
+Log.__dict__['d'] = Log.debug
+Log.__dict__['i'] = Log.info
+Log.__dict__['w'] = Log.warning
+Log.__dict__['e'] = Log.error

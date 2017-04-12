@@ -47,7 +47,7 @@ class MtProtoSender:
         self.updates_thread_sleep = None
 
         self.updates_thread = Thread(
-            target=self.updates_thread_method, name='Updates thread')
+            target=self.updates_thread_method, name='UpdatesThread')
 
         # The "updates" thread must also be running to make periodic ping requests.
         self.set_updates_thread(running=True)
