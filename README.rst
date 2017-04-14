@@ -167,7 +167,7 @@ know what arguments it has. It really isn't that hard to write a generator for g
 The generated code should also be able to *encode* the ``Request`` into bytes, so they can be sent over
 the network. This isn't a big deal either, because you know how the ``TLObject``'s are made.
 
-Once you have your own [code generator](telethon_generator/tl_generator.py), start by looking at the
+Once you have your own `code generator <telethon_generator/tl_generator.py>`_, start by looking at the
 `first release <https://github.com/LonamiWebs/Telethon/releases/tag/v0.1>`_ of Telethon.
 The code there is simple to understand, easy to read and hence easy to port. No extra useless features.
 Only the bare bones. Perfect for starting a *new implementation*.

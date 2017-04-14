@@ -41,7 +41,7 @@ from telethon.utils import (find_user_or_chat, get_input_peer,
 class TelegramClient:
 
     # Current TelegramClient version
-    __version__ = '0.7.1'
+    __version__ = '0.8'
 
     # region Initialization
 
