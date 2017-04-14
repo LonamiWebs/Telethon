@@ -30,11 +30,9 @@ class MtProtoSender:
         # We need this to avoid using the updates thread if we're waiting to read
         self.waiting_receive = False
 
-        # Determine whether the received acknowledge request confirm
-        # our requests or not. This is not desired until we initialize
-        # our connection, because it breaks things when we call InvokeWithLayer
+        # Used when logging out, the only request that seems to use 'ack' requests
         # TODO There might be a better way to handle msgs_ack requests
-        self.ack_requests_confirm = False
+        self.logging_out = False
 
         self.ping_interval = 60
         self.ping_time_last = time()
@@ -236,8 +234,8 @@ class MtProtoSender:
             if request and request.msg_id in ack.msg_ids:
                 Log.w('Ack found for the current request ID')
 
-                if self.ack_requests_confirm:
-                    Log.w('Message ack confirmed a request')
+                if self.logging_out:
+                    Log.i('Message ack confirmed the logout request')
                     request.confirm_received = True
 
             return False
@@ -440,6 +438,16 @@ class MtProtoSender:
                         Log.d('Receiving updates timed out')
                     except ReadCancelledError:
                         Log.i('Receiving updates cancelled')
+                    except OSError as e:
+                        Log.w('OSError on updates thread, %s logging out',
+                              'was' if self.logging_out else 'was not')
+
+                        if self.logging_out:
+                            # This error is okay when logging out, means we got disconnected
+                            # TODO Not sure why this happens because we call disconnect()…
+                            self.set_updates_thread(running=False)
+                        else:
+                            raise e
 
                 Log.d('Updates thread released the lock')
                 self.updates_thread_receiving = False

@@ -259,18 +259,18 @@ class TelegramClient:
 
     def log_out(self):
         """Logs out and deletes the current session. Returns True if everything went OK"""
-        # Only the logout request is confirmed via an ack request
-        # TODO This is only a supposition, there has to be a better way to handle acks
-        self.sender.ack_requests_confirm = True
+        # Special flag when logging out (so the ack request confirms it)
+        self.sender.logging_out = True
         try:
             self.invoke(LogOutRequest())
+            self.disconnect()
             if not self.session.delete():
                 return False
 
             self.session = None
         except:
             # Something happened when logging out, restore the state back
-            self.sender.ack_requests_confirm = False
+            self.sender.logging_out = False
             return False
 
     @staticmethod
