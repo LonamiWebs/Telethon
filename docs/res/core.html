@@ -6,9 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="css/docs.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro" rel="stylesheet">
+    <style>
+        body {
+            overflow: scroll;
+        }
+    </style>
 </head>
 <body>
 <div id="main_div">
+    <input id="searchBox" type="text" onkeyup="updateSearch()"
+           placeholder="Search for requests and types…" autofocus />
+
+<div id="searchDiv">
+    <table id="searchTable"></table>
+</div>
+
+<div id="contentDiv">
     <h1>Telethon API</h1>
     <p>This documentation was generated straight from the <code>scheme.tl</code>
     provided by Telegram. However, there is no official documentation per se
@@ -140,5 +153,71 @@ messages = result.messages</pre>
     </li>
     </ul>
 </div>
+
+<script>
+contentDiv = document.getElementById("contentDiv");
+searchDiv = document.getElementById("searchDiv");
+searchBox = document.getElementById("searchBox");
+searchTable = document.getElementById("searchTable");
+
+requests = [{request_names}];
+types = [{type_names}];
+
+requestsu = [{request_urls}];
+typesu = [{type_urls}];
+
+function updateSearch() {
+    if (searchBox.value) {
+        contentDiv.style.display = "none";
+        searchDiv.style.display = "";
+
+        var foundRequests = [];
+        var foundRequestsu = [];
+        for (var i = 0; i < requests.length; ++i) {
+            if (requests[i].toLowerCase().indexOf(searchBox.value) != -1) {
+                foundRequests.push(requests[i]);
+                foundRequestsu.push(requestsu[i]);
+            }
+        }
+
+        var foundTypes = [];
+        var foundTypesu = [];
+        for (var i = 0; i < types.length; ++i) {
+            if (types[i].toLowerCase().indexOf(searchBox.value) != -1) {
+                foundTypes.push(types[i]);
+                foundTypesu.push(typesu[i]);
+            }
+        }
+
+        var top = foundRequests.length > foundTypes.length ?
+                    foundRequests.length : foundTypes.length;
+
+        result = "";
+        for (var i = 0; i <= top; ++i) {
+            result += "<tr><td>";
+
+            if (i < foundRequests.length) {
+                result +=
+                    '<a href="'+foundRequestsu[i]+'">'+foundRequests[i]+'</a>';
+            }
+
+            result += "</td><td>";
+
+            if (i < foundTypes.length) {
+                result +=
+                    '<a href="'+foundTypesu[i]+'">'+foundTypes[i]+'</a>';
+            }
+
+            result += "</td></tr>";
+        }
+        searchTable.innerHTML = result;
+    } else {
+        contentDiv.style.display = "";
+        searchDiv.style.display = "none";
+    }
+}
+
+updateSearch();
+</script>
 </body>
 </html>

@@ -108,6 +108,20 @@ span.sh4 {
     color: #06c;
 }
 
+#searchBox {
+    width: 100%;
+    border: none;
+    height: 20px;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 2px;
+    border: 2px solid #ddd;
+}
+
+#searchBox:placeholder-shown {
+    font-style: italic;
+}
+
 @media (max-width: 640px) {
     h1 {
         font-size: 18px;

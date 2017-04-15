@@ -339,17 +339,34 @@ def generate_documentation(scheme_file):
 
         types.add(tlobject.result)
 
+    types = sorted(types)
+    methods = sorted(methods, key=lambda m: m.name)
+
+    request_names = ', '.join('"' + get_class_name(m) + '"' for m in methods)
+    type_names = ', '.join('"' + get_class_name(t) + '"' for t in types)
+
+    request_urls = ', '.join('"' + get_create_path_for(m) + '"' for m in methods)
+    type_urls = ', '.join('"' + get_path_for_type(t) + '"' for t in types)
+
     replace_dict = {
         'type_count': len(types),
         'method_count': len(methods),
         'constructor_count': len(methods) - len(tlobjects),
-        'layer': layer
+        'layer': layer,
+
+        'request_names': request_names,
+        'type_names': type_names,
+        'request_urls': request_urls,
+        'type_urls': type_urls
     }
 
     with open('../res/core.html') as infile:
         with open(original_paths['index_all'], 'w') as outfile:
-            outfile.write(infile.read()
-                          .format_map(replace_dict))
+            text = infile.read()
+            for key, value in replace_dict.items():
+                text = text.replace('{' + key + '}', str(value))
+
+            outfile.write(text)
 
     # Everything done
     print('Documentation generated.')
