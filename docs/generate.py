@@ -5,8 +5,6 @@ import shutil
 from docs.docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
-from docs.generate_core import write_core_index
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from telethon_generator.parser import TLParser, TLObject
@@ -333,8 +331,25 @@ def generate_documentation(scheme_file):
 
     # Write the final core index, the main index for the rest of files
     layer = TLParser.find_layer(scheme_file)
-    with DocsWriter(original_paths['index_all'], type_to_path_function=get_path_for_type) as docs:
-        write_core_index(docs, tlobjects, layer)
+    types = set()
+    methods = []
+    for tlobject in tlobjects:
+        if tlobject.is_function:
+            methods.append(tlobject)
+
+        types.add(tlobject.result)
+
+    replace_dict = {
+        'type_count': len(types),
+        'method_count': len(methods),
+        'constructor_count': len(methods) - len(tlobjects),
+        'layer': layer
+    }
+
+    with open('../res/core.html') as infile:
+        with open(original_paths['index_all'], 'w') as outfile:
+            outfile.write(infile.read()
+                          .format_map(replace_dict))
 
     # Everything done
     print('Documentation generated.')
@@ -344,8 +359,8 @@ def copy_resources():
     for d in ['css', 'img']:
         os.makedirs(d, exist_ok=True)
 
-    shutil.copy('../res/arrow.svg', 'img')
-    shutil.copy('../res/docs.css', 'css')
+    shutil.copy('../res/img/arrow.svg', 'img')
+    shutil.copy('../res/css/docs.css', 'css')
 
 
 if __name__ == '__main__':
