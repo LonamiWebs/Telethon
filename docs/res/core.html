@@ -15,7 +15,7 @@
 <body>
 <div id="main_div">
     <input id="searchBox" type="text" onkeyup="updateSearch()"
-           placeholder="Search for requests and types…" autofocus />
+           placeholder="Search for requests and types…" />
 
 <div id="searchDiv">
     <table id="searchTable"></table>
@@ -30,54 +30,36 @@
     definition and parameters.</p>
 
     <p>Although this documentation was generated for <i>Telethon</i>, it may
-    be useful for any other Telegram library out there.</p><h3 id="methods">Methods</h3>
+    be useful for any other Telegram library out there.</p>
+
+    <h3>Index</h3>
+    <ul>
+        <li>
+            <a href="#methods">Methods</a>
+            (<a href="methods/index.html">full list</a>)
+        </li>
+        <li>
+            <a href="#types">Types</a>
+            (<a href="types/index.html">full list</a>)
+        </li>
+        <li>
+            <a href="#constructors">Constructors</a>
+            (<a href="constructors/index.html">full list</a>)
+        </li>
+        <li><a href="#core">Core types</a></li>
+        <li><a href="#example">Full example</a></li>
+    </ul>
+
+    <h3 id="methods">Methods</h3>
     <p>Currently there are <b>{method_count} methods</b> available for the layer
     {layer}. The complete list can be seen <a href="methods/index.html">here</a>.
-    <br />
-    To invoke any of these methods (also called <i>requests</i>), you can do
-    as shown on the following example:</p>
-<pre><span class="sh3">#!/usr/bin/python3</span>
-<span class="sh4">from</span> telethon <span class="sh4">import</span> TelegramClient
-<span class="sh4">from</span> telethon.tl.functions.messages <span class="sh4">import</span> GetHistoryRequest
-<span class="sh4">from</span> telethon.utils <span class="sh4">import</span> get_input_peer
-
-<span class="sh3"># Use your own values here</span>
-api_id = <span class="sh1">12345</span>
-api_hash = <span class="sh2">'0123456789abcdef0123456789abcdef'</span>
-phone_number = <span class="sh2">'+34600000000'</span>
-
-<span class="sh3"># Create the client and connect</span>
-client = TelegramClient(<span class="sh2">'username'</span>, api_id, api_hash)
-client.connect()
-
-<span class="sh3"># Ensure you're authorized</span>
-if not client.is_user_authorized():
-    client.send_code_request(phone)
-    client.sign_in(phone, input(<span class="sh2">'Enter the code: '</span>))
-
-<span class="sh3"># Using built-in methods</span>
-dialogs, entities = client.get_dialogs(<span class="sh1">10</span>)
-entity = entities[<span class="sh1">0</span>]
-
-<span class="sh3"># !! Invoking a request manually !!</span>
-result = <b>client.invoke</b>(
-    GetHistoryRequest(
-        get_input_peer(entity),
-        limit=<span class="sh1">20</span>,
-        offset_date=<span class="sh1">None</span>,
-        offset_id=<span class="sh1">0</span>,
-        max_id=<span class="sh1">0</span>,
-        min_id=<span class="sh1">0</span>,
-        add_offset=<span class="sh1">0</span>))
-
-<span class="sh3"># Now you have access to the first 20 messages</span>
-messages = result.messages</pre>
-
-    <p>As you can see, manually invoking requests with <code>client.invoke()</code>
-    is way more verbose than using the built-in methods. However, and given
-    that there are so many methods available, it's impossible to provide a nice
-    interface to things that may change over time. To get full access, however,
-    you're still able to invoke these methods manually.</p>
+    <br /><br />
+    Methods, also known as <i>requests</i>, are used to interact with
+    the Telegram API itself and are invoked with a call to <code>.invoke()</code>.
+    <b>Only these</b> can be passed to <code>.invoke()</code>! You cannot
+    <code>.invoke()</code> types or constructors, only requests. After this,
+    Telegram will return a <code>result</code>, which may be, for instance,
+    a bunch of messages, some dialogs, users, etc.</p>
 
     <h3 id="types">Types</h3>
     <p>Currently there are <b>{type_count} types</b>. You can see the full
@@ -152,6 +134,58 @@ messages = result.messages</pre>
         with date parameters.
     </li>
     </ul>
+
+    <h3 id="example">Full example</h3>
+    <p>The following example demonstrates:</p>
+    <ol>
+        <li>How to create a <code>TelegramClient</code>.</li>
+        <li>Connecting to the Telegram servers and authorizing an user.</li>
+        <li>Retrieving a list of chats (<i>dialogs</i>).</li>
+        <li>Invoking a request without the built-in methods.</li>
+    </ol>
+    <pre><span class="sh3">#!/usr/bin/python3</span>
+<span class="sh4">from</span> telethon <span class="sh4">import</span> TelegramClient
+<span class="sh4">from</span> telethon.tl.functions.messages <span class="sh4">import</span> GetHistoryRequest
+<span class="sh4">from</span> telethon.utils <span class="sh4">import</span> get_input_peer
+
+<span class="sh3"># <b>(1)</b> Use your own values here</span>
+api_id = <span class="sh1">12345</span>
+api_hash = <span class="sh2">'0123456789abcdef0123456789abcdef'</span>
+phone_number = <span class="sh2">'+34600000000'</span>
+
+<span class="sh3"># <b>(2)</b> Create the client and connect</span>
+client = TelegramClient(<span class="sh2">'username'</span>, api_id, api_hash)
+client.connect()
+
+<span class="sh3"># Ensure you're authorized</span>
+if not client.is_user_authorized():
+    client.send_code_request(phone)
+    client.sign_in(phone, input(<span class="sh2">'Enter the code: '</span>))
+
+<span class="sh3"># <b>(3)</b> Using built-in methods</span>
+dialogs, entities = client.get_dialogs(<span class="sh1">10</span>)
+entity = entities[<span class="sh1">0</span>]
+
+<span class="sh3"># <b>(4)</b> !! Invoking a request manually !!</span>
+result = <b>client.invoke</b>(
+    GetHistoryRequest(
+        get_input_peer(entity),
+        limit=<span class="sh1">20</span>,
+        offset_date=<span class="sh1">None</span>,
+        offset_id=<span class="sh1">0</span>,
+        max_id=<span class="sh1">0</span>,
+        min_id=<span class="sh1">0</span>,
+        add_offset=<span class="sh1">0</span>))
+
+<span class="sh3"># Now you have access to the first 20 messages</span>
+messages = result.messages</pre>
+
+    <p>As it can be seen, manually invoking requests with
+    <code>client.invoke()</code> is way more verbose than using the built-in
+    methods (such as <code>client.get_dialogs()</code>. However, and given
+    that there are so many methods available, it's impossible to provide a nice
+    interface to things that may change over time. To get full access, however,
+    you're still able to invoke these methods manually.</p>
 </div>
 
 <script>
