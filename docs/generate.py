@@ -351,7 +351,7 @@ def generate_documentation(scheme_file):
     replace_dict = {
         'type_count': len(types),
         'method_count': len(methods),
-        'constructor_count': len(methods) - len(tlobjects),
+        'constructor_count': len(tlobjects) - len(methods),
         'layer': layer,
 
         'request_names': request_names,
