@@ -149,13 +149,18 @@ class InteractiveTelegramClient(TelegramClient):
                         name = sender.first_name if sender else '???'
 
                         # Format the message content
-                        if msg.media:
+                        if getattr(msg, 'media', None):
                             self.found_media.add(msg)
                             content = '<{}> {}'.format(  # The media may or may not have a caption
                                 msg.media.__class__.__name__,
                                 getattr(msg.media, 'caption', ''))
-                        else:
+                        elif hasattr(msg, 'message'):
                             content = msg.message
+                        elif hasattr(msg, 'action'):
+                            content = str(msg.action)
+                        else:
+                            # Unknown message, simply print its class name
+                            content = msg.__class__.__name__
 
                         # And print it to the user
                         print('[{}:{}] (ID={}) {}: {}'.format(
