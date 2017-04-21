@@ -8,6 +8,7 @@ from telethon.crypto import AES
 from telethon.errors import *
 from telethon.log import Log
 from telethon.tl.all_tlobjects import tlobjects
+from telethon.tl.functions.updates import GetStateRequest
 from telethon.tl.types import MsgsAck
 from telethon.tl.functions import PingRequest
 from telethon.utils import BinaryReader, BinaryWriter
@@ -80,7 +81,7 @@ class MtProtoSender:
 
     def send_ping(self):
         """Sends PingRequest"""
-        request = PingRequest(0)
+        request = PingRequest(utils.generate_random_long())
         self.send(request)
         self.receive(request)
 
@@ -436,6 +437,12 @@ class MtProtoSender:
 
                     except TimeoutError:
                         Log.d('Receiving updates timed out')
+                        # TODO Workaround for issue #50
+                        Log.d('Sending GetStateRequest (workaround for issue #50)')
+                        r = GetStateRequest()
+                        self.send(r)
+                        self.receive(r)
+
                     except ReadCancelledError:
                         Log.i('Receiving updates cancelled')
                     except OSError as e:
