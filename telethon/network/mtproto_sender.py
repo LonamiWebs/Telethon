@@ -49,6 +49,11 @@ class MtProtoSender:
             name='UpdatesThread', daemon=True,
             target=self.updates_thread_method)
 
+        self.connect()
+
+    def connect(self):
+        """Connects to the server"""
+        self.transport.connect()
         # The "updates" thread must also be running to make periodic ping requests.
         self.set_updates_thread(running=True)
 
@@ -56,6 +61,11 @@ class MtProtoSender:
         """Disconnects and **stops all the running threads** if any"""
         self.set_updates_thread(running=False)
         self.transport.close()
+
+    def reconnect(self):
+        """Disconnects and connects again (effectively reconnecting)"""
+        self.disconnect()
+        self.connect()
 
     def add_update_handler(self, handler):
         """Adds an update handler (a method with one argument, the received
@@ -438,14 +448,20 @@ class MtProtoSender:
                     except TimeoutError:
                         Log.d('Receiving updates timed out')
                         # TODO Workaround for issue #50
-                        Log.d('Sending GetStateRequest (workaround for issue #50)')
                         r = GetStateRequest()
-                        self.send(r)
-                        self.receive(r)
+                        try:
+                            Log.d('Sending GetStateRequest (workaround for issue #50)')
+                            self.send(r)
+                            self.receive(r)
+                        except TimeoutError:
+                            Log.w('Timed out inside a timeout, trying to reconnect...')
+                            self.reconnect()
+                            self.send(r)
+                            self.receive(r)
 
                     except ReadCancelledError:
                         Log.i('Receiving updates cancelled')
-                    except OSError as e:
+                    except OSError:
                         Log.w('OSError on updates thread, %s logging out',
                               'was' if self.logging_out else 'was not')
 
@@ -454,7 +470,7 @@ class MtProtoSender:
                             # TODO Not sure why this happens because we call disconnect()…
                             self.set_updates_thread(running=False)
                         else:
-                            raise e
+                            raise
 
                 Log.d('Updates thread released the lock')
                 self.updates_thread_receiving = False

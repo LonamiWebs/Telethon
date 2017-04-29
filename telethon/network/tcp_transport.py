@@ -8,10 +8,15 @@ from telethon.utils import BinaryWriter
 
 class TcpTransport:
     def __init__(self, ip_address, port, proxy=None):
+        self.ip = ip_address
+        self.port = port
         self.tcp_client = TcpClient(proxy)
         self.send_counter = 0
 
-        self.tcp_client.connect(ip_address, port)
+    def connect(self):
+        """Connects to the specified IP address and port"""
+        self.send_counter = 0
+        self.tcp_client.connect(self.ip, self.port)
 
     # Original reference: https://core.telegram.org/mtproto#tcp-transport
     # The packets are encoded as: total length, sequence number, packet and checksum (CRC32)
