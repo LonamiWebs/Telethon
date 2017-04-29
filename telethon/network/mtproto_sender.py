@@ -46,7 +46,8 @@ class MtProtoSender:
         self.updates_thread_sleep = None
 
         self.updates_thread = Thread(
-            target=self.updates_thread_method, name='UpdatesThread')
+            name='UpdatesThread', daemon=True,
+            target=self.updates_thread_method)
 
         # The "updates" thread must also be running to make periodic ping requests.
         self.set_updates_thread(running=True)
@@ -399,13 +400,12 @@ class MtProtoSender:
             # Always sleep a bit before each iteration to relax the CPU,
             # since it's possible to early 'continue' the loop to reach
             # the next iteration, but we still should to sleep.
-            if self.updates_thread_running:
-                if self.updates_thread_sleep:
-                    sleep(self.updates_thread_sleep)
-                    self.updates_thread_sleep = None
-                else:
-                    # Longer sleep if we're not expecting updates (only pings)
-                    sleep(0.1 if self.on_update_handlers else 1)
+            if self.updates_thread_sleep:
+                sleep(self.updates_thread_sleep)
+                self.updates_thread_sleep = None
+            else:
+                # Longer sleep if we're not expecting updates (only pings)
+                sleep(0.1 if self.on_update_handlers else 1)
 
             # Only try to receive updates if we're not waiting to receive a request
             if not self.waiting_receive:
