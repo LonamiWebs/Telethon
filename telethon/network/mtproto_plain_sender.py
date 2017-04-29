@@ -12,6 +12,7 @@ class MtProtoPlainSender:
         self._time_offset = 0
         self._last_msg_id = 0
         self._transport = transport
+        self._transport.connect()
 
     def send(self, data):
         """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""

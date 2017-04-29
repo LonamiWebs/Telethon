@@ -31,13 +31,15 @@ class TcpClient:
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number"""
-        self.socket.connect((ip, port))
-        self.connected = True
+        if not self.connected:
+            self.socket.connect((ip, port))
+            self.connected = True
 
     def close(self):
         """Closes the connection"""
-        self.socket.close()
-        self.connected = False
+        if self.connected:
+            self.socket.close()
+            self.connected = False
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
