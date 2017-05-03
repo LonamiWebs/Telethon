@@ -91,18 +91,6 @@ class BinaryReader:
         """Reads a Telegram-encoded string"""
         return str(self.tgread_bytes(), encoding='utf-8', errors='replace')
 
-    @staticmethod
-    def _decode_string(encoded):
-        # Workaround for issues #49 and #67
-        # Sometimes an invalid utf-8 string is received. We can just remove
-        # the offending parts and replace them with a different solution.
-        # There aren't many other options, besides crashing.
-        try:
-            return str(encoded, encoding='utf-8')
-        except UnicodeDecodeError as e:
-            fixed = encoded[:e.start] + encoded[e.end:]
-            return BinaryReader._decode_string(fixed)
-
     def tgread_bool(self):
         """Reads a Telegram boolean value"""
         value = self.read_int(signed=False)
