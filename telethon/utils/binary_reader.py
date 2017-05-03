@@ -89,7 +89,7 @@ class BinaryReader:
 
     def tgread_string(self):
         """Reads a Telegram-encoded string"""
-        return self._decode_string(self.tgread_bytes())
+        return str(self.tgread_bytes(), encoding='utf-8', errors='replace')
 
     @staticmethod
     def _decode_string(encoded):
