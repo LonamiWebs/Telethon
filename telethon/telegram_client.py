@@ -286,11 +286,12 @@ class TelegramClient:
     # region Dialogs ("chats") requests
 
     def get_dialogs(self,
-                    count=10,
+                    limit=10,
                     offset_date=None,
                     offset_id=0,
                     offset_peer=InputPeerEmpty()):
-        """Returns a tuple of lists ([dialogs], [entities]) with 'count' items each.
+        """Returns a tuple of lists ([dialogs], [entities]) with at least 'limit' items each.
+           If `limit` is 0, all dialogs will be retrieved.
            The `entity` represents the user, chat or channel corresponding to that dialog"""
 
         r = self.invoke(
@@ -298,7 +299,7 @@ class TelegramClient:
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=count))
+                limit=limit))
         return (
             r.dialogs,
             [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
