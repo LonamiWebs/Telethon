@@ -43,7 +43,7 @@ class TelegramClient:
     # Current TelegramClient version
     __version__ = '0.8'
 
-    # region Initialization
+    # region Default methods of class
 
     def __init__(self, session, api_id, api_hash, proxy=None):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -81,6 +81,10 @@ class TelegramClient:
 
         # We need to be signed in before we can listen for updates
         self.signed_in = False
+
+    def __del__(self):
+        """Releases the Telegram client, performing disconnection."""
+        self.disconnect()
 
     # endregion
 
