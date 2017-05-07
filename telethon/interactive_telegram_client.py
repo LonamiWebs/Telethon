@@ -13,7 +13,11 @@ def print_title(title):
     # Clear previous window
     print('\n')
     print('=={}=='.format('=' * len(title)))
-    print('= {} ='.format(title))
+    try:
+        print('= {} ='.format(title))
+    except UnicodeEncodeError:
+        # Issue #70, some consoles lack support for certain characters
+        print('= {} ='.format('?' * len(title)))
     print('=={}=='.format('=' * len(title)))
 
 
@@ -77,33 +81,36 @@ class InteractiveTelegramClient(TelegramClient):
 
             i = None
             while i is None:
-                try:
-                    print_title('Dialogs window')
+                print_title('Dialogs window')
 
-                    # Display them so the user can choose
-                    for i, entity in enumerate(entities):
-                        i += 1  # 1-based index for normies
+                # Display them so the user can choose
+                for i, entity in enumerate(entities):
+                    i += 1  # 1-based index for normies
+                    try:
                         print('{}. {}'.format(i, get_display_name(entity)))
+                    except UnicodeEncodeError:
+                        # Issue #70, some consoles lack support for certain characters
+                        print('{}. {}'.format(i, '(could not render name)'))
 
-                    # Let the user decide who they want to talk to
-                    print()
-                    print('> Who do you want to send messages to?')
-                    print('> Available commands:')
-                    print('  !q: Quits the dialogs window and exits.')
-                    print('  !l: Logs out, terminating this session.')
-                    print()
-                    i = input('Enter dialog ID or a command: ')
-                    if i == '!q':
-                        return
-                    if i == '!l':
-                        self.log_out()
-                        return
+                # Let the user decide who they want to talk to
+                print()
+                print('> Who do you want to send messages to?')
+                print('> Available commands:')
+                print('  !q: Quits the dialogs window and exits.')
+                print('  !l: Logs out, terminating this session.')
+                print()
+                i = input('Enter dialog ID or a command: ')
+                if i == '!q':
+                    return
+                if i == '!l':
+                    self.log_out()
+                    return
 
+                try:
                     i = int(i if i else 0) - 1
                     # Ensure it is inside the bounds, otherwise set to None and retry
                     if not 0 <= i < dialog_count:
                         i = None
-
                 except ValueError:
                     i = None
 
@@ -190,8 +197,7 @@ class InteractiveTelegramClient(TelegramClient):
                         print('Profile picture downloaded to {}'.format(
                             output))
                     else:
-                        print('"{}" does not seem to have a profile picture.'
-                              .format(get_display_name(entity)))
+                        print('No profile picture found for this user.')
 
                 # Send chat message (if any)
                 elif msg:
@@ -254,19 +260,24 @@ class InteractiveTelegramClient(TelegramClient):
 
     @staticmethod
     def update_handler(update_object):
-        if type(update_object) is UpdateShortMessage:
-            if update_object.out:
-                print('You sent {} to user #{}'.format(update_object.message,
-                                                       update_object.user_id))
-            else:
-                print('[User #{} sent {}]'.format(update_object.user_id,
-                                                  update_object.message))
+        try:
+            if type(update_object) is UpdateShortMessage:
+                if update_object.out:
+                    print('You sent {} to user #{}'.format(update_object.message,
+                                                           update_object.user_id))
+                else:
+                    print('[User #{} sent {}]'.format(update_object.user_id,
+                                                      update_object.message))
 
-        elif type(update_object) is UpdateShortChatMessage:
-            if update_object.out:
-                print('You sent {} to chat #{}'.format(update_object.message,
-                                                       update_object.chat_id))
-            else:
-                print('[Chat #{}, user #{} sent {}]'.format(
-                    update_object.chat_id, update_object.from_id,
-                    update_object.message))
+            elif type(update_object) is UpdateShortChatMessage:
+                if update_object.out:
+                    print('You sent {} to chat #{}'.format(update_object.message,
+                                                           update_object.chat_id))
+                else:
+                    print('[Chat #{}, user #{} sent {}]'.format(
+                        update_object.chat_id, update_object.from_id,
+                        update_object.message))
+        except UnicodeEncodeError:
+            # Issue #70, some consoles lack support for certain characters
+            print('(Could not print update since it contains '
+                  'characters your terminal does not support)')
