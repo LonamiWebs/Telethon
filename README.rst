@@ -3,6 +3,10 @@ Telethon
 **Telethon** is Telegram client implementation in Python which uses the latest available API of Telegram.
 The project's **core only** is based on TLSharp, a C# Telegram client implementation.
 
+Before opening an issue about how to use the library, **please** make sure you have read and followed
+the steps mentioned under `Using Telethon`_! A lot of people ask simple questions which will only
+be answered as "please see the ``README.rst``". And you should use the search before posting an issue, too.
+
 .. contents:: Table of contents
 
 Why Telethon?
@@ -72,9 +76,9 @@ If you've installed Telethon via pip, launch an interactive python3 session and 
   >>> client = InteractiveTelegramClient('sessionid', '+34600000000',
   ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef')
 
-  ┌─────────────────────────────────────────────┐
-  │               Initialization                │
-  └─────────────────────────────────────────────┘
+  ==================
+  = Initialization =
+  ==================
   Initializing interactive example...
   Connecting to Telegram servers...
   >>> client.run()
@@ -84,6 +88,8 @@ copy of the ``settings_example`` file, naming it ``settings`` (lowercase!). Then
 corresponding values (your ``api_id``, ``api_hash`` and phone number in international format).
 
 Then, simply run ``python3 try_telethon.py`` to start the interactive example.
+
+.. _Using Telethon:
 
 Using Telethon
 ==============
