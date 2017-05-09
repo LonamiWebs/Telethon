@@ -11,6 +11,7 @@ from telethon.utils import BinaryWriter
 class TcpClient:
     def __init__(self, proxy=None):
         self.connected = False
+
         if proxy:
             try:
                 import socks
@@ -20,8 +21,9 @@ class TcpClient:
                 print("Can't import PySocks, fallback to vanilla socket. "
                       "Proxy settings are ignored. "
                       "Try to install PySocks via pip")
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
+                proxy = None
+
+        if not proxy:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Support for multi-threading advantages and safety
