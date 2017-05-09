@@ -53,5 +53,4 @@ class SourceBuilder:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.out_stream.flush()
         self.out_stream.close()
