@@ -2,7 +2,7 @@
 import socket
 import time
 from datetime import datetime, timedelta
-from threading import Lock
+from threading import Event, Lock
 
 from telethon.errors import ReadCancelledError
 from telethon.utils import BinaryWriter
@@ -25,7 +25,7 @@ class TcpClient:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Support for multi-threading advantages and safety
-        self.cancelled = False  # Has the read operation been cancelled?
+        self.cancelled = Event()  # Has the read operation been cancelled?
         self.delay = 0.1  # Read delay when there was no data available
         self.lock = Lock()
 
@@ -59,7 +59,7 @@ class TcpClient:
         # Ensure that only one thread can receive data at once
         with self.lock:
             # Ensure it is not cancelled at first, so we can enter the loop
-            self.cancelled = False
+            self.cancelled.clear()
 
             # Set non-blocking so it can be cancelled
             self.socket.setblocking(False)
@@ -72,7 +72,7 @@ class TcpClient:
                 while writer.written_count < buffer_size:
                     # Only do cancel if no data was read yet
                     # Otherwise, carry on reading and finish
-                    if self.cancelled and writer.written_count == 0:
+                    if self.cancelled.is_set() and writer.written_count == 0:
                         raise ReadCancelledError()
 
                     try:
@@ -99,4 +99,4 @@ class TcpClient:
     def cancel_read(self):
         """Cancels the read operation IF it hasn't yet
            started, raising a ReadCancelledError"""
-        self.cancelled = True
+        self.cancelled.set()
