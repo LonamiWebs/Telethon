@@ -268,6 +268,7 @@ class TelegramClient:
                 return False
 
             self.session = None
+            return True
         except:
             # Something happened when logging out, restore the state back
             self.sender.logging_out = False
