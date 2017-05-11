@@ -63,7 +63,7 @@ class TelegramClient:
         self.api_hash = api_hash
 
         # Determine what session object we have
-        if isinstance(session, str):
+        if isinstance(session, str) or session is None:
             self.session = Session.try_load_or_create_new(session)
         elif isinstance(session, Session):
             self.session = session
