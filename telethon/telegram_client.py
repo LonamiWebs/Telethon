@@ -188,7 +188,9 @@ class TelegramClient:
     def is_user_authorized(self):
         """Has the user been authorized yet (code request sent and confirmed)?
            Note that this will NOT yield the correct result if the session was revoked by another client!"""
-        return self.session.user is not None
+        if self.session and self.session.user is not None:
+            return True
+        return False
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
