@@ -173,6 +173,9 @@ class TLArg:
     def __str__(self):
         # Find the real type representation by updating it as required
         real_type = self.type
+        if self.flag_indicator:
+            real_type = '#'
+
         if self.is_vector:
             real_type = 'Vector<{}>'.format(real_type)
 
