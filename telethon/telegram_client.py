@@ -173,7 +173,7 @@ class TelegramClient:
 
         except InvalidDCError as error:
             if throw_invalid_dc:
-                raise error
+                raise
 
             self.reconnect_to_dc(error.new_dc)
             return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
@@ -216,7 +216,7 @@ class TelegramClient:
                     print(error)
                     return False
                 else:
-                    raise error
+                    raise
         elif password:
             salt = self.invoke(GetPasswordRequest()).current_salt
             result = self.invoke(
