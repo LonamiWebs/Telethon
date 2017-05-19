@@ -294,6 +294,8 @@ class MtProtoSender:
             inner_length = reader.read_int()
             begin_position = reader.tell_position()
 
+            # note: this code is IMPORTANT for skipping RPC results of lost
+            # requests (for example, ones from the previous connection session)
             if not self.process_msg(inner_msg_id, sequence, reader, request):
                 reader.set_position(begin_position + inner_length)
 
@@ -372,7 +374,12 @@ class MtProtoSender:
                     request.on_response(compressed_reader)
             else:
                 reader.seek(-4)
-                request.on_response(reader)
+                if request_id == request.msg_id:
+                    request.on_response(reader)
+                else:
+                    # note: if it's really a result for RPC from previous connection
+                    # session, it will be skipped by the handle_container()
+                    Log.w('RPC result found for unknown request (maybe from previous connection session)')
 
     def handle_gzip_packed(self, msg_id, sequence, reader, request):
         Log.d('Handling gzip packed data')
