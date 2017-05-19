@@ -1,4 +1,5 @@
 import os
+import re
 
 
 class DocsWriter:
@@ -153,9 +154,25 @@ class DocsWriter:
             # Generic results cannot have any link
             self.write(tlobject.result)
         else:
-            self.write('<a href="')
-            self.write(self.type_to_path(tlobject.result))
-            self.write('">%s</a>' % tlobject.result)
+            if re.search('^vector<', tlobject.result, re.IGNORECASE):
+                # Notice that we don't simply make up the "Vector" part,
+                # because some requests (as of now, only FutureSalts),
+                # use a lower type name for it (see #81)
+                vector, inner = tlobject.result.split('<')
+                inner = inner.strip('>')
+                self.write('<a href="')
+                self.write(self.type_to_path(vector))
+                self.write('">%s</a>&lt;' % vector)
+
+                self.write('<a href="')
+                self.write(self.type_to_path(inner))
+                self.write('">%s</a>' % inner)
+
+                self.write('&gt;')
+            else:
+                self.write('<a href="')
+                self.write(self.type_to_path(tlobject.result))
+                self.write('">%s</a>' % tlobject.result)
 
         self.write('</pre>')
 
