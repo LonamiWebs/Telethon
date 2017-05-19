@@ -84,7 +84,7 @@ class TcpClient:
                         partial = self.socket.recv(left_count)
                         writer.write(partial)
 
-                    except BlockingIOError:
+                    except BlockingIOError as error:
                         # There was no data available for us to read. Sleep a bit
                         time.sleep(self.delay)
 
@@ -93,7 +93,7 @@ class TcpClient:
                             time_passed = datetime.now() - start_time
                             if time_passed > timeout:
                                 raise TimeoutError(
-                                    'The read operation exceeded the timeout.')
+                                    'The read operation exceeded the timeout.') from error
 
                 # If everything went fine, return the read bytes
                 return writer.get_bytes()

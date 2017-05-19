@@ -64,7 +64,7 @@ class InteractiveTelegramClient(TelegramClient):
                             'Two step verification is enabled. Please enter your password: ')
                         code_ok = self.sign_in(password=pw)
                     else:
-                        raise e
+                        raise
 
     def run(self):
         # Listen for updates
