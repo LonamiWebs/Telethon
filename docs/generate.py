@@ -154,6 +154,7 @@ def generate_index(folder, original_paths):
         if namespaces:
             docs.write_title('Namespaces', level=3)
             docs.begin_table(4)
+            namespaces.sort()
             for namespace in namespaces:
                 # For every namespace, also write the index of it
                 generate_index(os.path.join(folder, namespace), original_paths)
@@ -164,9 +165,13 @@ def generate_index(folder, original_paths):
 
         docs.write_title('Available items')
         docs.begin_table(2)
-        for file in files:
-            docs.add_row(find_title(os.path.join(folder, file)),
-                         link=file)
+
+        files = [(f, find_title(os.path.join(folder, f))) for f in files]
+        files.sort(key=lambda t: t[1])
+
+        for file, title in files:
+            docs.add_row(title, link=file)
+
         docs.end_table()
         docs.end_body()
 
