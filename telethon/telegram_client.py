@@ -118,6 +118,10 @@ class TelegramClient:
             # although many other options are available!
             self.dc_options = result.dc_options
 
+            # Once we know we're authorized, we can setup the ping thread
+            if self.is_user_authorized():
+                self.sender.setup_ping_thread()
+
             return True
         except RPCError as error:
             print('Could not stabilise initial connection: {}'.format(error))
@@ -235,6 +239,12 @@ class TelegramClient:
         # Result is an Auth.Authorization TLObject
         self.session.user = result.user
         self.session.save()
+
+        # If we want the connection to stay alive for a long time, we need
+        # to start the pings thread once we're already authorized and not
+        # before to avoid the updates thread trying to read anything while
+        # we haven't yet connected.
+        self.sender.setup_ping_thread()
 
         return True
 

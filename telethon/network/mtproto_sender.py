@@ -44,18 +44,13 @@ class MtProtoSender:
 
         # Sleep amount on "must sleep" error for the updates thread to sleep too
         self.updates_thread_sleep = None
-
-        self.updates_thread = Thread(
-            name='UpdatesThread', daemon=True,
-            target=self.updates_thread_method)
+        self.updates_thread = None  # Set later
 
         self.connect()
 
     def connect(self):
         """Connects to the server"""
         self.transport.connect()
-        # The "updates" thread must also be running to make periodic ping requests.
-        self.set_updates_thread(running=True)
 
     def disconnect(self):
         """Disconnects and **stops all the running threads** if any"""
@@ -66,6 +61,15 @@ class MtProtoSender:
         """Disconnects and connects again (effectively reconnecting)"""
         self.disconnect()
         self.connect()
+
+    def setup_ping_thread(self):
+        """Sets up the Ping's thread, so that a connection can be kept
+            alive for a longer time without Telegram disconnecting us"""
+        self.updates_thread = Thread(
+            name='UpdatesThread', daemon=True,
+            target=self.updates_thread_method)
+
+        self.set_updates_thread(running=True)
 
     def add_update_handler(self, handler):
         """Adds an update handler (a method with one argument, the received
@@ -395,7 +399,8 @@ class MtProtoSender:
 
     def set_updates_thread(self, running):
         """Sets the updates thread status (running or not)"""
-        if running == self.updates_thread_running.is_set():
+        if not self.updates_thread or \
+                running == self.updates_thread_running.is_set():
             return
 
         # Different state, update the saved value and behave as required
