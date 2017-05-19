@@ -205,10 +205,11 @@ function updateSearch() {
         contentDiv.style.display = "none";
         searchDiv.style.display = "";
 
+        var query = searchBox.value.toLowerCase();
         var foundRequests = [];
         var foundRequestsu = [];
         for (var i = 0; i < requests.length; ++i) {
-            if (requests[i].toLowerCase().indexOf(searchBox.value) != -1) {
+            if (requests[i].toLowerCase().indexOf(query) != -1) {
                 foundRequests.push(requests[i]);
                 foundRequestsu.push(requestsu[i]);
             }
@@ -217,7 +218,7 @@ function updateSearch() {
         var foundTypes = [];
         var foundTypesu = [];
         for (var i = 0; i < types.length; ++i) {
-            if (types[i].toLowerCase().indexOf(searchBox.value) != -1) {
+            if (types[i].toLowerCase().indexOf(query) != -1) {
                 foundTypes.push(types[i]);
                 foundTypesu.push(typesu[i]);
             }
