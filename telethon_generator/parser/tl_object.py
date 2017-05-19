@@ -159,8 +159,14 @@ class TLArg:
             vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)
             if vector_match:
                 self.is_vector = True
-                self.type = vector_match.group(
-                    1)  # Update the type to match the one inside the vector
+
+                # If the type's first letter is not uppercase, then
+                # it is a constructor and we use (read/write) its ID
+                # as pinpointed on issue #81.
+                self.use_vector_id = self.type[0] == 'V'
+
+                # Update the type to match the one inside the vector
+                self.type = vector_match.group(1)
 
             # The name may contain "date" in it, if this is the case and the type is "int",
             # we can safely assume that this should be treated as a "date" object.
@@ -179,7 +185,10 @@ class TLArg:
             real_type = '#'
 
         if self.is_vector:
-            real_type = 'Vector<{}>'.format(real_type)
+            if self.use_vector_id:
+                real_type = 'Vector<{}>'.format(real_type)
+            else:
+                real_type = 'vector<{}>'.format(real_type)
 
         if self.is_generic:
             real_type = '!{}'.format(real_type)

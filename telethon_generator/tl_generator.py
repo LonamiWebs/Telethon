@@ -311,8 +311,10 @@ class TLGenerator:
                 builder.writeln('if {}:'.format(name))
 
         if arg.is_vector:
-            builder.writeln(
-                "writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
+            if arg.use_vector_id:
+                builder.writeln(
+                    "writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
+
             builder.writeln('writer.write_int(len({}))'.format(name))
             builder.writeln('for {}_item in {}:'.format(arg.name, name))
             # Temporary disable .is_vector, not to enter this if again
@@ -405,7 +407,9 @@ class TLGenerator:
             arg.is_flag = False
 
         if arg.is_vector:
-            builder.writeln("reader.read_int()  # Vector's constructor ID")
+            if arg.use_vector_id:
+                builder.writeln("reader.read_int()  # Vector's constructor ID")
+
             builder.writeln('{} = []  # Initialize an empty list'.format(name))
             builder.writeln('{}_len = reader.read_int()'.format(arg.name))
             builder.writeln('for _ in range({}_len):'.format(arg.name))
