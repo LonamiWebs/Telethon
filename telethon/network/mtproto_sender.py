@@ -6,12 +6,14 @@ from time import sleep, time
 import telethon.helpers as utils
 from telethon.crypto import AES
 from telethon.errors import *
-from telethon.log import Log
 from telethon.tl.all_tlobjects import tlobjects
 from telethon.tl.functions.updates import GetStateRequest
 from telethon.tl.types import MsgsAck
 from telethon.tl.functions import PingRequest
 from telethon.utils import BinaryReader, BinaryWriter
+
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class MtProtoSender:
@@ -20,6 +22,7 @@ class MtProtoSender:
     def __init__(self, transport, session):
         self.transport = transport
         self.session = session
+        self.logger = logging.getLogger(__name__)
 
         self.need_confirmation = []  # Message IDs that need confirmation
         self.on_update_handlers = []
@@ -106,12 +109,12 @@ class MtProtoSender:
         # updates thread who was receiving. We do
         # not want to cancel other pending requests!
         if self.updates_thread_receiving.is_set():
-            Log.i('Cancelling updates receive from send()...')
+            self.logger.info('Cancelling updates receive from send()...')
             self.transport.cancel_receive()
 
         # Now only us can be using this method
         with self.lock:
-            Log.d('send() acquired the lock')
+            self.logger.debug('send() acquired the lock')
             # Set the flag to true so the updates thread stops trying to receive
             self.waiting_receive.set()
 
@@ -132,7 +135,7 @@ class MtProtoSender:
             # And update the saved session
             self.session.save()
 
-        Log.d('send() released the lock')
+        self.logger.debug('send() released the lock')
 
     def receive(self, request, timeout=timedelta(seconds=5)):
         """Receives the specified MTProtoRequest ("fills in it"
@@ -141,10 +144,10 @@ class MtProtoSender:
            if no data has been read after its time delta"""
 
         with self.lock:
-            Log.d('receive() acquired the lock')
+            self.logger.debug('receive() acquired the lock')
             # Don't stop trying to receive until we get the request we wanted
             while not request.confirm_received:
-                Log.i('Trying to .receive() the request result...')
+                self.logger.info('Trying to .receive() the request result...')
                 seq, body = self.transport.receive(timeout)
                 message, remote_msg_id, remote_sequence = self.decode_msg(body)
 
@@ -152,11 +155,11 @@ class MtProtoSender:
                     self.process_msg(remote_msg_id, remote_sequence, reader,
                                      request)
 
-            Log.i('Request result received')
+            self.logger.info('Request result received')
 
             # We can now set the flag to False thus resuming the updates thread
             self.waiting_receive.clear()
-        Log.d('receive() released the lock')
+        self.logger.debug('receive() released the lock')
 
     # endregion
 
@@ -246,10 +249,10 @@ class MtProtoSender:
         if code == 0x62d6b459:
             ack = reader.tgread_object()
             if request and request.msg_id in ack.msg_ids:
-                Log.w('Ack found for the current request ID')
+                self.logger.warning('Ack found for the current request ID')
 
                 if self.logging_out:
-                    Log.i('Message ack confirmed the logout request')
+                    self.logger.info('Message ack confirmed the logout request')
                     request.confirm_received = True
 
             return False
@@ -269,25 +272,25 @@ class MtProtoSender:
 
     def handle_update(self, msg_id, sequence, reader):
         tlobject = reader.tgread_object()
-        Log.d('Handling update for object %s', repr(tlobject))
+        self.logger.debug('Handling update for object %s', repr(tlobject))
         for handler in self.on_update_handlers:
             handler(tlobject)
 
         return False
 
     def handle_pong(self, msg_id, sequence, reader, request):
-        Log.d('Handling pong')
+        self.logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
         recv_msg_id = reader.read_long(signed=False)
 
         if recv_msg_id == request.msg_id:
-            Log.w('Pong confirmed a request')
+            self.logger.warning('Pong confirmed a request')
             request.confirm_received = True
 
         return False
 
     def handle_container(self, msg_id, sequence, reader, request):
-        Log.d('Handling container')
+        self.logger.debug('Handling container')
         reader.read_int(signed=False)  # code
         size = reader.read_int()
         for _ in range(size):
@@ -304,7 +307,7 @@ class MtProtoSender:
         return False
 
     def handle_bad_server_salt(self, msg_id, sequence, reader, request):
-        Log.d('Handling bad server salt')
+        self.logger.debug('Handling bad server salt')
         reader.read_int(signed=False)  # code
         reader.read_long(signed=False)  # bad_msg_id
         reader.read_int()  # bad_msg_seq_no
@@ -323,7 +326,7 @@ class MtProtoSender:
         return True
 
     def handle_bad_msg_notification(self, msg_id, sequence, reader):
-        Log.d('Handling bad message notification')
+        self.logger.debug('Handling bad message notification')
         reader.read_int(signed=False)  # code
         reader.read_long(signed=False)  # request_id
         reader.read_int()  # request_sequence
@@ -332,7 +335,7 @@ class MtProtoSender:
         raise BadMessageError(error_code)
 
     def handle_rpc_result(self, msg_id, sequence, reader, request):
-        Log.d('Handling RPC result, request is%s None', ' not' if request else '')
+        self.logger.debug('Handling RPC result, request is%s None', ' not' if request else '')
         reader.read_int(signed=False)  # code
         request_id = reader.read_long(signed=False)
         inner_code = reader.read_int(signed=False)
@@ -344,7 +347,7 @@ class MtProtoSender:
             error = RPCError(
                 code=reader.read_int(), message=reader.tgread_string())
 
-            Log.w('Read RPC error: %s', str(error))
+            self.logger.warning('Read RPC error: %s', str(error))
             if error.must_resend:
                 if not request:
                     raise ValueError(
@@ -369,7 +372,7 @@ class MtProtoSender:
                 raise ValueError(
                     'Cannot receive a request from inside an RPC result from the updates thread.')
 
-            Log.d('Reading request response')
+            self.logger.debug('Reading request response')
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
                 with BinaryReader(unpacked_data) as compressed_reader:
@@ -381,10 +384,10 @@ class MtProtoSender:
                 else:
                     # note: if it's really a result for RPC from previous connection
                     # session, it will be skipped by the handle_container()
-                    Log.w('RPC result found for unknown request (maybe from previous connection session)')
+                    self.logger.warning('RPC result found for unknown request (maybe from previous connection session)')
 
     def handle_gzip_packed(self, msg_id, sequence, reader, request):
-        Log.d('Handling gzip packed data')
+        self.logger.debug('Handling gzip packed data')
         reader.read_int(signed=False)  # code
         packed_data = reader.tgread_bytes()
         unpacked_data = gzip.decompress(packed_data)
@@ -402,7 +405,7 @@ class MtProtoSender:
             return
 
         # Different state, update the saved value and behave as required
-        Log.i('Changing updates thread running status to %s', running)
+        self.logger.info('Changing updates thread running status to %s', running)
         if running:
             self.updates_thread_running.set()
             self.updates_thread.start()
@@ -431,49 +434,49 @@ class MtProtoSender:
             # Only try to receive updates if we're not waiting to receive a request
             if not self.waiting_receive.is_set():
                 with self.lock:
-                    Log.d('Updates thread acquired the lock')
+                    self.logger.debug('Updates thread acquired the lock')
                     try:
                         now = time()
                         # If ping_interval seconds passed since last ping, send a new one
                         if now >= self.ping_time_last + self.ping_interval:
                             self.ping_time_last = now
                             self.send_ping()
-                            Log.d('Ping sent from the updates thread')
+                            self.logger.debug('Ping sent from the updates thread')
 
                         # Exit the loop if we're not expecting to receive any updates
                         if not self.on_update_handlers:
-                            Log.d('No updates handlers found, continuing')
+                            self.logger.debug('No updates handlers found, continuing')
                             continue
 
                         self.updates_thread_receiving.set()
-                        Log.d('Trying to receive updates from the updates thread')
+                        self.logger.debug('Trying to receive updates from the updates thread')
                         seq, body = self.transport.receive(timeout)
                         message, remote_msg_id, remote_sequence = self.decode_msg(
                             body)
 
-                        Log.i('Received update from the updates thread')
+                        self.logger.info('Received update from the updates thread')
                         with BinaryReader(message) as reader:
                             self.process_msg(remote_msg_id, remote_sequence,
                                              reader)
 
                     except TimeoutError:
-                        Log.d('Receiving updates timed out')
+                        self.logger.debug('Receiving updates timed out')
                         # TODO Workaround for issue #50
                         r = GetStateRequest()
                         try:
-                            Log.d('Sending GetStateRequest (workaround for issue #50)')
+                            self.logger.debug('Sending GetStateRequest (workaround for issue #50)')
                             self.send(r)
                             self.receive(r)
                         except TimeoutError:
-                            Log.w('Timed out inside a timeout, trying to reconnect...')
+                            self.logger.warning('Timed out inside a timeout, trying to reconnect...')
                             self.reconnect()
                             self.send(r)
                             self.receive(r)
 
                     except ReadCancelledError:
-                        Log.i('Receiving updates cancelled')
+                        self.logger.info('Receiving updates cancelled')
                     except OSError:
-                        Log.w('OSError on updates thread, %s logging out',
+                        self.logger.warning('OSError on updates thread, %s logging out',
                               'was' if self.logging_out else 'was not')
 
                         if self.logging_out:
@@ -483,5 +486,5 @@ class MtProtoSender:
                         else:
                             raise
 
-                Log.d('Updates thread released the lock')
+                self.logger.debug('Updates thread released the lock')
                 self.updates_thread_receiving.clear()
