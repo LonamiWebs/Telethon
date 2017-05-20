@@ -11,6 +11,7 @@ def do_authentication(transport):
     """Executes the authentication process with the Telegram servers.
     If no error is rose, returns both the authorization key and the time offset"""
     sender = MtProtoPlainSender(transport)
+    sender.connect()
 
     # Step 1 sending: PQ Request
     nonce = os.urandom(16)
@@ -184,6 +185,9 @@ def do_authentication(transport):
 
     # Step 3 response: Complete DH Exchange
     with BinaryReader(sender.receive()) as reader:
+        # Everything read from the server, disconnect now
+        sender.disconnect()
+
         code = reader.read_int(signed=False)
         if code == 0x3bcbf734:  # DH Gen OK
             nonce_from_server = reader.read(16)

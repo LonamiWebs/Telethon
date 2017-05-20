@@ -46,8 +46,6 @@ class MtProtoSender:
         self.updates_thread_sleep = None
         self.updates_thread = None  # Set later
 
-        self.connect()
-
     def connect(self):
         """Connects to the server"""
         self.transport.connect()

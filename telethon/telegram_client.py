@@ -99,6 +99,7 @@ class TelegramClient:
                 self.session.save()
 
             self.sender = MtProtoSender(self.transport, self.session)
+            self.sender.connect()
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
