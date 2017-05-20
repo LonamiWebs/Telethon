@@ -1,5 +1,5 @@
 import platform
-from datetime import datetime, timedelta
+from datetime import timedelta
 from hashlib import md5
 from mimetypes import guess_type
 from os import listdir, path
@@ -518,7 +518,7 @@ class TelegramClient:
             entity)
 
     def send_media_file(self, input_media, entity):
-        """Sends any input_media (contact, document, photo...) to the given entiy"""
+        """Sends any input_media (contact, document, photo...) to the given entity"""
         self.invoke(
             SendMediaRequest(
                 peer=get_input_peer(entity),
@@ -741,6 +741,6 @@ class TelegramClient:
         self.sender.remove_update_handler(handler)
 
     def list_update_handlers(self):
-        return [ handler.__name__ for handler in self.sender.on_update_handlers ]
+        return [handler.__name__ for handler in self.sender.on_update_handlers]
 
     # endregion
