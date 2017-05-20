@@ -28,13 +28,9 @@ class TypeNotFoundError(Exception):
 
 
 class InvalidDCError(Exception):
-    def __init__(self, new_dc):
-        super().__init__(
-            self, 'Your phone number is registered to #{} DC. '
-            'This should have been handled automatically; '
-            'if it has not, please restart the app.'.format(new_dc))
-
-        self.new_dc = new_dc
+    def __init__(self, rpc_error):
+        self.new_dc = rpc_error.__dict__.pop('additional_data')
+        self.__dict__.update(rpc_error.__dict__)
 
 
 class InvalidChecksumError(Exception):
@@ -129,6 +125,23 @@ class RPCError(Exception):
         'BOT_METHOD_INVALID':
         'The API access for bot users is restricted. The method you tried '
         'to invoke cannot be executed as a bot.',
+        'PEER_ID_INVALID':
+        'An invalid Peer was used. Make sure to pass the right peer type.',
+        'MESSAGE_EMPTY': 'Empty or invalid UTF-8 message was sent.',
+        'MESSAGE_TOO_LONG':
+        'Message was too long. Current maximum length is 4096 UTF-8 characters.',
+        'USERNAME_INVALID':
+        'Unacceptable username. Must match r"[a-zA-Z][\w\d]{4,32}"',
+        'USERNAME_OCCUPIED': 'The username is already taken.',
+        'USERNAME_NOT_MODIFIED':
+        'The username is not different from the current username',
+        'USER_ID_INVALID':
+        'Invalid object ID for an user. Make sure to pass the right types.',
+        'CHAT_ID_INVALID':
+        'Invalid object ID for a chat. Make sure to pass the right types.',
+        'CHANNEL_INVALID':
+        'Invalid channel object. Make sure to pass the right types.',
+        'MESSAGE_ID_INVALID': 'The specified message ID is invalid.',
 
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',

@@ -363,7 +363,7 @@ class MtProtoSender:
                 sleep(error.additional_data)
 
             elif '_MIGRATE_' in error.message:
-                raise InvalidDCError(error.additional_data)
+                raise InvalidDCError(error)
 
             else:
                 raise error
