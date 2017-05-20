@@ -82,6 +82,9 @@ class TcpClient:
                         # This is why we need to keep checking to make sure that we receive it all
                         left_count = buffer_size - writer.written_count
                         partial = self.socket.recv(left_count)
+                        if len(partial) == 0:
+                            raise ConnectionResetError(
+                                'The server has closed the connection (recv() returned 0 bytes).')
                         writer.write(partial)
 
                     except BlockingIOError as error:
