@@ -11,25 +11,28 @@ from telethon.utils import BinaryWriter
 class TcpClient:
     def __init__(self, proxy=None):
         self.connected = False
-
-        if proxy:
-            try:
-                import socks
-                self.socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-                self.socket.set_proxy(*proxy)
-            except (ImportError, SystemError):
-                print("Can't import PySocks, fallback to vanilla socket. "
-                      "Proxy settings are ignored. "
-                      "Try to install PySocks via pip")
-                proxy = None
-
-        if not proxy:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.proxy = proxy
+        self._recreate_socket()
 
         # Support for multi-threading advantages and safety
         self.cancelled = Event()  # Has the read operation been cancelled?
         self.delay = 0.1  # Read delay when there was no data available
         self.lock = Lock()
+
+    def _recreate_socket(self):
+        self.socket = None
+        if self.proxy:
+            try:
+                import socks
+                self.socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.set_proxy(*self.proxy)
+            except (ImportError, SystemError):
+                print("Can't import PySocks, fallback to vanilla socket. "
+                      "Proxy settings are ignored. "
+                      "Try to install PySocks via pip")
+
+        if not self.socket:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number"""
@@ -42,6 +45,7 @@ class TcpClient:
         if self.connected:
             self.socket.close()
             self.connected = False
+            self._recreate_socket()
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""

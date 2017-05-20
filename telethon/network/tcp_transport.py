@@ -64,8 +64,7 @@ class TcpTransport:
         return seq, body
 
     def close(self):
-        if self.tcp_client.connected:
-            self.tcp_client.close()
+        self.tcp_client.close()
 
     def cancel_receive(self):
         """Cancels (stops) trying to receive from the
