@@ -18,7 +18,8 @@ def print_title(title):
         print('= {} ='.format(title))
     except UnicodeEncodeError:
         # Issue #70, some consoles lack support for certain characters
-        print('= {} ='.format('?' * len(title)))
+        title_ascii = title.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+        print('= {} ='.format(title_ascii))
     print('=={}=='.format('=' * len(title)))
 
 
@@ -91,7 +92,9 @@ class InteractiveTelegramClient(TelegramClient):
                         print('{}. {}'.format(i, get_display_name(entity)))
                     except UnicodeEncodeError:
                         # Issue #70, some consoles lack support for certain characters
-                        print('{}. {}'.format(i, '(could not render name)'))
+                        name = get_display_name(entity)
+                        name_ascii = name.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+                        print('{}. {}'.format(i, name_ascii))
 
                 # Let the user decide who they want to talk to
                 print()
@@ -261,24 +264,40 @@ class InteractiveTelegramClient(TelegramClient):
 
     @staticmethod
     def update_handler(update_object):
-        try:
-            if type(update_object) is UpdateShortMessage:
-                if update_object.out:
+        if type(update_object) is UpdateShortMessage:
+            if update_object.out:
+                try:
                     print('You sent {} to user #{}'.format(update_object.message,
                                                            update_object.user_id))
-                else:
+                except UnicodeEncodeError:
+                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+                    print('You sent {} to user #{}'.format(message_ascii,
+                                                           update_object.user_id))
+            else:
+                try:
                     print('[User #{} sent {}]'.format(update_object.user_id,
                                                       update_object.message))
+                except UnicodeEncodeError:
+                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+                    print('[User #{} sent {}]'.format(update_object.user_id,
+                                                      message_ascii))
 
-            elif type(update_object) is UpdateShortChatMessage:
-                if update_object.out:
+        elif type(update_object) is UpdateShortChatMessage:
+            if update_object.out:
+                try:
                     print('You sent {} to chat #{}'.format(update_object.message,
                                                            update_object.chat_id))
-                else:
+                except UnicodeEncodeError:
+                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+                    print('You sent {} to chat #{}'.format(message_ascii,
+                                                           update_object.chat_id))
+            else:
+                try:
                     print('[Chat #{}, user #{} sent {}]'.format(
                         update_object.chat_id, update_object.from_id,
                         update_object.message))
-        except UnicodeEncodeError:
-            # Issue #70, some consoles lack support for certain characters
-            print('(Could not print update since it contains '
-                  'characters your terminal does not support)')
+                except UnicodeEncodeError:
+                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
+                    print('[Chat #{}, user #{} sent {}]'.format(
+                        update_object.chat_id, update_object.from_id,
+                        message_ascii))
