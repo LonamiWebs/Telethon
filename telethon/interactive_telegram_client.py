@@ -1,9 +1,10 @@
 import shutil
 from getpass import getpass
 
-from telethon import RPCError, TelegramClient
-from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
-from telethon.utils import get_display_name
+from . import TelegramClient
+from .errors import RPCError
+from .tl.types import UpdateShortChatMessage, UpdateShortMessage
+from .utils import get_display_name
 
 # Get the (current) number of lines in the terminal
 cols, rows = shutil.get_terminal_size()

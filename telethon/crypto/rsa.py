@@ -1,7 +1,7 @@
 import os
 
-import telethon.helpers as utils
-from telethon.utils import BinaryWriter
+from .. import helpers as utils
+from ..utils import BinaryWriter
 
 
 class RSAServerKey:

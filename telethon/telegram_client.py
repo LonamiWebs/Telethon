@@ -5,37 +5,36 @@ from mimetypes import guess_type
 from os import listdir, path
 
 # Import some externalized utilities to work with the Telegram types and more
-import telethon.helpers as utils
-import telethon.network.authenticator as authenticator
-from telethon.errors import *
-from telethon.network import MtProtoSender, TcpTransport
-from telethon.parser.markdown_parser import parse_message_entities
+from . import helpers as utils
+from .errors import RPCError, InvalidDCError, InvalidParameterError
+from .network import authenticator, MtProtoSender, TcpTransport
+from .parser.markdown_parser import parse_message_entities
 # For sending and receiving requests
-from telethon.tl import MTProtoRequest, Session
-from telethon.tl.all_tlobjects import layer
-from telethon.tl.functions import InitConnectionRequest, InvokeWithLayerRequest
+from .tl import MTProtoRequest, Session
+from .tl.all_tlobjects import layer
+from .tl.functions import InitConnectionRequest, InvokeWithLayerRequest
 # The following is required to get the password salt
-from telethon.tl.functions.account import GetPasswordRequest
-from telethon.tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
-                                        SendCodeRequest, SignInRequest,
-                                        SignUpRequest)
-from telethon.tl.functions.auth import ImportBotAuthorizationRequest
-from telethon.tl.functions.help import GetConfigRequest
-from telethon.tl.functions.messages import (
+from .tl.functions.account import GetPasswordRequest
+from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
+                                SendCodeRequest, SignInRequest,
+                                SignUpRequest)
+from .tl.functions.auth import ImportBotAuthorizationRequest
+from .tl.functions.help import GetConfigRequest
+from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest)
 # The Requests and types that we'll be using
-from telethon.tl.functions.upload import (
+from .tl.functions.upload import (
     GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
 # All the types we need to work with
-from telethon.tl.types import (
+from .tl.types import (
     ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
     InputDocumentFileLocation, InputFile, InputFileBig, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty)
-from telethon.utils import (find_user_or_chat, get_input_peer,
-                            get_appropiate_part_size, get_extension)
+from .utils import (find_user_or_chat, get_input_peer,
+                    get_appropiate_part_size, get_extension)
 
 
 class TelegramClient:

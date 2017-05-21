@@ -1,9 +1,9 @@
 from binascii import crc32
 from datetime import timedelta
 
-from telethon.errors import *
-from telethon.network import TcpClient
-from telethon.utils import BinaryWriter
+from ..errors import InvalidChecksumError
+from ..network import TcpClient
+from ..utils import BinaryWriter
 
 
 class TcpTransport:

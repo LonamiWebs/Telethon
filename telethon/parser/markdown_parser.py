@@ -1,5 +1,5 @@
-from telethon.tl.types import (MessageEntityBold, MessageEntityCode,
-                               MessageEntityItalic, MessageEntityTextUrl)
+from ..tl.types import (MessageEntityBold, MessageEntityCode,
+                        MessageEntityItalic, MessageEntityTextUrl)
 
 
 def parse_message_entities(msg):

@@ -4,7 +4,7 @@ import random
 import time
 from os.path import isfile as file_exists
 
-import telethon.helpers as utils
+from .. import helpers as utils
 
 
 class Session:

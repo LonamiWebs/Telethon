@@ -4,7 +4,7 @@
    after all, both are the same attribute, IDs."""
 from mimetypes import add_type, guess_extension
 
-from telethon.tl.types import (
+from ..tl.types import (
     Channel, Chat, ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
     MessageMediaDocument, MessageMediaPhoto, PeerChannel, PeerChat, PeerUser,
     User, UserProfilePhoto)

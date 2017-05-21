@@ -3,8 +3,8 @@ from datetime import datetime
 from io import BufferedReader, BytesIO
 from struct import unpack
 
-from telethon.errors import *
-from telethon.tl.all_tlobjects import tlobjects
+from ..errors import InvalidParameterError, TypeNotFoundError
+from ..tl.all_tlobjects import tlobjects
 
 
 class BinaryReader:

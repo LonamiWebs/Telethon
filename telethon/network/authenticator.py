@@ -1,10 +1,10 @@
 import os
 import time
 
-import telethon.helpers as utils
-from telethon.crypto import AES, RSA, AuthKey, Factorizator
-from telethon.network import MtProtoPlainSender
-from telethon.utils import BinaryReader, BinaryWriter
+from .. import helpers as utils
+from ..crypto import AES, RSA, AuthKey, Factorizator
+from ..network import MtProtoPlainSender
+from ..utils import BinaryReader, BinaryWriter
 
 
 def do_authentication(transport):

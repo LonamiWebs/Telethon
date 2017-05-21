@@ -1,7 +1,7 @@
 import random
 import time
 
-from telethon.utils import BinaryReader, BinaryWriter
+from ..utils import BinaryReader, BinaryWriter
 
 
 class MtProtoPlainSender:

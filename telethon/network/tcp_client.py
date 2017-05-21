@@ -4,8 +4,8 @@ import time
 from datetime import datetime, timedelta
 from threading import Event, Lock
 
-from telethon.errors import ReadCancelledError
-from telethon.utils import BinaryWriter
+from ..errors import ReadCancelledError
+from ..utils import BinaryWriter
 
 
 class TcpClient:

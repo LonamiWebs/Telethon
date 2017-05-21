@@ -3,14 +3,15 @@ from datetime import timedelta
 from threading import Event, RLock, Thread
 from time import sleep, time
 
-import telethon.helpers as utils
-from telethon.crypto import AES
-from telethon.errors import *
-from telethon.tl.all_tlobjects import tlobjects
-from telethon.tl.functions.updates import GetStateRequest
-from telethon.tl.types import MsgsAck
-from telethon.tl.functions import PingRequest
-from telethon.utils import BinaryReader, BinaryWriter
+from .. import helpers as utils
+from ..crypto import AES
+from ..errors import (BadMessageError, RPCError,
+                      InvalidDCError, ReadCancelledError)
+from ..tl.all_tlobjects import tlobjects
+from ..tl.functions import PingRequest
+from ..tl.functions.updates import GetStateRequest
+from ..tl.types import MsgsAck
+from ..utils import BinaryReader, BinaryWriter
 
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())

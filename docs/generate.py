@@ -3,7 +3,7 @@ import os
 import re
 import sys
 import shutil
-from docs.docs_writer import DocsWriter
+from .docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
