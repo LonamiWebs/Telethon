@@ -2,7 +2,7 @@ import os
 import time
 
 from .. import helpers as utils
-from ..crypto import AES, RSA, AuthKey, Factorizator
+from ..crypto import AES, RSA, AuthKey, Factorization
 from ..network import MtProtoPlainSender
 from ..utils import BinaryReader, BinaryWriter
 
@@ -49,7 +49,7 @@ def do_authentication(transport):
 
     # Step 2 sending: DH Exchange
     new_nonce = os.urandom(32)
-    p, q = Factorizator.factorize(pq)
+    p, q = Factorization.factorize(pq)
     with BinaryWriter() as pq_inner_data_writer:
         pq_inner_data_writer.write_int(
             0x83c95aec, signed=False)  # PQ Inner Data
@@ -120,12 +120,12 @@ def do_authentication(transport):
         encrypted_answer = reader.tgread_bytes()
 
     # Step 3 sending: Complete DH Exchange
-    key, iv = utils.generate_key_data_from_nonces(server_nonce, new_nonce)
+    key, iv = utils.generate_key_data_from_nonce(server_nonce, new_nonce)
     plain_text_answer = AES.decrypt_ige(encrypted_answer, key, iv)
 
     g, dh_prime, ga, time_offset = None, None, None, None
     with BinaryReader(plain_text_answer) as dh_inner_data_reader:
-        dh_inner_data_reader.read(20)  # hashsum
+        dh_inner_data_reader.read(20)  # hash sum
         code = dh_inner_data_reader.read_int(signed=False)
         if code != 0xb5890dba:
             raise AssertionError('Invalid DH Inner Data code: {}'.format(code))

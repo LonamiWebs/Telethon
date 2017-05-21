@@ -63,20 +63,20 @@ def get_create_path_for(tlobject):
     return os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
 
 
-def get_path_for_type(type, relative_to='.'):
+def get_path_for_type(type_, relative_to='.'):
     """Similar to getting the path for a TLObject, it might not be possible
        to have the TLObject itself but rather its name (the type);
        this method works in the same way, returning a relative path"""
-    if type.lower() in {'int', 'long', 'int128', 'int256', 'double',
-                        'vector', 'string', 'bool', 'true', 'bytes', 'date'}:
-        path = 'index.html#%s' % type.lower()
+    if type_.lower() in {'int', 'long', 'int128', 'int256', 'double',
+                         'vector', 'string', 'bool', 'true', 'bytes', 'date'}:
+        path = 'index.html#%s' % type_.lower()
 
-    elif '.' in type:
+    elif '.' in type_:
         # If it's not a core type, then it has to be a custom Telegram type
-        namespace, name = type.split('.')
+        namespace, name = type_.split('.')
         path = 'types/%s/%s' % (namespace, get_file_name(name, add_extension=True))
     else:
-        path = 'types/%s' % get_file_name(type, add_extension=True)
+        path = 'types/%s' % get_file_name(type_, add_extension=True)
 
     return get_relative_path(path, relative_to)
 
@@ -128,7 +128,7 @@ def build_menu(docs, filename, relative_main_index):
 def generate_index(folder, original_paths):
     """Generates the index file for the specified folder"""
 
-    # Determine the namespaces listed here (as subfolders)
+    # Determine the namespaces listed here (as sub folders)
     # and the files (.html files) that we should link to
     namespaces = []
     files = []
@@ -320,10 +320,10 @@ def generate_documentation(scheme_file):
                 docs.write_text('The following %d methods return this type as a result.' % len(functions))
 
             docs.begin_table(2)
-            for function in functions:
-                link = get_create_path_for(function)
+            for func in functions:
+                link = get_create_path_for(func)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(function), link=link)
+                docs.add_row(get_class_name(func), link=link)
             docs.end_table()
             docs.end_body()
 

@@ -7,18 +7,18 @@ from telethon.interactive_telegram_client import (InteractiveTelegramClient,
 
 def load_settings(path='api/settings'):
     """Loads the user settings located under `api/`"""
-    settings = {}
+    result = {}
     with open(path, 'r', encoding='utf-8') as file:
         for line in file:
             value_pair = line.split('=')
             left = value_pair[0].strip()
             right = value_pair[1].strip()
             if right.isnumeric():
-                settings[left] = int(right)
+                result[left] = int(right)
             else:
-                settings[left] = right
+                result[left] = right
 
-    return settings
+    return result
 
 
 if __name__ == '__main__':

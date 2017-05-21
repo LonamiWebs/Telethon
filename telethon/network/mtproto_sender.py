@@ -282,9 +282,9 @@ class MtProtoSender:
     def handle_pong(self, msg_id, sequence, reader, request):
         self.logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
-        recv_msg_id = reader.read_long(signed=False)
+        received_msg_id = reader.read_long(signed=False)
 
-        if recv_msg_id == request.msg_id:
+        if received_msg_id == request.msg_id:
             self.logger.warning('Pong confirmed a request')
             request.confirm_received = True
 
@@ -478,7 +478,7 @@ class MtProtoSender:
                         self.logger.info('Receiving updates cancelled')
                     except OSError:
                         self.logger.warning('OSError on updates thread, %s logging out',
-                              'was' if self.logging_out else 'was not')
+                                            'was' if self.logging_out else 'was not')
 
                         if self.logging_out:
                             # This error is okay when logging out, means we got disconnected

@@ -86,7 +86,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                 # Display them so the user can choose
                 for i, entity in enumerate(entities):
-                    i += 1  # 1-based index for normies
+                    i += 1  # 1-based index
                     try:
                         print('{}. {}'.format(i, get_display_name(entity)))
                     except UnicodeEncodeError:

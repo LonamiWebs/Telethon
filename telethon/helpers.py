@@ -41,8 +41,8 @@ def calc_msg_key(data):
     return sha1(data)[4:20]
 
 
-def generate_key_data_from_nonces(server_nonce, new_nonce):
-    """Generates the key data corresponding to the given nonces"""
+def generate_key_data_from_nonce(server_nonce, new_nonce):
+    """Generates the key data corresponding to the given nonce"""
     hash1 = sha1(bytes(new_nonce + server_nonce))
     hash2 = sha1(bytes(server_nonce + new_nonce))
     hash3 = sha1(bytes(new_nonce + new_nonce))
@@ -68,10 +68,11 @@ def sha256(data):
 
 def get_password_hash(pw, current_salt):
     """Gets the password hash for the two-step verification.
-       curent_salt should be the byte array provided by invoking GetPasswordRequest()"""
+       current_salt should be the byte array provided by invoking GetPasswordRequest()"""
 
     # Passwords are encoded as UTF-8
-    # https://github.com/DrKLO/Telegram/blob/e31388/TMessagesProj/src/main/java/org/telegram/ui/LoginActivity.java#L2003
+    # At https://github.com/DrKLO/Telegram/blob/e31388
+    # src/main/java/org/telegram/ui/LoginActivity.java#L2003
     data = pw.encode('utf-8')
 
     pw_hash = current_salt + data + current_salt

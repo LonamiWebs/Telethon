@@ -1,7 +1,7 @@
 from random import randint
 
 
-class Factorizator:
+class Factorization:
     @staticmethod
     def find_small_multiplier_lopatin(what):
         """Finds the small multiplier by using Lopatin's method"""
@@ -25,7 +25,7 @@ class Factorizator:
 
                 x = c
                 z = y - x if x < y else x - y
-                g = Factorizator.gcd(z, what)
+                g = Factorization.gcd(z, what)
                 if g != 1:
                     break
 
@@ -58,5 +58,5 @@ class Factorizator:
     @staticmethod
     def factorize(pq):
         """Factorizes the given number and returns both the divisor and the number divided by the divisor"""
-        divisor = Factorizator.find_small_multiplier_lopatin(pq)
+        divisor = Factorization.find_small_multiplier_lopatin(pq)
         return divisor, pq // divisor

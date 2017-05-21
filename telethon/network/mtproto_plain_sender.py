@@ -46,7 +46,7 @@ class MtProtoPlainSender:
         # See https://core.telegram.org/mtproto/description#message-identifier-msg-id
         ms_time = int(time.time() * 1000)
         new_msg_id = (((ms_time // 1000) << 32)
-                      |  # "must approximately equal unixtime*2^32"
+                      |  # "must approximately equal unix time*2^32"
                       ((ms_time % 1000) << 22)
                       |  # "approximate moment in time the message was created"
                       random.randint(0, 524288)

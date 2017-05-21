@@ -42,12 +42,12 @@ class TLObject:
             ([0-9a-f]+)        # The constructor ID is in hexadecimal form
 
             (?:\s              # After that, we want to match its arguments (name:type)
-                \{?            # For handling the start of the «{X:Type}» case
+                {?             # For handling the start of the «{X:Type}» case
                 \w+            # The argument name will always be an alpha-only name
                 :              # Then comes the separator between name:type
                 [\w\d<>#.?!]+  # The type is slightly more complex, since it's alphanumeric and it can
                                # also have Vector<type>, flags:# and flags.0?default, plus :!X as type
-                \}?            # For handling the end of the «{X:Type}» case
+                }?             # For handling the end of the «{X:Type}» case
             )*                 # Match 0 or more arguments
             \s                 # Leave a space between the arguments and the equal
             =
@@ -58,12 +58,12 @@ class TLObject:
 
         # Sub-regex to match the arguments (sadly, it cannot be embedded in the first regex)
         args_match = re.findall(r'''
-            (\{)?            # We may or may not capture the opening brace
+            ({)?             # We may or may not capture the opening brace
             (\w+)            # First we capture any alpha name with length 1 or more
             :                # Which is separated from its type by a colon
             ([\w\d<>#.?!]+)  # The type is slightly more complex, since it's alphanumeric and it can
                              # also have Vector<type>, flags:# and flags.0?default, plus :!X as type
-            (\})?            # We may or not capture the closing brace
+            (})?             # We may or not capture the closing brace
             ''', tl, re.IGNORECASE | re.VERBOSE)
 
         # Retrieve the matched arguments

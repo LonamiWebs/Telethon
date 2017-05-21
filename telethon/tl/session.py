@@ -31,7 +31,7 @@ class Session:
         try:
             os.remove('{}.session'.format(self.session_user_id))
             return True
-        except:
+        except OSError:
             return False
 
     @staticmethod
@@ -54,7 +54,7 @@ class Session:
         # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
         ms_time = int(time.time() * 1000)
         new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
-                      |  # "must approximately equal unixtime*2^32"
+                      |  # "must approximately equal unix time*2^32"
                       ((ms_time % 1000) << 22)
                       |  # "approximate moment in time the message was created"
                       random.randint(0, 524288)

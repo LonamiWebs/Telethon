@@ -1,7 +1,7 @@
 import unittest
 
 import telethon.helpers as utils
-from telethon.crypto import AES, Factorizator
+from telethon.crypto import AES, Factorization
 
 
 class CryptoTests(unittest.TestCase):
@@ -23,11 +23,11 @@ class CryptoTests(unittest.TestCase):
     def test_sha1():
         string = 'Example string'
 
-        hashsum = utils.sha1(string.encode('utf-8'))
+        hash_sum = utils.sha1(string.encode('utf-8'))
         expected = b'\nT\x92|\x8d\x06:)\x99\x04\x8e\xf8j?\xc4\x8e\xd3}m9'
 
-        assert hashsum == expected, 'Invalid sha1 hashsum representation (should be {}, but is {})'\
-            .format(expected, hashsum)
+        assert hash_sum == expected, 'Invalid sha1 hash_sum representation (should be {}, but is {})'\
+            .format(expected, hash_sum)
 
     def test_aes_encrypt(self):
         value = AES.encrypt_ige(self.plain_text, self.key, self.iv)
@@ -67,8 +67,12 @@ class CryptoTests(unittest.TestCase):
         msg_key = b'\xba\x1a\xcf\xda\xa8^Cbl\xfa\xb6\x0c:\x9b\xb0\xfc'
 
         key, iv = utils.calc_key(shared_key, msg_key, client=True)
-        expected_key = b"\xaf\xe3\x84Qm\xe0!\x0c\xd91\xe4\x9a\xa0v_gcx\xa1\xb0\xc9\xbc\x16'v\xcf,\x9dM\xae\xc6\xa5"
-        expected_iv = b'\xb8Q\xf3\xc5\xa3]\xc6\xdf\x9e\xe0Q\xbd"\x8d\x13\t\x0e\x9a\x9d^8\xa2\xf8\xe7\x00w\xd9\xc1\xa7\xa0\xf7\x0f'
+        expected_key = b"\xaf\xe3\x84Qm\xe0!\x0c\xd91\xe4\x9a\xa0v_gc" \
+                       b"x\xa1\xb0\xc9\xbc\x16'v\xcf,\x9dM\xae\xc6\xa5"
+
+        expected_iv = b'\xb8Q\xf3\xc5\xa3]\xc6\xdf\x9e\xe0Q\xbd"\x8d' \
+                      b'\x13\t\x0e\x9a\x9d^8\xa2\xf8\xe7\x00w\xd9\xc1' \
+                      b'\xa7\xa0\xf7\x0f'
 
         assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(
             expected_key, key)
@@ -79,8 +83,12 @@ class CryptoTests(unittest.TestCase):
         msg_key = b'\x86m\x92i\xcf\x8b\x93\xaa\x86K\x1fi\xd04\x83]'
 
         key, iv = utils.calc_key(shared_key, msg_key, client=False)
-        expected_key = b'\xdd0X\xb6\x93\x8e\xc9y\xef\x83\xf8\x8cj\xa7h\x03\xe2\xc6\xb16\xc5\xbb\xfc\xe7\xdf\xd6\xb1g\xf7u\xcfk'
-        expected_iv = b'\xdcL\xc2\x18\x01J"X\x86lb\xb6\xb547\xfd\xe2a4\xb6\xaf}FS\xd7[\xe0N\r\x19\xfb\xbc'
+        expected_key = b'\xdd0X\xb6\x93\x8e\xc9y\xef\x83\xf8\x8cj' \
+                       b'\xa7h\x03\xe2\xc6\xb16\xc5\xbb\xfc\xe7' \
+                       b'\xdf\xd6\xb1g\xf7u\xcfk'
+
+        expected_iv = b'\xdcL\xc2\x18\x01J"X\x86lb\xb6\xb547\xfd' \
+                      b'\xe2a4\xb6\xaf}FS\xd7[\xe0N\r\x19\xfb\xbc'
 
         assert key == expected_key, 'Invalid key (expected ("{}"), got ("{}"))'.format(
             expected_key, key)
@@ -95,11 +103,11 @@ class CryptoTests(unittest.TestCase):
             value, expected)
 
     @staticmethod
-    def test_generate_key_data_from_nonces():
+    def test_generate_key_data_from_nonce():
         server_nonce = b'I am the server nonce.'
         new_nonce = b'I am a new calculated nonce.'
 
-        key, iv = utils.generate_key_data_from_nonces(server_nonce, new_nonce)
+        key, iv = utils.generate_key_data_from_nonce(server_nonce, new_nonce)
         expected_key = b'?\xc4\xbd\xdf\rWU\x8a\xf5\x0f+V\xdc\x96up\x1d\xeeG\x00\x81|\x1eg\x8a\x8f{\xf0y\x80\xda\xde'
         expected_iv = b'Q\x9dpZ\xb7\xdd\xcb\x82_\xfa\xf4\x90\xecn\x10\x9cD\xd2\x01\x8d\x83\xa0\xa4^\xb8\x91,\x7fI am'
 
@@ -109,9 +117,9 @@ class CryptoTests(unittest.TestCase):
             key, expected_iv)
 
     @staticmethod
-    def test_factorizator():
+    def test_factorize():
         pq = 3118979781119966969
-        p, q = Factorizator.factorize(pq)
+        p, q = Factorization.factorize(pq)
 
         assert p == 1719614201, 'Factorized pair did not yield the correct result'
         assert q == 1813767169, 'Factorized pair did not yield the correct result'

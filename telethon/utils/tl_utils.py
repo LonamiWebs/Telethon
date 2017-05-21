@@ -77,8 +77,8 @@ def find_user_or_chat(peer, users, chats):
         return None
 
 
-def get_appropiate_part_size(file_size):
-    """Gets the appropiate part size when uploading or downloading files,
+def get_appropriated_part_size(file_size):
+    """Gets the appropriated part size when uploading or downloading files,
        given an initial file size"""
     if file_size <= 1048576:  # 1MB
         return 32

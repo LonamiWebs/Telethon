@@ -17,8 +17,7 @@ from .tl.functions import InitConnectionRequest, InvokeWithLayerRequest
 from .tl.functions.account import GetPasswordRequest
 from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SendCodeRequest, SignInRequest,
-                                SignUpRequest)
-from .tl.functions.auth import ImportBotAuthorizationRequest
+                                SignUpRequest, ImportBotAuthorizationRequest)
 from .tl.functions.help import GetConfigRequest
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
@@ -34,7 +33,7 @@ from .tl.types import (
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty)
 from .utils import (find_user_or_chat, get_input_peer,
-                    get_appropiate_part_size, get_extension)
+                    get_appropriated_part_size, get_extension)
 
 
 class TelegramClient:
@@ -273,7 +272,7 @@ class TelegramClient:
 
             self.session = None
             return True
-        except:
+        except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
             self.sender.logging_out = False
             return False
@@ -282,8 +281,7 @@ class TelegramClient:
     def list_sessions():
         """Lists all the sessions of the users who have ever connected
            using this client and never logged out"""
-        return [path.splitext(path.basename(f))[
-            0]  # splitext = split ext (not spli text!)
+        return [path.splitext(path.basename(f))[0]
                 for f in listdir('.') if f.endswith('.session')]
 
     # endregion
@@ -424,7 +422,7 @@ class TelegramClient:
         """
         file_size = path.getsize(file_path)
         if not part_size_kb:
-            part_size_kb = get_appropiate_part_size(file_size)
+            part_size_kb = get_appropriated_part_size(file_size)
 
         if part_size_kb > 512:
             raise ValueError('The part size must be less or equal to 512KB')
@@ -534,7 +532,7 @@ class TelegramClient:
                                add_extension=True,
                                download_big=True):
         """Downloads the profile photo for an user or a chat (including channels).
-           Returns False if no photo was providen, or if it was Empty"""
+           Returns False if no photo was provided, or if it was Empty"""
 
         if (not profile_photo or
                 isinstance(profile_photo, UserProfilePhotoEmpty) or
@@ -693,7 +691,7 @@ class TelegramClient:
             if not file_size:
                 raise ValueError('A part size value must be provided')
             else:
-                part_size_kb = get_appropiate_part_size(file_size)
+                part_size_kb = get_appropriated_part_size(file_size)
 
         part_size = int(part_size_kb * 1024)
         if part_size % 1024 != 0:

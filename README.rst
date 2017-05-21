@@ -70,10 +70,10 @@ If you've installed Telethon via pip, launch an interactive python3 session and 
 .. code:: python
 
   >>> from telethon import InteractiveTelegramClient
-  >>> # 'sessionid' can be 'yourname'. It'll be saved as yourname.session
+  >>> # 'session_id' can be 'your_name'. It'll be saved as your_name.session
   >>> # Also (obviously) replace the api_id and api_hash with your values
   ...
-  >>> client = InteractiveTelegramClient('sessionid', '+34600000000',
+  >>> client = InteractiveTelegramClient('session_id', '+34600000000',
   ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef')
 
   ==================
@@ -93,7 +93,7 @@ Then, simply run ``python3 try_telethon.py`` to start the interactive example.
 
 Using Telethon
 ==============
-If you really want to learn how to use Telethon, it is **highly adviced** that
+If you really want to learn how to use Telethon, it is **highly advised** that
 you take a look to the
 `InteractiveTelegramClient <telethon/interactive_telegram_client.py>`_ file
 and check how it works. This file contains everything you'll need to build
@@ -208,7 +208,7 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
 
   >>> from telethon import InteractiveTelegramClient
   >>> import socks
-  >>> client = InteractiveTelegramClient('sessionid', '+34600000000',
+  >>> client = InteractiveTelegramClient('session_id', '+34600000000',
   ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
   ...     proxy=(socks.SOCKS5, 'localhost', 4444))
 

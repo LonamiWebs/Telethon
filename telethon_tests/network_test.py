@@ -12,10 +12,10 @@ def run_server_echo_thread(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind(('', port))
             s.listen(1)
-            conn, addr = s.accept()
-            with conn:
-                data = conn.recv(16)
-                conn.send(data)
+            connection, address = s.accept()
+            with connection:
+                data = connection.recv(16)
+                connection.send(data)
 
     server = threading.Thread(target=server_thread)
     server.start()

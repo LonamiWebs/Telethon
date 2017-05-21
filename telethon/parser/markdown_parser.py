@@ -116,30 +116,30 @@ def parse_message_entities(msg):
             del msg[entity.offset]
 
             # Iterate over all the entities but the current
-            for subentity in [e for e in entities if e is not entity]:
+            for sub_entity in [e for e in entities if e is not entity]:
                 # First case, one in one out: so*me_th_in*g.
                 # In this case, the current entity length is decreased by two,
-                # and all the subentities offset decreases 1
-                if (subentity.offset > entity.offset and
-                        subentity.offset + subentity.length <
+                # and all the sub_entities offset decreases 1
+                if (sub_entity.offset > entity.offset and
+                        sub_entity.offset + sub_entity.length <
                         entity.offset + entity.length):
                     entity.length -= 2
-                    subentity.offset -= 1
+                    sub_entity.offset -= 1
 
                 # Second case, both inside: so*me_th*in_g.
                 # In this case, the current entity length is decreased by one,
-                # and all the subentities offset and length decrease 1
-                elif (entity.offset < subentity.offset < entity.offset +
-                      entity.length < subentity.offset + subentity.length):
+                # and all the sub_entities offset and length decrease 1
+                elif (entity.offset < sub_entity.offset < entity.offset +
+                      entity.length < sub_entity.offset + sub_entity.length):
                     entity.length -= 1
-                    subentity.offset -= 1
-                    subentity.length -= 1
+                    sub_entity.offset -= 1
+                    sub_entity.length -= 1
 
                 # Third case, both outside: so*me*th_in_g.
                 # In this case, the current entity is left untouched,
-                # and all the subentities offset decreases 2
-                elif subentity.offset > entity.offset + entity.length:
-                    subentity.offset -= 2
+                # and all the sub_entities offset decreases 2
+                elif sub_entity.offset > entity.offset + entity.length:
+                    sub_entity.offset -= 2
 
     # Finally, we can join our poor mutilated message back and return
     msg = ''.join(msg)

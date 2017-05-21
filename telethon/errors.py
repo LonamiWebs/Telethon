@@ -112,7 +112,7 @@ class RPCError(Exception):
         'FILE_PARTS_INVALID': 'The number of file parts is invalid.',
         'FILE_PART_(\d+)_MISSING':
         'Part {} of the file is missing from storage.',
-        'MD5_CHECKSUM_INVALID': 'The MD5 checksums do not match.',
+        'MD5_CHECKSUM_INVALID': 'The MD5 check-sums do not match.',
         'PHOTO_INVALID_DIMENSIONS': 'The photo dimensions are invalid.',
         'FIELD_NAME_INVALID': 'The field with the name FIELD_NAME is invalid.',
         'FIELD_NAME_EMPTY': 'The field with the name FIELD_NAME is missing.',
