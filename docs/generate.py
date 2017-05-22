@@ -294,6 +294,7 @@ def generate_documentation(scheme_file):
             # Main file title
             docs.write_title(get_class_name(name))
 
+            # List available constructors for this type
             docs.write_title('Available constructors', level=3)
             if not constructors:
                 docs.write_text('This type has no constructors available.')
@@ -310,6 +311,7 @@ def generate_documentation(scheme_file):
                 docs.add_row(get_class_name(constructor), link=link)
             docs.end_table()
 
+            # List all the methods which return this type
             docs.write_title('Methods returning this type', level=3)
             functions = tlfunctions.get(tltype, [])
             if not functions:
@@ -324,6 +326,30 @@ def generate_documentation(scheme_file):
                 link = get_create_path_for(func)
                 link = get_relative_path(link, relative_to=filename)
                 docs.add_row(get_class_name(func), link=link)
+            docs.end_table()
+
+            # List every other type which has this type as a member
+            docs.write_title('Other types containing this type', level=3)
+            other_types = sorted((t for t in tlobjects
+                                  if any(tltype == a.type for a in t.args)),
+                                 key=lambda t: t.name)
+
+            if not other_types:
+                docs.write_text(
+                    'No other types have a member of this type.')
+            elif len(other_types) == 1:
+                docs.write_text(
+                    'You can find this type as a member of this other type.')
+            else:
+                docs.write_text(
+                    'You can find this type as a member of any of '
+                    'the following %d types.' % len(other_types))
+
+            docs.begin_table(2)
+            for ot in other_types:
+                link = get_create_path_for(ot)
+                link = get_relative_path(link, relative_to=filename)
+                docs.add_row(get_class_name(ot), link=link)
             docs.end_table()
             docs.end_body()
 
