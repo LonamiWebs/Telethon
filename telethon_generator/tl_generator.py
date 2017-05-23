@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+from collections import defaultdict
 
 try:
     from .parser import SourceBuilder, TLParser
@@ -52,11 +53,16 @@ class TLGenerator:
         # will later need to perform a relative import for them to be used
         function_namespaces = set()
         type_namespaces = set()
+
+        # Now that we're iterating over all the objects we also store Type: [Constructors]
+        type_constructors = defaultdict(list)
         for tlobject in tlobjects:
-            if tlobject.namespace:
-                if tlobject.is_function:
+            if tlobject.is_function:
+                if tlobject.namespace:
                     function_namespaces.add(tlobject.namespace)
-                else:
+            else:
+                type_constructors[tlobject.result].append(tlobject)
+                if tlobject.namespace:
                     type_namespaces.add(tlobject.namespace)
 
         # Merge both namespaces to easily check if any namespace exists,
@@ -168,6 +174,28 @@ class TLGenerator:
                                     builder.write(
                                         ' This should be another MTProtoRequest.')
                                 builder.writeln()
+
+                        # We also want to know what type this request returns
+                        # or to which type this constructor belongs to
+                        builder.writeln()
+                        if tlobject.is_function:
+                            builder.write(':returns %s: ' % tlobject.result)
+                        else:
+                            builder.write('Constructor for %s: ' % tlobject.result)
+
+                        constructors = type_constructors[tlobject.result]
+                        if not constructors:
+                            builder.writeln('This type has no constructors.')
+                        elif len(constructors) == 1:
+                            builder.writeln('Instance of {}.'.format(
+                                TLGenerator.get_class_name(constructors[0])
+                            ))
+                        else:
+                            builder.writeln('Instance of either {}.'.format(
+                                ', '.join(TLGenerator.get_class_name(c)
+                                          for c in constructors)
+                            ))
+
                         builder.writeln('"""')
 
                     builder.writeln('super().__init__()')
