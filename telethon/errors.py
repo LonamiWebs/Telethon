@@ -142,6 +142,10 @@ class RPCError(Exception):
         'CHANNEL_INVALID':
         'Invalid channel object. Make sure to pass the right types.',
         'MESSAGE_ID_INVALID': 'The specified message ID is invalid.',
+        'CONNECTION_LAYER_INVALID':
+        'The very first request must always be InvokeWithLayerRequest.',
+        'INPUT_METHOD_INVALID':
+        'The invoked method does not exist anymore or has never existed.',
 
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
