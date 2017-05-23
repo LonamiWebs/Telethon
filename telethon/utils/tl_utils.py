@@ -21,6 +21,8 @@ def get_display_name(entity):
     if isinstance(entity, Chat) or isinstance(entity, Channel):
         return entity.title
 
+    return '(unknown)'
+
 # For some reason, .webp (stickers' format) is not registered
 add_type('image/webp', '.webp')
 
@@ -43,7 +45,7 @@ def get_extension(media):
 
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
-       Returns None if it was not found"""
+       A ValueError is rose if the given entity isn't a supported type."""
     if (isinstance(entity, InputPeerUser) or
         isinstance(entity, InputPeerChat) or
             isinstance(entity, InputPeerChannel)):
@@ -55,6 +57,9 @@ def get_input_peer(entity):
         return InputPeerChat(entity.id)
     if isinstance(entity, Channel):
         return InputPeerChannel(entity.id, entity.access_hash)
+
+    raise ValueError('Cannot cast {} to any kind of InputPeer.'
+                     .format(type(entity).__name__))
 
 
 def find_user_or_chat(peer, users, chats):
