@@ -3,7 +3,10 @@ import os
 import re
 import sys
 import shutil
-from .docs_writer import DocsWriter
+try:
+    from .docs_writer import DocsWriter
+except (ImportError, SystemError):
+    from docs_writer import DocsWriter
 
 # Small trick so importing telethon_generator works
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -187,10 +190,25 @@ def generate_documentation(scheme_file):
         'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
     }
-
     tlobjects = tuple(TLParser.parse_file(scheme_file))
 
     print('Generating constructors and functions documentation...')
+
+    # Save 'Type: [Constructors]' for use in both:
+    # * Seeing the return type or constructors belonging to the same type.
+    # * Generating the types documentation, showing available constructors.
+    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
+    tltypes = {}
+    tlfunctions = {}
+    for tlobject in tlobjects:
+        # Select to which dictionary we want to store this type
+        dictionary = tlfunctions if tlobject.is_function else tltypes
+
+        if tlobject.result in dictionary:
+            dictionary[tlobject.result].append(tlobject)
+        else:
+            dictionary[tlobject.result] = [tlobject]
+
     for tlobject in tlobjects:
         filename = get_create_path_for(tlobject)
 
@@ -212,6 +230,49 @@ def generate_documentation(scheme_file):
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
 
+            # Write the return type (or constructors belonging to the same type)
+            docs.write_title('Returns' if tlobject.is_function
+                             else 'Belongs to', level=3)
+
+            generic_arg = next((arg.name for arg in tlobject.args
+                                if arg.generic_definition), None)
+
+            if tlobject.result == generic_arg:
+                # We assume it's a function returning a generic type
+                generic_arg = next((arg.name for arg in tlobject.args
+                                    if arg.is_generic))
+                docs.write_text('This function returns the result of whatever '
+                                'the result from invoking the request passed '
+                                'through <i>{}</i> is.'.format(generic_arg))
+            else:
+                if re.search('^vector<', tlobject.result, re.IGNORECASE):
+                    docs.write_text('A list of the following type is returned.')
+                    _, inner = tlobject.result.split('<')
+                    inner = inner.strip('>')
+                else:
+                    inner = tlobject.result
+
+                docs.begin_table(column_count=1)
+                docs.add_row(inner,
+                             link=get_path_for_type(inner, relative_to=filename))
+                docs.end_table()
+
+                constructors = tltypes.get(inner, [])
+                if not constructors:
+                    docs.write_text('This type has no instances available.')
+                elif len(constructors) == 1:
+                    docs.write_text('This type can only be an instance of:')
+                else:
+                    docs.write_text('This type can be an instance of either:')
+
+                docs.begin_table(column_count=2)
+                for constructor in constructors:
+                    link = get_create_path_for(constructor)
+                    link = get_relative_path(link, relative_to=filename)
+                    docs.add_row(get_class_name(constructor), link=link)
+                docs.end_table()
+
+            # Return (or similar types) written. Now parameters/members
             docs.write_title('Parameters' if tlobject.is_function else 'Members', level=3)
 
             # Sort the arguments in the same way they're sorted on the generated code (flags go last)
@@ -258,17 +319,6 @@ def generate_documentation(scheme_file):
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, so it should be a map
     print('Generating types documentation...')
-    tltypes = {}
-    tlfunctions = {}
-    for tlobject in tlobjects:
-        # Select to which dictionary we want to store this type
-        dictionary = tlfunctions if tlobject.is_function else tltypes
-
-        if tlobject.result in dictionary:
-            dictionary[tlobject.result].append(tlobject)
-        else:
-            dictionary[tlobject.result] = [tlobject]
-
     for tltype, constructors in tltypes.items():
         filename = get_path_for_type(tltype)
         out_dir = os.path.dirname(filename)
