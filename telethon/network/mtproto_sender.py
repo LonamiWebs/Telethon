@@ -333,7 +333,16 @@ class MtProtoSender:
         reader.read_int()  # request_sequence
 
         error_code = reader.read_int()
-        raise BadMessageError(error_code)
+        error = BadMessageError(error_code)
+        if error_code in (16, 17):
+            # sent msg_id too low or too high (respectively).
+            # Use the current msg_id to determine the right time offset.
+            self.session.update_time_offset(correct_msg_id=msg_id)
+            self.session.save()
+            self.logger.warning('Read Bad Message error: ' + str(error))
+            self.logger.info('Attempting to use the correct time offset.')
+        else:
+            raise error
 
     def handle_rpc_result(self, msg_id, sequence, reader, request):
         self.logger.debug('Handling RPC result, request is%s None', ' not' if request else '')

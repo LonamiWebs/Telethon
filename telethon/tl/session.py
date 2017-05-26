@@ -65,3 +65,9 @@ class Session:
 
         self.last_message_id = new_msg_id
         return new_msg_id
+
+    def update_time_offset(self, correct_msg_id):
+        """Updates the time offset based on a known correct message ID"""
+        now = int(time.time())
+        correct = correct_msg_id >> 32
+        self.time_offset = correct - now
