@@ -169,8 +169,12 @@ class TelegramClient:
             raise ValueError('You must be connected to invoke requests!')
 
         try:
+            updates = []
             self.sender.send(request)
-            self.sender.receive(request, timeout)
+            self.sender.receive(request, timeout, updates=updates)
+            for update in updates:
+                for handler in self.sender._on_update_handlers:
+                    handler(update)
 
             return request.result
 
