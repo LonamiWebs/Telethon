@@ -3,16 +3,23 @@ from datetime import timedelta
 from hashlib import md5
 from mimetypes import guess_type
 from os import listdir, path
+from threading import Event, RLock, Thread
+from time import time, sleep
+import logging
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import RPCError, InvalidDCError, InvalidParameterError
+from .errors import (RPCError, InvalidDCError, FloodWaitError,
+                     InvalidParameterError, ReadCancelledError)
+
 from .network import authenticator, MtProtoSender, TcpTransport
 from .parser.markdown_parser import parse_message_entities
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session
 from .tl.all_tlobjects import layer
-from .tl.functions import InitConnectionRequest, InvokeWithLayerRequest
+from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest,
+                           PingRequest)
+
 # The following is required to get the password salt
 from .tl.functions.account import GetPasswordRequest
 from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
@@ -72,7 +79,19 @@ class TelegramClient:
         self.transport = None
         self.proxy = proxy  # Will be used when a TcpTransport is created
 
+        # Safety across multiple threads (for the updates thread)
+        self._lock = RLock()
+        self._logger = logging.getLogger(__name__)
+
+        # Methods to be called when an update is received
+        self.update_handlers = []
+        self.ping_interval = 60
+        self._ping_time_last = time()
+        self._updates_thread_running = Event()
+        self._updates_thread_receiving = Event()
+
         # These will be set later
+        self._updates_thread = None
         self.dc_options = None
         self.sender = None
         self.phone_code_hashes = {}
@@ -119,7 +138,7 @@ class TelegramClient:
 
             # Once we know we're authorized, we can setup the ping thread
             if self.is_user_authorized():
-                self.sender.setup_ping_thread()
+                self._setup_ping_thread()
 
             return True
         except RPCError as error:
@@ -143,13 +162,19 @@ class TelegramClient:
         self.connect(reconnect=True)
 
     def disconnect(self):
-        """Disconnects from the Telegram server **and pauses all the spawned threads**"""
+        """Disconnects from the Telegram server and stops all the spawned threads"""
+        self._set_updates_thread(running=False)
         if self.sender:
             self.sender.disconnect()
             self.sender = None
         if self.transport:
             self.transport.close()
             self.transport = None
+
+    def reconnect(self):
+        """Disconnects and connects again (effectively reconnecting)"""
+        self.disconnect()
+        self.connect()
 
     # endregion
 
@@ -168,12 +193,16 @@ class TelegramClient:
         if not self.sender:
             raise ValueError('You must be connected to invoke requests!')
 
+        if self._updates_thread_receiving.is_set():
+            self.sender.cancel_receive()
+
         try:
+            self._lock.acquire()
             updates = []
             self.sender.send(request)
             self.sender.receive(request, timeout, updates=updates)
             for update in updates:
-                for handler in self.sender._on_update_handlers:
+                for handler in self.update_handlers:
                     handler(update)
 
             return request.result
@@ -184,6 +213,14 @@ class TelegramClient:
 
             self._reconnect_to_dc(error.new_dc)
             return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
+
+        except FloodWaitError:
+            # TODO Write somewhere that FloodWaitError disconnects the client
+            self.disconnect()
+            raise
+
+        finally:
+            self._lock.release()
 
     # region Authorization requests
 
@@ -247,7 +284,7 @@ class TelegramClient:
         # to start the pings thread once we're already authorized and not
         # before to avoid the updates thread trying to read anything while
         # we haven't yet connected.
-        self.sender.setup_ping_thread()
+        self._setup_ping_thread()
 
         return True
 
@@ -736,12 +773,95 @@ class TelegramClient:
             raise RuntimeError(
                 "You should connect at least once to add update handlers.")
 
-        self.sender.add_update_handler(handler)
+        # TODO Eventually remove these methods, the user
+        # can access self.update_handlers manually
+        self.update_handlers.append(handler)
 
     def remove_update_handler(self, handler):
-        self.sender.remove_update_handler(handler)
+        self.update_handlers.remove(handler)
 
     def list_update_handlers(self):
-        return [handler.__name__ for handler in self.sender.on_update_handlers]
+        return self.update_handlers[:]
+
+    def _setup_ping_thread(self):
+        """Sets up the Ping's thread, so that a connection can be kept
+            alive for a longer time without Telegram disconnecting us"""
+        self._updates_thread = Thread(
+            name='UpdatesThread', daemon=True,
+            target=self._updates_thread_method)
+
+        self._set_updates_thread(running=True)
+
+    def _set_updates_thread(self, running):
+        """Sets the updates thread status (running or not)"""
+        if not self._updates_thread or \
+                running == self._updates_thread_running.is_set():
+            return
+
+        # Different state, update the saved value and behave as required
+        self._logger.info('Changing updates thread running status to %s', running)
+        if running:
+            self._updates_thread_running.set()
+            self._updates_thread.start()
+        else:
+            self._updates_thread_running.clear()
+            if self._updates_thread_receiving.is_set():
+                self.sender.cancel_receive()
+
+    def _updates_thread_method(self):
+        """This method will run until specified and listen for incoming updates"""
+
+        # Set a reasonable timeout when checking for updates
+        timeout = timedelta(minutes=1)
+
+        while self._updates_thread_running.is_set():
+            # Always sleep a bit before each iteration to relax the CPU,
+            # since it's possible to early 'continue' the loop to reach
+            # the next iteration, but we still should to sleep.
+            # Longer sleep if we're not expecting updates (only pings)
+            sleep(0.1 if self.update_handlers else 1)
+
+            with self._lock:
+                self._logger.debug('Updates thread acquired the lock')
+                try:
+                    now = time()
+                    # If ping_interval seconds passed since last ping, send a new one
+                    if now >= self._ping_time_last + self.ping_interval:
+                        self._ping_time_last = now
+                        self.invoke(PingRequest(utils.generate_random_long()))
+                        self._logger.debug('Ping sent from the updates thread')
+
+                    # Exit the loop if we're not expecting to receive any updates
+                    if not self.update_handlers:
+                        self._logger.debug('No updates handlers found, continuing')
+                        continue
+
+                    self._updates_thread_receiving.set()
+                    self._logger.debug('Trying to receive updates from the updates thread')
+                    result = self.sender.receive_update(timeout=timeout)
+                    self._logger.info('Received update from the updates thread')
+                    for handler in self.update_handlers:
+                        handler(result)
+
+                except TimeoutError:
+                    self._logger.debug('Receiving updates timed out')
+                    self.reconnect()
+
+                except ReadCancelledError:
+                    self._logger.info('Receiving updates cancelled')
+
+                except OSError:
+                    self._logger.warning('OSError on updates thread, %s logging out',
+                                         'was' if self.sender.logging_out else 'was not')
+
+                    if self.sender.logging_out:
+                        # This error is okay when logging out, means we got disconnected
+                        # TODO Not sure why this happens because we call disconnect()…
+                        self._set_updates_thread(running=False)
+                    else:
+                        raise
+
+            self._logger.debug('Updates thread released the lock')
+            self._updates_thread_receiving.clear()
 
     # endregion
