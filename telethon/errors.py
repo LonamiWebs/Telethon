@@ -44,6 +44,16 @@ class InvalidChecksumError(Exception):
         self.valid_checksum = valid_checksum
 
 
+class FloodWaitError(Exception):
+    def __init__(self, seconds):
+        super().__init__(
+            self,
+            'Too many requests were made too fast. Must wait {} seconds.'
+            .format(seconds)
+        )
+        self.seconds = seconds
+
+
 class RPCError(Exception):
 
     CodeMessages = {

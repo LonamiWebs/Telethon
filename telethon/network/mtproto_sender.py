@@ -5,7 +5,7 @@ from time import sleep, time
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import (BadMessageError, RPCError,
+from ..errors import (BadMessageError, FloodWaitError, RPCError,
                       InvalidDCError, ReadCancelledError)
 from ..tl.all_tlobjects import tlobjects
 from ..tl.functions import PingRequest
@@ -367,10 +367,7 @@ class MtProtoSender:
 
             if error.message.startswith('FLOOD_WAIT_'):
                 self.updates_thread_sleep = error.additional_data
-
-                print('Should wait {}s. Sleeping until then.'.format(
-                    error.additional_data))
-                sleep(error.additional_data)
+                raise FloodWaitError(seconds=error.additional_data)
 
             elif '_MIGRATE_' in error.message:
                 raise InvalidDCError(error)
