@@ -236,7 +236,7 @@ class MtProtoSender:
         # If the code is not parsed manually, then it was parsed by the code generator!
         # In this case, we will simply treat the incoming TLObject as an Update,
         # if we can first find a matching TLObject
-        if code in tlobjects.keys():
+        if code in tlobjects:
             result = reader.tgread_object()
             if updates is None:
                 self._logger.debug('Ignored update for %s', repr(result))
