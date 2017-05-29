@@ -126,7 +126,7 @@ class TelegramClient:
             print('Could not stabilise initial connection: {}'.format(error))
             return False
 
-    def reconnect_to_dc(self, dc_id):
+    def _reconnect_to_dc(self, dc_id):
         """Reconnects to the specified DC ID. This is automatically called after an InvalidDCError is raised"""
         if self.dc_options is None or not self.dc_options:
             raise ConnectionError(
@@ -178,7 +178,7 @@ class TelegramClient:
             if throw_invalid_dc:
                 raise
 
-            self.reconnect_to_dc(error.new_dc)
+            self._reconnect_to_dc(error.new_dc)
             return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
 
     # region Authorization requests

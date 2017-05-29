@@ -23,7 +23,7 @@ class MtProtoPlainSender:
         """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""
         with BinaryWriter() as writer:
             writer.write_long(0)
-            writer.write_long(self.get_new_msg_id())
+            writer.write_long(self._get_new_msg_id())
             writer.write_int(len(data))
             writer.write(data)
 
@@ -41,7 +41,7 @@ class MtProtoPlainSender:
             response = reader.read(message_length)
             return response
 
-    def get_new_msg_id(self):
+    def _get_new_msg_id(self):
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # See https://core.telegram.org/mtproto/description#message-identifier-msg-id
         ms_time = int(time.time() * 1000)
