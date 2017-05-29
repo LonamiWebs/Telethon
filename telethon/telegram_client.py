@@ -215,7 +215,6 @@ class TelegramClient:
             return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
 
         except FloodWaitError:
-            # TODO Write somewhere that FloodWaitError disconnects the client
             self.disconnect()
             raise
 

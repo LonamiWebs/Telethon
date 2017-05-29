@@ -1,11 +1,17 @@
 Telethon
 ========
-**Telethon** is Telegram client implementation in Python which uses the latest available API of Telegram.
-The project's **core only** is based on TLSharp, a C# Telegram client implementation.
+.. epigraph::
+
+  ⭐️ Thanks **everyone** who has starred the project, it means a lot!
+
+**Telethon** is Telegram client implementation in **Python** which uses the latest available API of Telegram.
 
 Before opening an issue about how to use the library, **please** make sure you have read and followed
-the steps mentioned under `Using Telethon`_! A lot of people ask simple questions which will only
-be answered as "please see the ``README.rst``". And you should use the search before posting an issue, too.
+the steps mentioned under `Using Telethon`_ and are using the latest version! A lot of people ask simple
+questions which will only be answered as "please see the ``README.rst``". And you should use the search
+before posting an issue, too.
+
+If you come here often, you may want to go to the `docs <https://lonamiwebs.github.io/Telethon>`_.
 
 .. contents:: Table of contents
 
@@ -43,6 +49,7 @@ Now that you know your ``API ID`` and ``Hash``, you can continue installing Tele
 
 Installing Telethon
 ===================
+
 Installing Telethon via ``pip``
 -------------------------------
 On a terminal, issue the following command:
@@ -51,7 +58,11 @@ On a terminal, issue the following command:
 
   sudo -H pip install telethon
 
-You're ready to go.
+You're ready to go. Oh, and upgrading is just as easy:
+
+.. code:: sh
+
+  sudo -H pip install --upgrade telethon
 
 Installing Telethon manually
 ----------------------------
@@ -110,6 +121,17 @@ If you want a nicer way to see all the available requests and types at your
 disposal, please check the
 `official Telethon documentation <https://lonamiwebs.github.io/Telethon>`_.
 There you'll find a list of all the methods, types and available constructors.
+
+Common errors
+-------------
+
+Some errors you may encounter when using Telethon can be the ``FloodWaitError``, which tells you
+that you've been trying to send the very same request many times, too quickly. You must wait
+``flood_wait_error.seconds`` before calling ``client.connect()`` again, since this error also
+disconnects the client.
+
+Another common one is the ``RPCError``, which usually has descriptive information on what went wrong.
+However, you may encounter something strange. If you don't manage to solve it, please open an issue.
 
 Advanced uses
 =============
@@ -214,3 +236,9 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
 
 The ``proxy=`` parameter should be a tuple consisting of
 ``(type, 'ip address', port)``, as described `here <https://github.com/Anorov/PySocks#sockssocksocket>`_.
+
+Disclaimer
+==========
+
+This project was originally an implementation from TLSharp (a C# library for the Telegram API),
+but since then, the project has evolved a lot on its own.
