@@ -10,16 +10,21 @@ from .utils import get_display_name
 cols, rows = shutil.get_terminal_size()
 
 
+def sprint(string, *args, **kwargs):
+    """Safe Print (handle UnicodeEncodeErrors on some terminals)"""
+    try:
+        print(string, *args, **kwargs)
+    except UnicodeEncodeError:
+        string = string.encode('utf-8', errors='ignore')\
+                       .decode('ascii', errors='ignore')
+        print(string, *args, **kwargs)
+
+
 def print_title(title):
     # Clear previous window
     print('\n')
     print('=={}=='.format('=' * len(title)))
-    try:
-        print('= {} ='.format(title))
-    except UnicodeEncodeError:
-        # Issue #70, some consoles lack support for certain characters
-        title_ascii = title.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-        print('= {} ='.format(title_ascii))
+    sprint('= {} ='.format(title))
     print('=={}=='.format('=' * len(title)))
 
 
@@ -88,13 +93,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # Display them so the user can choose
                 for i, entity in enumerate(entities):
                     i += 1  # 1-based index
-                    try:
-                        print('{}. {}'.format(i, get_display_name(entity)))
-                    except UnicodeEncodeError:
-                        # Issue #70, some consoles lack support for certain characters
-                        name = get_display_name(entity)
-                        name_ascii = name.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-                        print('{}. {}'.format(i, name_ascii))
+                    sprint('{}. {}'.format(i, get_display_name(entity)))
 
                 # Let the user decide who they want to talk to
                 print()
@@ -173,9 +172,9 @@ class InteractiveTelegramClient(TelegramClient):
                             content = msg.__class__.__name__
 
                         # And print it to the user
-                        print('[{}:{}] (ID={}) {}: {}'.format(
-                            msg.date.hour, msg.date.minute, msg.id, name,
-                            content))
+                        sprint('[{}:{}] (ID={}) {}: {}'.format(
+                               msg.date.hour, msg.date.minute, msg.id, name,
+                               content))
 
                 # Send photo
                 elif msg.startswith('!up '):
@@ -266,38 +265,17 @@ class InteractiveTelegramClient(TelegramClient):
     def update_handler(update_object):
         if type(update_object) is UpdateShortMessage:
             if update_object.out:
-                try:
-                    print('You sent {} to user #{}'.format(update_object.message,
-                                                           update_object.user_id))
-                except UnicodeEncodeError:
-                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-                    print('You sent {} to user #{}'.format(message_ascii,
-                                                           update_object.user_id))
+                sprint('You sent {} to user #{}'.format(
+                    update_object.message, update_object.user_id))
             else:
-                try:
-                    print('[User #{} sent {}]'.format(update_object.user_id,
-                                                      update_object.message))
-                except UnicodeEncodeError:
-                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-                    print('[User #{} sent {}]'.format(update_object.user_id,
-                                                      message_ascii))
+                sprint('[User #{} sent {}]'.format(
+                    update_object.user_id, update_object.message))
 
         elif type(update_object) is UpdateShortChatMessage:
             if update_object.out:
-                try:
-                    print('You sent {} to chat #{}'.format(update_object.message,
-                                                           update_object.chat_id))
-                except UnicodeEncodeError:
-                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-                    print('You sent {} to chat #{}'.format(message_ascii,
-                                                           update_object.chat_id))
+                sprint('You sent {} to chat #{}'.format(
+                    update_object.message, update_object.chat_id))
             else:
-                try:
-                    print('[Chat #{}, user #{} sent {}]'.format(
-                        update_object.chat_id, update_object.from_id,
-                        update_object.message))
-                except UnicodeEncodeError:
-                    message_ascii = update_object.message.encode('utf-8',errors='ignore').decode('ascii',errors='ignore')
-                    print('[Chat #{}, user #{} sent {}]'.format(
-                        update_object.chat_id, update_object.from_id,
-                        message_ascii))
+                sprint('[Chat #{}, user #{} sent {}]'.format(
+                       update_object.chat_id, update_object.from_id,
+                       update_object.message))
