@@ -51,7 +51,11 @@ class InteractiveTelegramClient(TelegramClient):
         self.found_media = set()
 
         print('Connecting to Telegram servers...')
-        self.connect()
+        if not self.connect():
+            print('Initial connection failed. Retrying...')
+            if not self.connect():
+                print('Could not connect to Telegram servers.')
+                return
 
         # Then, ensure we're authorized and have access
         if not self.is_user_authorized():

@@ -147,7 +147,8 @@ class TelegramClient:
                 self._setup_ping_thread()
 
             return True
-        except RPCError as error:
+        except (RPCError, ConnectionError) as error:
+            # Probably errors from the previous session, ignore them
             self._logger.warning('Could not stabilise initial connection: {}'
                                  .format(error))
             return False
@@ -163,7 +164,7 @@ class TelegramClient:
             self.transport = None
 
         # Also disconnect all the cached senders
-        for sender in self._cached_senders:
+        for sender in self._cached_senders.values():
             sender.disconnect()
 
         self._cached_senders.clear()
@@ -196,7 +197,7 @@ class TelegramClient:
         if not self.dc_options:
             raise ConnectionError(
                 'Cannot determine the required data center IP address. '
-                'Stabilise an initial connection first.')
+                'Stabilise a successful initial connection first.')
 
         return next(dc for dc in self.dc_options if dc.id == dc_id)
 
@@ -218,8 +219,8 @@ class TelegramClient:
 
         if sender and session:
             if init_connection:
-                # TODO reconnect
-                pass
+                sender.disconnect()
+                sender.connect()
 
             return sender
         else:
