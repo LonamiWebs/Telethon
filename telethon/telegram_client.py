@@ -214,6 +214,13 @@ class TelegramClient:
             self._reconnect_to_dc(error.new_dc)
             return self.invoke(request, timeout=timeout, throw_invalid_dc=True)
 
+        except ConnectionResetError:
+            self._logger.info('Server disconnected us. Reconnecting and '
+                              'resending request...')
+            self.reconnect()
+            self.invoke(request, timeout=timeout,
+                        throw_invalid_dc=throw_invalid_dc)
+
         except FloodWaitError:
             self.disconnect()
             raise
@@ -842,9 +849,12 @@ class TelegramClient:
                     for handler in self.update_handlers:
                         handler(result)
 
+                except ConnectionResetError:
+                    self._logger.info('Server disconnected us. Reconnecting...')
+                    self.reconnect()
+
                 except TimeoutError:
                     self._logger.debug('Receiving updates timed out')
-                    self.reconnect()
 
                 except ReadCancelledError:
                     self._logger.info('Receiving updates cancelled')
