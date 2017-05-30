@@ -11,39 +11,34 @@ from ..utils import BinaryWriter
 class TcpClient:
     def __init__(self, proxy=None):
         self.connected = False
-        self.proxy = proxy
+        self._proxy = proxy
         self._recreate_socket()
 
         # Support for multi-threading advantages and safety
         self.cancelled = Event()  # Has the read operation been cancelled?
         self.delay = 0.1  # Read delay when there was no data available
-        self.lock = Lock()
+        self._lock = Lock()
 
     def _recreate_socket(self):
-        self.socket = None
-        if self.proxy:
-            try:
-                import socks
-                self.socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-                self.socket.set_proxy(*self.proxy)
-            except (ImportError, SystemError):
-                print("Can't import PySocks, fallback to vanilla socket. "
-                      "Proxy settings are ignored. "
-                      "Try to install PySocks via pip")
+        self._socket = None
+        if self._proxy is not None:
+            import socks
+            self._socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.set_proxy(*self._proxy)
 
-        if not self.socket:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if not self._socket:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number"""
         if not self.connected:
-            self.socket.connect((ip, port))
+            self._socket.connect((ip, port))
             self.connected = True
 
     def close(self):
         """Closes the connection"""
         if self.connected:
-            self.socket.close()
+            self._socket.close()
             self.connected = False
             self._recreate_socket()
 
@@ -51,10 +46,10 @@ class TcpClient:
         """Writes (sends) the specified bytes to the connected peer"""
 
         # Ensure that only one thread can send data at once
-        with self.lock:
+        with self._lock:
             # Set blocking so it doesn't error
-            self.socket.setblocking(True)
-            self.socket.sendall(data)
+            self._socket.setblocking(True)
+            self._socket.sendall(data)
 
     def read(self, buffer_size, timeout=timedelta(seconds=5)):
         """Reads (receives) the specified bytes from the connected peer.
@@ -63,12 +58,12 @@ class TcpClient:
            for more, the timeout will NOT cancel the operation. Set to None for no timeout"""
 
         # Ensure that only one thread can receive data at once
-        with self.lock:
+        with self._lock:
             # Ensure it is not cancelled at first, so we can enter the loop
             self.cancelled.clear()
 
             # Set non-blocking so it can be cancelled
-            self.socket.setblocking(False)
+            self._socket.setblocking(False)
 
             # Set the starting time so we can calculate whether the timeout should fire
             if timeout:
@@ -85,7 +80,7 @@ class TcpClient:
                         # When receiving from the socket, we may not receive all the data at once
                         # This is why we need to keep checking to make sure that we receive it all
                         left_count = buffer_size - writer.written_count
-                        partial = self.socket.recv(left_count)
+                        partial = self._socket.recv(left_count)
                         if len(partial) == 0:
                             raise ConnectionResetError(
                                 'The server has closed the connection (recv() returned 0 bytes).')
