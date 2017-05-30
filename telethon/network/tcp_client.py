@@ -20,14 +20,12 @@ class TcpClient:
         self._lock = Lock()
 
     def _recreate_socket(self):
-        self._socket = None
-        if self._proxy is not None:
+        if self._proxy is None:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
             import socks
             self._socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.set_proxy(*self._proxy)
-
-        if not self._socket:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number"""
