@@ -142,7 +142,8 @@ class TelegramClient:
 
             return True
         except RPCError as error:
-            print('Could not stabilise initial connection: {}'.format(error))
+            self._logger.warning('Could not stabilise initial connection: {}'
+                                 .format(error))
             return False
 
     def _reconnect_to_dc(self, dc_id):
@@ -263,7 +264,6 @@ class TelegramClient:
 
             except RPCError as error:
                 if error.message.startswith('PHONE_CODE_'):
-                    print(error)
                     return False
                 else:
                     raise
@@ -681,7 +681,8 @@ class TelegramClient:
                     file_path = '{} - {}'.format(attr.performer, attr.title)
 
             if file_path is None:
-                print('Could not determine a filename for the document')
+                raise ValueError('Could not infer a file_path for the document'
+                                 '. Please provide a valid file_path manually')
 
         if add_extension:
             file_path += get_extension(message_media_document)

@@ -246,7 +246,7 @@ class MtProtoSender:
 
             return False
 
-        print('Unknown message: {}'.format(hex(code)))
+        self._logger.warning('Unknown message: {}'.format(hex(code)))
         return False
 
     # endregion
