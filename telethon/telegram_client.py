@@ -146,22 +146,6 @@ class TelegramClient:
                                  .format(error))
             return False
 
-    def _reconnect_to_dc(self, dc_id):
-        """Reconnects to the specified DC ID. This is automatically called after an InvalidDCError is raised"""
-        if self.dc_options is None or not self.dc_options:
-            raise ConnectionError(
-                "Can't reconnect. Stabilise an initial connection first.")
-
-        dc = next(dc for dc in self.dc_options if dc.id == dc_id)
-
-        self.transport.close()
-        self.transport = None
-        self.session.server_address = dc.ip_address
-        self.session.port = dc.port
-        self.session.save()
-
-        self.connect(reconnect=True)
-
     def disconnect(self):
         """Disconnects from the Telegram server and stops all the spawned threads"""
         self._set_updates_thread(running=False)
@@ -176,6 +160,32 @@ class TelegramClient:
         """Disconnects and connects again (effectively reconnecting)"""
         self.disconnect()
         self.connect()
+
+    # endregion
+
+    # region Working with different Data Centers
+
+    def _reconnect_to_dc(self, dc_id):
+        """Reconnects to the specified DC ID. This is automatically
+           called after an InvalidDCError is raised"""
+        dc = self._get_dc(dc_id)
+
+        self.transport.close()
+        self.transport = None
+        self.session.server_address = dc.ip_address
+        self.session.port = dc.port
+        self.session.save()
+
+        self.connect(reconnect=True)
+
+    def _get_dc(self, dc_id):
+        """Gets the Data Center (DC) associated to 'dc_id'"""
+        if not self.dc_options:
+            raise ConnectionError(
+                'Cannot determine the required data center IP address. '
+                'Stabilise an initial connection first.')
+
+        return next(dc for dc in self.dc_options if dc.id == dc_id)
 
     # endregion
 
