@@ -1,5 +1,6 @@
 import os
 import time
+from hashlib import sha1
 
 from .. import helpers as utils
 from ..crypto import AES, RSA, AuthKey, Factorization
@@ -162,11 +163,13 @@ def do_authentication(transport):
 
         with BinaryWriter() as client_dh_inner_data_with_hash_writer:
             client_dh_inner_data_with_hash_writer.write(
-                utils.sha1(client_dh_inner_data_writer.get_bytes()))
+                sha1(client_dh_inner_data_writer.get_bytes()).digest())
+
             client_dh_inner_data_with_hash_writer.write(
                 client_dh_inner_data_writer.get_bytes())
-            client_dh_inner_data_bytes = client_dh_inner_data_with_hash_writer.get_bytes(
-            )
+
+            client_dh_inner_data_bytes = \
+                client_dh_inner_data_with_hash_writer.get_bytes()
 
     # Encryption
     client_dh_inner_data_encrypted_bytes = AES.encrypt_ige(

@@ -1,4 +1,4 @@
-import hashlib
+from hashlib import sha1, sha256
 import os
 
 # region Multiple utilities
@@ -24,11 +24,12 @@ def calc_key(shared_key, msg_key, client):
     """Calculate the key based on Telegram guidelines, specifying whether it's the client or not"""
     x = 0 if client else 8
 
-    sha1a = sha1(msg_key + shared_key[x:x + 32])
-    sha1b = sha1(shared_key[x + 32:x + 48] + msg_key + shared_key[x + 48:x +
-                                                                  64])
-    sha1c = sha1(shared_key[x + 64:x + 96] + msg_key)
-    sha1d = sha1(msg_key + shared_key[x + 96:x + 128])
+    sha1a = sha1(msg_key + shared_key[x:x + 32]).digest()
+    sha1b = sha1(shared_key[x + 32:x + 48] + msg_key +
+                 shared_key[x + 48:x + 64]).digest()
+
+    sha1c = sha1(shared_key[x + 64:x + 96] + msg_key).digest()
+    sha1d = sha1(msg_key + shared_key[x + 96:x + 128]).digest()
 
     key = sha1a[0:8] + sha1b[8:20] + sha1c[4:16]
     iv = sha1a[8:20] + sha1b[0:8] + sha1c[16:20] + sha1d[0:8]
@@ -38,32 +39,18 @@ def calc_key(shared_key, msg_key, client):
 
 def calc_msg_key(data):
     """Calculates the message key from the given data"""
-    return sha1(data)[4:20]
+    return sha1(data).digest()[4:20]
 
 
 def generate_key_data_from_nonce(server_nonce, new_nonce):
     """Generates the key data corresponding to the given nonce"""
-    hash1 = sha1(bytes(new_nonce + server_nonce))
-    hash2 = sha1(bytes(server_nonce + new_nonce))
-    hash3 = sha1(bytes(new_nonce + new_nonce))
+    hash1 = sha1(bytes(new_nonce + server_nonce)).digest()
+    hash2 = sha1(bytes(server_nonce + new_nonce)).digest()
+    hash3 = sha1(bytes(new_nonce + new_nonce)).digest()
 
     key = hash1 + hash2[:12]
     iv = hash2[12:20] + hash3 + new_nonce[:4]
     return key, iv
-
-
-def sha1(data):
-    """Calculates the SHA1 digest for the given data"""
-    sha = hashlib.sha1()
-    sha.update(data)
-    return sha.digest()
-
-
-def sha256(data):
-    """Calculates the SHA256 digest for the given data"""
-    sha = hashlib.sha256()
-    sha.update(data)
-    return sha.digest()
 
 
 def get_password_hash(pw, current_salt):
@@ -76,6 +63,6 @@ def get_password_hash(pw, current_salt):
     data = pw.encode('utf-8')
 
     pw_hash = current_salt + data + current_salt
-    return sha256(pw_hash)
+    return sha256(pw_hash).digest()
 
 # endregion

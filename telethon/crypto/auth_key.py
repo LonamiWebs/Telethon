@@ -1,3 +1,5 @@
+from hashlib import sha1
+
 from .. import helpers as utils
 from ..utils import BinaryReader, BinaryWriter
 
@@ -6,7 +8,7 @@ class AuthKey:
     def __init__(self, data):
         self.key = data
 
-        with BinaryReader(utils.sha1(self.key)) as reader:
+        with BinaryReader(sha1(self.key).digest()) as reader:
             self.aux_hash = reader.read_long(signed=False)
             reader.read(4)
             self.key_id = reader.read_long(signed=False)

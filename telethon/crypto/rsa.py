@@ -1,6 +1,6 @@
 import os
+from hashlib import sha1
 
-from .. import helpers as utils
 from ..utils import BinaryWriter
 
 
@@ -19,7 +19,7 @@ class RSAServerKey:
 
         with BinaryWriter() as writer:
             # Write SHA
-            writer.write(utils.sha1(data[offset:offset + length]))
+            writer.write(sha1(data[offset:offset + length]).digest())
             # Write data
             writer.write(data[offset:offset + length])
             # Add padding if required

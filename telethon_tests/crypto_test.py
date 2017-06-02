@@ -1,4 +1,5 @@
 import unittest
+from hashlib import sha1
 
 import telethon.helpers as utils
 from telethon.crypto import AES, Factorization
@@ -23,7 +24,7 @@ class CryptoTests(unittest.TestCase):
     def test_sha1():
         string = 'Example string'
 
-        hash_sum = utils.sha1(string.encode('utf-8'))
+        hash_sum = sha1(string.encode('utf-8')).digest()
         expected = b'\nT\x92|\x8d\x06:)\x99\x04\x8e\xf8j?\xc4\x8e\xd3}m9'
 
         assert hash_sum == expected, 'Invalid sha1 hash_sum representation (should be {}, but is {})'\
