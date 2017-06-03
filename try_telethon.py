@@ -25,10 +25,10 @@ if __name__ == '__main__':
     # Load the settings and initialize the client
     settings = load_settings()
     client = InteractiveTelegramClient(
-        session_user_id=settings.get('session_name', 'anonymous'),
+        session_user_id=str(settings.get('session_name', 'anonymous')),
         user_phone=str(settings['user_phone']),
         api_id=settings['api_id'],
-        api_hash=settings['api_hash'])
+        api_hash=str(settings['api_hash']))
 
     print('Initialization done!')
 
