@@ -106,10 +106,20 @@ class TelegramClient:
 
     # region Connecting
 
-    def connect(self, reconnect=False):
-        """Connects to the Telegram servers, executing authentication if required.
-           Note that authenticating to the Telegram servers is not the same as authenticating
-           the app, which requires to send a code first."""
+    def connect(self, reconnect=False,
+                device_model=None, system_version=None,
+                app_version=None, lang_code=None):
+        """Connects to the Telegram servers, executing authentication if
+           required. Note that authenticating to the Telegram servers is
+           not the same as authenticating the desired user itself, which
+           may require a call (or several) to 'sign_in' for the first time.
+
+           Default values for the optional parameters if left as None are:
+             device_model   = platform.node()
+             system_version = platform.system()
+             app_version    = TelegramClient.__version__
+             lang_code      = 'en'
+        """
         if self.transport is None:
             self.transport = TcpTransport(self.session.server_address,
                                           self.session.port, proxy=self.proxy)
@@ -124,14 +134,24 @@ class TelegramClient:
             self.sender = MtProtoSender(self.transport, self.session)
             self.sender.connect()
 
+            # Set the default parameters if left unspecified
+            if not device_model:
+                device_model = platform.node()
+            if not system_version:
+                system_version = platform.system()
+            if not app_version:
+                app_version = self.__version__
+            if not lang_code:
+                lang_code = 'en'
+
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
             query = InitConnectionRequest(
                 api_id=self.api_id,
-                device_model=platform.node(),
-                system_version=platform.system(),
-                app_version=self.__version__,
-                lang_code='en',
+                device_model=device_model,
+                system_version=system_version,
+                app_version=app_version,
+                lang_code=lang_code,
                 query=GetConfigRequest())
 
             result = self.invoke(
