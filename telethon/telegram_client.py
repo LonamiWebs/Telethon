@@ -46,7 +46,7 @@ from .utils import (find_user_or_chat, get_input_peer,
 class TelegramClient:
 
     # Current TelegramClient version
-    __version__ = '0.9.1'
+    __version__ = '0.10'
 
     # region Initialization
 
@@ -228,7 +228,7 @@ class TelegramClient:
            current authorization is exported to the new DC so that
            it can be used there, and the connection is initialized.
 
-           If after using the sender a ConnectionResetError is rose,
+           If after using the sender a ConnectionResetError is raised,
            this method should be called again with init_connection=True
            in order to perform the reconnection."""
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
@@ -350,8 +350,8 @@ class TelegramClient:
         """Invokes the given request on a different DC
            by making use of the exported MtProtoSenders.
 
-           If 'reconnect=True', then the a reconnection will be performed
-           and ConnectionResetError will be rose if it occurs a second time.
+           If 'reconnect=True', then the a reconnection will be performed and
+           ConnectionResetError will be raised if it occurs a second time.
         """
         try:
             sender = self._get_exported_sender(

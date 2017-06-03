@@ -45,7 +45,7 @@ def get_extension(media):
 
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
-       A ValueError is rose if the given entity isn't a supported type."""
+       A ValueError is raised if the given entity isn't a supported type."""
     if (isinstance(entity, InputPeerUser) or
         isinstance(entity, InputPeerChat) or
             isinstance(entity, InputPeerChannel)):

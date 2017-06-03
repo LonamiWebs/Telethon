@@ -10,7 +10,9 @@ from ..utils import BinaryReader, BinaryWriter
 
 def do_authentication(transport):
     """Executes the authentication process with the Telegram servers.
-    If no error is rose, returns both the authorization key and the time offset"""
+       If no error is raised, returns both the authorization key and the
+       time offset.
+    """
     sender = MtProtoPlainSender(transport)
     sender.connect()
 
