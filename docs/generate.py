@@ -218,6 +218,9 @@ def generate_documentation(scheme_file):
         else:
             dictionary[tlobject.result] = [tlobject]
 
+    for tltype, constructors in tltypes.items():
+        tltypes[tltype] = list(sorted(constructors, key=lambda c: c.name))
+
     for tlobject in tlobjects:
         filename = get_create_path_for(tlobject)
 
