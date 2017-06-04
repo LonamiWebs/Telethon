@@ -14,31 +14,44 @@ from .errors import (RPCError, InvalidDCError, FloodWaitError,
 
 from .network import authenticator, MtProtoSender, TcpTransport
 from .parser.markdown_parser import parse_message_entities
+
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest,
                            PingRequest)
 
-# The following is required to get the password salt
+# Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
+
+# Logging in and out
 from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SendCodeRequest, SignInRequest,
                                 SignUpRequest, ImportBotAuthorizationRequest)
+
+# Initial request
 from .tl.functions.help import GetConfigRequest
+
+# Easier access to common methods
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest)
-# The Requests and types that we'll be using
+
+# For .get_me() and ensuring we're authorized
+from telethon.tl.functions.users import GetUsersRequest
+
+# Easier access for working with media, too
 from .tl.functions.upload import (
     GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
+
 # All the types we need to work with
 from .tl.types import (
     ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
     InputDocumentFileLocation, InputFile, InputFileBig, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
-    UserProfilePhotoEmpty)
+    UserProfilePhotoEmpty, InputUserSelf)
+
 from .utils import (find_user_or_chat, get_input_peer,
                     get_appropriated_part_size, get_extension)
 
@@ -371,11 +384,9 @@ class TelegramClient:
     # region Authorization requests
 
     def is_user_authorized(self):
-        """Has the user been authorized yet (code request sent and confirmed)?
-           Note that this will NOT yield the correct result if the session was revoked by another client!"""
-        if self.session and self.session.user is not None:
-            return True
-        return False
+        """Has the user been authorized yet
+           (code request sent and confirmed)?"""
+        return self.session and self.get_me() is not None
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
@@ -421,10 +432,8 @@ class TelegramClient:
                 'You must provide a phone_number and a code for the first time, '
                 'and a password only if an RPCError was raised before.')
 
-        # Result is an Auth.Authorization TLObject
-        self.session.user = result.user
-        self.session.save()
-
+        # Ignore 'result.user', we don't need it
+        #
         # If we want the connection to stay alive for a long time, we need
         # to start the pings thread once we're already authorized and not
         # before to avoid the updates thread trying to read anything while
@@ -462,6 +471,17 @@ class TelegramClient:
             # Something happened when logging out, restore the state back
             self.sender.logging_out = False
             return False
+
+    def get_me(self):
+        """Gets "me" (the self user) which is currently authenticated,
+           or None if the request fails (hence, not authenticated)."""
+        try:
+            return self.invoke(GetUsersRequest([InputUserSelf()]))[0]
+        except RPCError as e:
+            if e.code == 401:  # 401 UNAUTHORIZED
+                return None
+            else:
+                raise
 
     @staticmethod
     def list_sessions():

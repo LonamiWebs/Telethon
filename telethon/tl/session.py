@@ -18,6 +18,7 @@ class Session:
         self.salt = 0  # Unsigned long
         self.time_offset = 0
         self.last_message_id = 0  # Long
+        # TODO Remove this now unused members, left so unpickling is happy
         self.user = None
 
     def save(self):
