@@ -122,6 +122,36 @@ span.sh4 {
     font-style: italic;
 }
 
+button {
+    border-radius: 2px;
+    font-size: 16px;
+    padding: 8px;
+    color: #000;
+    background-color: #fff;
+    border: 2px solid #42aaed;
+    transition-duration: 300ms;
+}
+
+button:hover {
+    background-color: #42aaed;
+    color: #fff;
+}
+
+/* https://stackoverflow.com/a/30810322 */
+.invisible {
+    left: 0;
+    top: -99px;
+    padding: 0;
+    width: 2em;
+    height: 2em;
+    border: none;
+    outline: none;
+    position: fixed;
+    box-shadow: none;
+    color: transparent;
+    background: transparent;
+}
+
 @media (max-width: 640px) {
     h1 {
         font-size: 18px;

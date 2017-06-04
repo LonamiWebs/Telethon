@@ -24,6 +24,7 @@ class DocsWriter:
         self.menu_began = False
         self.table_columns = 0
         self.table_columns_left = None
+        self.write_copy_script = False
 
     # High level writing
     def write_head(self, title, relative_css_path):
@@ -232,8 +233,27 @@ class DocsWriter:
         self.write(text)
         self.write('</p>')
 
+    def write_copy_button(self, text, text_to_copy):
+        """Writes a button with 'text' which can be used
+           to copy 'text_to_copy' to clipboard when it's clicked."""
+        self.write_copy_script = True
+        self.write('<button onclick="cp(\'{}\');">{}</button>'
+                   .format(text_to_copy, text))
+
     def end_body(self):
         """Ends the whole document. This should be called the last"""
+        if self.write_copy_script:
+            self.write(
+                '<textarea id="c" class="invisible"></textarea>'
+                '<script>'
+                'function cp(t){'
+                'var c=document.getElementById("c");'
+                'c.value=t;'
+                'c.select();'
+                'try{document.execCommand("copy")}'
+                'catch(e){}}'
+                '</script>')
+
         self.write('</div></body></html>')
 
     # "Low" level writing

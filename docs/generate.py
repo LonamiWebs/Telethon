@@ -49,6 +49,15 @@ def get_file_name(tlobject, add_extension=False):
         return result
 
 
+# TLObject -> from ... import ...
+def get_import_code(tlobject):
+    kind = 'functions' if tlobject.is_function else 'types'
+    ns = '.' + tlobject.namespace if tlobject.namespace else ''
+
+    return 'from telethon.tl.{}{} import {}'\
+        .format(kind, ns, get_class_name(tlobject))
+
+
 def get_create_path_for(tlobject):
     """Gets the file path (and creates the parent directories)
        for the given 'tlobject', relative to nothing; only its local path"""
@@ -229,6 +238,8 @@ def generate_documentation(scheme_file):
 
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
+            docs.write_copy_button('Copy import to the clipboard',
+                                   get_import_code(tlobject))
 
             # Write the return type (or constructors belonging to the same type)
             docs.write_title('Returns' if tlobject.is_function
