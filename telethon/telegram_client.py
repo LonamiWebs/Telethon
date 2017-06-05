@@ -21,6 +21,10 @@ from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest,
                            PingRequest)
 
+# Required to work with different data centers
+from .tl.functions.auth import (ExportAuthorizationRequest,
+                                ImportAuthorizationRequest)
+
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
 
@@ -38,7 +42,7 @@ from .tl.functions.messages import (
     SendMessageRequest)
 
 # For .get_me() and ensuring we're authorized
-from telethon.tl.functions.users import GetUsersRequest
+from .tl.functions.users import GetUsersRequest
 
 # Easier access for working with media, too
 from .tl.functions.upload import (
@@ -257,9 +261,6 @@ class TelegramClient:
 
             return sender
         else:
-            from telethon.tl.functions.auth import \
-                ExportAuthorizationRequest, ImportAuthorizationRequest
-
             dc = self._get_dc(dc_id)
 
             # Step 1. Export the current authorization to the new DC.
