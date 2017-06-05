@@ -234,8 +234,8 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
   ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
   ...     proxy=(socks.SOCKS5, 'localhost', 4444))
 
-The ``proxy=`` parameter should be a tuple consisting of
-``(type, 'ip address', port)``, as described `here <https://github.com/Anorov/PySocks#sockssocksocket>`_.
+The ``proxy=`` argument should be a tuple, a list or a dict, consisting of parameters described
+`here <https://github.com/Anorov/PySocks#usage-1>`_.
 
 Disclaimer
 ==========
