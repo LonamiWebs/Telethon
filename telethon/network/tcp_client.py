@@ -25,7 +25,10 @@ class TcpClient:
         else:
             import socks
             self._socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.set_proxy(*self._proxy)
+            if type(self._proxy) is dict:
+                self._socket.set_proxy(**self._proxy)
+            else:  # tuple, list, etc.
+                self._socket.set_proxy(*self._proxy)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number"""
