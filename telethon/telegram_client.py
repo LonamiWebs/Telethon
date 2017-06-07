@@ -97,14 +97,14 @@ class TelegramClient:
         self.transport = None
         self.proxy = proxy  # Will be used when a TcpTransport is created
 
+        self.login_success = False
+
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
         self._logger = logging.getLogger(__name__)
 
         # Methods to be called when an update is received
-        self.update_handlers = []
-        self.ping_interval = 60
-        self._ping_time_last = time()
+        self._update_handlers = []
         self._updates_thread_running = Event()
         self._updates_thread_receiving = Event()
 
@@ -180,10 +180,7 @@ class TelegramClient:
             # although many other options are available!
             self.dc_options = result.dc_options
 
-            # Once we know we're authorized, we can setup the ping thread
-            if self.is_user_authorized():
-                self._setup_ping_thread()
-
+            self.login_success = True
             return True
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
@@ -329,7 +326,7 @@ class TelegramClient:
             self.sender.send(request)
             self.sender.receive(request, timeout, updates=updates)
             for update in updates:
-                for handler in self.update_handlers:
+                for handler in self._update_handlers:
                     handler(update)
 
             return request.result
@@ -435,13 +432,7 @@ class TelegramClient:
                 'and a password only if an RPCError was raised before.')
 
         # Ignore 'result.user', we don't need it
-        #
-        # If we want the connection to stay alive for a long time, we need
-        # to start the pings thread once we're already authorized and not
-        # before to avoid the updates thread trying to read anything while
-        # we haven't yet connected.
-        self._setup_ping_thread()
-
+        self.login_success = True
         return True
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
@@ -937,39 +928,37 @@ class TelegramClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.sender:
-            raise RuntimeError(
-                "You should connect at least once to add update handlers.")
+        if not self.sender or not self.login_success:
+            raise RuntimeError("You can't add update handlers until you've "
+                               "successfully logged in.")
 
-        # TODO Eventually remove these methods, the user
-        # can access self.update_handlers manually
-        self.update_handlers.append(handler)
+        first_handler = not self._update_handlers
+        self._update_handlers.append(handler)
+        if first_handler:
+            self._set_updates_thread(running=True)
 
     def remove_update_handler(self, handler):
-        self.update_handlers.remove(handler)
+        self._update_handlers.remove(handler)
+        if not self._update_handlers:
+            self._set_updates_thread(running=False)
 
     def list_update_handlers(self):
-        return self.update_handlers[:]
-
-    def _setup_ping_thread(self):
-        """Sets up the Ping's thread, so that a connection can be kept
-            alive for a longer time without Telegram disconnecting us"""
-        self._updates_thread = Thread(
-            name='UpdatesThread', daemon=True,
-            target=self._updates_thread_method)
-
-        self._set_updates_thread(running=True)
+        return self._update_handlers[:]
 
     def _set_updates_thread(self, running):
         """Sets the updates thread status (running or not)"""
-        if not self._updates_thread or \
-                running == self._updates_thread_running.is_set():
+        if running == self._updates_thread_running.is_set():
             return
 
         # Different state, update the saved value and behave as required
         self._logger.info('Changing updates thread running status to %s', running)
         if running:
             self._updates_thread_running.set()
+            if not self._updates_thread:
+                self._updates_thread = Thread(
+                    name='UpdatesThread', daemon=True,
+                    target=self._updates_thread_method)
+
             self._updates_thread.start()
         else:
             self._updates_thread_running.clear()
@@ -986,29 +975,16 @@ class TelegramClient:
             # Always sleep a bit before each iteration to relax the CPU,
             # since it's possible to early 'continue' the loop to reach
             # the next iteration, but we still should to sleep.
-            # Longer sleep if we're not expecting updates (only pings)
-            sleep(0.1 if self.update_handlers else 1)
+            sleep(0.1)
 
             with self._lock:
                 self._logger.debug('Updates thread acquired the lock')
                 try:
-                    now = time()
-                    # If ping_interval seconds passed since last ping, send a new one
-                    if now >= self._ping_time_last + self.ping_interval:
-                        self._ping_time_last = now
-                        self.invoke(PingRequest(utils.generate_random_long()))
-                        self._logger.debug('Ping sent from the updates thread')
-
-                    # Exit the loop if we're not expecting to receive any updates
-                    if not self.update_handlers:
-                        self._logger.debug('No updates handlers found, continuing')
-                        continue
-
                     self._updates_thread_receiving.set()
                     self._logger.debug('Trying to receive updates from the updates thread')
                     result = self.sender.receive_update(timeout=timeout)
                     self._logger.info('Received update from the updates thread')
-                    for handler in self.update_handlers:
+                    for handler in self._update_handlers:
                         handler(result)
 
                 except ConnectionResetError:
@@ -1034,5 +1010,8 @@ class TelegramClient:
 
             self._logger.debug('Updates thread released the lock')
             self._updates_thread_receiving.clear()
+
+        # Thread is over, so clean unset its variable
+        self._updates_thread = None
 
     # endregion
