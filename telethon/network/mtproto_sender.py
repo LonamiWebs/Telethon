@@ -39,16 +39,6 @@ class MtProtoSender:
         """Disconnects from the server"""
         self._transport.close()
 
-    def _generate_sequence(self, confirmed):
-        """Generates the next sequence number, based on whether it
-           was confirmed yet or not"""
-        if confirmed:
-            result = self.session.sequence * 2 + 1
-            self.session.sequence += 1
-            return result
-        else:
-            return self.session.sequence * 2
-
     # region Send and receive
 
     def send(self, request):
@@ -142,7 +132,9 @@ class MtProtoSender:
             plain_writer.write_long(self.session.salt, signed=False)
             plain_writer.write_long(self.session.id, signed=False)
             plain_writer.write_long(request.msg_id)
-            plain_writer.write_int(self._generate_sequence(request.confirmed))
+            plain_writer.write_int(
+                self.session.generate_sequence(request.confirmed))
+
             plain_writer.write_int(len(packet))
             plain_writer.write(packet)
 
