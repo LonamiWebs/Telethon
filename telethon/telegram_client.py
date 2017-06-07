@@ -16,7 +16,7 @@ from .network import authenticator, MtProtoSender, TcpTransport
 from .parser.markdown_parser import parse_message_entities
 
 # For sending and receiving requests
-from .tl import MTProtoRequest, Session
+from .tl import MTProtoRequest, Session, JsonSession
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest,
                            PingRequest)
@@ -85,8 +85,9 @@ class TelegramClient:
         self.api_hash = api_hash
 
         # Determine what session object we have
+        # TODO JsonSession until migration is complete (by v1.0)
         if isinstance(session, str) or session is None:
-            self.session = Session.try_load_or_create_new(session)
+            self.session = JsonSession.try_load_or_create_new(session)
         elif isinstance(session, Session):
             self.session = session
         else:

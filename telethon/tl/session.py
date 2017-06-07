@@ -1,7 +1,9 @@
+import json
 import os
 import pickle
 import random
 import time
+from base64 import b64encode, b64decode
 from os.path import isfile as file_exists
 
 from .. import helpers as utils
@@ -53,6 +55,118 @@ class Session:
     def get_new_msg_id(self):
         """Generates a new message ID based on the current time (in ms) since epoch"""
         # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
+        ms_time = int(time.time() * 1000)
+        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
+                      |  # "must approximately equal unix time*2^32"
+                      ((ms_time % 1000) << 22)
+                      |  # "approximate moment in time the message was created"
+                      random.randint(0, 524288)
+                      << 2)  # "message identifiers are divisible by 4"
+
+        if self.last_message_id >= new_msg_id:
+            new_msg_id = self.last_message_id + 4
+
+        self.last_message_id = new_msg_id
+        return new_msg_id
+
+    def update_time_offset(self, correct_msg_id):
+        """Updates the time offset based on a known correct message ID"""
+        now = int(time.time())
+        correct = correct_msg_id >> 32
+        self.time_offset = correct - now
+
+
+# Until migration is complete, we need the original 'Session' class
+# for Pickle to keep working. TODO Replace 'Session' by 'JsonSession' by v1.0
+class JsonSession:
+    """This session contains the required information to login into your
+       Telegram account. NEVER give the saved JSON file to anyone, since
+       they would gain instant access to all your messages and contacts.
+
+       If you think the session has been compromised, close all the sessions
+       through an official Telegram client to revoke the authorization.
+    """
+    def __init__(self, session_user_id):
+        self.session_user_id = session_user_id
+        self.server_address = '91.108.56.165'
+        self.port = 443
+        self.auth_key = None
+        self.id = utils.generate_random_long(signed=False)
+        self.sequence = 0
+        self.salt = 0  # Unsigned long
+        self.time_offset = 0
+        self.last_message_id = 0  # Long
+
+    def save(self):
+        """Saves the current session object as session_user_id.session"""
+        if self.session_user_id:
+            with open('{}.session'.format(self.session_user_id), 'w') as file:
+                json.dump({
+                    'id': self.id,
+                    'port': self.port,
+                    'salt': self.salt,
+                    'sequence': self.sequence,
+                    'time_offset': self.time_offset,
+                    'server_address': self.server_address,
+                    'auth_key_data':
+                        b64encode(self.auth_key.key).decode('ascii')
+                }, file)
+
+    def delete(self):
+        """Deletes the current session file"""
+        try:
+            os.remove('{}.session'.format(self.session_user_id))
+            return True
+        except OSError:
+            return False
+
+    @staticmethod
+    def try_load_or_create_new(session_user_id):
+        """Loads a saved session_user_id.session or creates a new one.
+           If session_user_id=None, later .save()'s will have no effect.
+        """
+        if session_user_id is None:
+            return JsonSession(None)
+        else:
+            path = '{}.session'.format(session_user_id)
+            result = JsonSession(session_user_id)
+            if not file_exists(path):
+                return result
+
+            try:
+                with open(path, 'r') as file:
+                    data = json.load(file)
+                    result.id = data['id']
+                    result.port = data['port']
+                    result.salt = data['salt']
+                    result.sequence = data['sequence']
+                    result.time_offset = data['time_offset']
+                    result.server_address = data['server_address']
+
+                    # FIXME We need to import the AuthKey here or otherwise
+                    # we get cyclic dependencies.
+                    from ..crypto import AuthKey
+                    key = b64decode(data['auth_key_data'])
+                    result.auth_key = AuthKey(data=key)
+
+            except (json.decoder.JSONDecodeError, UnicodeDecodeError):
+                # TODO Backwards-compatibility code
+                old = Session.try_load_or_create_new(session_user_id)
+                result.id = old.id
+                result.port = old.port
+                result.salt = old.salt
+                result.sequence = old.sequence
+                result.time_offset = old.time_offset
+                result.server_address = old.server_address
+                result.auth_key = old.auth_key
+                result.save()
+
+            return result
+
+    def get_new_msg_id(self):
+        """Generates a new unique message ID based on the current
+           time (in ms) since epoch"""
+        # Refer to mtproto_plain_sender.py for the original method,
         ms_time = int(time.time() * 1000)
         new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
                       |  # "must approximately equal unix time*2^32"
