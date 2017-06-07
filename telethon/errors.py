@@ -111,6 +111,9 @@ class RPCError(Exception):
         'PHONE_CODE_EMPTY': 'The phone code is missing.',
         'PHONE_CODE_INVALID': 'The phone code entered was invalid.',
         'PHONE_CODE_EXPIRED': 'The confirmation code has expired.',
+        'PHONE_NUMBER_BANNED':
+        'The used phone number has been banned from Telegram and cannot '
+        'be used anymore. Possibly check https://www.telegram.org/faq_spam.',
         'API_ID_INVALID': 'The api_id/api_hash combination is invalid.',
         'PHONE_NUMBER_OCCUPIED': 'The phone number is already in use.',
         'PHONE_NUMBER_UNOCCUPIED': 'The phone number is not yet being used.',
@@ -143,6 +146,8 @@ class RPCError(Exception):
         'USERNAME_INVALID':
         'Unacceptable username. Must match r"[a-zA-Z][\w\d]{4,32}"',
         'USERNAME_OCCUPIED': 'The username is already taken.',
+        'USERNAME_NOT_OCCUPIED':
+        'See issue #96 for Telethon - try upgrading the library.',
         'USERNAME_NOT_MODIFIED':
         'The username is not different from the current username',
         'USER_ID_INVALID':
@@ -156,6 +161,9 @@ class RPCError(Exception):
         'The very first request must always be InvokeWithLayerRequest.',
         'INPUT_METHOD_INVALID':
         'The invoked method does not exist anymore or has never existed.',
+        'DC_ID_INVALID':
+        'This occurs when an authorization is tried to be exported for '
+        'the same data center one is currently connected to.',
 
         # 401 UNAUTHORIZED
         'AUTH_KEY_UNREGISTERED': 'The key is not registered in the system.',
@@ -186,6 +194,9 @@ class RPCError(Exception):
         for key, error_msg in RPCError.ErrorMessages.items():
             match = re.match(key, message)
             if match:
+                error_msg = '{} ({}): {}'.format(
+                    self.message, self.code, error_msg)
+
                 # Get additional_data, if any
                 if match.groups():
                     self.additional_data = int(match.group(1))
