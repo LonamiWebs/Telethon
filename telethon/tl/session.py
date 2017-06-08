@@ -123,7 +123,8 @@ class JsonSession:
                     'time_offset': self.time_offset,
                     'server_address': self.server_address,
                     'auth_key_data':
-                        b64encode(self.auth_key.key).decode('ascii')
+                        b64encode(self.auth_key.key).decode('ascii')\
+                            if self.auth_key else None
                 }, file)
 
     def delete(self):
@@ -160,8 +161,9 @@ class JsonSession:
                     # FIXME We need to import the AuthKey here or otherwise
                     # we get cyclic dependencies.
                     from ..crypto import AuthKey
-                    key = b64decode(data['auth_key_data'])
-                    result.auth_key = AuthKey(data=key)
+                    if data['auth_key_data'] is not None:
+                        key = b64decode(data['auth_key_data'])
+                        result.auth_key = AuthKey(data=key)
 
             except (json.decoder.JSONDecodeError, UnicodeDecodeError):
                 # TODO Backwards-compatibility code
