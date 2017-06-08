@@ -80,25 +80,28 @@ If you've installed Telethon via pip, launch an interactive python3 session and 
 
 .. code:: python
 
-  >>> from telethon import InteractiveTelegramClient
+  >>> from telethon import TelegramClient
+  >>> api_id = 12345
+  >>> api_hash = '0123456789abcdef0123456789abcdef'
   >>> # 'session_id' can be 'your_name'. It'll be saved as your_name.session
-  >>> # Also (obviously) replace the api_id and api_hash with your values
+  ... client = TelegramClient('session_id', api_id, api_hash)
+  >>> client.connect()
+  True
+  >>>
+  >>> if not client.is_user_authorized():
+  >>>   client.send_code_request('+34600000000')
+  >>>   client.sign_in('+34600000000', input('Enter code: '))
   ...
-  >>> client = InteractiveTelegramClient('session_id', '+34600000000',
-  ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef')
-
-  ==================
-  = Initialization =
-  ==================
-  Initializing interactive example...
-  Connecting to Telegram servers...
-  >>> client.run()
+  >>> # Now you can use the connected client as you wish
+  >>> dialogs, entities = client.get_dialogs(10)
+  >>> print('\n'.join('{}. {}'.format(i, str(e))
+  ...                 for i, e in enumerate(entities)))
 
 If, on the other hand, you've installed Telethon manually, head to the ``api/`` directory and create a
 copy of the ``settings_example`` file, naming it ``settings`` (lowercase!). Then fill the file with the
 corresponding values (your ``api_id``, ``api_hash`` and phone number in international format).
 
-Then, simply run ``python3 try_telethon.py`` to start the interactive example.
+Then, simply run ``./try_telethon.py`` to start the interactive example.
 
 .. _Using Telethon:
 
@@ -106,9 +109,9 @@ Using Telethon
 ==============
 If you really want to learn how to use Telethon, it is **highly advised** that
 you take a look to the
-`InteractiveTelegramClient <telethon/interactive_telegram_client.py>`_ file
-and check how it works. This file contains everything you'll need to build
-your own application, since it shows, among other things:
+`InteractiveTelegramClient <telethon_examples/interactive_telegram_client.py>`_
+file and check how it works. This file contains everything you'll need to
+build your own application, since it shows, among other things:
 
 1. Authorizing the user for the first time.
 2. Support to enter the 2-steps-verification code.
@@ -121,6 +124,8 @@ If you want a nicer way to see all the available requests and types at your
 disposal, please check the
 `official Telethon documentation <https://lonamiwebs.github.io/Telethon>`_.
 There you'll find a list of all the methods, types and available constructors.
+
+More examples are also available under the ``telethon_examples/`` folder.
 
 Common errors
 -------------
@@ -228,9 +233,9 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
 
 .. code:: python
 
-  >>> from telethon import InteractiveTelegramClient
+  >>> from telethon import TelegramClient
   >>> import socks
-  >>> client = InteractiveTelegramClient('session_id', '+34600000000',
+  >>> client = TelegramClient('session_id',
   ...     api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
   ...     proxy=(socks.SOCKS5, 'localhost', 4444))
 

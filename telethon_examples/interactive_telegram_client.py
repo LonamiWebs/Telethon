@@ -1,10 +1,10 @@
 import shutil
 from getpass import getpass
 
-from . import TelegramClient
-from .errors import RPCError
-from .tl.types import UpdateShortChatMessage, UpdateShortMessage
-from .utils import get_display_name
+from telethon import TelegramClient
+from telethon.errors import RPCError
+from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
+from telethon.utils import get_display_name
 
 # Get the (current) number of lines in the terminal
 cols, rows = shutil.get_terminal_size()
@@ -40,6 +40,13 @@ def bytes_to_string(byte_count):
 
 
 class InteractiveTelegramClient(TelegramClient):
+    """Full featured Telegram client, meant to be used on an interactive
+       session to see what Telethon is capable off -
+
+       This client allows the user to perform some basic interaction with
+       Telegram through Telethon, such as listing dialogs (open chats),
+       talking to people, downloading media, and receiving updates.
+    """
     def __init__(self, session_user_id, user_phone, api_id, api_hash, proxy=None):
         print_title('Initialization')
 
@@ -130,14 +137,10 @@ class InteractiveTelegramClient(TelegramClient):
             print('Available commands:')
             print('  !q: Quits the current chat.')
             print('  !Q: Quits the current chat and exits.')
-            print(
-                '  !h: prints the latest messages (message History) of the chat.')
-            print(
-                '  !up <path>: Uploads and sends a Photo located at the given path.')
-            print(
-                '  !uf <path>: Uploads and sends a File document located at the given path.')
-            print(
-                '  !dm <msg-id>: Downloads the given message Media (if any).')
+            print('  !h: prints the latest messages (message History).')
+            print('  !up <path>: Uploads and sends the Photo from path.')
+            print('  !uf <path>: Uploads and sends the File from path.')
+            print('  !dm <msg-id>: Downloads the given message Media (if any).')
             print('  !dp: Downloads the current dialog Profile picture.')
             print()
 
@@ -155,8 +158,10 @@ class InteractiveTelegramClient(TelegramClient):
                     # First retrieve the messages and some information
                     total_count, messages, senders = self.get_message_history(
                         entity, limit=10)
-                    # Iterate over all (in reverse order so the latest appears the last in the console)
-                    # and print them in "[hh:mm] Sender: Message" text format
+
+                    # Iterate over all (in reverse order so the latest appear
+                    # the last in the console) and print them with format:
+                    # "[hh:mm] Sender: Message"
                     for msg, sender in zip(
                             reversed(messages), reversed(senders)):
                         # Get the name of the sender if any
@@ -165,16 +170,18 @@ class InteractiveTelegramClient(TelegramClient):
                         # Format the message content
                         if getattr(msg, 'media', None):
                             self.found_media.add(msg)
-                            content = '<{}> {}'.format(  # The media may or may not have a caption
-                                msg.media.__class__.__name__,
-                                getattr(msg.media, 'caption', ''))
+                            # The media may or may not have a caption
+                            caption = getattr(msg.media, 'caption', '')
+                            content = '<{}> {}'.format(
+                                type(msg.media).__name__, caption)
+
                         elif hasattr(msg, 'message'):
                             content = msg.message
                         elif hasattr(msg, 'action'):
                             content = str(msg.action)
                         else:
                             # Unknown message, simply print its class name
-                            content = msg.__class__.__name__
+                            content = type(msg).__name__
 
                         # And print it to the user
                         sprint('[{}:{}] (ID={}) {}: {}'.format(

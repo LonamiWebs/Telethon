@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import traceback
 
-from telethon.interactive_telegram_client import (InteractiveTelegramClient,
-                                                  print_title)
+from telethon_examples.interactive_telegram_client \
+    import InteractiveTelegramClient
 
 
 def load_settings(path='api/settings'):
@@ -40,6 +40,5 @@ if __name__ == '__main__':
             type(e), e, traceback.format_exc()))
 
     finally:
-        print_title('Exit')
-        print('Thanks for trying the interactive example! Exiting...')
         client.disconnect()
+        print('Thanks for trying the interactive example! Exiting...')
