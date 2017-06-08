@@ -125,13 +125,20 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self, a=None, b=None, c=None, d=None):
-        # TODO Use **kwargs instead 4 dummy parameters
+    def connect(self, *args):
+        """Connects to the Telegram servers, executing authentication if
+           required. Note that authenticating to the Telegram servers is
+           not the same as authenticating the desired user itself, which
+           may require a call (or several) to 'sign_in' for the first time.
+
+           *args will be ignored.
+        """
         return super(TelegramClient, self).connect(
             device_model=self.device_model,
             system_version=self.system_version,
             app_version=self.app_version,
-            lang_code=self.lang_code)
+            lang_code=self.lang_code
+        )
 
     def disconnect(self):
         """Disconnects from the Telegram server
@@ -146,14 +153,21 @@ class TelegramClient(TelegramBareClient):
         self._cached_senders.clear()
         self._cached_sessions.clear()
 
-    def reconnect(self, new_dc=None, a=None, b=None, c=None, d=None):
-        # TODO Use **kwargs instead 4 dummy parameters
+    def reconnect(self, new_dc=None, *args):
+        """Disconnects and connects again (effectively reconnecting).
+
+           If 'new_dc' is not None, the current authorization key is
+           removed, the DC used is switched, and a new connection is made.
+
+           *args will be ignored.
+        """
         super(TelegramClient, self).reconnect(
             device_model=self.device_model,
             system_version=self.system_version,
             app_version=self.app_version,
             lang_code=self.lang_code,
-            new_dc=new_dc)
+            new_dc=new_dc
+        )
 
     # endregion
 
@@ -227,11 +241,13 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5)):
+    def invoke(self, request, timeout=timedelta(seconds=5), *args):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            An optional timeout can be specified to cancel the operation if no
            result is received within such time, or None to disable any timeout.
+
+           *args will be ignored.
         """
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
