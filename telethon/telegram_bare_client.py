@@ -71,18 +71,11 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, device_model=None, system_version=None,
-                app_version=None, lang_code=None):
+    def connect(self, device_model, system_version, app_version, lang_code):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
-
-           Default values for the optional parameters if left as None are:
-             device_model   = platform.node()
-             system_version = platform.system()
-             app_version    = TelegramClient.__version__
-             lang_code      = 'en'
         """
         transport = TcpTransport(self.session.server_address,
                                  self.session.port, proxy=self.proxy)
@@ -96,16 +89,6 @@ class TelegramBareClient:
 
             self.sender = MtProtoSender(transport, self.session)
             self.sender.connect()
-
-            # Set the default parameters if left unspecified
-            if not device_model:
-                device_model = platform.node()
-            if not system_version:
-                system_version = platform.system()
-            if not app_version:
-                app_version = self.__version__
-            if not lang_code:
-                lang_code = 'en'
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
@@ -140,7 +123,7 @@ class TelegramBareClient:
             self.session.server_address = dc.ip_address
             self.session.port = dc.port
             self.session.save()
-            self.connect()
+            self.connect(device_model, system_version, app_version, lang_code)
 
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
@@ -158,7 +141,9 @@ class TelegramBareClient:
     def reconnect(self):
         """Disconnects and connects again (effectively reconnecting)"""
         self.disconnect()
-        self.connect()
+        # TODO Don't use these parameters
+        self.connect(
+            platform.node(), platform.system(), self.__version__, 'en')
 
     # endregion
 

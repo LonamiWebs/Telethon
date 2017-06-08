@@ -63,15 +63,22 @@ class TelegramClient(TelegramBareClient):
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash, proxy=None):
+    def __init__(self, session, api_id, api_hash, proxy=None,
+                 device_model=None, system_version=None,
+                 app_version=None, lang_code=None):
         """Initializes the Telegram client with the specified API ID and Hash.
 
-           Session can either be a `str` object (the filename for the loaded/saved .session)
-           or it can be a `Session` instance (in which case list_sessions() would probably not work).
-           If you don't want any file to be saved, pass `None`
+           Session can either be a `str` object (filename for the .session)
+           or it can be a `Session` instance (in which case list_sessions()
+           would probably not work). Pass 'None' for it to be a temporary
+           session - remember to '.log_out()'!
 
-           In the later case, you are free to override the `Session` class to provide different
-           .save() and .load() implementations to suit your needs."""
+           Default values for the optional parameters if left as None are:
+             device_model   = platform.node()
+             system_version = platform.system()
+             app_version    = TelegramClient.__version__
+             lang_code      = 'en'
+        """
 
         if not api_id or not api_hash:
             raise PermissionError(
@@ -96,6 +103,16 @@ class TelegramClient(TelegramBareClient):
         self._updates_thread_running = Event()
         self._updates_thread_receiving = Event()
 
+        # Used on connection - the user may modify these and reconnect
+        self.device_model = \
+            device_model if device_model else platform.node()
+
+        self.system_version = \
+            system_version if system_version else platform.system()
+
+        self.app_version = app_version if app_version else self.__version__
+        self.lang_code = lang_code if lang_code else 'en'
+
         # Cache "exported" senders 'dc_id: MtProtoSender' and
         # their corresponding sessions not to recreate them all
         # the time since it's a (somewhat expensive) process.
@@ -107,6 +124,13 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Connecting
+
+    def connect(self):
+        return super(TelegramClient, self).connect(
+            device_model=self.device_model,
+            system_version=self.system_version,
+            app_version=self.app_version,
+            lang_code=self.lang_code)
 
     def disconnect(self):
         """Disconnects from the Telegram server
@@ -193,14 +217,11 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5), updates=None):
+    def invoke(self, request, timeout=timedelta(seconds=5)):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            An optional timeout can be specified to cancel the operation if no
            result is received within such time, or None to disable any timeout.
-
-           The 'updates' parameter will be ignored, although it's kept for
-           both function signatures (base class and this) to be the same.
         """
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
