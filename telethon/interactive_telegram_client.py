@@ -62,18 +62,19 @@ class InteractiveTelegramClient(TelegramClient):
             print('First run. Sending code request...')
             self.send_code_request(user_phone)
 
-            code_ok = False
-            while not code_ok:
+            self_user = None
+            while self_user is None:
                 code = input('Enter the code you just received: ')
                 try:
-                    code_ok = self.sign_in(user_phone, code)
+                    self_user = self.sign_in(user_phone, code)
 
                 # Two-step verification may be enabled
                 except RPCError as e:
                     if e.password_required:
-                        pw = getpass(
-                            'Two step verification is enabled. Please enter your password: ')
-                        code_ok = self.sign_in(password=pw)
+                        pw = getpass('Two step verification is enabled. '
+                                     'Please enter your password: ')
+
+                        self_user = self.sign_in(password=pw)
                     else:
                         raise
 

@@ -1,29 +1,23 @@
 import platform
 from datetime import timedelta
-from hashlib import md5
 from mimetypes import guess_type
 from os import listdir, path
 from threading import Event, RLock, Thread
-from time import time, sleep
-import logging
+from time import sleep
+
+from . import TelegramBareClient
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import (RPCError, InvalidDCError, FloodWaitError,
-                     InvalidParameterError, ReadCancelledError)
-
+from .errors import (RPCError, InvalidDCError, InvalidParameterError,
+                     ReadCancelledError)
 from .network import authenticator, MtProtoSender, TcpTransport
 from .parser.markdown_parser import parse_message_entities
 
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session, JsonSession
 from .tl.all_tlobjects import layer
-from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest,
-                           PingRequest)
-
-# Required to work with different data centers
-from .tl.functions.auth import (ExportAuthorizationRequest,
-                                ImportAuthorizationRequest)
+from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -33,8 +27,9 @@ from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SendCodeRequest, SignInRequest,
                                 SignUpRequest, ImportBotAuthorizationRequest)
 
-# Initial request
-from .tl.functions.help import GetConfigRequest
+# Required to work with different data centers
+from .tl.functions.auth import (ExportAuthorizationRequest,
+                                ImportAuthorizationRequest)
 
 # Easier access to common methods
 from .tl.functions.messages import (
@@ -44,26 +39,27 @@ from .tl.functions.messages import (
 # For .get_me() and ensuring we're authorized
 from .tl.functions.users import GetUsersRequest
 
-# Easier access for working with media, too
-from .tl.functions.upload import (
-    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
-
 # All the types we need to work with
 from .tl.types import (
     ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
-    InputDocumentFileLocation, InputFile, InputFileBig, InputFileLocation,
+    InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty, InputUserSelf)
 
-from .utils import (find_user_or_chat, get_input_peer,
-                    get_appropriated_part_size, get_extension)
+from .utils import find_user_or_chat, get_input_peer, get_extension
 
 
-class TelegramClient:
+class TelegramClient(TelegramBareClient):
+    """Full featured TelegramClient meant to extend the basic functionality -
 
-    # Current TelegramClient version
-    __version__ = '0.10.1'
+       As opposed to the TelegramBareClient, this one  features downloading
+       media from different data centers, starting a second thread to
+       handle updates, and some very common functionality.
+
+       This should be used when the (slight) overhead of having locks,
+       threads, and possibly multiple connections is not an issue.
+    """
 
     # region Initialization
 
@@ -77,31 +73,23 @@ class TelegramClient:
            In the later case, you are free to override the `Session` class to provide different
            .save() and .load() implementations to suit your needs."""
 
-        if api_id is None or api_hash is None:
+        if not api_id or not api_hash:
             raise PermissionError(
-                'Your API ID or Hash are invalid. Please read "Requirements" on README.rst')
-
-        self.api_id = api_id
-        self.api_hash = api_hash
+                "Your API ID or Hash cannot be empty or None. "
+                "Refer to Telethon's README.rst for more information.")
 
         # Determine what session object we have
         # TODO JsonSession until migration is complete (by v1.0)
         if isinstance(session, str) or session is None:
-            self.session = JsonSession.try_load_or_create_new(session)
-        elif isinstance(session, Session):
-            self.session = session
-        else:
+            session = JsonSession.try_load_or_create_new(session)
+        elif not isinstance(session, Session):
             raise ValueError(
-                'The given session must either be a string or a Session instance.')
+                'The given session must be a str or a Session instance.')
 
-        self.transport = None
-        self.proxy = proxy  # Will be used when a TcpTransport is created
-
-        self.login_success = False
+        super().__init__(session, api_id, api_hash, proxy)
 
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
-        self._logger = logging.getLogger(__name__)
 
         # Methods to be called when an update is received
         self._update_handlers = []
@@ -113,90 +101,18 @@ class TelegramClient:
         # the time since it's a (somewhat expensive) process.
         self._cached_senders = {}
         self._cached_sessions = {}
-
-        # These will be set later
         self._updates_thread = None
-        self.dc_options = None
-        self.sender = None
-        self.phone_code_hashes = {}
+        self._phone_code_hashes = {}
 
     # endregion
 
     # region Connecting
 
-    def connect(self, reconnect=False,
-                device_model=None, system_version=None,
-                app_version=None, lang_code=None):
-        """Connects to the Telegram servers, executing authentication if
-           required. Note that authenticating to the Telegram servers is
-           not the same as authenticating the desired user itself, which
-           may require a call (or several) to 'sign_in' for the first time.
-
-           Default values for the optional parameters if left as None are:
-             device_model   = platform.node()
-             system_version = platform.system()
-             app_version    = TelegramClient.__version__
-             lang_code      = 'en'
-        """
-        if self.transport is None:
-            self.transport = TcpTransport(self.session.server_address,
-                                          self.session.port, proxy=self.proxy)
-
-        try:
-            if not self.session.auth_key or (reconnect and self.sender is not None):
-                self.session.auth_key, self.session.time_offset = \
-                    authenticator.do_authentication(self.transport)
-
-                self.session.save()
-
-            self.sender = MtProtoSender(self.transport, self.session)
-            self.sender.connect()
-
-            # Set the default parameters if left unspecified
-            if not device_model:
-                device_model = platform.node()
-            if not system_version:
-                system_version = platform.system()
-            if not app_version:
-                app_version = self.__version__
-            if not lang_code:
-                lang_code = 'en'
-
-            # Now it's time to send an InitConnectionRequest
-            # This must always be invoked with the layer we'll be using
-            query = InitConnectionRequest(
-                api_id=self.api_id,
-                device_model=device_model,
-                system_version=system_version,
-                app_version=app_version,
-                lang_code=lang_code,
-                query=GetConfigRequest())
-
-            result = self.invoke(
-                InvokeWithLayerRequest(
-                    layer=layer, query=query))
-
-            # We're only interested in the DC options,
-            # although many other options are available!
-            self.dc_options = result.dc_options
-
-            self.login_success = True
-            return True
-        except (RPCError, ConnectionError) as error:
-            # Probably errors from the previous session, ignore them
-            self._logger.warning('Could not stabilise initial connection: {}'
-                                 .format(error))
-            return False
-
     def disconnect(self):
-        """Disconnects from the Telegram server and stops all the spawned threads"""
+        """Disconnects from the Telegram server
+           and stops all the spawned threads"""
         self._set_updates_thread(running=False)
-        if self.sender:
-            self.sender.disconnect()
-            self.sender = None
-        if self.transport:
-            self.transport.close()
-            self.transport = None
+        super(TelegramClient, self).disconnect()
 
         # Also disconnect all the cached senders
         for sender in self._cached_senders.values():
@@ -205,36 +121,9 @@ class TelegramClient:
         self._cached_senders.clear()
         self._cached_sessions.clear()
 
-    def reconnect(self):
-        """Disconnects and connects again (effectively reconnecting)"""
-        self.disconnect()
-        self.connect()
-
     # endregion
 
     # region Working with different Data Centers
-
-    def _reconnect_to_dc(self, dc_id):
-        """Reconnects to the specified DC ID. This is automatically
-           called after an InvalidDCError is raised"""
-        dc = self._get_dc(dc_id)
-
-        self.transport.close()
-        self.transport = None
-        self.session.server_address = dc.ip_address
-        self.session.port = dc.port
-        self.session.save()
-
-        self.connect(reconnect=True)
-
-    def _get_dc(self, dc_id):
-        """Gets the Data Center (DC) associated to 'dc_id'"""
-        if not self.dc_options:
-            raise ConnectionError(
-                'Cannot determine the required data center IP address. '
-                'Stabilise a successful initial connection first.')
-
-        return next(dc for dc in self.dc_options if dc.id == dc_id)
 
     def _get_exported_sender(self, dc_id, init_connection=False):
         """Gets a cached exported MtProtoSender for the desired DC.
@@ -304,13 +193,15 @@ class TelegramClient:
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5), throw_invalid_dc=False):
-        """Invokes a MTProtoRequest (sends and receives it) and returns its result.
-           An optional timeout can be given to cancel the operation after the time delta.
-           Timeout can be set to None for no timeout.
+    def invoke(self, request, timeout=timedelta(seconds=5), updates=None):
+        """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
-           If throw_invalid_dc is True, these errors won't be caught (useful to
-           avoid infinite recursion). This should not be set to True manually."""
+           An optional timeout can be specified to cancel the operation if no
+           result is received within such time, or None to disable any timeout.
+
+           The 'updates' parameter will be ignored, although it's kept for
+           both function signatures (base class and this) to be the same.
+        """
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
@@ -322,37 +213,25 @@ class TelegramClient:
 
         try:
             self._lock.acquire()
-            updates = []
-            self.sender.send(request)
-            self.sender.receive(request, timeout, updates=updates)
-            for update in updates:
-                for handler in self._update_handlers:
-                    handler(update)
 
-            return request.result
+            updates = [] if self._update_handlers else None
+            result = super(TelegramClient, self).invoke(
+                request, timeout=timeout, updates=updates)
 
-        except InvalidDCError as error:
-            if throw_invalid_dc:
-                raise
+            if updates:
+                for update in updates:
+                    for handler in self._update_handlers:
+                        handler(update)
 
-            if error.message.startswith('FILE_MIGRATE_'):
-                return self.invoke_on_dc(request, error.new_dc,
-                                         timeout=timeout)
-            else:
-                self._reconnect_to_dc(error.new_dc)
-                return self.invoke(request,
-                                   timeout=timeout, throw_invalid_dc=True)
+            # TODO Retry if 'result' is None?
+            return result
 
-        except ConnectionResetError:
-            self._logger.info('Server disconnected us. Reconnecting and '
-                              'resending request...')
-            self.reconnect()
-            self.invoke(request, timeout=timeout,
-                        throw_invalid_dc=throw_invalid_dc)
+        except InvalidDCError as e:
+            self._logger.info('DC error when invoking request, '
+                              'attempting to send it on DC {}'
+                              .format(e.new_dc))
 
-        except FloodWaitError:
-            self.disconnect()
-            raise
+            return self.invoke_on_dc(request, e.new_dc, timeout=timeout)
 
         finally:
             self._lock.release()
@@ -389,58 +268,64 @@ class TelegramClient:
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
-        result = self.invoke(SendCodeRequest(phone_number, self.api_id, self.api_hash))
-        self.phone_code_hashes[phone_number] = result.phone_code_hash
+        result = self.invoke(
+            SendCodeRequest(phone_number, self.api_id, self.api_hash))
 
-    def sign_in(self, phone_number=None, code=None, password=None, bot_token=None):
-        """Completes the authorization of a phone number by providing the received code.
+        self._phone_code_hashes[phone_number] = result.phone_code_hash
 
-           If no phone or code is provided, then the sole password will be used. The password
-           should be used after a normal authorization attempt has happened and an RPCError
-           with `.password_required = True` was raised.
+    def sign_in(self, phone_number=None, code=None,
+                password=None, bot_token=None):
+        """Completes the sign in process with the phone number + code pair.
 
-           To login as a bot, only `bot_token` should be provided. This should equal to the
-           bot access hash provided by https://t.me/BotFather during your bot creation."""
+           If no phone or code is provided, then the sole password will be used.
+           The password should be used after a normal authorization attempt
+           has happened and an RPCError with `.password_required = True` was
+           raised.
+
+           To login as a bot, only `bot_token` should be provided.
+           This should equal to the bot access hash provided by
+           https://t.me/BotFather during your bot creation.
+
+           If the login succeeds, the logged in user is returned.
+        """
         if phone_number and code:
-            if phone_number not in self.phone_code_hashes:
+            if phone_number not in self._phone_code_hashes:
                 raise ValueError(
-                    'Please make sure you have called send_code_request first.')
+                    'Please make sure to call send_code_request first.')
 
             try:
-                result = self.invoke(
-                    SignInRequest(phone_number, self.phone_code_hashes[
-                        phone_number], code))
+                result = self.invoke(SignInRequest(
+                    phone_number, self._phone_code_hashes[phone_number], code))
 
             except RPCError as error:
                 if error.message.startswith('PHONE_CODE_'):
-                    return False
+                    return None
                 else:
                     raise
+
         elif password:
             salt = self.invoke(GetPasswordRequest()).current_salt
             result = self.invoke(
                 CheckPasswordRequest(utils.get_password_hash(password, salt)))
+
         elif bot_token:
-            result = self.invoke(
-                ImportBotAuthorizationRequest(flags=0,
-                                              api_id=self.api_id,
-                                              api_hash=self.api_hash,
-                                              bot_auth_token=bot_token))
+            result = self.invoke(ImportBotAuthorizationRequest(
+                flags=0, bot_auth_token=bot_token,
+                api_id=self.api_id, api_hash=self.api_hash))
+
         else:
             raise ValueError(
-                'You must provide a phone_number and a code for the first time, '
+                'You must provide a phone_number and a code the first time, '
                 'and a password only if an RPCError was raised before.')
 
-        # Ignore 'result.user', we don't need it
-        self.login_success = True
-        return True
+        return result.user
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
         result = self.invoke(
             SignUpRequest(
                 phone_number=phone_number,
-                phone_code_hash=self.phone_code_hashes[phone_number],
+                phone_code_hash=self._phone_code_hashes[phone_number],
                 phone_code=code,
                 first_name=first_name,
                 last_name=last_name))
@@ -449,7 +334,9 @@ class TelegramClient:
         self.session.save()
 
     def log_out(self):
-        """Logs out and deletes the current session. Returns True if everything went OK"""
+        """Logs out and deletes the current session.
+           Returns True if everything went okay."""
+
         # Special flag when logging out (so the ack request confirms it)
         self.sender.logging_out = True
         try:
@@ -492,9 +379,13 @@ class TelegramClient:
                     offset_date=None,
                     offset_id=0,
                     offset_peer=InputPeerEmpty()):
-        """Returns a tuple of lists ([dialogs], [entities]) with at least 'limit' items each.
-           If `limit` is 0, all dialogs will be retrieved.
-           The `entity` represents the user, chat or channel corresponding to that dialog"""
+        """Returns a tuple of lists ([dialogs], [entities])
+           with at least 'limit' items each.
+
+           If `limit` is 0, all dialogs will (should) retrieved.
+           The `entities` represent the user, chat or channel
+           corresponding to that dialog.
+        """
 
         r = self.invoke(
             GetDialogsRequest(
@@ -515,7 +406,8 @@ class TelegramClient:
                      message,
                      markdown=False,
                      no_web_page=False):
-        """Sends a message to the given entity (or input peer) and returns the sent message ID"""
+        """Sends a message to the given entity (or input peer)
+           and returns the sent message ID"""
         if markdown:
             msg, entities = parse_message_entities(message)
         else:
@@ -600,89 +492,6 @@ class TelegramClient:
 
     # endregion
 
-    # TODO Handle media downloading/uploading in a different session?
-    #  "It is recommended that large queries (upload.getFile, upload.saveFilePart)
-    #   be handled through a separate session and a separate connection"
-    # region Uploading media requests
-
-    def upload_file(self,
-                    file_path,
-                    part_size_kb=None,
-                    file_name=None,
-                    progress_callback=None):
-        """Uploads the specified file_path and returns a handle which can be later used
-
-        :param file_path: The file path of the file that will be uploaded
-        :param part_size_kb: The part size when uploading the file. None = Automatic
-        :param file_name: The name of the uploaded file. None = Automatic
-        :param progress_callback: A callback function which takes two parameters,
-                                  uploaded size (in bytes) and total file size (in bytes)
-                                  This is called every time a part is uploaded
-        """
-        file_size = path.getsize(file_path)
-        if not part_size_kb:
-            part_size_kb = get_appropriated_part_size(file_size)
-
-        if part_size_kb > 512:
-            raise ValueError('The part size must be less or equal to 512KB')
-
-        part_size = int(part_size_kb * 1024)
-        if part_size % 1024 != 0:
-            raise ValueError('The part size must be evenly divisible by 1024')
-
-        # Determine whether the file is too big (over 10MB) or not
-        # Telegram does make a distinction between smaller or larger files
-        is_large = file_size > 10 * 1024 * 1024
-        part_count = (file_size + part_size - 1) // part_size
-
-        # Multiply the datetime timestamp by 10^6 to get the ticks
-        # This is high likely going to be unique
-        file_id = utils.generate_random_long()
-        hash_md5 = md5()
-
-        with open(file_path, 'rb') as file:
-            for part_index in range(part_count):
-                # Read the file by in chunks of size part_size
-                part = file.read(part_size)
-
-                # The SavePartRequest is different depending on whether
-                # the file is too large or not (over or less than 10MB)
-                if is_large:
-                    request = SaveBigFilePartRequest(file_id, part_index,
-                                                     part_count, part)
-                else:
-                    request = SaveFilePartRequest(file_id, part_index, part)
-
-                # Invoke the file upload and increment both the part index and MD5 checksum
-                result = self.invoke(request)
-                if result:
-                    if not is_large:
-                        # No need to update the hash if it's a large file
-                        hash_md5.update(part)
-
-                    if progress_callback:
-                        progress_callback(file.tell(), file_size)
-                else:
-                    raise ValueError('Could not upload file part #{}'.format(
-                        part_index))
-
-        # Set a default file name if None was specified
-        if not file_name:
-            file_name = path.basename(file_path)
-
-        # After the file has been uploaded, we can return a handle pointing to it
-        if is_large:
-            return InputFileBig(
-                id=file_id,
-                parts=part_count,
-                name=file_name)
-        else:
-            return InputFile(
-                id=file_id,
-                parts=part_count,
-                name=file_name,
-                md5_checksum=hash_md5.hexdigest())
-
     def send_photo_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
            (which should be a photo) to the given entity (or input peer)"""
@@ -747,12 +556,14 @@ class TelegramClient:
             photo_location = profile_photo.photo_small
 
         # Download the media with the largest size input file location
-        self.download_file_loc(
+        self.download_file(
             InputFileLocation(
                 volume_id=photo_location.volume_id,
                 local_id=photo_location.local_id,
-                secret=photo_location.secret),
-            file_path)
+                secret=photo_location.secret
+            ),
+            file_path
+        )
         return True
 
     def download_msg_media(self,
@@ -798,14 +609,16 @@ class TelegramClient:
             file_path += get_extension(message_media_photo)
 
         # Download the media with the largest size input file location
-        self.download_file_loc(
+        self.download_file(
             InputFileLocation(
                 volume_id=largest_size.volume_id,
                 local_id=largest_size.local_id,
-                secret=largest_size.secret),
+                secret=largest_size.secret
+            ),
             file_path,
             file_size=file_size,
-            progress_callback=progress_callback)
+            progress_callback=progress_callback
+        )
         return file_path
 
     def download_document(self,
@@ -839,14 +652,16 @@ class TelegramClient:
         if add_extension:
             file_path += get_extension(message_media_document)
 
-        self.download_file_loc(
+        self.download_file(
             InputDocumentFileLocation(
                 id=document.id,
                 access_hash=document.access_hash,
-                version=document.version),
+                version=document.version
+            ),
             file_path,
             file_size=file_size,
-            progress_callback=progress_callback)
+            progress_callback=progress_callback
+        )
         return file_path
 
     @staticmethod
@@ -877,48 +692,6 @@ class TelegramClient:
 
         return file_path
 
-    def download_file_loc(self,
-                          input_location,
-                          file_path,
-                          part_size_kb=64,
-                          file_size=None,
-                          progress_callback=None):
-        """Downloads media from the given input_file_location to the specified file_path.
-           If a progress_callback function is given, it will be called taking two
-           arguments (downloaded bytes count and total file size)"""
-
-        if not part_size_kb:
-            if not file_size:
-                raise ValueError('A part size value must be provided')
-            else:
-                part_size_kb = get_appropriated_part_size(file_size)
-
-        part_size = int(part_size_kb * 1024)
-        if part_size % 1024 != 0:
-            raise ValueError('The part size must be evenly divisible by 1024')
-
-        # Ensure that we'll be able to download the media
-        utils.ensure_parent_dir_exists(file_path)
-
-        # Start with an offset index of 0
-        offset_index = 0
-        with open(file_path, 'wb') as file:
-            while True:
-                # The current offset equals the offset_index multiplied by the part size
-                offset = offset_index * part_size
-                result = self.invoke(
-                    GetFileRequest(input_location, offset, part_size))
-                offset_index += 1
-
-                # If we have received no data (0 bytes), the file is over
-                # So there is nothing left to download and write
-                if not result.bytes:
-                    return result.type  # Return some extra information
-
-                file.write(result.bytes)
-                if progress_callback:
-                    progress_callback(file.tell(), file_size)
-
     # endregion
 
     # endregion
@@ -928,9 +701,9 @@ class TelegramClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.sender or not self.login_success:
+        if not self.sender:
             raise RuntimeError("You can't add update handlers until you've "
-                               "successfully logged in.")
+                               "successfully connected to the server.")
 
         first_handler = not self._update_handlers
         self._update_handlers.append(handler)
