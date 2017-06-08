@@ -125,7 +125,8 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self):
+    def connect(self, a=None, b=None, c=None, d=None):
+        # TODO Use **kwargs instead 4 dummy parameters
         return super(TelegramClient, self).connect(
             device_model=self.device_model,
             system_version=self.system_version,
@@ -144,6 +145,15 @@ class TelegramClient(TelegramBareClient):
 
         self._cached_senders.clear()
         self._cached_sessions.clear()
+
+    def reconnect(self, new_dc=None, a=None, b=None, c=None, d=None):
+        # TODO Use **kwargs instead 4 dummy parameters
+        super(TelegramClient, self).reconnect(
+            device_model=self.device_model,
+            system_version=self.system_version,
+            app_version=self.app_version,
+            lang_code=self.lang_code,
+            new_dc=new_dc)
 
     # endregion
 
@@ -248,11 +258,21 @@ class TelegramClient(TelegramBareClient):
             return result
 
         except InvalidDCError as e:
-            self._logger.info('DC error when invoking request, '
-                              'attempting to send it on DC {}'
-                              .format(e.new_dc))
+            if (e.message.startswith('PHONE_MIGRATE_') or
+                    e.message.startswith('USER_MIGRATE_')):
+                self._logger.info('DC error when invoking request, '
+                                  'attempting to reconnect at DC {}'
+                                  .format(e.new_dc))
 
-            return self.invoke_on_dc(request, e.new_dc, timeout=timeout)
+                self.reconnect(new_dc=e.new_dc)
+                return self.invoke(request, timeout=timeout)
+
+            else:
+                self._logger.info('DC error when invoking request, '
+                                  'attempting to send it on DC {}'
+                                  .format(e.new_dc))
+
+                return self.invoke_on_dc(request, e.new_dc, timeout=timeout)
 
         finally:
             self._lock.release()

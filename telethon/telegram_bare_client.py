@@ -109,22 +109,6 @@ class TelegramBareClient:
             self.dc_options = result.dc_options
             return True
 
-        except InvalidDCError as e:
-            # If an InvalidDCError occurs on CONNECTION then it for sure
-            # means that the user is associated with a different DC,
-            # which is the only case in which we need to reconnect.
-            self._logger.info('DC error on initial connection, '
-                              'attempting to reconnect at DC {}'
-                              .format(e.new_dc))
-
-            self.disconnect()
-            self.session.auth_key = None  # Force creating new auth_key
-            dc = self._get_dc(e.new_dc)
-            self.session.server_address = dc.ip_address
-            self.session.port = dc.port
-            self.session.save()
-            self.connect(device_model, system_version, app_version, lang_code)
-
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
             self.disconnect()
@@ -138,12 +122,23 @@ class TelegramBareClient:
             self.sender.disconnect()
             self.sender = None
 
-    def reconnect(self):
-        """Disconnects and connects again (effectively reconnecting)"""
+    def reconnect(self, device_model, system_version, app_version, lang_code,
+                  new_dc=None):
+        """Disconnects and connects again (effectively reconnecting).
+
+           If 'new_dc' is not None, the current authorization key is
+           removed, the DC used is switched, and a new connection is made.
+        """
         self.disconnect()
-        # TODO Don't use these parameters
-        self.connect(
-            platform.node(), platform.system(), self.__version__, 'en')
+
+        if new_dc is not None:
+            self.session.auth_key = None  # Force creating new auth_key
+            dc = self._get_dc(new_dc)
+            self.session.server_address = dc.ip_address
+            self.session.port = dc.port
+            self.session.save()
+
+        self.connect(device_model, system_version, app_version, lang_code)
 
     # endregion
 
