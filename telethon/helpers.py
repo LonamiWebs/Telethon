@@ -1,3 +1,4 @@
+"""Various helpers not related to the Telegram API itself"""
 from hashlib import sha1, sha256
 import os
 

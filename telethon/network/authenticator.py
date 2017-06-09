@@ -5,7 +5,7 @@ from hashlib import sha1
 from .. import helpers as utils
 from ..crypto import AES, RSA, AuthKey, Factorization
 from ..network import MtProtoPlainSender
-from ..utils import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader, BinaryWriter
 
 
 def do_authentication(transport):

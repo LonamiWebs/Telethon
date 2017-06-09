@@ -1,7 +1,7 @@
 import random
 import time
 
-from ..utils import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader, BinaryWriter
 
 
 class MtProtoPlainSender:

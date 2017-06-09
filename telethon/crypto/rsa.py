@@ -1,7 +1,7 @@
 import os
 from hashlib import sha1
 
-from ..utils import BinaryWriter
+from ..extensions import BinaryWriter
 
 
 class RSAServerKey:

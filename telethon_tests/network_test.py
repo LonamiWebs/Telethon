@@ -4,7 +4,8 @@ import threading
 import unittest
 
 import telethon.network.authenticator as authenticator
-from telethon.network import TcpClient, TcpTransport
+from telethon.extensions import TcpClient
+from telethon.network import TcpTransport
 
 
 def run_server_echo_thread(port):

@@ -1,6 +1,6 @@
 import os
 import unittest
-from telethon.utils import BinaryReader, BinaryWriter
+from telethon.extensions import BinaryReader, BinaryWriter
 
 
 class UtilsTests(unittest.TestCase):

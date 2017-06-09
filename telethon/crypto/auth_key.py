@@ -1,7 +1,7 @@
 from hashlib import sha1
 
 from .. import helpers as utils
-from ..utils import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader, BinaryWriter
 
 
 class AuthKey:

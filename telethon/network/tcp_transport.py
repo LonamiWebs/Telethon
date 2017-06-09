@@ -2,8 +2,8 @@ from binascii import crc32
 from datetime import timedelta
 
 from ..errors import InvalidChecksumError
-from ..network import TcpClient
-from ..utils import BinaryWriter
+from ..extensions import TcpClient
+from ..extensions import BinaryWriter
 
 
 class TcpTransport:

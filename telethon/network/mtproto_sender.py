@@ -8,7 +8,7 @@ from ..errors import (BadMessageError, FloodWaitError,
                       RPCError, InvalidDCError)
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
-from ..utils import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader, BinaryWriter
 
 import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())

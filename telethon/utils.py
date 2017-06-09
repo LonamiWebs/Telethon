@@ -1,10 +1,10 @@
-"""Utilities for working with TLObjects.
-   We have these because some TLObjects differ in very little things,
-   for example, some may have an `user_id` attribute and other a `chat_id` but,
-   after all, both are the same attribute, IDs."""
+"""
+Utilities for working with the Telegram API itself (such as handy methods
+to convert between an entity like an User, Chat, etc. into its Input version)
+"""
 from mimetypes import add_type, guess_extension
 
-from ..tl.types import (
+from .tl.types import (
     Channel, Chat, ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
     MessageMediaDocument, MessageMediaPhoto, PeerChannel, PeerChat, PeerUser,
     User, UserProfilePhoto)
