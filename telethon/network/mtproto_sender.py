@@ -50,13 +50,7 @@ class MtProtoSender:
             self._logger.debug('send() acquired the lock')
 
             # If any message needs confirmation send an AckRequest first
-            if self._need_confirmation:
-                msgs_ack = MsgsAck(self._need_confirmation)
-                with BinaryWriter() as writer:
-                    msgs_ack.on_send(writer)
-                    self._send_packet(writer.get_bytes(), msgs_ack)
-
-                del self._need_confirmation[:]
+            self._send_acknowledges()
 
             # Finally send our packed request
             with BinaryWriter() as writer:
@@ -67,6 +61,16 @@ class MtProtoSender:
             self.session.save()
 
         self._logger.debug('send() released the lock')
+
+    def _send_acknowledges(self):
+        """Sends a messages acknowledge for all those who _need_confirmation"""
+        if self._need_confirmation:
+            msgs_ack = MsgsAck(self._need_confirmation)
+            with BinaryWriter() as writer:
+                msgs_ack.on_send(writer)
+                self._send_packet(writer.get_bytes(), msgs_ack)
+
+            del self._need_confirmation[:]
 
     def receive(self, request=None, timeout=timedelta(seconds=5), updates=None):
         """Receives the specified MTProtoRequest ("fills in it"
@@ -323,6 +327,10 @@ class MtProtoSender:
         if inner_code == 0x2144ca19:  # RPC Error
             error = RPCError(
                 code=reader.read_int(), message=reader.tgread_string())
+
+            # Acknowledge that we received the error
+            self._need_confirmation.append(request_id)
+            self._send_acknowledges()
 
             self._logger.warning('Read RPC error: %s', str(error))
             if error.must_resend:
