@@ -34,11 +34,13 @@ class TcpClient:
         """Connects to the specified IP and port number"""
         if not self.connected:
             self._socket.connect((ip, port))
+            self._socket.setblocking(False)
             self.connected = True
 
     def close(self):
         """Closes the connection"""
         if self.connected:
+            self._socket.shutdown(socket.SHUT_RDWR)
             self._socket.close()
             self.connected = False
             self._recreate_socket()
@@ -48,9 +50,13 @@ class TcpClient:
 
         # Ensure that only one thread can send data at once
         with self._lock:
-            # Set blocking so it doesn't error
-            self._socket.setblocking(True)
-            self._socket.sendall(data)
+            total_sent = 0
+            while total_sent < len(data):
+                sent = self._socket.send(data[total_sent:])
+                if sent == 0:
+                    raise ConnectionResetError(
+                        'The server has closed the connection.')
+                total_sent += sent
 
     def read(self, buffer_size, timeout=timedelta(seconds=5)):
         """Reads (receives) the specified bytes from the connected peer.
@@ -63,29 +69,26 @@ class TcpClient:
             # Ensure it is not cancelled at first, so we can enter the loop
             self.cancelled.clear()
 
-            # Set non-blocking so it can be cancelled
-            self._socket.setblocking(False)
-
             # Set the starting time so we can calculate whether the timeout should fire
             if timeout:
                 start_time = datetime.now()
 
-            with BinaryWriter() as writer:
-                while writer.written_count < buffer_size:
+            with BinaryWriter() as buffer:
+                while buffer.written_count < buffer_size:
                     # Only do cancel if no data was read yet
                     # Otherwise, carry on reading and finish
-                    if self.cancelled.is_set() and writer.written_count == 0:
+                    if self.cancelled.is_set() and buffer.written_count == 0:
                         raise ReadCancelledError()
 
                     try:
                         # When receiving from the socket, we may not receive all the data at once
                         # This is why we need to keep checking to make sure that we receive it all
-                        left_count = buffer_size - writer.written_count
+                        left_count = buffer_size - buffer.written_count
                         partial = self._socket.recv(left_count)
                         if len(partial) == 0:
                             raise ConnectionResetError(
                                 'The server has closed the connection (recv() returned 0 bytes).')
-                        writer.write(partial)
+                        buffer.write(partial)
 
                     except BlockingIOError as error:
                         # There was no data available for us to read. Sleep a bit
@@ -99,7 +102,7 @@ class TcpClient:
                                     'The read operation exceeded the timeout.') from error
 
                 # If everything went fine, return the read bytes
-                return writer.get_bytes()
+                return buffer.get_bytes()
 
     def cancel_read(self):
         """Cancels the read operation IF it hasn't yet
