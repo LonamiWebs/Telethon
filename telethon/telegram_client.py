@@ -723,16 +723,22 @@ class TelegramClient(TelegramBareClient):
 
     def download_file(self,
                       input_location,
-                      file_path,
+                      file,
                       part_size_kb=None,
                       file_size=None,
                       progress_callback=None,
                       on_dc=None):
+        """Downloads the given InputFileLocation to file (a stream or str).
+
+           If 'progress_callback' is not None, it should be a function that
+           takes two parameters, (bytes_downloaded, total_bytes). Note that
+           'total_bytes' simply equals 'file_size', and may be None.
+        """
         if on_dc is None:
             try:
                 super(TelegramClient, self).download_file(
                     input_location,
-                    file_path,
+                    file,
                     part_size_kb=part_size_kb,
                     file_size=file_size,
                     progress_callback=progress_callback
@@ -744,7 +750,7 @@ class TelegramClient(TelegramBareClient):
             client = self._get_exported_client(on_dc)
             client.download_file(
                 input_location,
-                file_path,
+                file,
                 part_size_kb=part_size_kb,
                 file_size=file_size,
                 progress_callback=progress_callback

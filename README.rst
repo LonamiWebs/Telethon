@@ -138,6 +138,10 @@ disconnects the client.
 Another common one is the ``RPCError``, which usually has descriptive information on what went wrong.
 However, you may encounter something strange. If you don't manage to solve it, please open an issue.
 
+Unless you know what you're doing, you should download media by always using the ``.download_file()``
+function, which supports a ``str`` or a file handle as parameters. Otherwise, ``.invoke()`` may raise
+``InvalidDCError`` which you will have to handle, and in turn call ``.invoke_on_dc()`` manually.
+
 Advanced uses
 =============
 
@@ -241,9 +245,3 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
 
 The ``proxy=`` argument should be a tuple, a list or a dict, consisting of parameters described
 `here <https://github.com/Anorov/PySocks#usage-1>`_.
-
-Disclaimer
-==========
-
-This project was originally an implementation from TLSharp (a C# library for the Telegram API),
-but since then, the project has evolved a lot on its own.

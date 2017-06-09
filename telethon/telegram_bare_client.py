@@ -283,11 +283,11 @@ class TelegramBareClient:
 
     def download_file(self,
                       input_location,
-                      file_path,
+                      file,
                       part_size_kb=None,
                       file_size=None,
                       progress_callback=None):
-        """Downloads the given InputFileLocation to file_path.
+        """Downloads the given InputFileLocation to file (a stream or str).
 
            If 'progress_callback' is not None, it should be a function that
            takes two parameters, (bytes_downloaded, total_bytes). Note that
@@ -303,11 +303,15 @@ class TelegramBareClient:
         if part_size % 1024 != 0:
             raise ValueError('The part size must be evenly divisible by 1024.')
 
-        # Ensure that we'll be able to download the media
-        utils.ensure_parent_dir_exists(file_path)
+        if isinstance(file, str):
+            # Ensure that we'll be able to download the media
+            utils.ensure_parent_dir_exists(file)
+            f = open(file, 'wb')
+        else:
+            f = file
 
-        offset_index = 0
-        with open(file_path, 'wb') as file:
+        try:
+            offset_index = 0
             while True:
                 offset = offset_index * part_size
                 result = self.invoke(
@@ -319,8 +323,11 @@ class TelegramBareClient:
                 if not result.bytes:
                     return result.type  # Return some extra information
 
-                file.write(result.bytes)
+                f.write(result.bytes)
                 if progress_callback:
-                    progress_callback(file.tell(), file_size)
+                    progress_callback(f.tell(), file_size)
+        finally:
+            if isinstance(file, str):
+                f.close()
 
     # endregion
