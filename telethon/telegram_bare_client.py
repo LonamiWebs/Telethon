@@ -1,22 +1,22 @@
 import logging
-import platform
 from datetime import timedelta
 from hashlib import md5
 from os import path
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import RPCError, InvalidDCError, FloodWaitError
+from .errors import RPCError, FloodWaitError
 from .network import authenticator, MtProtoSender, TcpTransport
 from .utils import get_appropriated_part_size
 
 # For sending and receiving requests
-from .tl import MTProtoRequest, Session, JsonSession
+from .tl import MTProtoRequest
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
 # Initial request
 from .tl.functions.help import GetConfigRequest
+from .tl.functions.auth import ImportAuthorizationRequest
 
 # Easier access for working with media
 from .tl.functions.upload import (
@@ -56,7 +56,6 @@ class TelegramBareClient:
            Session must always be a Session instance, and an optional proxy
            can also be specified to be used on the connection.
         """
-
         self.session = session
         self.api_id = api_id
         self.api_hash = api_hash
@@ -71,11 +70,15 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, device_model, system_version, app_version, lang_code):
+    def connect(self, device_model, system_version, app_version, lang_code,
+                exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
+
+           If 'exported_auth' is not None, it will be used instead to
+           determine the authorization key for the current session.
         """
         transport = TcpTransport(self.session.server_address,
                                  self.session.port, proxy=self.proxy)
@@ -92,17 +95,28 @@ class TelegramBareClient:
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
-            query = InitConnectionRequest(
+            if exported_auth is None:
+                query = GetConfigRequest()
+            else:
+                query = ImportAuthorizationRequest(
+                    exported_auth.id, exported_auth.bytes)
+
+            request = InitConnectionRequest(
                 api_id=self.api_id,
                 device_model=device_model,
                 system_version=system_version,
                 app_version=app_version,
                 lang_code=lang_code,
-                query=GetConfigRequest())
+                query=query)
 
             result = self.invoke(
                 InvokeWithLayerRequest(
-                    layer=layer, query=query))
+                    layer=layer, query=request))
+
+            if exported_auth is not None:
+                # TODO Don't actually need this for exported authorizations,
+                #      they're only valid on such data center.
+                result = self.invoke(GetConfigRequest())
 
             # We're only interested in the DC options,
             # although many other options are available!
@@ -180,7 +194,10 @@ class TelegramBareClient:
         except ConnectionResetError:
             self._logger.info('Server disconnected us. Reconnecting and '
                               'resending request...')
-            self.reconnect()
+
+            # TODO Don't actually use these values
+            import platform
+            self.reconnect(platform.node(), platform.system(), self.__version__, 'en')
             return self.invoke(request, timeout=timeout)
 
         except FloodWaitError:
@@ -265,17 +282,17 @@ class TelegramBareClient:
     # region Downloading media
 
     def download_file(self,
-                          input_location,
-                          file_path,
-                          part_size_kb=None,
-                          file_size=None,
-                          progress_callback=None):
+                      input_location,
+                      file_path,
+                      part_size_kb=None,
+                      file_size=None,
+                      progress_callback=None):
         """Downloads the given InputFileLocation to file_path.
 
            If 'progress_callback' is not None, it should be a function that
            takes two parameters, (bytes_downloaded, total_bytes). Note that
-           'total_bytes' simply equals 'file_size', and may be None."""
-
+           'total_bytes' simply equals 'file_size', and may be None.
+        """
         if not part_size_kb:
             if not file_size:
                 part_size_kb = 64  # Reasonable default

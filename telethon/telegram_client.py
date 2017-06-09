@@ -116,8 +116,7 @@ class TelegramClient(TelegramBareClient):
         # Cache "exported" senders 'dc_id: MtProtoSender' and
         # their corresponding sessions not to recreate them all
         # the time since it's a (somewhat expensive) process.
-        self._cached_senders = {}
-        self._cached_sessions = {}
+        self._cached_clients = {}
         self._updates_thread = None
         self._phone_code_hashes = {}
 
@@ -147,11 +146,10 @@ class TelegramClient(TelegramBareClient):
         super(TelegramClient, self).disconnect()
 
         # Also disconnect all the cached senders
-        for sender in self._cached_senders.values():
+        for sender in self._cached_clients.values():
             sender.disconnect()
 
-        self._cached_senders.clear()
-        self._cached_sessions.clear()
+        self._cached_clients.clear()
 
     def reconnect(self, new_dc=None, *args):
         """Disconnects and connects again (effectively reconnecting).
@@ -173,10 +171,10 @@ class TelegramClient(TelegramBareClient):
 
     # region Working with different Data Centers
 
-    def _get_exported_sender(self, dc_id, init_connection=False):
-        """Gets a cached exported MtProtoSender for the desired DC.
+    def _get_exported_client(self, dc_id, init_connection=False):
+        """Gets a cached exported TelegramBareClient for the desired DC.
 
-           If it's the first time retrieving the MtProtoSender, the
+           If it's the first time retrieving the TelegramBareClient, the
            current authorization is exported to the new DC so that
            it can be used there, and the connection is initialized.
 
@@ -186,56 +184,36 @@ class TelegramClient(TelegramBareClient):
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization! ^^
 
-        sender = self._cached_senders.get(dc_id)
-        session = self._cached_sessions.get(dc_id)
-
-        if sender and session:
+        client = self._cached_clients.get(dc_id)
+        if client:
             if init_connection:
-                sender.disconnect()
-                sender.connect()
+                client.reconnect(
+                    device_model=self.device_model,
+                    system_version=self.system_version,
+                    app_version=self.app_version,
+                    lang_code=self.lang_code
+                )
 
-            return sender
+            return client
         else:
             dc = self._get_dc(dc_id)
 
-            # Step 1. Export the current authorization to the new DC.
+            # Export the current authorization to the new DC.
             export_auth = self.invoke(ExportAuthorizationRequest(dc_id))
 
-            # Step 2. Create a transport connected to the new DC.
-            #         We also create a temporary session because
-            #         it's what will contain the required AuthKey
-            #         for MtProtoSender to work.
-            transport = TcpTransport(dc.ip_address, dc.port, proxy=self.proxy)
-            session = Session(None)
-            session.auth_key, session.time_offset = \
-                authenticator.do_authentication(transport)
+            # Create a temporary session for this IP address, which needs
+            # to be different because each auth_key is unique per DC.
+            session = JsonSession(None)
+            session.server_address = dc.ip_address
+            session.port = dc.port
+            client = TelegramBareClient(session, self.api_id, self.api_hash)
+            client.connect(self.device_model, self.system_version,
+                           self.app_version, self.lang_code,
+                           exported_auth=export_auth)
 
-            # Step 3. After authenticating on the new DC,
-            #         we can create the proper MtProtoSender.
-            sender = MtProtoSender(transport, session)
-            sender.connect()
-
-            # InvokeWithLayer(InitConnection(ImportAuthorization(...)))
-            init_connection = InitConnectionRequest(
-                api_id=self.api_id,
-                device_model=platform.node(),
-                system_version=platform.system(),
-                app_version=self.__version__,
-                lang_code='en',
-                query=ImportAuthorizationRequest(
-                    export_auth.id, export_auth.bytes)
-            )
-            query = InvokeWithLayerRequest(layer=layer, query=init_connection)
-
-            sender.send(query)
-            sender.receive(query)
-
-            # Step 4. We're connected and using the desired layer!
             # Don't go through this expensive process every time.
-            self._cached_senders[dc_id] = sender
-            self._cached_sessions[dc_id] = session
-
-            return sender
+            self._cached_clients[dc_id] = client
+            return client
 
     # endregion
 
@@ -302,12 +280,10 @@ class TelegramClient(TelegramBareClient):
            ConnectionResetError will be raised if it occurs a second time.
         """
         try:
-            sender = self._get_exported_sender(
+            client = self._get_exported_client(
                 dc_id, init_connection=reconnect)
 
-            sender.send(request)
-            sender.receive(request)
-            return request.result
+            return client.invoke(request)
 
         except ConnectionResetError:
             if reconnect:
