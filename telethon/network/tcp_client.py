@@ -50,9 +50,10 @@ class TcpClient:
 
         # Ensure that only one thread can send data at once
         with self._lock:
-            total_sent = 0
-            while total_sent < len(data):
-                sent = self._socket.send(data[total_sent:])
+            view = memoryview(data)
+            total_sent, total = 0, len(data)
+            while total_sent < total:
+                sent = self._socket.send(view[total_sent:])
                 if sent == 0:
                     raise ConnectionResetError(
                         'The server has closed the connection.')
