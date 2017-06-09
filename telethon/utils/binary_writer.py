@@ -12,8 +12,7 @@ class BinaryWriter:
         if not stream:
             stream = BytesIO()
 
-        self.stream = stream
-        self.writer = BufferedWriter(self.stream)
+        self.writer = BufferedWriter(stream)
         self.written_count = 0
 
     # region Writing
@@ -126,7 +125,7 @@ class BinaryWriter:
         """Get the current bytes array content from the buffer, optionally flushing first"""
         if flush:
             self.writer.flush()
-        return self.stream.getvalue()
+        return self.writer.raw.getvalue()
 
     def get_written_bytes_count(self):
         """Gets the count of bytes written in the buffer.
