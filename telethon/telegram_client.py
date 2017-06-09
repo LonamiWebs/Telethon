@@ -252,21 +252,17 @@ class TelegramClient(TelegramBareClient):
             return result
 
         except InvalidDCError as e:
-            if (e.message.startswith('PHONE_MIGRATE_') or
-                    e.message.startswith('USER_MIGRATE_')):
+            if not e.message.startswith('FILE_MIGRATE_'):
+                # Only reconnect unless we're trying to download media,
+                # this is, on login (user migrate, phone migrate, etc.)
                 self._logger.info('DC error when invoking request, '
                                   'attempting to reconnect at DC {}'
                                   .format(e.new_dc))
 
                 self.reconnect(new_dc=e.new_dc)
                 return self.invoke(request, timeout=timeout)
-
             else:
-                self._logger.info('DC error when invoking request, '
-                                  'attempting to send it on DC {}'
-                                  .format(e.new_dc))
-
-                return self.invoke_on_dc(request, e.new_dc, timeout=timeout)
+                raise
 
         finally:
             self._lock.release()
@@ -724,6 +720,35 @@ class TelegramClient(TelegramBareClient):
             file.write('END:VCARD\n')
 
         return file_path
+
+    def download_file(self,
+                      input_location,
+                      file_path,
+                      part_size_kb=None,
+                      file_size=None,
+                      progress_callback=None,
+                      on_dc=None):
+        if on_dc is None:
+            try:
+                super(TelegramClient, self).download_file(
+                    input_location,
+                    file_path,
+                    part_size_kb=part_size_kb,
+                    file_size=file_size,
+                    progress_callback=progress_callback
+                )
+            except InvalidDCError as e:
+                on_dc = e.new_dc
+
+        if on_dc is not None:
+            client = self._get_exported_client(on_dc)
+            client.download_file(
+                input_location,
+                file_path,
+                part_size_kb=part_size_kb,
+                file_size=file_size,
+                progress_callback=progress_callback
+            )
 
     # endregion
 
