@@ -42,12 +42,12 @@ class TLObject:
             ([0-9a-f]+)        # The constructor ID is in hexadecimal form
 
             (?:\s              # After that, we want to match its arguments (name:type)
-                {?             # For handling the start of the «{X:Type}» case
+                {?             # For handling the start of the '{X:Type}' case
                 \w+            # The argument name will always be an alpha-only name
                 :              # Then comes the separator between name:type
                 [\w\d<>#.?!]+  # The type is slightly more complex, since it's alphanumeric and it can
                                # also have Vector<type>, flags:# and flags.0?default, plus :!X as type
-                }?             # For handling the end of the «{X:Type}» case
+                }?             # For handling the end of the '{X:Type}' case
             )*                 # Match 0 or more arguments
             \s                 # Leave a space between the arguments and the equal
             =
@@ -146,14 +146,14 @@ class TLArg:
                 '!')  # Strip the exclamation mark always to have only the name
 
             # The type may be a flag (flags.IDX?REAL_TYPE)
-            # Note that «flags» is NOT the flags name; this is determined by a previous argument
-            # However, we assume that the argument will always be called «flags»
+            # Note that 'flags' is NOT the flags name; this is determined by a previous argument
+            # However, we assume that the argument will always be called 'flags'
             flag_match = re.match(r'flags.(\d+)\?([\w<>.]+)', self.type)
             if flag_match:
                 self.is_flag = True
                 self.flag_index = int(flag_match.group(1))
-                self.type = flag_match.group(
-                    2)  # Update the type to match the exact type, not the "flagged" one
+                # Update the type to match the exact type, not the "flagged" one
+                self.type = flag_match.group(2)
 
             # Then check if the type is a Vector<REAL_TYPE>
             vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)

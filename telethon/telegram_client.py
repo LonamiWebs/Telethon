@@ -467,7 +467,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """Sends a "read acknowledge" (i.e., notifying the given peer that we've
-           read their messages, also known as the "double check ✅✅").
+           read their messages, also known as the "double check").
 
            Either a list of messages (or a single message) can be given,
            or the maximum message ID (until which message we want to send the read acknowledge).
@@ -506,7 +506,8 @@ class TelegramClient(TelegramBareClient):
             # Performer and song title and add DocumentAttributeAudio
         ]
         # Ensure we have a mime type, any; but it cannot be None
-        # «The "octet-stream" subtype is used to indicate that a body contains arbitrary binary data.»
+        # 'The "octet-stream" subtype is used to indicate that a body
+        # contains arbitrary binary data.'
         if not mime_type:
             mime_type = 'application/octet-stream'
         self.send_media_file(
@@ -809,7 +810,7 @@ class TelegramClient(TelegramBareClient):
 
                     if self.sender.logging_out:
                         # This error is okay when logging out, means we got disconnected
-                        # TODO Not sure why this happens because we call disconnect()…
+                        # TODO Not sure why this happens because we call disconnect()...
                         self._set_updates_thread(running=False)
                     else:
                         raise

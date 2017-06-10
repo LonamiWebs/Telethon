@@ -165,7 +165,7 @@ class TLGenerator:
                         for arg in args:
                             if not arg.flag_indicator:
                                 builder.write(
-                                    ':param {}: Telegram type: «{}».'.format(
+                                    ':param {}: Telegram type: "{}".'.format(
                                         arg.name, arg.type))
                                 if arg.is_vector:
                                     builder.write(' Must be a list.'.format(
@@ -342,7 +342,7 @@ class TLGenerator:
         :param builder: The source code builder
         :param arg: The argument to write
         :param args: All the other arguments in TLObject same on_send. This is required to determine the flags value
-        :param name: The name of the argument. Defaults to «self.argname»
+        :param name: The name of the argument. Defaults to "self.argname"
                      This argument is an option because it's required when writing Vectors<>
         """
 
@@ -437,7 +437,7 @@ class TLGenerator:
         :param builder: The source code builder
         :param arg: The argument to write
         :param args: All the other arguments in TLObject same on_send. This is required to determine the flags value
-        :param name: The name of the argument. Defaults to «self.argname»
+        :param name: The name of the argument. Defaults to "self.argname"
                      This argument is an option because it's required when writing Vectors<>
         """
 
