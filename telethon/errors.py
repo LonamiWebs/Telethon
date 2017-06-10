@@ -178,6 +178,10 @@ class RPCError(Exception):
         'The method is unavailable for temporary authorization key, not bound to permanent.',
         'SESSION_PASSWORD_NEEDED':
         'Two-steps verification is enabled and a password is required.',
+        'USER_ALREADY_PARTICIPANT':
+        'The authenticated user is already a participant of the chat.',
+        'INVITE_HASH_EXPIRED':
+        'The chat the user tried to join has expired and is not valid anymore.',
 
         # 420 FLOOD
         'FLOOD_WAIT_(\d+)': 'A wait of {} seconds is required.'
