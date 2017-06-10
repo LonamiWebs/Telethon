@@ -785,7 +785,10 @@ class TelegramClient(TelegramBareClient):
                 try:
                     self._updates_thread_receiving.set()
                     self._logger.debug('Trying to receive updates from the updates thread')
+
                     result = self.sender.receive_update(timeout=timeout)
+
+                    self._updates_thread_receiving.clear()
                     self._logger.info('Received update from the updates thread')
                     for handler in self._update_handlers:
                         handler(result)
@@ -812,7 +815,6 @@ class TelegramClient(TelegramBareClient):
                         raise
 
             self._logger.debug('Updates thread released the lock')
-            self._updates_thread_receiving.clear()
 
         # Thread is over, so clean unset its variable
         self._updates_thread = None
