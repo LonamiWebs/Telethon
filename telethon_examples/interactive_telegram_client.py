@@ -214,7 +214,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # Send chat message (if any)
                 elif msg:
                     self.send_message(
-                        entity, msg, markdown=True, no_web_page=True)
+                        entity, msg, no_web_page=True)
 
     def send_photo(self, path, entity):
         print('Uploading {}...'.format(path))

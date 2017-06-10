@@ -15,8 +15,6 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      PhoneCodeExpiredError, PhoneCodeHashEmptyError,
                      PhoneCodeInvalidError)
 
-from .parser.markdown_parser import parse_message_entities
-
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session, JsonSession
 
@@ -424,22 +422,16 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
-                     markdown=False,
                      no_web_page=False):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
-        if markdown:
-            msg, entities = parse_message_entities(message)
-        else:
-            msg, entities = message, []
-
         msg_id = utils.generate_random_long()
         self.invoke(
             SendMessageRequest(
                 peer=get_input_peer(entity),
-                message=msg,
+                message=message,
                 random_id=msg_id,
-                entities=entities,
+                entities=[],
                 no_webpage=no_web_page))
         return msg_id
 
