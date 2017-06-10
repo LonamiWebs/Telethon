@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import platform
 import random
 import time
 from threading import Lock
@@ -98,7 +99,19 @@ class JsonSession:
        through an official Telegram client to revoke the authorization.
     """
     def __init__(self, session_user_id):
+        # These values will NOT be saved
         self.session_user_id = session_user_id
+
+        # For connection purposes
+        self.device_model = platform.node()
+        self.system_version = platform.system()
+        self.app_version = '0'
+        self.lang_code = 'en'
+
+        # Cross-thread safety
+        self._lock = Lock()
+
+        # These values will be saved
         self.server_address = '91.108.56.165'
         self.port = 443
         self.auth_key = None
@@ -107,9 +120,6 @@ class JsonSession:
         self.salt = 0  # Unsigned long
         self.time_offset = 0
         self.last_message_id = 0  # Long
-
-        # Cross-thread safety
-        self._lock = Lock()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""

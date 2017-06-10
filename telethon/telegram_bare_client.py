@@ -70,8 +70,7 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, device_model, system_version, app_version, lang_code,
-                exported_auth=None):
+    def connect(self, exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -103,10 +102,10 @@ class TelegramBareClient:
 
             request = InitConnectionRequest(
                 api_id=self.api_id,
-                device_model=device_model,
-                system_version=system_version,
-                app_version=app_version,
-                lang_code=lang_code,
+                device_model=self.session.device_model,
+                system_version=self.session.system_version,
+                app_version=self.session.app_version,
+                lang_code=self.session.lang_code,
                 query=query)
 
             result = self.invoke(
@@ -136,8 +135,7 @@ class TelegramBareClient:
             self.sender.disconnect()
             self.sender = None
 
-    def reconnect(self, device_model, system_version, app_version, lang_code,
-                  new_dc=None):
+    def reconnect(self, new_dc=None):
         """Disconnects and connects again (effectively reconnecting).
 
            If 'new_dc' is not None, the current authorization key is
@@ -152,7 +150,7 @@ class TelegramBareClient:
             self.session.port = dc.port
             self.session.save()
 
-        self.connect(device_model, system_version, app_version, lang_code)
+        self.connect()
 
     # endregion
 
@@ -194,10 +192,7 @@ class TelegramBareClient:
         except ConnectionResetError:
             self._logger.info('Server disconnected us. Reconnecting and '
                               'resending request...')
-
-            # TODO Don't actually use these values
-            import platform
-            self.reconnect(platform.node(), platform.system(), self.__version__, 'en')
+            self.reconnect()
             return self.invoke(request, timeout=timeout)
 
         except FloodWaitError:

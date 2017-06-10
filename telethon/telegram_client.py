@@ -27,8 +27,7 @@ from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SignUpRequest, ImportBotAuthorizationRequest)
 
 # Required to work with different data centers
-from .tl.functions.auth import (ExportAuthorizationRequest,
-                                ImportAuthorizationRequest)
+from .tl.functions.auth import ExportAuthorizationRequest
 
 # Easier access to common methods
 from .tl.functions.messages import (
@@ -103,14 +102,17 @@ class TelegramClient(TelegramBareClient):
         self._updates_thread_receiving = Event()
 
         # Used on connection - the user may modify these and reconnect
-        self.device_model = \
-            device_model if device_model else platform.node()
+        if device_model:
+            self.session.device_model = device_model
 
-        self.system_version = \
-            system_version if system_version else platform.system()
+        if system_version:
+            self.session.system_version = system_version
 
-        self.app_version = app_version if app_version else self.__version__
-        self.lang_code = lang_code if lang_code else 'en'
+        self.session.app_version = \
+            app_version if app_version else self.__version__
+
+        if lang_code:
+            self.session.lang_code = lang_code
 
         # Cache "exported" senders 'dc_id: MtProtoSender' and
         # their corresponding sessions not to recreate them all
@@ -131,12 +133,7 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        return super(TelegramClient, self).connect(
-            device_model=self.device_model,
-            system_version=self.system_version,
-            app_version=self.app_version,
-            lang_code=self.lang_code
-        )
+        return super(TelegramClient, self).connect()
 
     def disconnect(self):
         """Disconnects from the Telegram server
@@ -150,7 +147,7 @@ class TelegramClient(TelegramBareClient):
 
         self._cached_clients.clear()
 
-    def reconnect(self, new_dc=None, *args):
+    def reconnect(self, new_dc=None):
         """Disconnects and connects again (effectively reconnecting).
 
            If 'new_dc' is not None, the current authorization key is
@@ -158,13 +155,7 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        super(TelegramClient, self).reconnect(
-            device_model=self.device_model,
-            system_version=self.system_version,
-            app_version=self.app_version,
-            lang_code=self.lang_code,
-            new_dc=new_dc
-        )
+        super(TelegramClient, self).reconnect(new_dc=new_dc)
 
     # endregion
 
@@ -186,13 +177,7 @@ class TelegramClient(TelegramBareClient):
         client = self._cached_clients.get(dc_id)
         if client:
             if init_connection:
-                client.reconnect(
-                    device_model=self.device_model,
-                    system_version=self.system_version,
-                    app_version=self.app_version,
-                    lang_code=self.lang_code
-                )
-
+                client.reconnect()
             return client
         else:
             dc = self._get_dc(dc_id)
@@ -206,9 +191,7 @@ class TelegramClient(TelegramBareClient):
             session.server_address = dc.ip_address
             session.port = dc.port
             client = TelegramBareClient(session, self.api_id, self.api_hash)
-            client.connect(self.device_model, self.system_version,
-                           self.app_version, self.lang_code,
-                           exported_auth=export_auth)
+            client.connect(exported_auth=export_auth)
 
             # Don't go through this expensive process every time.
             self._cached_clients[dc_id] = client
