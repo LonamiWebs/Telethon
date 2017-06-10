@@ -2,7 +2,7 @@ import shutil
 from getpass import getpass
 
 from telethon import TelegramClient
-from telethon.errors import RPCError
+from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
 from telethon.utils import get_display_name
 
@@ -76,14 +76,11 @@ class InteractiveTelegramClient(TelegramClient):
                     self_user = self.sign_in(user_phone, code)
 
                 # Two-step verification may be enabled
-                except RPCError as e:
-                    if e.password_required:
-                        pw = getpass('Two step verification is enabled. '
-                                     'Please enter your password: ')
+                except SessionPasswordNeededError as e:
+                    pw = getpass('Two step verification is enabled. '
+                                 'Please enter your password: ')
 
-                        self_user = self.sign_in(password=pw)
-                    else:
-                        raise
+                    self_user = self.sign_in(password=pw)
 
     def run(self):
         # Listen for updates

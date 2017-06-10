@@ -130,13 +130,20 @@ More examples are also available under the ``telethon_examples/`` folder.
 Common errors
 -------------
 
-Some errors you may encounter when using Telethon can be the ``FloodWaitError``, which tells you
-that you've been trying to send the very same request many times, too quickly. You must wait
-``flood_wait_error.seconds`` before calling ``client.connect()`` again, since this error also
-disconnects the client.
+Errors resulting from Telegram queries all subclass the ``RPCError`` class.
+This class is further specialized into further errors:
 
-Another common one is the ``RPCError``, which usually has descriptive information on what went wrong.
-However, you may encounter something strange. If you don't manage to solve it, please open an issue.
+* ``InvalidDCError`` (303), the request must be repeated on another DC.
+* ``BadRequestError`` (400), the request contained errors.
+* ``UnauthorizedError`` (401), the user is not authorized yet.
+* ``ForbiddenError`` (403), privacy violation error.
+* ``NotFoundError`` (404), make sure you're invoking ``Request``'s!
+* ``FloodError`` (420), the same request was repeated many times. Must wait ``.seconds``.
+
+Further specialization is also available, for instance, the ``SessionPasswordNeededError``
+when signing in means that a password must be provided to continue.
+
+If the error is not recognised, it will only be an ``RPCError``.
 
 Unless you know what you're doing, you should download media by always using the ``.download_file()``
 function, which supports a ``str`` or a file handle as parameters. Otherwise, ``.invoke()`` may raise

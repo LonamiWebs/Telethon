@@ -4,8 +4,7 @@ from threading import RLock
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import (BadMessageError, FloodWaitError,
-                      RPCError, InvalidDCError)
+from ..errors import BadMessageError, InvalidDCError, rpc_message_to_error
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
 from ..extensions import BinaryReader, BinaryWriter
@@ -106,7 +105,7 @@ class MtProtoSender:
                     if updates:
                         break  # No request but one update read, exit
                 elif request.confirm_received:
-                        break  # Request, and result read, exit
+                    break  # Request, and result read, exit
 
             self._logger.info('Request result received')
         self._logger.debug('receive() released the lock')
@@ -325,15 +324,16 @@ class MtProtoSender:
             request.confirm_received = True
 
         if inner_code == 0x2144ca19:  # RPC Error
-            error = RPCError(
-                code=reader.read_int(), message=reader.tgread_string())
+            error = rpc_message_to_error(
+                reader.read_int(), reader.tgread_string())
 
             # Acknowledge that we received the error
             self._need_confirmation.append(request_id)
             self._send_acknowledges()
 
             self._logger.warning('Read RPC error: %s', str(error))
-            if error.must_resend:
+            if isinstance(error, InvalidDCError):
+                # Must resend this request
                 if not request:
                     raise ValueError(
                         'The previously sent request must be resent. '
@@ -341,15 +341,7 @@ class MtProtoSender:
                         '(possibly called from a different thread).')
                 request.confirm_received = False
 
-            if error.message.startswith('FLOOD_WAIT_'):
-                self._updates_thread_sleep = error.additional_data
-                raise FloodWaitError(seconds=error.additional_data)
-
-            elif '_MIGRATE_' in error.message:
-                raise InvalidDCError(error)
-
-            else:
-                raise error
+            raise error
         else:
             if not request:
                 raise ValueError(

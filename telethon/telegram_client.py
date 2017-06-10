@@ -9,15 +9,16 @@ from . import TelegramBareClient
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import (RPCError, InvalidDCError, InvalidParameterError,
-                     ReadCancelledError)
-from .network import authenticator, MtProtoSender, TcpTransport
+from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
+                     ReadCancelledError, FileMigrateError, PhoneMigrateError,
+                     NetworkMigrateError, UserMigrateError, PhoneCodeEmptyError,
+                     PhoneCodeExpiredError, PhoneCodeHashEmptyError,
+                     PhoneCodeInvalidError)
+
 from .parser.markdown_parser import parse_message_entities
 
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session, JsonSession
-from .tl.all_tlobjects import layer
-from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -251,18 +252,13 @@ class TelegramClient(TelegramBareClient):
             # TODO Retry if 'result' is None?
             return result
 
-        except InvalidDCError as e:
-            if not e.message.startswith('FILE_MIGRATE_'):
-                # Only reconnect unless we're trying to download media,
-                # this is, on login (user migrate, phone migrate, etc.)
-                self._logger.info('DC error when invoking request, '
-                                  'attempting to reconnect at DC {}'
-                                  .format(e.new_dc))
+        except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
+            self._logger.info('DC error when invoking request, '
+                              'attempting to reconnect at DC {}'
+                              .format(e.new_dc))
 
-                self.reconnect(new_dc=e.new_dc)
-                return self.invoke(request, timeout=timeout)
-            else:
-                raise
+            self.reconnect(new_dc=e.new_dc)
+            return self.invoke(request, timeout=timeout)
 
         finally:
             self._lock.release()
@@ -326,11 +322,9 @@ class TelegramClient(TelegramBareClient):
                 result = self.invoke(SignInRequest(
                     phone_number, self._phone_code_hashes[phone_number], code))
 
-            except RPCError as error:
-                if error.message.startswith('PHONE_CODE_'):
-                    return None
-                else:
-                    raise
+            except (PhoneCodeEmptyError, PhoneCodeExpiredError,
+                    PhoneCodeHashEmptyError, PhoneCodeInvalidError):
+                return None
 
         elif password:
             salt = self.invoke(GetPasswordRequest()).current_salt
@@ -386,11 +380,8 @@ class TelegramClient(TelegramBareClient):
            or None if the request fails (hence, not authenticated)."""
         try:
             return self.invoke(GetUsersRequest([InputUserSelf()]))[0]
-        except RPCError as e:
-            if e.code == 401:  # 401 UNAUTHORIZED
-                return None
-            else:
-                raise
+        except UnauthorizedError:
+            return None
 
     @staticmethod
     def list_sessions():
@@ -743,7 +734,7 @@ class TelegramClient(TelegramBareClient):
                     file_size=file_size,
                     progress_callback=progress_callback
                 )
-            except InvalidDCError as e:
+            except FileMigrateError as e:
                 on_dc = e.new_dc
 
         if on_dc is not None:
