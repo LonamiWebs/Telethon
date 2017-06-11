@@ -58,7 +58,7 @@ class TelegramBareClient:
         """
 
         self.session = session
-        self.api_id = api_id
+        self.api_id = int(api_id)
         self.api_hash = api_hash
         self.proxy = proxy
         self._logger = logging.getLogger(__name__)
