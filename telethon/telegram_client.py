@@ -408,15 +408,14 @@ class TelegramClient(TelegramBareClient):
                      no_web_page=False):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
-        msg_id = utils.generate_random_long()
-        self.invoke(
-            SendMessageRequest(
-                peer=get_input_peer(entity),
-                message=message,
-                random_id=msg_id,
-                entities=[],
-                no_webpage=no_web_page))
-        return msg_id
+        request = SendMessageRequest(
+            peer=get_input_peer(entity),
+            message=message,
+            entities=[],
+            no_webpage=no_web_page
+        )
+        self.invoke(request)
+        return request.random_id
 
     def get_message_history(self,
                             entity,
@@ -520,11 +519,10 @@ class TelegramClient(TelegramBareClient):
 
     def send_media_file(self, input_media, entity):
         """Sends any input_media (contact, document, photo...) to the given entity"""
-        self.invoke(
-            SendMediaRequest(
-                peer=get_input_peer(entity),
-                media=input_media,
-                random_id=utils.generate_random_long()))
+        self.invoke(SendMediaRequest(
+            peer=get_input_peer(entity),
+            media=input_media
+        ))
 
     # endregion
 

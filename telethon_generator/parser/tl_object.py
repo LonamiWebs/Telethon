@@ -78,6 +78,14 @@ class TLObject:
             result=match.group(3),
             is_function=is_function)
 
+    def sorted_args(self):
+        """Returns the arguments properly sorted and ready to plug-in
+           into a Python's method header (i.e., flags and those which
+           can be inferred will go last so they can default =None)
+        """
+        return sorted(self.args,
+                      key=lambda x: x.is_flag or x.can_be_inferred)
+
     def is_core_type(self):
         """Determines whether the TLObject is a "core type"
            (and thus should be embedded in the generated code) or not"""
@@ -133,6 +141,12 @@ class TLArg:
         self.is_vector = False
         self.is_flag = False
         self.flag_index = -1
+
+        # Special case: some types can be inferred, which makes it
+        # less annoying to type. Currently the only type that can
+        # be inferred is if the name is 'random_id', to which a
+        # random ID will be assigned if left as None (the default)
+        self.can_be_inferred = name == 'random_id'
 
         # The type can be an indicator that other arguments will be flags
         if arg_type == '#':

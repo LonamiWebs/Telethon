@@ -108,12 +108,18 @@ class TLGenerator:
                 out_dir,
                 TLGenerator.get_file_name(
                     tlobject, add_extension=True))
+
             with open(filename, 'w', encoding='utf-8') as file:
                 # Let's build the source code!
                 with SourceBuilder(file) as builder:
                     # Both types and functions inherit from MTProtoRequest so they all can be sent
                     builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
                                     .format('.' * depth))
+
+                    if any(a for a in tlobject.args if a.can_be_inferred):
+                        # Currently only 'random_id' needs 'os' to be imported
+                        builder.writeln('import os')
+
                     builder.writeln()
                     builder.writeln()
                     builder.writeln('class {}(MTProtoRequest):'.format(
@@ -134,16 +140,17 @@ class TLGenerator:
                     builder.writeln()
 
                     # First sort the arguments so that those not being a flag come first
-                    args = sorted(
-                        [arg for arg in tlobject.args
-                         if not arg.flag_indicator],
-                        key=lambda x: x.is_flag)
+                    args = [
+                        a for a in tlobject.sorted_args()
+                        if not a.flag_indicator and not a.generic_definition
+                    ]
 
                     # Then convert the args to string parameters, the flags having =None
-                    args = [(arg.name if not arg.is_flag else
-                             '{}=None'.format(arg.name)) for arg in args
-                            if not arg.flag_indicator and
-                            not arg.generic_definition]
+                    args = [
+                        (a.name if not a.is_flag and not a.can_be_inferred
+                         else '{}=None'.format(a.name))
+                        for a in args
+                    ]
 
                     # Write the __init__ function
                     if args:
@@ -209,8 +216,26 @@ class TLGenerator:
                     if args:
                         # Leave an empty line if there are any args
                         builder.writeln()
-                        for arg in args:
-                            builder.writeln('self.{0} = {0}'.format(arg.name))
+
+                    for arg in args:
+                        if arg.can_be_inferred:
+                            # Currently the only argument that can be
+                            # inferred are those called 'random_id'
+                            if arg.name == 'random_id':
+                                builder.writeln(
+                                    "self.random_id = random_id if random_id "
+                                    "is not None else int.from_bytes("
+                                    "os.urandom({}), signed=True, "
+                                    "byteorder='little')"
+                                        .format(8 if arg.type == 'long' else 4)
+                                )
+                            else:
+                                raise ValueError(
+                                    'Cannot infer a value for ', arg)
+                        else:
+                            builder.writeln('self.{0} = {0}'
+                                            .format(arg.name))
+
                     builder.end_block()
 
                     # Write the on_send(self, writer) function

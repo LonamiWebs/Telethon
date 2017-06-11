@@ -290,9 +290,11 @@ def generate_documentation(scheme_file):
             docs.write_title('Parameters' if tlobject.is_function else 'Members', level=3)
 
             # Sort the arguments in the same way they're sorted on the generated code (flags go last)
-            args = sorted([a for a in tlobject.args if
-                           not a.flag_indicator and not a.generic_definition],
-                          key=lambda a: a.is_flag)
+            args = [
+                a for a in tlobject.sorted_args()
+                if not a.flag_indicator and not a.generic_definition
+            ]
+
             if args:
                 # Writing parameters
                 docs.begin_table(column_count=3)
@@ -312,6 +314,8 @@ def generate_documentation(scheme_file):
 
                     # Create a description for this argument
                     description = ''
+                    if arg.can_be_inferred:
+                        description += 'If left to None, it will be inferred automatically. '
                     if arg.is_vector:
                         description += 'A list must be supplied for this argument. '
                     if arg.is_generic:
