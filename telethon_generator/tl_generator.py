@@ -222,14 +222,15 @@ class TLGenerator:
                                       "date"]
                         
                         for arg in args:
+                            builder.writeln("\'{}\': ".format(arg.name))
                             if arg.is_vector:
-                                builder.writeln("\'{}\': [_{} for _ in self.{}] if self.{} is not None else [],"
-                                                .format(arg.name, ".to_dict() if _ is not None else None"
+                                builder.writeln("[x{} for x in self.{}] if self.{} is not None else [],"
+                                                .format(".to_dict() if x is not None else None"
                                                                   if arg.type not in base_types else "",
                                                         arg.name, arg.name))
                             else:
-                                builder.writeln("\'{}\': self.{}{}, "
-                                                .format(arg.name, arg.name,
+                                builder.writeln("self.{}{},"
+                                                .format(arg.name,
                                                         ".to_dict() if self.{} is not None else None".format(arg.name)
                                                         if arg.type not in base_types else ""))
                         builder.write("}")
