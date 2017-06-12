@@ -237,6 +237,32 @@ class TLGenerator:
                                             .format(arg.name))
 
                     builder.end_block()
+                    
+                    # Write the to_dict(self) method
+                    builder.writeln('def to_dict(self):')
+                    if args:
+                        builder.writeln('return {')
+                        
+                        base_types = ["string", "bytes", "int", "long", "int128", "int256", "double", "Bool", "true",
+                                      "date"]
+                        
+                        for arg in args:
+                            builder.writeln("\'{}\': ".format(arg.name))
+                            if arg.is_vector:
+                                builder.writeln("[x{} for x in self.{}] if self.{} is not None else [],"
+                                                .format(".to_dict() if x is not None else None"
+                                                                  if arg.type not in base_types else "",
+                                                        arg.name, arg.name))
+                            else:
+                                builder.writeln("self.{}{},"
+                                                .format(arg.name,
+                                                        ".to_dict() if self.{} is not None else None".format(arg.name)
+                                                        if arg.type not in base_types else ""))
+                        builder.write("}")
+                    else:
+                        builder.writeln('return {}')
+                    builder.writeln()
+                    builder.end_block()
 
                     # Write the on_send(self, writer) function
                     builder.writeln('def on_send(self, writer):')
