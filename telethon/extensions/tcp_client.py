@@ -53,11 +53,15 @@ class TcpClient:
             view = memoryview(data)
             total_sent, total = 0, len(data)
             while total_sent < total:
-                sent = self._socket.send(view[total_sent:])
-                if sent == 0:
-                    raise ConnectionResetError(
-                        'The server has closed the connection.')
-                total_sent += sent
+                try:
+                    sent = self._socket.send(view[total_sent:])
+                    if sent == 0:
+                        raise ConnectionResetError(
+                            'The server has closed the connection.')
+                    total_sent += sent
+
+                except BlockingIOError:
+                    time.sleep(self.delay)
 
     def read(self, size, timeout=timedelta(seconds=5)):
         """Reads (receives) a whole block of 'size bytes
