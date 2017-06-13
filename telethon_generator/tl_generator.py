@@ -312,8 +312,8 @@ class TLGenerator:
         builder.end_block()
 
         # Write the to_dict(self) method
-        builder.writeln('def to_dict(self):')
         if args:
+            builder.writeln('def to_dict(self):')
             builder.writeln('return {')
             builder.current_indent += 1
 
@@ -345,11 +345,12 @@ class TLGenerator:
                 builder.writeln(',')
 
             builder.current_indent -= 1
-            builder.write("}")
+            builder.writeln("}")
         else:
+            builder.writeln('@staticmethod')
+            builder.writeln('def to_dict():')
             builder.writeln('return {}')
 
-        builder.writeln()
         builder.end_block()
 
         # Write the on_send(self, writer) function
