@@ -67,19 +67,22 @@ def find_user_or_chat(peer, users, chats):
        Returns None if it was not found"""
     try:
         if isinstance(peer, PeerUser):
-            user = next(u for u in users if u.id == peer.user_id)
-            return user
+            return next(u for u in users if u.id == peer.user_id)
 
         elif isinstance(peer, PeerChat):
-            chat = next(c for c in chats if c.id == peer.chat_id)
-            return chat
+            return next(c for c in chats if c.id == peer.chat_id)
 
         elif isinstance(peer, PeerChannel):
-            channel = next(c for c in chats if c.id == peer.channel_id)
-            return channel
+            return next(c for c in chats if c.id == peer.channel_id)
 
-    except StopIteration:
-        return None
+    except StopIteration: return
+
+    if isinstance(peer, int):
+        try: return next(u for u in users if u.id == peer)
+        except StopIteration: pass
+
+        try: return next(c for c in chats if c.id == peer)
+        except StopIteration: pass
 
 
 def get_appropriated_part_size(file_size):

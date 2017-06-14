@@ -440,20 +440,17 @@ class TelegramClient(TelegramBareClient):
                 min_id=min_id,
                 add_offset=add_offset))
 
-        # The result may be a messages slice (not all messages were retrieved) or
-        # simply a messages TLObject. In the later case, no "count" attribute is specified:
-        # the total messages count is retrieved by counting all the retrieved messages
+        # The result may be a messages slice (not all messages were retrieved)
+        # or simply a messages TLObject. In the later case, no "count"
+        # attribute is specified, so the total messages count is simply
+        # the count of retrieved messages
         total_messages = getattr(result, 'count', len(result.messages))
 
         # Iterate over all the messages and find the sender User
-        users = []
-        for msg in result.messages:
-            for usr in result.users:
-                if msg.from_id == usr.id:
-                    users.append(usr)
-                    break
+        entities = [find_user_or_chat(msg.from_id, result.users, result.chats)
+                    for msg in result.messages]
 
-        return total_messages, result.messages, users
+        return total_messages, result.messages, entities
 
     def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """Sends a "read acknowledge" (i.e., notifying the given peer that we've
