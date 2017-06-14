@@ -1,7 +1,5 @@
-import platform
 from datetime import timedelta
 from mimetypes import guess_type
-from os import listdir, path
 from threading import Event, RLock, Thread
 from time import sleep
 
@@ -363,13 +361,6 @@ class TelegramClient(TelegramBareClient):
             return self.invoke(GetUsersRequest([InputUserSelf()]))[0]
         except UnauthorizedError:
             return None
-
-    @staticmethod
-    def list_sessions():
-        """Lists all the sessions of the users who have ever connected
-           using this client and never logged out"""
-        return [path.splitext(path.basename(f))[0]
-                for f in listdir('.') if f.endswith('.session')]
 
     # endregion
 

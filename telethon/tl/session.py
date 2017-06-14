@@ -146,6 +146,14 @@ class JsonSession:
             return False
 
     @staticmethod
+    def list_sessions():
+        """Lists all the sessions of the users who have ever connected
+           using this client and never logged out
+        """
+        return [os.path.splitext(os.path.basename(f))[0]
+                for f in os.listdir('.') if f.endswith('.session')]
+
+    @staticmethod
     def try_load_or_create_new(session_user_id):
         """Loads a saved session_user_id.session or creates a new one.
            If session_user_id=None, later .save()'s will have no effect.
