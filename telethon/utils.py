@@ -14,8 +14,10 @@ def get_display_name(entity):
     """Gets the input peer for the given "entity" (user, chat or channel)
        Returns None if it was not found"""
     if isinstance(entity, User):
-        if entity.last_name is not None:
+        if entity.last_name and entity.first_name:
             return '{} {}'.format(entity.first_name, entity.last_name)
+        elif entity.last_name:
+            return entity.last_name
         return entity.first_name
 
     if isinstance(entity, Chat) or isinstance(entity, Channel):
