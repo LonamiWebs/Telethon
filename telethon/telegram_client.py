@@ -145,21 +145,13 @@ class TelegramClient(TelegramBareClient):
 
         self._cached_clients.clear()
 
-    def reconnect(self, new_dc=None):
-        """Disconnects and connects again (effectively reconnecting).
-
-           If 'new_dc' is not None, the current authorization key is
-           removed, the DC used is switched, and a new connection is made.
-
-           *args will be ignored.
-        """
-        super(TelegramClient, self).reconnect(new_dc=new_dc)
-
     # endregion
 
-    # region Working with different Data Centers
+    # region Working with different connections
 
-    def _get_exported_client(self, dc_id, init_connection=False):
+    def _get_exported_client(self, dc_id,
+                             init_connection=False,
+                             bypass_cache=False):
         """Gets a cached exported TelegramBareClient for the desired DC.
 
            If it's the first time retrieving the TelegramBareClient, the
@@ -168,12 +160,16 @@ class TelegramClient(TelegramBareClient):
 
            If after using the sender a ConnectionResetError is raised,
            this method should be called again with init_connection=True
-           in order to perform the reconnection."""
+           in order to perform the reconnection.
+
+           If bypass_cache is True, a new client will be exported and
+           it will not be cached.
+        """
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization! ^^
 
         client = self._cached_clients.get(dc_id)
-        if client:
+        if client and not bypass_cache:
             if init_connection:
                 client.reconnect()
             return client
@@ -191,9 +187,36 @@ class TelegramClient(TelegramBareClient):
             client = TelegramBareClient(session, self.api_id, self.api_hash)
             client.connect(exported_auth=export_auth)
 
-            # Don't go through this expensive process every time.
-            self._cached_clients[dc_id] = client
+            if not bypass_cache:
+                # Don't go through this expensive process every time.
+                self._cached_clients[dc_id] = client
             return client
+
+    def create_new_connection(self, on_dc=None):
+        """Creates a new connection which can be used in parallel
+           with the original TelegramClient. A TelegramBareClient
+           will be returned already connected, and the caller is
+           responsible to disconnect it.
+
+           If 'on_dc' is None, the new client will run on the same
+           data center as the current client (most common case).
+
+           If the client is meant to be used on a different data
+           center, the data center ID should be specified instead.
+
+           Note that TelegramBareClients will not handle automatic
+           reconnection (i.e. switching to another data center to
+           download media), and InvalidDCError will be raised in
+           such case.
+        """
+        if on_dc is None:
+            client = TelegramBareClient(self.session, self.api_id, self.api_hash,
+                                        proxy=self.proxy)
+            client.connect()
+        else:
+            client = self._get_exported_client(on_dc, bypass_cache=True)
+
+        return client
 
     # endregion
 
@@ -475,6 +498,8 @@ class TelegramClient(TelegramBareClient):
         return self.invoke(ReadHistoryRequest(peer=get_input_peer(entity), max_id=max_id))
 
     # endregion
+
+    # region Uploading files
 
     def send_photo_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
