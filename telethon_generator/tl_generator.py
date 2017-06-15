@@ -186,7 +186,8 @@ class TLGenerator:
         builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
                         .format('.' * depth))
 
-        if any(a for a in tlobject.args if a.type == 'InputPeer'):
+        if tlobject.is_function and \
+                any(a for a in tlobject.args if a.type == 'InputPeer'):
             # We can automatically convert a normal peer to an InputPeer,
             # it will make invoking a lot of requests a lot simpler.
             builder.writeln('from {}.utils import get_input_peer'
@@ -312,7 +313,7 @@ class TLGenerator:
                     )
                 else:
                     raise ValueError('Cannot infer a value for ', arg)
-            elif arg.type == 'InputPeer':
+            elif arg.type == 'InputPeer' and tlobject.is_function:
                 # Well-known case, auto-cast it to the right type
                 builder.writeln(
                     'self.{0} = get_input_peer({0})'.format(arg.name))

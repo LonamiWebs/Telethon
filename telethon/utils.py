@@ -5,9 +5,10 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 from mimetypes import add_type, guess_extension
 
 from .tl.types import (
-    Channel, Chat, ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
-    MessageMediaDocument, MessageMediaPhoto, PeerChannel, PeerChat, PeerUser,
-    User, UserProfilePhoto)
+    Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
+    ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
+    InputPeerSelf, MessageMediaDocument, MessageMediaPhoto, PeerChannel,
+    PeerChat, PeerUser, User, UserFull, UserProfilePhoto)
 
 
 def get_display_name(entity):
@@ -46,17 +47,28 @@ def get_extension(media):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
-    if (isinstance(entity, InputPeerUser) or
-        isinstance(entity, InputPeerChat) or
-            isinstance(entity, InputPeerChannel)):
+    if any(isinstance(entity, c) for c in (
+        InputPeerUser, InputPeerChat, InputPeerChannel,
+            InputPeerSelf, InputPeerEmpty)):
         return entity
 
     if isinstance(entity, User):
         return InputPeerUser(entity.id, entity.access_hash)
-    if isinstance(entity, Chat):
+
+    if any(isinstance(entity, c) for c in (
+            Chat, ChatEmpty, ChatForbidden)):
         return InputPeerChat(entity.id)
-    if isinstance(entity, Channel):
+
+    if any(isinstance(entity, c) for c in (
+            Channel, ChannelForbidden)):
         return InputPeerChannel(entity.id, entity.access_hash)
+
+    # Less common cases
+    if isinstance(entity, UserFull):
+        return InputPeerUser(entity.user.id, entity.user.access_hash)
+
+    if isinstance(entity, ChatFull):
+        return InputPeerChat(entity.id)
 
     raise ValueError('Cannot cast {} to any kind of InputPeer.'
                      .format(type(entity).__name__))
