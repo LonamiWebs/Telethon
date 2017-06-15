@@ -162,7 +162,14 @@ class InteractiveTelegramClient(TelegramClient):
                     for msg, sender in zip(
                             reversed(messages), reversed(senders)):
                         # Get the name of the sender if any
-                        name = sender.first_name if sender else '???'
+                        if sender:
+                            name = getattr(sender, 'first_name', None)
+                            if not name:
+                                name = getattr(sender, 'title')
+                                if not name:
+                                    name = '???'
+                        else:
+                            name = '???'
 
                         # Format the message content
                         if getattr(msg, 'media', None):

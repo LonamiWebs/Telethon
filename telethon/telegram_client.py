@@ -447,8 +447,10 @@ class TelegramClient(TelegramBareClient):
         total_messages = getattr(result, 'count', len(result.messages))
 
         # Iterate over all the messages and find the sender User
-        entities = [find_user_or_chat(msg.from_id, result.users, result.chats)
-                    for msg in result.messages]
+        entities = [find_user_or_chat(m.from_id, result.users, result.chats)
+                    if m.from_id is not None else
+                    find_user_or_chat(m.to_id, result.users, result.chats)
+                    for m in result.messages]
 
         return total_messages, result.messages, entities
 
