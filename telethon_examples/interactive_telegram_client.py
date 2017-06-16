@@ -1,13 +1,9 @@
-import shutil
 from getpass import getpass
 
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
 from telethon.utils import get_display_name
-
-# Get the (current) number of lines in the terminal
-cols, rows = shutil.get_terminal_size()
 
 
 def sprint(string, *args, **kwargs):
@@ -47,7 +43,8 @@ class InteractiveTelegramClient(TelegramClient):
        Telegram through Telethon, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
-    def __init__(self, session_user_id, user_phone, api_id, api_hash, proxy=None):
+    def __init__(self, session_user_id, user_phone, api_id, api_hash,
+                 proxy=None):
         print_title('Initialization')
 
         print('Initializing interactive example...')
@@ -76,7 +73,7 @@ class InteractiveTelegramClient(TelegramClient):
                     self_user = self.sign_in(user_phone, code)
 
                 # Two-step verification may be enabled
-                except SessionPasswordNeededError as e:
+                except SessionPasswordNeededError:
                     pw = getpass('Two step verification is enabled. '
                                  'Please enter your password: ')
 
@@ -120,7 +117,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                 try:
                     i = int(i if i else 0) - 1
-                    # Ensure it is inside the bounds, otherwise set to None and retry
+                    # Ensure it is inside the bounds, otherwise retry
                     if not 0 <= i < dialog_count:
                         i = None
                 except ValueError:
