@@ -798,14 +798,20 @@ class TelegramClient(TelegramBareClient):
                 self._logger.debug('Updates thread acquired the lock')
                 try:
                     self._updates_thread_receiving.set()
-                    self._logger.debug('Trying to receive updates from the updates thread')
+                    self._logger.debug(
+                        'Trying to receive updates from the updates thread'
+                    )
 
-                    result = self.sender.receive_update(timeout=timeout)
+                    updates = self.sender.receive_updates(timeout=timeout)
 
                     self._updates_thread_receiving.clear()
-                    self._logger.info('Received update from the updates thread')
-                    for handler in self._update_handlers:
-                        handler(result)
+                    self._logger.info(
+                        'Received {} update(s) from the updates thread'
+                        .format(len(updates))
+                    )
+                    for update in updates:
+                        for handler in self._update_handlers:
+                            handler(update)
 
                 except ConnectionResetError:
                     self._logger.info('Server disconnected us. Reconnecting...')

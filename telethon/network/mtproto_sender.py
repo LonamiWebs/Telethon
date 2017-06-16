@@ -113,11 +113,13 @@ class MtProtoSender:
             self._logger.info('Request result received')
         self._logger.debug('receive() released the lock')
 
-    def receive_update(self, timeout=timedelta(seconds=5)):
-        """Receives an update object and returns its result"""
+    def receive_updates(self, timeout=timedelta(seconds=5)):
+        """Receives one or more update objects
+           and returns them as a list
+        """
         updates = []
         self.receive(timeout=timeout, updates=updates)
-        return updates[0]
+        return updates
 
     def cancel_receive(self):
         """Cancels any pending receive operation
