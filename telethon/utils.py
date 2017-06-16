@@ -52,9 +52,7 @@ def get_extension(media):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
-    if any(isinstance(entity, c) for c in (
-        InputPeerUser, InputPeerChat, InputPeerChannel,
-            InputPeerSelf, InputPeerEmpty)):
+    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32('InputUser')
         return entity
 
     if isinstance(entity, User):

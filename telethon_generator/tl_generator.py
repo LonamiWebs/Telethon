@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+from zlib import crc32
 from collections import defaultdict
 
 try:
@@ -214,6 +215,9 @@ class TLGenerator:
         # Class-level variable to store its constructor ID
         builder.writeln("# Telegram's constructor (U)ID for this class")
         builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
+        builder.writeln("# Also the ID of its resulting type for fast checks")
+        builder.writeln('subclass_of_id = {}'.format(
+            hex(crc32(tlobject.result.encode('ascii')))))
         builder.writeln()
 
         # Flag arguments must go last
