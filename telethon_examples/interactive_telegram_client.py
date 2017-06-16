@@ -97,8 +97,7 @@ class InteractiveTelegramClient(TelegramClient):
                 print_title('Dialogs window')
 
                 # Display them so the user can choose
-                for i, entity in enumerate(entities):
-                    i += 1  # 1-based index
+                for i, entity in enumerate(entities, start=1):
                     sprint('{}. {}'.format(i, get_display_name(entity)))
 
                 # Let the user decide who they want to talk to
