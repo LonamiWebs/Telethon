@@ -11,7 +11,7 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      ReadCancelledError, FileMigrateError, PhoneMigrateError,
                      NetworkMigrateError, UserMigrateError, PhoneCodeEmptyError,
                      PhoneCodeExpiredError, PhoneCodeHashEmptyError,
-                     PhoneCodeInvalidError)
+                     PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session, JsonSession
@@ -816,6 +816,14 @@ class TelegramClient(TelegramBareClient):
 
                 except ReadCancelledError:
                     self._logger.info('Receiving updates cancelled')
+
+                except BrokenPipeError:
+                    self._logger.info('Tcp session is broken. Reconnecting...')
+                    self.reconnect()
+
+                except InvalidChecksumError:
+                    self._logger.info('MTProto session is broken. Reconnecting...')
+                    self.reconnect()
 
                 except OSError:
                     self._logger.warning('OSError on updates thread, %s logging out',
