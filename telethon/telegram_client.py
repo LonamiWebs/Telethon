@@ -181,7 +181,10 @@ class TelegramClient(TelegramBareClient):
 
             # Create a temporary session for this IP address, which needs
             # to be different because each auth_key is unique per DC.
-            session = JsonSession(None)
+            #
+            # Construct this session with the connection parameters
+            # (system version, device model...) from the current one.
+            session = JsonSession(self.session)
             session.server_address = dc.ip_address
             session.port = dc.port
             client = TelegramBareClient(session, self.api_id, self.api_hash)

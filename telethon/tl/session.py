@@ -99,14 +99,28 @@ class JsonSession:
        through an official Telegram client to revoke the authorization.
     """
     def __init__(self, session_user_id):
+        """session_user_id should either be a string or another Session.
+           Note that if another session is given, only parameters like
+           those required to init a connection will be copied.
+        """
         # These values will NOT be saved
-        self.session_user_id = session_user_id
+        if isinstance(session_user_id, str):
+            self.session_user_id = session_user_id
 
-        # For connection purposes
-        self.device_model = platform.node()
-        self.system_version = platform.system()
-        self.app_version = '0'
-        self.lang_code = 'en'
+            # For connection purposes
+            self.device_model = platform.node()
+            self.system_version = platform.system()
+            self.app_version = '0'
+            self.lang_code = 'en'
+
+        elif isinstance(session_user_id, JsonSession):
+            self.session_user_id = None
+
+            session = session_user_id
+            self.device_model = session.device_model
+            self.system_version = session.system_version
+            self.app_version = session.app_version
+            self.lang_code = session.lang_code
 
         # Cross-thread safety
         self._lock = Lock()
