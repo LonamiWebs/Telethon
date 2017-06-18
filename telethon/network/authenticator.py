@@ -148,7 +148,7 @@ def do_authentication(transport):
         server_time = dh_inner_data_reader.read_int()
         time_offset = server_time - int(time.time())
 
-    b = get_int(os.urandom(2048), signed=False)
+    b = get_int(os.urandom(256), signed=False)
     gb = pow(g, b, dh_prime)
     gab = pow(ga, b, dh_prime)
 
