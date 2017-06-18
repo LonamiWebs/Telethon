@@ -133,13 +133,13 @@ class MtProtoSender:
     def _send_packet(self, packet, request):
         """Sends the given packet bytes with the additional
            information of the original request. This does NOT lock the threads!"""
-        request.msg_id = self.session.get_new_msg_id()
+        request.request_msg_id = self.session.get_new_msg_id()
 
         # First calculate plain_text to encrypt it
         with BinaryWriter() as plain_writer:
             plain_writer.write_long(self.session.salt, signed=False)
             plain_writer.write_long(self.session.id, signed=False)
-            plain_writer.write_long(request.msg_id)
+            plain_writer.write_long(request.request_msg_id)
             plain_writer.write_int(
                 self.session.generate_sequence(request.confirmed))
 
@@ -223,7 +223,7 @@ class MtProtoSender:
         if code == 0x62d6b459:
             ack = reader.tgread_object()
             for r in self._pending_receive:
-                if r.msg_id in ack.msg_ids:
+                if r.request_msg_id in ack.msg_ids:
                     self._logger.warning('Ack found for the a request')
 
                     if self.logging_out:
@@ -259,7 +259,7 @@ class MtProtoSender:
 
         try:
             request = next(r for r in self._pending_receive
-                           if r.msg_id == received_msg_id)
+                           if r.request_msg_id == received_msg_id)
 
             self._logger.warning('Pong confirmed a request')
             request.confirm_received = True
@@ -296,7 +296,7 @@ class MtProtoSender:
 
         try:
             request = next(r for r in self._pending_receive
-                           if r.msg_id == bad_msg_id)
+                           if r.request_msg_id == bad_msg_id)
 
             self.send(request)
         except StopIteration: pass
@@ -330,7 +330,7 @@ class MtProtoSender:
 
         try:
             request = next(r for r in self._pending_receive
-                           if r.msg_id == request_id)
+                           if r.request_msg_id == request_id)
 
             request.confirm_received = True
         except StopIteration:
