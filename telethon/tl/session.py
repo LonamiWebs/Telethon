@@ -110,7 +110,7 @@ class JsonSession:
             # For connection purposes
             self.device_model = platform.node()
             self.system_version = platform.system()
-            self.app_version = '0'
+            self.app_version = '1.0'  # note: '0' will provoke error
             self.lang_code = 'en'
 
         elif isinstance(session_user_id, JsonSession):
