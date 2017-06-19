@@ -5,7 +5,7 @@ class MTProtoRequest:
     def __init__(self):
         self.sent = False
 
-        self.msg_id = 0  # Long
+        self.request_msg_id = 0  # Long
         self.sequence = 0
 
         self.dirty = False

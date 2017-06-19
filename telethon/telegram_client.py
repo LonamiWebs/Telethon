@@ -11,7 +11,7 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      ReadCancelledError, FileMigrateError, PhoneMigrateError,
                      NetworkMigrateError, UserMigrateError, PhoneCodeEmptyError,
                      PhoneCodeExpiredError, PhoneCodeHashEmptyError,
-                     PhoneCodeInvalidError)
+                     PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
 from .tl import MTProtoRequest, Session, JsonSession
@@ -145,21 +145,13 @@ class TelegramClient(TelegramBareClient):
 
         self._cached_clients.clear()
 
-    def reconnect(self, new_dc=None):
-        """Disconnects and connects again (effectively reconnecting).
-
-           If 'new_dc' is not None, the current authorization key is
-           removed, the DC used is switched, and a new connection is made.
-
-           *args will be ignored.
-        """
-        super(TelegramClient, self).reconnect(new_dc=new_dc)
-
     # endregion
 
-    # region Working with different Data Centers
+    # region Working with different connections
 
-    def _get_exported_client(self, dc_id, init_connection=False):
+    def _get_exported_client(self, dc_id,
+                             init_connection=False,
+                             bypass_cache=False):
         """Gets a cached exported TelegramBareClient for the desired DC.
 
            If it's the first time retrieving the TelegramBareClient, the
@@ -168,12 +160,16 @@ class TelegramClient(TelegramBareClient):
 
            If after using the sender a ConnectionResetError is raised,
            this method should be called again with init_connection=True
-           in order to perform the reconnection."""
+           in order to perform the reconnection.
+
+           If bypass_cache is True, a new client will be exported and
+           it will not be cached.
+        """
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization! ^^
 
         client = self._cached_clients.get(dc_id)
-        if client:
+        if client and not bypass_cache:
             if init_connection:
                 client.reconnect()
             return client
@@ -185,15 +181,45 @@ class TelegramClient(TelegramBareClient):
 
             # Create a temporary session for this IP address, which needs
             # to be different because each auth_key is unique per DC.
-            session = JsonSession(None)
+            #
+            # Construct this session with the connection parameters
+            # (system version, device model...) from the current one.
+            session = JsonSession(self.session)
             session.server_address = dc.ip_address
             session.port = dc.port
             client = TelegramBareClient(session, self.api_id, self.api_hash)
             client.connect(exported_auth=export_auth)
 
-            # Don't go through this expensive process every time.
-            self._cached_clients[dc_id] = client
+            if not bypass_cache:
+                # Don't go through this expensive process every time.
+                self._cached_clients[dc_id] = client
             return client
+
+    def create_new_connection(self, on_dc=None):
+        """Creates a new connection which can be used in parallel
+           with the original TelegramClient. A TelegramBareClient
+           will be returned already connected, and the caller is
+           responsible to disconnect it.
+
+           If 'on_dc' is None, the new client will run on the same
+           data center as the current client (most common case).
+
+           If the client is meant to be used on a different data
+           center, the data center ID should be specified instead.
+
+           Note that TelegramBareClients will not handle automatic
+           reconnection (i.e. switching to another data center to
+           download media), and InvalidDCError will be raised in
+           such case.
+        """
+        if on_dc is None:
+            client = TelegramBareClient(self.session, self.api_id, self.api_hash,
+                                        proxy=self.proxy)
+            client.connect()
+        else:
+            client = self._get_exported_client(on_dc, bypass_cache=True)
+
+        return client
 
     # endregion
 
@@ -447,8 +473,10 @@ class TelegramClient(TelegramBareClient):
         total_messages = getattr(result, 'count', len(result.messages))
 
         # Iterate over all the messages and find the sender User
-        entities = [find_user_or_chat(msg.from_id, result.users, result.chats)
-                    for msg in result.messages]
+        entities = [find_user_or_chat(m.from_id, result.users, result.chats)
+                    if m.from_id is not None else
+                    find_user_or_chat(m.to_id, result.users, result.chats)
+                    for m in result.messages]
 
         return total_messages, result.messages, entities
 
@@ -473,6 +501,8 @@ class TelegramClient(TelegramBareClient):
         return self.invoke(ReadHistoryRequest(peer=get_input_peer(entity), max_id=max_id))
 
     # endregion
+
+    # region Uploading files
 
     def send_photo_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
@@ -771,14 +801,20 @@ class TelegramClient(TelegramBareClient):
                 self._logger.debug('Updates thread acquired the lock')
                 try:
                     self._updates_thread_receiving.set()
-                    self._logger.debug('Trying to receive updates from the updates thread')
+                    self._logger.debug(
+                        'Trying to receive updates from the updates thread'
+                    )
 
-                    result = self.sender.receive_update(timeout=timeout)
+                    updates = self.sender.receive_updates(timeout=timeout)
 
                     self._updates_thread_receiving.clear()
-                    self._logger.info('Received update from the updates thread')
-                    for handler in self._update_handlers:
-                        handler(result)
+                    self._logger.info(
+                        'Received {} update(s) from the updates thread'
+                        .format(len(updates))
+                    )
+                    for update in updates:
+                        for handler in self._update_handlers:
+                            handler(update)
 
                 except ConnectionResetError:
                     self._logger.info('Server disconnected us. Reconnecting...')
@@ -789,6 +825,14 @@ class TelegramClient(TelegramBareClient):
 
                 except ReadCancelledError:
                     self._logger.info('Receiving updates cancelled')
+
+                except BrokenPipeError:
+                    self._logger.info('Tcp session is broken. Reconnecting...')
+                    self.reconnect()
+
+                except InvalidChecksumError:
+                    self._logger.info('MTProto session is broken. Reconnecting...')
+                    self.reconnect()
 
                 except OSError:
                     self._logger.warning('OSError on updates thread, %s logging out',

@@ -1,13 +1,9 @@
-import shutil
 from getpass import getpass
 
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
 from telethon.utils import get_display_name
-
-# Get the (current) number of lines in the terminal
-cols, rows = shutil.get_terminal_size()
 
 
 def sprint(string, *args, **kwargs):
@@ -47,7 +43,8 @@ class InteractiveTelegramClient(TelegramClient):
        Telegram through Telethon, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
-    def __init__(self, session_user_id, user_phone, api_id, api_hash, proxy=None):
+    def __init__(self, session_user_id, user_phone, api_id, api_hash,
+                 proxy=None):
         print_title('Initialization')
 
         print('Initializing interactive example...')
@@ -76,7 +73,7 @@ class InteractiveTelegramClient(TelegramClient):
                     self_user = self.sign_in(user_phone, code)
 
                 # Two-step verification may be enabled
-                except SessionPasswordNeededError as e:
+                except SessionPasswordNeededError:
                     pw = getpass('Two step verification is enabled. '
                                  'Please enter your password: ')
 
@@ -100,8 +97,7 @@ class InteractiveTelegramClient(TelegramClient):
                 print_title('Dialogs window')
 
                 # Display them so the user can choose
-                for i, entity in enumerate(entities):
-                    i += 1  # 1-based index
+                for i, entity in enumerate(entities, start=1):
                     sprint('{}. {}'.format(i, get_display_name(entity)))
 
                 # Let the user decide who they want to talk to
@@ -120,7 +116,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                 try:
                     i = int(i if i else 0) - 1
-                    # Ensure it is inside the bounds, otherwise set to None and retry
+                    # Ensure it is inside the bounds, otherwise retry
                     if not 0 <= i < dialog_count:
                         i = None
                 except ValueError:
@@ -162,7 +158,14 @@ class InteractiveTelegramClient(TelegramClient):
                     for msg, sender in zip(
                             reversed(messages), reversed(senders)):
                         # Get the name of the sender if any
-                        name = sender.first_name if sender else '???'
+                        if sender:
+                            name = getattr(sender, 'first_name', None)
+                            if not name:
+                                name = getattr(sender, 'title')
+                                if not name:
+                                    name = '???'
+                        else:
+                            name = '???'
 
                         # Format the message content
                         if getattr(msg, 'media', None):

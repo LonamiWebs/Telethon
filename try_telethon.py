@@ -24,11 +24,18 @@ def load_settings(path='api/settings'):
 if __name__ == '__main__':
     # Load the settings and initialize the client
     settings = load_settings()
+    kwargs = {}
+    if settings.get('socks_proxy'):
+        import socks  # $ pip install pysocks
+        host, port = settings['socks_proxy'].split(':')
+        kwargs = dict(proxy=(socks.SOCKS5, host, int(port)))
+
     client = InteractiveTelegramClient(
         session_user_id=str(settings.get('session_name', 'anonymous')),
         user_phone=str(settings['user_phone']),
         api_id=settings['api_id'],
-        api_hash=str(settings['api_hash']))
+        api_hash=str(settings['api_hash']),
+        **kwargs)
 
     print('Initialization done!')
 

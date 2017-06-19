@@ -32,12 +32,12 @@ def rpc_message_to_error(code, message):
                 return cls(extra=extra)
 
     elif code == 403:
-        return ForbiddenError()
+        return ForbiddenError(message)
 
     elif code == 404:
-        return NotFoundError()
+        return NotFoundError(message)
 
     elif code == 500:
-        return ServerError()
+        return ServerError(message)
 
     return RPCError('{} (code {})'.format(message, code))

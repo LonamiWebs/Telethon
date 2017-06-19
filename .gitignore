@@ -8,6 +8,9 @@ telethon/tl/all_tlobjects.py
 usermedia/
 api/settings
 
+# Quick tests should live in this file
+example.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

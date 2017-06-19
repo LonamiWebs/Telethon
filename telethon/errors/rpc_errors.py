@@ -38,6 +38,10 @@ class ForbiddenError(RPCError):
     code = 403
     message = 'FORBIDDEN'
 
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
+
 
 class NotFoundError(RPCError):
     """
@@ -45,6 +49,10 @@ class NotFoundError(RPCError):
     """
     code = 404
     message = 'NOT_FOUND'
+
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
 
 
 class FloodError(RPCError):
@@ -66,6 +74,10 @@ class ServerError(RPCError):
     """
     code = 500
     message = 'INTERNAL'
+
+    def __init__(self, message):
+        super().__init__(self, message)
+        self.message = message
 
 
 class BadMessageError(Exception):
