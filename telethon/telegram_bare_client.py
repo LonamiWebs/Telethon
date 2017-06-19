@@ -79,6 +79,12 @@ class TelegramBareClient:
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
         """
+        if self.sender and self.sender.is_connected():
+            self._logger.warning(
+                'Attempted to connect when the client was already connected.'
+            )
+            return
+
         transport = TcpTransport(self.session.server_address,
                                  self.session.port, proxy=self.proxy)
 

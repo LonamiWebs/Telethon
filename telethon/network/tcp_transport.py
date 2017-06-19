@@ -18,6 +18,9 @@ class TcpTransport:
         self.send_counter = 0
         self.tcp_client.connect(self.ip, self.port)
 
+    def is_connected(self):
+        return self.tcp_client.connected
+
     # Original reference: https://core.telegram.org/mtproto#tcp-transport
     # The packets are encoded as: total length, sequence number, packet and checksum (CRC32)
     def send(self, packet):

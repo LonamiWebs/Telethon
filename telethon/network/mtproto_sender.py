@@ -35,6 +35,9 @@ class MtProtoSender:
         """Connects to the server"""
         self._transport.connect()
 
+    def is_connected(self):
+        return self._transport.is_connected()
+
     def disconnect(self):
         """Disconnects from the server"""
         self._transport.close()
