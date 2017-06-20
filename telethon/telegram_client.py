@@ -1,7 +1,7 @@
 from datetime import timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
-from time import sleep
+from time import sleep, time
 
 from . import TelegramBareClient
 
@@ -34,6 +34,9 @@ from .tl.functions.messages import (
 
 # For .get_me() and ensuring we're authorized
 from .tl.functions.users import GetUsersRequest
+
+# So the server doesn't stop sending updates to us
+from .tl.functions import PingRequest
 
 # All the types we need to work with
 from .tl.types import (
@@ -94,10 +97,13 @@ class TelegramClient(TelegramBareClient):
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
 
-        # Methods to be called when an update is received
+        # Updates-related members
         self._update_handlers = []
         self._updates_thread_running = Event()
         self._updates_thread_receiving = Event()
+
+        self._next_ping_at = 0
+        self.ping_interval = 60  # Seconds
 
         # Used on connection - the user may modify these and reconnect
         if device_model:
@@ -804,6 +810,10 @@ class TelegramClient(TelegramBareClient):
                     self._logger.debug(
                         'Trying to receive updates from the updates thread'
                     )
+
+                    if time() > self._next_ping_at:
+                        self._next_ping_at = time() + self.ping_interval
+                        self.invoke(PingRequest(utils.generate_random_long()))
 
                     updates = self.sender.receive_updates(timeout=timeout)
 
