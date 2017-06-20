@@ -1,4 +1,4 @@
-from binascii import crc32
+from zlib import crc32
 from datetime import timedelta
 
 from ..errors import InvalidChecksumError
