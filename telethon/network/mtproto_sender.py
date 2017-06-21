@@ -309,7 +309,7 @@ class MtProtoSender:
     def _handle_bad_msg_notification(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad message notification')
         reader.read_int(signed=False)  # code
-        reader.read_long(signed=False)  # request_id
+        reader.read_long()  # request_id
         reader.read_int()  # request_sequence
 
         error_code = reader.read_int()
@@ -328,7 +328,7 @@ class MtProtoSender:
     def _handle_rpc_result(self, msg_id, sequence, reader):
         self._logger.debug('Handling RPC result')
         reader.read_int(signed=False)  # code
-        request_id = reader.read_long(signed=False)
+        request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
 
         try:
