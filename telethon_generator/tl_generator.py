@@ -1,51 +1,46 @@
-#!/usr/bin/env python3
 import os
 import re
 import shutil
 from zlib import crc32
 from collections import defaultdict
 
-try:
-    from .parser import SourceBuilder, TLParser
-except (ImportError, SystemError):
-    from parser import SourceBuilder, TLParser
-
-
-def get_output_path(normal_path):
-    return os.path.join('../telethon/tl', normal_path)
-
-output_base_depth = 2  # telethon/tl/
+from .parser import SourceBuilder, TLParser
 
 
 class TLGenerator:
-    @staticmethod
-    def tlobjects_exist():
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+
+    def _get_file(self, *paths):
+        return os.path.join(self.output_dir, *paths)
+
+    def _rm_if_exists(self, filename):
+        file = self._get_file(filename)
+        if os.path.exists(file):
+            if os.path.isdir(file):
+                shutil.rmtree(file)
+            else:
+                os.remove(file)
+
+    def tlobjects_exist(self):
         """Determines whether the TLObjects were previously
            generated (hence exist) or not
         """
-        return os.path.isfile(get_output_path('all_tlobjects.py'))
+        return os.path.isfile(self._get_file('all_tlobjects.py'))
 
-    @staticmethod
-    def clean_tlobjects():
+    def clean_tlobjects(self):
         """Cleans the automatically generated TLObjects from disk"""
-        if os.path.isdir(get_output_path('functions')):
-            shutil.rmtree(get_output_path('functions'))
+        for name in ('functions', 'types', 'all_tlobjects.py'):
+            self._rm_if_exists(name)
 
-        if os.path.isdir(get_output_path('types')):
-            shutil.rmtree(get_output_path('types'))
-
-        if os.path.isfile(get_output_path('all_tlobjects.py')):
-            os.remove(get_output_path('all_tlobjects.py'))
-
-    @staticmethod
-    def generate_tlobjects(scheme_file):
+    def generate_tlobjects(self, scheme_file, import_depth):
         """Generates all the TLObjects from scheme.tl to
            tl/functions and tl/types
         """
 
         # First ensure that the required parent directories exist
-        os.makedirs(get_output_path('functions'), exist_ok=True)
-        os.makedirs(get_output_path('types'), exist_ok=True)
+        os.makedirs(self._get_file('functions'), exist_ok=True)
+        os.makedirs(self._get_file('types'), exist_ok=True)
 
         # Step 0: Cache the parsed file on a tuple
         tlobjects = tuple(TLParser.parse_file(scheme_file))
@@ -91,11 +86,11 @@ class TLGenerator:
                 continue
 
             # Determine the output directory and create it
-            out_dir = get_output_path('functions'
-                                      if tlobject.is_function else 'types')
+            out_dir = self._get_file('functions'
+                                     if tlobject.is_function else 'types')
 
             # Path depth to perform relative import
-            depth = output_base_depth
+            depth = import_depth
             if tlobject.namespace:
                 depth += 1
                 out_dir = os.path.join(out_dir, tlobject.namespace)
@@ -121,19 +116,19 @@ class TLGenerator:
                         tlobject, builder, depth, type_constructors)
 
         # Step 3: Add the relative imports to the namespaces on __init__.py's
-        init_py = os.path.join(get_output_path('functions'), '__init__.py')
+        init_py = self._get_file('functions', '__init__.py')
         with open(init_py, 'a') as file:
             file.write('from . import {}\n'
                        .format(', '.join(function_namespaces)))
 
-        init_py = os.path.join(get_output_path('types'), '__init__.py')
+        init_py = self._get_file('types', '__init__.py')
         with open(init_py, 'a') as file:
             file.write('from . import {}\n'
                        .format(', '.join(type_namespaces)))
 
         # Step 4: Once all the objects have been generated,
         #         we can now group them in a single file
-        filename = os.path.join(get_output_path('all_tlobjects.py'))
+        filename = os.path.join(self._get_file('all_tlobjects.py'))
         with open(filename, 'w', encoding='utf-8') as file:
             with SourceBuilder(file) as builder:
                 builder.writeln(
@@ -658,13 +653,3 @@ class TLGenerator:
                 builder.writeln('self.result = reader.tgread_vector()')
         else:
             builder.writeln('self.result = reader.tgread_object()')
-
-
-if __name__ == '__main__':
-    if TLGenerator.tlobjects_exist():
-        print('Detected previous TLObjects. Cleaning...')
-        TLGenerator.clean_tlobjects()
-
-    print('Generating TLObjects...')
-    TLGenerator.generate_tlobjects('scheme.tl')
-    print('Done.')

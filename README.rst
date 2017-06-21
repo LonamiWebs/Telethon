@@ -71,7 +71,7 @@ Installing Telethon manually
    (`GitHub <https://github.com/ricmoo/pyaes>`_, `package index <https://pypi.python.org/pypi/pyaes>`_)
 2. Clone Telethon's GitHub repository: ``git clone https://github.com/LonamiWebs/Telethon.git``
 3. Enter the cloned repository: ``cd Telethon``
-4. Run the code generator: ``cd telethon_generator && python3 tl_generator.py``
+4. Run the code generator: ``python3 setup.py gen_tl``
 5. Done!
 
 Running Telethon
@@ -232,7 +232,7 @@ Have you found a more updated version of the ``scheme.tl`` file? Those are great
 as grabbing the
 `latest version <https://github.com/telegramdesktop/tdesktop/blob/dev/Telegram/Resources/scheme.tl>`_
 and replacing the one you can find in this same directory by the updated one.
-Don't forget to run ``python3 tl_generator.py``.
+Don't forget to run ``python3 setup.py gen_tl``.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
 
