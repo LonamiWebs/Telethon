@@ -17,7 +17,7 @@ class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
 
     def __init__(self, transport, session):
-        self._transport = transport
+        self.transport = transport
         self.session = session
         self._logger = logging.getLogger(__name__)
 
@@ -33,14 +33,14 @@ class MtProtoSender:
 
     def connect(self):
         """Connects to the server"""
-        self._transport.connect()
+        self.transport.connect()
 
     def is_connected(self):
-        return self._transport.is_connected()
+        return self.transport.is_connected()
 
     def disconnect(self):
         """Disconnects from the server"""
-        self._transport.close()
+        self.transport.close()
 
     # region Send and receive
 
@@ -76,11 +76,12 @@ class MtProtoSender:
 
             del self._need_confirmation[:]
 
-    def receive(self, request=None, timeout=timedelta(seconds=5), updates=None):
+    def receive(self, request=None, updates=None, **kwargs):
         """Receives the specified MTProtoRequest ("fills in it"
            the received data). This also restores the updates thread.
-           An optional timeout can be specified to cancel the operation
-           if no data has been read after its time delta.
+
+           An optional named parameter 'timeout' can be specified if
+           one desires to override 'self.transport.timeout'.
 
            If 'request' is None, a single item will be read into
            the 'updates' list (which cannot be None).
@@ -100,7 +101,7 @@ class MtProtoSender:
             while (request and not request.confirm_received) or \
                     (not request and not updates):
                 self._logger.info('Trying to .receive() the request result...')
-                seq, body = self._transport.receive(timeout)
+                seq, body = self.transport.receive(**kwargs)
                 message, remote_msg_id, remote_seq = self._decode_msg(body)
 
                 with BinaryReader(message) as reader:
@@ -116,18 +117,16 @@ class MtProtoSender:
             self._logger.info('Request result received')
         self._logger.debug('receive() released the lock')
 
-    def receive_updates(self, timeout=timedelta(seconds=5)):
-        """Receives one or more update objects
-           and returns them as a list
-        """
+    def receive_updates(self, **kwargs):
+        """Wrapper for .receive(request=None, updates=[])"""
         updates = []
-        self.receive(timeout=timeout, updates=updates)
+        self.receive(updates=updates, **kwargs)
         return updates
 
     def cancel_receive(self):
         """Cancels any pending receive operation
            by raising a ReadCancelledError"""
-        self._transport.cancel_receive()
+        self.transport.cancel_receive()
 
     # endregion
 
@@ -160,7 +159,7 @@ class MtProtoSender:
                 self.session.auth_key.key_id, signed=False)
             cipher_writer.write(msg_key)
             cipher_writer.write(cipher_text)
-            self._transport.send(cipher_writer.get_bytes())
+            self.transport.send(cipher_writer.get_bytes())
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""

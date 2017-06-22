@@ -80,7 +80,7 @@ class TcpClient:
 
             # Set the starting time so we can
             # calculate whether the timeout should fire
-            start_time = datetime.now() if timeout else None
+            start_time = datetime.now() if timeout is not None else None
 
             with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
                 bytes_left = size
@@ -104,7 +104,7 @@ class TcpClient:
                         time.sleep(self.delay)
 
                         # Check if the timeout finished
-                        if timeout:
+                        if timeout is not None:
                             time_passed = datetime.now() - start_time
                             if time_passed > timeout:
                                 raise TimeoutError(

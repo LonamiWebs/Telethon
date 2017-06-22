@@ -64,7 +64,8 @@ class TelegramClient(TelegramBareClient):
 
     def __init__(self, session, api_id, api_hash, proxy=None,
                  device_model=None, system_version=None,
-                 app_version=None, lang_code=None):
+                 app_version=None, lang_code=None,
+                 timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
 
            Session can either be a `str` object (filename for the .session)
@@ -78,7 +79,6 @@ class TelegramClient(TelegramBareClient):
              app_version    = TelegramClient.__version__
              lang_code      = 'en'
         """
-
         if not api_id or not api_hash:
             raise PermissionError(
                 "Your API ID or Hash cannot be empty or None. "
@@ -92,7 +92,7 @@ class TelegramClient(TelegramBareClient):
             raise ValueError(
                 'The given session must be a str or a Session instance.')
 
-        super().__init__(session, api_id, api_hash, proxy)
+        super().__init__(session, api_id, api_hash, proxy, timeout=timeout)
 
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
@@ -129,7 +129,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self, timeout=timedelta(seconds=5), *args):
+    def connect(self, *args):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -195,7 +195,10 @@ class TelegramClient(TelegramBareClient):
             session = JsonSession(self.session)
             session.server_address = dc.ip_address
             session.port = dc.port
-            client = TelegramBareClient(session, self.api_id, self.api_hash)
+            client = TelegramBareClient(
+                session, self.api_id, self.api_hash,
+                timeout=self._timeout
+            )
             client.connect(exported_auth=export_auth)
 
             if not bypass_cache:
@@ -233,7 +236,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5), *args):
+    def invoke(self, request, *args):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            An optional timeout can be specified to cancel the operation if no
@@ -244,18 +247,19 @@ class TelegramClient(TelegramBareClient):
         if not issubclass(type(request), MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
-        if not self.sender:
+        if not self._sender:
             raise ValueError('You must be connected to invoke requests!')
 
         if self._updates_thread_receiving.is_set():
-            self.sender.cancel_receive()
+            self._sender.cancel_receive()
 
         try:
             self._lock.acquire()
 
             updates = [] if self._update_handlers else None
             result = super(TelegramClient, self).invoke(
-                request, timeout=timeout, updates=updates)
+                request, updates=updates
+            )
 
             if updates:
                 for update in updates:
@@ -271,13 +275,12 @@ class TelegramClient(TelegramBareClient):
                               .format(e.new_dc))
 
             self.reconnect(new_dc=e.new_dc)
-            return self.invoke(request, timeout=timeout)
+            return self.invoke(request)
 
         finally:
             self._lock.release()
 
-    def invoke_on_dc(self, request, dc_id,
-                     timeout=timedelta(seconds=5), reconnect=False):
+    def invoke_on_dc(self, request, dc_id, reconnect=False):
         """Invokes the given request on a different DC
            by making use of the exported MtProtoSenders.
 
@@ -294,8 +297,7 @@ class TelegramClient(TelegramBareClient):
             if reconnect:
                 raise
             else:
-                return self.invoke_on_dc(request, dc_id,
-                                         timeout=timeout, reconnect=True)
+                return self.invoke_on_dc(request, dc_id, reconnect=True)
 
     # region Authorization requests
 
@@ -374,7 +376,7 @@ class TelegramClient(TelegramBareClient):
            Returns True if everything went okay."""
 
         # Special flag when logging out (so the ack request confirms it)
-        self.sender.logging_out = True
+        self._sender.logging_out = True
         try:
             self.invoke(LogOutRequest())
             self.disconnect()
@@ -385,7 +387,7 @@ class TelegramClient(TelegramBareClient):
             return True
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
-            self.sender.logging_out = False
+            self._sender.logging_out = False
             return False
 
     def get_me(self):
@@ -756,7 +758,7 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.sender:
+        if not self._sender:
             raise RuntimeError("You can't add update handlers until you've "
                                "successfully connected to the server.")
 
@@ -791,7 +793,7 @@ class TelegramClient(TelegramBareClient):
         else:
             self._updates_thread_running.clear()
             if self._updates_thread_receiving.is_set():
-                self.sender.cancel_receive()
+                self._sender.cancel_receive()
 
     def _updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
@@ -817,7 +819,7 @@ class TelegramClient(TelegramBareClient):
                         self._next_ping_at = time() + self.ping_interval
                         self.invoke(PingRequest(utils.generate_random_long()))
 
-                    updates = self.sender.receive_updates(timeout=timeout)
+                    updates = self._sender.receive_updates(timeout=timeout)
 
                     self._updates_thread_receiving.clear()
                     self._logger.info(
@@ -848,9 +850,9 @@ class TelegramClient(TelegramBareClient):
 
                 except OSError:
                     self._logger.warning('OSError on updates thread, %s logging out',
-                                         'was' if self.sender.logging_out else 'was not')
+                                         'was' if self._sender.logging_out else 'was not')
 
-                    if self.sender.logging_out:
+                    if self._sender.logging_out:
                         # This error is okay when logging out, means we got disconnected
                         # TODO Not sure why this happens because we call disconnect()...
                         self._set_updates_thread(running=False)

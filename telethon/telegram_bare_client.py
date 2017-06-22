@@ -51,7 +51,8 @@ class TelegramBareClient:
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash, proxy=None):
+    def __init__(self, session, api_id, api_hash,
+                 proxy=None, timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
            Session must always be a Session instance, and an optional proxy
            can also be specified to be used on the connection.
@@ -60,35 +61,36 @@ class TelegramBareClient:
         self.api_id = int(api_id)
         self.api_hash = api_hash
         self.proxy = proxy
+        self._timeout = timeout
         self._logger = logging.getLogger(__name__)
 
         # These will be set later
         self.dc_options = None
-        self.sender = None
+        self._sender = None
 
     # endregion
 
     # region Connecting
 
-    def connect(self, timeout=timedelta(seconds=5), exported_auth=None):
+    def connect(self, exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
-           The specified timeout will be used on internal .invoke()'s.
-
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
         """
-        if self.sender and self.sender.is_connected():
+        if self._sender and self._sender.is_connected():
             self._logger.warning(
                 'Attempted to connect when the client was already connected.'
             )
             return
 
         transport = TcpTransport(self.session.server_address,
-                                 self.session.port, proxy=self.proxy)
+                                 self.session.port,
+                                 proxy=self.proxy,
+                                 timeout=self._timeout)
 
         try:
             if not self.session.auth_key:
@@ -97,8 +99,8 @@ class TelegramBareClient:
 
                 self.session.save()
 
-            self.sender = MtProtoSender(transport, self.session)
-            self.sender.connect()
+            self._sender = MtProtoSender(transport, self.session)
+            self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
@@ -117,14 +119,13 @@ class TelegramBareClient:
                 query=query)
 
             result = self.invoke(
-                InvokeWithLayerRequest(layer=layer, query=request),
-                timeout=timeout
+                InvokeWithLayerRequest(layer=layer, query=request)
             )
 
             if exported_auth is not None:
                 # TODO Don't actually need this for exported authorizations,
                 #      they're only valid on such data center.
-                result = self.invoke(GetConfigRequest(), timeout=timeout)
+                result = self.invoke(GetConfigRequest())
 
             # We're only interested in the DC options,
             # although many other options are available!
@@ -140,9 +141,9 @@ class TelegramBareClient:
 
     def disconnect(self):
         """Disconnects from the Telegram server"""
-        if self.sender:
-            self.sender.disconnect()
-            self.sender = None
+        if self._sender:
+            self._sender.disconnect()
+            self._sender = None
 
     def reconnect(self, new_dc=None):
         """Disconnects and connects again (effectively reconnecting).
@@ -163,6 +164,30 @@ class TelegramBareClient:
 
     # endregion
 
+    # region Properties
+
+    def set_timeout(self, timeout):
+        if timeout is None:
+            self._timeout = None
+        elif isinstance(timeout, int) or isinstance(timeout, float):
+            self._timeout = timedelta(seconds=timeout)
+        elif isinstance(timeout, timedelta):
+            self._timeout = timeout
+        else:
+            raise ValueError(
+                '{} is not a valid type for a timeout'.format(type(timeout))
+            )
+
+        if self._sender:
+            self._sender.transport.timeout = self._timeout
+
+    def get_timeout(self):
+        return self._timeout
+
+    timeout = property(get_timeout, set_timeout)
+
+    # endregion
+
     # region Working with different Data Centers
 
     def _get_dc(self, dc_id):
@@ -178,11 +203,8 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, request, timeout=timedelta(seconds=5), updates=None):
+    def invoke(self, request, updates=None):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-
-           An optional timeout can be specified to cancel the operation if no
-           result is received within such time, or None to disable any timeout.
 
            If 'updates' is not None, all read update object will be put
            in such list. Otherwise, update objects will be ignored.
@@ -190,19 +212,19 @@ class TelegramBareClient:
         if not isinstance(request, MTProtoRequest):
             raise ValueError('You can only invoke MtProtoRequests')
 
-        if not self.sender:
+        if not self._sender:
             raise ValueError('You must be connected to invoke requests!')
 
         try:
-            self.sender.send(request)
-            self.sender.receive(request, timeout, updates=updates)
+            self._sender.send(request)
+            self._sender.receive(request, updates=updates)
             return request.result
 
         except ConnectionResetError:
             self._logger.info('Server disconnected us. Reconnecting and '
                               'resending request...')
             self.reconnect()
-            return self.invoke(request, timeout=timeout)
+            return self.invoke(request)
 
         except FloodWaitError:
             self.disconnect()
