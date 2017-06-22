@@ -129,11 +129,13 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self, *args):
+    def connect(self, timeout=timedelta(seconds=5), *args):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
+
+           The specified timeout will be used on internal .invoke()'s.
 
            *args will be ignored.
         """

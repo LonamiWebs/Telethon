@@ -70,11 +70,13 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, exported_auth=None):
+    def connect(self, timeout=timedelta(seconds=5), exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
+
+           The specified timeout will be used on internal .invoke()'s.
 
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
@@ -115,13 +117,14 @@ class TelegramBareClient:
                 query=query)
 
             result = self.invoke(
-                InvokeWithLayerRequest(
-                    layer=layer, query=request))
+                InvokeWithLayerRequest(layer=layer, query=request),
+                timeout=timeout
+            )
 
             if exported_auth is not None:
                 # TODO Don't actually need this for exported authorizations,
                 #      they're only valid on such data center.
-                result = self.invoke(GetConfigRequest())
+                result = self.invoke(GetConfigRequest(), timeout=timeout)
 
             # We're only interested in the DC options,
             # although many other options are available!
