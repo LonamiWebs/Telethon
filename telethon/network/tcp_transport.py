@@ -18,7 +18,8 @@ class TcpTransport:
     def connect(self):
         """Connects to the specified IP address and port"""
         self.send_counter = 0
-        self.tcp_client.connect(self.ip, self.port)
+        self.tcp_client.connect(self.ip, self.port,
+                                timeout=round(self.timeout.seconds))
 
     def is_connected(self):
         return self.tcp_client.connected

@@ -30,9 +30,12 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self._proxy)
 
-    def connect(self, ip, port):
-        """Connects to the specified IP and port number"""
+    def connect(self, ip, port, timeout):
+        """Connects to the specified IP and port number.
+           'timeout' must be given in seconds
+        """
         if not self.connected:
+            self._socket.settimeout(timeout)
             self._socket.connect((ip, port))
             self._socket.setblocking(False)
             self.connected = True
