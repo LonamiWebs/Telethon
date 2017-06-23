@@ -139,13 +139,13 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        return super(TelegramClient, self).connect()
+        return super().connect()
 
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
         self._set_updates_thread(running=False)
-        super(TelegramClient, self).disconnect()
+        super().disconnect()
 
         # Also disconnect all the cached senders
         for sender in self._cached_clients.values():
@@ -257,7 +257,7 @@ class TelegramClient(TelegramBareClient):
             self._lock.acquire()
 
             updates = [] if self._update_handlers else None
-            result = super(TelegramClient, self).invoke(
+            result = super().invoke(
                 request, updates=updates
             )
 
@@ -729,7 +729,7 @@ class TelegramClient(TelegramBareClient):
         """
         if on_dc is None:
             try:
-                super(TelegramClient, self).download_file(
+                super().download_file(
                     input_location,
                     file,
                     part_size_kb=part_size_kb,
