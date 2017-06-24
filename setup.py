@@ -21,7 +21,7 @@ from setuptools import find_packages, setup
 from telethon_generator.tl_generator import TLGenerator
 try:
     from telethon import TelegramClient
-except ModuleNotFoundError:
+except ImportError:
     TelegramClient = None
 
 
