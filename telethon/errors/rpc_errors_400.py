@@ -321,7 +321,7 @@ class UserIdInvalidError(BadRequestError):
         )
 
 
-rpc_400_errors = {
+rpc_errors_400_all = {
     'API_ID_INVALID': ApiIdInvalidError,
     'BOT_METHOD_INVALID': BotMethodInvalidError,
     'CHANNEL_INVALID': ChannelInvalidError,

@@ -43,7 +43,7 @@ class UserMigrateError(InvalidDCError):
         )
 
 
-rpc_303_errors = {
+rpc_errors_303_all = {
     'FILE_MIGRATE_(\d+)': FileMigrateError,
     'PHONE_MIGRATE_(\d+)': PhoneMigrateError,
     'NETWORK_MIGRATE_(\d+)': NetworkMigrateError,

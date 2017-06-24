@@ -84,7 +84,7 @@ class UserDeactivatedError(UnauthorizedError):
         )
 
 
-rpc_401_errors = {
+rpc_errors_401_all = {
     'ACTIVE_USER_REQUIRED': ActiveUserRequiredError,
     'AUTH_KEY_INVALID': AuthKeyInvalidError,
     'AUTH_KEY_PERM_EMPTY': AuthKeyPermEmptyError,

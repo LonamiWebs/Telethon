@@ -18,10 +18,10 @@ from .rpc_errors_420 import *
 
 def rpc_message_to_error(code, message):
     errors = {
-        303: rpc_303_errors,
-        400: rpc_400_errors,
-        401: rpc_401_errors,
-        420: rpc_420_errors
+        303: rpc_errors_303_all,
+        400: rpc_errors_400_all,
+        401: rpc_errors_401_all,
+        420: rpc_errors_420_all
     }.get(code, None)
 
     if errors is not None:
