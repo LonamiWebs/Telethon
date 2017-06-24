@@ -46,7 +46,7 @@ if __name__ == '__main__':
     else:
         if not TelegramClient:
             print('Run `python3', argv[0], 'gen_tl` first.')
-        quit()
+            quit()
 
         here = path.abspath(path.dirname(__file__))
 
