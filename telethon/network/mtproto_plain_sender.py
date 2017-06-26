@@ -1,4 +1,3 @@
-import random
 import time
 
 from ..extensions import BinaryReader, BinaryWriter
@@ -42,17 +41,12 @@ class MtProtoPlainSender:
             return response
 
     def _get_new_msg_id(self):
-        """Generates a new message ID based on the current time (in ms) since epoch"""
-        # See https://core.telegram.org/mtproto/description#message-identifier-msg-id
-        ms_time = int(time.time() * 1000)
-        new_msg_id = (((ms_time // 1000) << 32)
-                      |  # "must approximately equal unix time*2^32"
-                      ((ms_time % 1000) << 22)
-                      |  # "approximate moment in time the message was created"
-                      random.randint(0, 524288)
-                      << 2)  # "message identifiers are divisible by 4"
-
-        # Ensure that we always return a message ID which is higher than the previous one
+        """Generates a new message ID based on the current time since epoch"""
+        # See core.telegram.org/mtproto/description#message-identifier-msg-id
+        now = time.time()
+        nanoseconds = int((now - int(now)) * 1e+9)
+        # "message identifiers are divisible by 4"
+        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
         if self._last_msg_id >= new_msg_id:
             new_msg_id = self._last_msg_id + 4
 
