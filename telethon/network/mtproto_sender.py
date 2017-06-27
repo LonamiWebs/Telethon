@@ -257,7 +257,7 @@ class MtProtoSender:
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
-        received_msg_id = reader.read_long(signed=False)
+        received_msg_id = reader.read_long()
 
         try:
             request = next(r for r in self._pending_receive
@@ -274,7 +274,7 @@ class MtProtoSender:
         reader.read_int(signed=False)  # code
         size = reader.read_int()
         for _ in range(size):
-            inner_msg_id = reader.read_long(signed=False)
+            inner_msg_id = reader.read_long()
             reader.read_int()  # inner_sequence
             inner_length = reader.read_int()
             begin_position = reader.tell_position()
@@ -290,7 +290,7 @@ class MtProtoSender:
     def _handle_bad_server_salt(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad server salt')
         reader.read_int(signed=False)  # code
-        bad_msg_id = reader.read_long(signed=False)
+        bad_msg_id = reader.read_long()
         reader.read_int()  # bad_msg_seq_no
         reader.read_int()  # error_code
         new_salt = reader.read_long(signed=False)
