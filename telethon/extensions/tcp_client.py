@@ -96,8 +96,9 @@ class TcpClient:
                     try:
                         partial = self._socket.recv(bytes_left)
                         if len(partial) == 0:
+                            self.connected = False
                             raise ConnectionResetError(
-                                'The server has closed the connection (recv() returned 0 bytes).')
+                                'The server has closed the connection.')
 
                         buffer.write(partial)
                         bytes_left -= len(partial)
