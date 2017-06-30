@@ -44,6 +44,14 @@ class ChatIdInvalidError(BadRequestError):
         )
 
 
+class ConnectionLangPackInvalid(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The specified language pack is not valid.'
+        )
+
+
 class ConnectionLayerInvalidError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(

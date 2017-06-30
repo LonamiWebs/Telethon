@@ -65,6 +65,7 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash, proxy=None,
                  device_model=None, system_version=None,
                  app_version=None, lang_code=None,
+                 system_lang_code=None,
                  timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
 
@@ -74,10 +75,11 @@ class TelegramClient(TelegramBareClient):
            session - remember to '.log_out()'!
 
            Default values for the optional parameters if left as None are:
-             device_model   = platform.node()
-             system_version = platform.system()
-             app_version    = TelegramClient.__version__
-             lang_code      = 'en'
+             device_model     = platform.node()
+             system_version   = platform.system()
+             app_version      = TelegramClient.__version__
+             lang_code        = 'en'
+             system_lang_code = lang_code
         """
         if not api_id or not api_hash:
             raise PermissionError(
@@ -117,6 +119,9 @@ class TelegramClient(TelegramBareClient):
 
         if lang_code:
             self.session.lang_code = lang_code
+
+        self.session.system_lang_code = \
+            system_lang_code if system_lang_code else self.session.lang_code
 
         # Cache "exported" senders 'dc_id: MtProtoSender' and
         # their corresponding sessions not to recreate them all

@@ -116,6 +116,8 @@ class TelegramBareClient:
                 system_version=self.session.system_version,
                 app_version=self.session.app_version,
                 lang_code=self.session.lang_code,
+                system_lang_code=self.session.system_lang_code,
+                lang_pack='',  # "langPacks are for official apps only"
                 query=query)
 
             result = self.invoke(

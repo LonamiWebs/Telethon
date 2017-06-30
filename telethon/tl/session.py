@@ -107,6 +107,8 @@ class JsonSession:
             self.system_version = session.system_version
             self.app_version = session.app_version
             self.lang_code = session.lang_code
+            self.system_lang_code = session.system_lang_code
+            self.lang_pack = session.lang_pack
 
         else:  # str / None
             self.session_user_id = session_user_id
@@ -115,6 +117,8 @@ class JsonSession:
             self.system_version = platform.system()
             self.app_version = '1.0'  # note: '0' will provoke error
             self.lang_code = 'en'
+            self.system_lang_code = self.lang_code
+            self.lang_pack = ''
 
         # Cross-thread safety
         self._lock = Lock()
