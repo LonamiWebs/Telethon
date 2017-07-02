@@ -160,13 +160,16 @@ The ``TelegramClient`` class should be used to provide a quick, well-documented 
 It is **not** meant to be a place for *all* the available Telegram ``Request``'s, because there are simply too many.
 
 However, this doesn't mean that you cannot ``invoke`` all the power of Telegram's API.
-Whenever you need to ``invoke`` a Telegram ``Request``, all you need to do is the following:
+Whenever you need to ``call`` a Telegram ``Request``, all you need to do is the following:
 
 .. code:: python
 
+  result = client(SomeRequest(...))
+
+  # Or the old way:
   result = client.invoke(SomeRequest(...))
 
-You have just ``invoke``'d ``SomeRequest`` and retrieved its ``result``! That wasn't hard at all, was it?
+You have just called ``SomeRequest`` and retrieved its ``result``! That wasn't hard at all, was it?
 Now you may wonder, what's the deal with *all the power of Telegram's API*? Have a look under ``tl/functions/``.
 That is *everything* you can do. You have **over 200 API** ``Request``'s at your disposal.
 

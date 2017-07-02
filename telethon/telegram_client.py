@@ -190,7 +190,7 @@ class TelegramClient(TelegramBareClient):
             dc = self._get_dc(dc_id)
 
             # Export the current authorization to the new DC.
-            export_auth = self.invoke(ExportAuthorizationRequest(dc_id))
+            export_auth = self(ExportAuthorizationRequest(dc_id))
 
             # Create a temporary session for this IP address, which needs
             # to be different because each auth_key is unique per DC.
@@ -285,6 +285,9 @@ class TelegramClient(TelegramBareClient):
         finally:
             self._lock.release()
 
+    # Let people use client(SomeRequest()) instead client.invoke(...)
+    __call__ = invoke
+
     def invoke_on_dc(self, request, dc_id, reconnect=False):
         """Invokes the given request on a different DC
            by making use of the exported MtProtoSenders.
@@ -313,7 +316,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
-        result = self.invoke(
+        result = self(
             SendCodeRequest(phone_number, self.api_id, self.api_hash))
 
         self._phone_code_hashes[phone_number] = result.phone_code_hash
@@ -339,7 +342,7 @@ class TelegramClient(TelegramBareClient):
                     'Please make sure to call send_code_request first.')
 
             try:
-                result = self.invoke(SignInRequest(
+                result = self(SignInRequest(
                     phone_number, self._phone_code_hashes[phone_number], code))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
@@ -347,12 +350,12 @@ class TelegramClient(TelegramBareClient):
                 return None
 
         elif password:
-            salt = self.invoke(GetPasswordRequest()).current_salt
-            result = self.invoke(
+            salt = self(GetPasswordRequest()).current_salt
+            result = self(
                 CheckPasswordRequest(utils.get_password_hash(password, salt)))
 
         elif bot_token:
-            result = self.invoke(ImportBotAuthorizationRequest(
+            result = self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
                 api_id=self.api_id, api_hash=self.api_hash))
 
@@ -365,7 +368,7 @@ class TelegramClient(TelegramBareClient):
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        result = self.invoke(
+        result = self(
             SignUpRequest(
                 phone_number=phone_number,
                 phone_code_hash=self._phone_code_hashes[phone_number],
@@ -383,7 +386,7 @@ class TelegramClient(TelegramBareClient):
         # Special flag when logging out (so the ack request confirms it)
         self._sender.logging_out = True
         try:
-            self.invoke(LogOutRequest())
+            self(LogOutRequest())
             self.disconnect()
             if not self.session.delete():
                 return False
@@ -399,7 +402,7 @@ class TelegramClient(TelegramBareClient):
         """Gets "me" (the self user) which is currently authenticated,
            or None if the request fails (hence, not authenticated)."""
         try:
-            return self.invoke(GetUsersRequest([InputUserSelf()]))[0]
+            return self(GetUsersRequest([InputUserSelf()]))[0]
         except UnauthorizedError:
             return None
 
@@ -420,7 +423,7 @@ class TelegramClient(TelegramBareClient):
            corresponding to that dialog.
         """
 
-        r = self.invoke(
+        r = self(
             GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
@@ -440,14 +443,13 @@ class TelegramClient(TelegramBareClient):
                      no_web_page=False):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
-        request = SendMessageRequest(
+        result = self(SendMessageRequest(
             peer=get_input_peer(entity),
             message=message,
             entities=[],
             no_webpage=no_web_page
-        )
-        self.invoke(request)
-        return request.random_id
+        ))
+        return result.random_id
 
     def get_message_history(self,
                             entity,
@@ -471,15 +473,15 @@ class TelegramClient(TelegramBareClient):
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        result = self.invoke(
-            GetHistoryRequest(
-                get_input_peer(entity),
-                limit=limit,
-                offset_date=offset_date,
-                offset_id=offset_id,
-                max_id=max_id,
-                min_id=min_id,
-                add_offset=add_offset))
+        result = self(GetHistoryRequest(
+            get_input_peer(entity),
+            limit=limit,
+            offset_date=offset_date,
+            offset_id=offset_id,
+            max_id=max_id,
+            min_id=min_id,
+            add_offset=add_offset
+        ))
 
         # The result may be a messages slice (not all messages were retrieved)
         # or simply a messages TLObject. In the later case, no "count"
@@ -513,7 +515,10 @@ class TelegramClient(TelegramBareClient):
             else:
                 max_id = messages.id
 
-        return self.invoke(ReadHistoryRequest(peer=get_input_peer(entity), max_id=max_id))
+        return self(ReadHistoryRequest(
+            peer=get_input_peer(entity),
+            max_id=max_id
+        ))
 
     # endregion
 
@@ -552,7 +557,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_media_file(self, input_media, entity):
         """Sends any input_media (contact, document, photo...) to the given entity"""
-        self.invoke(SendMediaRequest(
+        self(SendMediaRequest(
             peer=get_input_peer(entity),
             media=input_media
         ))
@@ -822,7 +827,7 @@ class TelegramClient(TelegramBareClient):
 
                     if time() > self._next_ping_at:
                         self._next_ping_at = time() + self.ping_interval
-                        self.invoke(PingRequest(utils.generate_random_long()))
+                        self(PingRequest(utils.generate_random_long()))
 
                     updates = self._sender.receive_updates(timeout=timeout)
 

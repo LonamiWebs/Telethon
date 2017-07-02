@@ -120,14 +120,14 @@ class TelegramBareClient:
                 lang_pack='',  # "langPacks are for official apps only"
                 query=query)
 
-            result = self.invoke(
-                InvokeWithLayerRequest(layer=layer, query=request)
-            )
+            result = self(InvokeWithLayerRequest(
+                layer=layer, query=request
+            ))
 
             if exported_auth is not None:
                 # TODO Don't actually need this for exported authorizations,
                 #      they're only valid on such data center.
-                result = self.invoke(GetConfigRequest())
+                result = self(GetConfigRequest())
 
             # We're only interested in the DC options,
             # although many other options are available!
@@ -232,6 +232,9 @@ class TelegramBareClient:
             self.disconnect()
             raise
 
+    # Let people use client(SomeRequest()) instead client.invoke(...)
+    __call__ = invoke
+
     # endregion
 
     # region Uploading media
@@ -283,7 +286,7 @@ class TelegramBareClient:
                 else:
                     request = SaveFilePartRequest(file_id, part_index, part)
 
-                result = self.invoke(request)
+                result = self(request)
                 if result:
                     if not is_large:
                         # No need to update the hash if it's a large file
@@ -342,7 +345,7 @@ class TelegramBareClient:
             offset_index = 0
             while True:
                 offset = offset_index * part_size
-                result = self.invoke(
+                result = self(
                     GetFileRequest(input_location, offset, part_size))
                 offset_index += 1
 
