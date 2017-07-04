@@ -24,9 +24,6 @@ from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SendCodeRequest, SignInRequest,
                                 SignUpRequest, ImportBotAuthorizationRequest)
 
-# Required to work with different data centers
-from .tl.functions.auth import ExportAuthorizationRequest
-
 # Easier access to common methods
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
