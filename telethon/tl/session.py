@@ -113,9 +113,10 @@ class JsonSession:
         else:  # str / None
             self.session_user_id = session_user_id
 
-            self.device_model = platform.node()
-            self.system_version = platform.system()
-            self.app_version = '1.0'  # note: '0' will provoke error
+            system = platform.uname()
+            self.device_model = system.system if system.system else 'Unknown'
+            self.system_version = system.release if system.release else '1.0'
+            self.app_version = '1.0'  # '0' will provoke error
             self.lang_code = 'en'
             self.system_lang_code = self.lang_code
             self.lang_pack = ''
