@@ -18,7 +18,6 @@ from os import path
 # Always prefer setuptools over distutils
 from setuptools import find_packages, setup
 
-from telethon_generator.tl_generator import TLGenerator
 try:
     from telethon import TelegramClient
 except ImportError:
@@ -27,6 +26,7 @@ except ImportError:
 
 if __name__ == '__main__':
     if len(argv) >= 2 and argv[1] == 'gen_tl':
+        from telethon_generator.tl_generator import TLGenerator
         generator = TLGenerator('telethon/tl')
         if generator.tlobjects_exist():
             print('Detected previous TLObjects. Cleaning...')
@@ -39,6 +39,7 @@ if __name__ == '__main__':
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
+        from telethon_generator.tl_generator import TLGenerator
         print('Cleaning...')
         TLGenerator('telethon/tl').clean_tlobjects()
         print('Done.')
