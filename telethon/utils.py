@@ -6,8 +6,8 @@ from mimetypes import add_type, guess_extension
 
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
-    ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
-    InputPeerSelf, MessageMediaDocument, MessageMediaPhoto, PeerChannel,
+    ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
+    MessageMediaDocument, MessageMediaPhoto, PeerChannel,
     PeerChat, PeerUser, User, UserFull, UserProfilePhoto)
 
 
@@ -72,6 +72,9 @@ def get_input_peer(entity):
 
     if isinstance(entity, ChatFull):
         return InputPeerChat(entity.id)
+
+    if isinstance(entity, PeerChat):
+        return InputPeerChat(entity.chat_id)
 
     raise ValueError('Cannot cast {} to any kind of InputPeer.'
                      .format(type(entity).__name__))
