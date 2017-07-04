@@ -382,13 +382,16 @@ class TelegramClient(TelegramBareClient):
                      no_web_page=False):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
-        result = self(SendMessageRequest(
+        request = SendMessageRequest(
             peer=get_input_peer(entity),
             message=message,
             entities=[],
             no_webpage=no_web_page
-        ))
-        return result.random_id
+        )
+        result = self(request)
+        for handler in self._update_handlers:
+            handler(result)
+        return request.random_id
 
     def get_message_history(self,
                             entity,
