@@ -5,22 +5,25 @@ from os import path
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import RPCError, FloodWaitError
+from .errors import RPCError, FloodWaitError, FileMigrateError
 from .network import authenticator, MtProtoSender, TcpTransport
 from .utils import get_appropriated_part_size
 
 # For sending and receiving requests
-from .tl import MTProtoRequest
+from .tl import MTProtoRequest, JsonSession
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
 # Initial request
 from .tl.functions.help import GetConfigRequest
-from .tl.functions.auth import ImportAuthorizationRequest
+from .tl.functions.auth import (
+    ImportAuthorizationRequest, ExportAuthorizationRequest
+)
 
 # Easier access for working with media
 from .tl.functions.upload import (
-    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
+    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest
+)
 
 # All the types we need to work with
 from .tl.types import InputFile, InputFileBig
@@ -63,6 +66,11 @@ class TelegramBareClient:
         self.proxy = proxy
         self._timeout = timeout
         self._logger = logging.getLogger(__name__)
+
+        # Cache "exported" senders 'dc_id: TelegramBareClient' and
+        # their corresponding sessions not to recreate them all
+        # the time since it's a (somewhat expensive) process.
+        self._cached_clients = {}
 
         # These will be set later
         self.dc_options = None
@@ -125,8 +133,6 @@ class TelegramBareClient:
             ))
 
             if exported_auth is not None:
-                # TODO Don't actually need this for exported authorizations,
-                #      they're only valid on such data center.
                 result = self(GetConfigRequest())
 
             # We're only interested in the DC options,
@@ -200,6 +206,54 @@ class TelegramBareClient:
                 'Stabilise a successful initial connection first.')
 
         return next(dc for dc in self.dc_options if dc.id == dc_id)
+
+    def _get_exported_client(self, dc_id,
+                             init_connection=False,
+                             bypass_cache=False):
+        """Gets a cached exported TelegramBareClient for the desired DC.
+
+           If it's the first time retrieving the TelegramBareClient, the
+           current authorization is exported to the new DC so that
+           it can be used there, and the connection is initialized.
+
+           If after using the sender a ConnectionResetError is raised,
+           this method should be called again with init_connection=True
+           in order to perform the reconnection.
+
+           If bypass_cache is True, a new client will be exported and
+           it will not be cached.
+        """
+        # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
+        # for clearly showing how to export the authorization! ^^
+        client = self._cached_clients.get(dc_id)
+        if client and not bypass_cache:
+            if init_connection:
+                client.reconnect()
+            return client
+        else:
+            dc = self._get_dc(dc_id)
+
+            # Export the current authorization to the new DC.
+            export_auth = self(ExportAuthorizationRequest(dc_id))
+
+            # Create a temporary session for this IP address, which needs
+            # to be different because each auth_key is unique per DC.
+            #
+            # Construct this session with the connection parameters
+            # (system version, device model...) from the current one.
+            session = JsonSession(self.session)
+            session.server_address = dc.ip_address
+            session.port = dc.port
+            client = TelegramBareClient(
+                session, self.api_id, self.api_hash,
+                timeout=self._timeout
+            )
+            client.connect(exported_auth=export_auth)
+
+            if not bypass_cache:
+                # Don't go through this expensive process every time.
+                self._cached_clients[dc_id] = client
+            return client
 
     # endregion
 
@@ -341,12 +395,21 @@ class TelegramBareClient:
         else:
             f = file
 
+        # The used client will change if FileMigrateError occurs
+        client = self
+
         try:
             offset_index = 0
             while True:
                 offset = offset_index * part_size
-                result = self(
-                    GetFileRequest(input_location, offset, part_size))
+
+                try:
+                    result = client(
+                        GetFileRequest(input_location, offset, part_size))
+                except FileMigrateError as e:
+                    client = self._get_exported_client(e.new_dc)
+                    continue
+
                 offset_index += 1
 
                 # If we have received no data (0 bytes), the file is over
