@@ -179,6 +179,7 @@ class TLGenerator:
 
         # Both types and functions inherit from
         # MTProtoRequest so they all can be sent
+        # TODO MTProtoRequest is not the best name for a type
         builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
                         .format('.' * depth))
 
@@ -408,9 +409,12 @@ class TLGenerator:
         builder.end_block()
 
         builder.writeln('def __str__(self):')
-        builder.writeln('return {}'.format(str(tlobject)))
-        # builder.end_block()  # No need to end the last block
+        builder.writeln('return MTProtoRequest.pretty_format(self)')
+        builder.end_block()
 
+        builder.writeln('def stringify(self):')
+        builder.writeln('return MTProtoRequest.pretty_format(self, indent=0)')
+        # builder.end_block()  # No need to end the last block
 
     @staticmethod
     def get_class_name(tlobject):
