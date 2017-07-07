@@ -379,14 +379,14 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
-                     no_web_page=False):
+                     link_preview=True):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
         request = SendMessageRequest(
             peer=get_input_peer(entity),
             message=message,
             entities=[],
-            no_webpage=no_web_page
+            no_webpage=not link_preview
         )
         result = self(request)
         for handler in self._update_handlers:
