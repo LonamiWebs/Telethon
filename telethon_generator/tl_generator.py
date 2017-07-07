@@ -183,12 +183,17 @@ class TLGenerator:
         builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
                         .format('.' * depth))
 
-        if tlobject.is_function and \
-                any(a for a in tlobject.args if a.type == 'InputPeer'):
-            # We can automatically convert a normal peer to an InputPeer,
-            # it will make invoking a lot of requests a lot simpler.
-            builder.writeln('from {}.utils import get_input_peer'
-                            .format('.' * depth))
+        if tlobject.is_function:
+            if any(a for a in tlobject.args if a.type == 'InputPeer'):
+                # We can automatically convert a normal peer to an InputPeer,
+                # it will make invoking a lot of requests a lot simpler.
+                builder.writeln('from {}.utils import get_input_peer'
+                                .format('.' * depth))
+
+            if any(a for a in tlobject.args if a.type == 'InputChannel'):
+                # Same applies to channels
+                builder.writeln('from {}.utils import get_input_channel'
+                                .format('.' * depth))
 
         if any(a for a in tlobject.args if a.can_be_inferred):
             # Currently only 'random_id' needs 'os' to be imported
@@ -316,7 +321,12 @@ class TLGenerator:
             elif arg.type == 'InputPeer' and tlobject.is_function:
                 # Well-known case, auto-cast it to the right type
                 builder.writeln(
-                    'self.{0} = get_input_peer({0})'.format(arg.name))
+                    'self.{0} = get_input_peer({0})'.format(arg.name)
+                )
+            elif arg.type == 'InputChannel' and tlobject.is_function:
+                builder.writeln(
+                    'self.{0} = get_input_channel({0})'.format(arg.name)
+                )
             else:
                 builder.writeln('self.{0} = {0}'.format(arg.name))
 

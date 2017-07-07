@@ -7,7 +7,7 @@ from mimetypes import add_type, guess_extension
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser,
-    MessageMediaDocument, MessageMediaPhoto, PeerChannel,
+    MessageMediaDocument, MessageMediaPhoto, PeerChannel, InputChannel,
     PeerChat, PeerUser, User, UserFull, UserProfilePhoto)
 
 
@@ -52,7 +52,7 @@ def get_extension(media):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
-    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32('InputUser')
+    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32(b'InputPeer')
         return entity
 
     if isinstance(entity, User):
@@ -77,6 +77,19 @@ def get_input_peer(entity):
         return InputPeerChat(entity.chat_id)
 
     raise ValueError('Cannot cast {} to any kind of InputPeer.'
+                     .format(type(entity).__name__))
+
+
+def get_input_channel(entity):
+    """Gets the input peer for the given "entity" (user, chat or channel).
+       A ValueError is raised if the given entity isn't a supported type."""
+    if type(entity).subclass_of_id == 0x40f202fd:  # crc32(b'InputChannel')
+        return entity
+
+    if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+        return InputChannel(entity.id, entity.access_hash)
+
+    raise ValueError('Cannot cast {} to any kind of InputChannel.'
                      .format(type(entity).__name__))
 
 
