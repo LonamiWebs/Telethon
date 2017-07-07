@@ -14,6 +14,7 @@
 </head>
 <body>
 <div id="main_div">
+    <!-- You can append '?q=query' to the URL to default to a search -->
     <input id="searchBox" type="text" onkeyup="updateSearch()"
            placeholder="Search for requests and types…" />
 
@@ -146,7 +147,6 @@
     <pre><span class="sh3">#!/usr/bin/python3</span>
 <span class="sh4">from</span> telethon <span class="sh4">import</span> TelegramClient
 <span class="sh4">from</span> telethon.tl.functions.messages <span class="sh4">import</span> GetHistoryRequest
-<span class="sh4">from</span> telethon.utils <span class="sh4">import</span> get_input_peer
 
 <span class="sh3"># <b>(1)</b> Use your own values here</span>
 api_id   = <span class="sh1">12345</span>
@@ -167,25 +167,28 @@ dialogs, entities = client.get_dialogs(<span class="sh1">10</span>)
 entity = entities[<span class="sh1">0</span>]
 
 <span class="sh3"># <b>(4)</b> !! Invoking a request manually !!</span>
-result = <b>client.invoke</b>(
-    GetHistoryRequest(
-        get_input_peer(entity),
-        limit=<span class="sh1">20</span>,
-        offset_date=<span class="sh1">None</span>,
-        offset_id=<span class="sh1">0</span>,
-        max_id=<span class="sh1">0</span>,
-        min_id=<span class="sh1">0</span>,
-        add_offset=<span class="sh1">0</span>))
+result = <b>client</b>(GetHistoryRequest(
+    entity,
+    limit=<span class="sh1">20</span>,
+    offset_date=<span class="sh1">None</span>,
+    offset_id=<span class="sh1">0</span>,
+    max_id=<span class="sh1">0</span>,
+    min_id=<span class="sh1">0</span>,
+    add_offset=<span class="sh1">0</span>
+))
 
 <span class="sh3"># Now you have access to the first 20 messages</span>
 messages = result.messages</pre>
 
-    <p>As it can be seen, manually invoking requests with
-    <code>client.invoke()</code> is way more verbose than using the built-in
-    methods (such as <code>client.get_dialogs()</code>. However, and given
-    that there are so many methods available, it's impossible to provide a nice
-    interface to things that may change over time. To get full access, however,
-    you're still able to invoke these methods manually.</p>
+    <p>As it can be seen, manually calling requests with
+    <code>client(request)</code> (or using the old way, by calling
+    <code>client.invoke(request)</code>) is way more verbose than using the
+    built-in methods (such as <code>client.get_dialogs()</code>).</p>
+
+    <p>However, and
+    given that there are so many methods available, it's impossible to provide
+    a nice interface to things that may change over time. To get full access,
+    however, you're still able to invoke these methods manually.</p>
 </div>
 
 </div>
@@ -195,11 +198,18 @@ searchDiv = document.getElementById("searchDiv");
 searchBox = document.getElementById("searchBox");
 searchTable = document.getElementById("searchTable");
 
-requests = [{request_names}];
-types = [{type_names}];
+try {
+    requests = [{request_names}];
+    types = [{type_names}];
 
-requestsu = [{request_urls}];
-typesu = [{type_urls}];
+    requestsu = [{request_urls}];
+    typesu = [{type_urls}];
+} catch (e) {
+    requests = [];
+    types = [];
+    requetsu = [];
+    typesu = [];
+}
 
 function updateSearch() {
     if (searchBox.value) {
@@ -251,6 +261,21 @@ function updateSearch() {
         contentDiv.style.display = "";
         searchDiv.style.display = "none";
     }
+}
+
+function getQuery(name) {
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i = 0; i != vars.length; ++i) {
+        var pair = vars[i].split("=");
+        if (pair[0] == name)
+            return pair[1];
+    }
+}
+
+var query = getQuery('q');
+if (query) {
+    searchBox.value = query;
 }
 
 updateSearch();
