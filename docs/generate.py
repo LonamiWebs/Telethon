@@ -403,11 +403,39 @@ def generate_documentation(scheme_file):
                 docs.add_row(get_class_name(func), link=link)
             docs.end_table()
 
+            # List all the methods which take this type as input
+            docs.write_title('Methods accepting this type as input', level=3)
+            other_methods = sorted(
+                (t for t in tlobjects
+                 if any(tltype == a.type for a in t.args) and t.is_function),
+                key=lambda t: t.name
+            )
+            if not other_methods:
+                docs.write_text(
+                    'No methods accept this type as an input parameter.')
+            elif len(other_methods) == 1:
+                docs.write_text(
+                    'Only this method has a parameter with this type.')
+            else:
+                docs.write_text(
+                    'The following %d methods accept this type as an input '
+                    'parameter.' % len(other_methods))
+
+            docs.begin_table(2)
+            for ot in other_methods:
+                link = get_create_path_for(ot)
+                link = get_relative_path(link, relative_to=filename)
+                docs.add_row(get_class_name(ot), link=link)
+            docs.end_table()
+
             # List every other type which has this type as a member
             docs.write_title('Other types containing this type', level=3)
-            other_types = sorted((t for t in tlobjects
-                                  if any(tltype == a.type for a in t.args)),
-                                 key=lambda t: t.name)
+            other_types = sorted(
+                (t for t in tlobjects
+                 if any(tltype == a.type for a in t.args)
+                 and not t.is_function
+                 ), key=lambda t: t.name
+            )
 
             if not other_types:
                 docs.write_text(
