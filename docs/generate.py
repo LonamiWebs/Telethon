@@ -433,20 +433,26 @@ def generate_documentation(scheme_file):
     layer = TLParser.find_layer(scheme_file)
     types = set()
     methods = []
+    constructors = []
     for tlobject in tlobjects:
         if tlobject.is_function:
             methods.append(tlobject)
+        else:
+            constructors.append(tlobject)
 
         types.add(tlobject.result)
 
     types = sorted(types)
     methods = sorted(methods, key=lambda m: m.name)
+    constructors = sorted(constructors, key=lambda c: c.name)
 
     request_names = ', '.join('"' + get_class_name(m) + '"' for m in methods)
     type_names = ', '.join('"' + get_class_name(t) + '"' for t in types)
+    constructor_names = ', '.join('"' + get_class_name(t) + '"' for t in constructors)
 
     request_urls = ', '.join('"' + get_create_path_for(m) + '"' for m in methods)
     type_urls = ', '.join('"' + get_path_for_type(t) + '"' for t in types)
+    constructor_urls = ', '.join('"' + get_create_path_for(t) + '"' for t in constructors)
 
     replace_dict = {
         'type_count': len(types),
@@ -456,8 +462,10 @@ def generate_documentation(scheme_file):
 
         'request_names': request_names,
         'type_names': type_names,
+        'constructor_names': constructor_names,
         'request_urls': request_urls,
-        'type_urls': type_urls
+        'type_urls': type_urls,
+        'constructor_urls': constructor_urls
     }
 
     with open('../res/core.html') as infile:
