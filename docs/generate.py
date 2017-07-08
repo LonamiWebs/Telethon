@@ -75,12 +75,19 @@ def get_create_path_for(tlobject):
     return os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
 
 
+def is_core_type(type_):
+    """Returns "true" if the type is considered a core type"""
+    return type_.lower() in {
+        'int', 'long', 'int128', 'int256', 'double',
+        'vector', 'string', 'bool', 'true', 'bytes', 'date'
+    }
+
+
 def get_path_for_type(type_, relative_to='.'):
     """Similar to getting the path for a TLObject, it might not be possible
        to have the TLObject itself but rather its name (the type);
        this method works in the same way, returning a relative path"""
-    if type_.lower() in {'int', 'long', 'int128', 'int256', 'double',
-                         'vector', 'string', 'bool', 'true', 'bytes', 'date'}:
+    if is_core_type(type_):
         path = 'index.html#%s' % type_.lower()
 
     elif '.' in type_:
@@ -440,7 +447,11 @@ def generate_documentation(scheme_file):
         else:
             constructors.append(tlobject)
 
-        types.add(tlobject.result)
+        if not is_core_type(tlobject.result):
+            if re.search('^vector<', tlobject.result, re.IGNORECASE):
+                types.add(tlobject.result.split('<')[1].strip('>'))
+            else:
+                types.add(tlobject.result)
 
     types = sorted(types)
     methods = sorted(methods, key=lambda m: m.name)
