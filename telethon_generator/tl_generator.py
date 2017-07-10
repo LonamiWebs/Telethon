@@ -184,16 +184,20 @@ class TLGenerator:
                         .format('.' * depth))
 
         if tlobject.is_function:
-            if any(a for a in tlobject.args if a.type == 'InputPeer'):
-                # We can automatically convert a normal peer to an InputPeer,
-                # it will make invoking a lot of requests a lot simpler.
-                builder.writeln('from {}.utils import get_input_peer'
-                                .format('.' * depth))
+            util_imports = set()
+            for a in tlobject.args:
+                # We can automatically convert some "full" types to
+                # "input only" (like User -> InputPeerUser, etc.)
+                if a.type == 'InputPeer':
+                    util_imports.add('get_input_peer')
+                elif a.type == 'InputChannel':
+                    util_imports.add('get_input_channel')
+                elif a.type == 'InputUser':
+                    util_imports.add('get_input_user')
 
-            if any(a for a in tlobject.args if a.type == 'InputChannel'):
-                # Same applies to channels
-                builder.writeln('from {}.utils import get_input_channel'
-                                .format('.' * depth))
+            if util_imports:
+                builder.writeln('from {}.utils import {}'.format(
+                    '.' * depth, ', '.join(util_imports)))
 
         if any(a for a in tlobject.args if a.can_be_inferred):
             # Currently only 'random_id' needs 'os' to be imported
@@ -326,6 +330,10 @@ class TLGenerator:
             elif arg.type == 'InputChannel' and tlobject.is_function:
                 builder.writeln(
                     'self.{0} = get_input_channel({0})'.format(arg.name)
+                )
+            elif arg.type == 'InputUser' and tlobject.is_function:
+                builder.writeln(
+                    'self.{0} = get_input_user({0})'.format(arg.name)
                 )
             else:
                 builder.writeln('self.{0} = {0}'.format(arg.name))
