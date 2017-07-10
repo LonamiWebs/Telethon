@@ -50,7 +50,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.11.3'
+    __version__ = '0.11.4'
 
     # region Initialization
 
