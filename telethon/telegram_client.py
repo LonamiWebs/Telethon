@@ -214,7 +214,7 @@ class TelegramClient(TelegramBareClient):
             return result
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
-            self._logger.info('DC error when invoking request, '
+            self._logger.debug('DC error when invoking request, '
                               'attempting to reconnect at DC {}'
                               .format(e.new_dc))
 
@@ -698,7 +698,7 @@ class TelegramClient(TelegramBareClient):
             return
 
         # Different state, update the saved value and behave as required
-        self._logger.info('Changing updates thread running status to %s', running)
+        self._logger.debug('Changing updates thread running status to %s', running)
         if running:
             self._updates_thread_running.set()
             if not self._updates_thread:
@@ -739,7 +739,7 @@ class TelegramClient(TelegramBareClient):
                     updates = self._sender.receive_updates(timeout=timeout)
 
                     self._updates_thread_receiving.clear()
-                    self._logger.info(
+                    self._logger.debug(
                         'Received {} update(s) from the updates thread'
                         .format(len(updates))
                     )
@@ -748,25 +748,25 @@ class TelegramClient(TelegramBareClient):
                             handler(update)
 
                 except ConnectionResetError:
-                    self._logger.info('Server disconnected us. Reconnecting...')
+                    self._logger.debug('Server disconnected us. Reconnecting...')
                     self.reconnect()
 
                 except TimeoutError:
                     self._logger.debug('Receiving updates timed out')
 
                 except ReadCancelledError:
-                    self._logger.info('Receiving updates cancelled')
+                    self._logger.debug('Receiving updates cancelled')
 
                 except BrokenPipeError:
-                    self._logger.info('Tcp session is broken. Reconnecting...')
+                    self._logger.debug('Tcp session is broken. Reconnecting...')
                     self.reconnect()
 
                 except InvalidChecksumError:
-                    self._logger.info('MTProto session is broken. Reconnecting...')
+                    self._logger.debug('MTProto session is broken. Reconnecting...')
                     self.reconnect()
 
                 except OSError:
-                    self._logger.warning('OSError on updates thread, %s logging out',
+                    self._logger.debug('OSError on updates thread, %s logging out',
                                          'was' if self._sender.logging_out else 'was not')
 
                     if self._sender.logging_out:

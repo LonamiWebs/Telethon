@@ -90,7 +90,7 @@ class TelegramBareClient:
            determine the authorization key for the current session.
         """
         if self._sender and self._sender.is_connected():
-            self._logger.warning(
+            self._logger.debug(
                 'Attempted to connect when the client was already connected.'
             )
             return
@@ -143,7 +143,7 @@ class TelegramBareClient:
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
             self.disconnect()
-            self._logger.warning('Could not stabilise initial connection: {}'
+            self._logger.debug('Could not stabilise initial connection: {}'
                                  .format(error))
             return False
 
@@ -277,7 +277,7 @@ class TelegramBareClient:
             return request.result
 
         except ConnectionResetError:
-            self._logger.info('Server disconnected us. Reconnecting and '
+            self._logger.debug('Server disconnected us. Reconnecting and '
                               'resending request...')
             self.reconnect()
             return self.invoke(request)

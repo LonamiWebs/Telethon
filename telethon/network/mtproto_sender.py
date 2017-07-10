@@ -100,7 +100,7 @@ class MtProtoSender:
             # or, if there is no request, until we read an update
             while (request and not request.confirm_received) or \
                     (not request and not updates):
-                self._logger.info('Trying to .receive() the request result...')
+                self._logger.debug('Trying to .receive() the request result...')
                 seq, body = self.transport.receive(**kwargs)
                 message, remote_msg_id, remote_seq = self._decode_msg(body)
 
@@ -114,7 +114,7 @@ class MtProtoSender:
                     self._pending_receive.remove(request)
                 except ValueError: pass
 
-            self._logger.info('Request result received')
+            self._logger.debug('Request result received')
         self._logger.debug('receive() released the lock')
 
     def receive_updates(self, **kwargs):
@@ -226,10 +226,10 @@ class MtProtoSender:
             ack = reader.tgread_object()
             for r in self._pending_receive:
                 if r.request_msg_id in ack.msg_ids:
-                    self._logger.warning('Ack found for the a request')
+                    self._logger.debug('Ack found for the a request')
 
                     if self.logging_out:
-                        self._logger.info('Message ack confirmed a request')
+                        self._logger.debug('Message ack confirmed a request')
                         r.confirm_received = True
 
             return True
@@ -247,7 +247,7 @@ class MtProtoSender:
 
             return True
 
-        self._logger.warning('Unknown message: {}'.format(hex(code)))
+        self._logger.debug('Unknown message: {}'.format(hex(code)))
         return False
 
     # endregion
@@ -263,7 +263,7 @@ class MtProtoSender:
             request = next(r for r in self._pending_receive
                            if r.request_msg_id == received_msg_id)
 
-            self._logger.warning('Pong confirmed a request')
+            self._logger.debug('Pong confirmed a request')
             request.confirm_received = True
         except StopIteration: pass
 
@@ -318,8 +318,8 @@ class MtProtoSender:
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
             self.session.save()
-            self._logger.warning('Read Bad Message error: ' + str(error))
-            self._logger.info('Attempting to use the correct time offset.')
+            self._logger.debug('Read Bad Message error: ' + str(error))
+            self._logger.debug('Attempting to use the correct time offset.')
             return True
         else:
             raise error
@@ -346,7 +346,7 @@ class MtProtoSender:
             self._need_confirmation.append(request_id)
             self._send_acknowledges()
 
-            self._logger.warning('Read RPC error: %s', str(error))
+            self._logger.debug('Read RPC error: %s', str(error))
             if isinstance(error, InvalidDCError):
                 # Must resend this request, if any
                 if request:
@@ -368,7 +368,7 @@ class MtProtoSender:
             else:
                 # If it's really a result for RPC from previous connection
                 # session, it will be skipped by the handle_container()
-                self._logger.warning('Lost request will be skipped.')
+                self._logger.debug('Lost request will be skipped.')
                 return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, updates):
