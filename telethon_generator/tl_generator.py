@@ -437,7 +437,7 @@ class TLGenerator:
         """
         if arg.is_vector:
             builder.writeln(
-                'self.{0} = [{1}({0}_item) for {0}_item in {0}]'
+                'self.{0} = [{1}(_x) for _x in {0}]'
                 .format(arg.name, get_input_code)
             )
             pass
@@ -504,11 +504,10 @@ class TLGenerator:
                     "writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
 
             builder.writeln('writer.write_int(len({}))'.format(name))
-            builder.writeln('for {}_item in {}:'.format(arg.name, name))
+            builder.writeln('for _x in {}:'.format(name))
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
-            TLGenerator.write_onsend_code(
-                builder, arg, args, name='{}_item'.format(arg.name))
+            TLGenerator.write_onsend_code(builder, arg, args, name='_x')
             arg.is_vector = True
 
         elif arg.flag_indicator:
@@ -599,13 +598,12 @@ class TLGenerator:
                 builder.writeln("reader.read_int()  # Vector's constructor ID")
 
             builder.writeln('{} = []  # Initialize an empty list'.format(name))
-            builder.writeln('{}_len = reader.read_int()'.format(arg.name))
-            builder.writeln('for _ in range({}_len):'.format(arg.name))
+            builder.writeln('_len = reader.read_int()')
+            builder.writeln('for _ in range(_len):')
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
-            TLGenerator.write_onresponse_code(
-                builder, arg, args, name='{}_item'.format(arg.name))
-            builder.writeln('{}.append({}_item)'.format(name, arg.name))
+            TLGenerator.write_onresponse_code(builder, arg, args, name='_x')
+            builder.writeln('{}.append(_x)'.format(name))
             arg.is_vector = True
 
         elif arg.flag_indicator:
@@ -620,12 +618,14 @@ class TLGenerator:
             builder.writeln('{} = reader.read_long()'.format(name))
 
         elif 'int128' == arg.type:
-            builder.writeln('{} = reader.read_large_int(bits=128)'.format(
-                name))
+            builder.writeln(
+                '{} = reader.read_large_int(bits=128)'.format(name)
+            )
 
         elif 'int256' == arg.type:
-            builder.writeln('{} = reader.read_large_int(bits=256)'.format(
-                name))
+            builder.writeln(
+                '{} = reader.read_large_int(bits=256)'.format(name)
+            )
 
         elif 'double' == arg.type:
             builder.writeln('{} = reader.read_double()'.format(name))
