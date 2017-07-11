@@ -322,19 +322,15 @@ class TLGenerator:
                     )
                 else:
                     raise ValueError('Cannot infer a value for ', arg)
+
+            # Well-known cases, auto-cast it to the right type
             elif arg.type == 'InputPeer' and tlobject.is_function:
-                # Well-known case, auto-cast it to the right type
-                builder.writeln(
-                    'self.{0} = get_input_peer({0})'.format(arg.name)
-                )
+                TLGenerator.write_get_input(builder, arg, 'get_input_peer')
             elif arg.type == 'InputChannel' and tlobject.is_function:
-                builder.writeln(
-                    'self.{0} = get_input_channel({0})'.format(arg.name)
-                )
+                TLGenerator.write_get_input(builder, arg, 'get_input_channel')
             elif arg.type == 'InputUser' and tlobject.is_function:
-                builder.writeln(
-                    'self.{0} = get_input_user({0})'.format(arg.name)
-                )
+                TLGenerator.write_get_input(builder, arg, 'get_input_user')
+
             else:
                 builder.writeln('self.{0} = {0}'.format(arg.name))
 
@@ -433,6 +429,22 @@ class TLGenerator:
         builder.writeln('def stringify(self):')
         builder.writeln('return MTProtoRequest.pretty_format(self, indent=0)')
         # builder.end_block()  # No need to end the last block
+
+    @staticmethod
+    def write_get_input(builder, arg, get_input_code):
+        """Returns "True" if the get_input_* code was written when assigning
+           a parameter upon creating the request. Returns False otherwise
+        """
+        if arg.is_vector:
+            builder.writeln(
+                'self.{0} = [{1}({0}_item) for {0}_item in {0}]'
+                .format(arg.name, get_input_code)
+            )
+            pass
+        else:
+            builder.writeln(
+                'self.{0} = {1}({0})'.format(arg.name, get_input_code)
+            )
 
     @staticmethod
     def get_class_name(tlobject):
