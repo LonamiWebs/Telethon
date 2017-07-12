@@ -87,7 +87,7 @@ class TelegramClient(TelegramBareClient):
         # TODO JsonSession until migration is complete (by v1.0)
         if isinstance(session, str) or session is None:
             session = JsonSession.try_load_or_create_new(session)
-        elif not isinstance(session, Session):
+        elif not isinstance(session, Session) and not isinstance(session, JsonSession):
             raise ValueError(
                 'The given session must be a str or a Session instance.')
 
