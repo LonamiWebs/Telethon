@@ -542,33 +542,33 @@ class TelegramClient(TelegramBareClient):
 
     def download_msg_media(self,
                            message_media,
-                           file_path,
+                           file,
                            add_extension=True,
                            progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
-           into the desired file_path, optionally finding its extension automatically
+           into the desired file(a stream or str), optionally finding its extension automatically
            The progress_callback should be a callback function which takes two parameters,
            uploaded size (in bytes) and total file size (in bytes).
            This will be called every time a part is downloaded"""
         if type(message_media) == MessageMediaPhoto:
-            return self.download_photo(message_media, file_path, add_extension,
+            return self.download_photo(message_media, file, add_extension,
                                        progress_callback)
 
         elif type(message_media) == MessageMediaDocument:
-            return self.download_document(message_media, file_path,
+            return self.download_document(message_media, file,
                                           add_extension, progress_callback)
 
         elif type(message_media) == MessageMediaContact:
-            return self.download_contact(message_media, file_path,
+            return self.download_contact(message_media, file,
                                          add_extension)
 
     def download_photo(self,
                        message_media_photo,
-                       file_path,
+                       file,
                        add_extension=False,
                        progress_callback=None):
         """Downloads MessageMediaPhoto's largest size into the desired
-           file_path, optionally finding its extension automatically
+           file(a stream or str), optionally finding its extension automatically
            The progress_callback should be a callback function which takes two parameters,
            uploaded size (in bytes) and total file size (in bytes).
            This will be called every time a part is downloaded"""
@@ -579,8 +579,8 @@ class TelegramClient(TelegramBareClient):
         file_size = largest_size.size
         largest_size = largest_size.location
 
-        if add_extension:
-            file_path += get_extension(message_media_photo)
+        if isinstance(file, str) and add_extension:
+            file += get_extension(message_media_photo)
 
         # Download the media with the largest size input file location
         self.download_file(
@@ -589,19 +589,19 @@ class TelegramClient(TelegramBareClient):
                 local_id=largest_size.local_id,
                 secret=largest_size.secret
             ),
-            file_path,
+            file,
             file_size=file_size,
             progress_callback=progress_callback
         )
-        return file_path
+        return file
 
     def download_document(self,
                           message_media_document,
-                          file_path=None,
+                          file=None,
                           add_extension=True,
                           progress_callback=None):
         """Downloads the given MessageMediaDocument into the desired
-           file_path, optionally finding its extension automatically.
+           file(a stream or str), optionally finding its extension automatically.
            If no file_path is given, it will try to be guessed from the document
            The progress_callback should be a callback function which takes two parameters,
            uploaded size (in bytes) and total file size (in bytes).
@@ -610,21 +610,21 @@ class TelegramClient(TelegramBareClient):
         file_size = document.size
 
         # If no file path was given, try to guess it from the attributes
-        if file_path is None:
+        if file is None:
             for attr in document.attributes:
                 if type(attr) == DocumentAttributeFilename:
-                    file_path = attr.file_name
+                    file = attr.file_name
                     break  # This attribute has higher preference
 
                 elif type(attr) == DocumentAttributeAudio:
-                    file_path = '{} - {}'.format(attr.performer, attr.title)
+                    file = '{} - {}'.format(attr.performer, attr.title)
 
-            if file_path is None:
+            if file is None:
                 raise ValueError('Could not infer a file_path for the document'
                                  '. Please provide a valid file_path manually')
 
-        if add_extension:
-            file_path += get_extension(message_media_document)
+        if isinstance(file, str) and add_extension:
+            file += get_extension(message_media_document)
 
         self.download_file(
             InputDocumentFileLocation(
@@ -632,39 +632,50 @@ class TelegramClient(TelegramBareClient):
                 access_hash=document.access_hash,
                 version=document.version
             ),
-            file_path,
+            file,
             file_size=file_size,
             progress_callback=progress_callback
         )
-        return file_path
+        return file
 
     @staticmethod
-    def download_contact(message_media_contact, file_path, add_extension=True):
+    def download_contact(message_media_contact, file, add_extension=True):
         """Downloads a media contact using the vCard 4.0 format"""
 
         first_name = message_media_contact.first_name
         last_name = message_media_contact.last_name
         phone_number = message_media_contact.phone_number
 
-        # The only way we can save a contact in an understandable
-        # way by phones is by using the .vCard format
-        if add_extension:
-            file_path += '.vcard'
+        if isinstance(file, str):
+            # The only way we can save a contact in an understandable
+            # way by phones is by using the .vCard format
+            if add_extension:
+                file += '.vcard'
 
-        # Ensure that we'll be able to download the contact
-        utils.ensure_parent_dir_exists(file_path)
+            # Ensure that we'll be able to download the contact
+            utils.ensure_parent_dir_exists(file)
 
-        with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file, 'w', encoding='utf-8') as f:
+                f.write('BEGIN:VCARD\n')
+                f.write('VERSION:4.0\n')
+                f.write('N:{};{};;;\n'.format(first_name, last_name
+                                                 if last_name else ''))
+                f.write('FN:{}\n'.format(' '.join((first_name, last_name))))
+                f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
+                    phone_number))
+                f.write('END:VCARD\n')
+
+        else:
             file.write('BEGIN:VCARD\n')
             file.write('VERSION:4.0\n')
             file.write('N:{};{};;;\n'.format(first_name, last_name
-                                             if last_name else ''))
+            if last_name else ''))
             file.write('FN:{}\n'.format(' '.join((first_name, last_name))))
             file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
                 phone_number))
             file.write('END:VCARD\n')
 
-        return file_path
+        return file
 
     # endregion
 
