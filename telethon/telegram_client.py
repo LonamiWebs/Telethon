@@ -546,10 +546,13 @@ class TelegramClient(TelegramBareClient):
                            add_extension=True,
                            progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
-           into the desired file(a stream or str), optionally finding its extension automatically
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+           into the desired file (a stream or str), optionally finding its
+           extension automatically.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
         if type(message_media) == MessageMediaPhoto:
             return self.download_photo(message_media, file, add_extension,
                                        progress_callback)
@@ -654,26 +657,24 @@ class TelegramClient(TelegramBareClient):
 
             # Ensure that we'll be able to download the contact
             utils.ensure_parent_dir_exists(file)
-
-            with open(file, 'w', encoding='utf-8') as f:
-                f.write('BEGIN:VCARD\n')
-                f.write('VERSION:4.0\n')
-                f.write('N:{};{};;;\n'.format(first_name, last_name
-                                                 if last_name else ''))
-                f.write('FN:{}\n'.format(' '.join((first_name, last_name))))
-                f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
-                    phone_number))
-                f.write('END:VCARD\n')
-
+            f = open(file, 'w', encoding='utf-8')
         else:
-            file.write('BEGIN:VCARD\n')
-            file.write('VERSION:4.0\n')
-            file.write('N:{};{};;;\n'.format(first_name, last_name
-            if last_name else ''))
-            file.write('FN:{}\n'.format(' '.join((first_name, last_name))))
-            file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
+            f = file
+
+        try:
+            f.write('BEGIN:VCARD\n')
+            f.write('VERSION:4.0\n')
+            f.write('N:{};{};;;\n'.format(
+                first_name, last_name if last_name else '')
+            )
+            f.write('FN:{}\n'.format(' '.join((first_name, last_name))))
+            f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
                 phone_number))
-            file.write('END:VCARD\n')
+            f.write('END:VCARD\n')
+        finally:
+            # Only close the stream if we opened it
+            if isinstance(file, str):
+                f.close()
 
         return file
 
