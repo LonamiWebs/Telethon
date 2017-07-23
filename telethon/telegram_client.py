@@ -570,11 +570,13 @@ class TelegramClient(TelegramBareClient):
                        file,
                        add_extension=False,
                        progress_callback=None):
-        """Downloads MessageMediaPhoto's largest size into the desired
-           file(a stream or str), optionally finding its extension automatically
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+        """Downloads MessageMediaPhoto's largest size into the desired file
+           (a stream or str), optionally finding its extension automatically.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
 
         # Determine the photo and its largest size
         photo = message_media_photo.photo
@@ -603,12 +605,15 @@ class TelegramClient(TelegramBareClient):
                           file=None,
                           add_extension=True,
                           progress_callback=None):
-        """Downloads the given MessageMediaDocument into the desired
-           file(a stream or str), optionally finding its extension automatically.
-           If no file_path is given, it will try to be guessed from the document
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+        """Downloads the given MessageMediaDocument into the desired file
+           (a stream or str), optionally finding its extension automatically.
+
+           If no file_path is given it will try to be guessed from the document.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
         document = message_media_document.document
         file_size = document.size
 
