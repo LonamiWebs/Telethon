@@ -1,2 +1,2 @@
-from .mtproto_request import MTProtoRequest
+from .tlobject import TLObject
 from .session import Session, JsonSession

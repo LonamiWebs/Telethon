@@ -10,7 +10,7 @@ from .network import authenticator, MtProtoSender, TcpTransport
 from .utils import get_appropriated_part_size
 
 # For sending and receiving requests
-from .tl import MTProtoRequest, JsonSession
+from .tl import TLObject, JsonSession
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
@@ -265,8 +265,8 @@ class TelegramBareClient:
            If 'updates' is not None, all read update object will be put
            in such list. Otherwise, update objects will be ignored.
         """
-        if not isinstance(request, MTProtoRequest):
-            raise ValueError('You can only invoke MtProtoRequests')
+        if not isinstance(request, TLObject) and not request.content_related:
+            raise ValueError('You can only invoke requests, not types!')
 
         if not self._sender:
             raise ValueError('You must be connected to invoke requests!')

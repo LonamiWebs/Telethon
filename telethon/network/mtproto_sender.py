@@ -143,7 +143,7 @@ class MtProtoSender:
             plain_writer.write_long(self.session.id, signed=False)
             plain_writer.write_long(request.request_msg_id)
             plain_writer.write_int(
-                self.session.generate_sequence(request.confirmed))
+                self.session.generate_sequence(request.content_related))
 
             plain_writer.write_int(len(packet))
             plain_writer.write(packet)

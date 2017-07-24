@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 
-class MTProtoRequest:
+class TLObject:
     def __init__(self):
         self.sent = False
 
@@ -14,7 +14,7 @@ class MTProtoRequest:
 
         # These should be overrode
         self.constructor_id = 0
-        self.confirmed = False
+        self.content_related = False  # Only requests/functions/queries are
         self.responded = False
 
     # These should not be overrode
@@ -27,7 +27,7 @@ class MTProtoRequest:
 
     def need_resend(self):
         return self.dirty or (
-            self.confirmed and not self.confirm_received and
+            self.content_related and not self.confirm_received and
             datetime.now() - self.send_time > timedelta(seconds=3))
 
     @staticmethod
@@ -36,32 +36,32 @@ class MTProtoRequest:
            If indent is None, a single line will be returned.
         """
         if indent is None:
-            if isinstance(obj, MTProtoRequest):
+            if isinstance(obj, TLObject):
                 return '{{{}: {}}}'.format(
                     type(obj).__name__,
-                    MTProtoRequest.pretty_format(obj.to_dict())
+                    TLObject.pretty_format(obj.to_dict())
                 )
             if isinstance(obj, dict):
                 return '{{{}}}'.format(', '.join(
                     '{}: {}'.format(
-                        k, MTProtoRequest.pretty_format(v)
+                        k, TLObject.pretty_format(v)
                     ) for k, v in obj.items()
                 ))
             elif isinstance(obj, str):
                 return '"{}"'.format(obj)
             elif hasattr(obj, '__iter__'):
                 return '[{}]'.format(
-                    ', '.join(MTProtoRequest.pretty_format(x) for x in obj)
+                    ', '.join(TLObject.pretty_format(x) for x in obj)
                 )
             else:
                 return str(obj)
         else:
             result = []
-            if isinstance(obj, MTProtoRequest):
+            if isinstance(obj, TLObject):
                 result.append('{')
                 result.append(type(obj).__name__)
                 result.append(': ')
-                result.append(MTProtoRequest.pretty_format(
+                result.append(TLObject.pretty_format(
                     obj.to_dict(), indent
                 ))
 
@@ -72,7 +72,7 @@ class MTProtoRequest:
                     result.append('\t' * indent)
                     result.append(k)
                     result.append(': ')
-                    result.append(MTProtoRequest.pretty_format(v, indent))
+                    result.append(TLObject.pretty_format(v, indent))
                     result.append(',\n')
                 indent -= 1
                 result.append('\t' * indent)
@@ -88,7 +88,7 @@ class MTProtoRequest:
                 indent += 1
                 for x in obj:
                     result.append('\t' * indent)
-                    result.append(MTProtoRequest.pretty_format(x, indent))
+                    result.append(TLObject.pretty_format(x, indent))
                     result.append(',\n')
                 indent -= 1
                 result.append('\t' * indent)

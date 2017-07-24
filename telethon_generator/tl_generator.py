@@ -177,10 +177,10 @@ class TLGenerator:
            importing and documentation strings.
         '"""
 
-        # Both types and functions inherit from
-        # MTProtoRequest so they all can be sent
-        # TODO MTProtoRequest is not the best name for a type
-        builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
+        # Both types and functions inherit from the TLObject class so they
+        # all can be serialized and sent, however, only the functions are
+        # "content_related".
+        builder.writeln('from {}.tl.tlobject import TLObject'
                         .format('.' * depth))
 
         if tlobject.is_function:
@@ -205,7 +205,7 @@ class TLGenerator:
 
         builder.writeln()
         builder.writeln()
-        builder.writeln('class {}(MTProtoRequest):'.format(
+        builder.writeln('class {}(TLObject):'.format(
             TLGenerator.get_class_name(tlobject)))
 
         # Write the original .tl definition,
@@ -269,7 +269,7 @@ class TLGenerator:
                         builder.write(' Must be a list.'.format(arg.name))
 
                     if arg.is_generic:
-                        builder.write(' Must be another MTProtoRequest.')
+                        builder.write(' Must be another TLObject request.')
 
                     builder.writeln()
 
@@ -301,7 +301,7 @@ class TLGenerator:
         if tlobject.is_function:
             builder.writeln('self.result = None')
             builder.writeln(
-                'self.confirmed = True  # Confirmed by default')
+                'self.content_related = True')
 
         # Set the arguments
         if args:
@@ -423,11 +423,11 @@ class TLGenerator:
         builder.end_block()
 
         builder.writeln('def __str__(self):')
-        builder.writeln('return MTProtoRequest.pretty_format(self)')
+        builder.writeln('return TLObject.pretty_format(self)')
         builder.end_block()
 
         builder.writeln('def stringify(self):')
-        builder.writeln('return MTProtoRequest.pretty_format(self, indent=0)')
+        builder.writeln('return TLObject.pretty_format(self, indent=0)')
         # builder.end_block()  # No need to end the last block
 
     @staticmethod

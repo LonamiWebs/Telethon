@@ -14,7 +14,7 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
-from .tl import MTProtoRequest, Session, JsonSession
+from .tl import Session, JsonSession
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -188,12 +188,6 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if not issubclass(type(request), MTProtoRequest):
-            raise ValueError('You can only invoke MtProtoRequests')
-
-        if not self._sender:
-            raise ValueError('You must be connected to invoke requests!')
-
         if self._updates_thread_receiving.is_set():
             self._sender.cancel_receive()
 
