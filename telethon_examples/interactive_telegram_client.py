@@ -250,7 +250,7 @@ class InteractiveTelegramClient(TelegramClient):
                     print('Downloading media with name {}...'.format(output))
                     output = self.download_msg_media(
                         msg.media,
-                        file_path=output,
+                        file=output,
                         progress_callback=self.download_progress_callback)
                     print('Media downloaded to {}!'.format(output))
 
