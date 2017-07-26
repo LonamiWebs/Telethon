@@ -5,7 +5,9 @@ from os import path
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import RPCError, FloodWaitError, FileMigrateError
+from .errors import (
+    RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
+)
 from .network import authenticator, MtProtoSender, TcpTransport
 from .utils import get_appropriated_part_size
 
@@ -139,6 +141,12 @@ class TelegramBareClient:
             # although many other options are available!
             self.dc_options = result.dc_options
             return True
+
+        except TypeNotFoundError as e:
+            # This is fine, probably layer migration
+            self._logger.debug('Found invalid item, probably migrating', e)
+            self.disconnect()
+            self.connect(exported_auth=exported_auth)
 
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them

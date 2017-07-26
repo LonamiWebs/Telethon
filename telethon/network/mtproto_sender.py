@@ -281,9 +281,14 @@ class MtProtoSender:
 
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
-            if not self._process_msg(
-                    inner_msg_id, sequence, reader, updates):
+            try:
+                if not self._process_msg(
+                        inner_msg_id, sequence, reader, updates):
+                    reader.set_position(begin_position + inner_length)
+            except:
+                # If any error is raised, something went wrong; skip the packet
                 reader.set_position(begin_position + inner_length)
+                raise
 
         return True
 
