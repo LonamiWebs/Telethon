@@ -58,11 +58,11 @@ On a terminal, issue the following command:
 
   sudo -H pip install telethon
 
-You're ready to go. Oh, and upgrading is just as easy:
+If you get something like "SyntaxError: invalid syntax" on the ``from error``
+line, it's because ``pip`` defaults to Python 2. Use `pip3` instead.
 
-.. code:: sh
-
-  sudo -H pip install --upgrade telethon
+If you already have Telethon installed,
+upgrade with ``pip install --upgrade telethon``!
 
 Installing Telethon manually
 ----------------------------
