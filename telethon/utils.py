@@ -98,6 +98,9 @@ def get_input_channel(entity):
     if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
         return InputChannel(entity.id, entity.access_hash)
 
+    if isinstance(entity, InputPeerChannel):
+        return InputChannel(entity.channel_id, entity.access_hash)
+
     raise ValueError('Cannot cast {} to any kind of InputChannel.'
                      .format(type(entity).__name__))
 
