@@ -275,7 +275,7 @@ class InteractiveTelegramClient(TelegramClient):
 
     @staticmethod
     def update_handler(update_object):
-        if type(update_object) is UpdateShortMessage:
+        if isinstance(update_object, UpdateShortMessage):
             if update_object.out:
                 sprint('You sent {} to user #{}'.format(
                     update_object.message, update_object.user_id))
@@ -283,7 +283,7 @@ class InteractiveTelegramClient(TelegramClient):
                 sprint('[User #{} sent {}]'.format(
                     update_object.user_id, update_object.message))
 
-        elif type(update_object) is UpdateShortChatMessage:
+        elif isinstance(update_object, UpdateShortChatMessage):
             if update_object.out:
                 sprint('You sent {} to chat #{}'.format(
                     update_object.message, update_object.chat_id))
