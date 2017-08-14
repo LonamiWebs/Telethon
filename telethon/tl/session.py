@@ -234,10 +234,12 @@ class JsonSession:
         # "message identifiers are divisible by 4"
         new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
-        if self._last_msg_id >= new_msg_id:
-            new_msg_id = self._last_msg_id + 4
+        with self._lock:
+            if self._last_msg_id >= new_msg_id:
+                new_msg_id = self._last_msg_id + 4
 
-        self._last_msg_id = new_msg_id
+            self._last_msg_id = new_msg_id
+
         return new_msg_id
 
     def update_time_offset(self, correct_msg_id):
