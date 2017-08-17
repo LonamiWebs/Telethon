@@ -2,7 +2,6 @@ import json
 import os
 import pickle
 import platform
-import random
 import time
 from threading import Lock
 from base64 import b64encode, b64decode
@@ -65,15 +64,10 @@ class Session:
                 return self.sequence * 2
 
     def get_new_msg_id(self):
-        """Generates a new message ID based on the current time (in ms) since epoch"""
-        # Refer to mtproto_plain_sender.py for the original method, this is a simple copy
-        ms_time = int(time.time() * 1000)
-        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
-                      |  # "must approximately equal unix time*2^32"
-                      ((ms_time % 1000) << 22)
-                      |  # "approximate moment in time the message was created"
-                      random.randint(0, 524288)
-                      << 2)  # "message identifiers are divisible by 4"
+        now = time.time()
+        nanoseconds = int((now - int(now)) * 1e+9)
+        # "message identifiers are divisible by 4"
+        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
         if self.last_message_id >= new_msg_id:
             new_msg_id = self.last_message_id + 4
@@ -113,14 +107,19 @@ class JsonSession:
             self.system_version = session.system_version
             self.app_version = session.app_version
             self.lang_code = session.lang_code
+            self.system_lang_code = session.system_lang_code
+            self.lang_pack = session.lang_pack
 
         else:  # str / None
             self.session_user_id = session_user_id
 
-            self.device_model = platform.node()
-            self.system_version = platform.system()
-            self.app_version = '1.0'  # note: '0' will provoke error
+            system = platform.uname()
+            self.device_model = system.system if system.system else 'Unknown'
+            self.system_version = system.release if system.release else '1.0'
+            self.app_version = '1.0'  # '0' will provoke error
             self.lang_code = 'en'
+            self.system_lang_code = self.lang_code
+            self.lang_pack = ''
 
         # Cross-thread safety
         self._lock = Lock()
@@ -133,7 +132,7 @@ class JsonSession:
         self._sequence = 0
         self.salt = 0  # Unsigned long
         self.time_offset = 0
-        self.last_message_id = 0  # Long
+        self._last_msg_id = 0  # Long
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
@@ -229,19 +228,18 @@ class JsonSession:
     def get_new_msg_id(self):
         """Generates a new unique message ID based on the current
            time (in ms) since epoch"""
-        # Refer to mtproto_plain_sender.py for the original method,
-        ms_time = int(time.time() * 1000)
-        new_msg_id = (((ms_time // 1000 + self.time_offset) << 32)
-                      |  # "must approximately equal unix time*2^32"
-                      ((ms_time % 1000) << 22)
-                      |  # "approximate moment in time the message was created"
-                      random.randint(0, 524288)
-                      << 2)  # "message identifiers are divisible by 4"
+        # Refer to mtproto_plain_sender.py for the original method
+        now = time.time()
+        nanoseconds = int((now - int(now)) * 1e+9)
+        # "message identifiers are divisible by 4"
+        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
-        if self.last_message_id >= new_msg_id:
-            new_msg_id = self.last_message_id + 4
+        with self._lock:
+            if self._last_msg_id >= new_msg_id:
+                new_msg_id = self._last_msg_id + 4
 
-        self.last_message_id = new_msg_id
+            self._last_msg_id = new_msg_id
+
         return new_msg_id
 
     def update_time_offset(self, correct_msg_id):

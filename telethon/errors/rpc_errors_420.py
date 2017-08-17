@@ -11,6 +11,6 @@ class FloodWaitError(FloodError):
         )
 
 
-rpc_420_errors = {
+rpc_errors_420_all = {
     'FLOOD_WAIT_(\d+)': FloodWaitError
 }

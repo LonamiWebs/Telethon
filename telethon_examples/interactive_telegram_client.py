@@ -217,7 +217,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # Send chat message (if any)
                 elif msg:
                     self.send_message(
-                        entity, msg, no_web_page=True)
+                        entity, msg, link_preview=False)
 
     def send_photo(self, path, entity):
         print('Uploading {}...'.format(path))
@@ -250,7 +250,7 @@ class InteractiveTelegramClient(TelegramClient):
                     print('Downloading media with name {}...'.format(output))
                     output = self.download_msg_media(
                         msg.media,
-                        file_path=output,
+                        file=output,
                         progress_callback=self.download_progress_callback)
                     print('Media downloaded to {}!'.format(output))
 
@@ -275,7 +275,7 @@ class InteractiveTelegramClient(TelegramClient):
 
     @staticmethod
     def update_handler(update_object):
-        if type(update_object) is UpdateShortMessage:
+        if isinstance(update_object, UpdateShortMessage):
             if update_object.out:
                 sprint('You sent {} to user #{}'.format(
                     update_object.message, update_object.user_id))
@@ -283,7 +283,7 @@ class InteractiveTelegramClient(TelegramClient):
                 sprint('[User #{} sent {}]'.format(
                     update_object.user_id, update_object.message))
 
-        elif type(update_object) is UpdateShortChatMessage:
+        elif isinstance(update_object, UpdateShortChatMessage):
             if update_object.out:
                 sprint('You sent {} to chat #{}'.format(
                     update_object.message, update_object.chat_id))

@@ -17,7 +17,7 @@ class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
 
     def __init__(self, transport, session):
-        self._transport = transport
+        self.transport = transport
         self.session = session
         self._logger = logging.getLogger(__name__)
 
@@ -33,11 +33,14 @@ class MtProtoSender:
 
     def connect(self):
         """Connects to the server"""
-        self._transport.connect()
+        self.transport.connect()
+
+    def is_connected(self):
+        return self.transport.is_connected()
 
     def disconnect(self):
         """Disconnects from the server"""
-        self._transport.close()
+        self.transport.close()
 
     # region Send and receive
 
@@ -73,11 +76,12 @@ class MtProtoSender:
 
             del self._need_confirmation[:]
 
-    def receive(self, request=None, timeout=timedelta(seconds=5), updates=None):
+    def receive(self, request=None, updates=None, **kwargs):
         """Receives the specified MTProtoRequest ("fills in it"
            the received data). This also restores the updates thread.
-           An optional timeout can be specified to cancel the operation
-           if no data has been read after its time delta.
+
+           An optional named parameter 'timeout' can be specified if
+           one desires to override 'self.transport.timeout'.
 
            If 'request' is None, a single item will be read into
            the 'updates' list (which cannot be None).
@@ -96,8 +100,8 @@ class MtProtoSender:
             # or, if there is no request, until we read an update
             while (request and not request.confirm_received) or \
                     (not request and not updates):
-                self._logger.info('Trying to .receive() the request result...')
-                seq, body = self._transport.receive(timeout)
+                self._logger.debug('Trying to .receive() the request result...')
+                seq, body = self.transport.receive(**kwargs)
                 message, remote_msg_id, remote_seq = self._decode_msg(body)
 
                 with BinaryReader(message) as reader:
@@ -110,21 +114,19 @@ class MtProtoSender:
                     self._pending_receive.remove(request)
                 except ValueError: pass
 
-            self._logger.info('Request result received')
+            self._logger.debug('Request result received')
         self._logger.debug('receive() released the lock')
 
-    def receive_updates(self, timeout=timedelta(seconds=5)):
-        """Receives one or more update objects
-           and returns them as a list
-        """
+    def receive_updates(self, **kwargs):
+        """Wrapper for .receive(request=None, updates=[])"""
         updates = []
-        self.receive(timeout=timeout, updates=updates)
+        self.receive(updates=updates, **kwargs)
         return updates
 
     def cancel_receive(self):
         """Cancels any pending receive operation
            by raising a ReadCancelledError"""
-        self._transport.cancel_receive()
+        self.transport.cancel_receive()
 
     # endregion
 
@@ -141,7 +143,7 @@ class MtProtoSender:
             plain_writer.write_long(self.session.id, signed=False)
             plain_writer.write_long(request.request_msg_id)
             plain_writer.write_int(
-                self.session.generate_sequence(request.confirmed))
+                self.session.generate_sequence(request.content_related))
 
             plain_writer.write_int(len(packet))
             plain_writer.write(packet)
@@ -157,7 +159,7 @@ class MtProtoSender:
                 self.session.auth_key.key_id, signed=False)
             cipher_writer.write(msg_key)
             cipher_writer.write(cipher_text)
-            self._transport.send(cipher_writer.get_bytes())
+            self.transport.send(cipher_writer.get_bytes())
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -224,10 +226,10 @@ class MtProtoSender:
             ack = reader.tgread_object()
             for r in self._pending_receive:
                 if r.request_msg_id in ack.msg_ids:
-                    self._logger.warning('Ack found for the a request')
+                    self._logger.debug('Ack found for the a request')
 
                     if self.logging_out:
-                        self._logger.info('Message ack confirmed a request')
+                        self._logger.debug('Message ack confirmed a request')
                         r.confirm_received = True
 
             return True
@@ -245,7 +247,7 @@ class MtProtoSender:
 
             return True
 
-        self._logger.warning('Unknown message: {}'.format(hex(code)))
+        self._logger.debug('Unknown message: {}'.format(hex(code)))
         return False
 
     # endregion
@@ -255,13 +257,13 @@ class MtProtoSender:
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
-        received_msg_id = reader.read_long(signed=False)
+        received_msg_id = reader.read_long()
 
         try:
             request = next(r for r in self._pending_receive
                            if r.request_msg_id == received_msg_id)
 
-            self._logger.warning('Pong confirmed a request')
+            self._logger.debug('Pong confirmed a request')
             request.confirm_received = True
         except StopIteration: pass
 
@@ -272,23 +274,28 @@ class MtProtoSender:
         reader.read_int(signed=False)  # code
         size = reader.read_int()
         for _ in range(size):
-            inner_msg_id = reader.read_long(signed=False)
+            inner_msg_id = reader.read_long()
             reader.read_int()  # inner_sequence
             inner_length = reader.read_int()
             begin_position = reader.tell_position()
 
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
-            if not self._process_msg(
-                    inner_msg_id, sequence, reader, updates):
+            try:
+                if not self._process_msg(
+                        inner_msg_id, sequence, reader, updates):
+                    reader.set_position(begin_position + inner_length)
+            except:
+                # If any error is raised, something went wrong; skip the packet
                 reader.set_position(begin_position + inner_length)
+                raise
 
         return True
 
     def _handle_bad_server_salt(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad server salt')
         reader.read_int(signed=False)  # code
-        bad_msg_id = reader.read_long(signed=False)
+        bad_msg_id = reader.read_long()
         reader.read_int()  # bad_msg_seq_no
         reader.read_int()  # error_code
         new_salt = reader.read_long(signed=False)
@@ -306,7 +313,7 @@ class MtProtoSender:
     def _handle_bad_msg_notification(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad message notification')
         reader.read_int(signed=False)  # code
-        reader.read_long(signed=False)  # request_id
+        reader.read_long()  # request_id
         reader.read_int()  # request_sequence
 
         error_code = reader.read_int()
@@ -316,8 +323,8 @@ class MtProtoSender:
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
             self.session.save()
-            self._logger.warning('Read Bad Message error: ' + str(error))
-            self._logger.info('Attempting to use the correct time offset.')
+            self._logger.debug('Read Bad Message error: ' + str(error))
+            self._logger.debug('Attempting to use the correct time offset.')
             return True
         else:
             raise error
@@ -325,7 +332,7 @@ class MtProtoSender:
     def _handle_rpc_result(self, msg_id, sequence, reader):
         self._logger.debug('Handling RPC result')
         reader.read_int(signed=False)  # code
-        request_id = reader.read_long(signed=False)
+        request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
 
         try:
@@ -344,7 +351,7 @@ class MtProtoSender:
             self._need_confirmation.append(request_id)
             self._send_acknowledges()
 
-            self._logger.warning('Read RPC error: %s', str(error))
+            self._logger.debug('Read RPC error: %s', str(error))
             if isinstance(error, InvalidDCError):
                 # Must resend this request, if any
                 if request:
@@ -366,7 +373,7 @@ class MtProtoSender:
             else:
                 # If it's really a result for RPC from previous connection
                 # session, it will be skipped by the handle_container()
-                self._logger.warning('Lost request will be skipped.')
+                self._logger.debug('Lost request will be skipped.')
                 return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, updates):

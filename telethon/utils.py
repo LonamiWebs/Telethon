@@ -7,7 +7,8 @@ from mimetypes import add_type, guess_extension
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
-    InputPeerSelf, MessageMediaDocument, MessageMediaPhoto, PeerChannel,
+    MessageMediaDocument, MessageMediaPhoto, PeerChannel, InputChannel,
+    UserEmpty, InputUser, InputUserEmpty, InputUserSelf, InputPeerSelf,
     PeerChat, PeerUser, User, UserFull, UserProfilePhoto)
 
 
@@ -52,11 +53,14 @@ def get_extension(media):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
-    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32('InputUser')
+    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32(b'InputPeer')
         return entity
 
     if isinstance(entity, User):
-        return InputPeerUser(entity.id, entity.access_hash)
+        if entity.is_self:
+            return InputPeerSelf()
+        else:
+            return InputPeerUser(entity.id, entity.access_hash)
 
     if any(isinstance(entity, c) for c in (
             Chat, ChatEmpty, ChatForbidden)):
@@ -67,13 +71,61 @@ def get_input_peer(entity):
         return InputPeerChannel(entity.id, entity.access_hash)
 
     # Less common cases
+    if isinstance(entity, UserEmpty):
+        return InputPeerEmpty()
+
+    if isinstance(entity, InputUser):
+        return InputPeerUser(entity.user_id, entity.access_hash)
+
     if isinstance(entity, UserFull):
-        return InputPeerUser(entity.user.id, entity.user.access_hash)
+        return get_input_peer(entity.user)
 
     if isinstance(entity, ChatFull):
         return InputPeerChat(entity.id)
 
+    if isinstance(entity, PeerChat):
+        return InputPeerChat(entity.chat_id)
+
     raise ValueError('Cannot cast {} to any kind of InputPeer.'
+                     .format(type(entity).__name__))
+
+
+def get_input_channel(entity):
+    """Similar to get_input_peer, but for InputChannel's alone"""
+    if type(entity).subclass_of_id == 0x40f202fd:  # crc32(b'InputChannel')
+        return entity
+
+    if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+        return InputChannel(entity.id, entity.access_hash)
+
+    if isinstance(entity, InputPeerChannel):
+        return InputChannel(entity.channel_id, entity.access_hash)
+
+    raise ValueError('Cannot cast {} to any kind of InputChannel.'
+                     .format(type(entity).__name__))
+
+
+def get_input_user(entity):
+    """Similar to get_input_peer, but for InputUser's alone"""
+    if type(entity).subclass_of_id == 0xe669bf46:  # crc32(b'InputUser')
+        return entity
+
+    if isinstance(entity, User):
+        if entity.is_self:
+            return InputUserSelf()
+        else:
+            return InputUser(entity.id, entity.access_hash)
+
+    if isinstance(entity, UserEmpty):
+        return InputUserEmpty()
+
+    if isinstance(entity, UserFull):
+        return get_input_user(entity.user)
+
+    if isinstance(entity, InputPeerUser):
+        return InputUser(entity.user_id, entity.access_hash)
+
+    raise ValueError('Cannot cast {} to any kind of InputUser.'
                      .format(type(entity).__name__))
 
 

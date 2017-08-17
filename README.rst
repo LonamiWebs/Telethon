@@ -58,11 +58,11 @@ On a terminal, issue the following command:
 
   sudo -H pip install telethon
 
-You're ready to go. Oh, and upgrading is just as easy:
+If you get something like "SyntaxError: invalid syntax" on the ``from error``
+line, it's because ``pip`` defaults to Python 2. Use `pip3` instead.
 
-.. code:: sh
-
-  sudo -H pip install --upgrade telethon
+If you already have Telethon installed,
+upgrade with ``pip install --upgrade telethon``!
 
 Installing Telethon manually
 ----------------------------
@@ -71,7 +71,7 @@ Installing Telethon manually
    (`GitHub <https://github.com/ricmoo/pyaes>`_, `package index <https://pypi.python.org/pypi/pyaes>`_)
 2. Clone Telethon's GitHub repository: ``git clone https://github.com/LonamiWebs/Telethon.git``
 3. Enter the cloned repository: ``cd Telethon``
-4. Run the code generator: ``cd telethon_generator && python3 tl_generator.py``
+4. Run the code generator: ``python3 setup.py gen_tl``
 5. Done!
 
 Running Telethon
@@ -160,13 +160,16 @@ The ``TelegramClient`` class should be used to provide a quick, well-documented 
 It is **not** meant to be a place for *all* the available Telegram ``Request``'s, because there are simply too many.
 
 However, this doesn't mean that you cannot ``invoke`` all the power of Telegram's API.
-Whenever you need to ``invoke`` a Telegram ``Request``, all you need to do is the following:
+Whenever you need to ``call`` a Telegram ``Request``, all you need to do is the following:
 
 .. code:: python
 
+  result = client(SomeRequest(...))
+
+  # Or the old way:
   result = client.invoke(SomeRequest(...))
 
-You have just ``invoke``'d ``SomeRequest`` and retrieved its ``result``! That wasn't hard at all, was it?
+You have just called ``SomeRequest`` and retrieved its ``result``! That wasn't hard at all, was it?
 Now you may wonder, what's the deal with *all the power of Telegram's API*? Have a look under ``tl/functions/``.
 That is *everything* you can do. You have **over 200 API** ``Request``'s at your disposal.
 
@@ -232,7 +235,7 @@ Have you found a more updated version of the ``scheme.tl`` file? Those are great
 as grabbing the
 `latest version <https://github.com/telegramdesktop/tdesktop/blob/dev/Telegram/Resources/scheme.tl>`_
 and replacing the one you can find in this same directory by the updated one.
-Don't forget to run ``python3 tl_generator.py``.
+Don't forget to run ``python3 setup.py gen_tl``.
 
 If the changes weren't too big, everything should still work the same way as it did before; but with extra features.
 

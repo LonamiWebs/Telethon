@@ -52,7 +52,7 @@ table td {
     margin: 0 8px -2px 0;
 }
 
-h1 {
+h1, summary.title {
     font-size: 24px;
 }
 
@@ -137,6 +137,26 @@ button:hover {
     color: #fff;
 }
 
+/* https://www.w3schools.com/css/css_navbar.asp */
+ul.together {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+ul.together li {
+    float: left;
+}
+
+ul.together li a {
+    display: block;
+    border-radius: 8px;
+    background: #f0f4f8;
+    padding: 4px 8px;
+    margin: 8px;
+}
+
 /* https://stackoverflow.com/a/30810322 */
 .invisible {
     left: 0;
@@ -153,7 +173,7 @@ button:hover {
 }
 
 @media (max-width: 640px) {
-    h1 {
+    h1, summary.title {
         font-size: 18px;
     }
     h3 {

@@ -14,11 +14,26 @@
 </head>
 <body>
 <div id="main_div">
+    <!-- You can append '?q=query' to the URL to default to a search -->
     <input id="searchBox" type="text" onkeyup="updateSearch()"
            placeholder="Search for requests and types…" />
 
 <div id="searchDiv">
-    <table id="searchTable"></table>
+
+    <details open><summary class="title">Methods (<span id="methodsCount">0</span>)</summary>
+        <ul id="methodsList" class="together">
+        </ul>
+    </details>
+
+    <details open><summary class="title">Types (<span id="typesCount">0</span>)</summary>
+        <ul id="typesList" class="together">
+        </ul>
+    </details>
+
+    <details><summary class="title">Constructors (<span id="constructorsCount">0</span>)</summary>
+        <ul id="constructorsList" class="together">
+        </ul>
+    </details>
 </div>
 
 <div id="contentDiv">
@@ -146,7 +161,6 @@
     <pre><span class="sh3">#!/usr/bin/python3</span>
 <span class="sh4">from</span> telethon <span class="sh4">import</span> TelegramClient
 <span class="sh4">from</span> telethon.tl.functions.messages <span class="sh4">import</span> GetHistoryRequest
-<span class="sh4">from</span> telethon.utils <span class="sh4">import</span> get_input_peer
 
 <span class="sh3"># <b>(1)</b> Use your own values here</span>
 api_id   = <span class="sh1">12345</span>
@@ -167,25 +181,28 @@ dialogs, entities = client.get_dialogs(<span class="sh1">10</span>)
 entity = entities[<span class="sh1">0</span>]
 
 <span class="sh3"># <b>(4)</b> !! Invoking a request manually !!</span>
-result = <b>client.invoke</b>(
-    GetHistoryRequest(
-        get_input_peer(entity),
-        limit=<span class="sh1">20</span>,
-        offset_date=<span class="sh1">None</span>,
-        offset_id=<span class="sh1">0</span>,
-        max_id=<span class="sh1">0</span>,
-        min_id=<span class="sh1">0</span>,
-        add_offset=<span class="sh1">0</span>))
+result = <b>client</b>(GetHistoryRequest(
+    entity,
+    limit=<span class="sh1">20</span>,
+    offset_date=<span class="sh1">None</span>,
+    offset_id=<span class="sh1">0</span>,
+    max_id=<span class="sh1">0</span>,
+    min_id=<span class="sh1">0</span>,
+    add_offset=<span class="sh1">0</span>
+))
 
 <span class="sh3"># Now you have access to the first 20 messages</span>
 messages = result.messages</pre>
 
-    <p>As it can be seen, manually invoking requests with
-    <code>client.invoke()</code> is way more verbose than using the built-in
-    methods (such as <code>client.get_dialogs()</code>. However, and given
-    that there are so many methods available, it's impossible to provide a nice
-    interface to things that may change over time. To get full access, however,
-    you're still able to invoke these methods manually.</p>
+    <p>As it can be seen, manually calling requests with
+    <code>client(request)</code> (or using the old way, by calling
+    <code>client.invoke(request)</code>) is way more verbose than using the
+    built-in methods (such as <code>client.get_dialogs()</code>).</p>
+
+    <p>However, and
+    given that there are so many methods available, it's impossible to provide
+    a nice interface to things that may change over time. To get full access,
+    however, you're still able to invoke these methods manually.</p>
 </div>
 
 </div>
@@ -193,13 +210,66 @@ messages = result.messages</pre>
 contentDiv = document.getElementById("contentDiv");
 searchDiv = document.getElementById("searchDiv");
 searchBox = document.getElementById("searchBox");
-searchTable = document.getElementById("searchTable");
 
-requests = [{request_names}];
-types = [{type_names}];
+// Search lists
+methodsList = document.getElementById("methodsList");
+methodsCount = document.getElementById("methodsCount");
 
-requestsu = [{request_urls}];
-typesu = [{type_urls}];
+typesList = document.getElementById("typesList");
+typesCount = document.getElementById("typesCount");
+
+constructorsList = document.getElementById("constructorsList");
+constructorsCount = document.getElementById("constructorsCount");
+
+try {
+    requests = [{request_names}];
+    types = [{type_names}];
+    constructors = [{constructor_names}];
+
+    requestsu = [{request_urls}];
+    typesu = [{type_urls}];
+    constructorsu = [{constructor_urls}];
+} catch (e) {
+    requests = [];
+    types = [];
+    constructors = [];
+    requestsu = [];
+    typesu = [];
+    constructorsu = [];
+}
+
+// Given two input arrays "original" and "original urls" and a query,
+// return a pair of arrays with matching "query" elements from "original".
+//
+// TODO Perhaps return an array of pairs instead a pair of arrays (for cache).
+function getSearchArray(original, originalu, query) {
+    var destination = [];
+    var destinationu = [];
+
+    for (var i = 0; i < original.length; ++i) {
+        if (original[i].toLowerCase().indexOf(query) != -1) {
+            destination.push(original[i]);
+            destinationu.push(originalu[i]);
+        }
+    }
+
+    return [destination, destinationu];
+}
+
+// Modify "countSpan" and "resultList" accordingly based on the elements
+// given as [[elements], [element urls]] (both with the same length)
+function buildList(countSpan, resultList, foundElements) {
+    var result = "";
+    for (var i = 0; i < foundElements[0].length; ++i) {
+        result += '<li>';
+        result += '<a href="' + foundElements[1][i] + '">';
+        result += foundElements[0][i];
+        result += '</a></li>';
+    }
+
+    countSpan.innerHTML = "" + foundElements[0].length;
+    resultList.innerHTML = result;
+}
 
 function updateSearch() {
     if (searchBox.value) {
@@ -207,50 +277,35 @@ function updateSearch() {
         searchDiv.style.display = "";
 
         var query = searchBox.value.toLowerCase();
-        var foundRequests = [];
-        var foundRequestsu = [];
-        for (var i = 0; i < requests.length; ++i) {
-            if (requests[i].toLowerCase().indexOf(query) != -1) {
-                foundRequests.push(requests[i]);
-                foundRequestsu.push(requestsu[i]);
-            }
-        }
 
-        var foundTypes = [];
-        var foundTypesu = [];
-        for (var i = 0; i < types.length; ++i) {
-            if (types[i].toLowerCase().indexOf(query) != -1) {
-                foundTypes.push(types[i]);
-                foundTypesu.push(typesu[i]);
-            }
-        }
+        var foundRequests = getSearchArray(requests, requestsu, query);
+        var foundTypes = getSearchArray(types, typesu, query);
+        var foundConstructors = getSearchArray(
+            constructors, constructorsu, query
+        );
 
-        var top = foundRequests.length > foundTypes.length ?
-                    foundRequests.length : foundTypes.length;
-
-        result = "";
-        for (var i = 0; i <= top; ++i) {
-            result += "<tr><td>";
-
-            if (i < foundRequests.length) {
-                result +=
-                    '<a href="'+foundRequestsu[i]+'">'+foundRequests[i]+'</a>';
-            }
-
-            result += "</td><td>";
-
-            if (i < foundTypes.length) {
-                result +=
-                    '<a href="'+foundTypesu[i]+'">'+foundTypes[i]+'</a>';
-            }
-
-            result += "</td></tr>";
-        }
-        searchTable.innerHTML = result;
+        buildList(methodsCount, methodsList, foundRequests);
+        buildList(typesCount, typesList, foundTypes);
+        buildList(constructorsCount, constructorsList, foundConstructors);
     } else {
         contentDiv.style.display = "";
         searchDiv.style.display = "none";
     }
+}
+
+function getQuery(name) {
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i = 0; i != vars.length; ++i) {
+        var pair = vars[i].split("=");
+        if (pair[0] == name)
+            return pair[1];
+    }
+}
+
+var query = getQuery('q');
+if (query) {
+    searchBox.value = query;
 }
 
 updateSearch();

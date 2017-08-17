@@ -5,22 +5,27 @@ from os import path
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import RPCError, FloodWaitError
+from .errors import (
+    RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
+)
 from .network import authenticator, MtProtoSender, TcpTransport
 from .utils import get_appropriated_part_size
 
 # For sending and receiving requests
-from .tl import MTProtoRequest
+from .tl import TLObject, JsonSession
 from .tl.all_tlobjects import layer
 from .tl.functions import (InitConnectionRequest, InvokeWithLayerRequest)
 
 # Initial request
 from .tl.functions.help import GetConfigRequest
-from .tl.functions.auth import ImportAuthorizationRequest
+from .tl.functions.auth import (
+    ImportAuthorizationRequest, ExportAuthorizationRequest
+)
 
 # Easier access for working with media
 from .tl.functions.upload import (
-    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
+    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest
+)
 
 # All the types we need to work with
 from .tl.types import InputFile, InputFileBig
@@ -47,11 +52,12 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.11'
+    __version__ = '0.11.5'
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash, proxy=None):
+    def __init__(self, session, api_id, api_hash,
+                 proxy=None, timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
            Session must always be a Session instance, and an optional proxy
            can also be specified to be used on the connection.
@@ -60,11 +66,17 @@ class TelegramBareClient:
         self.api_id = int(api_id)
         self.api_hash = api_hash
         self.proxy = proxy
+        self._timeout = timeout
         self._logger = logging.getLogger(__name__)
+
+        # Cache "exported" senders 'dc_id: TelegramBareClient' and
+        # their corresponding sessions not to recreate them all
+        # the time since it's a (somewhat expensive) process.
+        self._cached_clients = {}
 
         # These will be set later
         self.dc_options = None
-        self.sender = None
+        self._sender = None
 
     # endregion
 
@@ -79,8 +91,16 @@ class TelegramBareClient:
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
         """
+        if self._sender and self._sender.is_connected():
+            self._logger.debug(
+                'Attempted to connect when the client was already connected.'
+            )
+            return
+
         transport = TcpTransport(self.session.server_address,
-                                 self.session.port, proxy=self.proxy)
+                                 self.session.port,
+                                 proxy=self.proxy,
+                                 timeout=self._timeout)
 
         try:
             if not self.session.auth_key:
@@ -89,8 +109,8 @@ class TelegramBareClient:
 
                 self.session.save()
 
-            self.sender = MtProtoSender(transport, self.session)
-            self.sender.connect()
+            self._sender = MtProtoSender(transport, self.session)
+            self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
             # This must always be invoked with the layer we'll be using
@@ -106,34 +126,40 @@ class TelegramBareClient:
                 system_version=self.session.system_version,
                 app_version=self.session.app_version,
                 lang_code=self.session.lang_code,
+                system_lang_code=self.session.system_lang_code,
+                lang_pack='',  # "langPacks are for official apps only"
                 query=query)
 
-            result = self.invoke(
-                InvokeWithLayerRequest(
-                    layer=layer, query=request))
+            result = self(InvokeWithLayerRequest(
+                layer=layer, query=request
+            ))
 
             if exported_auth is not None:
-                # TODO Don't actually need this for exported authorizations,
-                #      they're only valid on such data center.
-                result = self.invoke(GetConfigRequest())
+                result = self(GetConfigRequest())
 
             # We're only interested in the DC options,
             # although many other options are available!
             self.dc_options = result.dc_options
             return True
 
+        except TypeNotFoundError as e:
+            # This is fine, probably layer migration
+            self._logger.debug('Found invalid item, probably migrating', e)
+            self.disconnect()
+            self.connect(exported_auth=exported_auth)
+
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
             self.disconnect()
-            self._logger.warning('Could not stabilise initial connection: {}'
+            self._logger.debug('Could not stabilise initial connection: {}'
                                  .format(error))
             return False
 
     def disconnect(self):
         """Disconnects from the Telegram server"""
-        if self.sender:
-            self.sender.disconnect()
-            self.sender = None
+        if self._sender:
+            self._sender.disconnect()
+            self._sender = None
 
     def reconnect(self, new_dc=None):
         """Disconnects and connects again (effectively reconnecting).
@@ -154,6 +180,30 @@ class TelegramBareClient:
 
     # endregion
 
+    # region Properties
+
+    def set_timeout(self, timeout):
+        if timeout is None:
+            self._timeout = None
+        elif isinstance(timeout, int) or isinstance(timeout, float):
+            self._timeout = timedelta(seconds=timeout)
+        elif isinstance(timeout, timedelta):
+            self._timeout = timeout
+        else:
+            raise ValueError(
+                '{} is not a valid type for a timeout'.format(type(timeout))
+            )
+
+        if self._sender:
+            self._sender.transport.timeout = self._timeout
+
+    def get_timeout(self):
+        return self._timeout
+
+    timeout = property(get_timeout, set_timeout)
+
+    # endregion
+
     # region Working with different Data Centers
 
     def _get_dc(self, dc_id):
@@ -165,39 +215,87 @@ class TelegramBareClient:
 
         return next(dc for dc in self.dc_options if dc.id == dc_id)
 
+    def _get_exported_client(self, dc_id,
+                             init_connection=False,
+                             bypass_cache=False):
+        """Gets a cached exported TelegramBareClient for the desired DC.
+
+           If it's the first time retrieving the TelegramBareClient, the
+           current authorization is exported to the new DC so that
+           it can be used there, and the connection is initialized.
+
+           If after using the sender a ConnectionResetError is raised,
+           this method should be called again with init_connection=True
+           in order to perform the reconnection.
+
+           If bypass_cache is True, a new client will be exported and
+           it will not be cached.
+        """
+        # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
+        # for clearly showing how to export the authorization! ^^
+        client = self._cached_clients.get(dc_id)
+        if client and not bypass_cache:
+            if init_connection:
+                client.reconnect()
+            return client
+        else:
+            dc = self._get_dc(dc_id)
+
+            # Export the current authorization to the new DC.
+            export_auth = self(ExportAuthorizationRequest(dc_id))
+
+            # Create a temporary session for this IP address, which needs
+            # to be different because each auth_key is unique per DC.
+            #
+            # Construct this session with the connection parameters
+            # (system version, device model...) from the current one.
+            session = JsonSession(self.session)
+            session.server_address = dc.ip_address
+            session.port = dc.port
+            client = TelegramBareClient(
+                session, self.api_id, self.api_hash,
+                timeout=self._timeout
+            )
+            client.connect(exported_auth=export_auth)
+
+            if not bypass_cache:
+                # Don't go through this expensive process every time.
+                self._cached_clients[dc_id] = client
+            return client
+
     # endregion
 
     # region Invoking Telegram requests
 
-    def invoke(self, request, timeout=timedelta(seconds=5), updates=None):
+    def invoke(self, request, updates=None):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-
-           An optional timeout can be specified to cancel the operation if no
-           result is received within such time, or None to disable any timeout.
 
            If 'updates' is not None, all read update object will be put
            in such list. Otherwise, update objects will be ignored.
         """
-        if not isinstance(request, MTProtoRequest):
-            raise ValueError('You can only invoke MtProtoRequests')
+        if not isinstance(request, TLObject) and not request.content_related:
+            raise ValueError('You can only invoke requests, not types!')
 
-        if not self.sender:
+        if not self._sender:
             raise ValueError('You must be connected to invoke requests!')
 
         try:
-            self.sender.send(request)
-            self.sender.receive(request, timeout, updates=updates)
+            self._sender.send(request)
+            self._sender.receive(request, updates=updates)
             return request.result
 
         except ConnectionResetError:
-            self._logger.info('Server disconnected us. Reconnecting and '
+            self._logger.debug('Server disconnected us. Reconnecting and '
                               'resending request...')
             self.reconnect()
-            return self.invoke(request, timeout=timeout)
+            return self.invoke(request)
 
         except FloodWaitError:
             self.disconnect()
             raise
+
+    # Let people use client(SomeRequest()) instead client.invoke(...)
+    __call__ = invoke
 
     # endregion
 
@@ -250,7 +348,7 @@ class TelegramBareClient:
                 else:
                     request = SaveFilePartRequest(file_id, part_index, part)
 
-                result = self.invoke(request)
+                result = self(request)
                 if result:
                     if not is_large:
                         # No need to update the hash if it's a large file
@@ -305,12 +403,21 @@ class TelegramBareClient:
         else:
             f = file
 
+        # The used client will change if FileMigrateError occurs
+        client = self
+
         try:
             offset_index = 0
             while True:
                 offset = offset_index * part_size
-                result = self.invoke(
-                    GetFileRequest(input_location, offset, part_size))
+
+                try:
+                    result = client(
+                        GetFileRequest(input_location, offset, part_size))
+                except FileMigrateError as e:
+                    client = self._get_exported_client(e.new_dc)
+                    continue
+
                 offset_index += 1
 
                 # If we have received no data (0 bytes), the file is over

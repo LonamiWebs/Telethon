@@ -1,20 +1,20 @@
 from datetime import timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
-from time import sleep
+from time import sleep, time
 
 from . import TelegramBareClient
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
 from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
-                     ReadCancelledError, FileMigrateError, PhoneMigrateError,
-                     NetworkMigrateError, UserMigrateError, PhoneCodeEmptyError,
+                     ReadCancelledError, PhoneCodeEmptyError,
+                     PhoneMigrateError, NetworkMigrateError, UserMigrateError,
                      PhoneCodeExpiredError, PhoneCodeHashEmptyError,
                      PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
-from .tl import MTProtoRequest, Session, JsonSession
+from .tl import Session, JsonSession
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -24,9 +24,6 @@ from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
                                 SendCodeRequest, SignInRequest,
                                 SignUpRequest, ImportBotAuthorizationRequest)
 
-# Required to work with different data centers
-from .tl.functions.auth import ExportAuthorizationRequest
-
 # Easier access to common methods
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
@@ -34,6 +31,9 @@ from .tl.functions.messages import (
 
 # For .get_me() and ensuring we're authorized
 from .tl.functions.users import GetUsersRequest
+
+# So the server doesn't stop sending updates to us
+from .tl.functions import PingRequest
 
 # All the types we need to work with
 from .tl.types import (
@@ -61,7 +61,9 @@ class TelegramClient(TelegramBareClient):
 
     def __init__(self, session, api_id, api_hash, proxy=None,
                  device_model=None, system_version=None,
-                 app_version=None, lang_code=None):
+                 app_version=None, lang_code=None,
+                 system_lang_code=None,
+                 timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
 
            Session can either be a `str` object (filename for the .session)
@@ -70,12 +72,12 @@ class TelegramClient(TelegramBareClient):
            session - remember to '.log_out()'!
 
            Default values for the optional parameters if left as None are:
-             device_model   = platform.node()
-             system_version = platform.system()
-             app_version    = TelegramClient.__version__
-             lang_code      = 'en'
+             device_model     = platform.node()
+             system_version   = platform.system()
+             app_version      = TelegramClient.__version__
+             lang_code        = 'en'
+             system_lang_code = lang_code
         """
-
         if not api_id or not api_hash:
             raise PermissionError(
                 "Your API ID or Hash cannot be empty or None. "
@@ -85,19 +87,22 @@ class TelegramClient(TelegramBareClient):
         # TODO JsonSession until migration is complete (by v1.0)
         if isinstance(session, str) or session is None:
             session = JsonSession.try_load_or_create_new(session)
-        elif not isinstance(session, Session):
+        elif not isinstance(session, Session) and not isinstance(session, JsonSession):
             raise ValueError(
                 'The given session must be a str or a Session instance.')
 
-        super().__init__(session, api_id, api_hash, proxy)
+        super().__init__(session, api_id, api_hash, proxy, timeout=timeout)
 
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
 
-        # Methods to be called when an update is received
+        # Updates-related members
         self._update_handlers = []
         self._updates_thread_running = Event()
         self._updates_thread_receiving = Event()
+
+        self._next_ping_at = 0
+        self.ping_interval = 60  # Seconds
 
         # Used on connection - the user may modify these and reconnect
         if device_model:
@@ -112,10 +117,9 @@ class TelegramClient(TelegramBareClient):
         if lang_code:
             self.session.lang_code = lang_code
 
-        # Cache "exported" senders 'dc_id: MtProtoSender' and
-        # their corresponding sessions not to recreate them all
-        # the time since it's a (somewhat expensive) process.
-        self._cached_clients = {}
+        self.session.system_lang_code = \
+            system_lang_code if system_lang_code else self.session.lang_code
+
         self._updates_thread = None
         self._phone_code_hashes = {}
 
@@ -129,15 +133,17 @@ class TelegramClient(TelegramBareClient):
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
+           The specified timeout will be used on internal .invoke()'s.
+
            *args will be ignored.
         """
-        return super(TelegramClient, self).connect()
+        return super().connect()
 
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
         self._set_updates_thread(running=False)
-        super(TelegramClient, self).disconnect()
+        super().disconnect()
 
         # Also disconnect all the cached senders
         for sender in self._cached_clients.values():
@@ -148,52 +154,6 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Working with different connections
-
-    def _get_exported_client(self, dc_id,
-                             init_connection=False,
-                             bypass_cache=False):
-        """Gets a cached exported TelegramBareClient for the desired DC.
-
-           If it's the first time retrieving the TelegramBareClient, the
-           current authorization is exported to the new DC so that
-           it can be used there, and the connection is initialized.
-
-           If after using the sender a ConnectionResetError is raised,
-           this method should be called again with init_connection=True
-           in order to perform the reconnection.
-
-           If bypass_cache is True, a new client will be exported and
-           it will not be cached.
-        """
-        # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
-        # for clearly showing how to export the authorization! ^^
-
-        client = self._cached_clients.get(dc_id)
-        if client and not bypass_cache:
-            if init_connection:
-                client.reconnect()
-            return client
-        else:
-            dc = self._get_dc(dc_id)
-
-            # Export the current authorization to the new DC.
-            export_auth = self.invoke(ExportAuthorizationRequest(dc_id))
-
-            # Create a temporary session for this IP address, which needs
-            # to be different because each auth_key is unique per DC.
-            #
-            # Construct this session with the connection parameters
-            # (system version, device model...) from the current one.
-            session = JsonSession(self.session)
-            session.server_address = dc.ip_address
-            session.port = dc.port
-            client = TelegramBareClient(session, self.api_id, self.api_hash)
-            client.connect(exported_auth=export_auth)
-
-            if not bypass_cache:
-                # Don't go through this expensive process every time.
-                self._cached_clients[dc_id] = client
-            return client
 
     def create_new_connection(self, on_dc=None):
         """Creates a new connection which can be used in parallel
@@ -206,15 +166,10 @@ class TelegramClient(TelegramBareClient):
 
            If the client is meant to be used on a different data
            center, the data center ID should be specified instead.
-
-           Note that TelegramBareClients will not handle automatic
-           reconnection (i.e. switching to another data center to
-           download media), and InvalidDCError will be raised in
-           such case.
         """
         if on_dc is None:
-            client = TelegramBareClient(self.session, self.api_id, self.api_hash,
-                                        proxy=self.proxy)
+            client = TelegramBareClient(
+                self.session, self.api_id, self.api_hash, proxy=self.proxy)
             client.connect()
         else:
             client = self._get_exported_client(on_dc, bypass_cache=True)
@@ -225,7 +180,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, timeout=timedelta(seconds=5), *args):
+    def invoke(self, request, *args):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            An optional timeout can be specified to cancel the operation if no
@@ -233,21 +188,16 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if not issubclass(type(request), MTProtoRequest):
-            raise ValueError('You can only invoke MtProtoRequests')
-
-        if not self.sender:
-            raise ValueError('You must be connected to invoke requests!')
-
         if self._updates_thread_receiving.is_set():
-            self.sender.cancel_receive()
+            self._sender.cancel_receive()
 
         try:
             self._lock.acquire()
 
             updates = [] if self._update_handlers else None
-            result = super(TelegramClient, self).invoke(
-                request, timeout=timeout, updates=updates)
+            result = super().invoke(
+                request, updates=updates
+            )
 
             if updates:
                 for update in updates:
@@ -258,18 +208,20 @@ class TelegramClient(TelegramBareClient):
             return result
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
-            self._logger.info('DC error when invoking request, '
+            self._logger.debug('DC error when invoking request, '
                               'attempting to reconnect at DC {}'
                               .format(e.new_dc))
 
             self.reconnect(new_dc=e.new_dc)
-            return self.invoke(request, timeout=timeout)
+            return self.invoke(request)
 
         finally:
             self._lock.release()
 
-    def invoke_on_dc(self, request, dc_id,
-                     timeout=timedelta(seconds=5), reconnect=False):
+    # Let people use client(SomeRequest()) instead client.invoke(...)
+    __call__ = invoke
+
+    def invoke_on_dc(self, request, dc_id, reconnect=False):
         """Invokes the given request on a different DC
            by making use of the exported MtProtoSenders.
 
@@ -286,8 +238,7 @@ class TelegramClient(TelegramBareClient):
             if reconnect:
                 raise
             else:
-                return self.invoke_on_dc(request, dc_id,
-                                         timeout=timeout, reconnect=True)
+                return self.invoke_on_dc(request, dc_id, reconnect=True)
 
     # region Authorization requests
 
@@ -298,7 +249,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone_number):
         """Sends a code request to the specified phone number"""
-        result = self.invoke(
+        result = self(
             SendCodeRequest(phone_number, self.api_id, self.api_hash))
 
         self._phone_code_hashes[phone_number] = result.phone_code_hash
@@ -324,7 +275,7 @@ class TelegramClient(TelegramBareClient):
                     'Please make sure to call send_code_request first.')
 
             try:
-                result = self.invoke(SignInRequest(
+                result = self(SignInRequest(
                     phone_number, self._phone_code_hashes[phone_number], code))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
@@ -332,12 +283,12 @@ class TelegramClient(TelegramBareClient):
                 return None
 
         elif password:
-            salt = self.invoke(GetPasswordRequest()).current_salt
-            result = self.invoke(
+            salt = self(GetPasswordRequest()).current_salt
+            result = self(
                 CheckPasswordRequest(utils.get_password_hash(password, salt)))
 
         elif bot_token:
-            result = self.invoke(ImportBotAuthorizationRequest(
+            result = self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
                 api_id=self.api_id, api_hash=self.api_hash))
 
@@ -350,7 +301,7 @@ class TelegramClient(TelegramBareClient):
 
     def sign_up(self, phone_number, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        result = self.invoke(
+        result = self(
             SignUpRequest(
                 phone_number=phone_number,
                 phone_code_hash=self._phone_code_hashes[phone_number],
@@ -366,9 +317,9 @@ class TelegramClient(TelegramBareClient):
            Returns True if everything went okay."""
 
         # Special flag when logging out (so the ack request confirms it)
-        self.sender.logging_out = True
+        self._sender.logging_out = True
         try:
-            self.invoke(LogOutRequest())
+            self(LogOutRequest())
             self.disconnect()
             if not self.session.delete():
                 return False
@@ -377,14 +328,14 @@ class TelegramClient(TelegramBareClient):
             return True
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
-            self.sender.logging_out = False
+            self._sender.logging_out = False
             return False
 
     def get_me(self):
         """Gets "me" (the self user) which is currently authenticated,
            or None if the request fails (hence, not authenticated)."""
         try:
-            return self.invoke(GetUsersRequest([InputUserSelf()]))[0]
+            return self(GetUsersRequest([InputUserSelf()]))[0]
         except UnauthorizedError:
             return None
 
@@ -405,7 +356,7 @@ class TelegramClient(TelegramBareClient):
            corresponding to that dialog.
         """
 
-        r = self.invoke(
+        r = self(
             GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
@@ -422,16 +373,18 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
-                     no_web_page=False):
+                     link_preview=True):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID"""
         request = SendMessageRequest(
             peer=get_input_peer(entity),
             message=message,
             entities=[],
-            no_webpage=no_web_page
+            no_webpage=not link_preview
         )
-        self.invoke(request)
+        result = self(request)
+        for handler in self._update_handlers:
+            handler(result)
         return request.random_id
 
     def get_message_history(self,
@@ -456,15 +409,15 @@ class TelegramClient(TelegramBareClient):
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        result = self.invoke(
-            GetHistoryRequest(
-                get_input_peer(entity),
-                limit=limit,
-                offset_date=offset_date,
-                offset_id=offset_id,
-                max_id=max_id,
-                min_id=min_id,
-                add_offset=add_offset))
+        result = self(GetHistoryRequest(
+            get_input_peer(entity),
+            limit=limit,
+            offset_date=offset_date,
+            offset_id=offset_id,
+            max_id=max_id,
+            min_id=min_id,
+            add_offset=add_offset
+        ))
 
         # The result may be a messages slice (not all messages were retrieved)
         # or simply a messages TLObject. In the later case, no "count"
@@ -498,7 +451,10 @@ class TelegramClient(TelegramBareClient):
             else:
                 max_id = messages.id
 
-        return self.invoke(ReadHistoryRequest(peer=get_input_peer(entity), max_id=max_id))
+        return self(ReadHistoryRequest(
+            peer=get_input_peer(entity),
+            max_id=max_id
+        ))
 
     # endregion
 
@@ -537,7 +493,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_media_file(self, input_media, entity):
         """Sends any input_media (contact, document, photo...) to the given entity"""
-        self.invoke(SendMediaRequest(
+        self(SendMediaRequest(
             peer=get_input_peer(entity),
             media=input_media
         ))
@@ -580,36 +536,41 @@ class TelegramClient(TelegramBareClient):
 
     def download_msg_media(self,
                            message_media,
-                           file_path,
+                           file,
                            add_extension=True,
                            progress_callback=None):
         """Downloads the given MessageMedia (Photo, Document or Contact)
-           into the desired file_path, optionally finding its extension automatically
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+           into the desired file (a stream or str), optionally finding its
+           extension automatically.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
         if type(message_media) == MessageMediaPhoto:
-            return self.download_photo(message_media, file_path, add_extension,
+            return self.download_photo(message_media, file, add_extension,
                                        progress_callback)
 
         elif type(message_media) == MessageMediaDocument:
-            return self.download_document(message_media, file_path,
+            return self.download_document(message_media, file,
                                           add_extension, progress_callback)
 
         elif type(message_media) == MessageMediaContact:
-            return self.download_contact(message_media, file_path,
+            return self.download_contact(message_media, file,
                                          add_extension)
 
     def download_photo(self,
                        message_media_photo,
-                       file_path,
+                       file,
                        add_extension=False,
                        progress_callback=None):
-        """Downloads MessageMediaPhoto's largest size into the desired
-           file_path, optionally finding its extension automatically
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+        """Downloads MessageMediaPhoto's largest size into the desired file
+           (a stream or str), optionally finding its extension automatically.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
 
         # Determine the photo and its largest size
         photo = message_media_photo.photo
@@ -617,8 +578,8 @@ class TelegramClient(TelegramBareClient):
         file_size = largest_size.size
         largest_size = largest_size.location
 
-        if add_extension:
-            file_path += get_extension(message_media_photo)
+        if isinstance(file, str) and add_extension:
+            file += get_extension(message_media_photo)
 
         # Download the media with the largest size input file location
         self.download_file(
@@ -627,42 +588,45 @@ class TelegramClient(TelegramBareClient):
                 local_id=largest_size.local_id,
                 secret=largest_size.secret
             ),
-            file_path,
+            file,
             file_size=file_size,
             progress_callback=progress_callback
         )
-        return file_path
+        return file
 
     def download_document(self,
                           message_media_document,
-                          file_path=None,
+                          file=None,
                           add_extension=True,
                           progress_callback=None):
-        """Downloads the given MessageMediaDocument into the desired
-           file_path, optionally finding its extension automatically.
-           If no file_path is given, it will try to be guessed from the document
-           The progress_callback should be a callback function which takes two parameters,
-           uploaded size (in bytes) and total file size (in bytes).
-           This will be called every time a part is downloaded"""
+        """Downloads the given MessageMediaDocument into the desired file
+           (a stream or str), optionally finding its extension automatically.
+
+           If no file_path is given it will try to be guessed from the document.
+
+           The progress_callback should be a callback function which takes
+           two parameters, uploaded size and total file size (both in bytes).
+           This will be called every time a part is downloaded
+        """
         document = message_media_document.document
         file_size = document.size
 
         # If no file path was given, try to guess it from the attributes
-        if file_path is None:
+        if file is None:
             for attr in document.attributes:
                 if type(attr) == DocumentAttributeFilename:
-                    file_path = attr.file_name
+                    file = attr.file_name
                     break  # This attribute has higher preference
 
                 elif type(attr) == DocumentAttributeAudio:
-                    file_path = '{} - {}'.format(attr.performer, attr.title)
+                    file = '{} - {}'.format(attr.performer, attr.title)
 
-            if file_path is None:
+            if file is None:
                 raise ValueError('Could not infer a file_path for the document'
                                  '. Please provide a valid file_path manually')
 
-        if add_extension:
-            file_path += get_extension(message_media_document)
+        if isinstance(file, str) and add_extension:
+            file += get_extension(message_media_document)
 
         self.download_file(
             InputDocumentFileLocation(
@@ -670,74 +634,48 @@ class TelegramClient(TelegramBareClient):
                 access_hash=document.access_hash,
                 version=document.version
             ),
-            file_path,
+            file,
             file_size=file_size,
             progress_callback=progress_callback
         )
-        return file_path
+        return file
 
     @staticmethod
-    def download_contact(message_media_contact, file_path, add_extension=True):
+    def download_contact(message_media_contact, file, add_extension=True):
         """Downloads a media contact using the vCard 4.0 format"""
 
         first_name = message_media_contact.first_name
         last_name = message_media_contact.last_name
         phone_number = message_media_contact.phone_number
 
-        # The only way we can save a contact in an understandable
-        # way by phones is by using the .vCard format
-        if add_extension:
-            file_path += '.vcard'
+        if isinstance(file, str):
+            # The only way we can save a contact in an understandable
+            # way by phones is by using the .vCard format
+            if add_extension:
+                file += '.vcard'
 
-        # Ensure that we'll be able to download the contact
-        utils.ensure_parent_dir_exists(file_path)
+            # Ensure that we'll be able to download the contact
+            utils.ensure_parent_dir_exists(file)
+            f = open(file, 'w', encoding='utf-8')
+        else:
+            f = file
 
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write('BEGIN:VCARD\n')
-            file.write('VERSION:4.0\n')
-            file.write('N:{};{};;;\n'.format(first_name, last_name
-                                             if last_name else ''))
-            file.write('FN:{}\n'.format(' '.join((first_name, last_name))))
-            file.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
-                phone_number))
-            file.write('END:VCARD\n')
-
-        return file_path
-
-    def download_file(self,
-                      input_location,
-                      file,
-                      part_size_kb=None,
-                      file_size=None,
-                      progress_callback=None,
-                      on_dc=None):
-        """Downloads the given InputFileLocation to file (a stream or str).
-
-           If 'progress_callback' is not None, it should be a function that
-           takes two parameters, (bytes_downloaded, total_bytes). Note that
-           'total_bytes' simply equals 'file_size', and may be None.
-        """
-        if on_dc is None:
-            try:
-                super(TelegramClient, self).download_file(
-                    input_location,
-                    file,
-                    part_size_kb=part_size_kb,
-                    file_size=file_size,
-                    progress_callback=progress_callback
-                )
-            except FileMigrateError as e:
-                on_dc = e.new_dc
-
-        if on_dc is not None:
-            client = self._get_exported_client(on_dc)
-            client.download_file(
-                input_location,
-                file,
-                part_size_kb=part_size_kb,
-                file_size=file_size,
-                progress_callback=progress_callback
+        try:
+            f.write('BEGIN:VCARD\n')
+            f.write('VERSION:4.0\n')
+            f.write('N:{};{};;;\n'.format(
+                first_name, last_name if last_name else '')
             )
+            f.write('FN:{}\n'.format(' '.join((first_name, last_name))))
+            f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
+                phone_number))
+            f.write('END:VCARD\n')
+        finally:
+            # Only close the stream if we opened it
+            if isinstance(file, str):
+                f.close()
+
+        return file
 
     # endregion
 
@@ -748,7 +686,7 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.sender:
+        if not self._sender:
             raise RuntimeError("You can't add update handlers until you've "
                                "successfully connected to the server.")
 
@@ -771,7 +709,7 @@ class TelegramClient(TelegramBareClient):
             return
 
         # Different state, update the saved value and behave as required
-        self._logger.info('Changing updates thread running status to %s', running)
+        self._logger.debug('Changing updates thread running status to %s', running)
         if running:
             self._updates_thread_running.set()
             if not self._updates_thread:
@@ -783,7 +721,7 @@ class TelegramClient(TelegramBareClient):
         else:
             self._updates_thread_running.clear()
             if self._updates_thread_receiving.is_set():
-                self.sender.cancel_receive()
+                self._sender.cancel_receive()
 
     def _updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
@@ -805,10 +743,14 @@ class TelegramClient(TelegramBareClient):
                         'Trying to receive updates from the updates thread'
                     )
 
-                    updates = self.sender.receive_updates(timeout=timeout)
+                    if time() > self._next_ping_at:
+                        self._next_ping_at = time() + self.ping_interval
+                        self(PingRequest(utils.generate_random_long()))
+
+                    updates = self._sender.receive_updates(timeout=timeout)
 
                     self._updates_thread_receiving.clear()
-                    self._logger.info(
+                    self._logger.debug(
                         'Received {} update(s) from the updates thread'
                         .format(len(updates))
                     )
@@ -817,28 +759,28 @@ class TelegramClient(TelegramBareClient):
                             handler(update)
 
                 except ConnectionResetError:
-                    self._logger.info('Server disconnected us. Reconnecting...')
+                    self._logger.debug('Server disconnected us. Reconnecting...')
                     self.reconnect()
 
                 except TimeoutError:
                     self._logger.debug('Receiving updates timed out')
 
                 except ReadCancelledError:
-                    self._logger.info('Receiving updates cancelled')
+                    self._logger.debug('Receiving updates cancelled')
 
                 except BrokenPipeError:
-                    self._logger.info('Tcp session is broken. Reconnecting...')
+                    self._logger.debug('Tcp session is broken. Reconnecting...')
                     self.reconnect()
 
                 except InvalidChecksumError:
-                    self._logger.info('MTProto session is broken. Reconnecting...')
+                    self._logger.debug('MTProto session is broken. Reconnecting...')
                     self.reconnect()
 
                 except OSError:
-                    self._logger.warning('OSError on updates thread, %s logging out',
-                                         'was' if self.sender.logging_out else 'was not')
+                    self._logger.debug('OSError on updates thread, %s logging out',
+                                         'was' if self._sender.logging_out else 'was not')
 
-                    if self.sender.logging_out:
+                    if self._sender.logging_out:
                         # This error is okay when logging out, means we got disconnected
                         # TODO Not sure why this happens because we call disconnect()...
                         self._set_updates_thread(running=False)

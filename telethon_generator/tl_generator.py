@@ -1,51 +1,46 @@
-#!/usr/bin/env python3
 import os
 import re
 import shutil
 from zlib import crc32
 from collections import defaultdict
 
-try:
-    from .parser import SourceBuilder, TLParser
-except (ImportError, SystemError):
-    from parser import SourceBuilder, TLParser
-
-
-def get_output_path(normal_path):
-    return os.path.join('../telethon/tl', normal_path)
-
-output_base_depth = 2  # telethon/tl/
+from .parser import SourceBuilder, TLParser
 
 
 class TLGenerator:
-    @staticmethod
-    def tlobjects_exist():
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+
+    def _get_file(self, *paths):
+        return os.path.join(self.output_dir, *paths)
+
+    def _rm_if_exists(self, filename):
+        file = self._get_file(filename)
+        if os.path.exists(file):
+            if os.path.isdir(file):
+                shutil.rmtree(file)
+            else:
+                os.remove(file)
+
+    def tlobjects_exist(self):
         """Determines whether the TLObjects were previously
            generated (hence exist) or not
         """
-        return os.path.isfile(get_output_path('all_tlobjects.py'))
+        return os.path.isfile(self._get_file('all_tlobjects.py'))
 
-    @staticmethod
-    def clean_tlobjects():
+    def clean_tlobjects(self):
         """Cleans the automatically generated TLObjects from disk"""
-        if os.path.isdir(get_output_path('functions')):
-            shutil.rmtree(get_output_path('functions'))
+        for name in ('functions', 'types', 'all_tlobjects.py'):
+            self._rm_if_exists(name)
 
-        if os.path.isdir(get_output_path('types')):
-            shutil.rmtree(get_output_path('types'))
-
-        if os.path.isfile(get_output_path('all_tlobjects.py')):
-            os.remove(get_output_path('all_tlobjects.py'))
-
-    @staticmethod
-    def generate_tlobjects(scheme_file):
+    def generate_tlobjects(self, scheme_file, import_depth):
         """Generates all the TLObjects from scheme.tl to
            tl/functions and tl/types
         """
 
         # First ensure that the required parent directories exist
-        os.makedirs(get_output_path('functions'), exist_ok=True)
-        os.makedirs(get_output_path('types'), exist_ok=True)
+        os.makedirs(self._get_file('functions'), exist_ok=True)
+        os.makedirs(self._get_file('types'), exist_ok=True)
 
         # Step 0: Cache the parsed file on a tuple
         tlobjects = tuple(TLParser.parse_file(scheme_file))
@@ -91,11 +86,11 @@ class TLGenerator:
                 continue
 
             # Determine the output directory and create it
-            out_dir = get_output_path('functions'
-                                      if tlobject.is_function else 'types')
+            out_dir = self._get_file('functions'
+                                     if tlobject.is_function else 'types')
 
             # Path depth to perform relative import
-            depth = output_base_depth
+            depth = import_depth
             if tlobject.namespace:
                 depth += 1
                 out_dir = os.path.join(out_dir, tlobject.namespace)
@@ -121,19 +116,19 @@ class TLGenerator:
                         tlobject, builder, depth, type_constructors)
 
         # Step 3: Add the relative imports to the namespaces on __init__.py's
-        init_py = os.path.join(get_output_path('functions'), '__init__.py')
+        init_py = self._get_file('functions', '__init__.py')
         with open(init_py, 'a') as file:
             file.write('from . import {}\n'
                        .format(', '.join(function_namespaces)))
 
-        init_py = os.path.join(get_output_path('types'), '__init__.py')
+        init_py = self._get_file('types', '__init__.py')
         with open(init_py, 'a') as file:
             file.write('from . import {}\n'
                        .format(', '.join(type_namespaces)))
 
         # Step 4: Once all the objects have been generated,
         #         we can now group them in a single file
-        filename = os.path.join(get_output_path('all_tlobjects.py'))
+        filename = os.path.join(self._get_file('all_tlobjects.py'))
         with open(filename, 'w', encoding='utf-8') as file:
             with SourceBuilder(file) as builder:
                 builder.writeln(
@@ -182,17 +177,27 @@ class TLGenerator:
            importing and documentation strings.
         '"""
 
-        # Both types and functions inherit from
-        # MTProtoRequest so they all can be sent
-        builder.writeln('from {}.tl.mtproto_request import MTProtoRequest'
+        # Both types and functions inherit from the TLObject class so they
+        # all can be serialized and sent, however, only the functions are
+        # "content_related".
+        builder.writeln('from {}.tl.tlobject import TLObject'
                         .format('.' * depth))
 
-        if tlobject.is_function and \
-                any(a for a in tlobject.args if a.type == 'InputPeer'):
-            # We can automatically convert a normal peer to an InputPeer,
-            # it will make invoking a lot of requests a lot simpler.
-            builder.writeln('from {}.utils import get_input_peer'
-                            .format('.' * depth))
+        if tlobject.is_function:
+            util_imports = set()
+            for a in tlobject.args:
+                # We can automatically convert some "full" types to
+                # "input only" (like User -> InputPeerUser, etc.)
+                if a.type == 'InputPeer':
+                    util_imports.add('get_input_peer')
+                elif a.type == 'InputChannel':
+                    util_imports.add('get_input_channel')
+                elif a.type == 'InputUser':
+                    util_imports.add('get_input_user')
+
+            if util_imports:
+                builder.writeln('from {}.utils import {}'.format(
+                    '.' * depth, ', '.join(util_imports)))
 
         if any(a for a in tlobject.args if a.can_be_inferred):
             # Currently only 'random_id' needs 'os' to be imported
@@ -200,7 +205,7 @@ class TLGenerator:
 
         builder.writeln()
         builder.writeln()
-        builder.writeln('class {}(MTProtoRequest):'.format(
+        builder.writeln('class {}(TLObject):'.format(
             TLGenerator.get_class_name(tlobject)))
 
         # Write the original .tl definition,
@@ -264,7 +269,7 @@ class TLGenerator:
                         builder.write(' Must be a list.'.format(arg.name))
 
                     if arg.is_generic:
-                        builder.write(' Must be another MTProtoRequest.')
+                        builder.write(' Must be another TLObject request.')
 
                     builder.writeln()
 
@@ -296,7 +301,7 @@ class TLGenerator:
         if tlobject.is_function:
             builder.writeln('self.result = None')
             builder.writeln(
-                'self.confirmed = True  # Confirmed by default')
+                'self.content_related = True')
 
         # Set the arguments
         if args:
@@ -317,10 +322,15 @@ class TLGenerator:
                     )
                 else:
                     raise ValueError('Cannot infer a value for ', arg)
+
+            # Well-known cases, auto-cast it to the right type
             elif arg.type == 'InputPeer' and tlobject.is_function:
-                # Well-known case, auto-cast it to the right type
-                builder.writeln(
-                    'self.{0} = get_input_peer({0})'.format(arg.name))
+                TLGenerator.write_get_input(builder, arg, 'get_input_peer')
+            elif arg.type == 'InputChannel' and tlobject.is_function:
+                TLGenerator.write_get_input(builder, arg, 'get_input_channel')
+            elif arg.type == 'InputUser' and tlobject.is_function:
+                TLGenerator.write_get_input(builder, arg, 'get_input_user')
+
             else:
                 builder.writeln('self.{0} = {0}'.format(arg.name))
 
@@ -413,9 +423,28 @@ class TLGenerator:
         builder.end_block()
 
         builder.writeln('def __str__(self):')
-        builder.writeln('return {}'.format(str(tlobject)))
+        builder.writeln('return TLObject.pretty_format(self)')
+        builder.end_block()
+
+        builder.writeln('def stringify(self):')
+        builder.writeln('return TLObject.pretty_format(self, indent=0)')
         # builder.end_block()  # No need to end the last block
 
+    @staticmethod
+    def write_get_input(builder, arg, get_input_code):
+        """Returns "True" if the get_input_* code was written when assigning
+           a parameter upon creating the request. Returns False otherwise
+        """
+        if arg.is_vector:
+            builder.writeln(
+                'self.{0} = [{1}(_x) for _x in {0}]'
+                .format(arg.name, get_input_code)
+            )
+            pass
+        else:
+            builder.writeln(
+                'self.{0} = {1}({0})'.format(arg.name, get_input_code)
+            )
 
     @staticmethod
     def get_class_name(tlobject):
@@ -475,11 +504,10 @@ class TLGenerator:
                     "writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
 
             builder.writeln('writer.write_int(len({}))'.format(name))
-            builder.writeln('for {}_item in {}:'.format(arg.name, name))
+            builder.writeln('for _x in {}:'.format(name))
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
-            TLGenerator.write_onsend_code(
-                builder, arg, args, name='{}_item'.format(arg.name))
+            TLGenerator.write_onsend_code(builder, arg, args, name='_x')
             arg.is_vector = True
 
         elif arg.flag_indicator:
@@ -570,13 +598,12 @@ class TLGenerator:
                 builder.writeln("reader.read_int()  # Vector's constructor ID")
 
             builder.writeln('{} = []  # Initialize an empty list'.format(name))
-            builder.writeln('{}_len = reader.read_int()'.format(arg.name))
-            builder.writeln('for _ in range({}_len):'.format(arg.name))
+            builder.writeln('_len = reader.read_int()')
+            builder.writeln('for _ in range(_len):')
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
-            TLGenerator.write_onresponse_code(
-                builder, arg, args, name='{}_item'.format(arg.name))
-            builder.writeln('{}.append({}_item)'.format(name, arg.name))
+            TLGenerator.write_onresponse_code(builder, arg, args, name='_x')
+            builder.writeln('{}.append(_x)'.format(name))
             arg.is_vector = True
 
         elif arg.flag_indicator:
@@ -591,12 +618,14 @@ class TLGenerator:
             builder.writeln('{} = reader.read_long()'.format(name))
 
         elif 'int128' == arg.type:
-            builder.writeln('{} = reader.read_large_int(bits=128)'.format(
-                name))
+            builder.writeln(
+                '{} = reader.read_large_int(bits=128)'.format(name)
+            )
 
         elif 'int256' == arg.type:
-            builder.writeln('{} = reader.read_large_int(bits=256)'.format(
-                name))
+            builder.writeln(
+                '{} = reader.read_large_int(bits=256)'.format(name)
+            )
 
         elif 'double' == arg.type:
             builder.writeln('{} = reader.read_double()'.format(name))
@@ -658,13 +687,3 @@ class TLGenerator:
                 builder.writeln('self.result = reader.tgread_vector()')
         else:
             builder.writeln('self.result = reader.tgread_object()')
-
-
-if __name__ == '__main__':
-    if TLGenerator.tlobjects_exist():
-        print('Detected previous TLObjects. Cleaning...')
-        TLGenerator.clean_tlobjects()
-
-    print('Generating TLObjects...')
-    TLGenerator.generate_tlobjects('scheme.tl')
-    print('Done.')

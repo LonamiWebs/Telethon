@@ -1,4 +1,5 @@
 import re
+from zlib import crc32
 
 
 class TLObject:
@@ -24,11 +25,17 @@ class TLObject:
             self.namespace = None
             self.name = fullname
 
-        # The ID should be an hexadecimal string
-        self.id = int(object_id, base=16)
         self.args = args
         self.result = result
         self.is_function = is_function
+
+        # The ID should be an hexadecimal string or None to be inferred
+        if object_id is None:
+            self.id = self.infer_id()
+        else:
+            self.id = int(object_id, base=16)
+            assert self.id == self.infer_id(),\
+                'Invalid inferred ID for ' + repr(self)
 
     @staticmethod
     def from_tl(tl, is_function):
@@ -38,8 +45,10 @@ class TLObject:
         match = re.match(r'''
             ^                  # We want to match from the beginning to the end
             ([\w.]+)           # The .tl object can contain alpha_name or namespace.alpha_name
-            \#                 # After the name, comes the ID of the object
-            ([0-9a-f]+)        # The constructor ID is in hexadecimal form
+            (?:
+                \#             # After the name, comes the ID of the object
+                ([0-9a-f]+)    # The constructor ID is in hexadecimal form
+            )?                 # If no constructor ID was given, CRC32 the 'tl' to determine it
 
             (?:\s              # After that, we want to match its arguments (name:type)
                 {?             # For handling the start of the '{X:Type}' case
@@ -91,16 +100,39 @@ class TLObject:
            (and thus should be embedded in the generated code) or not"""
         return self.id in TLObject.CORE_TYPES
 
-    def __repr__(self):
+    def __repr__(self, ignore_id=False):
         fullname = ('{}.{}'.format(self.namespace, self.name)
                     if self.namespace is not None else self.name)
 
-        hex_id = hex(self.id)[2:].rjust(8,
-                                        '0')  # Skip 0x and add 0's for padding
+        if getattr(self, 'id', None) is None or ignore_id:
+            hex_id = ''
+        else:
+            # Skip 0x and add 0's for padding
+            hex_id = '#' + hex(self.id)[2:].rjust(8, '0')
 
-        return '{}#{} {} = {}'.format(
-            fullname, hex_id, ' '.join([str(arg) for arg in self.args]),
-            self.result)
+        if self.args:
+            args = ' ' + ' '.join([repr(arg) for arg in self.args])
+        else:
+            args = ''
+
+        return '{}{}{} = {}'.format(fullname, hex_id, args, self.result)
+
+    def infer_id(self):
+        representation = self.__repr__(ignore_id=True)
+
+        # Clean the representation
+        representation = representation\
+            .replace(':bytes ', ':string ')\
+            .replace('?bytes ', '?string ')\
+            .replace('<', ' ').replace('>', '')\
+            .replace('{', '').replace('}', '')
+
+        representation = re.sub(
+            r' \w+:flags\.\d+\?true',
+            r'',
+            representation
+        )
+        return crc32(representation.encode('ascii'))
 
     def __str__(self):
         fullname = ('{}.{}'.format(self.namespace, self.name)
@@ -214,3 +246,9 @@ class TLArg:
             return '{{{}:{}}}'.format(self.name, real_type)
         else:
             return '{}:{}'.format(self.name, real_type)
+
+    def __repr__(self):
+        # Get rid of our special type
+        return str(self)\
+            .replace(':date', ':int')\
+            .replace('?date', '?int')

@@ -30,9 +30,12 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self._proxy)
 
-    def connect(self, ip, port):
-        """Connects to the specified IP and port number"""
+    def connect(self, ip, port, timeout):
+        """Connects to the specified IP and port number.
+           'timeout' must be given in seconds
+        """
         if not self.connected:
+            self._socket.settimeout(timeout)
             self._socket.connect((ip, port))
             self._socket.setblocking(False)
             self.connected = True
@@ -80,7 +83,7 @@ class TcpClient:
 
             # Set the starting time so we can
             # calculate whether the timeout should fire
-            start_time = datetime.now() if timeout else None
+            start_time = datetime.now() if timeout is not None else None
 
             with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
                 bytes_left = size
@@ -93,8 +96,9 @@ class TcpClient:
                     try:
                         partial = self._socket.recv(bytes_left)
                         if len(partial) == 0:
+                            self.connected = False
                             raise ConnectionResetError(
-                                'The server has closed the connection (recv() returned 0 bytes).')
+                                'The server has closed the connection.')
 
                         buffer.write(partial)
                         bytes_left -= len(partial)
@@ -104,7 +108,7 @@ class TcpClient:
                         time.sleep(self.delay)
 
                         # Check if the timeout finished
-                        if timeout:
+                        if timeout is not None:
                             time_passed = datetime.now() - start_time
                             if time_passed > timeout:
                                 raise TimeoutError(

@@ -44,6 +44,14 @@ class ChatIdInvalidError(BadRequestError):
         )
 
 
+class ConnectionLangPackInvalid(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The specified language pack is not valid.'
+        )
+
+
 class ConnectionLayerInvalidError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
@@ -321,7 +329,7 @@ class UserIdInvalidError(BadRequestError):
         )
 
 
-rpc_400_errors = {
+rpc_errors_400_all = {
     'API_ID_INVALID': ApiIdInvalidError,
     'BOT_METHOD_INVALID': BotMethodInvalidError,
     'CHANNEL_INVALID': ChannelInvalidError,

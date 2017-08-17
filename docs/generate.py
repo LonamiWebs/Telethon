@@ -75,12 +75,19 @@ def get_create_path_for(tlobject):
     return os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
 
 
+def is_core_type(type_):
+    """Returns "true" if the type is considered a core type"""
+    return type_.lower() in {
+        'int', 'long', 'int128', 'int256', 'double',
+        'vector', 'string', 'bool', 'true', 'bytes', 'date'
+    }
+
+
 def get_path_for_type(type_, relative_to='.'):
     """Similar to getting the path for a TLObject, it might not be possible
        to have the TLObject itself but rather its name (the type);
        this method works in the same way, returning a relative path"""
-    if type_.lower() in {'int', 'long', 'int128', 'int256', 'double',
-                         'vector', 'string', 'bool', 'true', 'bytes', 'date'}:
+    if is_core_type(type_):
         path = 'index.html#%s' % type_.lower()
 
     elif '.' in type_:
@@ -396,11 +403,39 @@ def generate_documentation(scheme_file):
                 docs.add_row(get_class_name(func), link=link)
             docs.end_table()
 
+            # List all the methods which take this type as input
+            docs.write_title('Methods accepting this type as input', level=3)
+            other_methods = sorted(
+                (t for t in tlobjects
+                 if any(tltype == a.type for a in t.args) and t.is_function),
+                key=lambda t: t.name
+            )
+            if not other_methods:
+                docs.write_text(
+                    'No methods accept this type as an input parameter.')
+            elif len(other_methods) == 1:
+                docs.write_text(
+                    'Only this method has a parameter with this type.')
+            else:
+                docs.write_text(
+                    'The following %d methods accept this type as an input '
+                    'parameter.' % len(other_methods))
+
+            docs.begin_table(2)
+            for ot in other_methods:
+                link = get_create_path_for(ot)
+                link = get_relative_path(link, relative_to=filename)
+                docs.add_row(get_class_name(ot), link=link)
+            docs.end_table()
+
             # List every other type which has this type as a member
             docs.write_title('Other types containing this type', level=3)
-            other_types = sorted((t for t in tlobjects
-                                  if any(tltype == a.type for a in t.args)),
-                                 key=lambda t: t.name)
+            other_types = sorted(
+                (t for t in tlobjects
+                 if any(tltype == a.type for a in t.args)
+                 and not t.is_function
+                 ), key=lambda t: t.name
+            )
 
             if not other_types:
                 docs.write_text(
@@ -433,20 +468,30 @@ def generate_documentation(scheme_file):
     layer = TLParser.find_layer(scheme_file)
     types = set()
     methods = []
+    constructors = []
     for tlobject in tlobjects:
         if tlobject.is_function:
             methods.append(tlobject)
+        else:
+            constructors.append(tlobject)
 
-        types.add(tlobject.result)
+        if not is_core_type(tlobject.result):
+            if re.search('^vector<', tlobject.result, re.IGNORECASE):
+                types.add(tlobject.result.split('<')[1].strip('>'))
+            else:
+                types.add(tlobject.result)
 
     types = sorted(types)
     methods = sorted(methods, key=lambda m: m.name)
+    constructors = sorted(constructors, key=lambda c: c.name)
 
     request_names = ', '.join('"' + get_class_name(m) + '"' for m in methods)
     type_names = ', '.join('"' + get_class_name(t) + '"' for t in types)
+    constructor_names = ', '.join('"' + get_class_name(t) + '"' for t in constructors)
 
     request_urls = ', '.join('"' + get_create_path_for(m) + '"' for m in methods)
     type_urls = ', '.join('"' + get_path_for_type(t) + '"' for t in types)
+    constructor_urls = ', '.join('"' + get_create_path_for(t) + '"' for t in constructors)
 
     replace_dict = {
         'type_count': len(types),
@@ -456,8 +501,10 @@ def generate_documentation(scheme_file):
 
         'request_names': request_names,
         'type_names': type_names,
+        'constructor_names': constructor_names,
         'request_urls': request_urls,
-        'type_urls': type_urls
+        'type_urls': type_urls,
+        'constructor_urls': constructor_urls
     }
 
     with open('../res/core.html') as infile:
