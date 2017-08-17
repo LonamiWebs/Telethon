@@ -127,6 +127,11 @@ There you'll find a list of all the methods, types and available constructors.
 
 More examples are also available under the ``telethon_examples/`` folder.
 
+If you're using Telethon under ARM, you may want to install ``sympy`` through
+``pip`` for a substantial speed-up when generating the keys required to
+connect to Telegram (you can of course do this on desktop too). See
+`issue #199 <https://github.com/LonamiWebs/Telethon/issues/199>`_ for more.
+
 Common errors
 -------------
 
