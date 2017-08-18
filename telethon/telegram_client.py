@@ -1,3 +1,4 @@
+import errno
 from datetime import timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
@@ -326,6 +327,17 @@ class TelegramClient(TelegramBareClient):
 
             self.session = None
             return True
+        except OSError as e:
+            # macos issue: https://github.com/veusz/veusz/issues/54
+            # socket has been already closed
+            if e.errno == errno.ENOTCONN:
+                if not self.session.delete():
+                    return False
+
+                self.session = None
+                return True
+            else:
+                raise e
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
             self._sender.logging_out = False
