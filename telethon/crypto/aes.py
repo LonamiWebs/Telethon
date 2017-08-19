@@ -1,6 +1,6 @@
 import os
 import pyaes
-
+from . import libssl
 
 class AES:
     @staticmethod
@@ -71,3 +71,7 @@ class AES:
             cipher_text.extend(cipher_text_block)
 
         return bytes(cipher_text)
+
+# use libssl if available
+if libssl.libssl:
+    AES = libssl.AES
