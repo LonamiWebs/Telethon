@@ -5,8 +5,9 @@ from ctypes.util import find_library
 # search and load libssl.so
 lib = find_library('ssl')
 if not lib:
-    raise ImportError('libssl.so not found')
-libssl = ctypes.cdll.LoadLibrary(lib)
+    libssl = None
+else:
+    libssl = ctypes.cdll.LoadLibrary(lib)
 
 """ <aes.h>
 # define AES_ENCRYPT     1
