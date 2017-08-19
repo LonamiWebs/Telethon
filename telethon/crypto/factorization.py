@@ -1,4 +1,8 @@
 from random import randint
+try:
+    import sympy.ntheory
+except ImportError:
+    sympy = None
 
 
 class Factorization:
@@ -58,5 +62,8 @@ class Factorization:
     @staticmethod
     def factorize(pq):
         """Factorizes the given number and returns both the divisor and the number divided by the divisor"""
-        divisor = Factorization.find_small_multiplier_lopatin(pq)
-        return divisor, pq // divisor
+        if sympy:
+            return tuple(sympy.ntheory.factorint(pq).keys())
+        else:
+            divisor = Factorization.find_small_multiplier_lopatin(pq)
+            return divisor, pq // divisor
