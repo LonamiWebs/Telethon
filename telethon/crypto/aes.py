@@ -3,7 +3,7 @@ import pyaes
 from . import libssl
 
 
-if libssl.libssl:
+if libssl.AES is not None:
     # Use libssl if available, since it will be faster
     AES = libssl.AES
 else:
