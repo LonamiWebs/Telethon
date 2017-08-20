@@ -327,7 +327,7 @@ class TelegramClient(TelegramBareClient):
             # Socket has been already closed (Errno 57)
             # Fail on any other error
             if e.errno != errno.ENOTCONN:
-                raise e
+                raise
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
             self._sender.logging_out = False
