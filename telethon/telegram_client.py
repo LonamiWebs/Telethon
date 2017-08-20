@@ -323,9 +323,9 @@ class TelegramClient(TelegramBareClient):
             self(LogOutRequest())
             self.disconnect()
         except OSError as e:
-            # macos issue: https://github.com/veusz/veusz/issues/54
-            # socket has been already closed (Errno 57)
-            # if any other - fail
+            # macOS issue: https://github.com/veusz/veusz/issues/54
+            # Socket has been already closed (Errno 57)
+            # Fail on any other error
             if e.errno != errno.ENOTCONN:
                 raise e
         except (RPCError, ConnectionError):
