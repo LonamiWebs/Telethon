@@ -1,3 +1,4 @@
+import errno
 from datetime import timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
@@ -315,21 +316,26 @@ class TelegramClient(TelegramBareClient):
     def log_out(self):
         """Logs out and deletes the current session.
            Returns True if everything went okay."""
-
         # Special flag when logging out (so the ack request confirms it)
         self._sender.logging_out = True
+
         try:
             self(LogOutRequest())
             self.disconnect()
-            if not self.session.delete():
-                return False
-
-            self.session = None
-            return True
+        except OSError as e:
+            # macOS issue: https://github.com/veusz/veusz/issues/54
+            # Socket has been already closed (Errno 57)
+            # Fail on any other error
+            if e.errno != errno.ENOTCONN:
+                raise
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
             self._sender.logging_out = False
             return False
+
+        self.session.delete()
+        self.session = None
+        return True
 
     def get_me(self):
         """Gets "me" (the self user) which is currently authenticated,
