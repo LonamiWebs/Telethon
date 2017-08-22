@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 from hashlib import md5
 from os import path
+from io import BytesIO
 
 # Import some externalized utilities to work with the Telegram types and more
 from telethon.tl.functions import PingRequest
@@ -308,16 +309,20 @@ class TelegramBareClient:
     # region Uploading media
 
     def upload_file(self,
-                    file_path,
+                    file,
                     part_size_kb=None,
                     file_name=None,
                     progress_callback=None):
-        """Uploads the specified file_path and returns a handle (an instance
+        """Uploads the specified file and returns a handle (an instance
            of InputFile or InputFileBig, as required) which can be later used.
 
            Uploading a file will simply return a "handle" to the file stored
            remotely in the Telegram servers, which can be later used on. This
            will NOT upload the file to your own chat.
+
+           'file' may be either a file path, a byte array, or a stream.
+           Note that if the file is a stream it will need to be read
+           entirely into memory to tell its size first.
 
            If 'progress_callback' is not None, it should be a function that
            takes two parameters, (bytes_uploaded, total_bytes).
@@ -326,8 +331,14 @@ class TelegramBareClient:
              part_size_kb = get_appropriated_part_size(file_size)
              file_name    = path.basename(file_path)
         """
-        # TODO Support both streams and bytes instead just "file_path"
-        file_size = path.getsize(file_path)
+        if isinstance(file, str):
+            file_size = path.getsize(file)
+        elif isinstance(file, bytes):
+            file_size = len(file)
+        else:
+            file = file.read()
+            file_size = len(file)
+
         if not part_size_kb:
             part_size_kb = get_appropriated_part_size(file_size)
 
@@ -346,10 +357,11 @@ class TelegramBareClient:
         file_id = utils.generate_random_long()
         hash_md5 = md5()
 
-        with open(file_path, 'rb') as file:
+        stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)
+        try:
             for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
-                part = file.read(part_size)
+                part = stream.read(part_size)
 
                 # The SavePartRequest is different depending on whether
                 # the file is too large or not (over or less than 10MB)
@@ -366,14 +378,19 @@ class TelegramBareClient:
                         hash_md5.update(part)
 
                     if progress_callback:
-                        progress_callback(file.tell(), file_size)
+                        progress_callback(stream.tell(), file_size)
                 else:
                     raise ValueError('Failed to upload file part {}.'
                                      .format(part_index))
+        finally:
+            stream.close()
 
         # Set a default file name if None was specified
         if not file_name:
-            file_name = path.basename(file_path)
+            if isinstance(file, str):
+                file_name = path.basename(file)
+            else:
+                file_name = str(file_id)
 
         if is_large:
             return InputFileBig(file_id, part_count, file_name)
