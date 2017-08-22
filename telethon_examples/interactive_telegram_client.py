@@ -1,3 +1,4 @@
+import os
 from getpass import getpass
 
 from telethon import TelegramClient
@@ -201,7 +202,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # Download media
                 elif msg.startswith('!dm '):
                     # Slice the message to get message ID
-                    self.download_media(msg[len('!dm '):])
+                    self.download_media_by_id(msg[len('!dm '):])
 
                 # Download profile photo
                 elif msg == '!dp':
@@ -220,24 +221,21 @@ class InteractiveTelegramClient(TelegramClient):
                         entity, msg, link_preview=False)
 
     def send_photo(self, path, entity):
-        print('Uploading {}...'.format(path))
-        input_file = self.upload_file(
-            path, progress_callback=self.upload_progress_callback)
-
-        # After we have the handle to the uploaded file, send it to our peer
-        self.send_photo_file(input_file, entity)
+        self.send_file(
+            entity, path,
+            progress_callback=self.upload_progress_callback
+        )
         print('Photo sent!')
 
     def send_document(self, path, entity):
-        print('Uploading {}...'.format(path))
-        input_file = self.upload_file(
-            path, progress_callback=self.upload_progress_callback)
-
-        # After we have the handle to the uploaded file, send it to our peer
-        self.send_document_file(input_file, entity)
+        self.send_file(
+            entity, path,
+            force_document=True,
+            progress_callback=self.upload_progress_callback
+        )
         print('Document sent!')
 
-    def download_media(self, media_id):
+    def download_media_by_id(self, media_id):
         try:
             # The user may have entered a non-integer string!
             msg_media_id = int(media_id)
@@ -245,13 +243,13 @@ class InteractiveTelegramClient(TelegramClient):
             # Search the message ID
             for msg in self.found_media:
                 if msg.id == msg_media_id:
-                    # Let the output be the message ID
-                    output = str('usermedia/{}'.format(msg_media_id))
-                    print('Downloading media with name {}...'.format(output))
-                    output = self.download_msg_media(
+                    print('Downloading media to usermedia/...')
+                    os.makedirs('usermedia', exist_ok=True)
+                    output = self.download_media(
                         msg.media,
-                        file=output,
-                        progress_callback=self.download_progress_callback)
+                        file='usermedia/',
+                        progress_callback=self.download_progress_callback
+                    )
                     print('Media downloaded to {}!'.format(output))
 
         except ValueError:
