@@ -724,11 +724,11 @@ class TelegramClient(TelegramBareClient):
 
         if os.path.isdir(file) or not file:
             for attr in document.attributes:
-                if type(attr) == DocumentAttributeFilename:
+                if isinstance(attr, DocumentAttributeFilename):
                     file = os.path.join(file, attr.file_name)
                     break  # This attribute has higher preference
 
-                elif type(attr) == DocumentAttributeAudio:
+                elif isinstance(attr, DocumentAttributeAudio):
                     file = os.path.join(
                         file, '{} - {}'.format(attr.performer, attr.title)
                     )
