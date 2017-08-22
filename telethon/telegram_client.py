@@ -15,7 +15,7 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
-from .tl import Session, JsonSession
+from .tl import Session, JsonSession, TLObject
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -29,6 +29,8 @@ from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest)
+
+from .tl.functions.contacts import GetContactsRequest, ResolveUsernameRequest
 
 # For .get_me() and ensuring we're authorized
 from .tl.functions.users import GetUsersRequest
@@ -44,7 +46,7 @@ from .tl.types import (
     MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty, InputUserSelf)
 
-from .utils import find_user_or_chat, get_input_peer, get_extension
+from .utils import find_user_or_chat, get_extension
 
 
 class TelegramClient(TelegramBareClient):
@@ -377,9 +379,13 @@ class TelegramClient(TelegramBareClient):
                      message,
                      link_preview=True):
         """Sends a message to the given entity (or input peer)
-           and returns the sent message ID"""
+           and returns the sent message ID.
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
+        """
         request = SendMessageRequest(
-            peer=get_input_peer(entity),
+            peer=self._get_entity(entity),
             message=message,
             entities=[],
             no_webpage=not link_preview
@@ -400,7 +406,7 @@ class TelegramClient(TelegramBareClient):
         """
         Gets the message history for the specified entity
 
-        :param entity:      The entity (or input peer) from whom to retrieve the message history
+        :param entity:      The entity from whom to retrieve the message history
         :param limit:       Number of messages to be retrieved
         :param offset_date: Offset date (messages *previous* to this date will be retrieved)
         :param offset_id:   Offset message ID (only messages *previous* to the given ID will be retrieved)
@@ -410,9 +416,12 @@ class TelegramClient(TelegramBareClient):
 
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
         """
         result = self(GetHistoryRequest(
-            get_input_peer(entity),
+            peer=self._get_entity(entity),
             limit=limit,
             offset_date=offset_date,
             offset_id=offset_id,
@@ -442,7 +451,11 @@ class TelegramClient(TelegramBareClient):
            Either a list of messages (or a single message) can be given,
            or the maximum message ID (until which message we want to send the read acknowledge).
 
-           Returns an AffectedMessages TLObject"""
+           Returns an AffectedMessages TLObject
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
+        """
         if max_id is None:
             if not messages:
                 raise InvalidParameterError(
@@ -454,7 +467,7 @@ class TelegramClient(TelegramBareClient):
                 max_id = messages.id
 
         return self(ReadHistoryRequest(
-            peer=get_input_peer(entity),
+            peer=self._get_entity(entity),
             max_id=max_id
         ))
 
@@ -470,7 +483,11 @@ class TelegramClient(TelegramBareClient):
 
     def send_document_file(self, input_file, entity, caption=''):
         """Sends a previously uploaded input_file
-           (which should be a document) to the given entity (or input peer)"""
+           (which should be a document) to the given entity.
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
+        """
 
         # Determine mime-type and attributes
         # Take the first element by using [0] since it returns a tuple
@@ -494,9 +511,14 @@ class TelegramClient(TelegramBareClient):
             entity)
 
     def send_media_file(self, input_media, entity):
-        """Sends any input_media (contact, document, photo...) to the given entity"""
+        """Sends any input_media (contact, document, photo...)
+           to the given entity.
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
+        """
         self(SendMediaRequest(
-            peer=get_input_peer(entity),
+            peer=self._get_entity(entity),
             media=input_media
         ))
 
@@ -511,6 +533,7 @@ class TelegramClient(TelegramBareClient):
                                download_big=True):
         """Downloads the profile photo for an user or a chat (including channels).
            Returns False if no photo was provided, or if it was Empty"""
+        # TODO Support specifying an entity
 
         if (not profile_photo or
                 isinstance(profile_photo, UserProfilePhotoEmpty) or
@@ -549,6 +572,7 @@ class TelegramClient(TelegramBareClient):
            two parameters, uploaded size and total file size (both in bytes).
            This will be called every time a part is downloaded
         """
+        # TODO Support specifying a message
         if type(message_media) == MessageMediaPhoto:
             return self.download_photo(message_media, file, add_extension,
                                        progress_callback)
@@ -561,6 +585,7 @@ class TelegramClient(TelegramBareClient):
             return self.download_contact(message_media, file,
                                          add_extension)
 
+    # TODO Make these private and only expose download_msg_media?
     def download_photo(self,
                        message_media_photo,
                        file,
@@ -680,6 +705,61 @@ class TelegramClient(TelegramBareClient):
         return file
 
     # endregion
+
+    # endregion
+
+    # region Small utilities to make users' life easier
+
+    def _get_entity(self, entity):
+        """Turns an entity into a valid Telegram user or chat.
+           If "entity" is a string, and starts with '+', or if
+           it is an integer value, it will be resolved as if it
+           were a phone number.
+
+           If "entity" is a string and doesn't start with '+', or
+           it starts with '@', it will be resolved from the username.
+           If no exact match is returned, an error will be raised.
+
+           If the entity is neither, and it's not a TLObject, an
+           error will be raised.
+        """
+        if isinstance(entity, TLObject):
+            return entity
+
+        if isinstance(entity, int):
+            entity = '+{}'.format(entity)  # Turn it into a phone-like str
+
+        if isinstance(entity, str):
+            if entity.startswith('+'):
+                contacts = self(GetContactsRequest(''))
+                try:
+                    stripped_phone = entity.strip('+')
+                    return next(
+                        u for u in contacts.users
+                        if u.phone and u.phone.endswith(stripped_phone)
+                    )
+                except StopIteration:
+                    raise ValueError(
+                        'Could not find user with phone {}, '
+                        'add them to your contacts first'.format(entity)
+                    )
+            else:
+                username = entity.strip('@').lower()
+                resolved = self(ResolveUsernameRequest(username))
+                for c in resolved.chats:
+                    if getattr(c, 'username', '').lower() == username:
+                        return c
+                for u in resolved.users:
+                    if getattr(u, 'username', '').lower() == username:
+                        return u
+
+                raise ValueError(
+                    'Could not find user with username {}'.format(entity)
+                )
+
+        raise ValueError(
+            'Cannot turn "{}" into any entity (user or chat)'.format(entity)
+        )
 
     # endregion
 
