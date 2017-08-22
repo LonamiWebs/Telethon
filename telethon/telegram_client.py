@@ -40,11 +40,11 @@ from .tl.functions import PingRequest
 
 # All the types we need to work with
 from .tl.types import (
-    ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
+    DocumentAttributeAudio, DocumentAttributeFilename,
     InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
-    UserProfilePhotoEmpty, InputUserSelf)
+    InputUserSelf, UserProfilePhoto, ChatPhoto)
 
 from .utils import find_user_or_chat, get_extension
 
@@ -564,26 +564,72 @@ class TelegramClient(TelegramBareClient):
     # region Downloading media requests
 
     def download_profile_photo(self,
-                               profile_photo,
-                               file_path,
+                               entity,
+                               file_path='',
                                add_extension=True,
                                download_big=True):
-        """Downloads the profile photo for an user or a chat (including channels).
-           Returns False if no photo was provided, or if it was Empty"""
-        # TODO Support specifying an entity
+        """Downloads the profile photo for an user or a chat (channels too).
+           Returns None if no photo was provided, or if it was Empty.
 
-        if (not profile_photo or
-                isinstance(profile_photo, UserProfilePhotoEmpty) or
-                isinstance(profile_photo, ChatPhotoEmpty)):
-            return False
+           If an entity itself (an user, chat or channel) is given, the photo
+           to be downloaded will be downloaded automatically.
+
+           On success, the file path is returned since it may differ.
+
+           The entity may be a phone or an username at the expense of
+           some performance loss.
+        """
+        if not isinstance(entity, TLObject) or type(entity).subclass_of_id in (
+                    0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
+            ):
+            # Maybe it is an user or a chat? Or their full versions?
+            #
+            # The hexadecimal numbers above are simply:
+            # hex(crc32(x.encode('ascii'))) for x in
+            # ('User', 'Chat', 'UserFull', 'ChatFull')
+            entity = self._get_entity(entity)
+            if not hasattr(entity, 'photo'):
+                # Special case: may be a ChatFull with photo:Photo
+                # This is different from a normal UserProfilePhoto and Chat
+                if hasattr(entity, 'chat_photo'):
+                    return self._download_photo(
+                        entity.chat_photo, file_path,
+                        add_extension=add_extension
+                    )
+                else:
+                    # Give up
+                    return None
+
+            was_dir = None
+            if os.path.isdir(file_path):
+                was_dir = file_path
+                file_path = ''  # File path needs to be empty to infer it
+
+            if not file_path:
+                for attr in ('username', 'first_name', 'title'):
+                    file_path = getattr(entity, attr, '')
+                    if file_path:
+                        break
+
+            if was_dir:
+                file_path = os.path.join(was_dir, file_path)
+
+            entity = entity.photo
+
+        if not isinstance(entity, UserProfilePhoto) and \
+                not isinstance(entity, ChatPhoto):
+            return None
+
+        if os.path.isdir(file_path) or not file_path:
+            file_path = 'profile_photo_{}'.format(datetime.now())
 
         if add_extension:
-            file_path += get_extension(profile_photo)
+            file_path += get_extension(entity)
 
         if download_big:
-            photo_location = profile_photo.photo_big
+            photo_location = entity.photo_big
         else:
-            photo_location = profile_photo.photo_small
+            photo_location = entity.photo_small
 
         # Download the media with the largest size input file location
         self.download_file(
@@ -594,7 +640,7 @@ class TelegramClient(TelegramBareClient):
             ),
             file_path
         )
-        return True
+        return file_path
 
     def download_media(self,
                        message,

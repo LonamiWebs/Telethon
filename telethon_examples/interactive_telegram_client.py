@@ -206,12 +206,13 @@ class InteractiveTelegramClient(TelegramClient):
 
                 # Download profile photo
                 elif msg == '!dp':
-                    output = str('usermedia/propic_{}'.format(entity.id))
-                    print('Downloading profile picture...')
-                    success = self.download_profile_photo(entity.photo, output)
-                    if success:
-                        print('Profile picture downloaded to {}'.format(
-                            output))
+                    print('Downloading profile picture to usermedia/...')
+                    os.makedirs('usermedia', exist_ok=True)
+                    output = self.download_profile_photo(entity, 'usermedia')
+                    if output:
+                        print(
+                            'Profile picture downloaded to {}'.format(output)
+                        )
                     else:
                         print('No profile picture found for this user.')
 
