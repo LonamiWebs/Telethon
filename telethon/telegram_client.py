@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
 from time import sleep, time
@@ -43,7 +43,7 @@ from .tl.types import (
     ChatPhotoEmpty, DocumentAttributeAudio, DocumentAttributeFilename,
     InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
-    MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
+    Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     UserProfilePhotoEmpty, InputUserSelf)
 
 from .utils import find_user_or_chat, get_extension
@@ -595,45 +595,57 @@ class TelegramClient(TelegramBareClient):
         )
         return True
 
-    def download_msg_media(self,
-                           message_media,
-                           file,
-                           add_extension=True,
-                           progress_callback=None):
-        """Downloads the given MessageMedia (Photo, Document or Contact)
-           into the desired file (a stream or str), optionally finding its
-           extension automatically.
-
-           The progress_callback should be a callback function which takes
-           two parameters, uploaded size and total file size (both in bytes).
-           This will be called every time a part is downloaded
-        """
-        # TODO Support specifying a message
-        if type(message_media) == MessageMediaPhoto:
-            return self.download_photo(message_media, file, add_extension,
-                                       progress_callback)
-
-        elif type(message_media) == MessageMediaDocument:
-            return self.download_document(message_media, file,
-                                          add_extension, progress_callback)
-
-        elif type(message_media) == MessageMediaContact:
-            return self.download_contact(message_media, file,
-                                         add_extension)
-
-    # TODO Make these private and only expose download_msg_media?
-    def download_photo(self,
-                       message_media_photo,
+    def download_media(self,
+                       message,
                        file,
-                       add_extension=False,
+                       add_extension=True,
                        progress_callback=None):
-        """Downloads MessageMediaPhoto's largest size into the desired file
-           (a stream or str), optionally finding its extension automatically.
+        """Downloads the media from a specified Message (it can also be
+           the message.media) into the desired file (a stream or str),
+           optionally finding its extension automatically.
+
+           The file may be an existing directory, or a full filename.
+
+           If the operation succeeds, the path will be returned (since
+           the extension may have been added automatically). Otherwise,
+           None is returned.
 
            The progress_callback should be a callback function which takes
            two parameters, uploaded size and total file size (both in bytes).
            This will be called every time a part is downloaded
         """
+        # TODO This won't work for messageService
+        if isinstance(message, Message):
+            message = message.media
+            date = message.date
+        else:
+            date = datetime.now()
+
+        if isinstance(message, MessageMediaPhoto):
+            if isinstance(file, str) and (os.path.isdir(file) or not file):
+                file = os.path.join(file, 'photo_{}'.format(date))
+
+            return self._download_photo(
+                message, file, add_extension, progress_callback
+            )
+
+        elif isinstance(message, MessageMediaDocument):
+            # Pass the date if a better filename cannot be inferred
+            return self._download_document(
+                message, file, add_extension, date, progress_callback
+            )
+
+        elif isinstance(message, MessageMediaContact):
+            return self._download_contact(
+                message, file, add_extension
+            )
+
+    def _download_photo(self,
+                        message_media_photo,
+                        file,
+                        add_extension=False,
+                        progress_callback=None):
+        """Specialized version of .download_media() for photos"""
 
         # Determine the photo and its largest size
         photo = message_media_photo.photo
@@ -657,36 +669,24 @@ class TelegramClient(TelegramBareClient):
         )
         return file
 
-    def download_document(self,
-                          message_media_document,
-                          file=None,
-                          add_extension=True,
-                          progress_callback=None):
-        """Downloads the given MessageMediaDocument into the desired file
-           (a stream or str), optionally finding its extension automatically.
-
-           If no file_path is given it will try to be guessed from the document.
-
-           The progress_callback should be a callback function which takes
-           two parameters, uploaded size and total file size (both in bytes).
-           This will be called every time a part is downloaded
-        """
+    def _download_document(self, message_media_document, file,
+                           add_extension, date, progress_callback):
+        """Specialized version of .download_media() for documents"""
         document = message_media_document.document
         file_size = document.size
 
-        # If no file path was given, try to guess it from the attributes
-        if file is None:
+        if os.path.isdir(file) or not file:
             for attr in document.attributes:
                 if type(attr) == DocumentAttributeFilename:
-                    file = attr.file_name
+                    file = os.path.join(file, attr.file_name)
                     break  # This attribute has higher preference
 
                 elif type(attr) == DocumentAttributeAudio:
-                    file = '{} - {}'.format(attr.performer, attr.title)
+                    file = os.path.join(
+                        file, '{} - {}'.format(attr.performer, attr.title)
+                    )
 
-            if file is None:
-                raise ValueError('Could not infer a file_path for the document'
-                                 '. Please provide a valid file_path manually')
+            file = os.path.join(file, 'document_{}'.format(date))
 
         if isinstance(file, str) and add_extension:
             file += get_extension(message_media_document)
@@ -704,14 +704,18 @@ class TelegramClient(TelegramBareClient):
         return file
 
     @staticmethod
-    def download_contact(message_media_contact, file, add_extension=True):
-        """Downloads a media contact using the vCard 4.0 format"""
-
+    def _download_contact(message_media_contact, file, add_extension=True):
+        """Specialized version of .download_media() for contacts.
+           Will make use of the vCard 4.0 format
+        """
         first_name = message_media_contact.first_name
         last_name = message_media_contact.last_name
         phone_number = message_media_contact.phone_number
 
         if isinstance(file, str):
+            if not file:
+                file = phone_number
+
             # The only way we can save a contact in an understandable
             # way by phones is by using the .vCard format
             if add_extension:
