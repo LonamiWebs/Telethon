@@ -42,7 +42,7 @@ In order to use Telethon, you first need to obtain your very own API ID and Hash
 2. Click under *API Development tools*.
 3. A *Create new application* window will appear. Fill in your application details.
    There is no need to enter any *URL*, and only the first two fields (*App title* and *Short name*)
-   can be changed later as long as I'm aware.
+   can be changed later as far as I'm aware.
 4. Click on *Create application* at the end.
 
 Now that you know your ``API ID`` and ``Hash``, you can continue installing Telethon.
