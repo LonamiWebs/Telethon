@@ -479,7 +479,7 @@ class TelegramClient(TelegramBareClient):
     # region Uploading files
 
     def send_file(self, entity, file, caption='',
-                  force_document=False, callback=None):
+                  force_document=False, progress_callback=None):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
 
@@ -511,8 +511,9 @@ class TelegramClient(TelegramBareClient):
         if file_hash in self._upload_cache:
             file_handle = self._upload_cache[file_hash]
         else:
-            file_handle = self.upload_file(file, progress_callback=callback)
-            self._upload_cache[file_hash] = file_handle
+            self._upload_cache[file_hash] = file_handle = self.upload_file(
+                file, progress_callback=progress_callback
+            )
 
         if as_photo and not force_document:
             media = InputMediaUploadedPhoto(file_handle, caption)
