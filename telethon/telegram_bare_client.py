@@ -315,6 +315,10 @@ class TelegramBareClient:
         """Uploads the specified file_path and returns a handle (an instance
            of InputFile or InputFileBig, as required) which can be later used.
 
+           Uploading a file will simply return a "handle" to the file stored
+           remotely in the Telegram servers, which can be later used on. This
+           will NOT upload the file to your own chat.
+
            If 'progress_callback' is not None, it should be a function that
            takes two parameters, (bytes_uploaded, total_bytes).
 
@@ -322,6 +326,7 @@ class TelegramBareClient:
              part_size_kb = get_appropriated_part_size(file_size)
              file_name    = path.basename(file_path)
         """
+        # TODO Support both streams and bytes instead just "file_path"
         file_size = path.getsize(file_path)
         if not part_size_kb:
             part_size_kb = get_appropriated_part_size(file_size)

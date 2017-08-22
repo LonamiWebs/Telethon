@@ -1,4 +1,4 @@
-import errno
+import os
 from datetime import timedelta
 from mimetypes import guess_type
 from threading import Event, RLock, Thread
@@ -125,6 +125,9 @@ class TelegramClient(TelegramBareClient):
 
         self._updates_thread = None
         self._phone_code_hashes = {}
+
+        # Uploaded files cache so subsequent calls are instant
+        self._upload_cache = {}
 
     # endregion
 
@@ -475,52 +478,85 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
-    def send_photo_file(self, input_file, entity, caption=''):
-        """Sends a previously uploaded input_file
-           (which should be a photo) to the given entity (or input peer)"""
-        self.send_media_file(
-            InputMediaUploadedPhoto(input_file, caption), entity)
+    def send_file(self, entity, file, caption='',
+                  force_document=False, callback=None):
+        """Sends a file to the specified entity.
+           The file may either be a path, a byte array, or a stream.
 
-    def send_document_file(self, input_file, entity, caption=''):
-        """Sends a previously uploaded input_file
-           (which should be a document) to the given entity.
+           An optional caption can also be specified for said file.
+
+           If "force_document" is False, the file will be sent as a photo
+           if it's recognised to have a common image format (e.g. .png, .jpg).
+
+           Otherwise, the file will always be sent as an uncompressed document.
+
+           Subsequent calls with the very same file will result in
+           immediate uploads, unless .clear_file_cache() is called.
+
+           If "progress_callback" is not None, it should be a function that
+           takes two parameters, (bytes_uploaded, total_bytes).
 
            The entity may be a phone or an username at the expense of
            some performance loss.
         """
+        as_photo = False
+        if isinstance(file, str):
+            lowercase_file = file.lower()
+            as_photo = any(
+                lowercase_file.endswith(ext)
+                for ext in ('.png', '.jpg', '.gif', '.jpeg')
+            )
 
-        # Determine mime-type and attributes
-        # Take the first element by using [0] since it returns a tuple
-        mime_type = guess_type(input_file.name)[0]
-        attributes = [
-            DocumentAttributeFilename(input_file.name)
-            # TODO If the input file is an audio, find out:
-            # Performer and song title and add DocumentAttributeAudio
-        ]
-        # Ensure we have a mime type, any; but it cannot be None
-        # 'The "octet-stream" subtype is used to indicate that a body
-        # contains arbitrary binary data.'
-        if not mime_type:
-            mime_type = 'application/octet-stream'
-        self.send_media_file(
-            InputMediaUploadedDocument(
-                file=input_file,
+        file_hash = hash(file)
+        if file_hash in self._upload_cache:
+            file_handle = self._upload_cache[file_hash]
+        else:
+            file_handle = self.upload_file(file, progress_callback=callback)
+            self._upload_cache[file_hash] = file_handle
+
+        if as_photo and not force_document:
+            media = InputMediaUploadedPhoto(file_handle, caption)
+        else:
+            mime_type = None
+            if isinstance(file, str):
+                # Determine mime-type and attributes
+                # Take the first element by using [0] since it returns a tuple
+                mime_type = guess_type(file)[0]
+                attributes = [
+                    DocumentAttributeFilename(os.path.abspath(file))
+                    # TODO If the input file is an audio, find out:
+                    # Performer and song title and add DocumentAttributeAudio
+                ]
+            else:
+                attributes = [DocumentAttributeFilename('unnamed')]
+
+            # Ensure we have a mime type, any; but it cannot be None
+            # 'The "octet-stream" subtype is used to indicate that a body
+            # contains arbitrary binary data.'
+            if not mime_type:
+                mime_type = 'application/octet-stream'
+
+            media = InputMediaUploadedDocument(
+                file=file_handle,
                 mime_type=mime_type,
                 attributes=attributes,
-                caption=caption),
-            entity)
+                caption=caption
+            )
 
-    def send_media_file(self, input_media, entity):
-        """Sends any input_media (contact, document, photo...)
-           to the given entity.
-
-           The entity may be a phone or an username at the expense of
-           some performance loss.
-        """
+        # Once the media type is properly specified and the file uploaded,
+        # send the media message to the desired entity.
         self(SendMediaRequest(
             peer=self._get_entity(entity),
-            media=input_media
+            media=media
         ))
+
+    def clear_file_cache(self):
+        """Calls to .send_file() will cache the remote location of the
+           uploaded files so that subsequent files can be immediate, so
+           uploading the same file path will result in using the cached
+           version. To avoid this a call to this method should be made.
+        """
+        self._upload_cache.clear()
 
     # endregion
 
@@ -723,6 +759,9 @@ class TelegramClient(TelegramBareClient):
            If the entity is neither, and it's not a TLObject, an
            error will be raised.
         """
+        # TODO Maybe cache both the contacts and the entities.
+        # If an user cannot be found, force a cache update through
+        # a public method (since users may change their username)
         if isinstance(entity, TLObject):
             return entity
 
