@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from io import BytesIO, BufferedWriter
 from threading import Event, Lock
+import errno
 
 from ..errors import ReadCancelledError
 
@@ -43,8 +44,13 @@ class TcpClient:
     def close(self):
         """Closes the connection"""
         if self.connected:
-            self._socket.shutdown(socket.SHUT_RDWR)
-            self._socket.close()
+            try:
+                self._socket.shutdown(socket.SHUT_RDWR)
+                self._socket.close()
+            except OSError as e:
+                if e.errno != errno.ENOTCONN:
+                    raise
+
             self.connected = False
             self._recreate_socket()
 
@@ -53,18 +59,22 @@ class TcpClient:
 
         # Ensure that only one thread can send data at once
         with self._lock:
-            view = memoryview(data)
-            total_sent, total = 0, len(data)
-            while total_sent < total:
-                try:
-                    sent = self._socket.send(view[total_sent:])
-                    if sent == 0:
-                        raise ConnectionResetError(
-                            'The server has closed the connection.')
-                    total_sent += sent
+            try:
+                view = memoryview(data)
+                total_sent, total = 0, len(data)
+                while total_sent < total:
+                    try:
+                        sent = self._socket.send(view[total_sent:])
+                        if sent == 0:
+                            raise ConnectionResetError(
+                                'The server has closed the connection.')
+                        total_sent += sent
 
-                except BlockingIOError:
-                    time.sleep(self.delay)
+                    except BlockingIOError:
+                        time.sleep(self.delay)
+            except BrokenPipeError:
+                self.close()
+                raise
 
     def read(self, size, timeout=timedelta(seconds=5)):
         """Reads (receives) a whole block of 'size bytes
@@ -96,7 +106,7 @@ class TcpClient:
                     try:
                         partial = self._socket.recv(bytes_left)
                         if len(partial) == 0:
-                            self.connected = False
+                            self.close()
                             raise ConnectionResetError(
                                 'The server has closed the connection.')
 

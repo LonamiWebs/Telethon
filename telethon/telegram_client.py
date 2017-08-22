@@ -321,13 +321,9 @@ class TelegramClient(TelegramBareClient):
 
         try:
             self(LogOutRequest())
+            # The server may have already disconnected us, we still
+            # try to disconnect to make sure.
             self.disconnect()
-        except OSError as e:
-            # macOS issue: https://github.com/veusz/veusz/issues/54
-            # Socket has been already closed (Errno 57)
-            # Fail on any other error
-            if e.errno != errno.ENOTCONN:
-                raise
         except (RPCError, ConnectionError):
             # Something happened when logging out, restore the state back
             self._sender.logging_out = False
