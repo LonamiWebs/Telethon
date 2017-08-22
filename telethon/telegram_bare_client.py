@@ -4,6 +4,8 @@ from hashlib import md5
 from os import path
 
 # Import some externalized utilities to work with the Telegram types and more
+from telethon.tl.functions import PingRequest
+
 from . import helpers as utils
 from .errors import (
     RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
@@ -92,10 +94,14 @@ class TelegramBareClient:
            determine the authorization key for the current session.
         """
         if self._sender and self._sender.is_connected():
-            self._logger.debug(
-                'Attempted to connect when the client was already connected.'
-            )
-            return
+            # Try sending a ping to make sure we're connected already
+            # TODO Maybe there's a better way to check this
+            try:
+                self(PingRequest(utils.generate_random_long()))
+                return True
+            except:
+                # If ping failed, ensure we're disconnected first
+                self.disconnect()
 
         transport = TcpTransport(self.session.server_address,
                                  self.session.port,
@@ -146,7 +152,7 @@ class TelegramBareClient:
             # This is fine, probably layer migration
             self._logger.debug('Found invalid item, probably migrating', e)
             self.disconnect()
-            self.connect(exported_auth=exported_auth)
+            return self.connect(exported_auth=exported_auth)
 
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
