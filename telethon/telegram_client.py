@@ -663,8 +663,8 @@ class TelegramClient(TelegramBareClient):
         """
         # TODO This won't work for messageService
         if isinstance(message, Message):
-            message = message.media
             date = message.date
+            message = message.media
         else:
             date = datetime.now()
 
