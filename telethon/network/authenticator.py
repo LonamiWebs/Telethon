@@ -3,7 +3,8 @@ import time
 from hashlib import sha1
 
 from .. import helpers as utils
-from ..crypto import AES, RSA, AuthKey, Factorization
+from ..crypto import AES, AuthKey, Factorization
+from ..crypto import rsa
 from ..network import MtProtoPlainSender
 from ..extensions import BinaryReader, BinaryWriter
 
@@ -56,22 +57,20 @@ def do_authentication(transport):
     with BinaryWriter() as pq_inner_data_writer:
         pq_inner_data_writer.write_int(
             0x83c95aec, signed=False)  # PQ Inner Data
-        pq_inner_data_writer.tgwrite_bytes(get_byte_array(pq, signed=False))
-        pq_inner_data_writer.tgwrite_bytes(
-            get_byte_array(
-                min(p, q), signed=False))
-        pq_inner_data_writer.tgwrite_bytes(
-            get_byte_array(
-                max(p, q), signed=False))
+        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(pq))
+        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(min(p, q)))
+        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(max(p, q)))
         pq_inner_data_writer.write(nonce)
         pq_inner_data_writer.write(server_nonce)
         pq_inner_data_writer.write(new_nonce)
 
+        # sha_digest + data + random_bytes
         cipher_text, target_fingerprint = None, None
         for fingerprint in fingerprints:
-            cipher_text = RSA.encrypt(
-                get_fingerprint_text(fingerprint),
-                pq_inner_data_writer.get_bytes())
+            cipher_text = rsa.encrypt(
+                fingerprint,
+                pq_inner_data_writer.get_bytes()
+            )
 
             if cipher_text is not None:
                 target_fingerprint = fingerprint
@@ -80,20 +79,16 @@ def do_authentication(transport):
         if cipher_text is None:
             raise AssertionError(
                 'Could not find a valid key for fingerprints: {}'
-                .format(', '.join([get_fingerprint_text(f)
-                                   for f in fingerprints])))
+                .format(', '.join([repr(f) for f in fingerprints]))
+            )
 
         with BinaryWriter() as req_dh_params_writer:
             req_dh_params_writer.write_int(
                 0xd712e4be, signed=False)  # Req DH Params
             req_dh_params_writer.write(nonce)
             req_dh_params_writer.write(server_nonce)
-            req_dh_params_writer.tgwrite_bytes(
-                get_byte_array(
-                    min(p, q), signed=False))
-            req_dh_params_writer.tgwrite_bytes(
-                get_byte_array(
-                    max(p, q), signed=False))
+            req_dh_params_writer.tgwrite_bytes(rsa.get_byte_array(min(p, q)))
+            req_dh_params_writer.tgwrite_bytes(rsa.get_byte_array(max(p, q)))
             req_dh_params_writer.write(target_fingerprint)
             req_dh_params_writer.tgwrite_bytes(cipher_text)
 
@@ -159,9 +154,7 @@ def do_authentication(transport):
         client_dh_inner_data_writer.write(nonce)
         client_dh_inner_data_writer.write(server_nonce)
         client_dh_inner_data_writer.write_long(0)  # TODO retry_id
-        client_dh_inner_data_writer.tgwrite_bytes(
-            get_byte_array(
-                gb, signed=False))
+        client_dh_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(gb))
 
         with BinaryWriter() as client_dh_inner_data_with_hash_writer:
             client_dh_inner_data_with_hash_writer.write(
@@ -204,7 +197,7 @@ def do_authentication(transport):
                 raise NotImplementedError('Invalid server nonce from server')
 
             new_nonce_hash1 = reader.read(16)
-            auth_key = AuthKey(get_byte_array(gab, signed=False))
+            auth_key = AuthKey(rsa.get_byte_array(gab))
 
             new_nonce_hash_calculated = auth_key.calc_new_nonce_hash(new_nonce,
                                                                      1)
@@ -221,23 +214,6 @@ def do_authentication(transport):
 
         else:
             raise AssertionError('DH Gen unknown: {}'.format(hex(code)))
-
-
-def get_fingerprint_text(fingerprint):
-    """Gets a fingerprint text in 01-23-45-67-89-AB-CD-EF format (no hyphens)"""
-    return ''.join(hex(b)[2:].rjust(2, '0').upper() for b in fingerprint)
-
-
-# The following methods operate in big endian (unlike most of Telegram API) because:
-# > "...pq is a representation of a natural number (in binary *big endian* format)..."
-# > "...current value of dh_prime equals (in *big-endian* byte order)..."
-# Reference: https://core.telegram.org/mtproto/auth_key
-def get_byte_array(integer, signed):
-    """Gets the arbitrary-length byte array corresponding to the given integer"""
-    bits = integer.bit_length()
-    byte_length = (bits + 8 - 1) // 8  # 8 bits per byte
-    return int.to_bytes(
-        integer, length=byte_length, byteorder='big', signed=signed)
 
 
 def get_int(byte_array, signed=True):
