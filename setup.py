@@ -94,5 +94,5 @@ if __name__ == '__main__':
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
                 'try_telethon.py'
             ]),
-            install_requires=['pyaes', 'pycrypto']
+            install_requires=['pyaes', 'rsa']
         )

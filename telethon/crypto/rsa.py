@@ -1,9 +1,10 @@
 import os
 from hashlib import sha1
 try:
-    from Crypto.PublicKey import RSA
+    import rsa
+    import rsa.core
 except ImportError:
-    raise ImportError('Missing module "pycrypto", please install via pip.')
+    raise ImportError('Missing module "rsa", please install via pip.')
 
 from ..extensions import BinaryWriter
 
@@ -42,7 +43,7 @@ def _compute_fingerprint(key):
 def add_key(pub):
     """Adds a new public key to be used when encrypting new data is needed"""
     global _server_keys
-    key = RSA.importKey(pub)
+    key = rsa.PublicKey.load_pkcs1(pub)
     _server_keys[_compute_fingerprint(key)] = key
 
 
@@ -57,7 +58,14 @@ def encrypt(fingerprint, data):
 
     # len(sha1.digest) is always 20, so we're left with 255 - 20 - x padding
     to_encrypt = sha1(data).digest() + data + os.urandom(235 - len(data))
-    return key.encrypt(to_encrypt, 0)[0]
+
+    # rsa module rsa.encrypt adds 11 bits for padding which we don't want
+    # rsa module uses rsa.transform.bytes2int(to_encrypt), easier way:
+    payload = int.from_bytes(to_encrypt, 'big')
+    encrypted = rsa.core.encrypt_int(payload, key.e, key.n)
+    # rsa module uses transform.int2bytes(encrypted, keylength), easier:
+    block = encrypted.to_bytes(256, 'big')
+    return block
 
 
 # Add default keys
