@@ -47,8 +47,8 @@ class TLObject:
                         k, TLObject.pretty_format(v)
                     ) for k, v in obj.items()
                 ))
-            elif isinstance(obj, str):
-                return '"{}"'.format(obj)
+            elif isinstance(obj, str) or isinstance(obj, bytes):
+                return repr(obj)
             elif hasattr(obj, '__iter__'):
                 return '[{}]'.format(
                     ', '.join(TLObject.pretty_format(x) for x in obj)
