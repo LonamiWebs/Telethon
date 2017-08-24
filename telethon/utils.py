@@ -9,7 +9,8 @@ from .tl.types import (
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
     MessageMediaDocument, MessageMediaPhoto, PeerChannel, InputChannel,
     UserEmpty, InputUser, InputUserEmpty, InputUserSelf, InputPeerSelf,
-    PeerChat, PeerUser, User, UserFull, UserProfilePhoto)
+    PeerChat, PeerUser, User, UserFull, UserProfilePhoto, Document
+)
 
 
 def get_display_name(entity):
@@ -42,12 +43,17 @@ def get_extension(media):
             isinstance(media, MessageMediaPhoto)):
         return '.jpg'
 
-    # Documents will come with a mime type, from which we can guess their mime type
+    # Documents will come with a mime type
     if isinstance(media, MessageMediaDocument):
-        extension = guess_extension(media.document.mime_type)
-        return extension if extension else ''
+        if isinstance(media.document, Document):
+            if media.document.mime_type == 'application/octet-stream':
+                # Octet stream are just bytes, which have no default extension
+                return ''
+            else:
+                extension = guess_extension(media.document.mime_type)
+                return extension if extension else ''
 
-    return None
+    return ''
 
 
 def get_input_peer(entity):

@@ -563,22 +563,24 @@ class TelegramClient(TelegramBareClient):
 
     # region Downloading media requests
 
-    def download_profile_photo(self,
-                               entity,
-                               file_path='',
-                               add_extension=True,
-                               download_big=True):
+    def download_profile_photo(self, entity, file=None, download_big=True):
         """Downloads the profile photo for an user or a chat (channels too).
            Returns None if no photo was provided, or if it was Empty.
 
            If an entity itself (an user, chat or channel) is given, the photo
            to be downloaded will be downloaded automatically.
 
-           On success, the file path is returned since it may differ.
+           On success, the file path is returned since it may differ from
+           the one provided.
+
+           The specified output file can either be a file path, a directory,
+           or a stream-like object. If the path exists and is a file, it will
+           be overwritten.
 
            The entity may be a phone or an username at the expense of
            some performance loss.
         """
+        possible_names = []
         if not isinstance(entity, TLObject) or type(entity).subclass_of_id in (
                     0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
             ):
@@ -593,26 +595,15 @@ class TelegramClient(TelegramBareClient):
                 # This is different from a normal UserProfilePhoto and Chat
                 if hasattr(entity, 'chat_photo'):
                     return self._download_photo(
-                        entity.chat_photo, file_path,
-                        add_extension=add_extension
+                        entity.chat_photo, file,
+                        date=None, progress_callback=None
                     )
                 else:
                     # Give up
                     return None
 
-            was_dir = None
-            if os.path.isdir(file_path):
-                was_dir = file_path
-                file_path = ''  # File path needs to be empty to infer it
-
-            if not file_path:
-                for attr in ('username', 'first_name', 'title'):
-                    file_path = getattr(entity, attr, '')
-                    if file_path:
-                        break
-
-            if was_dir:
-                file_path = os.path.join(was_dir, file_path)
+            for attr in ('username', 'first_name', 'title'):
+                possible_names.append(getattr(entity, attr, None))
 
             entity = entity.photo
 
@@ -620,16 +611,15 @@ class TelegramClient(TelegramBareClient):
                 not isinstance(entity, ChatPhoto):
             return None
 
-        if os.path.isdir(file_path) or not file_path:
-            file_path = 'profile_photo_{}'.format(datetime.now())
-
-        if add_extension:
-            file_path += get_extension(entity)
-
         if download_big:
             photo_location = entity.photo_big
         else:
             photo_location = entity.photo_small
+
+        file = self._get_proper_filename(
+            file, 'profile_photo', '.jpg',
+            possible_names=possible_names
+        )
 
         # Download the media with the largest size input file location
         self.download_file(
@@ -638,20 +628,18 @@ class TelegramClient(TelegramBareClient):
                 local_id=photo_location.local_id,
                 secret=photo_location.secret
             ),
-            file_path
+            file
         )
-        return file_path
+        return file
 
-    def download_media(self,
-                       message,
-                       file,
-                       add_extension=True,
-                       progress_callback=None):
+    def download_media(self, message, file=None, progress_callback=None):
         """Downloads the media from a specified Message (it can also be
            the message.media) into the desired file (a stream or str),
            optionally finding its extension automatically.
 
-           The file may be an existing directory, or a full filename.
+           The specified output file can either be a file path, a directory,
+           or a stream-like object. If the path exists and is a file, it will
+           be overwritten.
 
            If the operation succeeds, the path will be returned (since
            the extension may have been added automatically). Otherwise,
@@ -664,44 +652,34 @@ class TelegramClient(TelegramBareClient):
         # TODO This won't work for messageService
         if isinstance(message, Message):
             date = message.date
-            message = message.media
+            media = message.media
         else:
             date = datetime.now()
+            media = message
 
-        if isinstance(message, MessageMediaPhoto):
-            if isinstance(file, str) and (os.path.isdir(file) or not file):
-                file = os.path.join(file, 'photo_{}'.format(date))
-
+        if isinstance(media, MessageMediaPhoto):
             return self._download_photo(
-                message, file, add_extension, progress_callback
+                media, file, date, progress_callback
             )
-
-        elif isinstance(message, MessageMediaDocument):
-            # Pass the date if a better filename cannot be inferred
+        elif isinstance(media, MessageMediaDocument):
             return self._download_document(
-                message, file, add_extension, date, progress_callback
+                media, file, date, progress_callback
             )
-
-        elif isinstance(message, MessageMediaContact):
+        elif isinstance(media, MessageMediaContact):
             return self._download_contact(
-                message, file, add_extension
+                media, file
             )
 
-    def _download_photo(self,
-                        message_media_photo,
-                        file,
-                        add_extension=False,
-                        progress_callback=None):
+    def _download_photo(self, mm_photo, file, date, progress_callback):
         """Specialized version of .download_media() for photos"""
 
         # Determine the photo and its largest size
-        photo = message_media_photo.photo
+        photo = mm_photo.photo
         largest_size = photo.sizes[-1]
         file_size = largest_size.size
         largest_size = largest_size.location
 
-        if isinstance(file, str) and add_extension:
-            file += get_extension(message_media_photo)
+        file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
 
         # Download the media with the largest size input file location
         self.download_file(
@@ -716,27 +694,25 @@ class TelegramClient(TelegramBareClient):
         )
         return file
 
-    def _download_document(self, message_media_document, file,
-                           add_extension, date, progress_callback):
+    def _download_document(self, mm_doc, file, date, progress_callback):
         """Specialized version of .download_media() for documents"""
-        document = message_media_document.document
+        document = mm_doc.document
         file_size = document.size
 
-        if os.path.isdir(file) or not file:
-            for attr in document.attributes:
-                if isinstance(attr, DocumentAttributeFilename):
-                    file = os.path.join(file, attr.file_name)
-                    break  # This attribute has higher preference
+        possible_names = []
+        for attr in document.attributes:
+            if isinstance(attr, DocumentAttributeFilename):
+                possible_names.insert(0, attr.file_name)
 
-                elif isinstance(attr, DocumentAttributeAudio):
-                    file = os.path.join(
-                        file, '{} - {}'.format(attr.performer, attr.title)
-                    )
+            elif isinstance(attr, DocumentAttributeAudio):
+                possible_names.append('{} - {}'.format(
+                    attr.performer, attr.title
+                ))
 
-            file = os.path.join(file, 'document_{}'.format(date))
-
-        if isinstance(file, str) and add_extension:
-            file += get_extension(message_media_document)
+        file = self._get_proper_filename(
+            file, 'document', get_extension(mm_doc),
+            date=date, possible_names=possible_names
+        )
 
         self.download_file(
             InputDocumentFileLocation(
@@ -751,25 +727,19 @@ class TelegramClient(TelegramBareClient):
         return file
 
     @staticmethod
-    def _download_contact(message_media_contact, file, add_extension=True):
+    def _download_contact(mm_contact, file):
         """Specialized version of .download_media() for contacts.
            Will make use of the vCard 4.0 format
         """
-        first_name = message_media_contact.first_name
-        last_name = message_media_contact.last_name
-        phone_number = message_media_contact.phone_number
+        first_name = mm_contact.first_name
+        last_name = mm_contact.last_name
+        phone_number = mm_contact.phone_number
 
         if isinstance(file, str):
-            if not file:
-                file = phone_number
-
-            # The only way we can save a contact in an understandable
-            # way by phones is by using the .vCard format
-            if add_extension:
-                file += '.vcard'
-
-            # Ensure that we'll be able to download the contact
-            utils.ensure_parent_dir_exists(file)
+            file = TelegramClient._get_proper_filename(
+                file, 'contact', '.vcard',
+                possible_names=[first_name, phone_number, last_name]
+            )
             f = open(file, 'w', encoding='utf-8')
         else:
             f = file
@@ -790,6 +760,64 @@ class TelegramClient(TelegramBareClient):
                 f.close()
 
         return file
+
+    @staticmethod
+    def _get_proper_filename(file, kind, extension,
+                             date=None, possible_names=None):
+        """Gets a proper filename for 'file', if this is a path.
+
+           'kind' should be the kind of the output file (photo, document...)
+           'extension' should be the extension to be added to the file if
+                       the filename doesn't have any yet
+           'date' should be when this file was originally sent, if known
+           'possible_names' should be an ordered list of possible names
+
+           If no modification is made to the path, any existing file
+           will be overwritten.
+           If any modification is made to the path, this method will
+           ensure that no existing file will be overwritten.
+        """
+        if file is not None and not isinstance(file, str):
+            # Probably a stream-like object, we cannot set a filename here
+            return file
+
+        if file is None:
+            file = ''
+        elif os.path.isfile(file):
+            # Make no modifications to valid existing paths
+            return file
+
+        if os.path.isdir(file) or not file:
+            try:
+                name = None if possible_names is None else next(
+                    x for x in possible_names if x
+                )
+            except StopIteration:
+                name = None
+
+            if not name:
+                name = '{}_{}-{:02}-{:02}_{:02}-{:02}-{:02}'.format(
+                    kind,
+                    date.year, date.month, date.day,
+                    date.hour, date.minute, date.second,
+                )
+            file = os.path.join(file, name)
+
+        directory, name = os.path.split(file)
+        name, ext = os.path.splitext(name)
+        if not ext:
+            ext = extension
+
+        result = os.path.join(directory, name + ext)
+        if not os.path.isfile(result):
+            return result
+
+        i = 1
+        while True:
+            result = os.path.join(directory, '{} ({}){}'.format(name, i, ext))
+            if not os.path.isfile(result):
+                return result
+            i += 1
 
     # endregion
 
