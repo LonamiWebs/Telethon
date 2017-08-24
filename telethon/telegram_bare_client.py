@@ -458,7 +458,7 @@ class TelegramBareClient:
            takes two parameters, (bytes_downloaded, total_bytes). Note that
            'total_bytes' simply equals 'file_size', and may be None.
         """
-        # TODO Clean up this CDN mess
+        # TODO Clean up the CDN mess below
         if not part_size_kb:
             if not file_size:
                 part_size_kb = 64  # Reasonable default
@@ -466,8 +466,14 @@ class TelegramBareClient:
                 part_size_kb = get_appropriated_part_size(file_size)
 
         part_size = int(part_size_kb * 1024)
-        if part_size % 1024 != 0:
-            raise ValueError('The part size must be evenly divisible by 1024.')
+        # https://core.telegram.org/api/files says:
+        # > part_size % 1024 = 0 (divisible by 1KB)
+        #
+        # But https://core.telegram.org/cdn (more recent) says:
+        # > limit must be divisible by 4096 bytes
+        # So we just stick to the 4096 limit.
+        if part_size % 4096 != 0:
+            raise ValueError('The part size must be evenly divisible by 4096.')
 
         if isinstance(file, str):
             # Ensure that we'll be able to download the media
