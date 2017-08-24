@@ -458,7 +458,6 @@ class TelegramBareClient:
            takes two parameters, (bytes_downloaded, total_bytes). Note that
            'total_bytes' simply equals 'file_size', and may be None.
         """
-        # TODO Clean up the CDN mess below
         if not part_size_kb:
             if not file_size:
                 part_size_kb = 64  # Reasonable default
@@ -487,49 +486,33 @@ class TelegramBareClient:
 
         try:
             offset_index = 0
-            cdn_redirect = None
-            cdn_aes = None
+            cdn_file_token = None
+
+            def encrypt_method(x):
+                return x  # Defaults to no-op
+
             while True:
                 offset = offset_index * part_size
 
                 try:
-                    if cdn_redirect:
+                    if cdn_file_token:
                         result = client(GetCdnFileRequest(
-                            cdn_redirect.file_token, offset, part_size
+                            cdn_file_token, offset, part_size
                         ))
                     else:
                         result = client(GetFileRequest(
                             input_location, offset, part_size
                         ))
 
-                    if isinstance(result, FileCdnRedirect):
-                        # https://core.telegram.org/cdn
-                        cdn_redirect = result
-                        cdn_aes = pyaes.AESModeOfOperationCTR(
-                            result.encryption_key
-                        )
-                        # The returned IV is the counter used on CTR
-                        cdn_aes._counter._counter = list(
-                            result.encryption_iv[:12] +
-                            (offset >> 4).to_bytes(4, 'big')
-                        )
+                        if isinstance(result, FileCdnRedirect):
+                            client, cdn_file_token, encrypt_method, result = \
+                                self._prepare_cdn_redirect(
+                                    result, offset, part_size
+                                )
 
-                        client, cdn_file = self._get_cdn_client(
-                            result.dc_id,
-                            GetCdnFileRequest(
-                                cdn_redirect.file_token, offset, part_size
-                            )
-                        )
-
-                        if isinstance(cdn_file, CdnFileReuploadNeeded):
-                            # We need to use the original client here
-                            self(ReuploadCdnFileRequest(
-                                file_token=cdn_redirect.file_token,
-                                request_token=cdn_file.request_token
-                            ))
-                        # TODO else: we have the first file bytes already,
-                        # avoid a redundant call
-                        continue
+                            if result is None:
+                                # File was not ready on the CDN yet
+                                continue
 
                 except FileMigrateError as e:
                     client = self._get_exported_client(e.new_dc)
@@ -543,16 +526,42 @@ class TelegramBareClient:
                     # Return some extra information, unless it's a cdn file
                     return getattr(result, 'type', '')
 
-                if cdn_redirect:
-                    # We first need to decrypt the result
-                    # TODO Use libssl if available
-                    result.bytes = cdn_aes.encrypt(result.bytes)
-
-                f.write(result.bytes)
+                f.write(encrypt_method(result.bytes))
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
             if isinstance(file, str):
                 f.close()
+
+    def _prepare_cdn_redirect(self, cdn_redirect, offset, part_size):
+        """Returns (client, cdn_file_token, encrypt_method, result)"""
+        # https://core.telegram.org/cdn
+        # TODO Use libssl if available
+        cdn_aes = pyaes.AESModeOfOperationCTR(
+            cdn_redirect.encryption_key
+        )
+        # The returned IV is the counter used on CTR
+        cdn_aes._counter._counter = list(
+            cdn_redirect.encryption_iv[:12] +
+            (offset >> 4).to_bytes(4, 'big')
+        )
+
+        client, cdn_file = self._get_cdn_client(
+            cdn_redirect.dc_id,
+            GetCdnFileRequest(
+                cdn_redirect.file_token, offset, part_size
+            )
+        )
+
+        if isinstance(cdn_file, CdnFileReuploadNeeded):
+            # We need to use the original client here
+            self(ReuploadCdnFileRequest(
+                file_token=cdn_redirect.file_token,
+                request_token=cdn_file.request_token
+            ))
+            return client, cdn_redirect.file_token, cdn_aes.encrypt, None
+        else:
+            # We have the first bytes for the file
+            return client, cdn_redirect.file_token, cdn_aes.encrypt, cdn_file
 
     # endregion

@@ -39,6 +39,10 @@ class HigherLevelTests(unittest.TestCase):
             client.download_media(msg, out)
             assert sha256(data).digest() == sha256(out.getvalue()).digest()
 
+            out = BytesIO()
+            client.download_media(msg, out)  # Won't redirect
+            assert sha256(data).digest() == sha256(out.getvalue()).digest()
+
             client.log_out()
         finally:
             client.disconnect()
