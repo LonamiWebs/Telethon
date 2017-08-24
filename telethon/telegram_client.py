@@ -281,8 +281,11 @@ class TelegramClient(TelegramBareClient):
                     'Please make sure to call send_code_request first.')
 
             try:
+                if isinstance(code, int):
+                    code = str(code)
                 result = self(SignInRequest(
-                    phone_number, self._phone_code_hashes[phone_number], code))
+                    phone_number, self._phone_code_hashes[phone_number], code
+                ))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
