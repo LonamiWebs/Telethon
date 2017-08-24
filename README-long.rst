@@ -67,12 +67,15 @@ upgrade with ``pip install --upgrade telethon``!
 Installing Telethon manually
 ----------------------------
 
-1. Install the required ``pyaes`` module: ``sudo -H pip install pyaes``
+1. Install the required ``pyaes`` and ``rsa`` modules: ``sudo -H pip install pyaes rsa``
    (`GitHub <https://github.com/ricmoo/pyaes>`_, `package index <https://pypi.python.org/pypi/pyaes>`_)
 2. Clone Telethon's GitHub repository: ``git clone https://github.com/LonamiWebs/Telethon.git``
 3. Enter the cloned repository: ``cd Telethon``
 4. Run the code generator: ``python3 setup.py gen_tl``
 5. Done!
+
+To speed up the crypto part of Telethon, you should also install ``sympy`` and
+``libssl`` on your computer. This step is optional.
 
 Running Telethon
 ================
