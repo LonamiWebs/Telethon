@@ -488,6 +488,7 @@ class TelegramBareClient:
         try:
             offset_index = 0
             cdn_redirect = None
+            cdn_aes = None
             while True:
                 offset = offset_index * part_size
 
@@ -504,6 +505,15 @@ class TelegramBareClient:
                     if isinstance(result, FileCdnRedirect):
                         # https://core.telegram.org/cdn
                         cdn_redirect = result
+                        cdn_aes = pyaes.AESModeOfOperationCTR(
+                            result.encryption_key
+                        )
+                        # The returned IV is the counter used on CTR
+                        cdn_aes._counter._counter = list(
+                            result.encryption_iv[:12] +
+                            (offset >> 4).to_bytes(4, 'big')
+                        )
+
                         client, cdn_file = self._get_cdn_client(
                             result.dc_id,
                             GetCdnFileRequest(
@@ -535,8 +545,8 @@ class TelegramBareClient:
 
                 if cdn_redirect:
                     # We first need to decrypt the result
-                    # TODO Decrypt the file, and use libssl if available
-                    pass
+                    # TODO Use libssl if available
+                    result.bytes = cdn_aes.encrypt(result.bytes)
 
                 f.write(result.bytes)
                 if progress_callback:
