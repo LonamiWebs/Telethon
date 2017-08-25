@@ -344,8 +344,15 @@ class MtProtoSender:
             request = None
 
         if inner_code == 0x2144ca19:  # RPC Error
-            error = rpc_message_to_error(
-                reader.read_int(), reader.tgread_string())
+            if self.session.report_errors and request:
+                error = rpc_message_to_error(
+                    reader.read_int(), reader.tgread_string(),
+                    report_method=type(request).constructor_id
+                )
+            else:
+                error = rpc_message_to_error(
+                    reader.read_int(), reader.tgread_string()
+                )
 
             # Acknowledge that we received the error
             self._need_confirmation.append(request_id)

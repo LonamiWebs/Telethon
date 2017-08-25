@@ -109,6 +109,7 @@ class JsonSession:
             self.lang_code = session.lang_code
             self.system_lang_code = session.system_lang_code
             self.lang_pack = session.lang_pack
+            self.report_errors = session.report_errors
 
         else:  # str / None
             self.session_user_id = session_user_id
@@ -120,6 +121,7 @@ class JsonSession:
             self.lang_code = 'en'
             self.system_lang_code = self.lang_code
             self.lang_pack = ''
+            self.report_errors = True
 
         # Cross-thread safety
         self._lock = Lock()

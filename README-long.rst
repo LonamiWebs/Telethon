@@ -263,3 +263,17 @@ Once this is done, pass the proxy settings to the ``TelegramClient`` constructor
 
 The ``proxy=`` argument should be a tuple, a list or a dict, consisting of parameters described
 `here <https://github.com/Anorov/PySocks#usage-1>`_.
+
+API status
+----------
+
+In an attempt to help everyone who works with the Telegram API, Telethon
+will by default report all Remote Procedure Call errors to
+`PWRTelegram <https://pwrtelegram.xyz/>`_, a public database anyone
+can query, made by `Daniil <https://github.com/danog>`_. All the information
+sent is a ``GET`` request with the error code, error message and method used.
+
+If you still would like to opt out, simply set
+``client.session.report_errors = False`` to disable this feature. However
+Daniil would really thank you if you helped him (and everyone) by keeping
+it on!
