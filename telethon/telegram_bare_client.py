@@ -10,7 +10,7 @@ from . import helpers as utils
 from .errors import (
     RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
 )
-from .network import authenticator, MtProtoSender, TcpTransport
+from .network import authenticator, MtProtoSender, Connection
 from .utils import get_appropriated_part_size
 from .crypto import rsa, CdnDecrypter
 
@@ -117,19 +117,19 @@ class TelegramBareClient:
                 # If ping failed, ensure we're disconnected first
                 self.disconnect()
 
-        transport = TcpTransport(self.session.server_address,
-                                 self.session.port,
-                                 proxy=self.proxy,
-                                 timeout=self._timeout)
+        connection = Connection(
+            self.session.server_address, self.session.port,
+            proxy=self.proxy, timeout=self._timeout
+        )
 
         try:
             if not self.session.auth_key:
                 self.session.auth_key, self.session.time_offset = \
-                    authenticator.do_authentication(transport)
+                    authenticator.do_authentication(connection)
 
                 self.session.save()
 
-            self._sender = MtProtoSender(transport, self.session)
+            self._sender = MtProtoSender(connection, self.session)
             self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest

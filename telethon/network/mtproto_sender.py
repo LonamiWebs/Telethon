@@ -16,8 +16,8 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 class MtProtoSender:
     """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
 
-    def __init__(self, transport, session):
-        self.transport = transport
+    def __init__(self, connection, session):
+        self.connection = connection
         self.session = session
         self._logger = logging.getLogger(__name__)
 
@@ -33,14 +33,14 @@ class MtProtoSender:
 
     def connect(self):
         """Connects to the server"""
-        self.transport.connect()
+        self.connection.connect()
 
     def is_connected(self):
-        return self.transport.is_connected()
+        return self.connection.is_connected()
 
     def disconnect(self):
         """Disconnects from the server"""
-        self.transport.close()
+        self.connection.close()
 
     # region Send and receive
 
@@ -81,7 +81,7 @@ class MtProtoSender:
            the received data). This also restores the updates thread.
 
            An optional named parameter 'timeout' can be specified if
-           one desires to override 'self.transport.timeout'.
+           one desires to override 'self.connection.timeout'.
 
            If 'request' is None, a single item will be read into
            the 'updates' list (which cannot be None).
@@ -101,7 +101,7 @@ class MtProtoSender:
             while (request and not request.confirm_received) or \
                     (not request and not updates):
                 self._logger.debug('Trying to .receive() the request result...')
-                seq, body = self.transport.receive(**kwargs)
+                body = self.connection.recv(**kwargs)
                 message, remote_msg_id, remote_seq = self._decode_msg(body)
 
                 with BinaryReader(message) as reader:
@@ -126,7 +126,7 @@ class MtProtoSender:
     def cancel_receive(self):
         """Cancels any pending receive operation
            by raising a ReadCancelledError"""
-        self.transport.cancel_receive()
+        self.connection.cancel_receive()
 
     # endregion
 
@@ -159,7 +159,7 @@ class MtProtoSender:
                 self.session.auth_key.key_id, signed=False)
             cipher_writer.write(msg_key)
             cipher_writer.write(cipher_text)
-            self.transport.send(cipher_writer.get_bytes())
+            self.connection.send(cipher_writer.get_bytes())
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""

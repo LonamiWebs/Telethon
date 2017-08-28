@@ -5,7 +5,7 @@ import unittest
 
 import telethon.network.authenticator as authenticator
 from telethon.extensions import TcpClient
-from telethon.network import TcpTransport
+from telethon.network import Connection
 
 
 def run_server_echo_thread(port):
@@ -38,6 +38,6 @@ class NetworkTests(unittest.TestCase):
 
     @staticmethod
     def test_authenticator():
-        transport = TcpTransport('149.154.167.91', 443)
+        transport = Connection('149.154.167.91', 443)
         authenticator.do_authentication(transport)
         transport.close()

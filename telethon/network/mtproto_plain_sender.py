@@ -6,17 +6,17 @@ from ..extensions import BinaryReader, BinaryWriter
 class MtProtoPlainSender:
     """MTProto Mobile Protocol plain sender (https://core.telegram.org/mtproto/description#unencrypted-messages)"""
 
-    def __init__(self, transport):
+    def __init__(self, connection):
         self._sequence = 0
         self._time_offset = 0
         self._last_msg_id = 0
-        self._transport = transport
+        self._connection = connection
 
     def connect(self):
-        self._transport.connect()
+        self._connection.connect()
 
     def disconnect(self):
-        self._transport.close()
+        self._connection.close()
 
     def send(self, data):
         """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""
@@ -27,11 +27,11 @@ class MtProtoPlainSender:
             writer.write(data)
 
             packet = writer.get_bytes()
-            self._transport.send(packet)
+            self._connection.send(packet)
 
     def receive(self):
         """Receives a plain packet, returning the body of the response"""
-        seq, body = self._transport.receive()
+        body = self._connection.recv()
         with BinaryReader(body) as reader:
             reader.read_long()  # auth_key_id
             reader.read_long()  # msg_id

@@ -9,12 +9,12 @@ from ..network import MtProtoPlainSender
 from ..extensions import BinaryReader, BinaryWriter
 
 
-def do_authentication(transport):
+def do_authentication(connection):
     """Executes the authentication process with the Telegram servers.
        If no error is raised, returns both the authorization key and the
        time offset.
     """
-    sender = MtProtoPlainSender(transport)
+    sender = MtProtoPlainSender(connection)
     sender.connect()
 
     # Step 1 sending: PQ Request
