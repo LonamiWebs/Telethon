@@ -2,7 +2,7 @@ from zlib import crc32
 from datetime import timedelta
 
 from ..errors import InvalidChecksumError
-from ..extensions import TcpClient
+from ..extensions import TcpClient, TcpClientObfuscated
 from ..extensions import BinaryWriter
 
 
@@ -11,7 +11,7 @@ class TcpTransport:
                  proxy=None, timeout=timedelta(seconds=5)):
         self.ip = ip_address
         self.port = port
-        self.tcp_client = TcpClient(proxy)
+        self.tcp_client = TcpClientObfuscated(proxy)
         self.timeout = timeout
         self.send_counter = 0
 
@@ -33,14 +33,27 @@ class TcpTransport:
             raise ConnectionError('Client not connected to server.')
 
         with BinaryWriter() as writer:
-            writer.write_int(len(packet) + 12)  # 12 = size_of (integer) * 3
-            writer.write_int(self.send_counter)
-            writer.write(packet)
+            if isinstance(self.tcp_client, TcpClient):
+                # 12 = size_of (integer) * 3
+                writer.write_int(len(packet) + 12)
+                writer.write_int(self.send_counter)
+                writer.write(packet)
 
-            crc = crc32(writer.get_bytes())
-            writer.write_int(crc, signed=False)
+                crc = crc32(writer.get_bytes())
+                writer.write_int(crc, signed=False)
 
-            self.send_counter += 1
+                self.send_counter += 1
+            elif isinstance(self.tcp_client, TcpClientObfuscated):
+                length = len(packet) >> 2
+                if length < 127:
+                    writer.write_byte(length)
+                else:
+                    writer.write_byte(127)
+                    writer.write(int.to_bytes(length, 3, 'little'))
+                writer.write(packet)
+            else:
+                raise ValueError('Unknown client')
+
             self.tcp_client.write(writer.get_bytes())
 
     def receive(self, **kwargs):
@@ -50,29 +63,40 @@ class TcpTransport:
            If a named 'timeout' parameter is present, it will override
            'self.timeout', and this can be a 'timedelta' or 'None'.
          """
-        timeout = kwargs.get('timeout', self.timeout)
+        if isinstance(self.tcp_client, TcpClient):
+            timeout = kwargs.get('timeout', self.timeout)
 
-        # First read everything we need
-        packet_length_bytes = self.tcp_client.read(4, timeout)
-        packet_length = int.from_bytes(packet_length_bytes, byteorder='little')
+            # First read everything we need
+            packet_length_bytes = self.tcp_client.read(4, timeout)
+            packet_length = int.from_bytes(packet_length_bytes, byteorder='little')
 
-        seq_bytes = self.tcp_client.read(4, timeout)
-        seq = int.from_bytes(seq_bytes, byteorder='little')
+            seq_bytes = self.tcp_client.read(4, timeout)
+            seq = int.from_bytes(seq_bytes, byteorder='little')
 
-        body = self.tcp_client.read(packet_length - 12, timeout)
+            body = self.tcp_client.read(packet_length - 12, timeout)
 
-        checksum = int.from_bytes(
-            self.tcp_client.read(4, timeout), byteorder='little', signed=False)
+            checksum = int.from_bytes(
+                self.tcp_client.read(4, timeout), byteorder='little', signed=False)
 
-        # Then perform the checks
-        rv = packet_length_bytes + seq_bytes + body
-        valid_checksum = crc32(rv)
+            # Then perform the checks
+            rv = packet_length_bytes + seq_bytes + body
+            valid_checksum = crc32(rv)
 
-        if checksum != valid_checksum:
-            raise InvalidChecksumError(checksum, valid_checksum)
+            if checksum != valid_checksum:
+                raise InvalidChecksumError(checksum, valid_checksum)
 
-        # If we passed the tests, we can then return a valid TCP message
-        return seq, body
+            # If we passed the tests, we can then return a valid TCP message
+            return seq, body
+        elif isinstance(self.tcp_client, TcpClientObfuscated):
+            packet_length = int.from_bytes(self.tcp_client.read(1), 'little')
+            if packet_length < 127:
+                return 0, self.tcp_client.read(packet_length << 2)
+            else:
+                plb = self.tcp_client.read(3)
+                pl = int.from_bytes(plb + b'\0', 'little') << 2
+                return 0, self.tcp_client.read(pl)
+        else:
+            raise ValueError('Unknown client')
 
     def close(self):
         self.tcp_client.close()
