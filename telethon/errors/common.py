@@ -35,3 +35,11 @@ class InvalidChecksumError(Exception):
 
         self.checksum = checksum
         self.valid_checksum = valid_checksum
+
+
+class CdnFileTamperedError(Exception):
+    def __init__(self):
+        super().__init__(
+            self,
+            'The CDN file has been altered and its download cancelled.'
+        )

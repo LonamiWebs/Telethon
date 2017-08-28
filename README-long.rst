@@ -147,6 +147,7 @@ This class is further specialized into further errors:
 * ``ForbiddenError`` (403), privacy violation error.
 * ``NotFoundError`` (404), make sure you're invoking ``Request``'s!
 * ``FloodError`` (420), the same request was repeated many times. Must wait ``.seconds``.
+* ``CdnFileTamperedError``, if the media you were trying to download has been altered.
 
 Further specialization is also available, for instance, the ``SessionPasswordNeededError``
 when signing in means that a password must be provided to continue.
