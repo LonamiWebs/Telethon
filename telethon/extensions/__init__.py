@@ -7,4 +7,3 @@ strings, bytes, etc.)
 from .binary_writer import BinaryWriter
 from .binary_reader import BinaryReader
 from .tcp_client import TcpClient
-from .tcp_client_obfuscated import TcpClientObfuscated
