@@ -467,11 +467,10 @@ class TelegramBareClient:
 
         # The used client will change if FileMigrateError occurs
         client = self
+        cdn_decrypter = None
 
         try:
             offset_index = 0
-            cdn_decrypter = None
-
             while True:
                 offset = offset_index * part_size
 
@@ -509,6 +508,9 @@ class TelegramBareClient:
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
+            if cdn_decrypter:
+                try: cdn_decrypter.client.disconnect()
+                except: pass
             if isinstance(file, str):
                 f.close()
 
