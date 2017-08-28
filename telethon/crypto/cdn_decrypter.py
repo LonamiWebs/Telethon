@@ -1,9 +1,9 @@
 from hashlib import sha256
-import pyaes
 
 from ..tl import JsonSession
 from ..tl.functions.upload import GetCdnFileRequest, ReuploadCdnFileRequest
 from ..tl.types.upload import CdnFileReuploadNeeded
+from ..crypto import AESModeCTR
 from ..errors import CdnFileTamperedError
 
 
@@ -29,13 +29,9 @@ class CdnDecrypter:
         """
         # TODO Avoid the need for 'client_cls=TelegramBareClient'
         # https://core.telegram.org/cdn
-        # TODO Use libssl if available
-        cdn_aes = pyaes.AESModeOfOperationCTR(cdn_redirect.encryption_key)
-
-        # The returned IV is the counter used on CTR
-        cdn_aes._counter._counter = list(
-            cdn_redirect.encryption_iv[:12] +
-            (offset >> 4).to_bytes(4, 'big')
+        cdn_aes = AESModeCTR(
+            key=cdn_redirect.encryption_key,
+            iv=cdn_redirect.encryption_iv[:12] + (offset >> 4).to_bytes(4, 'big')
         )
 
         # Create a new client on said CDN

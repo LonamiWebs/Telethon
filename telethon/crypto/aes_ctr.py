@@ -12,18 +12,10 @@ class AESModeCTR:
 
         assert isinstance(iv, bytes)
         assert len(iv) == 16
-        self.iv = iv
-        self._aes._counter._counter = list(self.iv)
-
-    def reset(self):
-        pass
+        self._aes._counter._counter = list(iv)
 
     def encrypt(self, data):
-        result = self._aes.encrypt(data)
-        self.reset()
-        return result
+        return self._aes.encrypt(data)
 
     def decrypt(self, data):
-        result = self._aes.decrypt(data)
-        self.reset()
-        return result
+        return self._aes.decrypt(data)
