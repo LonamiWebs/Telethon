@@ -63,10 +63,8 @@ class TelegramClient(TelegramBareClient):
     # region Initialization
 
     def __init__(self, session, api_id, api_hash, proxy=None,
-                 device_model=None, system_version=None,
-                 app_version=None, lang_code=None,
-                 system_lang_code=None,
-                 timeout=timedelta(seconds=5)):
+                 timeout=timedelta(seconds=5),
+                 **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
 
            Session can either be a `str` object (filename for the .session)
@@ -74,12 +72,14 @@ class TelegramClient(TelegramBareClient):
            would probably not work). Pass 'None' for it to be a temporary
            session - remember to '.log_out()'!
 
-           Default values for the optional parameters if left as None are:
+           If more named arguments are provided as **kwargs, they will be
+           used to update the Session instance. Most common settings are:
              device_model     = platform.node()
              system_version   = platform.system()
              app_version      = TelegramClient.__version__
              lang_code        = 'en'
              system_lang_code = lang_code
+             report_errors    = True
         """
         if not api_id or not api_hash:
             raise PermissionError(
@@ -107,20 +107,10 @@ class TelegramClient(TelegramBareClient):
         self.ping_interval = 60  # Seconds
 
         # Used on connection - the user may modify these and reconnect
-        if device_model:
-            self.session.device_model = device_model
-
-        if system_version:
-            self.session.system_version = system_version
-
-        self.session.app_version = \
-            app_version if app_version else self.__version__
-
-        if lang_code:
-            self.session.lang_code = lang_code
-
-        self.session.system_lang_code = \
-            system_lang_code if system_lang_code else self.session.lang_code
+        kwargs['app_version'] = kwargs.get('app_version', self.__version__)
+        for name, value in kwargs.items():
+            if hasattr(self.session, name):
+                setattr(self.session, name, value)
 
         self._updates_thread = None
         self._phone_code_hashes = {}
