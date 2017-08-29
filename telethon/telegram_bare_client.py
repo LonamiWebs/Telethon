@@ -230,7 +230,7 @@ class TelegramBareClient:
 
     # region Working with different Data Centers
 
-    def _get_dc(self, dc_id, ipv6=True, cdn=False):
+    def _get_dc(self, dc_id, ipv6=False, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if not self.dc_options:
             raise ConnectionError(
