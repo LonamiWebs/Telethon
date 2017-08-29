@@ -20,7 +20,7 @@ class MtProtoPlainSender:
 
     def send(self, data):
         """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""
-        with BinaryWriter() as writer:
+        with BinaryWriter(known_length=len(data) + 20) as writer:
             writer.write_long(0)
             writer.write_long(self._get_new_msg_id())
             writer.write_int(len(data))

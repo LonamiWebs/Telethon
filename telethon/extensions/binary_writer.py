@@ -1,4 +1,4 @@
-from io import BufferedWriter, BytesIO
+from io import BufferedWriter, BytesIO, DEFAULT_BUFFER_SIZE
 from struct import pack
 
 
@@ -8,11 +8,16 @@ class BinaryWriter:
     Also creates a "Memory Stream" if necessary
     """
 
-    def __init__(self, stream=None):
+    def __init__(self, stream=None, known_length=None):
         if not stream:
             stream = BytesIO()
 
-        self.writer = BufferedWriter(stream)
+        if known_length is None:
+            # On some systems, DEFAULT_BUFFER_SIZE defaults to 8192
+            # That's over 16 times as big as necessary for most messages
+            known_length = max(DEFAULT_BUFFER_SIZE, 1024)
+
+        self.writer = BufferedWriter(stream, buffer_size=known_length)
         self.written_count = 0
 
     # region Writing

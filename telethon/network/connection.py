@@ -151,8 +151,9 @@ class Connection:
     def _send_tcp_full(self, message):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
-        with BinaryWriter() as writer:
-            writer.write_int(len(message) + 12)
+        length = len(message) + 12
+        with BinaryWriter(known_length=length) as writer:
+            writer.write_int(length)
             writer.write_int(self._send_counter)
             writer.write(message)
             writer.write_int(crc32(writer.get_bytes()), signed=False)
@@ -160,13 +161,13 @@ class Connection:
             self.write(writer.get_bytes())
 
     def _send_intermediate(self, message):
-        with BinaryWriter() as writer:
+        with BinaryWriter(known_length=len(message) + 4) as writer:
             writer.write_int(len(message))
             writer.write(message)
             self.write(writer.get_bytes())
 
     def _send_abridged(self, message):
-        with BinaryWriter() as writer:
+        with BinaryWriter(known_length=len(message) + 4) as writer:
             length = len(message) >> 2
             if length < 127:
                 writer.write_byte(length)

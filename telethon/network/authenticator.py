@@ -19,7 +19,7 @@ def do_authentication(connection):
 
     # Step 1 sending: PQ Request
     nonce = os.urandom(16)
-    with BinaryWriter() as writer:
+    with BinaryWriter(known_length=20) as writer:
         writer.write_int(0x60469778, signed=False)  # Constructor number
         writer.write(nonce)
         sender.send(writer.get_bytes())
