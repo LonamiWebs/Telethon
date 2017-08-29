@@ -11,9 +11,8 @@ from ..errors import ReadCancelledError
 
 class TcpClient:
     def __init__(self, proxy=None):
-        self.connected = False
         self._proxy = proxy
-        self._recreate_socket()
+        self._socket = None
 
         # Support for multi-threading advantages and safety
         self.cancelled = Event()  # Has the read operation been cancelled?
@@ -36,23 +35,27 @@ class TcpClient:
            'timeout' must be given in seconds
         """
         if not self.connected:
+            self._recreate_socket()
             self._socket.settimeout(timeout)
             self._socket.connect((ip, port))
             self._socket.setblocking(False)
-            self.connected = True
+
+    def _get_connected(self):
+        return self._socket is not None
+
+    connected = property(fget=_get_connected)
 
     def close(self):
         """Closes the connection"""
-        if self.connected:
-            try:
+        try:
+            if self.connected:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
-            except OSError as e:
-                if e.errno != errno.ENOTCONN:
-                    raise
-
-            self.connected = False
-            self._recreate_socket()
+        except OSError as e:
+            if e.errno != errno.ENOTCONN:
+                raise
+        finally:
+            self._socket = None
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
@@ -66,6 +69,7 @@ class TcpClient:
                     try:
                         sent = self._socket.send(view[total_sent:])
                         if sent == 0:
+                            self.close()
                             raise ConnectionResetError(
                                 'The server has closed the connection.')
                         total_sent += sent
