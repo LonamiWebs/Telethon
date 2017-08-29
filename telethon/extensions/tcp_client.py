@@ -19,12 +19,12 @@ class TcpClient:
         self.delay = 0.1  # Read delay when there was no data available
         self._lock = Lock()
 
-    def _recreate_socket(self):
+    def _recreate_socket(self, mode):
         if self._proxy is None:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket = socket.socket(mode, socket.SOCK_STREAM)
         else:
             import socks
-            self._socket = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket = socks.socksocket(mode, socket.SOCK_STREAM)
             if type(self._proxy) is dict:
                 self._socket.set_proxy(**self._proxy)
             else:  # tuple, list, etc.
@@ -35,9 +35,14 @@ class TcpClient:
            'timeout' must be given in seconds
         """
         if not self.connected:
-            self._recreate_socket()
-            self._socket.settimeout(timeout)
-            self._socket.connect((ip, port))
+            if ':' in ip:  # IPv6
+                self._recreate_socket(socket.AF_INET6)
+                self._socket.settimeout(timeout)
+                self._socket.connect((ip, port, 0, 0))
+            else:
+                self._recreate_socket(socket.AF_INET)
+                self._socket.settimeout(timeout)
+                self._socket.connect((ip, port))
             self._socket.setblocking(False)
 
     def _get_connected(self):

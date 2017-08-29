@@ -230,7 +230,7 @@ class TelegramBareClient:
 
     # region Working with different Data Centers
 
-    def _get_dc(self, dc_id, cdn=False):
+    def _get_dc(self, dc_id, ipv6=True, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if not self.dc_options:
             raise ConnectionError(
@@ -238,8 +238,10 @@ class TelegramBareClient:
                 'Stabilise a successful initial connection first.')
 
         try:
-            return next(dc for dc in self.dc_options
-                        if dc.id == dc_id and bool(dc.cdn) == cdn)
+            return next(
+                dc for dc in self.dc_options if dc.id == dc_id and
+                bool(dc.ipv6) == ipv6 and bool(dc.cdn) == cdn
+            )
         except StopIteration:
             if not cdn:
                 raise
@@ -248,7 +250,7 @@ class TelegramBareClient:
                 rsa.add_key(pk.public_key)
 
             self.dc_options = self(GetConfigRequest()).dc_options
-            return self._get_dc(dc_id, cdn=cdn)
+            return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
     def _get_exported_client(self, dc_id,
                              init_connection=False,
