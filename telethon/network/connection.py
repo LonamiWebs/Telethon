@@ -9,14 +9,15 @@ from ..errors import InvalidChecksumError
 
 class Connection:
     """Represents an abstract connection (TCP, TCP abridged...).
-       'mode' may be any of 'tcp_full', 'tcp_abridged'.
+       'mode' may be any of:
+         'tcp_full', 'tcp_intermediate', 'tcp_abridged', 'tcp_obfuscated'
 
        Note that '.send()' and '.recv()' refer to messages, which
        will be packed accordingly, whereas '.write()' and '.read()'
        work on plain bytes, with no further additions.
     """
 
-    def __init__(self, ip, port, mode='tcp_obfuscated',
+    def __init__(self, ip, port, mode='tcp_intermediate',
                  proxy=None, timeout=timedelta(seconds=5)):
         self.ip = ip
         self.port = port
@@ -33,6 +34,10 @@ class Connection:
         if mode == 'tcp_full':
             setattr(self, 'send', self._send_tcp_full)
             setattr(self, 'recv', self._recv_tcp_full)
+
+        elif mode == 'tcp_intermediate':
+            setattr(self, 'send', self._send_intermediate)
+            setattr(self, 'recv', self._recv_intermediate)
 
         elif mode in ('tcp_abridged', 'tcp_obfuscated'):
             setattr(self, 'send', self._send_abridged)
@@ -52,7 +57,9 @@ class Connection:
                           timeout=round(self.timeout.seconds))
 
         if self._mode == 'tcp_abridged':
-            self.conn.write(int.to_bytes(239, 1, 'little'))
+            self.conn.write(b'\xef')
+        elif self._mode == 'tcp_intermediate':
+            self.conn.write(b'\xee\xee\xee\xee')
         elif self._mode == 'tcp_obfuscated':
             self._setup_obfuscation()
 
@@ -122,6 +129,9 @@ class Connection:
 
         return body
 
+    def _recv_intermediate(self, **kwargs):
+        return self.read(int.from_bytes(self.read(4), 'little'))
+
     def _recv_abridged(self, **kwargs):
         length = int.from_bytes(self.read(1), 'little')
         if length >= 127:
@@ -147,6 +157,12 @@ class Connection:
             writer.write(message)
             writer.write_int(crc32(writer.get_bytes()), signed=False)
             self._send_counter += 1
+            self.write(writer.get_bytes())
+
+    def _send_intermediate(self, message):
+        with BinaryWriter() as writer:
+            writer.write_int(len(message))
+            writer.write(message)
             self.write(writer.get_bytes())
 
     def _send_abridged(self, message):
