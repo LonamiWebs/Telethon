@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from ..tl import JsonSession
+from ..tl import Session
 from ..tl.functions.upload import GetCdnFileRequest, ReuploadCdnFileRequest
 from ..tl.types.upload import CdnFileReuploadNeeded
 from ..crypto import AESModeCTR
@@ -36,7 +36,7 @@ class CdnDecrypter:
 
         # Create a new client on said CDN
         dc = client._get_dc(cdn_redirect.dc_id, cdn=True)
-        session = JsonSession(client.session)
+        session = Session(client.session)
         session.server_address = dc.ip_address
         session.port = dc.port
         cdn_client = client_cls(  # Avoid importing TelegramBareClient

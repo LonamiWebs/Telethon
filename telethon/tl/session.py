@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 import platform
 import time
 from threading import Lock
@@ -11,80 +10,6 @@ from .. import helpers as utils
 
 
 class Session:
-    def __init__(self, session_user_id):
-        self.session_user_id = session_user_id
-        self.server_address = '91.108.56.165'
-        self.port = 443
-        self.auth_key = None
-        self.id = utils.generate_random_long(signed=False)
-        self.sequence = 0
-        self.salt = 0  # Unsigned long
-        self.time_offset = 0
-        self.last_message_id = 0  # Long
-        # TODO Remove this now unused members, left so unpickling is happy
-        self.user = None
-
-    def save(self):
-        """Saves the current session object as session_user_id.session"""
-        if self.session_user_id:
-            with open('{}.session'.format(self.session_user_id), 'wb') as file:
-                pickle.dump(self, file)
-
-    def delete(self):
-        """Deletes the current session file"""
-        try:
-            os.remove('{}.session'.format(self.session_user_id))
-            return True
-        except OSError:
-            return False
-
-    @staticmethod
-    def try_load_or_create_new(session_user_id):
-        """Loads a saved session_user_id session, or creates a new one if none existed before.
-           If the given session_user_id is None, we assume that it is for testing purposes"""
-        if session_user_id is None:
-            return Session(None)
-        else:
-            path = '{}.session'.format(session_user_id)
-
-            if file_exists(path):
-                with open(path, 'rb') as file:
-                    return pickle.load(file)
-            else:
-                return Session(session_user_id)
-
-    def generate_sequence(self, confirmed):
-        """Ported from JsonSession.generate_sequence"""
-        with Lock():
-            if confirmed:
-                result = self.sequence * 2 + 1
-                self.sequence += 1
-                return result
-            else:
-                return self.sequence * 2
-
-    def get_new_msg_id(self):
-        now = time.time()
-        nanoseconds = int((now - int(now)) * 1e+9)
-        # "message identifiers are divisible by 4"
-        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
-
-        if self.last_message_id >= new_msg_id:
-            new_msg_id = self.last_message_id + 4
-
-        self.last_message_id = new_msg_id
-        return new_msg_id
-
-    def update_time_offset(self, correct_msg_id):
-        """Updates the time offset based on a known correct message ID"""
-        now = int(time.time())
-        correct = correct_msg_id >> 32
-        self.time_offset = correct - now
-
-
-# Until migration is complete, we need the original 'Session' class
-# for Pickle to keep working. TODO Replace 'Session' by 'JsonSession' by v1.0
-class JsonSession:
     """This session contains the required information to login into your
        Telegram account. NEVER give the saved JSON file to anyone, since
        they would gain instant access to all your messages and contacts.
@@ -98,7 +23,7 @@ class JsonSession:
            those required to init a connection will be copied.
         """
         # These values will NOT be saved
-        if isinstance(session_user_id, JsonSession):
+        if isinstance(session_user_id, Session):
             self.session_user_id = None
 
             # For connection purposes
@@ -174,10 +99,10 @@ class JsonSession:
            If session_user_id=None, later .save()'s will have no effect.
         """
         if session_user_id is None:
-            return JsonSession(None)
+            return Session(None)
         else:
             path = '{}.session'.format(session_user_id)
-            result = JsonSession(session_user_id)
+            result = Session(session_user_id)
             if not file_exists(path):
                 return result
 
@@ -199,16 +124,7 @@ class JsonSession:
                         result.auth_key = AuthKey(data=key)
 
             except (json.decoder.JSONDecodeError, UnicodeDecodeError):
-                # TODO Backwards-compatibility code
-                old = Session.try_load_or_create_new(session_user_id)
-                result.id = old.id
-                result.port = old.port
-                result.salt = old.salt
-                result._sequence = old.sequence
-                result.time_offset = old.time_offset
-                result.server_address = old.server_address
-                result.auth_key = old.auth_key
-                result.save()
+                pass
 
             return result
 

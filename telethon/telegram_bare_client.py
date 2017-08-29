@@ -15,7 +15,7 @@ from .utils import get_appropriated_part_size
 from .crypto import rsa, CdnDecrypter
 
 # For sending and receiving requests
-from .tl import TLObject, JsonSession
+from .tl import TLObject, Session
 from .tl.all_tlobjects import layer
 from .tl.functions import (
     InitConnectionRequest, InvokeWithLayerRequest, PingRequest
@@ -230,7 +230,7 @@ class TelegramBareClient:
 
     # region Working with different Data Centers
 
-    def _get_dc(self, dc_id, ipv6=True, cdn=False):
+    def _get_dc(self, dc_id, ipv6=False, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if not self.dc_options:
             raise ConnectionError(
@@ -286,7 +286,7 @@ class TelegramBareClient:
             #
             # Construct this session with the connection parameters
             # (system version, device model...) from the current one.
-            session = JsonSession(self.session)
+            session = Session(self.session)
             session.server_address = dc.ip_address
             session.port = dc.port
             client = TelegramBareClient(

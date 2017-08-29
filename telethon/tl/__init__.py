@@ -1,2 +1,2 @@
 from .tlobject import TLObject
-from .session import Session, JsonSession
+from .session import Session

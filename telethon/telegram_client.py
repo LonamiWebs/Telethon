@@ -15,7 +15,7 @@ from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
                      PhoneCodeInvalidError, InvalidChecksumError)
 
 # For sending and receiving requests
-from .tl import Session, JsonSession, TLObject
+from .tl import Session, TLObject
 
 # Required to get the password salt
 from .tl.functions.account import GetPasswordRequest
@@ -87,10 +87,9 @@ class TelegramClient(TelegramBareClient):
                 "Refer to Telethon's README.rst for more information.")
 
         # Determine what session object we have
-        # TODO JsonSession until migration is complete (by v1.0)
         if isinstance(session, str) or session is None:
-            session = JsonSession.try_load_or_create_new(session)
-        elif not isinstance(session, Session) and not isinstance(session, JsonSession):
+            session = Session.try_load_or_create_new(session)
+        elif not isinstance(session, Session):
             raise ValueError(
                 'The given session must be a str or a Session instance.')
 
