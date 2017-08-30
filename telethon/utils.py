@@ -4,6 +4,7 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 """
 from mimetypes import add_type, guess_extension
 
+from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -56,9 +57,20 @@ def get_extension(media):
     return ''
 
 
+def _raise_cast_fail(entity, target):
+    raise ValueError('Cannot cast {} to any kind of {}.'
+                     .format(type(entity).__name__, target))
+
+
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
+    if entity is None:
+        return None
+
+    if not isinstance(entity, TLObject):
+        _raise_cast_fail(entity, 'InputPeer')
+
     if type(entity).subclass_of_id == 0xc91c90b6:  # crc32(b'InputPeer')
         return entity
 
@@ -92,12 +104,17 @@ def get_input_peer(entity):
     if isinstance(entity, PeerChat):
         return InputPeerChat(entity.chat_id)
 
-    raise ValueError('Cannot cast {} to any kind of InputPeer.'
-                     .format(type(entity).__name__))
+    _raise_cast_fail(entity, 'InputPeer')
 
 
 def get_input_channel(entity):
     """Similar to get_input_peer, but for InputChannel's alone"""
+    if entity is None:
+        return None
+
+    if not isinstance(entity, TLObject):
+        _raise_cast_fail(entity, 'InputChannel')
+
     if type(entity).subclass_of_id == 0x40f202fd:  # crc32(b'InputChannel')
         return entity
 
@@ -107,12 +124,17 @@ def get_input_channel(entity):
     if isinstance(entity, InputPeerChannel):
         return InputChannel(entity.channel_id, entity.access_hash)
 
-    raise ValueError('Cannot cast {} to any kind of InputChannel.'
-                     .format(type(entity).__name__))
+    _raise_cast_fail(entity, 'InputChannel')
 
 
 def get_input_user(entity):
     """Similar to get_input_peer, but for InputUser's alone"""
+    if entity is None:
+        return None
+
+    if not isinstance(entity, TLObject):
+        _raise_cast_fail(entity, 'InputUser')
+
     if type(entity).subclass_of_id == 0xe669bf46:  # crc32(b'InputUser')
         return entity
 
@@ -131,8 +153,7 @@ def get_input_user(entity):
     if isinstance(entity, InputPeerUser):
         return InputUser(entity.user_id, entity.access_hash)
 
-    raise ValueError('Cannot cast {} to any kind of InputUser.'
-                     .format(type(entity).__name__))
+    _raise_cast_fail(entity, 'InputUser')
 
 
 def find_user_or_chat(peer, users, chats):
