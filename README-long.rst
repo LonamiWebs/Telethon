@@ -92,8 +92,8 @@ If you've installed Telethon via pip, launch an interactive python3 session and 
   True
   >>>
   >>> if not client.is_user_authorized():
-  >>>   client.send_code_request('+34600000000')
-  >>>   client.sign_in('+34600000000', input('Enter code: '))
+  >>>   client.sign_in(code='+34600000000')
+  >>>   client.sign_in(code=input('Enter code: '))
   ...
   >>> # Now you can use the connected client as you wish
   >>> dialogs, entities = client.get_dialogs(10)

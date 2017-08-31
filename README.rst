@@ -32,8 +32,8 @@ Creating a client
   client.connect()
 
   # If you already have a previous 'session_name.session' file, skip this.
-  client.send_code_request(phone)
-  me = client.sign_in(phone, 77777)  # Put whatever code you received here.
+  client.sign_in(phone=phone)
+  me = client.sign_in(code=77777)  # Put whatever code you received here.
 
 
 Doing stuff

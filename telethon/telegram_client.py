@@ -113,7 +113,8 @@ class TelegramClient(TelegramBareClient):
                 setattr(self.session, name, value)
 
         self._updates_thread = None
-        self._phone_code_hashes = {}
+        self._phone_code_hash = None
+        self._phone = None
 
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
@@ -242,14 +243,15 @@ class TelegramClient(TelegramBareClient):
            (code request sent and confirmed)?"""
         return self.session and self.get_me() is not None
 
-    def send_code_request(self, phone_number):
+    def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
         result = self(
-            SendCodeRequest(phone_number, self.api_id, self.api_hash))
+            SendCodeRequest(phone, self.api_id, self.api_hash))
+        self._phone = phone
+        self._phone_code_hash = result.phone_code_hash
+        return result
 
-        self._phone_code_hashes[phone_number] = result.phone_code_hash
-
-    def sign_in(self, phone_number=None, code=None,
+    def sign_in(self, phone=None, code=None,
                 password=None, bot_token=None):
         """Completes the sign in process with the phone number + code pair.
 
@@ -264,8 +266,11 @@ class TelegramClient(TelegramBareClient):
 
            If the login succeeds, the logged in user is returned.
         """
-        if phone_number and code:
-            if phone_number not in self._phone_code_hashes:
+
+        if phone:
+            return self.send_code_request(phone)
+        elif code:
+            if self._phone == None:
                 raise ValueError(
                     'Please make sure to call send_code_request first.')
 
@@ -273,7 +278,7 @@ class TelegramClient(TelegramBareClient):
                 if isinstance(code, int):
                     code = str(code)
                 result = self(SignInRequest(
-                    phone_number, self._phone_code_hashes[phone_number], code
+                    self._phone, self._phone_code_hash, code
                 ))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
@@ -292,17 +297,17 @@ class TelegramClient(TelegramBareClient):
 
         else:
             raise ValueError(
-                'You must provide a phone_number and a code the first time, '
+                'You must provide a phone and a code the first time, '
                 'and a password only if an RPCError was raised before.')
 
         return result.user
 
-    def sign_up(self, phone_number, code, first_name, last_name=''):
+    def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
         result = self(
             SignUpRequest(
-                phone_number=phone_number,
-                phone_code_hash=self._phone_code_hashes[phone_number],
+                phone=self._phone,
+                phone_code_hash=self._phone_code_hash,
                 phone_code=code,
                 first_name=first_name,
                 last_name=last_name))
