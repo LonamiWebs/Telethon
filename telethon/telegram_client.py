@@ -267,10 +267,10 @@ class TelegramClient(TelegramBareClient):
            If the login succeeds, the logged in user is returned.
         """
 
-        if phone:
+        if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            if self._phone == None:
+            if self._phone is None:
                 raise ValueError(
                     'Please make sure to call send_code_request first.')
 
