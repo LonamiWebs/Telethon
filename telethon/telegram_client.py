@@ -133,14 +133,14 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        conn_return = super().connect()
+        result = super().connect()
 
-        # Checking if there are update_handlers and if true, start runngin updates thread.
+        # Checking if there are update_handlers and if true, start running updates thread.
         # This situation may occur on reconnecting.
-        if conn_return and self._update_handlers:
+        if result and self._update_handlers:
             self._set_updates_thread(running=True)
 
-        return conn_return
+        return result
 
 
     def disconnect(self):
@@ -922,7 +922,7 @@ class TelegramClient(TelegramBareClient):
                     name='UpdatesThread', daemon=True,
                     target=self._updates_thread_method)
 
-            self._updates_thread.start()
+                self._updates_thread.start()
         else:
             self._updates_thread_running.clear()
             if self._updates_thread_receiving.is_set():
