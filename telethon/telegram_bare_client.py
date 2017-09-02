@@ -204,30 +204,6 @@ class TelegramBareClient:
 
     # endregion
 
-    # region Properties
-
-    def set_timeout(self, timeout):
-        if timeout is None:
-            self._timeout = None
-        elif isinstance(timeout, int) or isinstance(timeout, float):
-            self._timeout = timedelta(seconds=timeout)
-        elif isinstance(timeout, timedelta):
-            self._timeout = timeout
-        else:
-            raise ValueError(
-                '{} is not a valid type for a timeout'.format(type(timeout))
-            )
-
-        if self._sender:
-            self._sender.transport.timeout = self._timeout
-
-    def get_timeout(self):
-        return self._timeout
-
-    timeout = property(get_timeout, set_timeout)
-
-    # endregion
-
     # region Working with different Data Centers
 
     def _get_dc(self, dc_id, ipv6=False, cdn=False):

@@ -1,5 +1,4 @@
 import gzip
-from datetime import timedelta
 from threading import RLock, Thread
 
 from .. import helpers as utils
@@ -91,15 +90,11 @@ class MtProtoSender:
                 # No problem.
                 pass
 
-    def _receive_message(self, **kwargs):
-        """Receives a single message from the connected endpoint.
-
-           An optional named parameter 'timeout' can be specified if
-           one desires to override 'self.connection.timeout'.
-        """
+    def _receive_message(self):
+        """Receives a single message from the connected endpoint."""
         # TODO Don't ignore updates
         self._logger.debug('Receiving a message...')
-        body = self.connection.recv(**kwargs)
+        body = self.connection.recv()
         message, remote_msg_id, remote_seq = self._decode_msg(body)
 
         with BinaryReader(message) as reader:

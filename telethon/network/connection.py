@@ -22,13 +22,12 @@ class Connection:
         self.ip = ip
         self.port = port
         self._mode = mode
-        self.timeout = timeout
 
         self._send_counter = 0
         self._aes_encrypt, self._aes_decrypt = None, None
 
         # TODO Rename "TcpClient" as some sort of generic socket?
-        self.conn = TcpClient(proxy=proxy)
+        self.conn = TcpClient(proxy=proxy, timeout=timeout)
 
         # Sending messages
         if mode == 'tcp_full':
@@ -53,8 +52,7 @@ class Connection:
 
     def connect(self):
         self._send_counter = 0
-        self.conn.connect(self.ip, self.port,
-                          timeout=round(self.timeout.seconds))
+        self.conn.connect(self.ip, self.port)
 
         if self._mode == 'tcp_abridged':
             self.conn.write(b'\xef')
@@ -102,13 +100,12 @@ class Connection:
 
     # region Receive message implementations
 
-    def recv(self, **kwargs):
+    def recv(self):
         """Receives and unpacks a message"""
-        # TODO Don't ignore kwargs['timeout']?
         # Default implementation is just an error
         raise ValueError('Invalid connection mode specified: ' + self._mode)
 
-    def _recv_tcp_full(self, **kwargs):
+    def _recv_tcp_full(self):
         packet_length_bytes = self.read(4)
         packet_length = int.from_bytes(packet_length_bytes, 'little')
 
@@ -124,10 +121,10 @@ class Connection:
 
         return body
 
-    def _recv_intermediate(self, **kwargs):
+    def _recv_intermediate(self):
         return self.read(int.from_bytes(self.read(4), 'little'))
 
-    def _recv_abridged(self, **kwargs):
+    def _recv_abridged(self):
         length = int.from_bytes(self.read(1), 'little')
         if length >= 127:
             length = int.from_bytes(self.read(3) + b'\0', 'little')
@@ -180,11 +177,11 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + self._mode)
 
     def _read_plain(self, length):
-        return self.conn.read(length, timeout=self.timeout)
+        return self.conn.read(length)
 
     def _read_obfuscated(self, length):
         return self._aes_decrypt.encrypt(
-            self.conn.read(length, timeout=self.timeout)
+            self.conn.read(length)
         )
 
     # endregion

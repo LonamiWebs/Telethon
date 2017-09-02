@@ -129,8 +129,6 @@ class TelegramClient(TelegramBareClient):
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
-           The specified timeout will be used on internal .invoke()'s.
-
            *args will be ignored.
         """
         return super().connect()
@@ -151,7 +149,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Working with different connections
 
-    def create_new_connection(self, on_dc=None):
+    def create_new_connection(self, on_dc=None, timeout=timedelta(seconds=5)):
         """Creates a new connection which can be used in parallel
            with the original TelegramClient. A TelegramBareClient
            will be returned already connected, and the caller is
@@ -165,7 +163,9 @@ class TelegramClient(TelegramBareClient):
         """
         if on_dc is None:
             client = TelegramBareClient(
-                self.session, self.api_id, self.api_hash, proxy=self.proxy)
+                self.session, self.api_id, self.api_hash,
+                proxy=self.proxy, timeout=timeout
+            )
             client.connect()
         else:
             client = self._get_exported_client(on_dc, bypass_cache=True)
@@ -178,9 +178,6 @@ class TelegramClient(TelegramBareClient):
 
     def invoke(self, request, *args):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-
-           An optional timeout can be specified to cancel the operation if no
-           result is received within such time, or None to disable any timeout.
 
            *args will be ignored.
         """
@@ -920,9 +917,6 @@ class TelegramClient(TelegramBareClient):
 
     def _updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
-
-        # Set a reasonable timeout when checking for updates
-        timeout = timedelta(minutes=1)
 
         while self._updates_thread_running.is_set():
             # Always sleep a bit before each iteration to relax the CPU,

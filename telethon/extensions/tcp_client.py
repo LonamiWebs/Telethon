@@ -10,9 +10,15 @@ from ..errors import ReadCancelledError
 
 
 class TcpClient:
-    def __init__(self, proxy=None):
+    def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
         self._proxy = proxy
         self._socket = None
+        if isinstance(timeout, timedelta):
+            self._timeout = timeout.seconds
+        elif isinstance(timeout, int) or isinstance(timeout, float):
+            self._timeout = float(timeout)
+        else:
+            raise ValueError('Invalid timeout type', type(timeout))
 
     def _recreate_socket(self, mode):
         if self._proxy is None:
@@ -25,7 +31,7 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self._proxy)
 
-    def connect(self, ip, port, timeout):
+    def connect(self, ip, port):
         """Connects to the specified IP and port number.
            'timeout' must be given in seconds
         """
@@ -36,7 +42,7 @@ class TcpClient:
                 mode, address = socket.AF_INET, (ip, port)
 
             self._recreate_socket(mode)
-            self._socket.settimeout(timeout)
+            self._socket.settimeout(self._timeout)
             self._socket.connect(address)
 
     def _get_connected(self):
@@ -59,10 +65,6 @@ class TcpClient:
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
 
-        # TODO Check whether the code using this has multiple threads calling
-        # .write() on the very same socket. If so, have two locks, one for
-        # .write() and another for .read().
-        #
         # TODO Timeout may be an issue when sending the data, Changed in v3.5:
         # The socket timeout is now the maximum total duration to send all data.
         try:
@@ -71,7 +73,7 @@ class TcpClient:
             self.close()
             raise
 
-    def read(self, size, timeout=timedelta(seconds=5)):
+    def read(self, size):
         """Reads (receives) a whole block of 'size bytes
            from the connected peer.
 
