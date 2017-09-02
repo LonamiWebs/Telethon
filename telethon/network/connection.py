@@ -96,11 +96,6 @@ class Connection:
     def close(self):
         self.conn.close()
 
-    def cancel_receive(self):
-        """Cancels (stops) trying to receive from the
-        remote peer and raises a ReadCancelledError"""
-        self.conn.cancel_read()
-
     def get_client_delay(self):
         """Gets the client read delay"""
         return self.conn.delay
