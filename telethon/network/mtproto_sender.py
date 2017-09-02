@@ -1,6 +1,5 @@
 import gzip
-from datetime import timedelta
-from threading import RLock
+from threading import RLock, Thread
 
 from .. import helpers as utils
 from ..crypto import AES
@@ -14,9 +13,22 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class MtProtoSender:
-    """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
+    """MTProto Mobile Protocol sender
+       (https://core.telegram.org/mtproto/description)
+    """
 
-    def __init__(self, connection, session):
+    def __init__(self, connection, session, constant_read):
+        """Creates a new MtProtoSender configured to send messages through
+           'connection' and using the parameters from 'session'.
+
+           If 'constant_read' is set to True, another thread will be
+           created and started upon connection to constantly read
+           from the other end. Otherwise, manual calls to .receive()
+           must be performed. The MtProtoSender cannot be connected,
+           or an error will be thrown.
+
+           This way, sending and receiving will be completely independent.
+        """
         self.connection = connection
         self.session = session
         self._logger = logging.getLogger(__name__)
@@ -31,16 +43,45 @@ class MtProtoSender:
         # TODO There might be a better way to handle msgs_ack requests
         self.logging_out = False
 
+        # Will create a new _recv_thread when connecting if set
+        self._constant_read = constant_read
+        self._recv_thread = None
+
+        # Every unhandled result gets passed to these callbacks, which
+        # should be functions accepting a single parameter: a TLObject.
+        # This should only be Update(s), although it can actually be any type.
+        #
+        # The thread from which these callbacks are called can be any.
+        #
+        # The creator of the MtProtoSender is responsible for setting this
+        # to point to the list wherever their callbacks reside.
+        self.unhandled_callbacks = None
+
     def connect(self):
         """Connects to the server"""
-        self.connection.connect()
+        if not self.is_connected():
+            self.connection.connect()
+            if self._constant_read:
+                self._recv_thread = Thread(
+                    name='ReadThread', daemon=True,
+                    target=self._recv_thread_impl
+                )
+                self._recv_thread.start()
 
     def is_connected(self):
         return self.connection.is_connected()
 
     def disconnect(self):
         """Disconnects from the server"""
-        self.connection.close()
+        if self.is_connected():
+            self.connection.close()
+            if self._constant_read:
+                # The existing thread will close eventually, since it's
+                # only running while the MtProtoSender.is_connected()
+                self._recv_thread = None
+
+    def is_constant_read(self):
+        return self._constant_read
 
     # region Send and receive
 
@@ -76,57 +117,31 @@ class MtProtoSender:
 
             del self._need_confirmation[:]
 
-    def receive(self, request=None, updates=None, **kwargs):
-        """Receives the specified MTProtoRequest ("fills in it"
-           the received data). This also restores the updates thread.
+    def _recv_thread_impl(self):
+        while self.is_connected():
+            try:
+                self.receive()
+            except TimeoutError:
+                # No problem.
+                pass
 
-           An optional named parameter 'timeout' can be specified if
-           one desires to override 'self.connection.timeout'.
+    def receive(self):
+        """Receives a single message from the connected endpoint.
 
-           If 'request' is None, a single item will be read into
-           the 'updates' list (which cannot be None).
-
-           If 'request' is not None, any update received before
-           reading the request's result will be put there unless
-           it's None, in which case updates will be ignored.
+           This method returns nothing, and will only affect other parts
+           of the MtProtoSender such as the updates callback being fired
+           or a pending request being confirmed.
         """
-        if request is None and updates is None:
-            raise ValueError('Both the "request" and "updates"'
-                             'parameters cannot be None at the same time.')
+        # TODO Don't ignore updates
+        self._logger.debug('Receiving a message...')
+        body = self.connection.recv()
+        message, remote_msg_id, remote_seq = self._decode_msg(body)
 
-        with self._lock:
-            self._logger.debug('receive() acquired the lock')
-            # Don't stop trying to receive until we get the request we wanted
-            # or, if there is no request, until we read an update
-            while (request and not request.confirm_received) or \
-                    (not request and not updates):
-                self._logger.debug('Trying to .receive() the request result...')
-                body = self.connection.recv(**kwargs)
-                message, remote_msg_id, remote_seq = self._decode_msg(body)
+        with BinaryReader(message) as reader:
+            self._process_msg(
+                remote_msg_id, remote_seq, reader, updates=None)
 
-                with BinaryReader(message) as reader:
-                    self._process_msg(
-                        remote_msg_id, remote_seq, reader, updates)
-
-            # We're done receiving, remove the request from pending, if any
-            if request:
-                try:
-                    self._pending_receive.remove(request)
-                except ValueError: pass
-
-            self._logger.debug('Request result received')
-        self._logger.debug('receive() released the lock')
-
-    def receive_updates(self, **kwargs):
-        """Wrapper for .receive(request=None, updates=[])"""
-        updates = []
-        self.receive(updates=updates, **kwargs)
-        return updates
-
-    def cancel_receive(self):
-        """Cancels any pending receive operation
-           by raising a ReadCancelledError"""
-        self.connection.cancel_receive()
+        self._logger.debug('Received message.')
 
     # endregion
 
@@ -230,20 +245,19 @@ class MtProtoSender:
 
                     if self.logging_out:
                         self._logger.debug('Message ack confirmed a request')
-                        r.confirm_received = True
+                        r.confirm_received.set()
 
             return True
 
-        # If the code is not parsed manually, then it was parsed by the code generator!
-        # In this case, we will simply treat the incoming TLObject as an Update,
-        # if we can first find a matching TLObject
+        # If the code is not parsed manually then it should be a TLObject.
         if code in tlobjects:
             result = reader.tgread_object()
-            if updates is None:
-                self._logger.debug('Ignored update for %s', repr(result))
+            if self.unhandled_callbacks:
+                self._logger.debug('Passing TLObject to callbacks %s', repr(result))
+                for callback in self.unhandled_callbacks:
+                    callback(result)
             else:
-                self._logger.debug('Read update for %s', repr(result))
-                updates.append(result)
+                self._logger.debug('Ignoring unhandled TLObject %s', repr(result))
 
             return True
 
@@ -264,7 +278,7 @@ class MtProtoSender:
                            if r.request_msg_id == received_msg_id)
 
             self._logger.debug('Pong confirmed a request')
-            request.confirm_received = True
+            request.confirm_received.set()
         except StopIteration: pass
 
         return True
@@ -338,8 +352,6 @@ class MtProtoSender:
         try:
             request = next(r for r in self._pending_receive
                            if r.request_msg_id == request_id)
-
-            request.confirm_received = True
         except StopIteration:
             request = None
 
@@ -358,13 +370,12 @@ class MtProtoSender:
             self._need_confirmation.append(request_id)
             self._send_acknowledges()
 
+            if request:
+                request.error = error
+                request.confirm_received.set()
+            # else TODO Where should this error be reported?
+            # Read may be async. Can an error not-belong to a request?
             self._logger.debug('Read RPC error: %s', str(error))
-            if isinstance(error, InvalidDCError):
-                # Must resend this request, if any
-                if request:
-                    request.confirm_received = False
-
-            raise error
         else:
             if request:
                 self._logger.debug('Reading request response')
@@ -376,6 +387,7 @@ class MtProtoSender:
                     reader.seek(-4)
                     request.on_response(reader)
 
+                request.confirm_received.set()
                 return True
             else:
                 # If it's really a result for RPC from previous connection

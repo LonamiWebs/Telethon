@@ -1,5 +1,5 @@
 import logging
-import pyaes
+from time import sleep
 from datetime import timedelta
 from hashlib import md5
 from os import path
@@ -83,6 +83,12 @@ class TelegramBareClient:
         # the time since it's a (somewhat expensive) process.
         self._cached_clients = {}
 
+        # Update callbacks (functions accepting a single TLObject) go here
+        #
+        # Note that changing the list to which this variable points to
+        # will not reflect the changes on the existing senders.
+        self._update_callbacks = []
+
         # These will be set later
         self.dc_options = None
         self._sender = None
@@ -91,7 +97,8 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, exported_auth=None, initial_query=None):
+    def connect(self, exported_auth=None, initial_query=None,
+                constant_read=False):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -103,6 +110,9 @@ class TelegramBareClient:
            If 'initial_query' is not None, it will override the default
            'GetConfigRequest()', and its result will be returned ONLY
            if the client wasn't connected already.
+
+           The 'constant_read' parameter will be used when creating
+           the MtProtoSender. Refer to it for more information.
         """
         if self._sender and self._sender.is_connected():
             # Try sending a ping to make sure we're connected already
@@ -129,7 +139,10 @@ class TelegramBareClient:
 
                 self.session.save()
 
-            self._sender = MtProtoSender(connection, self.session)
+            self._sender = MtProtoSender(
+                connection, self.session, constant_read=constant_read
+            )
+            self._sender.unhandled_callbacks = self._update_callbacks
             self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
@@ -201,30 +214,6 @@ class TelegramBareClient:
             self.session.save()
 
         self.connect()
-
-    # endregion
-
-    # region Properties
-
-    def set_timeout(self, timeout):
-        if timeout is None:
-            self._timeout = None
-        elif isinstance(timeout, int) or isinstance(timeout, float):
-            self._timeout = timedelta(seconds=timeout)
-        elif isinstance(timeout, timedelta):
-            self._timeout = timeout
-        else:
-            raise ValueError(
-                '{} is not a valid type for a timeout'.format(type(timeout))
-            )
-
-        if self._sender:
-            self._sender.transport.timeout = self._timeout
-
-    def get_timeout(self):
-        return self._timeout
-
-    timeout = property(get_timeout, set_timeout)
 
     # endregion
 
@@ -318,7 +307,18 @@ class TelegramBareClient:
 
         try:
             self._sender.send(request)
-            self._sender.receive(request, updates=updates)
+            if self._sender.is_constant_read():
+                # TODO This will be slightly troublesome if we allow
+                # switching between constant read or not on the fly.
+                # Must also watch out for calling .read() from two places,
+                # in which case a Lock would be required for .receive().
+                request.confirm_received.wait()  # TODO Optional timeout here?
+            else:
+                while not request.confirm_received.is_set():
+                    self._sender.receive()
+
+            if request.rpc_error:
+                raise request.rpc_error
             return request.result
 
         except ConnectionResetError:

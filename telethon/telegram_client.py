@@ -98,14 +98,6 @@ class TelegramClient(TelegramBareClient):
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
 
-        # Updates-related members
-        self._update_handlers = []
-        self._updates_thread_running = Event()
-        self._updates_thread_receiving = Event()
-
-        self._next_ping_at = 0
-        self.ping_interval = 60  # Seconds
-
         # Used on connection - the user may modify these and reconnect
         kwargs['app_version'] = kwargs.get('app_version', self.__version__)
         for name, value in kwargs.items():
@@ -129,24 +121,22 @@ class TelegramClient(TelegramBareClient):
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
-           The specified timeout will be used on internal .invoke()'s.
-
            *args will be ignored.
         """
-        result = super().connect()
-
-        # Checking if there are update_handlers and if true, start running updates thread.
-        # This situation may occur on reconnecting.
-        if result and self._update_handlers:
-            self._set_updates_thread(running=True)
-
-        return result
-
+        # The main TelegramClient is the only one that will have
+        # constant_read, since it's also the only one who receives
+        # updates and need to be processed as soon as they occur.
+        #
+        # TODO Allow to disable this to avoid the creation of a new thread
+        # if the user is not going to work with updates at all? Whether to
+        # read constantly or not for updates needs to be known before hand,
+        # and further updates won't be able to be added unless allowing to
+        # switch the mode on the fly.
+        return super().connect(constant_read=True)
 
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        self._set_updates_thread(running=False)
         super().disconnect()
 
         # Also disconnect all the cached senders
@@ -159,7 +149,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Working with different connections
 
-    def create_new_connection(self, on_dc=None):
+    def create_new_connection(self, on_dc=None, timeout=timedelta(seconds=5)):
         """Creates a new connection which can be used in parallel
            with the original TelegramClient. A TelegramBareClient
            will be returned already connected, and the caller is
@@ -173,7 +163,9 @@ class TelegramClient(TelegramBareClient):
         """
         if on_dc is None:
             client = TelegramBareClient(
-                self.session, self.api_id, self.api_hash, proxy=self.proxy)
+                self.session, self.api_id, self.api_hash,
+                proxy=self.proxy, timeout=timeout
+            )
             client.connect()
         else:
             client = self._get_exported_client(on_dc, bypass_cache=True)
@@ -187,29 +179,13 @@ class TelegramClient(TelegramBareClient):
     def invoke(self, request, *args):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
-           An optional timeout can be specified to cancel the operation if no
-           result is received within such time, or None to disable any timeout.
-
            *args will be ignored.
         """
-        if self._updates_thread_receiving.is_set():
-            self._sender.cancel_receive()
-
         try:
             self._lock.acquire()
 
-            updates = [] if self._update_handlers else None
-            result = super().invoke(
-                request, updates=updates
-            )
-
-            if updates:
-                for update in updates:
-                    for handler in self._update_handlers:
-                        handler(update)
-
             # TODO Retry if 'result' is None?
-            return result
+            return super().invoke(request)
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
@@ -399,8 +375,8 @@ class TelegramClient(TelegramBareClient):
             no_webpage=not link_preview
         )
         result = self(request)
-        for handler in self._update_handlers:
-            handler(result)
+        for callback in self._update_callbacks:
+            callback(result)
         return request.random_id
 
     def get_message_history(self,
@@ -891,110 +867,12 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self._sender:
-            raise RuntimeError("You can't add update handlers until you've "
-                               "successfully connected to the server.")
-
-        first_handler = not self._update_handlers
-        self._update_handlers.append(handler)
-        if first_handler:
-            self._set_updates_thread(running=True)
+        self._update_callbacks.append(handler)
 
     def remove_update_handler(self, handler):
-        self._update_handlers.remove(handler)
-        if not self._update_handlers:
-            self._set_updates_thread(running=False)
+        self._update_callbacks.remove(handler)
 
     def list_update_handlers(self):
-        return self._update_handlers[:]
-
-    def _set_updates_thread(self, running):
-        """Sets the updates thread status (running or not)"""
-        if running == self._updates_thread_running.is_set():
-            return
-
-        # Different state, update the saved value and behave as required
-        self._logger.debug('Changing updates thread running status to %s', running)
-        if running:
-            self._updates_thread_running.set()
-            if not self._updates_thread:
-                self._updates_thread = Thread(
-                    name='UpdatesThread', daemon=True,
-                    target=self._updates_thread_method)
-
-                self._updates_thread.start()
-        else:
-            self._updates_thread_running.clear()
-            if self._updates_thread_receiving.is_set():
-                self._sender.cancel_receive()
-
-    def _updates_thread_method(self):
-        """This method will run until specified and listen for incoming updates"""
-
-        # Set a reasonable timeout when checking for updates
-        timeout = timedelta(minutes=1)
-
-        while self._updates_thread_running.is_set():
-            # Always sleep a bit before each iteration to relax the CPU,
-            # since it's possible to early 'continue' the loop to reach
-            # the next iteration, but we still should to sleep.
-            sleep(0.1)
-
-            with self._lock:
-                self._logger.debug('Updates thread acquired the lock')
-                try:
-                    self._updates_thread_receiving.set()
-                    self._logger.debug(
-                        'Trying to receive updates from the updates thread'
-                    )
-
-                    if time() > self._next_ping_at:
-                        self._next_ping_at = time() + self.ping_interval
-                        self(PingRequest(utils.generate_random_long()))
-
-                    updates = self._sender.receive_updates(timeout=timeout)
-
-                    self._updates_thread_receiving.clear()
-                    self._logger.debug(
-                        'Received {} update(s) from the updates thread'
-                        .format(len(updates))
-                    )
-                    for update in updates:
-                        for handler in self._update_handlers:
-                            handler(update)
-
-                except ConnectionResetError:
-                    self._logger.debug('Server disconnected us. Reconnecting...')
-                    self.reconnect()
-
-                except TimeoutError:
-                    self._logger.debug('Receiving updates timed out')
-
-                except ReadCancelledError:
-                    self._logger.debug('Receiving updates cancelled')
-
-                except BrokenPipeError:
-                    self._logger.debug('Tcp session is broken. Reconnecting...')
-                    self.reconnect()
-
-                except InvalidChecksumError:
-                    self._logger.debug('MTProto session is broken. Reconnecting...')
-                    self.reconnect()
-
-                except OSError:
-                    self._logger.debug('OSError on updates thread, %s logging out',
-                                         'was' if self._sender.logging_out else 'was not')
-
-                    if self._sender.logging_out:
-                        # This error is okay when logging out, means we got disconnected
-                        # TODO Not sure why this happens because we call disconnect()...
-                        self._set_updates_thread(running=False)
-                    else:
-                        raise
-
-            self._logger.debug('Updates thread released the lock')
-
-        # Thread is over, so clean unset its variable
-        self._updates_thread = None
+        return self._update_callbacks[:]
 
     # endregion
