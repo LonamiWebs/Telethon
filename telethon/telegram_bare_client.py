@@ -1,5 +1,5 @@
 import logging
-import pyaes
+from time import sleep
 from datetime import timedelta
 from hashlib import md5
 from os import path
@@ -318,7 +318,8 @@ class TelegramBareClient:
 
         try:
             self._sender.send(request)
-            self._sender.receive(request, updates=updates)
+            while not request.confirm_received:
+                sleep(0.1)  # TODO Use a proper lock
             return request.result
 
         except ConnectionResetError:

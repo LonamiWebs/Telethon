@@ -184,9 +184,6 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if self._updates_thread_receiving.is_set():
-            self._sender.cancel_receive()
-
         try:
             self._lock.acquire()
 
@@ -918,7 +915,8 @@ class TelegramClient(TelegramBareClient):
         else:
             self._updates_thread_running.clear()
             if self._updates_thread_receiving.is_set():
-                self._sender.cancel_receive()
+                # self._sender.cancel_receive()
+                pass
 
     def _updates_thread_method(self):
         """This method will run until specified and listen for incoming updates"""
@@ -944,7 +942,8 @@ class TelegramClient(TelegramBareClient):
                         self._next_ping_at = time() + self.ping_interval
                         self(PingRequest(utils.generate_random_long()))
 
-                    updates = self._sender.receive_updates(timeout=timeout)
+                    #updates = self._sender.receive_updates(timeout=timeout)
+                    updates = []
 
                     self._updates_thread_receiving.clear()
                     self._logger.debug(
