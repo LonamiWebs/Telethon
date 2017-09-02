@@ -294,8 +294,9 @@ class TelegramBareClient:
 
         try:
             self._sender.send(request)
-            while not request.confirm_received:
-                sleep(0.1)  # TODO Use a proper lock
+            request.confirm_received.wait()  # TODO Optional timeout here?
+            if request.rpc_error:
+                raise request.rpc_error
             return request.result
 
         except ConnectionResetError:

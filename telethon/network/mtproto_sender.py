@@ -205,7 +205,7 @@ class MtProtoSender:
 
                     if self.logging_out:
                         self._logger.debug('Message ack confirmed a request')
-                        r.confirm_received = True
+                        r.confirm_received.set()
 
             return True
 
@@ -239,7 +239,7 @@ class MtProtoSender:
                            if r.request_msg_id == received_msg_id)
 
             self._logger.debug('Pong confirmed a request')
-            request.confirm_received = True
+            request.confirm_received.set()
         except StopIteration: pass
 
         return True
@@ -313,8 +313,6 @@ class MtProtoSender:
         try:
             request = next(r for r in self._pending_receive
                            if r.request_msg_id == request_id)
-
-            request.confirm_received = True
         except StopIteration:
             request = None
 
@@ -333,13 +331,12 @@ class MtProtoSender:
             self._need_confirmation.append(request_id)
             self._send_acknowledges()
 
+            if request:
+                request.error = error
+                request.confirm_received.set()
+            # else TODO Where should this error be reported?
+            # Read may be async. Can an error not-belong to a request?
             self._logger.debug('Read RPC error: %s', str(error))
-            if isinstance(error, InvalidDCError):
-                # Must resend this request, if any
-                if request:
-                    request.confirm_received = False
-
-            raise error
         else:
             if request:
                 self._logger.debug('Reading request response')
@@ -351,6 +348,7 @@ class MtProtoSender:
                     reader.seek(-4)
                     request.on_response(reader)
 
+                request.confirm_received.set()
                 return True
             else:
                 # If it's really a result for RPC from previous connection

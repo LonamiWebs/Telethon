@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from threading import Event
 
 
 class TLObject:
@@ -10,7 +11,8 @@ class TLObject:
 
         self.dirty = False
         self.send_time = None
-        self.confirm_received = False
+        self.confirm_received = Event()
+        self.rpc_error = None
 
         # These should be overrode
         self.constructor_id = 0
@@ -23,11 +25,11 @@ class TLObject:
         self.sent = True
 
     def on_confirm(self):
-        self.confirm_received = True
+        self.confirm_received.set()
 
     def need_resend(self):
         return self.dirty or (
-            self.content_related and not self.confirm_received and
+            self.content_related and not self.confirm_received.is_set() and
             datetime.now() - self.send_time > timedelta(seconds=3))
 
     @staticmethod
