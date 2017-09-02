@@ -91,7 +91,8 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, exported_auth=None, initial_query=None):
+    def connect(self, exported_auth=None, initial_query=None,
+                constant_read=False):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -103,6 +104,9 @@ class TelegramBareClient:
            If 'initial_query' is not None, it will override the default
            'GetConfigRequest()', and its result will be returned ONLY
            if the client wasn't connected already.
+
+           The 'constant_read' parameter will be used when creating
+           the MtProtoSender. Refer to it for more information.
         """
         if self._sender and self._sender.is_connected():
             # Try sending a ping to make sure we're connected already
@@ -129,7 +133,9 @@ class TelegramBareClient:
 
                 self.session.save()
 
-            self._sender = MtProtoSender(connection, self.session)
+            self._sender = MtProtoSender(
+                connection, self.session, constant_read=constant_read
+            )
             self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
@@ -294,7 +300,16 @@ class TelegramBareClient:
 
         try:
             self._sender.send(request)
-            request.confirm_received.wait()  # TODO Optional timeout here?
+            if self._sender.is_constant_read():
+                # TODO This will be slightly troublesome if we allow
+                # switching between constant read or not on the fly.
+                # Must also watch out for calling .read() from two places,
+                # in which case a Lock would be required for .receive().
+                request.confirm_received.wait()  # TODO Optional timeout here?
+            else:
+                while not request.confirm_received.is_set():
+                    self._sender.receive()
+
             if request.rpc_error:
                 raise request.rpc_error
             return request.result

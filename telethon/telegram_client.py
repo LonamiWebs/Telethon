@@ -131,7 +131,16 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        return super().connect()
+        # The main TelegramClient is the only one that will have
+        # constant_read, since it's also the only one who receives
+        # updates and need to be processed as soon as they occur.
+        #
+        # TODO Allow to disable this to avoid the creation of a new thread
+        # if the user is not going to work with updates at all? Whether to
+        # read constantly or not for updates needs to be known before hand,
+        # and further updates won't be able to be added unless allowing to
+        # switch the mode on the fly.
+        return super().connect(constant_read=True)
 
     def disconnect(self):
         """Disconnects from the Telegram server

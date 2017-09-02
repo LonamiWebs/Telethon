@@ -13,9 +13,22 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class MtProtoSender:
-    """MTProto Mobile Protocol sender (https://core.telegram.org/mtproto/description)"""
+    """MTProto Mobile Protocol sender
+       (https://core.telegram.org/mtproto/description)
+    """
 
-    def __init__(self, connection, session):
+    def __init__(self, connection, session, constant_read):
+        """Creates a new MtProtoSender configured to send messages through
+           'connection' and using the parameters from 'session'.
+
+           If 'constant_read' is set to True, another thread will be
+           created and started upon connection to constantly read
+           from the other end. Otherwise, manual calls to .receive()
+           must be performed. The MtProtoSender cannot be connected,
+           or an error will be thrown.
+
+           This way, sending and receiving will be completely independent.
+        """
         self.connection = connection
         self.session = session
         self._logger = logging.getLogger(__name__)
@@ -30,23 +43,35 @@ class MtProtoSender:
         # TODO There might be a better way to handle msgs_ack requests
         self.logging_out = False
 
-        # Reading and writing shouldn't be related. Call .recv() forever here.
-        # TODO Maybe this could be disabled with some "constant_read=bool".
-        self._recv_thread = Thread(
-            name='ReadThread', daemon=True, target=self._recv_thread_impl
-        )
+        # Will create a new _recv_thread when connecting if set
+        self._constant_read = constant_read
+        self._recv_thread = None
 
     def connect(self):
         """Connects to the server"""
-        self.connection.connect()
-        self._recv_thread.start()
+        if not self.is_connected():
+            self.connection.connect()
+            if self._constant_read:
+                self._recv_thread = Thread(
+                    name='ReadThread', daemon=True,
+                    target=self._recv_thread_impl
+                )
+                self._recv_thread.start()
 
     def is_connected(self):
         return self.connection.is_connected()
 
     def disconnect(self):
         """Disconnects from the server"""
-        self.connection.close()
+        if self.is_connected():
+            self.connection.close()
+            if self._constant_read:
+                # The existing thread will close eventually, since it's
+                # only running while the MtProtoSender.is_connected()
+                self._recv_thread = None
+
+    def is_constant_read(self):
+        return self._constant_read
 
     # region Send and receive
 
@@ -85,13 +110,18 @@ class MtProtoSender:
     def _recv_thread_impl(self):
         while self.is_connected():
             try:
-                self._receive_message()
+                self.receive()
             except TimeoutError:
                 # No problem.
                 pass
 
-    def _receive_message(self):
-        """Receives a single message from the connected endpoint."""
+    def receive(self):
+        """Receives a single message from the connected endpoint.
+
+           This method returns nothing, and will only affect other parts
+           of the MtProtoSender such as the updates callback being fired
+           or a pending request being confirmed.
+        """
         # TODO Don't ignore updates
         self._logger.debug('Receiving a message...')
         body = self.connection.recv()
