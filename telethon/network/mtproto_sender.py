@@ -47,6 +47,16 @@ class MtProtoSender:
         self._constant_read = constant_read
         self._recv_thread = None
 
+        # Every unhandled result gets passed to these callbacks, which
+        # should be functions accepting a single parameter: a TLObject.
+        # This should only be Update(s), although it can actually be any type.
+        #
+        # The thread from which these callbacks are called can be any.
+        #
+        # The creator of the MtProtoSender is responsible for setting this
+        # to point to the list wherever their callbacks reside.
+        self.unhandled_callbacks = None
+
     def connect(self):
         """Connects to the server"""
         if not self.is_connected():
@@ -239,16 +249,15 @@ class MtProtoSender:
 
             return True
 
-        # If the code is not parsed manually, then it was parsed by the code generator!
-        # In this case, we will simply treat the incoming TLObject as an Update,
-        # if we can first find a matching TLObject
+        # If the code is not parsed manually then it should be a TLObject.
         if code in tlobjects:
             result = reader.tgread_object()
-            if updates is None:
-                self._logger.debug('Ignored update for %s', repr(result))
+            if self.unhandled_callbacks:
+                self._logger.debug('Passing TLObject to callbacks %s', repr(result))
+                for callback in self.unhandled_callbacks:
+                    callback(result)
             else:
-                self._logger.debug('Read update for %s', repr(result))
-                updates.append(result)
+                self._logger.debug('Ignoring unhandled TLObject %s', repr(result))
 
             return True
 

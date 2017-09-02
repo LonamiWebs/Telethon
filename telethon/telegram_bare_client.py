@@ -83,6 +83,12 @@ class TelegramBareClient:
         # the time since it's a (somewhat expensive) process.
         self._cached_clients = {}
 
+        # Update callbacks (functions accepting a single TLObject) go here
+        #
+        # Note that changing the list to which this variable points to
+        # will not reflect the changes on the existing senders.
+        self._update_callbacks = []
+
         # These will be set later
         self.dc_options = None
         self._sender = None
@@ -136,6 +142,7 @@ class TelegramBareClient:
             self._sender = MtProtoSender(
                 connection, self.session, constant_read=constant_read
             )
+            self._sender.unhandled_callbacks = self._update_callbacks
             self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
