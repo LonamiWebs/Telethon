@@ -314,7 +314,7 @@ class TelegramClient(TelegramBareClient):
         """Signs up to Telegram. Make sure you sent a code request first!"""
         result = self(
             SignUpRequest(
-                phone=self._phone,
+                phone_number=self._phone,
                 phone_code_hash=self._phone_code_hash,
                 phone_code=code,
                 first_name=first_name,
