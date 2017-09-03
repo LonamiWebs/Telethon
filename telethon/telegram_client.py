@@ -155,11 +155,14 @@ class TelegramClient(TelegramBareClient):
         if not self._sender or not self._sender.is_connected():
             return
 
-        super().disconnect()
-
         # The existing thread will close eventually, since it's
         # only running while the MtProtoSender.is_connected()
         self._recv_thread = None
+
+        # This will trigger a "ConnectionResetError", usually, the background
+        # thread would try restarting the connection but since the
+        # ._recv_thread = None, it knows it doesn't have to.
+        super().disconnect()
 
         # Also disconnect all the cached senders
         for sender in self._cached_clients.values():
@@ -213,8 +216,8 @@ class TelegramClient(TelegramBareClient):
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
-                              'attempting to reconnect at DC {}'
-                              .format(e.new_dc))
+                               'attempting to reconnect at DC {}'
+                               .format(e.new_dc))
 
             self.reconnect(new_dc=e.new_dc)
             return self.invoke(request)
@@ -911,14 +914,17 @@ class TelegramClient(TelegramBareClient):
     #
     # This way, sending and receiving will be completely independent.
     def _recv_thread_impl(self):
-        while self._sender.is_connected():
+        while self._sender and self._sender.is_connected():
             try:
                 self._sender.receive()
             except TimeoutError:
                 # No problem.
                 pass
             except ConnectionResetError:
-                self._logger.debug('Server disconnected us. Reconnecting...')
-                self.reconnect()
+                if self._recv_thread is not None:
+                    # Do NOT attempt reconnecting unless the connection was
+                    # finished by the user -> ._recv_thread is None
+                    self._logger.debug('Server disconnected us. Reconnecting...')
+                    self.reconnect()
 
     # endregion
