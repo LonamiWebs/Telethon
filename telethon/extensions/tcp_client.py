@@ -69,6 +69,8 @@ class TcpClient:
         # The socket timeout is now the maximum total duration to send all data.
         try:
             self._socket.sendall(data)
+        except socket.timeout as e:
+            raise TimeoutError() from e
         except BrokenPipeError:
             self.close()
             raise
@@ -86,7 +88,11 @@ class TcpClient:
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
             while bytes_left != 0:
-                partial = self._socket.recv(bytes_left)
+                try:
+                    partial = self._socket.recv(bytes_left)
+                except socket.timeout as e:
+                    raise TimeoutError() from e
+
                 if len(partial) == 0:
                     self.close()
                     raise ConnectionResetError(
