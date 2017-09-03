@@ -111,6 +111,10 @@ class TelegramClient(TelegramBareClient):
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
 
+        # Constantly read for results and updates from within the main client
+        self._recv_thread = None
+
+
     # endregion
 
     # region Connecting
@@ -123,6 +127,10 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
+        if self._sender.is_connected():
+            return
+
+        ok = super().connect()
         # The main TelegramClient is the only one that will have
         # constant_read, since it's also the only one who receives
         # updates and need to be processed as soon as they occur.
@@ -132,12 +140,26 @@ class TelegramClient(TelegramBareClient):
         # read constantly or not for updates needs to be known before hand,
         # and further updates won't be able to be added unless allowing to
         # switch the mode on the fly.
-        return super().connect(constant_read=True)
+        if ok:
+            self._recv_thread = Thread(
+                name='ReadThread', daemon=True,
+                target=self._recv_thread_impl
+            )
+            self._recv_thread.start()
+
+        return ok
 
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
+        if not self._sender.is_connected():
+            return
+
         super().disconnect()
+
+        # The existing thread will close eventually, since it's
+        # only running while the MtProtoSender.is_connected()
+        self._recv_thread = None
 
         # Also disconnect all the cached senders
         for sender in self._cached_clients.values():
@@ -185,7 +207,9 @@ class TelegramClient(TelegramBareClient):
             self._lock.acquire()
 
             # TODO Retry if 'result' is None?
-            return super().invoke(request)
+            return super().invoke(
+                request, call_receive=self._recv_thread is None
+            )
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
@@ -874,5 +898,25 @@ class TelegramClient(TelegramBareClient):
 
     def list_update_handlers(self):
         return self._update_callbacks[:]
+
+    # endregion
+
+    # Constant read
+
+    # By using this approach, another thread will be
+    # created and started upon connection to constantly read
+    # from the other end. Otherwise, manual calls to .receive()
+    # must be performed. The MtProtoSender cannot be connected,
+    # or an error will be thrown.
+    #
+    # This way, sending and receiving will be completely independent.
+    def _recv_thread_impl(self):
+        while self._sender.is_connected():
+            try:
+                self._sender.receive()
+                print('got one')
+            except TimeoutError:
+                # No problem.
+                pass
 
     # endregion
