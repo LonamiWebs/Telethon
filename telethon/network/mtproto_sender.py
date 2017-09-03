@@ -335,7 +335,7 @@ class MtProtoSender:
             self._send_acknowledges()
 
             if request:
-                request.error = error
+                request.rpc_error = error
                 request.confirm_received.set()
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
