@@ -56,9 +56,8 @@ class TcpClient:
             if self.connected:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
-        except OSError as e:
-            if e.errno != errno.ENOTCONN:
-                raise
+        except OSError:
+            pass  # Ignore ENOTCONN, EBADF, and any other error when closing
         finally:
             self._socket = None
 
