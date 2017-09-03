@@ -917,5 +917,8 @@ class TelegramClient(TelegramBareClient):
             except TimeoutError:
                 # No problem.
                 pass
+            except ConnectionResetError:
+                self._logger.debug('Server disconnected us. Reconnecting...')
+                self.reconnect()
 
     # endregion
