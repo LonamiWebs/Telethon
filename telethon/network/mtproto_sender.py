@@ -204,13 +204,13 @@ class MtProtoSender:
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
             ack = reader.tgread_object()
-            for msg_id in ack.msg_ids:
-                r = self._pop_request(msg_id)
-                if r:
+            for r in self._pending_receive:
+                if r.request_msg_id in ack.msg_ids:
                     self._logger.debug('Ack found for the a request')
 
                     if self.logging_out:
                         self._logger.debug('Message ack confirmed a request')
+                        self._pending_receive.remove(r)
                         r.confirm_received.set()
 
             return True
