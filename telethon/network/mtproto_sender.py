@@ -204,8 +204,9 @@ class MtProtoSender:
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
             ack = reader.tgread_object()
-            for r in self._pending_receive:
-                if r.request_msg_id in ack.msg_ids:
+            for msg_id in ack.msg_ids:
+                r = self._pop_request(msg_id)
+                if r:
                     self._logger.debug('Ack found for the a request')
 
                     if self.logging_out:
@@ -233,18 +234,23 @@ class MtProtoSender:
 
     # region Message handling
 
+    def _pop_request(self, request_msg_id):
+        """Pops a pending request from self._pending_receive, or
+           returns None if it's not found
+        """
+        for i in range(len(self._pending_receive)):
+            if self._pending_receive[i].request_msg_id == request_msg_id:
+                return self._pending_receive.pop(i)
+
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
         received_msg_id = reader.read_long()
 
-        try:
-            request = next(r for r in self._pending_receive
-                           if r.request_msg_id == received_msg_id)
-
+        request = self._pop_request(received_msg_id)
+        if request:
             self._logger.debug('Pong confirmed a request')
             request.confirm_received.set()
-        except StopIteration: pass
 
         return True
 
@@ -280,12 +286,9 @@ class MtProtoSender:
         new_salt = reader.read_long(signed=False)
         self.session.salt = new_salt
 
-        try:
-            request = next(r for r in self._pending_receive
-                           if r.request_msg_id == bad_msg_id)
-
+        request = self._pop_request(bad_msg_id)
+        if request:
             self.send(request)
-        except StopIteration: pass
 
         return True
 
@@ -314,11 +317,7 @@ class MtProtoSender:
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
 
-        try:
-            request = next(r for r in self._pending_receive
-                           if r.request_msg_id == request_id)
-        except StopIteration:
-            request = None
+        request = self._pop_request(request_id)
 
         if inner_code == 0x2144ca19:  # RPC Error
             if self.session.report_errors and request:
