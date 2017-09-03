@@ -127,7 +127,7 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if self._sender.is_connected():
+        if self._sender and self._sender.is_connected():
             return
 
         ok = super().connect()
@@ -152,7 +152,7 @@ class TelegramClient(TelegramBareClient):
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        if not self._sender.is_connected():
+        if not self._sender or not self._sender.is_connected():
             return
 
         super().disconnect()
@@ -914,7 +914,6 @@ class TelegramClient(TelegramBareClient):
         while self._sender.is_connected():
             try:
                 self._sender.receive()
-                print('got one')
             except TimeoutError:
                 # No problem.
                 pass
