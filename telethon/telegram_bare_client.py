@@ -304,6 +304,10 @@ class TelegramBareClient:
             raise ValueError('You must be connected to invoke requests!')
 
         try:
+            # Ensure that we start with no previous errors (i.e. resending)
+            request.confirm_received.clear()
+            request.rpc_error = None
+
             self._sender.send(request)
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
