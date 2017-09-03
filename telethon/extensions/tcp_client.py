@@ -71,9 +71,13 @@ class TcpClient:
             self._socket.sendall(data)
         except socket.timeout as e:
             raise TimeoutError() from e
+        except OSError as e:
+            if e.errno == errno.EBADF:
+                self._raise_connection_reset()
+            else:
+                raise
         except BrokenPipeError:
-            self.close()
-            raise
+            self._raise_connection_reset()
 
     def read(self, size):
         """Reads (receives) a whole block of 'size bytes
@@ -92,11 +96,14 @@ class TcpClient:
                     partial = self._socket.recv(bytes_left)
                 except socket.timeout as e:
                     raise TimeoutError() from e
+                except OSError as e:
+                    if e.errno == errno.EBADF:
+                        self._raise_connection_reset()
+                    else:
+                        raise
 
                 if len(partial) == 0:
-                    self.close()
-                    raise ConnectionResetError(
-                        'The server has closed the connection.')
+                    self._raise_connection_reset()
 
                 buffer.write(partial)
                 bytes_left -= len(partial)
@@ -104,3 +111,7 @@ class TcpClient:
             # If everything went fine, return the read bytes
             buffer.flush()
             return buffer.raw.getvalue()
+
+    def _raise_connection_reset(self):
+        self.close()  # Connection reset -> flag as socket closed
+        raise ConnectionResetError('The server has closed the connection.')
