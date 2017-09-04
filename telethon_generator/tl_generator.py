@@ -181,10 +181,8 @@ class TLGenerator:
         builder.writeln('class {}(TLObject):'.format(
             TLGenerator.get_class_name(tlobject)))
 
-        # Class-level variable to store its constructor ID
-        builder.writeln("# Telegram's constructor (U)ID for this class")
+        # Class-level variable to store its Telegram's constructor ID
         builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
-        builder.writeln("# Also the ID of its resulting type for fast checks")
         builder.writeln('subclass_of_id = {}'.format(
             hex(crc32(tlobject.result.encode('ascii')))))
         builder.writeln()
@@ -357,8 +355,6 @@ class TLGenerator:
         # instance, in which all attributes are set to None
         builder.writeln('@staticmethod')
         builder.writeln('def empty():')
-        builder.writeln(
-            '"""Returns an "empty" instance (attributes=None)"""')
         builder.writeln('return {}({})'.format(
             TLGenerator.get_class_name(tlobject), ', '.join(
                 'None' for _ in range(len(args)))))
@@ -476,8 +472,6 @@ class TLGenerator:
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
-            builder.writeln(
-                '# Calculate the flags. This equals to those flag arguments which are NOT None')
             builder.writeln('flags = 0')
             for flag in args:
                 if flag.is_flag:
@@ -559,9 +553,10 @@ class TLGenerator:
 
         if arg.is_vector:
             if arg.use_vector_id:
-                builder.writeln("reader.read_int()  # Vector's constructor ID")
+                # We have to read the vector's constructor ID
+                builder.writeln("reader.read_int()")
 
-            builder.writeln('{} = []  # Initialize an empty list'.format(name))
+            builder.writeln('{} = []'.format(name))
             builder.writeln('_len = reader.read_int()')
             builder.writeln('for _ in range(_len):')
             # Temporary disable .is_vector, not to enter this if again
@@ -600,10 +595,9 @@ class TLGenerator:
         elif 'Bool' == arg.type:
             builder.writeln('{} = reader.tgread_bool()'.format(name))
 
-        elif 'true' == arg.type:  # Awkwardly enough, Telegram has both bool and "true", used in flags
-            builder.writeln(
-                '{} = True  # Arbitrary not-None value, no need to read since it is a flag'.
-                format(name))
+        elif 'true' == arg.type:
+            # Arbitrary not-None value, don't actually read "true" flags
+            builder.writeln('{} = True'.format(name))
 
         elif 'bytes' == arg.type:
             builder.writeln('{} = reader.tgread_bytes()'.format(name))
