@@ -4,7 +4,12 @@ from zlib import crc32
 
 class TLObject:
     """.tl core types IDs (such as vector, booleans, etc.)"""
-    CORE_TYPES = (0x1cb5c415, 0xbc799737, 0x997275b5, 0x3fedd339)
+    CORE_TYPES = (
+        0xbc799737,  # boolFalse#bc799737 = Bool;
+        0x997275b5,  # boolTrue#997275b5 = Bool;
+        0x3fedd339,  # true#3fedd339 = True;
+        0x1cb5c415,  # vector#1cb5c415 {t:Type} # [ t ] = Vector t;
+    )
 
     def __init__(self, fullname, object_id, args, result, is_function):
         """
@@ -64,6 +69,10 @@ class TLObject:
             ([\w\d<>#.?]+)     # The result can again be as complex as any argument type
             ;$                 # Finally, the line should always end with ;
             ''', tl, re.IGNORECASE | re.VERBOSE)
+
+        if match is None:
+            # Probably "vector#1cb5c415 {t:Type} # [ t ] = Vector t;"
+            raise ValueError('Cannot parse TLObject', tl)
 
         # Sub-regex to match the arguments (sadly, it cannot be embedded in the first regex)
         args_match = re.findall(r'''

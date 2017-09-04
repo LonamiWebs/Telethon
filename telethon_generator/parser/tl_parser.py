@@ -7,7 +7,7 @@ class TLParser:
     """Class used to parse .tl files"""
 
     @staticmethod
-    def parse_file(file_path):
+    def parse_file(file_path, ignore_core=False):
         """This method yields TLObjects from a given .tl file"""
 
         with open(file_path, encoding='utf-8') as file:
@@ -28,7 +28,13 @@ class TLParser:
                         is_function = following_types == 'functions'
 
                     else:
-                        yield TLObject.from_tl(line, is_function)
+                        try:
+                            result = TLObject.from_tl(line, is_function)
+                            if not ignore_core or not result.is_core_type():
+                                yield result
+                        except ValueError as e:
+                            if 'vector#1cb5c415' not in str(e):
+                                raise
 
     @staticmethod
     def find_layer(file_path):

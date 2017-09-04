@@ -45,7 +45,7 @@ class TLGenerator:
         os.makedirs(self._get_file('types'), exist_ok=True)
 
         # Step 0: Cache the parsed file on a tuple
-        tlobjects = tuple(TLParser.parse_file(scheme_file))
+        tlobjects = tuple(TLParser.parse_file(scheme_file, ignore_core=True))
 
         # Step 1: Group everything by {namespace: [tlobjects]} so we can
         # easily generate __init__.py files with all the TLObjects on them.
@@ -138,10 +138,6 @@ class TLGenerator:
 
                 # Generate the class for every TLObject
                 for t in sorted(tlobjects, key=lambda x: x.name):
-                    # Omit core types, they're embedded in the code
-                    if t.is_core_type():
-                        continue
-
                     TLGenerator._write_source_code(
                         t, builder, depth, type_constructors
                     )

@@ -232,12 +232,6 @@ P.S.: I may have lied a bit. The ``TL`` language is not that easy. But it's not 
 You're free to sniff the ``parser/`` files and learn how to parse other more complex lines.
 Or simply use that code and change the `SourceBuilder <telethon_generator/parser/source_builder.py>`_!
 
-Notes about the code generator
-------------------------------
-The code generator will skip the types considered as *core types*. These types are usually included in
-almost every programming language, such as boolean values or lists, and also the Telegram True flag,
-which is *not* sent but rather used to determine whether that flag should be enabled or not.
-
 Updating the ``scheme.tl``
 --------------------------
 Have you found a more updated version of the ``scheme.tl`` file? Those are great news! Updating is as simple
