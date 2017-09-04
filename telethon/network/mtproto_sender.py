@@ -1,14 +1,14 @@
 import gzip
-from threading import RLock, Thread
+import logging
+from threading import RLock
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import BadMessageError, InvalidDCError, rpc_message_to_error
+from ..errors import BadMessageError, rpc_message_to_error
+from ..extensions import BinaryReader, BinaryWriter
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
-from ..extensions import BinaryReader, BinaryWriter
 
-import logging
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 

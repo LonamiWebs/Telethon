@@ -4,6 +4,7 @@ try:
     import rsa
     import rsa.core
 except ImportError:
+    rsa = None
     raise ImportError('Missing module "rsa", please install via pip.')
 
 from ..extensions import BinaryWriter

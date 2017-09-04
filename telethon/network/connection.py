@@ -118,10 +118,6 @@ class Connection:
     def close(self):
         self.conn.close()
 
-    def get_client_delay(self):
-        """Gets the client read delay"""
-        return self.conn.delay
-
     # region Receive message implementations
 
     def recv(self):

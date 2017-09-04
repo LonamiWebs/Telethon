@@ -1,43 +1,32 @@
 import logging
-from time import sleep
 from datetime import timedelta
 from hashlib import md5
-from os import path
 from io import BytesIO
+from os import path
 
-# Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
+from .crypto import rsa, CdnDecrypter
 from .errors import (
     RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
-from .utils import get_appropriated_part_size
-from .crypto import rsa, CdnDecrypter
-
-# For sending and receiving requests
 from .tl import TLObject, Session
 from .tl.all_tlobjects import layer
 from .tl.functions import (
     InitConnectionRequest, InvokeWithLayerRequest, PingRequest
 )
-
-# Initial request
-from .tl.functions.help import GetConfigRequest
 from .tl.functions.auth import (
     ImportAuthorizationRequest, ExportAuthorizationRequest
 )
-
-# Easier access for working with media
-from .tl.functions.upload import (
-    GetFileRequest, GetCdnFileRequest, ReuploadCdnFileRequest,
-    SaveBigFilePartRequest, SaveFilePartRequest
+from .tl.functions.help import (
+    GetCdnConfigRequest, GetConfigRequest
 )
-
-from .tl.functions.help import GetCdnConfigRequest
-
-# All the types we need to work with
+from .tl.functions.upload import (
+    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest
+)
 from .tl.types import InputFile, InputFileBig
-from .tl.types.upload import FileCdnRedirect, CdnFileReuploadNeeded
+from .tl.types.upload import FileCdnRedirect
+from .utils import get_appropriated_part_size
 
 
 class TelegramBareClient:

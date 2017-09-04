@@ -1,52 +1,41 @@
 import os
 from datetime import datetime, timedelta
 from mimetypes import guess_type
-from threading import Event, RLock, Thread
-from time import sleep, time
+from threading import RLock, Thread
 
 from . import TelegramBareClient
-from .network import ConnectionMode
-
-# Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
-from .errors import (RPCError, UnauthorizedError, InvalidParameterError,
-                     ReadCancelledError, PhoneCodeEmptyError,
-                     PhoneMigrateError, NetworkMigrateError, UserMigrateError,
-                     PhoneCodeExpiredError, PhoneCodeHashEmptyError,
-                     PhoneCodeInvalidError, InvalidChecksumError)
-
-# For sending and receiving requests
+from .errors import (
+    RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
+    PhoneMigrateError, NetworkMigrateError, UserMigrateError,
+    PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
+)
+from .network import ConnectionMode
 from .tl import Session, TLObject
-
-# Required to get the password salt
-from .tl.functions.account import GetPasswordRequest
-
-# Logging in and out
-from .tl.functions.auth import (CheckPasswordRequest, LogOutRequest,
-                                SendCodeRequest, SignInRequest,
-                                SignUpRequest, ImportBotAuthorizationRequest)
-
-# Easier access to common methods
+from .tl.functions.account import (
+    GetPasswordRequest
+)
+from .tl.functions.auth import (
+    CheckPasswordRequest, LogOutRequest, SendCodeRequest, SignInRequest,
+    SignUpRequest, ImportBotAuthorizationRequest
+)
+from .tl.functions.contacts import (
+    GetContactsRequest, ResolveUsernameRequest
+)
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest)
-
-from .tl.functions.contacts import GetContactsRequest, ResolveUsernameRequest
-
-# For .get_me() and ensuring we're authorized
-from .tl.functions.users import GetUsersRequest
-
-# So the server doesn't stop sending updates to us
-from .tl.functions import PingRequest
-
-# All the types we need to work with
+    SendMessageRequest
+)
+from .tl.functions.users import (
+    GetUsersRequest
+)
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
     InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
-    InputUserSelf, UserProfilePhoto, ChatPhoto)
-
+    InputUserSelf, UserProfilePhoto, ChatPhoto
+)
 from .utils import find_user_or_chat, get_extension
 
 

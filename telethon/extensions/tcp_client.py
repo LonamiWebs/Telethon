@@ -1,12 +1,8 @@
 # Python rough implementation of a C# TCP client
-import socket
-import time
-from datetime import datetime, timedelta
-from io import BytesIO, BufferedWriter
-from threading import Event, Lock
 import errno
-
-from ..errors import ReadCancelledError
+import socket
+from datetime import timedelta
+from io import BytesIO, BufferedWriter
 
 
 class TcpClient:
