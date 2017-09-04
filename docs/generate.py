@@ -16,7 +16,7 @@ from telethon_generator.parser import TLParser, TLObject
 
 # TLObject -> Python class name
 def get_class_name(tlobject):
-    """Gets the class name following the Python style guidelines, in ThisClassFormat"""
+    """Gets the class name following the Python style guidelines"""
     # Courtesy of http://stackoverflow.com/a/31531797/4759433
     name = tlobject.name if isinstance(tlobject, TLObject) else tlobject
     result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
@@ -93,9 +93,9 @@ def get_path_for_type(type_, relative_to='.'):
     elif '.' in type_:
         # If it's not a core type, then it has to be a custom Telegram type
         namespace, name = type_.split('.')
-        path = 'types/%s/%s' % (namespace, get_file_name(name, add_extension=True))
+        path = 'types/%s/%s' % (namespace, get_file_name(name, True))
     else:
-        path = 'types/%s' % get_file_name(type_, add_extension=True)
+        path = 'types/%s' % get_file_name(type_, True)
 
     return get_relative_path(path, relative_to)
 
@@ -116,7 +116,7 @@ def get_relative_paths(original, relative_to):
 
 # Generate a index.html file for the given folder
 def find_title(html_file):
-    """Finds the <title> for the given HTML file, returns (Unknown) if not found"""
+    """Finds the <title> for the given HTML file, or (Unknown)"""
     with open(html_file) as handle:
         for line in handle:
             if '<title>' in line:
@@ -196,8 +196,25 @@ def generate_index(folder, original_paths):
         docs.end_body()
 
 
+def get_description(arg):
+    """Generates a proper description for the given argument"""
+    desc = []
+    if arg.can_be_inferred:
+        desc.append('If left to None, it will be inferred automatically.')
+    if arg.is_vector:
+        desc.append('A list must be supplied for this argument.')
+    if arg.is_generic:
+        desc.append('A different Request must be supplied for this argument.')
+    if arg.is_flag:
+        desc.append('This argument can be omitted.')
+
+    return ' '.join(desc)
+
+
 def generate_documentation(scheme_file):
-    """Generates the documentation HTML files from from scheme.tl to /methods and /constructors, etc."""
+    """Generates the documentation HTML files from from scheme.tl to
+       /methods and /constructors, etc.
+    """
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
@@ -234,7 +251,8 @@ def generate_documentation(scheme_file):
         # Determine the relative paths for this file
         paths = get_relative_paths(original_paths, relative_to=filename)
 
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
+        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
+                as docs:
             docs.write_head(
                 title=get_class_name(tlobject),
                 relative_css_path=paths['css'])
@@ -274,8 +292,9 @@ def generate_documentation(scheme_file):
                     inner = tlobject.result
 
                 docs.begin_table(column_count=1)
-                docs.add_row(inner,
-                             link=get_path_for_type(inner, relative_to=filename))
+                docs.add_row(inner, link=get_path_for_type(
+                    inner, relative_to=filename
+                ))
                 docs.end_table()
 
                 constructors = tltypes.get(inner, [])
@@ -294,9 +313,12 @@ def generate_documentation(scheme_file):
                 docs.end_table()
 
             # Return (or similar types) written. Now parameters/members
-            docs.write_title('Parameters' if tlobject.is_function else 'Members', level=3)
+            docs.write_title(
+                'Parameters' if tlobject.is_function else 'Members', level=3
+            )
 
-            # Sort the arguments in the same way they're sorted on the generated code (flags go last)
+            # Sort the arguments in the same way they're sorted
+            # on the generated code (flags go last)
             args = [
                 a for a in tlobject.sorted_args()
                 if not a.flag_indicator and not a.generic_definition
@@ -315,22 +337,13 @@ def generate_documentation(scheme_file):
                     if arg.is_generic:
                         docs.add_row('!' + arg.type, align='center')
                     else:
-                        docs.add_row(arg.type,
-                                     link=get_path_for_type(arg.type, relative_to=filename),
-                                     align='center')
+                        docs.add_row(
+                            arg.type, align='center', link=
+                            get_path_for_type(arg.type, relative_to=filename)
+                         )
 
-                    # Create a description for this argument
-                    description = ''
-                    if arg.can_be_inferred:
-                        description += 'If left to None, it will be inferred automatically. '
-                    if arg.is_vector:
-                        description += 'A list must be supplied for this argument. '
-                    if arg.is_generic:
-                        description += 'A different MTProtoRequest must be supplied for this argument. '
-                    if arg.is_flag:
-                        description += 'This argument can be omitted. '
-
-                    docs.add_row(description.strip())
+                    # Add a description for this argument
+                    docs.add_row(get_description(arg))
 
                 docs.end_table()
             else:
@@ -342,14 +355,14 @@ def generate_documentation(scheme_file):
             docs.end_body()
 
     # Find all the available types (which are not the same as the constructors)
-    # Each type has a list of constructors associated to it, so it should be a map
+    # Each type has a list of constructors associated to it, hence is a map
     print('Generating types documentation...')
     for tltype, constructors in tltypes.items():
         filename = get_path_for_type(tltype)
         out_dir = os.path.dirname(filename)
         os.makedirs(out_dir, exist_ok=True)
 
-        # Since we don't have access to the full TLObject, split the type into namespace.name
+        # Since we don't have access to the full TLObject, split the type
         if '.' in tltype:
             namespace, name = tltype.split('.')
         else:
@@ -358,7 +371,8 @@ def generate_documentation(scheme_file):
         # Determine the relative paths for this file
         paths = get_relative_paths(original_paths, relative_to=out_dir)
 
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
+        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
+                as docs:
             docs.write_head(
                 title=get_class_name(name),
                 relative_css_path=paths['css'])
@@ -376,7 +390,8 @@ def generate_documentation(scheme_file):
             elif len(constructors) == 1:
                 docs.write_text('This type has one constructor available.')
             else:
-                docs.write_text('This type has %d constructors available.' % len(constructors))
+                docs.write_text('This type has %d constructors available.' %
+                                len(constructors))
 
             docs.begin_table(2)
             for constructor in constructors:
@@ -394,7 +409,10 @@ def generate_documentation(scheme_file):
             elif len(functions) == 1:
                 docs.write_text('Only the following method returns this type.')
             else:
-                docs.write_text('The following %d methods return this type as a result.' % len(functions))
+                docs.write_text(
+                    'The following %d methods return this type as a result.' %
+                    len(functions)
+                )
 
             docs.begin_table(2)
             for func in functions:
@@ -456,8 +474,8 @@ def generate_documentation(scheme_file):
             docs.end_table()
             docs.end_body()
 
-    # After everything's been written, generate an index.html file for every folder.
-    # This will be done automatically and not taking into account any additional
+    # After everything's been written, generate an index.html per folder.
+    # This will be done automatically and not taking into account any extra
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
     print('Generating indices...')
@@ -485,13 +503,16 @@ def generate_documentation(scheme_file):
     methods = sorted(methods, key=lambda m: m.name)
     constructors = sorted(constructors, key=lambda c: c.name)
 
-    request_names = ', '.join('"' + get_class_name(m) + '"' for m in methods)
-    type_names = ', '.join('"' + get_class_name(t) + '"' for t in types)
-    constructor_names = ', '.join('"' + get_class_name(t) + '"' for t in constructors)
+    def fmt(xs, formatter):
+        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
 
-    request_urls = ', '.join('"' + get_create_path_for(m) + '"' for m in methods)
-    type_urls = ', '.join('"' + get_path_for_type(t) + '"' for t in types)
-    constructor_urls = ', '.join('"' + get_create_path_for(t) + '"' for t in constructors)
+    request_names = fmt(methods, get_class_name)
+    type_names = fmt(types, get_class_name)
+    constructor_names = fmt(constructors, get_class_name)
+
+    request_urls = fmt(methods, get_create_path_for)
+    type_urls = fmt(types, get_create_path_for)
+    constructor_urls = fmt(constructors, get_create_path_for)
 
     replace_dict = {
         'type_count': len(types),

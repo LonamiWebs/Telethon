@@ -11,21 +11,27 @@ class SourceBuilder:
         self.auto_added_line = False
 
     def indent(self):
-        """Indents the current source code line by the current indentation level"""
+        """Indents the current source code line
+           by the current indentation level
+        """
         self.write(' ' * (self.current_indent * self.indent_size))
 
     def write(self, string):
-        """Writes a string into the source code, applying indentation if required"""
+        """Writes a string into the source code,
+           applying indentation if required
+        """
         if self.on_new_line:
             self.on_new_line = False  # We're not on a new line anymore
-            if string.strip(
-            ):  # If the string was not empty, indent; Else it probably was a new line
+            # If the string was not empty, indent; Else probably a new line
+            if string.strip():
                 self.indent()
 
         self.out_stream.write(string)
 
     def writeln(self, string=''):
-        """Writes a string into the source code _and_ appends a new line, applying indentation if required"""
+        """Writes a string into the source code _and_ appends a new line,
+           applying indentation if required
+        """
         self.write(string + '\n')
         self.on_new_line = True
 

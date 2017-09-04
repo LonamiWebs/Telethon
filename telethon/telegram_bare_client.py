@@ -184,8 +184,9 @@ class TelegramBareClient:
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
             self.disconnect()
-            self._logger.debug('Could not stabilise initial connection: {}'
-                                 .format(error))
+            self._logger.debug(
+                'Could not stabilise initial connection: {}'.format(error)
+            )
             return None if initial_query else False
 
     def disconnect(self):
@@ -493,7 +494,7 @@ class TelegramBareClient:
                                 CdnDecrypter.prepare_decrypter(
                                     client, TelegramBareClient, result,
                                     offset, part_size
-                            )
+                                )
 
                 except FileMigrateError as e:
                     client = self._get_exported_client(e.new_dc)
@@ -515,8 +516,10 @@ class TelegramBareClient:
                     progress_callback(f.tell(), file_size)
         finally:
             if cdn_decrypter:
-                try: cdn_decrypter.client.disconnect()
-                except: pass
+                try:
+                    cdn_decrypter.client.disconnect()
+                except:
+                    pass
             if isinstance(file, str):
                 f.close()
 

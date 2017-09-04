@@ -73,8 +73,8 @@ class Session:
                     'time_offset': self.time_offset,
                     'server_address': self.server_address,
                     'auth_key_data':
-                        b64encode(self.auth_key.key).decode('ascii')\
-                            if self.auth_key else None
+                        b64encode(self.auth_key.key).decode('ascii')
+                        if self.auth_key else None
                 }, file)
 
     def delete(self):

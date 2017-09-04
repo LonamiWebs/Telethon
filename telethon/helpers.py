@@ -22,7 +22,9 @@ def ensure_parent_dir_exists(file_path):
 
 
 def calc_key(shared_key, msg_key, client):
-    """Calculate the key based on Telegram guidelines, specifying whether it's the client or not"""
+    """Calculate the key based on Telegram guidelines,
+       specifying whether it's the client or not
+    """
     x = 0 if client else 8
 
     sha1a = sha1(msg_key + shared_key[x:x + 32]).digest()
@@ -56,7 +58,9 @@ def generate_key_data_from_nonce(server_nonce, new_nonce):
 
 def get_password_hash(pw, current_salt):
     """Gets the password hash for the two-step verification.
-       current_salt should be the byte array provided by invoking GetPasswordRequest()"""
+       current_salt should be the byte array provided by
+       invoking GetPasswordRequest()
+    """
 
     # Passwords are encoded as UTF-8
     # At https://github.com/DrKLO/Telegram/blob/e31388

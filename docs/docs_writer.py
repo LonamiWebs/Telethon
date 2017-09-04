@@ -8,9 +8,10 @@ class DocsWriter:
         """Initializes the writer to the specified output file,
            creating the parent directories when used if required.
 
-           'type_to_path_function' should be a function which, given a type name
-           and a named argument relative_to, returns the file path for the specified
-           type, relative to the given filename"""
+           'type_to_path_function' should be a function which, given a type
+           name and a named argument relative_to, returns the file path for
+           the specified type, relative to the given filename
+        """
         self.filename = filename
         self.handle = None
 
@@ -18,7 +19,9 @@ class DocsWriter:
         self.menu_separator_tag = None
 
         # Utility functions TODO There must be a better way
-        self.type_to_path = lambda t: type_to_path_function(t, relative_to=self.filename)
+        self.type_to_path = lambda t: type_to_path_function(
+            t, relative_to=self.filename
+        )
 
         # Control signals
         self.menu_began = False
@@ -28,7 +31,9 @@ class DocsWriter:
 
     # High level writing
     def write_head(self, title, relative_css_path):
-        """Writes the head part for the generated document, with the given title and CSS"""
+        """Writes the head part for the generated document,
+           with the given title and CSS
+        """
         self.write('''<!DOCTYPE html>
 <html>
 <head>
@@ -50,9 +55,12 @@ class DocsWriter:
 <div id="main_div">''')
 
     def set_menu_separator(self, relative_image_path):
-        """Sets the menu separator. Must be called before adding entries to the menu"""
+        """Sets the menu separator.
+           Must be called before adding entries to the menu
+        """
         if relative_image_path:
-            self.menu_separator_tag = '<img src="%s" alt="/" />' % relative_image_path
+            self.menu_separator_tag = \
+                '<img src="{}" alt="/" />'.format(relative_image_path)
         else:
             self.menu_separator_tag = None
 
@@ -86,13 +94,17 @@ class DocsWriter:
         self.write('</ul>')
 
     def write_title(self, title, level=1):
-        """Writes a title header in the document body, with an optional depth level"""
+        """Writes a title header in the document body,
+           with an optional depth level
+        """
         self.write('<h%d>' % level)
         self.write(title)
         self.write('</h%d>' % level)
 
     def write_code(self, tlobject):
-        """Writes the code for the given 'tlobject' properly formatted ith with hyperlinks"""
+        """Writes the code for the given 'tlobject' properly
+           formatted with hyperlinks
+        """
         self.write('<pre>---')
         self.write('functions' if tlobject.is_function else 'types')
         self.write('---\n')
@@ -127,7 +139,9 @@ class DocsWriter:
                 self.write('!')
 
             if arg.is_vector:
-                self.write('<a href="%s">Vector</a>&lt;' % self.type_to_path('vector'))
+                self.write(
+                    '<a href="%s">Vector</a>&lt;' % self.type_to_path('vector')
+                )
 
             # Argument type
             if arg.type:
@@ -146,7 +160,7 @@ class DocsWriter:
             if arg.generic_definition:
                 self.write('}')
 
-        # Now write the resulting type (result from a function, or type for a constructor)
+        # Now write the resulting type (result from a function/type)
         self.write(' = ')
         generic_name = next((arg.name for arg in tlobject.args
                              if arg.generic_definition), None)

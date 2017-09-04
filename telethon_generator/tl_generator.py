@@ -405,15 +405,14 @@ class TLGenerator:
 
     @staticmethod
     def get_class_name(tlobject):
-        """Gets the class name following the Python style guidelines, in ThisClassFormat"""
+        """Gets the class name following the Python style guidelines"""
 
         # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        # Also, '_' could be replaced for ' ', then use .title(), and then remove ' '
         result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(),
                         tlobject.name)
         result = result[:1].upper() + result[1:].replace(
             '_', '')  # Replace again to fully ensure!
-        # If it's a function, let it end with "Request" to identify them more easily
+        # If it's a function, let it end with "Request" to identify them
         if tlobject.is_function:
             result += 'Request'
         return result
@@ -436,9 +435,11 @@ class TLGenerator:
         Writes the write code for the given argument
         :param builder: The source code builder
         :param arg: The argument to write
-        :param args: All the other arguments in TLObject same on_send. This is required to determine the flags value
+        :param args: All the other arguments in TLObject same on_send.
+                     This is required to determine the flags value
         :param name: The name of the argument. Defaults to "self.argname"
-                     This argument is an option because it's required when writing Vectors<>
+                     This argument is an option because it's required when
+                     writing Vectors<>
         """
 
         if arg.generic_definition:
@@ -447,8 +448,10 @@ class TLGenerator:
         if name is None:
             name = 'self.{}'.format(arg.name)
 
-        # The argument may be a flag, only write if it's not None AND if it's not a True type
-        # True types are not actually sent, but instead only used to determine the flags
+        # The argument may be a flag, only write if it's not None AND
+        # if it's not a True type.
+        # True types are not actually sent, but instead only used to
+        # determine the flags.
         if arg.is_flag:
             if arg.type == 'true':
                 return  # Exit, since True type is never written
@@ -457,8 +460,7 @@ class TLGenerator:
 
         if arg.is_vector:
             if arg.use_vector_id:
-                builder.writeln(
-                    "writer.write_int(0x1cb5c415, signed=False)  # Vector's constructor ID")
+                builder.writeln('writer.write_int(0x1cb5c415, signed=False)')
 
             builder.writeln('writer.write_int(len({}))'.format(name))
             builder.writeln('for _x in {}:'.format(name))
@@ -501,7 +503,7 @@ class TLGenerator:
         elif 'Bool' == arg.type:
             builder.writeln('writer.tgwrite_bool({})'.format(name))
 
-        elif 'true' == arg.type:  # Awkwardly enough, Telegram has both bool and "true", used in flags
+        elif 'true' == arg.type:
             pass  # These are actually NOT written! Only used for flags
 
         elif 'bytes' == arg.type:
@@ -528,9 +530,11 @@ class TLGenerator:
 
         :param builder: The source code builder
         :param arg: The argument to write
-        :param args: All the other arguments in TLObject same on_send. This is required to determine the flags value
+        :param args: All the other arguments in TLObject same on_send.
+                     This is required to determine the flags value
         :param name: The name of the argument. Defaults to "self.argname"
-                     This argument is an option because it's required when writing Vectors<>
+                     This argument is an option because it's required when
+                     writing Vectors<>
         """
 
         if arg.generic_definition:
@@ -544,8 +548,10 @@ class TLGenerator:
         if arg.is_flag:
             was_flag = True
             builder.writeln('if (flags & (1 << {})) != 0:'.format(
-                arg.flag_index))
-            # Temporary disable .is_flag not to enter this if again when calling the method recursively
+                arg.flag_index
+            ))
+            # Temporary disable .is_flag not to enter this if
+            # again when calling the method recursively
             arg.is_flag = False
 
         if arg.is_vector:
@@ -621,7 +627,8 @@ class TLGenerator:
         Writes the receive code for the given function
 
         :param builder: The source code builder
-        :param tlobject: The TLObject for which the 'self.result = ' will be written
+        :param tlobject: The TLObject for which the 'self.result = '
+                         will be written
         """
         if tlobject.result.startswith('Vector<'):
             # Vector results are a bit special since they can also be composed
@@ -631,13 +638,15 @@ class TLGenerator:
             if tlobject.result == 'Vector<int>':
                 builder.writeln('reader.read_int()  # Vector id')
                 builder.writeln('count = reader.read_int()')
-                builder.writeln('self.result = [reader.read_int() for _ in range(count)]')
-
+                builder.writeln(
+                    'self.result = [reader.read_int() for _ in range(count)]'
+                )
             elif tlobject.result == 'Vector<long>':
                 builder.writeln('reader.read_int()  # Vector id')
                 builder.writeln('count = reader.read_long()')
-                builder.writeln('self.result = [reader.read_long() for _ in range(count)]')
-
+                builder.writeln(
+                    'self.result = [reader.read_long() for _ in range(count)]'
+                )
             else:
                 builder.writeln('self.result = reader.tgread_vector()')
         else:

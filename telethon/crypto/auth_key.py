@@ -14,7 +14,9 @@ class AuthKey:
             self.key_id = reader.read_long(signed=False)
 
     def calc_new_nonce_hash(self, new_nonce, number):
-        """Calculates the new nonce hash based on the current class fields' values"""
+        """Calculates the new nonce hash based on
+           the current class fields' values
+        """
         with BinaryWriter() as writer:
             writer.write(new_nonce)
             writer.write_byte(number)

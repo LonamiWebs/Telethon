@@ -30,7 +30,8 @@ class InvalidChecksumError(Exception):
     def __init__(self, checksum, valid_checksum):
         super().__init__(
             self,
-            'Invalid checksum ({} when {} was expected). This packet should be skipped.'
+            'Invalid checksum ({} when {} was expected). '
+            'This packet should be skipped.'
             .format(checksum, valid_checksum))
 
         self.checksum = checksum

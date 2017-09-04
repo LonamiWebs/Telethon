@@ -217,6 +217,8 @@ def do_authentication(connection):
 
 
 def get_int(byte_array, signed=True):
-    """Gets the specified integer from its byte array. This should be used by the authenticator,
-       who requires the data to be in big endian"""
+    """Gets the specified integer from its byte array.
+       This should be used by the authenticator,
+       who requires the data to be in big endian
+    """
     return int.from_bytes(byte_array, byteorder='big', signed=signed)

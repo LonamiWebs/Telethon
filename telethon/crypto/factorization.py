@@ -61,7 +61,9 @@ class Factorization:
 
     @staticmethod
     def factorize(pq):
-        """Factorizes the given number and returns both the divisor and the number divided by the divisor"""
+        """Factorizes the given number and returns both
+           the divisor and the number divided by the divisor
+        """
         if sympy:
             return tuple(sympy.ntheory.factorint(pq).keys())
         else:

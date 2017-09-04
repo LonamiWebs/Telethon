@@ -10,7 +10,7 @@ from ..extensions import BinaryWriter
 
 
 # {fingerprint: Crypto.PublicKey.RSA._RSAobj} dictionary
-_server_keys = { }
+_server_keys = {}
 
 
 def get_byte_array(integer):

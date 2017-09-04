@@ -61,7 +61,8 @@ class Connection:
             setattr(self, 'send', self._send_intermediate)
             setattr(self, 'recv', self._recv_intermediate)
 
-        elif mode in (ConnectionMode.TCP_ABRIDGED, ConnectionMode.TCP_OBFUSCATED):
+        elif mode in (ConnectionMode.TCP_ABRIDGED,
+                      ConnectionMode.TCP_OBFUSCATED):
             setattr(self, 'send', self._send_abridged)
             setattr(self, 'recv', self._recv_abridged)
 
@@ -90,8 +91,8 @@ class Connection:
         while True:
             random = os.urandom(64)
             if (random[0] != b'\xef' and
-                        random[:4] not in keywords and
-                        random[4:4] != b'\0\0\0\0'):
+                    random[:4] not in keywords and
+                    random[4:4] != b'\0\0\0\0'):
                 # Invalid random generated
                 break
 

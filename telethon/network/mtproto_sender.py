@@ -31,7 +31,7 @@ class MtProtoSender:
         # Store an RLock instance to make this class safely multi-threaded
         self._lock = RLock()
 
-        # Used when logging out, the only request that seems to use 'ack' requests
+        # Used when logging out, the only request that seems to use 'ack'
         # TODO There might be a better way to handle msgs_ack requests
         self.logging_out = False
 
@@ -114,7 +114,10 @@ class MtProtoSender:
 
     def _send_packet(self, packet, request):
         """Sends the given packet bytes with the additional
-           information of the original request. This does NOT lock the threads!"""
+           information of the original request.
+
+           This does NOT lock the threads!
+        """
         request.request_msg_id = self.session.get_new_msg_id()
 
         # First calculate plain_text to encrypt it
@@ -183,7 +186,7 @@ class MtProtoSender:
         reader.seek(-4)
 
         # The following codes are "parsed manually"
-        if code == 0xf35c6d01:  # rpc_result, (response of an RPC call, i.e., we sent a request)
+        if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
             return self._handle_rpc_result(msg_id, sequence, reader)
 
         if code == 0x347773c5:  # pong
@@ -219,11 +222,15 @@ class MtProtoSender:
         if code in tlobjects:
             result = reader.tgread_object()
             if self.unhandled_callbacks:
-                self._logger.debug('Passing TLObject to callbacks %s', repr(result))
+                self._logger.debug(
+                    'Passing TLObject to callbacks %s', repr(result)
+                )
                 for callback in self.unhandled_callbacks:
                     callback(result)
             else:
-                self._logger.debug('Ignoring unhandled TLObject %s', repr(result))
+                self._logger.debug(
+                    'Ignoring unhandled TLObject %s', repr(result)
+                )
 
             return True
 

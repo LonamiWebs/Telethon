@@ -22,21 +22,22 @@ class BinaryWriter:
 
     # region Writing
 
-    # "All numbers are written as little endian." |> Source: https://core.telegram.org/mtproto
+    # "All numbers are written as little endian."
+    # https://core.telegram.org/mtproto
     def write_byte(self, value):
         """Writes a single byte value"""
         self.writer.write(pack('B', value))
         self.written_count += 1
 
     def write_int(self, value, signed=True):
-        """Writes an integer value (4 bytes), which can or cannot be signed"""
+        """Writes an integer value (4 bytes), optionally signed"""
         self.writer.write(
             int.to_bytes(
                 value, length=4, byteorder='little', signed=signed))
         self.written_count += 4
 
     def write_long(self, value, signed=True):
-        """Writes a long integer value (8 bytes), which can or cannot be signed"""
+        """Writes a long integer value (8 bytes), optionally signed"""
         self.writer.write(
             int.to_bytes(
                 value, length=8, byteorder='little', signed=signed))
@@ -101,7 +102,9 @@ class BinaryWriter:
         self.write_int(0x997275b5 if boolean else 0xbc799737, signed=False)
 
     def tgwrite_date(self, datetime):
-        """Converts a Python datetime object into Unix time (used by Telegram) and writes it"""
+        """Converts a Python datetime object into Unix time
+           (used by Telegram) and writes it
+        """
         value = 0 if datetime is None else int(datetime.timestamp())
         self.write_int(value)
 
@@ -127,14 +130,18 @@ class BinaryWriter:
         self.writer.close()
 
     def get_bytes(self, flush=True):
-        """Get the current bytes array content from the buffer, optionally flushing first"""
+        """Get the current bytes array content from the buffer,
+           optionally flushing first
+        """
         if flush:
             self.writer.flush()
         return self.writer.raw.getvalue()
 
     def get_written_bytes_count(self):
         """Gets the count of bytes written in the buffer.
-           This may NOT be equal to the stream length if one was provided when initializing the writer"""
+           This may NOT be equal to the stream length if one
+           was provided when initializing the writer
+        """
         return self.written_count
 
     # with block

@@ -31,7 +31,8 @@ class CdnDecrypter:
         # https://core.telegram.org/cdn
         cdn_aes = AESModeCTR(
             key=cdn_redirect.encryption_key,
-            iv=cdn_redirect.encryption_iv[:12] + (offset >> 4).to_bytes(4, 'big')
+            iv=
+            cdn_redirect.encryption_iv[:12] + (offset >> 4).to_bytes(4, 'big')
         )
 
         # Create a new client on said CDN

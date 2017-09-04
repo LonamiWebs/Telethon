@@ -4,7 +4,9 @@ from ..extensions import BinaryReader, BinaryWriter
 
 
 class MtProtoPlainSender:
-    """MTProto Mobile Protocol plain sender (https://core.telegram.org/mtproto/description#unencrypted-messages)"""
+    """MTProto Mobile Protocol plain sender
+       (https://core.telegram.org/mtproto/description#unencrypted-messages)
+    """
 
     def __init__(self, connection):
         self._sequence = 0
@@ -19,7 +21,9 @@ class MtProtoPlainSender:
         self._connection.close()
 
     def send(self, data):
-        """Sends a plain packet (auth_key_id = 0) containing the given message body (data)"""
+        """Sends a plain packet (auth_key_id = 0) containing the
+           given message body (data)
+        """
         with BinaryWriter(known_length=len(data) + 20) as writer:
             writer.write_long(0)
             writer.write_long(self._get_new_msg_id())

@@ -124,7 +124,6 @@ class TelegramClient(TelegramBareClient):
         # Constantly read for results and updates from within the main client
         self._recv_thread = None
 
-
     # endregion
 
     # region Connecting
