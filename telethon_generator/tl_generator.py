@@ -121,6 +121,14 @@ class TLGenerator:
             with open(file, 'w', encoding='utf-8') as f, \
                     SourceBuilder(f) as builder:
                 builder.writeln(AUTO_GEN_NOTICE)
+
+                # Both types and functions inherit from the TLObject class
+                # so they all can be serialized and sent, however, only the
+                # functions are "content_related".
+                builder.writeln(
+                    'from {}.tl.tlobject import TLObject'.format('.' * depth)
+                )
+
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
                 if not ns:
@@ -148,14 +156,7 @@ class TLGenerator:
            Additional information such as file path depth and
            the Type: [Constructors] must be given for proper
            importing and documentation strings.
-        '"""
-
-        # Both types and functions inherit from the TLObject class so they
-        # all can be serialized and sent, however, only the functions are
-        # "content_related".
-        builder.writeln('from {}.tl.tlobject import TLObject'
-                        .format('.' * depth))
-
+        """
         if tlobject.is_function:
             util_imports = set()
             for a in tlobject.args:
