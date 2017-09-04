@@ -45,86 +45,30 @@ class TLGenerator:
         # Step 0: Cache the parsed file on a tuple
         tlobjects = tuple(TLParser.parse_file(scheme_file))
 
-        # Step 1: Ensure that no object has the same name as a namespace
-        # We must check this because Python will complain if it sees a
-        # file and a directory with the same name, which happens for
-        # example with "updates".
-        #
-        # We distinguish between function and type namespaces since we
-        # will later need to perform a relative import for them to be used
-        function_namespaces = set()
-        type_namespaces = set()
+        # Step 1: Group everything by {namespace: [tlobjects]} so we can
+        # easily generate __init__.py files with all the TLObjects on them.
+        namespace_functions = defaultdict(list)
+        namespace_types = defaultdict(list)
 
-        # Make use of this iteration to also store 'Type: [Constructors]'
+        # Make use of this iteration to also store 'Type: [Constructors]',
+        # used when generating the documentation for the classes.
         type_constructors = defaultdict(list)
         for tlobject in tlobjects:
             if tlobject.is_function:
-                if tlobject.namespace:
-                    function_namespaces.add(tlobject.namespace)
+                namespace_functions[tlobject.namespace].append(tlobject)
             else:
+                namespace_types[tlobject.namespace].append(tlobject)
                 type_constructors[tlobject.result].append(tlobject)
-                if tlobject.namespace:
-                    type_namespaces.add(tlobject.namespace)
-
-        # Merge both namespaces to easily check if any namespace exists,
-        # though we could also distinguish between types and functions
-        # here, it's not worth doing
-        namespace_directories = function_namespaces | type_namespaces
-        for tlobject in tlobjects:
-            if TLGenerator.get_file_name(tlobject, add_extension=False) \
-                    in namespace_directories:
-                # If this TLObject isn't under the same directory as its
-                # name (i.e. "contacts"), append "_tg" to avoid confusion
-                # between the file and the directory (i.e. "updates")
-                if tlobject.namespace != tlobject.name:
-                    tlobject.name += '_tg'
 
         # Step 2: Generate the actual code
-        for tlobject in tlobjects:
-            # Omit core types, these are embedded in the generated code
-            if tlobject.is_core_type():
-                continue
-
-            # Determine the output directory and create it
-            out_dir = self._get_file('functions'
-                                     if tlobject.is_function else 'types')
-
-            # Path depth to perform relative import
-            depth = import_depth
-            if tlobject.namespace:
-                depth += 1
-                out_dir = os.path.join(out_dir, tlobject.namespace)
-
-            os.makedirs(out_dir, exist_ok=True)
-
-            # Add this object to __init__.py, so we can import *
-            init_py = os.path.join(out_dir, '__init__.py')
-            with open(init_py, 'a', encoding='utf-8') as file:
-                with SourceBuilder(file) as builder:
-                    builder.writeln('from .{} import {}'.format(
-                        TLGenerator.get_file_name(tlobject, add_extension=False),
-                        TLGenerator.get_class_name(tlobject)))
-
-            # Create the file for this TLObject
-            filename = os.path.join(out_dir, TLGenerator.get_file_name(
-                tlobject, add_extension=True
-            ))
-
-            with open(filename, 'w', encoding='utf-8') as file:
-                with SourceBuilder(file) as builder:
-                    TLGenerator._write_source_code(
-                        tlobject, builder, depth, type_constructors)
-
-        # Step 3: Add the relative imports to the namespaces on __init__.py's
-        init_py = self._get_file('functions', '__init__.py')
-        with open(init_py, 'a') as file:
-            file.write('from . import {}\n'
-                       .format(', '.join(function_namespaces)))
-
-        init_py = self._get_file('types', '__init__.py')
-        with open(init_py, 'a') as file:
-            file.write('from . import {}\n'
-                       .format(', '.join(type_namespaces)))
+        self._write_init_py(
+            self._get_file('functions'), import_depth,
+            namespace_functions, type_constructors
+        )
+        self._write_init_py(
+            self._get_file('types'), import_depth,
+            namespace_types, type_constructors
+        )
 
         # Step 4: Once all the objects have been generated,
         #         we can now group them in a single file
@@ -166,6 +110,41 @@ class TLGenerator:
 
                 builder.current_indent -= 1
                 builder.writeln('}')
+
+    @staticmethod
+    def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
+        # namespace_tlobjects: {'namespace', [TLObject]}
+        for ns, tlobjects in namespace_tlobjects.items():
+            # Path depth to perform relative import
+            current_depth = depth
+            if ns:
+                current_depth += 1
+                init_py = os.path.join(out_dir, ns)
+            else:
+                init_py = out_dir
+
+            os.makedirs(init_py, exist_ok=True)
+            init_py = os.path.join(init_py, '__init__.py')
+            with open(init_py, 'w', encoding='utf-8') as file:
+                with SourceBuilder(file) as builder:
+                    # Add the relative imports to the namespaces,
+                    # unless we already are in a namespace.
+                    if not ns:
+                        builder.writeln('from . import {}'.format(', '.join(
+                            x for x in namespace_tlobjects.keys() if x
+                        )))
+
+                    # Generate the class for every TLObject
+                    for t in tlobjects:
+                        # Omit core types, they're embedded in the code
+                        if t.is_core_type():
+                            continue
+
+                        TLGenerator._write_source_code(
+                            t, builder, current_depth, type_constructors
+                        )
+                        while builder.current_indent != 0:
+                            builder.end_block()
 
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
