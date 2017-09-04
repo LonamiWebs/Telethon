@@ -137,7 +137,7 @@ class TLGenerator:
                     )))
 
                 # Generate the class for every TLObject
-                for t in tlobjects:
+                for t in sorted(tlobjects, key=lambda x: x.name):
                     # Omit core types, they're embedded in the code
                     if t.is_core_type():
                         continue
