@@ -114,37 +114,29 @@ class TLGenerator:
     @staticmethod
     def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
         # namespace_tlobjects: {'namespace', [TLObject]}
+        os.makedirs(out_dir, exist_ok=True)
         for ns, tlobjects in namespace_tlobjects.items():
-            # Path depth to perform relative import
-            current_depth = depth
-            if ns:
-                current_depth += 1
-                init_py = os.path.join(out_dir, ns)
-            else:
-                init_py = out_dir
+            file = os.path.join(out_dir, ns + '.py' if ns else '__init__.py')
+            with open(file, 'w', encoding='utf-8') as f, \
+                    SourceBuilder(f) as builder:
+                # Add the relative imports to the namespaces,
+                # unless we already are in a namespace.
+                if not ns:
+                    builder.writeln('from . import {}'.format(', '.join(
+                        x for x in namespace_tlobjects.keys() if x
+                    )))
 
-            os.makedirs(init_py, exist_ok=True)
-            init_py = os.path.join(init_py, '__init__.py')
-            with open(init_py, 'w', encoding='utf-8') as file:
-                with SourceBuilder(file) as builder:
-                    # Add the relative imports to the namespaces,
-                    # unless we already are in a namespace.
-                    if not ns:
-                        builder.writeln('from . import {}'.format(', '.join(
-                            x for x in namespace_tlobjects.keys() if x
-                        )))
+                # Generate the class for every TLObject
+                for t in tlobjects:
+                    # Omit core types, they're embedded in the code
+                    if t.is_core_type():
+                        continue
 
-                    # Generate the class for every TLObject
-                    for t in tlobjects:
-                        # Omit core types, they're embedded in the code
-                        if t.is_core_type():
-                            continue
-
-                        TLGenerator._write_source_code(
-                            t, builder, current_depth, type_constructors
-                        )
-                        while builder.current_indent != 0:
-                            builder.end_block()
+                    TLGenerator._write_source_code(
+                        t, builder, depth, type_constructors
+                    )
+                    while builder.current_indent != 0:
+                        builder.end_block()
 
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
