@@ -4,34 +4,16 @@ from threading import Event
 
 class TLObject:
     def __init__(self):
-        self.sent = False
-
         self.request_msg_id = 0  # Long
-        self.sequence = 0
 
-        self.dirty = False
-        self.send_time = None
         self.confirm_received = Event()
         self.rpc_error = None
 
         # These should be overrode
         self.constructor_id = 0
         self.content_related = False  # Only requests/functions/queries are
-        self.responded = False
 
     # These should not be overrode
-    def on_send_success(self):
-        self.send_time = datetime.now()
-        self.sent = True
-
-    def on_confirm(self):
-        self.confirm_received.set()
-
-    def need_resend(self):
-        return self.dirty or (
-            self.content_related and not self.confirm_received.is_set() and
-            datetime.now() - self.send_time > timedelta(seconds=3))
-
     @staticmethod
     def pretty_format(obj, indent=None):
         """Pretty formats the given object as a string which is returned.
@@ -109,7 +91,4 @@ class TLObject:
         pass
 
     def on_response(self, reader):
-        pass
-
-    def on_exception(self, exception):
         pass
