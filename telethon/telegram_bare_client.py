@@ -10,7 +10,7 @@ from . import helpers as utils
 from .errors import (
     RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
 )
-from .network import authenticator, MtProtoSender, Connection
+from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .utils import get_appropriated_part_size
 from .crypto import rsa, CdnDecrypter
 
@@ -66,6 +66,7 @@ class TelegramBareClient:
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
+                 connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None, timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
            Session must always be a Session instance, and an optional proxy
@@ -74,6 +75,7 @@ class TelegramBareClient:
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
+        self._connection_mode = connection_mode
         self.proxy = proxy
         self._timeout = timeout
         self._logger = logging.getLogger(__name__)
@@ -125,7 +127,7 @@ class TelegramBareClient:
 
         connection = Connection(
             self.session.server_address, self.session.port,
-            proxy=self.proxy, timeout=self._timeout
+            mode=self._connection_mode, proxy=self.proxy, timeout=self._timeout
         )
 
         try:

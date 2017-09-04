@@ -1,7 +1,7 @@
 import os
 from getpass import getpass
 
-from telethon import TelegramClient
+from telethon import TelegramClient, ConnectionMode
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
 from telethon.utils import get_display_name
@@ -49,7 +49,10 @@ class InteractiveTelegramClient(TelegramClient):
         print_title('Initialization')
 
         print('Initializing interactive example...')
-        super().__init__(session_user_id, api_id, api_hash, proxy)
+        super().__init__(
+            session_user_id, api_id, api_hash,
+            connection_mode=ConnectionMode.TCP_ABRIDGED, proxy=proxy
+        )
 
         # Store all the found media in memory here,
         # so it can be downloaded if the user wants

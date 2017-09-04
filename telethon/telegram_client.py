@@ -5,6 +5,7 @@ from threading import Event, RLock, Thread
 from time import sleep, time
 
 from . import TelegramBareClient
+from .network import ConnectionMode
 
 # Import some externalized utilities to work with the Telegram types and more
 from . import helpers as utils
@@ -62,7 +63,9 @@ class TelegramClient(TelegramBareClient):
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash, proxy=None,
+    def __init__(self, session, api_id, api_hash,
+                 connection_mode=ConnectionMode.TCP_FULL,
+                 proxy=None,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -71,6 +74,10 @@ class TelegramClient(TelegramBareClient):
            or it can be a `Session` instance (in which case list_sessions()
            would probably not work). Pass 'None' for it to be a temporary
            session - remember to '.log_out()'!
+
+           The 'connection_mode' should be any value under ConnectionMode.
+           This will only affect how messages are sent over the network
+           and how much processing is required before sending them.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -93,7 +100,10 @@ class TelegramClient(TelegramBareClient):
             raise ValueError(
                 'The given session must be a str or a Session instance.')
 
-        super().__init__(session, api_id, api_hash, proxy, timeout=timeout)
+        super().__init__(
+            session, api_id, api_hash,
+            connection_mode=connection_mode, proxy=proxy, timeout=timeout
+        )
 
         # Safety across multiple threads (for the updates thread)
         self._lock = RLock()
