@@ -313,16 +313,13 @@ class TelegramClient(TelegramBareClient):
 
     def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        result = self(
-            SignUpRequest(
-                phone_number=self._phone,
-                phone_code_hash=self._phone_code_hash,
-                phone_code=code,
-                first_name=first_name,
-                last_name=last_name))
-
-        self.session.user = result.user
-        self.session.save()
+        return self(SignUpRequest(
+            phone_number=self._phone,
+            phone_code_hash=self._phone_code_hash,
+            phone_code=code,
+            first_name=first_name,
+            last_name=last_name
+        )).user
 
     def log_out(self):
         """Logs out and deletes the current session.
