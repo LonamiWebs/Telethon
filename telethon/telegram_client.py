@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 from threading import RLock, Thread
+import threading
 
 from . import TelegramBareClient
 from . import helpers as utils
@@ -207,10 +208,16 @@ class TelegramClient(TelegramBareClient):
         try:
             self._lock.acquire()
 
+            # Users may call this method from within some update handler.
+            # If this is the case, then the thread invoking the request
+            # will be the one which should be reading (but is invoking the
+            # request) thus not being available to read it "in the background"
+            # and it's needed to call receive.
+            call_receive = self._recv_thread is None or \
+                           threading.get_ident() == self._recv_thread.ident
+
             # TODO Retry if 'result' is None?
-            return super().invoke(
-                request, call_receive=self._recv_thread is None
-            )
+            return super().invoke(request, call_receive=call_receive)
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
