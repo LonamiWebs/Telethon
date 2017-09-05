@@ -167,6 +167,14 @@ class MessageTooLongError(BadRequestError):
         )
 
 
+class MessageNotModifiedError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'Content of the message was not modified.'
+        )
+
+
 class MsgWaitFailedError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
@@ -349,6 +357,7 @@ rpc_errors_400_all = {
     'MESSAGE_EMPTY': MessageEmptyError,
     'MESSAGE_ID_INVALID': MessageIdInvalidError,
     'MESSAGE_TOO_LONG': MessageTooLongError,
+    'MESSAGE_NOT_MODIFIED': MessageNotModifiedError,
     'MSG_WAIT_FAILED': MsgWaitFailedError,
     'PASSWORD_HASH_INVALID': PasswordHashInvalidError,
     'PEER_ID_INVALID': PeerIdInvalidError,
