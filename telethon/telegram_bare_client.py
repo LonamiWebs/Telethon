@@ -213,6 +213,11 @@ class TelegramBareClient:
                 'Stabilise a successful initial connection first.')
 
         try:
+            if cdn:
+                # Ensure we have the latest keys for the CDNs
+                for pk in self(GetCdnConfigRequest()).public_keys:
+                    rsa.add_key(pk.public_key)
+
             return next(
                 dc for dc in self.dc_options if dc.id == dc_id and
                 bool(dc.ipv6) == ipv6 and bool(dc.cdn) == cdn
@@ -221,9 +226,7 @@ class TelegramBareClient:
             if not cdn:
                 raise
 
-            for pk in self(GetCdnConfigRequest()).public_keys:
-                rsa.add_key(pk.public_key)
-
+            # New configuration, perhaps a new CDN was added?
             self.dc_options = self(GetConfigRequest()).dc_options
             return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
