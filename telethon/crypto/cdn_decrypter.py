@@ -2,7 +2,7 @@ from hashlib import sha256
 
 from ..tl import Session
 from ..tl.functions.upload import GetCdnFileRequest, ReuploadCdnFileRequest
-from ..tl.types.upload import CdnFileReuploadNeeded
+from ..tl.types.upload import CdnFileReuploadNeeded, CdnFile
 from ..crypto import AESModeCTR
 from ..errors import CdnFileTamperedError
 
@@ -20,7 +20,7 @@ class CdnDecrypter:
         self.shaes = [sha256() for _ in range(len(cdn_file_hashes))]
 
     @staticmethod
-    def prepare_decrypter(client, client_cls, cdn_redirect, offset, part_size):
+    def prepare_decrypter(client, client_cls, cdn_redirect):
         """Prepares a CDN decrypter, returning (decrypter, file data).
            'client' should be the original TelegramBareClient that
            tried to download the file.
@@ -31,8 +31,8 @@ class CdnDecrypter:
         # https://core.telegram.org/cdn
         cdn_aes = AESModeCTR(
             key=cdn_redirect.encryption_key,
-            iv=
-            cdn_redirect.encryption_iv[:12] + (offset >> 4).to_bytes(4, 'big')
+            # 12 first bytes of the IV..4 bytes of the offset (0, big endian)
+            iv=cdn_redirect.encryption_iv[:12] + bytes(4)
         )
 
         # Create a new client on said CDN
@@ -44,9 +44,14 @@ class CdnDecrypter:
             session, client.api_id, client.api_hash,
             timeout=client._timeout
         )
-        # This will make use of the new RSA keys for this specific CDN
+        # This will make use of the new RSA keys for this specific CDN.
+        #
+        # We assume that cdn_redirect.cdn_file_hashes are ordered by offset,
+        # and that there will be enough of these to retrieve the whole file.
         cdn_file = cdn_client.connect(initial_query=GetCdnFileRequest(
-            cdn_redirect.file_token, offset, part_size
+            file_token=cdn_redirect.file_token,
+            offset=cdn_redirect.cdn_file_hashes[0].offset,
+            limit=cdn_redirect.cdn_file_hashes[0].limit
         ))
 
         # CDN client is ready, create the resulting CdnDecrypter
@@ -63,51 +68,32 @@ class CdnDecrypter:
             ))
 
             # We want to always return a valid upload.CdnFile
-            cdn_file = decrypter.get_file(offset, part_size)
+            cdn_file = decrypter.get_file()
         else:
             cdn_file.bytes = decrypter.cdn_aes.encrypt(cdn_file.bytes)
-            decrypter.check(offset, cdn_file.bytes)
+            cdn_hash = decrypter.cdn_file_hashes.pop(0)
+            decrypter.check(cdn_file.bytes, cdn_hash)
 
         return decrypter, cdn_file
 
-    def get_file(self, offset, limit):
+    def get_file(self):
         """Calls GetCdnFileRequest and decrypts its bytes.
            Also ensures that the file hasn't been tampered.
         """
-        result = self.client(GetCdnFileRequest(self.file_token, offset, limit))
-        result.bytes = self.cdn_aes.encrypt(result.bytes)
-        self.check(offset, result.bytes)
-        return result
+        if self.cdn_file_hashes:
+            cdn_hash = self.cdn_file_hashes.pop(0)
+            cdn_file = self.client(GetCdnFileRequest(
+                self.file_token, cdn_hash.offset, cdn_hash.limit
+            ))
+            cdn_file.bytes = self.cdn_aes.encrypt(cdn_file.bytes)
+            self.check(cdn_file.bytes, cdn_hash)
+        else:
+            cdn_file = CdnFile(bytes(0))
 
-    def check(self, offset, data):
-        """Checks the integrity of the given data"""
-        for cdn_hash, sha in zip(self.cdn_file_hashes, self.shaes):
-            inter = self.intersect(
-                cdn_hash.offset, cdn_hash.offset + cdn_hash.limit,
-                offset, offset + len(data)
-            )
-            if inter:
-                x1, x2 = inter[0] - offset, inter[1] - offset
-                sha.update(data[x1:x2])
-            elif offset > cdn_hash.offset:
-                if cdn_hash.hash == sha.digest():
-                    self.cdn_file_hashes.remove(cdn_hash)
-                    self.shaes.remove(sha)
-                else:
-                    raise CdnFileTamperedError()
-
-    def finish_check(self):
-        """Similar to the check method, but for all unchecked hashes"""
-        for cdn_hash, sha in zip(self.cdn_file_hashes, self.shaes):
-            if cdn_hash.hash != sha.digest():
-                raise CdnFileTamperedError()
-
-        self.cdn_file_hashes.clear()
-        self.shaes.clear()
+        return cdn_file
 
     @staticmethod
-    def intersect(x1, x2, z1, z2):
-        if x1 > z1:
-            return None if x1 > z2 else (x1, min(x2, z2))
-        else:
-            return (z1, min(x2, z2)) if x2 > z1 else None
+    def check(data, cdn_hash):
+        """Checks the integrity of the given data"""
+        if sha256(data).digest() != cdn_hash.hash:
+            raise CdnFileTamperedError()

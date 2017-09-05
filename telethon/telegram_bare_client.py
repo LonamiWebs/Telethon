@@ -475,7 +475,7 @@ class TelegramBareClient:
 
                 try:
                     if cdn_decrypter:
-                        result = cdn_decrypter.get_file(offset, part_size)
+                        result = cdn_decrypter.get_file()
                     else:
                         result = client(GetFileRequest(
                             input_location, offset, part_size
@@ -484,8 +484,7 @@ class TelegramBareClient:
                         if isinstance(result, FileCdnRedirect):
                             cdn_decrypter, result = \
                                 CdnDecrypter.prepare_decrypter(
-                                    client, TelegramBareClient, result,
-                                    offset, part_size
+                                    client, TelegramBareClient, result
                                 )
 
                 except FileMigrateError as e:
