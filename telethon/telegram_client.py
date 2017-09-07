@@ -56,6 +56,7 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
+                 enable_updates=False,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -68,6 +69,12 @@ class TelegramClient(TelegramBareClient):
            The 'connection_mode' should be any value under ConnectionMode.
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
+
+           If 'enable_updates' is set to True, it will by default put
+           all updates on self.updates. NOTE that you must manually query
+           this from another thread or it will eventually fill up all your
+           memory. If you want to ignore updates, leave this set to False.
+           You may change self.updates.enabled at any later point.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -92,7 +99,10 @@ class TelegramClient(TelegramBareClient):
 
         super().__init__(
             session, api_id, api_hash,
-            connection_mode=connection_mode, proxy=proxy, timeout=timeout
+            connection_mode=connection_mode,
+            proxy=proxy,
+            enable_updates=enable_updates,
+            timeout=timeout
         )
 
         # Safety across multiple threads (for the updates thread)
@@ -407,8 +417,6 @@ class TelegramClient(TelegramBareClient):
             no_webpage=not link_preview
         )
         result = self(request)
-        for callback in self._update_callbacks:
-            callback(result)
         return request.random_id
 
     def get_message_history(self,
@@ -899,12 +907,15 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
+        return  # TODO Implement
         self._update_callbacks.append(handler)
 
     def remove_update_handler(self, handler):
+        return  # TODO Implement
         self._update_callbacks.remove(handler)
 
     def list_update_handlers(self):
+        return  # TODO Implement
         return self._update_callbacks[:]
 
     # endregion
@@ -921,7 +932,7 @@ class TelegramClient(TelegramBareClient):
     def _recv_thread_impl(self):
         while self._sender and self._sender.is_connected():
             try:
-                self._sender.receive()
+                self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem.
                 pass
