@@ -9,8 +9,9 @@ class UpdateState:
     """Used to hold the current state of processed updates.
        To retrieve an update, .pop_update() should be called.
     """
-    def __init__(self, enabled):
+    def __init__(self, enabled, store_updates):
         self.enabled = enabled
+        self._store_updates = store_updates
         self.handlers = []
         self._updates_lock = RLock()
         self._updates_available = Event()
@@ -23,8 +24,11 @@ class UpdateState:
         """Returns True if a call to .pop_update() won't lock"""
         return self._updates_available.is_set()
 
-    def pop(self):
-        """Pops an update or blocks until an update object is available"""
+    def poll(self):
+        """Polls an update or blocks until an update object is available"""
+        if not self._store_updates:
+            raise ValueError('Polling updates is not enabled.')
+
         self._updates_available.wait()
         with self._updates_lock:
             update = self._updates.popleft()
@@ -32,6 +36,12 @@ class UpdateState:
                 self._updates_available.clear()
 
             return update
+
+    def set_polling(self, store):
+        self._store_updates = store
+        if not store:
+            with self._updates_lock:
+                self._updates.clear()
 
     def process(self, update):
         """Processes an update object. This method is normally called by
@@ -48,5 +58,6 @@ class UpdateState:
                 for handler in self.handlers:
                     handler(update)
 
-                self._updates.append(update)
-                self._updates_available.set()
+                if self._store_updates:
+                    self._updates.append(update)
+                    self._updates_available.set()

@@ -60,6 +60,7 @@ class TelegramClient(TelegramBareClient):
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
                  enable_updates=False,
+                 active_updates_polling=False,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -73,11 +74,18 @@ class TelegramClient(TelegramBareClient):
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
 
-           If 'enable_updates' is set to True, it will by default put
-           all updates on self.updates. NOTE that you must manually query
-           this from another thread or it will eventually fill up all your
-           memory. If you want to ignore updates, leave this set to False.
-           You may change self.updates.enabled at any later point.
+           If 'enable_updates' is set to True, it will process incoming
+           updates to ensure that no duplicates are received, and update
+           handlers will be invoked. You CANNOT invoke requests from within
+           these handlers.
+
+           In order to invoke requests upon receiving an update, you must
+           have your own thread (or use the main thread) and enable set
+           'active_updates_polling' to True. You must call self.updates.poll()
+           or you'll memory will be filled with unhandled updates.
+
+           You can also modify 'self.updates.enabled' and
+           'self.updates.set_polling()' at any later point.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -105,6 +113,7 @@ class TelegramClient(TelegramBareClient):
             connection_mode=connection_mode,
             proxy=proxy,
             enable_updates=enable_updates,
+            active_updates_polling=active_updates_polling,
             timeout=timeout
         )
 

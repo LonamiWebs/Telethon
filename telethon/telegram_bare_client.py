@@ -59,6 +59,7 @@ class TelegramBareClient:
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
                  enable_updates=False,
+                 active_updates_polling=False,
                  timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
            Session must always be a Session instance, and an optional proxy
@@ -79,7 +80,7 @@ class TelegramBareClient:
 
         # This member will process updates if enabled.
         # One may change self.updates.enabled at any later point.
-        self.updates = UpdateState(enabled=enable_updates)
+        self.updates = UpdateState(enable_updates, active_updates_polling)
 
         # These will be set later
         self.dc_options = None
