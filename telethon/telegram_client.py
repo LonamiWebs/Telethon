@@ -907,16 +907,13 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        return  # TODO Implement
-        self._update_callbacks.append(handler)
+        self.updates.handlers.append(handler)
 
     def remove_update_handler(self, handler):
-        return  # TODO Implement
-        self._update_callbacks.remove(handler)
+        self.updates.handlers.remove(handler)
 
     def list_update_handlers(self):
-        return  # TODO Implement
-        return self._update_callbacks[:]
+        return self.updates.handlers[:]
 
     # endregion
 

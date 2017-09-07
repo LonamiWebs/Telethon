@@ -8,6 +8,7 @@ class UpdateState:
     """
     def __init__(self, enabled):
         self.enabled = enabled
+        self.handlers = []
         self._updates_lock = Lock()
         self._updates_available = Event()
         self._updates = deque()
@@ -30,9 +31,11 @@ class UpdateState:
         """Processes an update object. This method is normally called by
            the library itself.
         """
-        if not self.enabled:
-            return
+        for handler in self.handlers:
+            handler(update)
 
-        with self._updates_lock:
-            self._updates.append(update)
-            self._updates_available.set()
+        if self.enabled:
+            with self._updates_lock:
+                self._updates.append(update)
+                self._updates_available.set()
+
