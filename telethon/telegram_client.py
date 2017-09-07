@@ -205,6 +205,10 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
+        if self._recv_thread is not None and \
+                threading.get_ident() == self._recv_thread.ident:
+            raise AssertionError('Cannot invoke requests from the ReadThread')
+
         try:
             self._lock.acquire()
 
@@ -213,11 +217,10 @@ class TelegramClient(TelegramBareClient):
             # will be the one which should be reading (but is invoking the
             # request) thus not being available to read it "in the background"
             # and it's needed to call receive.
-            call_receive = self._recv_thread is None or \
-                           threading.get_ident() == self._recv_thread.ident
-
             # TODO Retry if 'result' is None?
-            return super().invoke(request, call_receive=call_receive)
+            return super().invoke(
+                request, call_receive=self._recv_thread is None
+            )
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
