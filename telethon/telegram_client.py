@@ -1,8 +1,8 @@
 import os
+import threading
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 from threading import RLock, Thread
-import threading
 
 from . import TelegramBareClient
 from . import helpers as utils
@@ -26,6 +26,9 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest
+)
+from .tl.functions.updates import (
+    GetStateRequest
 )
 from .tl.functions.users import (
     GetUsersRequest
@@ -155,6 +158,8 @@ class TelegramClient(TelegramBareClient):
                 target=self._recv_thread_impl
             )
             self._recv_thread.start()
+            if self.updates.enabled:
+                self.sync_updates()
 
         return ok
 
@@ -903,6 +908,13 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Updates handling
+
+    def sync_updates(self):
+        """Synchronizes self.updates to their initial state. Will be
+           called automatically on connection if self.updates.enabled = True,
+           otherwise it should be called manually after enabling updates.
+        """
+        self.updates.process(self(GetStateRequest()))
 
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,

@@ -1,5 +1,8 @@
-from threading import Lock, Event
 from collections import deque
+from datetime import datetime
+from threading import RLock, Event
+
+from .tl import types as tl
 
 
 class UpdateState:
@@ -9,9 +12,12 @@ class UpdateState:
     def __init__(self, enabled):
         self.enabled = enabled
         self.handlers = []
-        self._updates_lock = Lock()
+        self._updates_lock = RLock()
         self._updates_available = Event()
         self._updates = deque()
+
+        # https://core.telegram.org/api/updates
+        self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
 
     def has_any(self):
         """Returns True if a call to .pop_update() won't lock"""
@@ -31,11 +37,16 @@ class UpdateState:
         """Processes an update object. This method is normally called by
            the library itself.
         """
-        for handler in self.handlers:
-            handler(update)
+        if not self.enabled:
+            return
 
-        if self.enabled:
-            with self._updates_lock:
+        with self._updates_lock:
+            if isinstance(update, tl.updates.State):
+                self._state = update
+            elif not hasattr(update, 'pts') or update.pts > self._state.pts:
+                self._state.pts = getattr(update, 'pts', self._state.pts)
+                for handler in self.handlers:
+                    handler(update)
+
                 self._updates.append(update)
                 self._updates_available.set()
-

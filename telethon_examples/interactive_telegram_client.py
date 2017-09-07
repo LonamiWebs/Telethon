@@ -51,7 +51,9 @@ class InteractiveTelegramClient(TelegramClient):
         print('Initializing interactive example...')
         super().__init__(
             session_user_id, api_id, api_hash,
-            connection_mode=ConnectionMode.TCP_ABRIDGED, proxy=proxy
+            connection_mode=ConnectionMode.TCP_ABRIDGED,
+            enable_updates=True,
+            proxy=proxy
         )
 
         # Store all the found media in memory here,
