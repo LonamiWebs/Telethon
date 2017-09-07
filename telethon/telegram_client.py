@@ -13,6 +13,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import Session, TLObject
+from .tl.functions import PingRequest
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -135,6 +136,10 @@ class TelegramClient(TelegramBareClient):
 
         # Constantly read for results and updates from within the main client
         self._recv_thread = None
+
+        # Default PingRequest delay
+        self._last_ping = datetime.now()
+        self._ping_delay = timedelta(minutes=1)
 
     # endregion
 
@@ -950,6 +955,12 @@ class TelegramClient(TelegramBareClient):
     def _recv_thread_impl(self):
         while self._sender and self._sender.is_connected():
             try:
+                if datetime.now() > self._last_ping + self._ping_delay:
+                    self._sender.send(PingRequest(
+                        int.from_bytes(os.urandom(8), 'big', signed=True)
+                    ))
+                    self._last_ping = datetime.now()
+
                 self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem.
