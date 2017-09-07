@@ -2,7 +2,7 @@ import os
 import threading
 from datetime import datetime, timedelta
 from mimetypes import guess_type
-from threading import RLock, Thread
+from threading import Thread
 
 from . import TelegramBareClient
 from . import helpers as utils
@@ -50,9 +50,6 @@ class TelegramClient(TelegramBareClient):
        As opposed to the TelegramBareClient, this one  features downloading
        media from different data centers, starting a second thread to
        handle updates, and some very common functionality.
-
-       This should be used when the (slight) overhead of having locks,
-       threads, and possibly multiple connections is not an issue.
     """
 
     # region Initialization
@@ -117,9 +114,6 @@ class TelegramClient(TelegramBareClient):
             active_updates_polling=active_updates_polling,
             timeout=timeout
         )
-
-        # Safety across multiple threads (for the updates thread)
-        self._lock = RLock()
 
         # Used on connection - the user may modify these and reconnect
         kwargs['app_version'] = kwargs.get('app_version', self.__version__)
@@ -239,8 +233,6 @@ class TelegramClient(TelegramBareClient):
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
         try:
-            self._lock.acquire()
-
             # Users may call this method from within some update handler.
             # If this is the case, then the thread invoking the request
             # will be the one which should be reading (but is invoking the
@@ -258,9 +250,6 @@ class TelegramClient(TelegramBareClient):
 
             self.reconnect(new_dc=e.new_dc)
             return self.invoke(request)
-
-        finally:
-            self._lock.release()
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
