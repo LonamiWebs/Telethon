@@ -859,7 +859,7 @@ class TelegramClient(TelegramBareClient):
 
         if isinstance(entity, str):
             if entity.startswith('+'):
-                contacts = self(GetContactsRequest(''))
+                contacts = self(GetContactsRequest(0))
                 try:
                     stripped_phone = entity.strip('+')
                     return next(
