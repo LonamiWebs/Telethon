@@ -284,7 +284,7 @@ class UsernameInvalidError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
             self,
-            'Unacceptable username. Must match r"[a-zA-Z][\w\d]{4,32}"'
+            'Unacceptable username. Must match r"[a-zA-Z][\w\d]{4,31}"'
         )
 
 
