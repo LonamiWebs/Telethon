@@ -51,7 +51,7 @@ class UpdateState:
         """Processes an update object. This method is normally called by
            the library itself.
         """
-        if not self._polling or not self.handlers:
+        if not self._polling and not self.handlers:
             return
 
         with self._updates_lock:
