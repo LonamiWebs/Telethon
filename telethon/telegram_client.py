@@ -1,8 +1,8 @@
 import os
+import threading
 from datetime import datetime, timedelta
 from mimetypes import guess_type
-from threading import RLock, Thread
-import threading
+from threading import Thread
 
 from . import TelegramBareClient
 from . import helpers as utils
@@ -13,6 +13,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import Session, TLObject
+from .tl.functions import PingRequest
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -26,6 +27,9 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest
+)
+from .tl.functions.updates import (
+    GetStateRequest
 )
 from .tl.functions.users import (
     GetUsersRequest
@@ -46,9 +50,6 @@ class TelegramClient(TelegramBareClient):
        As opposed to the TelegramBareClient, this one  features downloading
        media from different data centers, starting a second thread to
        handle updates, and some very common functionality.
-
-       This should be used when the (slight) overhead of having locks,
-       threads, and possibly multiple connections is not an issue.
     """
 
     # region Initialization
@@ -56,6 +57,7 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
+                 process_updates=False,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -68,6 +70,16 @@ class TelegramClient(TelegramBareClient):
            The 'connection_mode' should be any value under ConnectionMode.
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
+
+           If 'process_updates' is set to True, incoming updates will be
+           processed and you must manually call 'self.updates.poll()' from
+           another thread to retrieve the saved update objects, or your
+           memory will fill with these. You may modify the value of
+           'self.updates.polling' at any later point.
+
+           Despite the value of 'process_updates', if you later call
+           '.add_update_handler(...)', updates will also be processed
+           and the update objects will be passed to the handlers you added.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -92,11 +104,11 @@ class TelegramClient(TelegramBareClient):
 
         super().__init__(
             session, api_id, api_hash,
-            connection_mode=connection_mode, proxy=proxy, timeout=timeout
+            connection_mode=connection_mode,
+            proxy=proxy,
+            process_updates=process_updates,
+            timeout=timeout
         )
-
-        # Safety across multiple threads (for the updates thread)
-        self._lock = RLock()
 
         # Used on connection - the user may modify these and reconnect
         kwargs['app_version'] = kwargs.get('app_version', self.__version__)
@@ -113,6 +125,10 @@ class TelegramClient(TelegramBareClient):
 
         # Constantly read for results and updates from within the main client
         self._recv_thread = None
+
+        # Default PingRequest delay
+        self._last_ping = datetime.now()
+        self._ping_delay = timedelta(minutes=1)
 
     # endregion
 
@@ -145,6 +161,8 @@ class TelegramClient(TelegramBareClient):
                 target=self._recv_thread_impl
             )
             self._recv_thread.start()
+            if self.updates.enabled:
+                self.sync_updates()
 
         return ok
 
@@ -205,19 +223,20 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        try:
-            self._lock.acquire()
+        if self._recv_thread is not None and \
+                threading.get_ident() == self._recv_thread.ident:
+            raise AssertionError('Cannot invoke requests from the ReadThread')
 
+        try:
             # Users may call this method from within some update handler.
             # If this is the case, then the thread invoking the request
             # will be the one which should be reading (but is invoking the
             # request) thus not being available to read it "in the background"
             # and it's needed to call receive.
-            call_receive = self._recv_thread is None or \
-                           threading.get_ident() == self._recv_thread.ident
-
             # TODO Retry if 'result' is None?
-            return super().invoke(request, call_receive=call_receive)
+            return super().invoke(
+                request, call_receive=self._recv_thread is None
+            )
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
             self._logger.debug('DC error when invoking request, '
@@ -226,9 +245,6 @@ class TelegramClient(TelegramBareClient):
 
             self.reconnect(new_dc=e.new_dc)
             return self.invoke(request)
-
-        finally:
-            self._lock.release()
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
@@ -404,8 +420,6 @@ class TelegramClient(TelegramBareClient):
             no_webpage=not link_preview
         )
         result = self(request)
-        for callback in self._update_callbacks:
-            callback(result)
         return request.random_id
 
     def get_message_history(self,
@@ -893,16 +907,26 @@ class TelegramClient(TelegramBareClient):
 
     # region Updates handling
 
+    def sync_updates(self):
+        """Synchronizes self.updates to their initial state. Will be
+           called automatically on connection if self.updates.enabled = True,
+           otherwise it should be called manually after enabling updates.
+        """
+        self.updates.process(self(GetStateRequest()))
+
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        self._update_callbacks.append(handler)
+        sync = not self.updates.handlers
+        self.updates.handlers.append(handler)
+        if sync:
+            self.sync_updates()
 
     def remove_update_handler(self, handler):
-        self._update_callbacks.remove(handler)
+        self.updates.handlers.remove(handler)
 
     def list_update_handlers(self):
-        return self._update_callbacks[:]
+        return self.updates.handlers[:]
 
     # endregion
 
@@ -918,7 +942,13 @@ class TelegramClient(TelegramBareClient):
     def _recv_thread_impl(self):
         while self._sender and self._sender.is_connected():
             try:
-                self._sender.receive()
+                if datetime.now() > self._last_ping + self._ping_delay:
+                    self._sender.send(PingRequest(
+                        int.from_bytes(os.urandom(8), 'big', signed=True)
+                    ))
+                    self._last_ping = datetime.now()
+
+                self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem.
                 pass

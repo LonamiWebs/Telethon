@@ -26,6 +26,7 @@ from .tl.functions.upload import (
 )
 from .tl.types import InputFile, InputFileBig
 from .tl.types.upload import FileCdnRedirect
+from .update_state import UpdateState
 from .utils import get_appropriated_part_size
 
 
@@ -56,7 +57,9 @@ class TelegramBareClient:
 
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
-                 proxy=None, timeout=timedelta(seconds=5)):
+                 proxy=None,
+                 process_updates=False,
+                 timeout=timedelta(seconds=5)):
         """Initializes the Telegram client with the specified API ID and Hash.
            Session must always be a Session instance, and an optional proxy
            can also be specified to be used on the connection.
@@ -74,11 +77,9 @@ class TelegramBareClient:
         # the time since it's a (somewhat expensive) process.
         self._cached_clients = {}
 
-        # Update callbacks (functions accepting a single TLObject) go here
-        #
-        # Note that changing the list to which this variable points to
-        # will not reflect the changes on the existing senders.
-        self._update_callbacks = []
+        # This member will process updates if enabled.
+        # One may change self.updates.enabled at any later point.
+        self.updates = UpdateState(process_updates)
 
         # These will be set later
         self.dc_options = None
@@ -127,7 +128,6 @@ class TelegramBareClient:
                 self.session.save()
 
             self._sender = MtProtoSender(connection, self.session)
-            self._sender.unhandled_callbacks = self._update_callbacks
             self._sender.connect()
 
             # Now it's time to send an InitConnectionRequest
@@ -312,7 +312,7 @@ class TelegramBareClient:
                 request.confirm_received.wait()  # TODO Socket's timeout here?
             else:
                 while not request.confirm_received.is_set():
-                    self._sender.receive()
+                    self._sender.receive(update_state=self.updates)
 
             if request.rpc_error:
                 raise request.rpc_error

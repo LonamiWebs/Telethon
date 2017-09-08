@@ -28,22 +28,14 @@ class MtProtoSender:
         self._need_confirmation = []  # Message IDs that need confirmation
         self._pending_receive = []  # Requests sent waiting to be received
 
-        # Store an RLock instance to make this class safely multi-threaded
-        self._lock = RLock()
+        # Sending and receiving are independent, but two threads cannot
+        # send or receive at the same time no matter what.
+        self._send_lock = RLock()
+        self._recv_lock = RLock()
 
         # Used when logging out, the only request that seems to use 'ack'
         # TODO There might be a better way to handle msgs_ack requests
         self.logging_out = False
-
-        # Every unhandled result gets passed to these callbacks, which
-        # should be functions accepting a single parameter: a TLObject.
-        # This should only be Update(s), although it can actually be any type.
-        #
-        # The thread from which these callbacks are called can be any.
-        #
-        # The creator of the MtProtoSender is responsible for setting this
-        # to point to the list wherever their callbacks reside.
-        self.unhandled_callbacks = None
 
     def connect(self):
         """Connects to the server"""
@@ -62,23 +54,17 @@ class MtProtoSender:
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
-        # Now only us can be using this method
-        with self._lock:
-            self._logger.debug('send() acquired the lock')
+        # If any message needs confirmation send an AckRequest first
+        self._send_acknowledges()
 
-            # If any message needs confirmation send an AckRequest first
-            self._send_acknowledges()
+        # Finally send our packed request
+        with BinaryWriter() as writer:
+            request.on_send(writer)
+            self._send_packet(writer.get_bytes(), request)
+            self._pending_receive.append(request)
 
-            # Finally send our packed request
-            with BinaryWriter() as writer:
-                request.on_send(writer)
-                self._send_packet(writer.get_bytes(), request)
-                self._pending_receive.append(request)
-
-            # And update the saved session
-            self.session.save()
-
-        self._logger.debug('send() released the lock')
+        # And update the saved session
+        self.session.save()
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
@@ -90,23 +76,22 @@ class MtProtoSender:
 
             del self._need_confirmation[:]
 
-    def receive(self):
+    def receive(self, update_state):
         """Receives a single message from the connected endpoint.
 
            This method returns nothing, and will only affect other parts
            of the MtProtoSender such as the updates callback being fired
            or a pending request being confirmed.
+
+           Any unhandled object (likely updates) will be passed to
+           update_state.process(TLObject).
         """
-        # TODO Don't ignore updates
-        self._logger.debug('Receiving a message...')
-        body = self.connection.recv()
+        with self._recv_lock:
+            body = self.connection.recv()
+
         message, remote_msg_id, remote_seq = self._decode_msg(body)
-
         with BinaryReader(message) as reader:
-            self._process_msg(
-                remote_msg_id, remote_seq, reader, updates=None)
-
-        self._logger.debug('Received message.')
+            self._process_msg(remote_msg_id, remote_seq, reader, update_state)
 
     # endregion
 
@@ -115,8 +100,6 @@ class MtProtoSender:
     def _send_packet(self, packet, request):
         """Sends the given packet bytes with the additional
            information of the original request.
-
-           This does NOT lock the threads!
         """
         request.request_msg_id = self.session.get_new_msg_id()
 
@@ -142,7 +125,8 @@ class MtProtoSender:
                 self.session.auth_key.key_id, signed=False)
             cipher_writer.write(msg_key)
             cipher_writer.write(cipher_text)
-            self.connection.send(cipher_writer.get_bytes())
+            with self._send_lock:
+                self.connection.send(cipher_writer.get_bytes())
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -172,7 +156,7 @@ class MtProtoSender:
 
         return message, remote_msg_id, remote_sequence
 
-    def _process_msg(self, msg_id, sequence, reader, updates):
+    def _process_msg(self, msg_id, sequence, reader, state):
         """Processes and handles a Telegram message.
 
            Returns True if the message was handled correctly and doesn't
@@ -193,10 +177,10 @@ class MtProtoSender:
             return self._handle_pong(msg_id, sequence, reader)
 
         if code == 0x73f1f8dc:  # msg_container
-            return self._handle_container(msg_id, sequence, reader, updates)
+            return self._handle_container(msg_id, sequence, reader, state)
 
         if code == 0x3072cfa1:  # gzip_packed
-            return self._handle_gzip_packed(msg_id, sequence, reader, updates)
+            return self._handle_gzip_packed(msg_id, sequence, reader, state)
 
         if code == 0xedab447b:  # bad_server_salt
             return self._handle_bad_server_salt(msg_id, sequence, reader)
@@ -221,16 +205,15 @@ class MtProtoSender:
         # If the code is not parsed manually then it should be a TLObject.
         if code in tlobjects:
             result = reader.tgread_object()
-            if self.unhandled_callbacks:
-                self._logger.debug(
-                    'Passing TLObject to callbacks %s', repr(result)
-                )
-                for callback in self.unhandled_callbacks:
-                    callback(result)
-            else:
+            if state is None:
                 self._logger.debug(
                     'Ignoring unhandled TLObject %s', repr(result)
                 )
+            else:
+                self._logger.debug(
+                    'Processing TLObject %s', repr(result)
+                )
+                state.process(result)
 
             return True
 
@@ -261,7 +244,7 @@ class MtProtoSender:
 
         return True
 
-    def _handle_container(self, msg_id, sequence, reader, updates):
+    def _handle_container(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling container')
         reader.read_int(signed=False)  # code
         size = reader.read_int()
@@ -274,8 +257,7 @@ class MtProtoSender:
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
-                if not self._process_msg(
-                        inner_msg_id, sequence, reader, updates):
+                if not self._process_msg(inner_msg_id, sequence, reader, state):
                     reader.set_position(begin_position + inner_length)
             except:
                 # If any error is raised, something went wrong; skip the packet
@@ -366,14 +348,13 @@ class MtProtoSender:
                 self._logger.debug('Lost request will be skipped.')
                 return False
 
-    def _handle_gzip_packed(self, msg_id, sequence, reader, updates):
+    def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
         reader.read_int(signed=False)  # code
         packed_data = reader.tgread_bytes()
         unpacked_data = gzip.decompress(packed_data)
 
         with BinaryReader(unpacked_data) as compressed_reader:
-            return self._process_msg(
-                msg_id, sequence, compressed_reader, updates)
+            return self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion
