@@ -57,8 +57,7 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
-                 enable_updates=False,
-                 active_updates_polling=False,
+                 process_updates=False,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -72,18 +71,15 @@ class TelegramClient(TelegramBareClient):
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
 
-           If 'enable_updates' is set to True, it will process incoming
-           updates to ensure that no duplicates are received, and update
-           handlers will be invoked. You CANNOT invoke requests from within
-           these handlers.
+           If 'process_updates' is set to True, incoming updates will be
+           processed and you must manually call 'self.updates.poll()' from
+           another thread to retrieve the saved update objects, or your
+           memory will fill with these. You may modify the value of
+           'self.updates.polling' at any later point.
 
-           In order to invoke requests upon receiving an update, you must
-           have your own thread (or use the main thread) and enable set
-           'active_updates_polling' to True. You must call self.updates.poll()
-           or you'll memory will be filled with unhandled updates.
-
-           You can also modify 'self.updates.enabled' and
-           'self.updates.set_polling()' at any later point.
+           Despite the value of 'process_updates', if you later call
+           '.add_update_handler(...)', updates will also be processed
+           and the update objects will be passed to the handlers you added.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -110,8 +106,7 @@ class TelegramClient(TelegramBareClient):
             session, api_id, api_hash,
             connection_mode=connection_mode,
             proxy=proxy,
-            enable_updates=enable_updates,
-            active_updates_polling=active_updates_polling,
+            process_updates=process_updates,
             timeout=timeout
         )
 
@@ -922,7 +917,10 @@ class TelegramClient(TelegramBareClient):
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
+        sync = not self.updates.handlers
         self.updates.handlers.append(handler)
+        if sync:
+            self.sync_updates()
 
     def remove_update_handler(self, handler):
         self.updates.handlers.remove(handler)

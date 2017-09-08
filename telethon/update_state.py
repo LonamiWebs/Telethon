@@ -7,11 +7,10 @@ from .tl import types as tl
 
 class UpdateState:
     """Used to hold the current state of processed updates.
-       To retrieve an update, .pop_update() should be called.
+       To retrieve an update, .poll() should be called.
     """
-    def __init__(self, enabled, store_updates):
-        self.enabled = enabled
-        self._store_updates = store_updates
+    def __init__(self, polling):
+        self._polling = polling
         self.handlers = []
         self._updates_lock = RLock()
         self._updates_available = Event()
@@ -20,14 +19,14 @@ class UpdateState:
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
 
-    def has_any(self):
-        """Returns True if a call to .pop_update() won't lock"""
+    def can_poll(self):
+        """Returns True if a call to .poll() won't lock"""
         return self._updates_available.is_set()
 
     def poll(self):
         """Polls an update or blocks until an update object is available"""
-        if not self._store_updates:
-            raise ValueError('Polling updates is not enabled.')
+        if not self._polling:
+            raise ValueError('Updates are not being polled hence not saved.')
 
         self._updates_available.wait()
         with self._updates_lock:
@@ -37,17 +36,22 @@ class UpdateState:
 
             return update
 
-    def set_polling(self, store):
-        self._store_updates = store
-        if not store:
+    def get_polling(self):
+        return self._polling
+
+    def set_polling(self, polling):
+        self._polling = polling
+        if not polling:
             with self._updates_lock:
                 self._updates.clear()
+
+    polling = property(fget=get_polling, fset=set_polling)
 
     def process(self, update):
         """Processes an update object. This method is normally called by
            the library itself.
         """
-        if not self.enabled:
+        if not self._polling or not self.handlers:
             return
 
         with self._updates_lock:
@@ -58,6 +62,6 @@ class UpdateState:
                 for handler in self.handlers:
                     handler(update)
 
-                if self._store_updates:
+                if self._polling:
                     self._updates.append(update)
                     self._updates_available.set()
