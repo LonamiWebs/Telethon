@@ -161,7 +161,7 @@ class TelegramClient(TelegramBareClient):
                 target=self._recv_thread_impl
             )
             self._recv_thread.start()
-            if self.updates.enabled:
+            if self.updates.polling:
                 self.sync_updates()
 
         return ok
