@@ -12,15 +12,15 @@ Some questions are okay, but make sure you've investigated enough on your own be
 Describe what happened or what the error you have is.
 
 ```
-// paste the crash log here if any, or remove these 3 lines if nothing happens
+// paste the crash log here if any
 ```
 
 ### What I've done
 Either a code example of what you were trying to do, or steps to reproduce, or methods you have tried invoking.
 
 ```python
-# Add your Python code here, or remove these 3 lines
+# Add your Python code here
 ```
 
 ### More information
-If you think other information can be relevant (e.g. operative system or other variables), add it here. You may remove this block otherwise.
+If you think other information can be relevant (e.g. operative system or other variables), add it here.
