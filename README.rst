@@ -54,6 +54,7 @@ Doing stuff
 Next steps
 ----------
 
-Once you've decided that you like the way Telethon looks and feel comfortable
-with this code, go ahead and read the full
-`README <https://github.com/LonamiWebs/Telethon/blob/HEAD/README-long.rst>`_ :)
+Do you like how Telethon looks? Check the
+`wiki over GitHub <https://github.com/LonamiWebs/Telethon/wiki>`_ for a
+more in-depth explanation, with examples, troubleshooting issues, and more
+useful information.
