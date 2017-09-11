@@ -282,7 +282,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, request, updates=None, call_receive=True):
+    def invoke(self, request, call_receive=True, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            If 'updates' is not None, all read update object will be put
@@ -297,6 +297,9 @@ class TelegramBareClient:
 
         if not self._sender:
             raise ValueError('You must be connected to invoke requests!')
+
+        if retries <= 0:
+            raise ValueError('Number of retries reached 0.')
 
         try:
             # Ensure that we start with no previous errors (i.e. resending)
@@ -314,19 +317,23 @@ class TelegramBareClient:
                 while not request.confirm_received.is_set():
                     self._sender.receive(update_state=self.updates)
 
-            if request.rpc_error:
-                raise request.rpc_error
-            return request.result
-
         except ConnectionResetError:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request...')
             self.reconnect()
-            return self.invoke(request)
 
         except FloodWaitError:
             self.disconnect()
             raise
+
+        if request.rpc_error:
+            raise request.rpc_error
+        if request.result is None:
+            return self.invoke(
+                request, call_receive=call_receive, retries=(retries - 1)
+            )
+        else:
+            return request.result
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke

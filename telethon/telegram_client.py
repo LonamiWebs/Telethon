@@ -218,8 +218,9 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, *args):
+    def invoke(self, request, *args, **kwargs):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
+           An optional 'retries' parameter can be set.
 
            *args will be ignored.
         """
@@ -233,9 +234,9 @@ class TelegramClient(TelegramBareClient):
             # will be the one which should be reading (but is invoking the
             # request) thus not being available to read it "in the background"
             # and it's needed to call receive.
-            # TODO Retry if 'result' is None?
             return super().invoke(
-                request, call_receive=self._recv_thread is None
+                request, call_receive=self._recv_thread is None,
+                retries=kwargs.get('retries', 5)
             )
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
