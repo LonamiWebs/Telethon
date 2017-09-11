@@ -4,7 +4,7 @@ from threading import RLock
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import BadMessageError, rpc_message_to_error
+from ..errors import BadMessageError, InvalidChecksumError, rpc_message_to_error
 from ..extensions import BinaryReader, BinaryWriter
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
@@ -87,7 +87,16 @@ class MtProtoSender:
            update_state.process(TLObject).
         """
         with self._recv_lock:
-            body = self.connection.recv()
+            try:
+                body = self.connection.recv()
+            except InvalidChecksumError:
+                # "This packet should be skipped"; since this may have
+                # been a result for a request, invalidate every request
+                # and just re-invoke them to avoid problems
+                for r in self._pending_receive:
+                    r.confirm_received.set()
+                self._pending_receive.clear()
+                return
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
