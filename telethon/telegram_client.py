@@ -958,6 +958,8 @@ class TelegramClient(TelegramBareClient):
                     # Do NOT attempt reconnecting unless the connection was
                     # finished by the user -> ._recv_thread is None
                     self._logger.debug('Server disconnected us. Reconnecting...')
+                    self._recv_thread = None  # Not running anymore
                     self.reconnect()
+                    return
 
     # endregion
