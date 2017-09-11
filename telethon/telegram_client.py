@@ -415,7 +415,7 @@ class TelegramClient(TelegramBareClient):
            some performance loss.
         """
         request = SendMessageRequest(
-            peer=self._get_entity(entity),
+            peer=self.get_entity(entity),
             message=message,
             entities=[],
             no_webpage=not link_preview
@@ -449,7 +449,7 @@ class TelegramClient(TelegramBareClient):
            some performance loss.
         """
         result = self(GetHistoryRequest(
-            peer=self._get_entity(entity),
+            peer=self.get_entity(entity),
             limit=limit,
             offset_date=offset_date,
             offset_id=offset_id,
@@ -495,7 +495,7 @@ class TelegramClient(TelegramBareClient):
                 max_id = messages.id
 
         return self(ReadHistoryRequest(
-            peer=self._get_entity(entity),
+            peer=self.get_entity(entity),
             max_id=max_id
         ))
 
@@ -572,7 +572,7 @@ class TelegramClient(TelegramBareClient):
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
         self(SendMediaRequest(
-            peer=self._get_entity(entity),
+            peer=self.get_entity(entity),
             media=media
         ))
 
@@ -614,7 +614,7 @@ class TelegramClient(TelegramBareClient):
             # The hexadecimal numbers above are simply:
             # hex(crc32(x.encode('ascii'))) for x in
             # ('User', 'Chat', 'UserFull', 'ChatFull')
-            entity = self._get_entity(entity)
+            entity = self.get_entity(entity)
             if not hasattr(entity, 'photo'):
                 # Special case: may be a ChatFull with photo:Photo
                 # This is different from a normal UserProfilePhoto and Chat
@@ -850,7 +850,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
-    def _get_entity(self, entity):
+    def get_entity(self, entity):
         """Turns an entity into a valid Telegram user or chat.
            If "entity" is a string, and starts with '+', or if
            it is an integer value, it will be resolved as if it
