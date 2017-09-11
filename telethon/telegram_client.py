@@ -1,6 +1,7 @@
 import os
 import threading
 from datetime import datetime, timedelta
+from functools import lru_cache
 from mimetypes import guess_type
 from threading import Thread
 
@@ -850,6 +851,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
+    @lru_cache()
     def get_entity(self, entity):
         """Turns an entity into a valid Telegram user or chat.
            If "entity" is a string, and starts with '+', or if
