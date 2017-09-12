@@ -268,30 +268,7 @@ class TLGenerator:
             builder.writeln()
 
         for arg in args:
-            if arg.can_be_inferred:
-                # Currently the only argument that can be
-                # inferred are those called 'random_id'
-                if arg.name == 'random_id':
-                    builder.writeln(
-                        "self.random_id = random_id if random_id "
-                        "is not None else int.from_bytes("
-                        "os.urandom({}), signed=True, "
-                        "byteorder='little')"
-                        .format(8 if arg.type == 'long' else 4)
-                    )
-                else:
-                    raise ValueError('Cannot infer a value for ', arg)
-
-            # Well-known cases, auto-cast it to the right type
-            elif arg.type == 'InputPeer' and tlobject.is_function:
-                TLGenerator.write_get_input(builder, arg, 'get_input_peer')
-            elif arg.type == 'InputChannel' and tlobject.is_function:
-                TLGenerator.write_get_input(builder, arg, 'get_input_channel')
-            elif arg.type == 'InputUser' and tlobject.is_function:
-                TLGenerator.write_get_input(builder, arg, 'get_input_user')
-
-            else:
-                builder.writeln('self.{0} = {0}'.format(arg.name))
+            TLGenerator._write_self_assigns(builder, tlobject, arg, args)
 
         builder.end_block()
 
@@ -386,6 +363,43 @@ class TLGenerator:
         builder.writeln('def stringify(self):')
         builder.writeln('return TLObject.pretty_format(self, indent=0)')
         # builder.end_block()  # No need to end the last block
+
+    @staticmethod
+    def _write_self_assigns(builder, tlobject, arg, args):
+        if arg.can_be_inferred:
+            # Currently the only argument that can be
+            # inferred are those called 'random_id'
+            if arg.name == 'random_id':
+                # Endianness doesn't really matter, and 'big' is shorter
+                code = "int.from_bytes(os.urandom({}), 'big', signed=True)"\
+                    .format(8 if arg.type == 'long' else 4)
+
+                if arg.is_vector:
+                    # Currently for the case of "messages.forwardMessages"
+                    # Ensure we can infer the length from id:Vector<>
+                    if not next(a for a in args if a.name == 'id').is_vector:
+                        raise ValueError(
+                            'Cannot infer list of random ids for ', tlobject
+                        )
+                    code = '[{} for _ in range(len(id))]'.format(code)
+
+                builder.writeln(
+                    "self.random_id = random_id if random_id "
+                    "is not None else {}".format(code)
+                )
+            else:
+                raise ValueError('Cannot infer a value for ', arg)
+
+        # Well-known cases, auto-cast it to the right type
+        elif arg.type == 'InputPeer' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_peer')
+        elif arg.type == 'InputChannel' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_channel')
+        elif arg.type == 'InputUser' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_user')
+
+        else:
+            builder.writeln('self.{0} = {0}'.format(arg.name))
 
     @staticmethod
     def write_get_input(builder, arg, get_input_code):
