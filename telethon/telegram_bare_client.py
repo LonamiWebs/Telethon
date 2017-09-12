@@ -503,9 +503,6 @@ class TelegramBareClient:
                 # If we have received no data (0 bytes), the file is over
                 # So there is nothing left to download and write
                 if not result.bytes:
-                    if cdn_decrypter:
-                        cdn_decrypter.finish_check()
-
                     # Return some extra information, unless it's a CDN file
                     return getattr(result, 'type', '')
 
