@@ -505,7 +505,8 @@ class TelegramClient(TelegramBareClient):
     # region Uploading files
 
     def send_file(self, entity, file, caption='',
-                  force_document=False, progress_callback=None):
+                  force_document=False, progress_callback=None,
+                  **kwargs):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
 
@@ -521,6 +522,9 @@ class TelegramClient(TelegramBareClient):
 
            If "progress_callback" is not None, it should be a function that
            takes two parameters, (bytes_uploaded, total_bytes).
+
+           If 'is_voice_note' in kwargs, despite its value, and the file is
+           sent as a document, it will be sent as a voice note.
 
            The entity may be a phone or an username at the expense of
            some performance loss.
@@ -557,6 +561,9 @@ class TelegramClient(TelegramBareClient):
             else:
                 attributes = [DocumentAttributeFilename('unnamed')]
 
+            if 'is_voice_note' in kwargs:
+                attributes.append(DocumentAttributeAudio(0, voice=True))
+
             # Ensure we have a mime type, any; but it cannot be None
             # 'The "octet-stream" subtype is used to indicate that a body
             # contains arbitrary binary data.'
@@ -576,6 +583,12 @@ class TelegramClient(TelegramBareClient):
             peer=self.get_entity(entity),
             media=media
         ))
+
+    def send_voice_note(self, entity, file, caption='', upload_progress=None):
+        """Wrapper method around .send_file() with is_voice_note=()"""
+        return self.send_file(entity, file, caption,
+                              upload_progress=upload_progress,
+                              is_voice_note=())  # empty tuple is enough
 
     def clear_file_cache(self):
         """Calls to .send_file() will cache the remote location of the
