@@ -40,7 +40,8 @@ from .tl.types import (
     InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
-    InputUserSelf, UserProfilePhoto, ChatPhoto
+    InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
+    UpdateNewMessage
 )
 from .utils import find_user_or_chat, get_extension
 
@@ -411,7 +412,7 @@ class TelegramClient(TelegramBareClient):
                      reply_to=None,
                      link_preview=True):
         """Sends a message to the given entity (or input peer)
-           and returns the sent message ID.
+           and returns the sent message as a Telegram object.
 
            If 'reply_to' is set to either a message or a message ID,
            the sent message will be replying to such message.
@@ -424,7 +425,21 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
-        return request.random_id
+        # Telegram seems to send updateMessageID first, then updateNewMessage,
+        # however let's not rely on that just in case.
+        msg_id = None
+        for update in result.updates:
+            if isinstance(update, UpdateMessageID):
+                if update.random_id == request.random_id:
+                    msg_id = update.id
+                    break
+
+        for update in result.updates:
+            if isinstance(update, UpdateNewMessage):
+                if update.message.id == msg_id:
+                    return update.message
+
+        return None  # Should not happen
 
     def get_message_history(self,
                             entity,
