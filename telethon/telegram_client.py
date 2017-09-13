@@ -408,18 +408,20 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
+                     reply_to=None,
                      link_preview=True):
         """Sends a message to the given entity (or input peer)
            and returns the sent message ID.
 
-           The entity may be a phone or an username at the expense of
-           some performance loss.
+           If 'reply_to' is set to either a message or a message ID,
+           the sent message will be replying to such message.
         """
         request = SendMessageRequest(
             peer=self.get_entity(entity),
             message=message,
             entities=[],
-            no_webpage=not link_preview
+            no_webpage=not link_preview,
+            reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
         return request.random_id
@@ -500,12 +502,29 @@ class TelegramClient(TelegramBareClient):
             max_id=max_id
         ))
 
+    @staticmethod
+    def _get_reply_to(reply_to):
+        """Sanitizes the 'reply_to' parameter a user may send"""
+        if reply_to is None:
+            return None
+
+        if isinstance(reply_to, int):
+            return reply_to
+
+        if isinstance(reply_to, TLObject) and \
+                type(reply_to).subclass_of_id == 0x790009e3:
+            # hex(crc32(b'Message')) = 0x790009e3
+            return reply_to.id
+
+        raise ValueError('Invalid reply_to type: ', type(reply_to))
+
     # endregion
 
     # region Uploading files
 
     def send_file(self, entity, file, caption='',
                   force_document=False, progress_callback=None,
+                  reply_to=None,
                   **kwargs):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
@@ -523,7 +542,9 @@ class TelegramClient(TelegramBareClient):
            If "progress_callback" is not None, it should be a function that
            takes two parameters, (bytes_uploaded, total_bytes).
 
-           If 'is_voice_note' in kwargs, despite its value, and the file is
+           The "reply_to" parameter works exactly as the one on .send_message.
+
+           If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
 
            The entity may be a phone or an username at the expense of
@@ -581,13 +602,16 @@ class TelegramClient(TelegramBareClient):
         # send the media message to the desired entity.
         self(SendMediaRequest(
             peer=self.get_entity(entity),
-            media=media
+            media=media,
+            reply_to_msg_id=self._get_reply_to(reply_to)
         ))
 
-    def send_voice_note(self, entity, file, caption='', upload_progress=None):
+    def send_voice_note(self, entity, file, caption='', upload_progress=None,
+                        reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
         return self.send_file(entity, file, caption,
                               upload_progress=upload_progress,
+                              reply_to=reply_to,
                               is_voice_note=())  # empty tuple is enough
 
     def clear_file_cache(self):
