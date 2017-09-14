@@ -306,6 +306,15 @@ class MtProtoSender:
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
             return True
+        elif error_code == 32:
+            # msg_seqno too low, so just pump it up by some "large" amount
+            # TODO A better fix would be to start with a new fresh session ID
+            self.session._sequence += 64
+            return True
+        elif error_code == 33:
+            # msg_seqno too high never seems to happen but just in case
+            self.session._sequence -= 16
+            return True
         else:
             raise error
 
