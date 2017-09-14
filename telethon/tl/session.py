@@ -66,11 +66,8 @@ class Session:
         if self.session_user_id:
             with open('{}.session'.format(self.session_user_id), 'w') as file:
                 json.dump({
-                    'id': self.id,
                     'port': self.port,
                     'salt': self.salt,
-                    'sequence': self._sequence,
-                    'time_offset': self.time_offset,
                     'server_address': self.server_address,
                     'auth_key_data':
                         b64encode(self.auth_key.key).decode('ascii')
@@ -109,11 +106,8 @@ class Session:
             try:
                 with open(path, 'r') as file:
                     data = json.load(file)
-                    result.id = data['id']
                     result.port = data['port']
                     result.salt = data['salt']
-                    result._sequence = data['sequence']
-                    result.time_offset = data['time_offset']
                     result.server_address = data['server_address']
 
                     # FIXME We need to import the AuthKey here or otherwise
@@ -128,7 +122,7 @@ class Session:
 
             return result
 
-    def generate_sequence(self, confirmed):
+    def generate_sequence(self, content_related):
         """Thread safe method to generates the next sequence number,
            based on whether it was confirmed yet or not.
 
@@ -136,7 +130,7 @@ class Session:
            will be increased by one too
         """
         with self._lock:
-            if confirmed:
+            if content_related:
                 result = self._sequence * 2 + 1
                 self._sequence += 1
                 return result
