@@ -67,7 +67,10 @@ class TelegramBareClient:
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
-        self._connection_mode = connection_mode
+        if self.api_id < 20:  # official apps must use obfuscated
+            self._connection_mode = ConnectionMode.TCP_OBFUSCATED
+        else:
+            self._connection_mode = connection_mode
         self.proxy = proxy
         self._timeout = timeout
         self._logger = logging.getLogger(__name__)
