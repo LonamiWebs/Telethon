@@ -967,7 +967,11 @@ class TelegramClient(TelegramBareClient):
            called automatically on connection if self.updates.enabled = True,
            otherwise it should be called manually after enabling updates.
         """
-        self.updates.process(self(GetStateRequest()))
+        try:
+            self.updates.process(self(GetStateRequest()))
+            return True
+        except UnauthorizedError:
+            return False
 
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
