@@ -322,6 +322,9 @@ class TelegramBareClient:
                 while not request.confirm_received.is_set():
                     self._sender.receive(update_state=self.updates)
 
+        except TimeoutError:
+            pass  # We will just retry
+
         except ConnectionResetError:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request...')
