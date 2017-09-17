@@ -1004,6 +1004,13 @@ class TelegramClient(TelegramBareClient):
                     self._last_ping = datetime.now()
 
                 self._sender.receive(update_state=self.updates)
+            except AttributeError:
+                # 'NoneType' object has no attribute 'receive'.
+                # The only moment when this can happen is reconnection
+                # was triggered from another thread and the ._sender
+                # was set to None, so close this thread and exit by return.
+                self._recv_thread = None
+                return
             except TimeoutError:
                 # No problem.
                 pass
