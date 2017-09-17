@@ -46,9 +46,15 @@ class BrokenAuthKeyError(Exception):
         )
 
 
-class CdnFileTamperedError(Exception):
+class SecurityError(Exception):
+    def __init__(self, *args):
+        if not args:
+            args = ['A security check failed.']
+        super().__init__(self, *args)
+
+
+class CdnFileTamperedError(SecurityError):
     def __init__(self):
         super().__init__(
-            self,
             'The CDN file has been altered and its download cancelled.'
         )

@@ -5,11 +5,26 @@ from hashlib import sha1
 from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
-from ..network import MtProtoPlainSender
+from ..errors import SecurityError, TypeNotFoundError
 from ..extensions import BinaryReader, BinaryWriter
+from ..network import MtProtoPlainSender
 
 
-def do_authentication(connection):
+def do_authentication(connection, retries=5):
+    if not retries or retries < 0:
+        retries = 1
+
+    last_error = None
+    while retries:
+        try:
+            return _do_authentication(connection)
+        except (SecurityError, TypeNotFoundError, NotImplementedError) as e:
+            last_error = e
+        retries -= 1
+    raise last_error
+
+
+def _do_authentication(connection):
     """Executes the authentication process with the Telegram servers.
        If no error is raised, returns both the authorization key and the
        time offset.
@@ -29,12 +44,11 @@ def do_authentication(connection):
     with BinaryReader(sender.receive()) as reader:
         response_code = reader.read_int(signed=False)
         if response_code != 0x05162463:
-            raise AssertionError('Invalid response code: {}'.format(
-                hex(response_code)))
+            raise TypeNotFoundError(response_code)
 
         nonce_from_server = reader.read(16)
         if nonce_from_server != nonce:
-            raise AssertionError('Invalid nonce from server')
+            raise SecurityError('Invalid nonce from server')
 
         server_nonce = reader.read(16)
 
@@ -43,8 +57,7 @@ def do_authentication(connection):
 
         vector_id = reader.read_int()
         if vector_id != 0x1cb5c415:
-            raise AssertionError('Invalid vector constructor ID: {}'.format(
-                hex(response_code)))
+            raise TypeNotFoundError(response_code)
 
         fingerprints = []
         fingerprint_count = reader.read_int()
@@ -77,7 +90,7 @@ def do_authentication(connection):
                 break
 
         if cipher_text is None:
-            raise AssertionError(
+            raise SecurityError(
                 'Could not find a valid key for fingerprints: {}'
                 .format(', '.join([repr(f) for f in fingerprints]))
             )
@@ -101,19 +114,18 @@ def do_authentication(connection):
         response_code = reader.read_int(signed=False)
 
         if response_code == 0x79cb045d:
-            raise AssertionError('Server DH params fail: TODO')
+            raise SecurityError('Server DH params fail: TODO')
 
         if response_code != 0xd0e8075c:
-            raise AssertionError('Invalid response code: {}'.format(
-                hex(response_code)))
+            raise TypeNotFoundError(response_code)
 
         nonce_from_server = reader.read(16)
         if nonce_from_server != nonce:
-            raise NotImplementedError('Invalid nonce from server')
+            raise SecurityError('Invalid nonce from server')
 
         server_nonce_from_server = reader.read(16)
         if server_nonce_from_server != server_nonce:
-            raise NotImplementedError('Invalid server nonce from server')
+            raise SecurityError('Invalid server nonce from server')
 
         encrypted_answer = reader.tgread_bytes()
 
@@ -126,15 +138,15 @@ def do_authentication(connection):
         dh_inner_data_reader.read(20)  # hash sum
         code = dh_inner_data_reader.read_int(signed=False)
         if code != 0xb5890dba:
-            raise AssertionError('Invalid DH Inner Data code: {}'.format(code))
+            raise TypeNotFoundError(code)
 
         nonce_from_server1 = dh_inner_data_reader.read(16)
         if nonce_from_server1 != nonce:
-            raise AssertionError('Invalid nonce in encrypted answer')
+            raise SecurityError('Invalid nonce in encrypted answer')
 
         server_nonce_from_server1 = dh_inner_data_reader.read(16)
         if server_nonce_from_server1 != server_nonce:
-            raise AssertionError('Invalid server nonce in encrypted answer')
+            raise SecurityError('Invalid server nonce in encrypted answer')
 
         g = dh_inner_data_reader.read_int()
         dh_prime = get_int(dh_inner_data_reader.tgread_bytes(), signed=False)
@@ -190,11 +202,11 @@ def do_authentication(connection):
         if code == 0x3bcbf734:  # DH Gen OK
             nonce_from_server = reader.read(16)
             if nonce_from_server != nonce:
-                raise NotImplementedError('Invalid nonce from server')
+                raise SecurityError('Invalid nonce from server')
 
             server_nonce_from_server = reader.read(16)
             if server_nonce_from_server != server_nonce:
-                raise NotImplementedError('Invalid server nonce from server')
+                raise SecurityError('Invalid server nonce from server')
 
             new_nonce_hash1 = reader.read(16)
             auth_key = AuthKey(rsa.get_byte_array(gab))
@@ -202,7 +214,7 @@ def do_authentication(connection):
             new_nonce_hash_calculated = auth_key.calc_new_nonce_hash(new_nonce,
                                                                      1)
             if new_nonce_hash1 != new_nonce_hash_calculated:
-                raise AssertionError('Invalid new nonce hash')
+                raise SecurityError('Invalid new nonce hash')
 
             return auth_key, time_offset
 
@@ -213,7 +225,7 @@ def do_authentication(connection):
             raise NotImplementedError('dh_gen_fail')
 
         else:
-            raise AssertionError('DH Gen unknown: {}'.format(hex(code)))
+            raise NotImplementedError('DH Gen unknown: {}'.format(hex(code)))
 
 
 def get_int(byte_array, signed=True):
