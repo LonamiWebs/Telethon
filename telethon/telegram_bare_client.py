@@ -103,15 +103,8 @@ class TelegramBareClient:
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
         """
-        if self._sender and self._sender.is_connected():
-            # Try sending a ping to make sure we're connected already
-            # TODO Maybe there's a better way to check this
-            try:
-                self(PingRequest(utils.generate_random_long()))
-                return True
-            except:
-                # If ping failed, ensure we're disconnected first
-                self.disconnect()
+        if self.is_connected():
+            return True
 
         connection = Connection(
             self.session.server_address, self.session.port,
@@ -167,6 +160,9 @@ class TelegramBareClient:
                 'Could not stabilise initial connection: {}'.format(error)
             )
             return False
+
+    def is_connected(self):
+        return self._sender is not None and self._sender.is_connected()
 
     def _init_connection(self, query=None):
         result = self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
