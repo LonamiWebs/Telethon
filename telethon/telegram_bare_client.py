@@ -7,13 +7,14 @@ from os import path
 from . import helpers as utils
 from .crypto import rsa, CdnDecrypter
 from .errors import (
-    RPCError, FloodWaitError, FileMigrateError, TypeNotFoundError
+    RPCError, BrokenAuthKeyError,
+    FloodWaitError, FileMigrateError, TypeNotFoundError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .tl import TLObject, Session
 from .tl.all_tlobjects import LAYER
 from .tl.functions import (
-    InitConnectionRequest, InvokeWithLayerRequest, PingRequest
+    InitConnectionRequest, InvokeWithLayerRequest
 )
 from .tl.functions.auth import (
     ImportAuthorizationRequest, ExportAuthorizationRequest
@@ -115,8 +116,11 @@ class TelegramBareClient:
             if not self.session.auth_key:
                 # New key, we need to tell the server we're going to use
                 # the latest layer
-                self.session.auth_key, self.session.time_offset = \
-                    authenticator.do_authentication(connection)
+                try:
+                    self.session.auth_key, self.session.time_offset = \
+                        authenticator.do_authentication(connection)
+                except BrokenAuthKeyError:
+                    return False
 
                 self.session.layer = LAYER
                 self.session.save()

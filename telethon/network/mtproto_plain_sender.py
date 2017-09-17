@@ -1,5 +1,6 @@
 import time
 
+from ..errors import BrokenAuthKeyError
 from ..extensions import BinaryReader, BinaryWriter
 
 
@@ -36,6 +37,10 @@ class MtProtoPlainSender:
     def receive(self):
         """Receives a plain packet, returning the body of the response"""
         body = self._connection.recv()
+        if body == b'l\xfe\xff\xff':  # -404 little endian signed
+            # Broken authorization, must reset the auth key
+            raise BrokenAuthKeyError()
+
         with BinaryReader(body) as reader:
             reader.read_long()  # auth_key_id
             reader.read_long()  # msg_id

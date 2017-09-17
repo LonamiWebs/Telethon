@@ -38,6 +38,14 @@ class InvalidChecksumError(Exception):
         self.valid_checksum = valid_checksum
 
 
+class BrokenAuthKeyError(Exception):
+    def __init__(self):
+        super().__init__(
+            self,
+            'The authorization key is broken, and it must be reset.'
+        )
+
+
 class CdnFileTamperedError(Exception):
     def __init__(self):
         super().__init__(

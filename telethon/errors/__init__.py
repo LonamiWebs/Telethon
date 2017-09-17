@@ -3,7 +3,7 @@ import re
 
 from .common import (
     ReadCancelledError, InvalidParameterError, TypeNotFoundError,
-    InvalidChecksumError, CdnFileTamperedError
+    InvalidChecksumError, BrokenAuthKeyError, CdnFileTamperedError
 )
 
 from .rpc_errors import (
