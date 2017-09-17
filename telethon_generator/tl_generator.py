@@ -83,8 +83,8 @@ class TLGenerator:
                 builder.writeln('from . import types, functions')
                 builder.writeln()
 
-                # Create a read-only property to indicate which layer this is
-                builder.writeln('LAYER = property(fget=lambda: {})'.format(
+                # Create a constant variable to indicate which layer this is
+                builder.writeln('LAYER = {}'.format(
                     TLParser.find_layer(scheme_file))
                 )
                 builder.writeln()
