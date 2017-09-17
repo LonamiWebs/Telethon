@@ -125,46 +125,42 @@ class TelegramBareClient:
 
         try:
             if not self.session.auth_key:
+                # New key, we need to tell the server we're going to use
+                # the latest layer
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(connection)
 
+                self.session.layer = layer
                 self.session.save()
+                init_connection = True
+            else:
+                init_connection = self.session.layer != layer
 
             self._sender = MtProtoSender(connection, self.session)
             self._sender.connect()
 
-            # Now it's time to send an InitConnectionRequest
-            # This must always be invoked with the layer we'll be using
-            if exported_auth is None:
-                query = initial_query if initial_query else GetConfigRequest()
-            else:
-                query = ImportAuthorizationRequest(
-                    exported_auth.id, exported_auth.bytes)
-
-            request = InitConnectionRequest(
-                api_id=self.api_id,
-                device_model=self.session.device_model,
-                system_version=self.session.system_version,
-                app_version=self.session.app_version,
-                lang_code=self.session.lang_code,
-                system_lang_code=self.session.system_lang_code,
-                lang_pack='',  # "langPacks are for official apps only"
-                query=query)
-
-            result = self(InvokeWithLayerRequest(
-                layer=layer, query=request
-            ))
-
-            if initial_query is None:
+            if init_connection:
                 if exported_auth is not None:
-                    result = self(GetConfigRequest())
-
-                # We're only interested in the DC options,
-                # although many other options are available!
-                self.dc_options = result.dc_options
-                return True
+                    self._init_connection(ImportAuthorizationRequest(
+                        exported_auth.id, exported_auth.bytes
+                    ))
+                elif initial_query:
+                    return self._init_connection(initial_query)
+                else:
+                    self.dc_options = \
+                        self._init_connection(GetConfigRequest()).dc_options
             else:
-                return result
+                # TODO Avoid duplicated code
+                if exported_auth is not None:
+                    self(ImportAuthorizationRequest(
+                        exported_auth.id, exported_auth.bytes
+                    ))
+                elif initial_query:
+                    return self(initial_query)
+                if not self.dc_options:
+                    self.dc_options = self(GetConfigRequest()).dc_options
+
+            return True
 
         except TypeNotFoundError as e:
             # This is fine, probably layer migration
@@ -180,6 +176,21 @@ class TelegramBareClient:
                 'Could not stabilise initial connection: {}'.format(error)
             )
             return None if initial_query else False
+
+    def _init_connection(self, query=None):
+        result = self(InvokeWithLayerRequest(layer, InitConnectionRequest(
+            api_id=self.api_id,
+            device_model=self.session.device_model,
+            system_version=self.session.system_version,
+            app_version=self.session.app_version,
+            lang_code=self.session.lang_code,
+            system_lang_code=self.session.system_lang_code,
+            lang_pack='',  # "langPacks are for official apps only"
+            query=query
+        )))
+        self.session.layer = layer
+        self.session.save()
+        return result
 
     def disconnect(self):
         """Disconnects from the Telegram server"""

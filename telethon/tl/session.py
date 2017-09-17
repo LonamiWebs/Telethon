@@ -51,15 +51,17 @@ class Session:
         # Cross-thread safety
         self._lock = Lock()
 
+        self.id = utils.generate_random_long(signed=False)
+        self._sequence = 0
+        self.time_offset = 0
+        self._last_msg_id = 0  # Long
+
         # These values will be saved
         self.server_address = '91.108.56.165'
         self.port = 443
         self.auth_key = None
-        self.id = utils.generate_random_long(signed=False)
-        self._sequence = 0
+        self.layer = 0
         self.salt = 0  # Unsigned long
-        self.time_offset = 0
-        self._last_msg_id = 0  # Long
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
@@ -68,6 +70,7 @@ class Session:
                 json.dump({
                     'port': self.port,
                     'salt': self.salt,
+                    'layer': self.layer,
                     'server_address': self.server_address,
                     'auth_key_data':
                         b64encode(self.auth_key.key).decode('ascii')
@@ -106,9 +109,11 @@ class Session:
             try:
                 with open(path, 'r') as file:
                     data = json.load(file)
-                    result.port = data['port']
-                    result.salt = data['salt']
-                    result.server_address = data['server_address']
+                    result.port = data.get('port', result.port)
+                    result.salt = data.get('salt', result.salt)
+                    result.layer = data.get('layer', result.layer)
+                    result.server_address = \
+                        data.get('server_address', result.server_address)
 
                     # FIXME We need to import the AuthKey here or otherwise
                     # we get cyclic dependencies.
