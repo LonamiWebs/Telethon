@@ -89,7 +89,11 @@ class MtProtoSender:
         with self._recv_lock:
             try:
                 body = self.connection.recv()
-            except InvalidChecksumError:
+            except (BufferError, InvalidChecksumError):
+                # TODO BufferError, we should spot the cause...
+                # "No more bytes left"; something wrong happened, clear
+                # everything to be on the safe side, or:
+                #
                 # "This packet should be skipped"; since this may have
                 # been a result for a request, invalidate every request
                 # and just re-invoke them to avoid problems
