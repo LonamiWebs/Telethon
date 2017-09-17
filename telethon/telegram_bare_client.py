@@ -158,8 +158,7 @@ class TelegramBareClient:
             # This is fine, probably layer migration
             self._logger.debug('Found invalid item, probably migrating', e)
             self.disconnect()
-            return self.connect(exported_auth=exported_auth,
-                                initial_query=initial_query)
+            return self.connect(exported_auth=exported_auth)
 
         except (RPCError, ConnectionError) as error:
             # Probably errors from the previous session, ignore them
@@ -167,7 +166,7 @@ class TelegramBareClient:
             self._logger.debug(
                 'Could not stabilise initial connection: {}'.format(error)
             )
-            return None if initial_query else False
+            return False
 
     def _init_connection(self, query=None):
         result = self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
