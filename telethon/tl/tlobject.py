@@ -61,10 +61,8 @@ class TLObject:
                 result.append('\t' * indent)
                 result.append('}')
 
-            elif isinstance(obj, str):
-                result.append('"')
-                result.append(obj)
-                result.append('"')
+            elif isinstance(obj, str) or isinstance(obj, bytes):
+                result.append(repr(obj))
 
             elif hasattr(obj, '__iter__'):
                 result.append('[\n')
