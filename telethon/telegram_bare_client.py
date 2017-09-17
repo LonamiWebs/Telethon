@@ -11,7 +11,7 @@ from .errors import (
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .tl import TLObject, Session
-from .tl.all_tlobjects import layer
+from .tl.all_tlobjects import LAYER
 from .tl.functions import (
     InitConnectionRequest, InvokeWithLayerRequest, PingRequest
 )
@@ -125,11 +125,11 @@ class TelegramBareClient:
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(connection)
 
-                self.session.layer = layer
+                self.session.layer = LAYER
                 self.session.save()
                 init_connection = True
             else:
-                init_connection = self.session.layer != layer
+                init_connection = self.session.layer != LAYER
 
             self._sender = MtProtoSender(connection, self.session)
             self._sender.connect()
@@ -170,7 +170,7 @@ class TelegramBareClient:
             return None if initial_query else False
 
     def _init_connection(self, query=None):
-        result = self(InvokeWithLayerRequest(layer, InitConnectionRequest(
+        result = self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
             api_id=self.api_id,
             device_model=self.session.device_model,
             system_version=self.session.system_version,
@@ -180,7 +180,7 @@ class TelegramBareClient:
             lang_pack='',  # "langPacks are for official apps only"
             query=query
         )))
-        self.session.layer = layer
+        self.session.layer = LAYER
         self.session.save()
         return result
 

@@ -83,9 +83,10 @@ class TLGenerator:
                 builder.writeln('from . import types, functions')
                 builder.writeln()
 
-                # Create a variable to indicate which layer this is
-                builder.writeln('layer = {}  # Current generated layer'.format(
-                    TLParser.find_layer(scheme_file)))
+                # Create a read-only property to indicate which layer this is
+                builder.writeln('LAYER = property(fget=lambda: {})'.format(
+                    TLParser.find_layer(scheme_file))
+                )
                 builder.writeln()
 
                 # Then create the dictionary containing constructor_id: class
