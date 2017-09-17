@@ -48,11 +48,10 @@ class CdnDecrypter:
         #
         # We assume that cdn_redirect.cdn_file_hashes are ordered by offset,
         # and that there will be enough of these to retrieve the whole file.
-        cdn_file = cdn_client.connect(initial_query=GetCdnFileRequest(
-            file_token=cdn_redirect.file_token,
-            offset=cdn_redirect.cdn_file_hashes[0].offset,
-            limit=cdn_redirect.cdn_file_hashes[0].limit
-        ))
+        #
+        # This relies on the fact that TelegramBareClient._dc_options is
+        # static and it won't be called from this DC (it would fail).
+        cdn_client.connect()
 
         # CDN client is ready, create the resulting CdnDecrypter
         decrypter = CdnDecrypter(
@@ -60,6 +59,11 @@ class CdnDecrypter:
             cdn_aes, cdn_redirect.cdn_file_hashes
         )
 
+        cdn_file = client(GetCdnFileRequest(
+            file_token=cdn_redirect.file_token,
+            offset=cdn_redirect.cdn_file_hashes[0].offset,
+            limit=cdn_redirect.cdn_file_hashes[0].limit
+        ))
         if isinstance(cdn_file, CdnFileReuploadNeeded):
             # We need to use the original client here
             client(ReuploadCdnFileRequest(

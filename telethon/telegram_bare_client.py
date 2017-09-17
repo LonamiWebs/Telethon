@@ -94,7 +94,7 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, exported_auth=None, initial_query=None):
+    def connect(self, exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -102,20 +102,13 @@ class TelegramBareClient:
 
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
-
-           If 'initial_query' is not None, it will override the default
-           'GetConfigRequest()', and its result will be returned ONLY
-           if the client wasn't connected already.
         """
         if self._sender and self._sender.is_connected():
             # Try sending a ping to make sure we're connected already
             # TODO Maybe there's a better way to check this
             try:
-                if initial_query is None:
-                    self(PingRequest(utils.generate_random_long()))
-                    return True
-                else:
-                    return self(initial_query)
+                self(PingRequest(utils.generate_random_long()))
+                return True
             except:
                 # If ping failed, ensure we're disconnected first
                 self.disconnect()
@@ -146,22 +139,18 @@ class TelegramBareClient:
                     self._init_connection(ImportAuthorizationRequest(
                         exported_auth.id, exported_auth.bytes
                     ))
-                elif initial_query:
-                    return self._init_connection(initial_query)
                 else:
                     TelegramBareClient._dc_options = \
                         self._init_connection(GetConfigRequest()).dc_options
-            else:
-                # TODO Avoid duplicated code
-                if exported_auth is not None:
-                    self(ImportAuthorizationRequest(
-                        exported_auth.id, exported_auth.bytes
-                    ))
-                elif initial_query:
-                    return self(initial_query)
-                if TelegramBareClient._dc_options is None:
-                    TelegramBareClient._dc_options = \
-                        self(GetConfigRequest()).dc_options
+
+            elif exported_auth is not None:
+                self(ImportAuthorizationRequest(
+                    exported_auth.id, exported_auth.bytes
+                ))
+
+            if TelegramBareClient._dc_options is None:
+                TelegramBareClient._dc_options = \
+                    self(GetConfigRequest()).dc_options
 
             return True
 
