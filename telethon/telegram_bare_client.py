@@ -53,6 +53,9 @@ class TelegramBareClient:
     # Current TelegramClient version
     __version__ = '0.13.3'
 
+    # TODO Make this thread-safe, all connections share the same DC
+    _dc_options = None
+
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
@@ -85,7 +88,6 @@ class TelegramBareClient:
         self.updates = UpdateState(process_updates)
 
         # These will be set later
-        self.dc_options = None
         self._sender = None
 
     # endregion
@@ -147,7 +149,7 @@ class TelegramBareClient:
                 elif initial_query:
                     return self._init_connection(initial_query)
                 else:
-                    self.dc_options = \
+                    TelegramBareClient._dc_options = \
                         self._init_connection(GetConfigRequest()).dc_options
             else:
                 # TODO Avoid duplicated code
@@ -157,8 +159,9 @@ class TelegramBareClient:
                     ))
                 elif initial_query:
                     return self(initial_query)
-                if not self.dc_options:
-                    self.dc_options = self(GetConfigRequest()).dc_options
+                if TelegramBareClient._dc_options is None:
+                    TelegramBareClient._dc_options = \
+                        self(GetConfigRequest()).dc_options
 
             return True
 
@@ -221,7 +224,7 @@ class TelegramBareClient:
 
     def _get_dc(self, dc_id, ipv6=False, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
-        if not self.dc_options:
+        if TelegramBareClient._dc_options is None:
             raise ConnectionError(
                 'Cannot determine the required data center IP address. '
                 'Stabilise a successful initial connection first.')
@@ -233,15 +236,15 @@ class TelegramBareClient:
                     rsa.add_key(pk.public_key)
 
             return next(
-                dc for dc in self.dc_options if dc.id == dc_id and
-                bool(dc.ipv6) == ipv6 and bool(dc.cdn) == cdn
+                dc for dc in TelegramBareClient._dc_options if dc.id == dc_id
+                and bool(dc.ipv6) == ipv6 and bool(dc.cdn) == cdn
             )
         except StopIteration:
             if not cdn:
                 raise
 
             # New configuration, perhaps a new CDN was added?
-            self.dc_options = self(GetConfigRequest()).dc_options
+            TelegramBareClient._dc_options = self(GetConfigRequest()).dc_options
             return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
     def _get_exported_client(self, dc_id,
