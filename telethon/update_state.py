@@ -34,7 +34,10 @@ class UpdateState:
             if not self._updates:
                 self._updates_available.clear()
 
-            return update
+        if isinstance(update, Exception):
+            raise update  # Some error was set through .set_error()
+
+        return update
 
     def get_polling(self):
         return self._polling
@@ -46,6 +49,21 @@ class UpdateState:
                 self._updates.clear()
 
     polling = property(fget=get_polling, fset=set_polling)
+
+    def set_error(self, error):
+        """Sets an error, so that the next call to .poll() will raise it.
+           Can be (and is) used to pass exceptions between threads.
+        """
+        with self._updates_lock:
+            # Insert at the beginning so the very next poll causes an error
+            # TODO Should this reset the pts and such?
+            self._updates.insert(0, error)
+            self._updates_available.set()
+
+    def check_error(self):
+        with self._updates_lock:
+            if self._updates and isinstance(self._updates[0], Exception):
+                raise self._updates.pop()
 
     def process(self, update):
         """Processes an update object. This method is normally called by
@@ -59,9 +77,10 @@ class UpdateState:
                 self._state = update
             elif not hasattr(update, 'pts') or update.pts > self._state.pts:
                 self._state.pts = getattr(update, 'pts', self._state.pts)
-                for handler in self.handlers:
-                    handler(update)
 
                 if self._polling:
                     self._updates.append(update)
                     self._updates_available.set()
+
+        for handler in self.handlers:
+            handler(update)

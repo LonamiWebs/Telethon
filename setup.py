@@ -8,9 +8,12 @@ https://github.com/pypa/sampleproject
 Extra supported commands are:
 * gen_tl, to generate the classes required for Telethon to run
 * clean_tl, to clean these generated classes
+* pypi, to generate sdist, bdist_wheel, and push to PyPi
 """
 
 # To use a consistent encoding
+from subprocess import run
+from shutil import rmtree
 from codecs import open
 from sys import argv
 from os import path
@@ -43,6 +46,15 @@ if __name__ == '__main__':
         print('Cleaning...')
         TLGenerator('telethon/tl').clean_tlobjects()
         print('Done.')
+
+    elif len(argv) >= 2 and argv[1] == 'pypi':
+        for x in ('build', 'dist', 'Telethon.egg-info'):
+            rmtree(x, ignore_errors=True)
+        run('python3 setup.py sdist', shell=True)
+        run('python3 setup.py bdist_wheel', shell=True)
+        run('twine upload dist/*', shell=True)
+        for x in ('build', 'dist', 'Telethon.egg-info'):
+            rmtree(x, ignore_errors=True)
 
     else:
         if not TelegramClient:

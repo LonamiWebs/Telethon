@@ -41,7 +41,7 @@ from .tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
-    UpdateNewMessage
+    UpdateNewMessage, UpdateShortSentMessage
 )
 from .utils import find_user_or_chat, get_extension
 
@@ -136,18 +136,18 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self, *args):
+    def connect(self, exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
-           *args will be ignored.
+           exported_auth is meant for internal purposes and can be ignored.
         """
         if self._sender and self._sender.is_connected():
             return
 
-        ok = super().connect()
+        ok = super().connect(exported_auth=exported_auth)
         # The main TelegramClient is the only one that will have
         # constant_read, since it's also the only one who receives
         # updates and need to be processed as soon as they occur.
@@ -230,6 +230,8 @@ class TelegramClient(TelegramBareClient):
                 threading.get_ident() == self._recv_thread.ident:
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
+        self.updates.check_error()
+
         try:
             # Users may call this method from within some update handler.
             # If this is the case, then the thread invoking the request
@@ -292,8 +294,7 @@ class TelegramClient(TelegramBareClient):
 
            If no phone or code is provided, then the sole password will be used.
            The password should be used after a normal authorization attempt
-           has happened and an RPCError with `.password_required = True` was
-           raised.
+           has happened and an SessionPasswordNeededError was raised.
 
            To login as a bot, only `bot_token` should be provided.
            This should equal to the bot access hash provided by
@@ -417,14 +418,26 @@ class TelegramClient(TelegramBareClient):
            If 'reply_to' is set to either a message or a message ID,
            the sent message will be replying to such message.
         """
+        entity = self.get_entity(entity)
         request = SendMessageRequest(
-            peer=self.get_entity(entity),
+            peer=entity,
             message=message,
             entities=[],
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
+        if isinstance(request, UpdateShortSentMessage):
+            return Message(
+                id=result.id,
+                to_id=entity,
+                message=message,
+                date=result.date,
+                out=result.out,
+                media=result.media,
+                entities=result.entities
+            )
+
         # Telegram seems to send updateMessageID first, then updateNewMessage,
         # however let's not rely on that just in case.
         msg_id = None
@@ -1026,5 +1039,10 @@ class TelegramClient(TelegramBareClient):
                     self._recv_thread = None  # Not running anymore
                     self.reconnect()
                     return
+            except Exception as e:
+                # Unknown exception, pass it to the main thread
+                self.updates.set_error(e)
+                self._recv_thread = None
+                return
 
     # endregion
