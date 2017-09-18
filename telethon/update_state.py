@@ -77,9 +77,10 @@ class UpdateState:
                 self._state = update
             elif not hasattr(update, 'pts') or update.pts > self._state.pts:
                 self._state.pts = getattr(update, 'pts', self._state.pts)
-                for handler in self.handlers:
-                    handler(update)
 
                 if self._polling:
                     self._updates.append(update)
                     self._updates_available.set()
+
+        for handler in self.handlers:
+            handler(update)
