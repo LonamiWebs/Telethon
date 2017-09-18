@@ -352,11 +352,7 @@ class TLGenerator:
                 builder.writeln('pass')
         builder.end_block()
 
-        # Write the __repr__(self) and __str__(self) functions
-        builder.writeln('def __repr__(self):')
-        builder.writeln("return '{}'".format(repr(tlobject)))
-        builder.end_block()
-
+        # Write the __str__(self) and stringify(self) functions
         builder.writeln('def __str__(self):')
         builder.writeln('return TLObject.pretty_format(self)')
         builder.end_block()
