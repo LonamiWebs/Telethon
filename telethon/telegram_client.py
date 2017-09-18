@@ -41,7 +41,7 @@ from .tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
-    UpdateNewMessage
+    UpdateNewMessage, UpdateShortSentMessage
 )
 from .utils import find_user_or_chat, get_extension
 
@@ -418,14 +418,26 @@ class TelegramClient(TelegramBareClient):
            If 'reply_to' is set to either a message or a message ID,
            the sent message will be replying to such message.
         """
+        entity = self.get_entity(entity)
         request = SendMessageRequest(
-            peer=self.get_entity(entity),
+            peer=entity,
             message=message,
             entities=[],
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
+        if isinstance(request, UpdateShortSentMessage):
+            return Message(
+                id=result.id,
+                to_id=entity,
+                message=message,
+                date=result.date,
+                out=result.out,
+                media=result.media,
+                entities=result.entities
+            )
+
         # Telegram seems to send updateMessageID first, then updateNewMessage,
         # however let's not rely on that just in case.
         msg_id = None
