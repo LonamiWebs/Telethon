@@ -292,8 +292,7 @@ class TelegramClient(TelegramBareClient):
 
            If no phone or code is provided, then the sole password will be used.
            The password should be used after a normal authorization attempt
-           has happened and an RPCError with `.password_required = True` was
-           raised.
+           has happened and an SessionPasswordNeededError was raised.
 
            To login as a bot, only `bot_token` should be provided.
            This should equal to the bot access hash provided by
