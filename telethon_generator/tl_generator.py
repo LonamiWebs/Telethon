@@ -107,8 +107,7 @@ class TLGenerator:
                     if tlobject.namespace:
                         builder.write('.' + tlobject.namespace)
 
-                    builder.writeln('.{},'.format(
-                        TLGenerator.get_class_name(tlobject)))
+                    builder.writeln('.{},'.format(tlobject.class_name()))
 
                 builder.current_indent -= 1
                 builder.writeln('}')
@@ -176,8 +175,7 @@ class TLGenerator:
 
         builder.writeln()
         builder.writeln()
-        builder.writeln('class {}(TLObject):'.format(
-            TLGenerator.get_class_name(tlobject)))
+        builder.writeln('class {}(TLObject):'.format(tlobject.class_name()))
 
         # Class-level variable to store its Telegram's constructor ID
         builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
@@ -221,17 +219,10 @@ class TLGenerator:
             builder.writeln('"""')
             for arg in args:
                 if not arg.flag_indicator:
-                    builder.write(
-                        ':param {}: Telegram type: "{}".'
-                        .format(arg.name, arg.type)
-                    )
-                    if arg.is_vector:
-                        builder.write(' Must be a list.'.format(arg.name))
-
-                    if arg.is_generic:
-                        builder.write(' Must be another TLObject request.')
-
-                    builder.writeln()
+                    builder.writeln(':param {} {}:'.format(
+                        arg.type_hint(), arg.name
+                    ))
+                    builder.current_indent -= 1  # It will auto-indent (':')
 
             # We also want to know what type this request returns
             # or to which type this constructor belongs to
@@ -246,12 +237,11 @@ class TLGenerator:
                 builder.writeln('This type has no constructors.')
             elif len(constructors) == 1:
                 builder.writeln('Instance of {}.'.format(
-                    TLGenerator.get_class_name(constructors[0])
+                    constructors[0].class_name()
                 ))
             else:
                 builder.writeln('Instance of either {}.'.format(
-                    ', '.join(TLGenerator.get_class_name(c)
-                              for c in constructors)
+                    ', '.join(c.class_name() for c in constructors)
                 ))
 
             builder.writeln('"""')
@@ -319,7 +309,8 @@ class TLGenerator:
         builder.writeln('def on_send(self, writer):')
         builder.writeln(
             'writer.write_int({}.constructor_id, signed=False)'
-                .format(TLGenerator.get_class_name(tlobject)))
+            .format(tlobject.class_name())
+        )
 
         for arg in tlobject.args:
             TLGenerator.write_onsend_code(builder, arg,
@@ -331,8 +322,8 @@ class TLGenerator:
         builder.writeln('@staticmethod')
         builder.writeln('def empty():')
         builder.writeln('return {}({})'.format(
-            TLGenerator.get_class_name(tlobject), ', '.join(
-                'None' for _ in range(len(args)))))
+            tlobject.class_name(), ', '.join('None' for _ in range(len(args)))
+        ))
         builder.end_block()
 
         # Write the on_response(self, reader) function
@@ -413,20 +404,6 @@ class TLGenerator:
             builder.writeln(
                 'self.{0} = {1}({0})'.format(arg.name, get_input_code)
             )
-
-    @staticmethod
-    def get_class_name(tlobject):
-        """Gets the class name following the Python style guidelines"""
-
-        # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(),
-                        tlobject.name)
-        result = result[:1].upper() + result[1:].replace(
-            '_', '')  # Replace again to fully ensure!
-        # If it's a function, let it end with "Request" to identify them
-        if tlobject.is_function:
-            result += 'Request'
-        return result
 
     @staticmethod
     def get_file_name(tlobject, add_extension=False):
