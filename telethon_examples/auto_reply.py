@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # disclaimer: you should not actually use this. it can be quite spammy.
-from time import sleep
 from telethon import TelegramClient
+from telethon.errors import SessionPasswordNeededError
 from getpass import getpass
 from telethon.tl.types import InputPeerUser,InputPeerChannel
 from telethon.tl.types import Updates
@@ -10,6 +10,7 @@ from telethon.tl.functions.messages import SendMessageRequest,EditMessageRequest
 from telethon.tl.types import MessageService
 from nltk.tokenize import word_tokenize
 from os import environ
+from time import sleep
 
 CHANNELS = {}
 CHANNELNAMES = {}
@@ -47,12 +48,10 @@ class NeedsMore(TelegramClient):
                 code = input('Enter the auth code: ')
                 try:
                     code_ok = self.sign_in(user_phone, code)
-                except RPCError as e:
+                except SessionPasswordNeededError:
                     if e.password_required:
                         pw = getpass('Two step verification enabled. Please enter your password: ')
                         self.sign_in(password=pw)
-                    else:
-                        raise e
             print('INFO: Client initialized succesfully!')
 
     def run(self):
