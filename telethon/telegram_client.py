@@ -230,6 +230,8 @@ class TelegramClient(TelegramBareClient):
                 threading.get_ident() == self._recv_thread.ident:
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
+        self.updates.check_error()
+
         try:
             # Users may call this method from within some update handler.
             # If this is the case, then the thread invoking the request
@@ -1025,5 +1027,10 @@ class TelegramClient(TelegramBareClient):
                     self._recv_thread = None  # Not running anymore
                     self.reconnect()
                     return
+            except Exception as e:
+                # Unknown exception, pass it to the main thread
+                self.updates.set_error(e)
+                self._recv_thread = None
+                return
 
     # endregion
