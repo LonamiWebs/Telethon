@@ -49,9 +49,8 @@ class NeedsMore(TelegramClient):
                 try:
                     code_ok = self.sign_in(user_phone, code)
                 except SessionPasswordNeededError:
-                    if e.password_required:
-                        pw = getpass('Two step verification enabled. Please enter your password: ')
-                        self.sign_in(password=pw)
+                    pw = getpass('Two step verification enabled. Please enter your password: ')
+                    self.sign_in(password=pw)
             print('INFO: Client initialized succesfully!')
 
     def run(self):
