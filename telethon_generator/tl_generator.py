@@ -137,13 +137,17 @@ class TLGenerator:
                         x for x in namespace_tlobjects.keys() if x
                     )))
 
+                # Import 'os' for those needing access to 'os.urandom()'
+                # Currently only 'random_id' needs 'os' to be imported,
+                # for all those TLObjects with arg.can_be_inferred.
+                builder.writeln('import os')
+
                 # Generate the class for every TLObject
                 for t in sorted(tlobjects, key=lambda x: x.name):
                     TLGenerator._write_source_code(
                         t, builder, depth, type_constructors
                     )
-                    while builder.current_indent != 0:
-                        builder.end_block()
+                    builder.current_indent = 0
 
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
@@ -169,10 +173,6 @@ class TLGenerator:
             if util_imports:
                 builder.writeln('from {}.utils import {}'.format(
                     '.' * depth, ', '.join(util_imports)))
-
-        if any(a for a in tlobject.args if a.can_be_inferred):
-            # Currently only 'random_id' needs 'os' to be imported
-            builder.writeln('import os')
 
         builder.writeln()
         builder.writeln()
