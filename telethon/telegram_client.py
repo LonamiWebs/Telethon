@@ -136,18 +136,18 @@ class TelegramClient(TelegramBareClient):
 
     # region Connecting
 
-    def connect(self, *args):
+    def connect(self, exported_auth=None):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
            may require a call (or several) to 'sign_in' for the first time.
 
-           *args will be ignored.
+           exported_auth is meant for internal purposes and can be ignored.
         """
         if self._sender and self._sender.is_connected():
             return
 
-        ok = super().connect()
+        ok = super().connect(exported_auth=exported_auth)
         # The main TelegramClient is the only one that will have
         # constant_read, since it's also the only one who receives
         # updates and need to be processed as soon as they occur.
