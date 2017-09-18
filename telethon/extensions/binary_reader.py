@@ -23,6 +23,7 @@ class BinaryReader:
                 'Either bytes or a stream must be provided')
 
         self.reader = BufferedReader(self.stream)
+        self._last = None  # Should come in handy to spot -404 errors
 
     # region Reading
 
@@ -57,8 +58,12 @@ class BinaryReader:
         """Read the given amount of bytes"""
         result = self.reader.read(length)
         if len(result) != length:
-            raise BufferError('No more data left to read')
+            raise BufferError(
+                'No more data left to read (need {}, got {}: {}); last read {}'
+                .format(length, len(result), repr(result), repr(self._last))
+            )
 
+        self._last = result
         return result
 
     def get_bytes(self):
