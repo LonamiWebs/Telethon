@@ -249,7 +249,7 @@ class TLArg:
             'int': 'int',
             'long': 'int',
             'string': 'str',
-            'date': 'datetime',
+            'date': 'datetime.datetime',
             'bytes': 'bytes',
             'true': 'bool',
         }.get(self.type, 'TLObject')
