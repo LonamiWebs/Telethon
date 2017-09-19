@@ -12,8 +12,6 @@ Extra supported commands are:
 """
 
 # To use a consistent encoding
-from subprocess import run
-from shutil import rmtree
 from codecs import open
 from sys import argv
 from os import path
@@ -48,6 +46,11 @@ if __name__ == '__main__':
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
+        # Need python3.5 or higher, but Telethon is supposed to support 3.x
+        # Place it here since noone should be running ./setup.py pypi anyway
+        from subprocess import run
+        from shutil import rmtree
+
         for x in ('build', 'dist', 'Telethon.egg-info'):
             rmtree(x, ignore_errors=True)
         run('python3 setup.py sdist', shell=True)
