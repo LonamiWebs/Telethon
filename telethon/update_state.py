@@ -75,12 +75,16 @@ class UpdateState:
         with self._updates_lock:
             if isinstance(update, tl.updates.State):
                 self._state = update
-            elif not hasattr(update, 'pts') or update.pts > self._state.pts:
-                self._state.pts = getattr(update, 'pts', self._state.pts)
+                return  # Nothing else to be done
 
-                if self._polling:
-                    self._updates.append(update)
-                    self._updates_available.set()
+            pts = getattr(update, 'pts', self._state.pts)
+            if pts <= self._state.pts:
+                return  # We already handled this update
+
+            self._state.pts = pts
+            if self._polling:
+                self._updates.append(update)
+                self._updates_available.set()
 
         for handler in self.handlers:
             handler(update)
