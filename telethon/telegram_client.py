@@ -427,7 +427,7 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
-        if isinstance(request, UpdateShortSentMessage):
+        if isinstance(result, UpdateShortSentMessage):
             return Message(
                 id=result.id,
                 to_id=entity,
