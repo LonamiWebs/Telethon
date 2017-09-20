@@ -282,8 +282,12 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
-        result = self(
-            SendCodeRequest(phone, self.api_id, self.api_hash))
+        if isinstance(phone, int):
+            phone = str(phone)
+        elif phone.startswith('+'):
+            phone = phone.strip('+')
+
+        result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
         return result
