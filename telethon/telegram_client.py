@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
 from threading import Thread
+try:
+    import socks
+except ImportError:
+    socks = None
 
 from . import TelegramBareClient
 from . import helpers as utils
@@ -147,7 +151,19 @@ class TelegramClient(TelegramBareClient):
         if self._sender and self._sender.is_connected():
             return
 
-        ok = super().connect(exported_auth=exported_auth)
+        if socks and self._recv_thread:
+            # Treat proxy errors specially since they're not related to
+            # Telegram itself, but rather to the proxy. If any happens on
+            # the read thread forward it to the main thread.
+            try:
+                ok = super().connect(exported_auth=exported_auth)
+            except socks.ProxyConnectionError as e:
+                ok = False
+                # Report the exception to the main thread
+                self.updates.set_error(e)
+        else:
+            ok = super().connect(exported_auth=exported_auth)
+
         # The main TelegramClient is the only one that will have
         # constant_read, since it's also the only one who receives
         # updates and need to be processed as soon as they occur.
@@ -193,6 +209,10 @@ class TelegramClient(TelegramBareClient):
 
     # region Working with different connections
 
+    def _on_read_thread(self):
+        return self._recv_thread is not None and \
+               threading.get_ident() == self._recv_thread.ident
+
     def create_new_connection(self, on_dc=None, timeout=timedelta(seconds=5)):
         """Creates a new connection which can be used in parallel
            with the original TelegramClient. A TelegramBareClient
@@ -226,8 +246,7 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if self._recv_thread is not None and \
-                threading.get_ident() == self._recv_thread.ident:
+        if self._on_read_thread():
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
         self.updates.check_error()
