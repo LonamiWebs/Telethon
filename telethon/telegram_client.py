@@ -126,6 +126,9 @@ class TelegramClient(TelegramBareClient):
         self._phone_code_hash = None
         self._phone = None
 
+        # Save whether the user is authorized here (a.k.a. logged in)
+        self._authorized = False
+
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
 
@@ -161,25 +164,16 @@ class TelegramClient(TelegramBareClient):
         else:
             ok = super().connect(exported_auth=exported_auth)
 
-        # The main TelegramClient is the only one that will have
-        # constant_read, since it's also the only one who receives
-        # updates and need to be processed as soon as they occur.
-        #
-        # TODO Allow to disable this to avoid the creation of a new thread
-        # if the user is not going to work with updates at all? Whether to
-        # read constantly or not for updates needs to be known before hand,
-        # and further updates won't be able to be added unless allowing to
-        # switch the mode on the fly.
-        if ok and self._recv_thread is None:
-            self._recv_thread = Thread(
-                name='ReadThread', daemon=True,
-                target=self._recv_thread_impl
-            )
-            self._recv_thread.start()
-            if self.updates.polling:
-                self.sync_updates()
+        if not ok:
+            return False
 
-        return ok
+        try:
+            self.sync_updates()
+            self._set_connected_and_authorized()
+        except UnauthorizedError:
+            self._authorized = False
+
+        return True
 
     def disconnect(self):
         """Disconnects from the Telegram server
@@ -291,7 +285,7 @@ class TelegramClient(TelegramBareClient):
     def is_user_authorized(self):
         """Has the user been authorized yet
            (code request sent and confirmed)?"""
-        return self.session and self.get_me() is not None
+        return self._authorized
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
@@ -337,33 +331,37 @@ class TelegramClient(TelegramBareClient):
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
                 return None
-
         elif password:
             salt = self(GetPasswordRequest()).current_salt
-            result = self(
-                CheckPasswordRequest(utils.get_password_hash(password, salt)))
-
+            result = self(CheckPasswordRequest(
+                utils.get_password_hash(password, salt)
+            ))
         elif bot_token:
             result = self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
-                api_id=self.api_id, api_hash=self.api_hash))
-
+                api_id=self.api_id, api_hash=self.api_hash
+            ))
         else:
             raise ValueError(
                 'You must provide a phone and a code the first time, '
-                'and a password only if an RPCError was raised before.')
+                'and a password only if an RPCError was raised before.'
+            )
 
+        self._set_connected_and_authorized()
         return result.user
 
     def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        return self(SignUpRequest(
+        result = self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
             first_name=first_name,
             last_name=last_name
-        )).user
+        ))
+
+        self._set_connected_and_authorized()
+        return result.user
 
     def log_out(self):
         """Logs out and deletes the current session.
@@ -997,11 +995,7 @@ class TelegramClient(TelegramBareClient):
            called automatically on connection if self.updates.enabled = True,
            otherwise it should be called manually after enabling updates.
         """
-        try:
-            self.updates.process(self(GetStateRequest()))
-            return True
-        except UnauthorizedError:
-            return False
+        self.updates.process(self(GetStateRequest()))
 
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
@@ -1020,6 +1014,14 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # Constant read
+
+    def _set_connected_and_authorized(self):
+        self._authorized = True
+        self._recv_thread = Thread(
+            name='ReadThread', daemon=True,
+            target=self._recv_thread_impl
+        )
+        self._recv_thread.start()
 
     # By using this approach, another thread will be
     # created and started upon connection to constantly read
