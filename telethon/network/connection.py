@@ -3,6 +3,8 @@ from datetime import timedelta
 from zlib import crc32
 from enum import Enum
 
+import errno
+
 from ..crypto import AESModeCTR
 from ..extensions import BinaryWriter, TcpClient
 from ..errors import InvalidChecksumError
@@ -75,9 +77,15 @@ class Connection:
             setattr(self, 'read', self._read_plain)
 
     def connect(self):
-        self._send_counter = 0
-        self.conn.connect(self.ip, self.port)
+        try:
+            self.conn.connect(self.ip, self.port)
+        except OSError as e:
+            if e.errno == errno.EISCONN:
+                return  # Already connected, no need to re-set everything up
+            else:
+                raise
 
+        self._send_counter = 0
         if self._mode == ConnectionMode.TCP_ABRIDGED:
             self.conn.write(b'\xef')
         elif self._mode == ConnectionMode.TCP_INTERMEDIATE:

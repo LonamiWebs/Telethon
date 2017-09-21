@@ -30,19 +30,33 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self._proxy)
 
+        self._socket.settimeout(self._timeout)
+
     def connect(self, ip, port):
         """Connects to the specified IP and port number.
            'timeout' must be given in seconds
         """
-        if not self.connected:
-            if ':' in ip:  # IPv6
-                mode, address = socket.AF_INET6, (ip, port, 0, 0)
-            else:
-                mode, address = socket.AF_INET, (ip, port)
+        if ':' in ip:  # IPv6
+            mode, address = socket.AF_INET6, (ip, port, 0, 0)
+        else:
+            mode, address = socket.AF_INET, (ip, port)
 
-            self._recreate_socket(mode)
-            self._socket.settimeout(self._timeout)
-            self._socket.connect(address)
+        while True:
+            try:
+                if not self._socket:
+                    self._recreate_socket(mode)
+
+                self._socket.connect(address)
+                break  # Successful connection, stop retrying to connect
+            except OSError as e:
+                # There are some errors that we know how to handle, and
+                # the loop will allow us to retry
+                if e.errno == errno.EBADF:
+                    # Bad file descriptor, i.e. socket was closed, set it
+                    # to none to recreate it on the next iteration
+                    self._socket = None
+                else:
+                    raise
 
     def _get_connected(self):
         return self._socket is not None
