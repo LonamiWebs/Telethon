@@ -120,7 +120,6 @@ class TelegramBareClient:
             else:
                 init_connection = self.session.layer != LAYER
 
-
             if init_connection:
                 if exported_auth is not None:
                     self._init_connection(ImportAuthorizationRequest(
@@ -188,8 +187,9 @@ class TelegramBareClient:
         if new_dc is not None:
             self.session.auth_key = None  # Force creating new auth_key
             dc = self._get_dc(new_dc)
-            self.session.server_address = dc.ip_address
-            self.session.port = dc.port
+            ip = dc.ip_address
+            self._sender.connection.ip = self.session.server_address = ip
+            self._sender.connection.port = self.session.port = dc.port
             self.session.save()
 
         self.connect()
