@@ -196,9 +196,6 @@ def _do_authentication(connection):
 
     # Step 3 response: Complete DH Exchange
     with BinaryReader(sender.receive()) as reader:
-        # Everything read from the server, disconnect now
-        sender.disconnect()
-
         code = reader.read_int(signed=False)
         if code == 0x3bcbf734:  # DH Gen OK
             nonce_from_server = reader.read(16)
