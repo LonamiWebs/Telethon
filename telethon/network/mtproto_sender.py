@@ -66,9 +66,6 @@ class MtProtoSender:
             self._send_packet(writer.get_bytes(), request)
             self._pending_receive.append(request)
 
-        # And update the saved session
-        self.session.save()
-
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
         if self._need_confirmation:
@@ -312,7 +309,6 @@ class MtProtoSender:
             # sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
-            self.session.save()
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
             return True
