@@ -13,9 +13,9 @@ class TcpClient:
         self._closing_lock = Lock()
 
         if isinstance(timeout, timedelta):
-            self._timeout = timeout.seconds
+            self.timeout = timeout.seconds
         elif isinstance(timeout, int) or isinstance(timeout, float):
-            self._timeout = float(timeout)
+            self.timeout = float(timeout)
         else:
             raise ValueError('Invalid timeout type', type(timeout))
 
@@ -30,7 +30,7 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self._proxy)
 
-        self._socket.settimeout(self._timeout)
+        self._socket.settimeout(self.timeout)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number.
@@ -81,6 +81,8 @@ class TcpClient:
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
+        if self._socket is None:
+            raise ConnectionResetError()
 
         # TODO Timeout may be an issue when sending the data, Changed in v3.5:
         # The socket timeout is now the maximum total duration to send all data.
@@ -105,6 +107,9 @@ class TcpClient:
            and it's waiting for more, the timeout will NOT cancel the
            operation. Set to None for no timeout
         """
+        if self._socket is None:
+            raise ConnectionResetError()
+
         # TODO Remove the timeout from this method, always use previous one
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size

@@ -93,6 +93,9 @@ class Connection:
         elif self._mode == ConnectionMode.TCP_OBFUSCATED:
             self._setup_obfuscation()
 
+    def get_timeout(self):
+        return self.conn.timeout
+
     def _setup_obfuscation(self):
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee' * 4)

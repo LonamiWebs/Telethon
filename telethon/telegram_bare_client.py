@@ -72,11 +72,13 @@ class TelegramBareClient:
         self.api_id = int(api_id)
         self.api_hash = api_hash
         if self.api_id < 20:  # official apps must use obfuscated
-            self._connection_mode = ConnectionMode.TCP_OBFUSCATED
-        else:
-            self._connection_mode = connection_mode
-        self.proxy = proxy
-        self._timeout = timeout
+            connection_mode = ConnectionMode.TCP_OBFUSCATED
+
+        self._sender = MtProtoSender(self.session, Connection(
+            self.session.server_address, self.session.port,
+            mode=connection_mode, proxy=proxy, timeout=timeout
+        ))
+
         self._logger = logging.getLogger(__name__)
 
         # Cache "exported" senders 'dc_id: TelegramBareClient' and
@@ -87,9 +89,6 @@ class TelegramBareClient:
         # This member will process updates if enabled.
         # One may change self.updates.enabled at any later point.
         self.updates = UpdateState(process_updates)
-
-        # These will be set later
-        self._sender = None
 
     # endregion
 
@@ -104,21 +103,14 @@ class TelegramBareClient:
            If 'exported_auth' is not None, it will be used instead to
            determine the authorization key for the current session.
         """
-        if self.is_connected():
-            return True
-
-        connection = Connection(
-            self.session.server_address, self.session.port,
-            mode=self._connection_mode, proxy=self.proxy, timeout=self._timeout
-        )
-
         try:
+            self._sender.connect()
             if not self.session.auth_key:
                 # New key, we need to tell the server we're going to use
                 # the latest layer
                 try:
                     self.session.auth_key, self.session.time_offset = \
-                        authenticator.do_authentication(connection)
+                        authenticator.do_authentication(self._sender.connection)
                 except BrokenAuthKeyError:
                     return False
 
@@ -128,8 +120,6 @@ class TelegramBareClient:
             else:
                 init_connection = self.session.layer != LAYER
 
-            self._sender = MtProtoSender(connection, self.session)
-            self._sender.connect()
 
             if init_connection:
                 if exported_auth is not None:
@@ -166,7 +156,7 @@ class TelegramBareClient:
             return False
 
     def is_connected(self):
-        return self._sender is not None and self._sender.is_connected()
+        return self._sender.is_connected()
 
     def _init_connection(self, query=None):
         result = self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
@@ -185,9 +175,7 @@ class TelegramBareClient:
 
     def disconnect(self):
         """Disconnects from the Telegram server"""
-        if self._sender:
-            self._sender.disconnect()
-            self._sender = None
+        self._sender.disconnect()
 
     def reconnect(self, new_dc=None):
         """Disconnects and connects again (effectively reconnecting).
@@ -274,7 +262,7 @@ class TelegramBareClient:
             session.port = dc.port
             client = TelegramBareClient(
                 session, self.api_id, self.api_hash,
-                timeout=self._timeout
+                timeout=self._connection.get_timeout()
             )
             client.connect(exported_auth=export_auth)
 
@@ -299,9 +287,6 @@ class TelegramBareClient:
         """
         if not isinstance(request, TLObject) and not request.content_related:
             raise ValueError('You can only invoke requests, not types!')
-
-        if not self._sender:
-            raise ValueError('You must be connected to invoke requests!')
 
         if retries <= 0:
             raise ValueError('Number of retries reached 0.')

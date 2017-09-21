@@ -17,12 +17,12 @@ class MtProtoSender:
        (https://core.telegram.org/mtproto/description)
     """
 
-    def __init__(self, connection, session):
+    def __init__(self, session, connection):
         """Creates a new MtProtoSender configured to send messages through
            'connection' and using the parameters from 'session'.
         """
-        self.connection = connection
         self.session = session
+        self.connection = connection
         self._logger = logging.getLogger(__name__)
 
         self._need_confirmation = []  # Message IDs that need confirmation
@@ -47,6 +47,9 @@ class MtProtoSender:
     def disconnect(self):
         """Disconnects from the server"""
         self.connection.close()
+        self._need_confirmation.clear()
+        self._clear_all_pending()
+        self.logging_out = False
 
     # region Send and receive
 
@@ -97,9 +100,7 @@ class MtProtoSender:
                 # "This packet should be skipped"; since this may have
                 # been a result for a request, invalidate every request
                 # and just re-invoke them to avoid problems
-                for r in self._pending_receive:
-                    r.confirm_received.set()
-                self._pending_receive.clear()
+                self._clear_all_pending()
                 return
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
@@ -244,6 +245,11 @@ class MtProtoSender:
         for i in range(len(self._pending_receive)):
             if self._pending_receive[i].request_msg_id == request_msg_id:
                 return self._pending_receive.pop(i)
+
+    def _clear_all_pending(self):
+        for r in self._pending_receive:
+            r.confirm_received.set()
+        self._pending_receive.clear()
 
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')

@@ -2,6 +2,8 @@ import os
 import time
 from hashlib import sha1
 
+import errno
+
 from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
@@ -30,7 +32,6 @@ def _do_authentication(connection):
        time offset.
     """
     sender = MtProtoPlainSender(connection)
-    sender.connect()
 
     # Step 1 sending: PQ Request
     nonce = os.urandom(16)

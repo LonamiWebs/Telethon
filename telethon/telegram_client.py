@@ -148,9 +148,6 @@ class TelegramClient(TelegramBareClient):
 
            exported_auth is meant for internal purposes and can be ignored.
         """
-        if self._sender and self._sender.is_connected():
-            return
-
         if socks and self._recv_thread:
             # Treat proxy errors specially since they're not related to
             # Telegram itself, but rather to the proxy. If any happens on
@@ -173,7 +170,7 @@ class TelegramClient(TelegramBareClient):
         # read constantly or not for updates needs to be known before hand,
         # and further updates won't be able to be added unless allowing to
         # switch the mode on the fly.
-        if ok:
+        if ok and self._recv_thread is None:
             self._recv_thread = Thread(
                 name='ReadThread', daemon=True,
                 target=self._recv_thread_impl
@@ -187,9 +184,6 @@ class TelegramClient(TelegramBareClient):
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        if not self._sender or not self._sender.is_connected():
-            return
-
         # The existing thread will close eventually, since it's
         # only running while the MtProtoSender.is_connected()
         self._recv_thread = None
@@ -1035,7 +1029,7 @@ class TelegramClient(TelegramBareClient):
     #
     # This way, sending and receiving will be completely independent.
     def _recv_thread_impl(self):
-        while self._sender and self._sender.is_connected():
+        while self._sender.is_connected():
             try:
                 if datetime.now() > self._last_ping + self._ping_delay:
                     self._sender.send(PingRequest(
