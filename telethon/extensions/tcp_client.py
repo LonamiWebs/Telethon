@@ -100,7 +100,7 @@ class TcpClient:
                 except socket.timeout as e:
                     raise TimeoutError() from e
                 except OSError as e:
-                    if e.errno == errno.EBADF:
+                    if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
                         self._raise_connection_reset()
                     else:
                         raise
