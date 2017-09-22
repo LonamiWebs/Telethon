@@ -317,7 +317,9 @@ class TelegramBareClient:
                 # switching between constant read or not on the fly.
                 # Must also watch out for calling .read() from two places,
                 # in which case a Lock would be required for .receive().
-                request.confirm_received.wait()  # TODO Socket's timeout here?
+                request.confirm_received.wait(
+                    self._sender.connection.get_timeout()
+                )
             else:
                 while not request.confirm_received.is_set():
                     self._sender.receive(update_state=self.updates)
