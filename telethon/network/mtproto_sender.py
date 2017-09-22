@@ -4,7 +4,10 @@ from threading import RLock
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import BadMessageError, InvalidChecksumError, rpc_message_to_error
+from ..errors import (
+    BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
+    rpc_message_to_error
+)
 from ..extensions import BinaryReader, BinaryWriter
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
@@ -147,7 +150,10 @@ class MtProtoSender:
 
         with BinaryReader(body) as reader:
             if len(body) < 8:
-                raise BufferError("Can't decode packet ({})".format(body))
+                if body == b'l\xfe\xff\xff':
+                    raise BrokenAuthKeyError()
+                else:
+                    raise BufferError("Can't decode packet ({})".format(body))
 
             # TODO Check for both auth key ID and msg_key correctness
             reader.read_long()  # remote_auth_key_id
