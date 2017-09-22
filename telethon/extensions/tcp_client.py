@@ -43,7 +43,7 @@ class TcpClient:
 
         while True:
             try:
-                if not self._socket:
+                while not self._socket:
                     self._recreate_socket(mode)
 
                 self._socket.connect(address)
