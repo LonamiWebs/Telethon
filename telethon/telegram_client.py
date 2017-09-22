@@ -245,19 +245,19 @@ class TelegramClient(TelegramBareClient):
         """
         # This is only valid when the read thread is reconnecting,
         # that is, the connection lock is locked.
-        on_read_thread = self._on_read_thread()
-        if on_read_thread and not self._connect_lock.locked():
+        if self._on_read_thread() and not self._connect_lock.locked():
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
         self.updates.check_error()
 
         try:
-            # Users may call this method from within some update handler.
-            # If this is the case, then the thread invoking the request
-            # will be the one which should be reading (but is invoking the
-            # request) thus not being available to read it "in the background"
-            # and it's needed to call receive.
-            call_receive = on_read_thread or self._recv_thread is None
+            # We should call receive from this thread if there's no background
+            # thread reading or if the server disconnected us and we're trying
+            # to reconnect. This is because the read thread may either be
+            # locked also trying to reconnect or we may be said thread already.
+            call_receive = \
+                self._recv_thread is None or self._connect_lock.locked()
+
             return super().invoke(
                 request, call_receive=call_receive,
                 retries=kwargs.get('retries', 5)
