@@ -1041,11 +1041,12 @@ class TelegramClient(TelegramBareClient):
 
     def _set_connected_and_authorized(self):
         self._authorized = True
-        self._recv_thread = Thread(
-            name='ReadThread', daemon=True,
-            target=self._recv_thread_impl
-        )
-        self._recv_thread.start()
+        if self._recv_thread is None:
+            self._recv_thread = Thread(
+                name='ReadThread', daemon=True,
+                target=self._recv_thread_impl
+            )
+            self._recv_thread.start()
 
     # By using this approach, another thread will be
     # created and started upon connection to constantly read
@@ -1075,7 +1076,8 @@ class TelegramClient(TelegramBareClient):
             except Exception as e:
                 # Unknown exception, pass it to the main thread
                 self.updates.set_error(e)
-                self._recv_thread = None
-                return
+                break
+
+        self._recv_thread = None
 
     # endregion
