@@ -195,7 +195,9 @@ class TelegramBareClient:
             with self._connect_lock:
                 # Another thread may have connected again, so check that first
                 if not self.is_connected():
-                    self.connect()
+                    return self.connect()
+                else:
+                    return True
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
@@ -204,7 +206,7 @@ class TelegramBareClient:
             self._sender.connection.ip = self.session.server_address = ip
             self._sender.connection.port = self.session.port = dc.port
             self.session.save()
-            self.connect()
+            return self.connect()
 
     # endregion
 
