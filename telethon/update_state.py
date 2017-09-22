@@ -78,7 +78,7 @@ class UpdateState:
                 return  # Nothing else to be done
 
             pts = getattr(update, 'pts', self._state.pts)
-            if pts <= self._state.pts:
+            if hasattr(update, 'pts') and pts <= self._state.pts:
                 return  # We already handled this update
 
             self._state.pts = pts
