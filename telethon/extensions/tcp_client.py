@@ -90,13 +90,13 @@ class TcpClient:
             self._socket.sendall(data)
         except socket.timeout as e:
             raise TimeoutError() from e
+        except BrokenPipeError:
+            self._raise_connection_reset()
         except OSError as e:
             if e.errno == errno.EBADF:
                 self._raise_connection_reset()
             else:
                 raise
-        except BrokenPipeError:
-            self._raise_connection_reset()
 
     def read(self, size):
         """Reads (receives) a whole block of 'size bytes
