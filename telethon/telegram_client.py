@@ -126,6 +126,15 @@ class TelegramClient(TelegramBareClient):
         self._phone_code_hash = None
         self._phone = None
 
+        # Despite the state of the real connection, keep track of whether
+        # the user has explicitly called .connect() or .disconnect() here.
+        # This information is required by the read thread, who will be the
+        # one attempting to reconnect on the background *while* the user
+        # doesn't explicitly call .disconnect(), thus telling it to stop
+        # retrying. The main thread, knowing there is a background thread
+        # attempting reconnection as soon as it happens, will just sleep.
+        self._user_connected = False
+
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = False
 
@@ -167,6 +176,7 @@ class TelegramClient(TelegramBareClient):
         if not ok:
             return False
 
+        self._user_connected = True
         try:
             self.sync_updates()
             self._set_connected_and_authorized()
@@ -178,8 +188,7 @@ class TelegramClient(TelegramBareClient):
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        # The existing thread will close eventually, since it's
-        # only running while the MtProtoSender.is_connected()
+        self._user_connected = False
         self._recv_thread = None
 
         # This will trigger a "ConnectionResetError", usually, the background
@@ -255,8 +264,19 @@ class TelegramClient(TelegramBareClient):
                                'attempting to reconnect at DC {}'
                                .format(e.new_dc))
 
+            # TODO What happens with the background thread here?
+            # For normal use cases, this won't happen, because this will only
+            # be on the very first connection (not authorized, not running),
+            # but may be an issue for people who actually travel?
             self.reconnect(new_dc=e.new_dc)
             return self.invoke(request)
+
+        except ConnectionResetError:
+            if self._connect_lock.locked():
+                # We are connecting and we don't want to reconnect there...
+                raise
+            while self._user_connected and not self.reconnect():
+                pass  # Retry forever until we finally can send the request
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
@@ -1031,7 +1051,7 @@ class TelegramClient(TelegramBareClient):
     #
     # This way, sending and receiving will be completely independent.
     def _recv_thread_impl(self):
-        while self._sender.is_connected():
+        while self._user_connected:
             try:
                 if datetime.now() > self._last_ping + self._ping_delay:
                     self._sender.send(PingRequest(
@@ -1040,24 +1060,14 @@ class TelegramClient(TelegramBareClient):
                     self._last_ping = datetime.now()
 
                 self._sender.receive(update_state=self.updates)
-            except AttributeError:
-                # 'NoneType' object has no attribute 'receive'.
-                # The only moment when this can happen is reconnection
-                # was triggered from another thread and the ._sender
-                # was set to None, so close this thread and exit by return.
-                self._recv_thread = None
-                return
             except TimeoutError:
                 # No problem.
                 pass
             except ConnectionResetError:
-                if self._recv_thread is not None:
-                    # Do NOT attempt reconnecting unless the connection was
-                    # finished by the user -> ._recv_thread is None
-                    self._logger.debug('Server disconnected us. Reconnecting...')
-                    self._recv_thread = None  # Not running anymore
-                    self.reconnect()
-                    return
+                self._logger.debug('Server disconnected us. Reconnecting...')
+                while self._user_connected and not self.reconnect():
+                    pass  # Retry forever, this is instant messaging
+
             except Exception as e:
                 # Unknown exception, pass it to the main thread
                 self.updates.set_error(e)

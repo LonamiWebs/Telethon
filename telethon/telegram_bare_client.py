@@ -3,6 +3,7 @@ from datetime import timedelta
 from hashlib import md5
 from io import BytesIO
 from os import path
+from threading import RLock
 
 from . import helpers as utils
 from .crypto import rsa, CdnDecrypter
@@ -80,6 +81,10 @@ class TelegramBareClient:
         ))
 
         self._logger = logging.getLogger(__name__)
+
+        # Two threads may be calling reconnect() when the connection is lost,
+        # we only want one to actually perform the reconnection.
+        self._connect_lock = RLock()
 
         # Cache "exported" senders 'dc_id: TelegramBareClient' and
         # their corresponding sessions not to recreate them all
@@ -177,22 +182,29 @@ class TelegramBareClient:
         self._sender.disconnect()
 
     def reconnect(self, new_dc=None):
-        """Disconnects and connects again (effectively reconnecting).
+        """If 'new_dc' is not set, only a call to .connect() will be made
+           since it's assumed that the connection has been lost and the
+           library is reconnecting.
 
-           If 'new_dc' is not None, the current authorization key is
-           removed, the DC used is switched, and a new connection is made.
+           If 'new_dc' is set, the client is first disconnected from the
+           current data center, clears the auth key for the old DC, and
+           connects to the new data center.
         """
-        self.disconnect()
-
-        if new_dc is not None:
+        if new_dc is None:
+            # Assume we are disconnected due to some error, so connect again
+            with self._connect_lock:
+                # Another thread may have connected again, so check that first
+                if not self.is_connected():
+                    self.connect()
+        else:
+            self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
             dc = self._get_dc(new_dc)
             ip = dc.ip_address
             self._sender.connection.ip = self.session.server_address = ip
             self._sender.connection.port = self.session.port = dc.port
             self.session.save()
-
-        self.connect()
+            self.connect()
 
     # endregion
 
