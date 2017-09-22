@@ -181,7 +181,7 @@ class TelegramBareClient:
         """Disconnects from the Telegram server"""
         self._sender.disconnect()
 
-    def reconnect(self, new_dc=None):
+    def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
            since it's assumed that the connection has been lost and the
            library is reconnecting.
@@ -325,7 +325,7 @@ class TelegramBareClient:
         except ConnectionResetError:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request...')
-            self.reconnect()
+            self._reconnect()
 
         except FloodWaitError:
             self.disconnect()

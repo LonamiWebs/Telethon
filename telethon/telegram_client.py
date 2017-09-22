@@ -268,14 +268,14 @@ class TelegramClient(TelegramBareClient):
             # For normal use cases, this won't happen, because this will only
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
-            self.reconnect(new_dc=e.new_dc)
+            self._reconnect(new_dc=e.new_dc)
             return self.invoke(request)
 
         except ConnectionResetError:
             if self._connect_lock.locked():
                 # We are connecting and we don't want to reconnect there...
                 raise
-            while self._user_connected and not self.reconnect():
+            while self._user_connected and not self._reconnect():
                 pass  # Retry forever until we finally can send the request
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
@@ -1065,7 +1065,7 @@ class TelegramClient(TelegramBareClient):
                 pass
             except ConnectionResetError:
                 self._logger.debug('Server disconnected us. Reconnecting...')
-                while self._user_connected and not self.reconnect():
+                while self._user_connected and not self._reconnect():
                     pass  # Retry forever, this is instant messaging
 
             except Exception as e:
