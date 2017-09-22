@@ -276,7 +276,8 @@ class TelegramBareClient:
             session.port = dc.port
             client = TelegramBareClient(
                 session, self.api_id, self.api_hash,
-                timeout=self._connection.get_timeout()
+                proxy=self._sender.connection.conn.proxy,
+                timeout=self._sender.connection.get_timeout()
             )
             client.connect(exported_auth=export_auth)
 

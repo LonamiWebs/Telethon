@@ -8,7 +8,7 @@ from threading import Lock
 
 class TcpClient:
     def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
-        self._proxy = proxy
+        self.proxy = proxy
         self._socket = None
         self._closing_lock = Lock()
 
@@ -20,15 +20,15 @@ class TcpClient:
             raise ValueError('Invalid timeout type', type(timeout))
 
     def _recreate_socket(self, mode):
-        if self._proxy is None:
+        if self.proxy is None:
             self._socket = socket.socket(mode, socket.SOCK_STREAM)
         else:
             import socks
             self._socket = socks.socksocket(mode, socket.SOCK_STREAM)
-            if type(self._proxy) is dict:
-                self._socket.set_proxy(**self._proxy)
+            if type(self.proxy) is dict:
+                self._socket.set_proxy(**self.proxy)
             else:  # tuple, list, etc.
-                self._socket.set_proxy(*self._proxy)
+                self._socket.set_proxy(*self.proxy)
 
         self._socket.settimeout(self.timeout)
 

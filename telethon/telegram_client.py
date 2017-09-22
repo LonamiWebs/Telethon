@@ -225,7 +225,7 @@ class TelegramClient(TelegramBareClient):
         if on_dc is None:
             client = TelegramBareClient(
                 self.session, self.api_id, self.api_hash,
-                proxy=self.proxy, timeout=timeout
+                proxy=self._sender.connection.conn.proxy, timeout=timeout
             )
             client.connect()
         else:
