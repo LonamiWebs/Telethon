@@ -243,7 +243,10 @@ class TelegramClient(TelegramBareClient):
 
            *args will be ignored.
         """
-        if self._on_read_thread():
+        # This is only valid when the read thread is reconnecting,
+        # that is, the connection lock is locked.
+        on_read_thread = self._on_read_thread()
+        if on_read_thread and not self._connect_lock.locked():
             raise AssertionError('Cannot invoke requests from the ReadThread')
 
         self.updates.check_error()
@@ -254,8 +257,9 @@ class TelegramClient(TelegramBareClient):
             # will be the one which should be reading (but is invoking the
             # request) thus not being available to read it "in the background"
             # and it's needed to call receive.
+            call_receive = on_read_thread or self._recv_thread is None
             return super().invoke(
-                request, call_receive=self._recv_thread is None,
+                request, call_receive=call_receive,
                 retries=kwargs.get('retries', 5)
             )
 
@@ -271,7 +275,7 @@ class TelegramClient(TelegramBareClient):
             self._reconnect(new_dc=e.new_dc)
             return self.invoke(request)
 
-        except ConnectionResetError:
+        except ConnectionResetError as e:
             if self._connect_lock.locked():
                 # We are connecting and we don't want to reconnect there...
                 raise

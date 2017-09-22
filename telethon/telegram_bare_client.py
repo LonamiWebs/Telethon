@@ -3,7 +3,7 @@ from datetime import timedelta
 from hashlib import md5
 from io import BytesIO
 from os import path
-from threading import RLock
+from threading import Lock
 
 from . import helpers as utils
 from .crypto import rsa, CdnDecrypter
@@ -84,7 +84,7 @@ class TelegramBareClient:
 
         # Two threads may be calling reconnect() when the connection is lost,
         # we only want one to actually perform the reconnection.
-        self._connect_lock = RLock()
+        self._connect_lock = Lock()
 
         # Cache "exported" senders 'dc_id: TelegramBareClient' and
         # their corresponding sessions not to recreate them all
