@@ -360,7 +360,8 @@ def generate_documentation(scheme_file):
     for tltype, constructors in tltypes.items():
         filename = get_path_for_type(tltype)
         out_dir = os.path.dirname(filename)
-        os.makedirs(out_dir, exist_ok=True)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
 
         # Since we don't have access to the full TLObject, split the type
         if '.' in tltype:
