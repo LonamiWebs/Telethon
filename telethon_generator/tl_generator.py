@@ -265,7 +265,7 @@ class TLGenerator:
 
         # Write the to_dict(self) method
         if args:
-            builder.writeln('def to_dict(self):')
+            builder.writeln('def to_dict(self, recursive=True):')
             builder.writeln('return {')
             builder.current_indent += 1
 
@@ -285,13 +285,15 @@ class TLGenerator:
                 else:
                     if arg.is_vector:
                         builder.write(
-                            '[] if self.{0} is None else [None '
+                            '([] if self.{0} is None else [None '
                             'if x is None else x.to_dict() for x in self.{0}]'
+                            ') if recursive else self.{0}'
                             .format(arg.name)
                         )
                     else:
                         builder.write(
-                            'None if self.{0} is None else self.{0}.to_dict()'
+                            '(None if self.{0} is None else '
+                            'self.{0}.to_dict()) if recursive else self.{0}'
                             .format(arg.name)
                         )
                 builder.writeln(',')
@@ -299,8 +301,7 @@ class TLGenerator:
             builder.current_indent -= 1
             builder.writeln("}")
         else:
-            builder.writeln('@staticmethod')
-            builder.writeln('def to_dict():')
+            builder.writeln('def to_dict(self, recursive=True):')
             builder.writeln('return {}')
 
         builder.end_block()
