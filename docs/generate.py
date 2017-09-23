@@ -563,5 +563,8 @@ def copy_resources():
 if __name__ == '__main__':
     os.makedirs('generated', exist_ok=True)
     os.chdir('generated')
-    generate_documentation('../../telethon_generator/scheme.tl')
-    copy_resources()
+    try:
+        generate_documentation('../../telethon_generator/scheme.tl')
+        copy_resources()
+    finally:
+        os.chdir(os.pardir)
