@@ -504,12 +504,23 @@ def generate_documentation(scheme_file):
     methods = sorted(methods, key=lambda m: m.name)
     constructors = sorted(constructors, key=lambda c: c.name)
 
+    def fmt(xs):
+        ys = {x: get_class_name(x) for x in xs}  # cache TLObject: display
+        zs = {}  # create a dict to hold those which have duplicated keys
+        for y in ys.values():
+            zs[y] = y in zs
+        return ', '.join(
+            '"{}.{}"'.format(x.namespace, ys[x])
+            if zs[ys[x]] and getattr(x, 'namespace', None)
+            else '"{}"'.format(ys[x]) for x in xs
+        )
+
+    request_names = fmt(methods)
+    type_names = fmt(types)
+    constructor_names = fmt(constructors)
+
     def fmt(xs, formatter):
         return ', '.join('"{}"'.format(formatter(x)) for x in xs)
-
-    request_names = fmt(methods, get_class_name)
-    type_names = fmt(types, get_class_name)
-    constructor_names = fmt(constructors, get_class_name)
 
     request_urls = fmt(methods, get_create_path_for)
     type_urls = fmt(types, get_path_for_type)
