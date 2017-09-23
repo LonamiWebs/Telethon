@@ -246,7 +246,7 @@ class TelegramClient(TelegramBareClient):
         # This is only valid when the read thread is reconnecting,
         # that is, the connection lock is locked.
         if self._on_read_thread() and not self._connect_lock.locked():
-            raise AssertionError('Cannot invoke requests from the ReadThread')
+            return  # Just ignore, we would be raising and crashing the thread
 
         self.updates.check_error()
 
