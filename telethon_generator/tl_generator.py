@@ -264,45 +264,40 @@ class TLGenerator:
         builder.end_block()
 
         # Write the to_dict(self) method
+        builder.writeln('def to_dict(self, recursive=True):')
         if args:
-            builder.writeln('def to_dict(self, recursive=True):')
             builder.writeln('return {')
-            builder.current_indent += 1
-
-            base_types = ('string', 'bytes', 'int', 'long', 'int128',
-                          'int256', 'double', 'Bool', 'true', 'date')
-
-            for arg in args:
-                builder.write("'{}': ".format(arg.name))
-                if arg.type in base_types:
-                    if arg.is_vector:
-                        builder.write(
-                            '[] if self.{0} is None else self.{0}[:]'
-                            .format(arg.name)
-                        )
-                    else:
-                        builder.write('self.{}'.format(arg.name))
-                else:
-                    if arg.is_vector:
-                        builder.write(
-                            '([] if self.{0} is None else [None '
-                            'if x is None else x.to_dict() for x in self.{0}]'
-                            ') if recursive else self.{0}'
-                            .format(arg.name)
-                        )
-                    else:
-                        builder.write(
-                            '(None if self.{0} is None else '
-                            'self.{0}.to_dict()) if recursive else self.{0}'
-                            .format(arg.name)
-                        )
-                builder.writeln(',')
-
-            builder.current_indent -= 1
-            builder.writeln("}")
         else:
-            builder.writeln('def to_dict(self, recursive=True):')
-            builder.writeln('return {}')
+            builder.write('return {')
+        builder.current_indent += 1
+
+        base_types = ('string', 'bytes', 'int', 'long', 'int128',
+                      'int256', 'double', 'Bool', 'true', 'date')
+
+        for arg in args:
+            builder.write("'{}': ".format(arg.name))
+            if arg.type in base_types:
+                if arg.is_vector:
+                    builder.write('[] if self.{0} is None else self.{0}[:]'
+                                  .format(arg.name))
+                else:
+                    builder.write('self.{}'.format(arg.name))
+            else:
+                if arg.is_vector:
+                    builder.write(
+                        '([] if self.{0} is None else [None'
+                        ' if x is None else x.to_dict() for x in self.{0}]'
+                        ') if recursive else self.{0}'.format(arg.name)
+                    )
+                else:
+                    builder.write(
+                        '(None if self.{0} is None else self.{0}.to_dict())'
+                        ' if recursive else self.{0}'.format(arg.name)
+                    )
+            builder.writeln(',')
+
+        builder.current_indent -= 1
+        builder.writeln("}")
 
         builder.end_block()
 
