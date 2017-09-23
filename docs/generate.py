@@ -512,7 +512,7 @@ def generate_documentation(scheme_file):
     constructor_names = fmt(constructors, get_class_name)
 
     request_urls = fmt(methods, get_create_path_for)
-    type_urls = fmt(types, get_create_path_for)
+    type_urls = fmt(types, get_path_for_type)
     constructor_urls = fmt(constructors, get_create_path_for)
 
     replace_dict = {
