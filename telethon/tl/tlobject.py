@@ -20,10 +20,13 @@ class TLObject:
         """
         if indent is None:
             if isinstance(obj, TLObject):
-                return '{{{}: {}}}'.format(
-                    type(obj).__name__,
-                    TLObject.pretty_format(obj.to_dict())
-                )
+                children = obj.to_dict(recursive=False)
+                if children:
+                    return '{}: {}'.format(
+                        type(obj).__name__, TLObject.pretty_format(children)
+                    )
+                else:
+                    return type(obj).__name__
             if isinstance(obj, dict):
                 return '{{{}}}'.format(', '.join(
                     '{}: {}'.format(
@@ -41,12 +44,13 @@ class TLObject:
         else:
             result = []
             if isinstance(obj, TLObject):
-                result.append('{')
                 result.append(type(obj).__name__)
-                result.append(': ')
-                result.append(TLObject.pretty_format(
-                    obj.to_dict(), indent
-                ))
+                children = obj.to_dict(recursive=False)
+                if children:
+                    result.append(': ')
+                    result.append(TLObject.pretty_format(
+                        obj.to_dict(recursive=False), indent
+                    ))
 
             elif isinstance(obj, dict):
                 result.append('{\n')
@@ -81,7 +85,7 @@ class TLObject:
             return ''.join(result)
 
     # These should be overrode
-    def to_dict(self):
+    def to_dict(self, recursive=True):
         return {}
 
     def on_send(self, writer):
