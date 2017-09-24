@@ -218,6 +218,7 @@ def generate_documentation(scheme_file):
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
+        '404': '404.html',
         'index_all': 'index.html',
         'index_types': 'types/index.html',
         'index_methods': 'methods/index.html',
@@ -540,13 +541,15 @@ def generate_documentation(scheme_file):
         'constructor_urls': constructor_urls
     }
 
-    with open('../res/core.html') as infile:
-        with open(original_paths['index_all'], 'w') as outfile:
-            text = infile.read()
-            for key, value in replace_dict.items():
-                text = text.replace('{' + key + '}', str(value))
+    shutil.copy('../res/404.html', original_paths['404'])
 
-            outfile.write(text)
+    with open('../res/core.html') as infile,\
+            open(original_paths['index_all'], 'w') as outfile:
+        text = infile.read()
+        for key, value in replace_dict.items():
+            text = text.replace('{' + key + '}', str(value))
+
+        outfile.write(text)
 
     # Everything done
     print('Documentation generated.')
