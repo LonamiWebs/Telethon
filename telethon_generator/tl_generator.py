@@ -136,6 +136,15 @@ class TLGenerator:
                         x for x in namespace_tlobjects.keys() if x
                     )))
 
+                # Import 'get_input_*' utils
+                # TODO Support them on types too
+                if 'functions' in out_dir:
+                    builder.writeln(
+                        'from {}.utils import get_input_peer, '
+                        'get_input_channel, get_input_user, '
+                        'get_input_media'.format('.' * depth)
+                    )
+
                 # Import 'os' for those needing access to 'os.urandom()'
                 # Currently only 'random_id' needs 'os' to be imported,
                 # for all those TLObjects with arg.can_be_inferred.
@@ -157,24 +166,6 @@ class TLGenerator:
            the Type: [Constructors] must be given for proper
            importing and documentation strings.
         """
-        if tlobject.is_function:
-            util_imports = set()
-            for a in tlobject.args:
-                # We can automatically convert some "full" types to
-                # "input only" (like User -> InputPeerUser, etc.)
-                if a.type == 'InputPeer':
-                    util_imports.add('get_input_peer')
-                elif a.type == 'InputChannel':
-                    util_imports.add('get_input_channel')
-                elif a.type == 'InputUser':
-                    util_imports.add('get_input_user')
-                elif a.type == 'InputMedia':
-                    util_imports.add('get_input_media')
-
-            if util_imports:
-                builder.writeln('from {}.utils import {}'.format(
-                    '.' * depth, ', '.join(util_imports)))
-
         builder.writeln()
         builder.writeln()
         builder.writeln('class {}(TLObject):'.format(tlobject.class_name()))
