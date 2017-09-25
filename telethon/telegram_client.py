@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
 from threading import Thread
+from time import sleep
+
 try:
     import socks
 except ImportError:
@@ -280,7 +282,7 @@ class TelegramClient(TelegramBareClient):
                 # We are connecting and we don't want to reconnect there...
                 raise
             while self._user_connected and not self._reconnect():
-                pass  # Retry forever until we finally can send the request
+                sleep(0.1)  # Retry forever until we can send the request
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
@@ -1071,7 +1073,7 @@ class TelegramClient(TelegramBareClient):
             except ConnectionResetError:
                 self._logger.debug('Server disconnected us. Reconnecting...')
                 while self._user_connected and not self._reconnect():
-                    pass  # Retry forever, this is instant messaging
+                    sleep(0.1)  # Retry forever, this is instant messaging
 
             except Exception as e:
                 # Unknown exception, pass it to the main thread
