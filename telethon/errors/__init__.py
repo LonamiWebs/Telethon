@@ -27,7 +27,8 @@ def report_error(code, message, report_method):
         )
         url = urllib.request.urlopen(
             'https://rpc.pwrtelegram.xyz?code={}&error={}&method={}'
-            .format(code, message, report_method)
+            .format(code, message, report_method),
+            timeout=5
         )
         url.read()
         url.close()
