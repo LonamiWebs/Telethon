@@ -38,7 +38,7 @@ def report_error(code, message, report_method):
 def rpc_message_to_error(code, message, report_method=None):
     if report_method is not None:
         Thread(
-            target=report_method,
+            target=report_error,
             args=(code, message, report_method)
         ).start()
 
