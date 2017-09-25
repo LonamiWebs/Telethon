@@ -168,6 +168,8 @@ class TLGenerator:
                     util_imports.add('get_input_channel')
                 elif a.type == 'InputUser':
                     util_imports.add('get_input_user')
+                elif a.type == 'InputMedia':
+                    util_imports.add('get_input_media')
 
             if util_imports:
                 builder.writeln('from {}.utils import {}'.format(
@@ -381,6 +383,8 @@ class TLGenerator:
             TLGenerator.write_get_input(builder, arg, 'get_input_channel')
         elif arg.type == 'InputUser' and tlobject.is_function:
             TLGenerator.write_get_input(builder, arg, 'get_input_user')
+        elif arg.type == 'InputMedia' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_media')
 
         else:
             builder.writeln('self.{0} = {0}'.format(arg.name))
