@@ -9,6 +9,7 @@ from ..errors import (
     rpc_message_to_error
 )
 from ..extensions import BinaryReader, BinaryWriter
+from ..tl import MessageContainer
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
 
@@ -56,14 +57,20 @@ class MtProtoSender:
 
     # region Send and receive
 
-    def send(self, request):
+    def send(self, *requests):
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
         # If any message needs confirmation send an AckRequest first
         self._send_acknowledges()
 
-        # Finally send our packed request
+        # Finally send our packed request(s)
+        self._pending_receive.extend(requests)
+        if len(requests) == 1:
+            request = requests[0]
+        else:
+            request = MessageContainer(self.session, requests)
+
         with BinaryWriter() as writer:
             request.on_send(writer)
             self._send_packet(writer.get_bytes(), request)
@@ -268,22 +275,17 @@ class MtProtoSender:
 
     def _handle_container(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling container')
-        reader.read_int(signed=False)  # code
-        size = reader.read_int()
-        for _ in range(size):
-            inner_msg_id = reader.read_long()
-            reader.read_int()  # inner_sequence
-            inner_length = reader.read_int()
+        for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
 
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
                 if not self._process_msg(inner_msg_id, sequence, reader, state):
-                    reader.set_position(begin_position + inner_length)
+                    reader.set_position(begin_position + inner_len)
             except:
                 # If any error is raised, something went wrong; skip the packet
-                reader.set_position(begin_position + inner_length)
+                reader.set_position(begin_position + inner_len)
                 raise
 
         return True

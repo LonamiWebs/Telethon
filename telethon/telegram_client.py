@@ -239,11 +239,10 @@ class TelegramClient(TelegramBareClient):
 
     # region Telegram requests functions
 
-    def invoke(self, request, *args, **kwargs):
-        """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-           An optional 'retries' parameter can be set.
-
-           *args will be ignored.
+    def invoke(self, *requests, **kwargs):
+        """Invokes (sends) one or several MTProtoRequest and returns
+           (receives) their result. An optional named 'retries' parameter
+           can be used, indicating how many times it should retry.
         """
         # This is only valid when the read thread is reconnecting,
         # that is, the connection lock is locked.
@@ -261,7 +260,8 @@ class TelegramClient(TelegramBareClient):
                 self._recv_thread is None or self._connect_lock.locked()
 
             return super().invoke(
-                request, call_receive=call_receive,
+                *requests,
+                call_receive=call_receive,
                 retries=kwargs.get('retries', 5)
             )
 
@@ -275,7 +275,7 @@ class TelegramClient(TelegramBareClient):
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self.invoke(request)
+            return self.invoke(*requests)
 
         except ConnectionResetError as e:
             if self._connect_lock.locked():

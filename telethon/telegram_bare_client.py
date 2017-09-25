@@ -290,7 +290,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, request, call_receive=True, retries=5):
+    def invoke(self, *requests, call_receive=True, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            If 'updates' is not None, all read update object will be put
@@ -300,7 +300,8 @@ class TelegramBareClient:
            thread calling to 'self._sender.receive()' running or this method
            will lock forever.
         """
-        if not isinstance(request, TLObject) and not request.content_related:
+        if not all(isinstance(x, TLObject) and
+                   x.content_related for x in requests):
             raise ValueError('You can only invoke requests, not types!')
 
         if retries <= 0:
@@ -308,20 +309,22 @@ class TelegramBareClient:
 
         try:
             # Ensure that we start with no previous errors (i.e. resending)
-            request.confirm_received.clear()
-            request.rpc_error = None
+            for x in requests:
+                x.confirm_received.clear()
+                x.rpc_error = None
 
-            self._sender.send(request)
+            self._sender.send(*requests)
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
                 # switching between constant read or not on the fly.
                 # Must also watch out for calling .read() from two places,
                 # in which case a Lock would be required for .receive().
-                request.confirm_received.wait(
-                    self._sender.connection.get_timeout()
-                )
+                for x in requests:
+                    x.confirm_received.wait(
+                        self._sender.connection.get_timeout()
+                    )
             else:
-                while not request.confirm_received.is_set():
+                while not all(x.confirm_received.is_set() for x in requests):
                     self._sender.receive(update_state=self.updates)
 
         except TimeoutError:
@@ -336,14 +339,19 @@ class TelegramBareClient:
             self.disconnect()
             raise
 
-        if request.rpc_error:
-            raise request.rpc_error
-        if request.result is None:
-            return self.invoke(
-                request, call_receive=call_receive, retries=(retries - 1)
-            )
-        else:
-            return request.result
+        try:
+            raise next(x.rpc_error for x in requests if x.rpc_error)
+        except StopIteration:
+            if any(x.result is None for x in requests):
+                # "A container may only be accepted or
+                #  rejected by the other party as a whole."
+                return self.invoke(
+                    *requests, call_receive=call_receive, retries=(retries - 1)
+                )
+            elif len(requests) == 1:
+                return requests[0].result
+            else:
+                return [x.result for x in requests]
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
