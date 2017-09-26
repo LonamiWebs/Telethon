@@ -101,10 +101,12 @@ class TLObject:
             if padding != 0:
                 padding = 4 - padding
 
-            r.append(bytes([254]))
-            r.append(bytes([len(data) % 256]))
-            r.append(bytes([(len(data) >> 8) % 256]))
-            r.append(bytes([(len(data) >> 16) % 256]))
+            r.append(bytes([
+                254,
+                len(data) % 256,
+                (len(data) >> 8) % 256,
+                (len(data) >> 16) % 256
+            ]))
             r.append(data)
 
         r.append(bytes(padding))
