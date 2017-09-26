@@ -18,17 +18,21 @@ class MessageContainer(TLObject):
         writer.write_int(0x73f1f8dc, signed=False)
         writer.write_int(len(self.requests))
         for x in self.requests:
-            with BinaryWriter() as aux:
-                x.on_send(aux)
-                x.request_msg_id = self.session.get_new_msg_id()
+            x.request_msg_id = self.session.get_new_msg_id()
 
-                writer.write_long(x.request_msg_id)
-                writer.write_int(
-                    self.session.generate_sequence(x.content_related)
-                )
-                packet = aux.get_bytes()
-                writer.write_int(len(packet))
-                writer.write(packet)
+            writer.write_long(x.request_msg_id)
+            writer.write_int(
+                self.session.generate_sequence(x.content_related)
+            )
+            packet = x.to_bytes()
+            writer.write_int(len(packet))
+            writer.write(packet)
+
+    def to_bytes(self):
+        # TODO Change this to delete the on_send from this class
+        with BinaryWriter() as writer:
+            self.on_send(writer)
+            return writer.get_bytes()
 
     @staticmethod
     def iter_read(reader):

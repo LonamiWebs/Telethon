@@ -110,7 +110,7 @@ class BinaryWriter:
 
     def tgwrite_object(self, tlobject):
         """Writes a Telegram object"""
-        tlobject.on_send(self)
+        self.write(tlobject.to_bytes())
 
     def tgwrite_vector(self, vector):
         """Writes a vector of Telegram objects"""

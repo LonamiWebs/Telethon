@@ -71,19 +71,14 @@ class MtProtoSender:
         else:
             request = MessageContainer(self.session, requests)
 
-        with BinaryWriter() as writer:
-            request.on_send(writer)
-            self._send_packet(writer.get_bytes(), request)
-            self._pending_receive.append(request)
+        self._send_packet(request.to_bytes(), request)
+        self._pending_receive.append(request)
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
         if self._need_confirmation:
             msgs_ack = MsgsAck(self._need_confirmation)
-            with BinaryWriter() as writer:
-                msgs_ack.on_send(writer)
-                self._send_packet(writer.get_bytes(), msgs_ack)
-
+            self._send_packet(msgs_ack.to_bytes(), msgs_ack)
             del self._need_confirmation[:]
 
     def receive(self, update_state):

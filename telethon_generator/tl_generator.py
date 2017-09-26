@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import struct
 from zlib import crc32
 from collections import defaultdict
 
@@ -150,6 +151,9 @@ class TLGenerator:
                 # for all those TLObjects with arg.can_be_inferred.
                 builder.writeln('import os')
 
+                # Import struct for the .to_bytes(self) serialization
+                builder.writeln('import struct')
+
                 # Generate the class for every TLObject
                 for t in sorted(tlobjects, key=lambda x: x.name):
                     TLGenerator._write_source_code(
@@ -294,16 +298,18 @@ class TLGenerator:
 
         builder.end_block()
 
-        # Write the on_send(self, writer) function
-        builder.writeln('def on_send(self, writer):')
-        builder.writeln(
-            'writer.write_int({}.constructor_id, signed=False)'
-            .format(tlobject.class_name())
-        )
+        # Write the .to_bytes() function
+        builder.writeln('def to_bytes(self):')
+        builder.write("return b''.join((")
+
+        # First constructor code, we already know its bytes
+        builder.write('{},'.format(repr(struct.pack('<I', tlobject.id))))
 
         for arg in tlobject.args:
-            TLGenerator.write_onsend_code(builder, arg,
-                                          tlobject.args)
+            if TLGenerator.write_to_bytes(builder, arg, tlobject.args):
+                builder.write(',')
+
+        builder.writeln('))')
         builder.end_block()
 
         # Write the empty() function, which returns an "empty"
@@ -409,18 +415,17 @@ class TLGenerator:
             return result
 
     @staticmethod
-    def write_onsend_code(builder, arg, args, name=None):
+    def write_to_bytes(builder, arg, args, name=None):
         """
-        Writes the write code for the given argument
+        Writes the .to_bytes() code for the given argument
         :param builder: The source code builder
         :param arg: The argument to write
-        :param args: All the other arguments in TLObject same on_send.
+        :param args: All the other arguments in TLObject same to_bytes.
                      This is required to determine the flags value
         :param name: The name of the argument. Defaults to "self.argname"
                      This argument is an option because it's required when
                      writing Vectors<>
         """
-
         if arg.generic_definition:
             return  # Do nothing, this only specifies a later type
 
@@ -434,73 +439,85 @@ class TLGenerator:
         if arg.is_flag:
             if arg.type == 'true':
                 return  # Exit, since True type is never written
+            elif arg.is_vector:
+                # Vector flags are special since they consist of 3 values,
+                # so we need an extra join here. Note that empty vector flags
+                # should NOT be sent either!
+                builder.write("b'' if not {} else b''.join((".format(name))
             else:
-                builder.writeln('if {}:'.format(name))
+                builder.write("b'' if not {} else (".format(name))
 
         if arg.is_vector:
             if arg.use_vector_id:
-                builder.writeln('writer.write_int(0x1cb5c415, signed=False)')
+                # vector code, unsigned 0x1cb5c415 as little endian
+                builder.write(r"b'\x15\xc4\xb5\x1c',")
 
-            builder.writeln('writer.write_int(len({}))'.format(name))
-            builder.writeln('for _x in {}:'.format(name))
+            builder.write("struct.pack('<i', len({})),".format(name))
+
+            # Unpack the values for the outer tuple
+            builder.write('*[(')
+
             # Temporary disable .is_vector, not to enter this if again
-            arg.is_vector = False
-            TLGenerator.write_onsend_code(builder, arg, args, name='_x')
+            # Also disable .is_flag since it's not needed per element
+            old_flag = arg.is_flag
+            arg.is_vector = arg.is_flag = False
+            TLGenerator.write_to_bytes(builder, arg, args, name='x')
             arg.is_vector = True
+            arg.is_flag = old_flag
+
+            builder.write(') for x in {}]'.format(name))
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
-            builder.writeln('flags = 0')
-            for flag in args:
-                if flag.is_flag:
-                    builder.writeln('flags |= (1 << {}) if {} else 0'.format(
-                        flag.flag_index, 'self.{}'.format(flag.name)))
-
-            builder.writeln('writer.write_int(flags)')
-            builder.writeln()
+            builder.write("struct.pack('<I', {})".format(
+                ' | '.join('(1 << {} if {} else 0)'.format(
+                    flag.flag_index, 'self.{}'.format(flag.name)
+                ) for flag in args if flag.is_flag)
+            ))
 
         elif 'int' == arg.type:
-            builder.writeln('writer.write_int({})'.format(name))
+            # struct.pack is around 4 times faster than int.to_bytes
+            builder.write("struct.pack('<i', {})".format(name))
 
         elif 'long' == arg.type:
-            builder.writeln('writer.write_long({})'.format(name))
+            builder.write("struct.pack('<q', {})".format(name))
 
         elif 'int128' == arg.type:
-            builder.writeln('writer.write_large_int({}, bits=128)'.format(
-                name))
+            builder.write("int.to_bytes({}, 16, 'little', signed=True)")
 
         elif 'int256' == arg.type:
-            builder.writeln('writer.write_large_int({}, bits=256)'.format(
-                name))
+            builder.write("int.to_bytes({}, 32, 'little', signed=True)")
 
         elif 'double' == arg.type:
-            builder.writeln('writer.write_double({})'.format(name))
+            builder.write("struct.pack('<d', {})".format(name))
 
         elif 'string' == arg.type:
-            builder.writeln('writer.tgwrite_string({})'.format(name))
+            builder.write('TLObject.serialize_string({})'.format(name))
 
         elif 'Bool' == arg.type:
-            builder.writeln('writer.tgwrite_bool({})'.format(name))
+            # 0x997275b5 if boolean else 0xbc799737
+            builder.write(r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'")
 
         elif 'true' == arg.type:
             pass  # These are actually NOT written! Only used for flags
 
         elif 'bytes' == arg.type:
-            builder.writeln('writer.tgwrite_bytes({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'date' == arg.type:  # Custom format
-            builder.writeln('writer.tgwrite_date({})'.format(name))
+            # 0 if datetime is None else int(datetime.timestamp())
+            builder.write(r"b'\0\0\0\0' if {0} is None else struct.pack('<I', int({0}.timestamp()))".format(name))
 
         else:
             # Else it may be a custom type
-            builder.writeln('{}.on_send(writer)'.format(name))
-
-        # End vector and flag blocks if required (if we opened them before)
-        if arg.is_vector:
-            builder.end_block()
+            builder.write('{}.to_bytes()'.format(name))
 
         if arg.is_flag:
-            builder.end_block()
+            builder.write(')')
+            if arg.is_vector:
+                builder.write(')')  # We were using a tuple
+
+        return True  # Something was written
 
     @staticmethod
     def write_onresponse_code(builder, arg, args, name=None):

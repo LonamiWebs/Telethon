@@ -84,12 +84,42 @@ class TLObject:
 
             return ''.join(result)
 
+    @staticmethod
+    def serialize_bytes(data):
+        """Write bytes by using Telegram guidelines"""
+        r = []
+        if len(data) < 254:
+            padding = (len(data) + 1) % 4
+            if padding != 0:
+                padding = 4 - padding
+
+            r.append(bytes([len(data)]))
+            r.append(data)
+
+        else:
+            padding = len(data) % 4
+            if padding != 0:
+                padding = 4 - padding
+
+            r.append(bytes([254]))
+            r.append(bytes([len(data) % 256]))
+            r.append(bytes([(len(data) >> 8) % 256]))
+            r.append(bytes([(len(data) >> 16) % 256]))
+            r.append(data)
+
+        r.append(bytes(padding))
+        return b''.join(r)
+
+    @staticmethod
+    def serialize_string(string):
+        return TLObject.serialize_bytes(string.encode('utf-8'))
+
     # These should be overrode
     def to_dict(self, recursive=True):
         return {}
 
-    def on_send(self, writer):
-        pass
+    def to_bytes(self):
+        return b''
 
     def on_response(self, reader):
         pass
