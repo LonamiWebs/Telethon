@@ -21,7 +21,8 @@ from setuptools import find_packages, setup
 
 try:
     from telethon import TelegramClient
-except ImportError:
+except Exception as e:
+    print('Failed to import TelegramClient due to', e)
     TelegramClient = None
 
 
