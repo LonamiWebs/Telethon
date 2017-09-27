@@ -1,5 +1,6 @@
 import gzip
 import logging
+import struct
 from threading import RLock
 
 from .. import helpers as utils
@@ -8,8 +9,8 @@ from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
 )
-from ..extensions import BinaryReader, BinaryWriter
-from ..tl import MessageContainer, GzipPacked
+from ..extensions import BinaryReader
+from ..tl import Message, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
 
@@ -29,8 +30,11 @@ class MtProtoSender:
         self.connection = connection
         self._logger = logging.getLogger(__name__)
 
-        self._need_confirmation = []  # Message IDs that need confirmation
-        self._pending_receive = []  # Requests sent waiting to be received
+        # Message IDs that need confirmation
+        self._need_confirmation = []
+
+        # Requests (as msg_id: Message) sent waiting to be received
+        self._pending_receive = {}
 
         # Sending and receiving are independent, but two threads cannot
         # send or receive at the same time no matter what.
@@ -65,21 +69,22 @@ class MtProtoSender:
         self._send_acknowledges()
 
         # Finally send our packed request(s)
-        self._pending_receive.extend(requests)
-        if len(requests) == 1:
-            request = requests[0]
-            data = GzipPacked.gzip_if_smaller(request)
-        else:
-            request = MessageContainer(self.session, requests)
-            data = request.to_bytes()
+        messages = [Message(self.session, r) for r in requests]
+        self._pending_receive.update({m.msg_id: m for m in messages})
 
-        self._send_packet(data, request)
+        if len(messages) == 1:
+            message = messages[0]
+        else:
+            message = Message(self.session, MessageContainer(messages))
+
+        self._send_message(message)
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
         if self._need_confirmation:
-            msgs_ack = MsgsAck(self._need_confirmation)
-            self._send_packet(msgs_ack.to_bytes(), msgs_ack)
+            self._send_message(
+                Message(self.session, MsgsAck(self._need_confirmation))
+            )
             del self._need_confirmation[:]
 
     def receive(self, update_state):
@@ -114,36 +119,21 @@ class MtProtoSender:
 
     # region Low level processing
 
-    def _send_packet(self, packet, request):
-        """Sends the given packet bytes with the additional
-           information of the original request.
-        """
-        request.request_msg_id = self.session.get_new_msg_id()
+    def _send_message(self, message):
+        """Sends the given Message(TLObject) encrypted through the network"""
 
-        # First calculate plain_text to encrypt it
-        with BinaryWriter() as plain_writer:
-            plain_writer.write_long(self.session.salt, signed=False)
-            plain_writer.write_long(self.session.id, signed=False)
-            plain_writer.write_long(request.request_msg_id)
-            plain_writer.write_int(
-                self.session.generate_sequence(request.content_related))
+        plain_text = \
+            struct.pack('<QQ', self.session.salt, self.session.id) \
+            + message.to_bytes()
 
-            plain_writer.write_int(len(packet))
-            plain_writer.write(packet)
+        msg_key = utils.calc_msg_key(plain_text)
+        key_id = struct.pack('<q', self.session.auth_key.key_id)
+        key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
+        cipher_text = AES.encrypt_ige(plain_text, key, iv)
 
-            msg_key = utils.calc_msg_key(plain_writer.get_bytes())
-
-            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
-            cipher_text = AES.encrypt_ige(plain_writer.get_bytes(), key, iv)
-
-        # And then finally send the encrypted packet
-        with BinaryWriter() as cipher_writer:
-            cipher_writer.write_long(
-                self.session.auth_key.key_id, signed=False)
-            cipher_writer.write(msg_key)
-            cipher_writer.write(cipher_text)
-            with self._send_lock:
-                self.connection.send(cipher_writer.get_bytes())
+        result = key_id + msg_key + cipher_text
+        with self._send_lock:
+            self.connection.send(result)
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -211,13 +201,12 @@ class MtProtoSender:
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
             ack = reader.tgread_object()
-            for r in self._pending_receive:
-                if r.request_msg_id in ack.msg_ids:
-                    self._logger.debug('Ack found for the a request')
-
-                    if self.logging_out:
-                        self._logger.debug('Message ack confirmed a request')
-                        self._pending_receive.remove(r)
+            # We only care about ack requests if we're logging out
+            if self.logging_out:
+                for msg_id in ack.msg_ids:
+                    r = self._pop_request(msg_id)
+                    if r:
+                        self._logger.debug('Message ack confirmed', r)
                         r.confirm_received.set()
 
             return True
@@ -244,16 +233,16 @@ class MtProtoSender:
 
     # region Message handling
 
-    def _pop_request(self, request_msg_id):
-        """Pops a pending request from self._pending_receive, or
-           returns None if it's not found
+    def _pop_request(self, msg_id):
+        """Pops a pending REQUEST from self._pending_receive, or
+           returns None if it's not found.
         """
-        for i in range(len(self._pending_receive)):
-            if self._pending_receive[i].request_msg_id == request_msg_id:
-                return self._pending_receive.pop(i)
+        message = self._pending_receive.pop(msg_id, None)
+        if message:
+            return message.request
 
     def _clear_all_pending(self):
-        for r in self._pending_receive:
+        for r in self._pending_receive.values():
             r.confirm_received.set()
         self._pending_receive.clear()
 
