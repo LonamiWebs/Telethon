@@ -1,7 +1,7 @@
 import gzip
+import struct
 
 from . import TLObject
-from ..extensions import BinaryWriter
 
 
 class GzipPacked(TLObject):
@@ -29,10 +29,8 @@ class GzipPacked(TLObject):
 
     def to_bytes(self):
         # TODO Maybe compress level could be an option
-        with BinaryWriter() as writer:
-            writer.write_int(GzipPacked.constructor_id, signed=False)
-            writer.tgwrite_bytes(gzip.compress(self.data))
-            return writer.get_bytes()
+        return struct.pack('<I', GzipPacked.constructor_id) + \
+               TLObject.serialize_bytes(gzip.compress(self.data))
 
     @staticmethod
     def read(reader):
