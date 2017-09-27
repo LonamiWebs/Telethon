@@ -17,7 +17,6 @@ class CdnDecrypter:
         self.file_token = file_token
         self.cdn_aes = cdn_aes
         self.cdn_file_hashes = cdn_file_hashes
-        self.shaes = [sha256() for _ in range(len(cdn_file_hashes))]
 
     @staticmethod
     def prepare_decrypter(client, client_cls, cdn_redirect):
