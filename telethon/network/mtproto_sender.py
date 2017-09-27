@@ -72,7 +72,6 @@ class MtProtoSender:
             request = MessageContainer(self.session, requests)
 
         self._send_packet(request.to_bytes(), request)
-        self._pending_receive.append(request)
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
