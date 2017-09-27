@@ -42,7 +42,7 @@ class CdnDecrypter:
         session.port = dc.port
         cdn_client = client_cls(  # Avoid importing TelegramBareClient
             session, client.api_id, client.api_hash,
-            timeout=client._timeout
+            timeout=client._sender.connection.get_timeout()
         )
         # This will make use of the new RSA keys for this specific CDN.
         #
