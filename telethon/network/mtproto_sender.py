@@ -127,7 +127,7 @@ class MtProtoSender:
             + message.to_bytes()
 
         msg_key = utils.calc_msg_key(plain_text)
-        key_id = struct.pack('<q', self.session.auth_key.key_id)
+        key_id = struct.pack('<Q', self.session.auth_key.key_id)
         key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
         cipher_text = AES.encrypt_ige(plain_text, key, iv)
 
