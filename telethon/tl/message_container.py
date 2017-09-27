@@ -3,7 +3,7 @@ from ..extensions import BinaryWriter
 
 
 class MessageContainer(TLObject):
-    constructor_id = 0x8953ad37
+    constructor_id = 0x73f1f8dc
 
     # TODO Currently it's a bit of a hack, since the container actually holds
     # messages (message id, sequence number, request body), not requests.
@@ -15,7 +15,7 @@ class MessageContainer(TLObject):
         self.requests = requests
 
     def on_send(self, writer):
-        writer.write_int(0x73f1f8dc, signed=False)
+        writer.write_int(MessageContainer.constructor_id, signed=False)
         writer.write_int(len(self.requests))
         for x in self.requests:
             x.request_msg_id = self.session.get_new_msg_id()
