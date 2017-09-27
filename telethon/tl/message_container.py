@@ -1,5 +1,6 @@
-from . import TLObject, GzipPacked
-from ..extensions import BinaryWriter
+import struct
+
+from . import TLObject
 
 
 class MessageContainer(TLObject):
@@ -11,14 +12,9 @@ class MessageContainer(TLObject):
         self.messages = messages
 
     def to_bytes(self):
-        # TODO Change this to delete the on_send from this class
-        with BinaryWriter() as writer:
-            writer.write_int(MessageContainer.constructor_id, signed=False)
-            writer.write_int(len(self.messages))
-            for m in self.messages:
-                writer.write(m.to_bytes())
-
-            return writer.get_bytes()
+        return struct.pack(
+            '<Ii', MessageContainer.constructor_id, len(self.messages)
+        ) + b''.join(m.to_bytes() for m in self.messages)
 
     @staticmethod
     def iter_read(reader):
