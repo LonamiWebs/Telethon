@@ -14,25 +14,22 @@ class MessageContainer(TLObject):
         self.session = session
         self.requests = requests
 
-    def on_send(self, writer):
-        writer.write_int(MessageContainer.constructor_id, signed=False)
-        writer.write_int(len(self.requests))
-        for x in self.requests:
-            x.request_msg_id = self.session.get_new_msg_id()
-
-            writer.write_long(x.request_msg_id)
-            writer.write_int(
-                self.session.generate_sequence(x.content_related)
-            )
-
-            packet = GzipPacked.gzip_if_smaller(x)
-            writer.write_int(len(packet))
-            writer.write(packet)
-
     def to_bytes(self):
         # TODO Change this to delete the on_send from this class
         with BinaryWriter() as writer:
-            self.on_send(writer)
+            writer.write_int(MessageContainer.constructor_id, signed=False)
+            writer.write_int(len(self.requests))
+            for x in self.requests:
+                x.request_msg_id = self.session.get_new_msg_id()
+
+                writer.write_long(x.request_msg_id)
+                writer.write_int(
+                    self.session.generate_sequence(x.content_related)
+                )
+
+                packet = GzipPacked.gzip_if_smaller(x)
+                writer.write_int(len(packet))
+                writer.write(packet)
             return writer.get_bytes()
 
     @staticmethod
