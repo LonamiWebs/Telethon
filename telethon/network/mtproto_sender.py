@@ -9,7 +9,7 @@ from ..errors import (
     rpc_message_to_error
 )
 from ..extensions import BinaryReader, BinaryWriter
-from ..tl import MessageContainer
+from ..tl import MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
 
@@ -68,10 +68,12 @@ class MtProtoSender:
         self._pending_receive.extend(requests)
         if len(requests) == 1:
             request = requests[0]
+            data = GzipPacked.gzip_if_smaller(request)
         else:
             request = MessageContainer(self.session, requests)
+            data = request.to_bytes()
 
-        self._send_packet(request.to_bytes(), request)
+        self._send_packet(data, request)
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
@@ -376,11 +378,7 @@ class MtProtoSender:
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
-        reader.read_int(signed=False)  # code
-        packed_data = reader.tgread_bytes()
-        unpacked_data = gzip.decompress(packed_data)
-
-        with BinaryReader(unpacked_data) as compressed_reader:
+        with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
             return self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion

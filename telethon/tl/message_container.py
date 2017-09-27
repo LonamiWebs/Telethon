@@ -1,4 +1,4 @@
-from . import TLObject
+from . import TLObject, GzipPacked
 from ..extensions import BinaryWriter
 
 
@@ -24,7 +24,8 @@ class MessageContainer(TLObject):
             writer.write_int(
                 self.session.generate_sequence(x.content_related)
             )
-            packet = x.to_bytes()
+
+            packet = GzipPacked.gzip_if_smaller(x)
             writer.write_int(len(packet))
             writer.write(packet)
 
