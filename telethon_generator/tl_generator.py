@@ -454,8 +454,9 @@ class TLGenerator:
 
             builder.write("struct.pack('<i', len({})),".format(name))
 
-            # Unpack the values for the outer tuple
-            builder.write('*[(')
+            # Cannot unpack the values for the outer tuple through *[(
+            # since that's a Python >3.5 feature, so add another join.
+            builder.write("b''.join(")
 
             # Temporary disable .is_vector, not to enter this if again
             # Also disable .is_flag since it's not needed per element
@@ -465,7 +466,7 @@ class TLGenerator:
             arg.is_vector = True
             arg.is_flag = old_flag
 
-            builder.write(') for x in {}]'.format(name))
+            builder.write(' for x in {})'.format(name))
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
@@ -506,7 +507,10 @@ class TLGenerator:
 
         elif 'date' == arg.type:  # Custom format
             # 0 if datetime is None else int(datetime.timestamp())
-            builder.write(r"b'\0\0\0\0' if {0} is None else struct.pack('<I', int({0}.timestamp()))".format(name))
+            builder.write(
+                r"b'\0\0\0\0' if {0} is None else "
+                r"struct.pack('<I', int({0}.timestamp()))".format(name)
+            )
 
         else:
             # Else it may be a custom type
