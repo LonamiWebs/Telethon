@@ -2,14 +2,19 @@ import os
 import time
 from hashlib import sha1
 
-import errno
-
+from ..tl.types import (
+    ResPQ, PQInnerData, ServerDHParamsFail, ServerDHParamsOk,
+    ServerDHInnerData, ClientDHInnerData, DhGenOk, DhGenRetry, DhGenFail
+)
 from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
 from ..errors import SecurityError, TypeNotFoundError
-from ..extensions import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader
 from ..network import MtProtoPlainSender
+from ..tl.functions import (
+    ReqPqRequest, ReqDHParamsRequest, SetClientDHParamsRequest
+)
 
 
 def do_authentication(connection, retries=5):
@@ -33,197 +38,157 @@ def _do_authentication(connection):
     """
     sender = MtProtoPlainSender(connection)
 
-    # Step 1 sending: PQ Request
-    nonce = os.urandom(16)
-    with BinaryWriter(known_length=20) as writer:
-        writer.write_int(0x60469778, signed=False)  # Constructor number
-        writer.write(nonce)
-        sender.send(writer.get_bytes())
-
-    # Step 1 response: PQ Request
-    pq, pq_bytes, server_nonce, fingerprints = None, None, None, []
+    # Step 1 sending: PQ Request, endianness doesn't matter since it's random
+    req_pq_request = ReqPqRequest(
+        nonce=int.from_bytes(os.urandom(16), 'big', signed=True)
+    )
+    sender.send(req_pq_request.to_bytes())
     with BinaryReader(sender.receive()) as reader:
-        response_code = reader.read_int(signed=False)
-        if response_code != 0x05162463:
-            raise TypeNotFoundError(response_code)
+        req_pq_request.on_response(reader)
 
-        nonce_from_server = reader.read(16)
-        if nonce_from_server != nonce:
-            raise SecurityError('Invalid nonce from server')
+    res_pq = req_pq_request.result
+    if not isinstance(res_pq, ResPQ):
+        raise TypeNotFoundError(type(res_pq).constructor_id)
 
-        server_nonce = reader.read(16)
+    if res_pq.nonce != req_pq_request.nonce:
+        raise SecurityError('Invalid nonce from server')
 
-        pq_bytes = reader.tgread_bytes()
-        pq = get_int(pq_bytes)
-
-        vector_id = reader.read_int()
-        if vector_id != 0x1cb5c415:
-            raise TypeNotFoundError(response_code)
-
-        fingerprints = []
-        fingerprint_count = reader.read_int()
-        for _ in range(fingerprint_count):
-            fingerprints.append(reader.read(8))
+    pq = get_int(res_pq.pq)
 
     # Step 2 sending: DH Exchange
-    new_nonce = os.urandom(32)
     p, q = Factorization.factorize(pq)
-    with BinaryWriter() as pq_inner_data_writer:
-        pq_inner_data_writer.write_int(
-            0x83c95aec, signed=False)  # PQ Inner Data
-        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(pq))
-        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(min(p, q)))
-        pq_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(max(p, q)))
-        pq_inner_data_writer.write(nonce)
-        pq_inner_data_writer.write(server_nonce)
-        pq_inner_data_writer.write(new_nonce)
+    p, q = rsa.get_byte_array(min(p, q)), rsa.get_byte_array(max(p, q))
+    new_nonce = int.from_bytes(os.urandom(32), 'little', signed=True)
 
-        # sha_digest + data + random_bytes
-        cipher_text, target_fingerprint = None, None
-        for fingerprint in fingerprints:
-            cipher_text = rsa.encrypt(
-                fingerprint,
-                pq_inner_data_writer.get_bytes()
+    pq_inner_data = PQInnerData(
+        pq=rsa.get_byte_array(pq), p=p, q=q,
+        nonce=res_pq.nonce,
+        server_nonce=res_pq.server_nonce,
+        new_nonce=new_nonce
+    ).to_bytes()
+
+    # sha_digest + data + random_bytes
+    cipher_text, target_fingerprint = None, None
+    for fingerprint in res_pq.server_public_key_fingerprints:
+        cipher_text = rsa.encrypt(fingerprint, pq_inner_data)
+        if cipher_text is not None:
+            target_fingerprint = fingerprint
+            break
+
+    if cipher_text is None:
+        raise SecurityError(
+            'Could not find a valid key for fingerprints: {}'
+            .format(', '.join(
+                [str(f) for f in res_pq.server_public_key_fingerprints])
             )
+        )
 
-            if cipher_text is not None:
-                target_fingerprint = fingerprint
-                break
-
-        if cipher_text is None:
-            raise SecurityError(
-                'Could not find a valid key for fingerprints: {}'
-                .format(', '.join([repr(f) for f in fingerprints]))
-            )
-
-        with BinaryWriter() as req_dh_params_writer:
-            req_dh_params_writer.write_int(
-                0xd712e4be, signed=False)  # Req DH Params
-            req_dh_params_writer.write(nonce)
-            req_dh_params_writer.write(server_nonce)
-            req_dh_params_writer.tgwrite_bytes(rsa.get_byte_array(min(p, q)))
-            req_dh_params_writer.tgwrite_bytes(rsa.get_byte_array(max(p, q)))
-            req_dh_params_writer.write(target_fingerprint)
-            req_dh_params_writer.tgwrite_bytes(cipher_text)
-
-            req_dh_params_bytes = req_dh_params_writer.get_bytes()
-            sender.send(req_dh_params_bytes)
+    req_dh_params = ReqDHParamsRequest(
+        nonce=res_pq.nonce,
+        server_nonce=res_pq.server_nonce,
+        p=p, q=q,
+        public_key_fingerprint=target_fingerprint,
+        encrypted_data=cipher_text
+    )
+    sender.send(req_dh_params.to_bytes())
 
     # Step 2 response: DH Exchange
-    encrypted_answer = None
     with BinaryReader(sender.receive()) as reader:
-        response_code = reader.read_int(signed=False)
+        req_dh_params.on_response(reader)
 
-        if response_code == 0x79cb045d:
-            raise SecurityError('Server DH params fail: TODO')
+    server_dh_params = req_dh_params.result
+    if isinstance(server_dh_params, ServerDHParamsFail):
+        raise SecurityError('Server DH params fail: TODO')
 
-        if response_code != 0xd0e8075c:
-            raise TypeNotFoundError(response_code)
+    if not isinstance(server_dh_params, ServerDHParamsOk):
+        raise TypeNotFoundError(type(server_dh_params).constructor_id)
 
-        nonce_from_server = reader.read(16)
-        if nonce_from_server != nonce:
-            raise SecurityError('Invalid nonce from server')
+    if server_dh_params.nonce != res_pq.nonce:
+        raise SecurityError('Invalid nonce from server')
 
-        server_nonce_from_server = reader.read(16)
-        if server_nonce_from_server != server_nonce:
-            raise SecurityError('Invalid server nonce from server')
-
-        encrypted_answer = reader.tgread_bytes()
+    if server_dh_params.server_nonce != res_pq.server_nonce:
+        raise SecurityError('Invalid server nonce from server')
 
     # Step 3 sending: Complete DH Exchange
-    key, iv = utils.generate_key_data_from_nonce(server_nonce, new_nonce)
-    plain_text_answer = AES.decrypt_ige(encrypted_answer, key, iv)
+    key, iv = utils.generate_key_data_from_nonce(
+        res_pq.server_nonce, new_nonce
+    )
+    plain_text_answer = AES.decrypt_ige(
+        server_dh_params.encrypted_answer, key, iv
+    )
 
-    g, dh_prime, ga, time_offset = None, None, None, None
-    with BinaryReader(plain_text_answer) as dh_inner_data_reader:
-        dh_inner_data_reader.read(20)  # hash sum
-        code = dh_inner_data_reader.read_int(signed=False)
-        if code != 0xb5890dba:
-            raise TypeNotFoundError(code)
+    with BinaryReader(plain_text_answer) as reader:
+        reader.read(20)  # hash sum
+        server_dh_inner = reader.tgread_object()
+        if not isinstance(server_dh_inner, ServerDHInnerData):
+            raise TypeNotFoundError(server_dh_inner)
 
-        nonce_from_server1 = dh_inner_data_reader.read(16)
-        if nonce_from_server1 != nonce:
-            raise SecurityError('Invalid nonce in encrypted answer')
+    if server_dh_inner.nonce != res_pq.nonce:
+        print(server_dh_inner.nonce, res_pq.nonce)
+        raise SecurityError('Invalid nonce in encrypted answer')
 
-        server_nonce_from_server1 = dh_inner_data_reader.read(16)
-        if server_nonce_from_server1 != server_nonce:
-            raise SecurityError('Invalid server nonce in encrypted answer')
+    if server_dh_inner.server_nonce != res_pq.server_nonce:
+        raise SecurityError('Invalid server nonce in encrypted answer')
 
-        g = dh_inner_data_reader.read_int()
-        dh_prime = get_int(dh_inner_data_reader.tgread_bytes(), signed=False)
-        ga = get_int(dh_inner_data_reader.tgread_bytes(), signed=False)
-
-        server_time = dh_inner_data_reader.read_int()
-        time_offset = server_time - int(time.time())
+    dh_prime = get_int(server_dh_inner.dh_prime, signed=False)
+    g_a = get_int(server_dh_inner.g_a, signed=False)
+    time_offset = server_dh_inner.server_time - int(time.time())
 
     b = get_int(os.urandom(256), signed=False)
-    gb = pow(g, b, dh_prime)
-    gab = pow(ga, b, dh_prime)
+    gb = pow(server_dh_inner.g, b, dh_prime)
+    gab = pow(g_a, b, dh_prime)
 
     # Prepare client DH Inner Data
-    with BinaryWriter() as client_dh_inner_data_writer:
-        client_dh_inner_data_writer.write_int(
-            0x6643b654, signed=False)  # Client DH Inner Data
-        client_dh_inner_data_writer.write(nonce)
-        client_dh_inner_data_writer.write(server_nonce)
-        client_dh_inner_data_writer.write_long(0)  # TODO retry_id
-        client_dh_inner_data_writer.tgwrite_bytes(rsa.get_byte_array(gb))
+    client_dh_inner = ClientDHInnerData(
+        nonce=res_pq.nonce,
+        server_nonce=res_pq.server_nonce,
+        retry_id=0,  # TODO Actual retry ID
+        g_b=rsa.get_byte_array(gb)
+    ).to_bytes()
 
-        with BinaryWriter() as client_dh_inner_data_with_hash_writer:
-            client_dh_inner_data_with_hash_writer.write(
-                sha1(client_dh_inner_data_writer.get_bytes()).digest())
-
-            client_dh_inner_data_with_hash_writer.write(
-                client_dh_inner_data_writer.get_bytes())
-
-            client_dh_inner_data_bytes = \
-                client_dh_inner_data_with_hash_writer.get_bytes()
+    client_dh_inner_hashed = sha1(client_dh_inner).digest() + client_dh_inner
 
     # Encryption
-    client_dh_inner_data_encrypted_bytes = AES.encrypt_ige(
-        client_dh_inner_data_bytes, key, iv)
+    client_dh_encrypted = AES.encrypt_ige(client_dh_inner_hashed, key, iv)
 
     # Prepare Set client DH params
-    with BinaryWriter() as set_client_dh_params_writer:
-        set_client_dh_params_writer.write_int(0xf5045f1f, signed=False)
-        set_client_dh_params_writer.write(nonce)
-        set_client_dh_params_writer.write(server_nonce)
-        set_client_dh_params_writer.tgwrite_bytes(
-            client_dh_inner_data_encrypted_bytes)
-
-        set_client_dh_params_bytes = set_client_dh_params_writer.get_bytes()
-        sender.send(set_client_dh_params_bytes)
+    set_client_dh = SetClientDHParamsRequest(
+        nonce=res_pq.nonce,
+        server_nonce=res_pq.server_nonce,
+        encrypted_data=client_dh_encrypted,
+    )
+    sender.send(set_client_dh.to_bytes())
 
     # Step 3 response: Complete DH Exchange
     with BinaryReader(sender.receive()) as reader:
-        code = reader.read_int(signed=False)
-        if code == 0x3bcbf734:  # DH Gen OK
-            nonce_from_server = reader.read(16)
-            if nonce_from_server != nonce:
-                raise SecurityError('Invalid nonce from server')
+        set_client_dh.on_response(reader)
 
-            server_nonce_from_server = reader.read(16)
-            if server_nonce_from_server != server_nonce:
-                raise SecurityError('Invalid server nonce from server')
+    dh_gen = set_client_dh.result
+    if isinstance(dh_gen, DhGenOk):
+        if dh_gen.nonce != res_pq.nonce:
+            raise SecurityError('Invalid nonce from server')
 
-            new_nonce_hash1 = reader.read(16)
-            auth_key = AuthKey(rsa.get_byte_array(gab))
+        if dh_gen.server_nonce != res_pq.server_nonce:
+            raise SecurityError('Invalid server nonce from server')
 
-            new_nonce_hash_calculated = auth_key.calc_new_nonce_hash(new_nonce,
-                                                                     1)
-            if new_nonce_hash1 != new_nonce_hash_calculated:
-                raise SecurityError('Invalid new nonce hash')
+        auth_key = AuthKey(rsa.get_byte_array(gab))
+        new_nonce_hash = int.from_bytes(
+            auth_key.calc_new_nonce_hash(new_nonce, 1), 'little', signed=True
+        )
 
-            return auth_key, time_offset
+        if dh_gen.new_nonce_hash1 != new_nonce_hash:
+            raise SecurityError('Invalid new nonce hash')
 
-        elif code == 0x46dc1fb9:  # DH Gen Retry
-            raise NotImplementedError('dh_gen_retry')
+        return auth_key, time_offset
 
-        elif code == 0xa69dae02:  # DH Gen Fail
-            raise NotImplementedError('dh_gen_fail')
+    elif isinstance(dh_gen, DhGenRetry):
+        raise NotImplementedError('DhGenRetry')
 
-        else:
-            raise NotImplementedError('DH Gen unknown: {}'.format(hex(code)))
+    elif isinstance(dh_gen, DhGenFail):
+        raise NotImplementedError('DhGenFail')
+
+    else:
+        raise NotImplementedError('DH Gen unknown: {}'.format(dh_gen))
 
 
 def get_int(byte_array, signed=True):

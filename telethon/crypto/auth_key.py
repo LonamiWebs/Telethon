@@ -18,5 +18,6 @@ class AuthKey:
         """Calculates the new nonce hash based on
            the current class fields' values
         """
+        new_nonce = new_nonce.to_bytes(32, 'little', signed=True)
         data = new_nonce + struct.pack('<BQ', number, self.aux_hash)
         return utils.calc_msg_key(data)
