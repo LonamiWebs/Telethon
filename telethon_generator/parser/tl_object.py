@@ -248,6 +248,8 @@ class TLArg:
         result = {
             'int': 'int',
             'long': 'int',
+            'int128': 'int',
+            'int256': 'int',
             'string': 'str',
             'date': 'datetime.datetime | None',  # None date = 0 timestamp
             'bytes': 'bytes',
