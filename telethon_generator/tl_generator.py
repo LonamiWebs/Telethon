@@ -493,7 +493,7 @@ class TLGenerator:
             builder.write("struct.pack('<d', {})".format(name))
 
         elif 'string' == arg.type:
-            builder.write('TLObject.serialize_string({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'Bool' == arg.type:
             # 0x997275b5 if boolean else 0xbc799737
