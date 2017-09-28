@@ -1,26 +1,9 @@
 <!--
-Please remember that issues here should be related to the library itself and NOT your code.
+0. The library is Python 3.x, not Python 2.x.
+1. If you're posting an issue, make sure it's a bug in the library, not in your code.
+2. If you're posting a question, make sure you have read and tried enough things first.
+3. Show as much information as possible, including your failed attempts, and the full console output (to include the whole traceback with line numbers).
+4. Good looking issues are a lot more appealing. If you need help check out https://guides.github.com/features/mastering-markdown/.
 
-Python 2 is NOT supported. Make sure you're using the latest version of Telethon before reporting:
-    pip install telethon --upgrade
-
-Some questions are okay, but make sure you've investigated enough on your own before or you will end up on the Wall of Shame:
-    https://github.com/LonamiWebs/Telethon/wiki/Wall-of-Shame.
+You may also want to watch "How (not) to ask a technical question" over https://youtu.be/53zkBvL4ZB4
 -->
-
-### What went wrong
-Describe what happened or what the error you have is.
-
-```
-// paste the crash log here if any
-```
-
-### What I've done
-Either a code example of what you were trying to do, or steps to reproduce, or methods you have tried invoking.
-
-```python
-# Add your Python code here
-```
-
-### More information
-If you think other information can be relevant (e.g. operative system or other variables), add it here.
