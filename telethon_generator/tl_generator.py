@@ -484,10 +484,10 @@ class TLGenerator:
             builder.write("struct.pack('<q', {})".format(name))
 
         elif 'int128' == arg.type:
-            builder.write("int.to_bytes({}, 16, 'little', signed=True)")
+            builder.write("{}.to_bytes(16, 'little', signed=True)".format(name))
 
         elif 'int256' == arg.type:
-            builder.write("int.to_bytes({}, 32, 'little', signed=True)")
+            builder.write("{}.to_bytes(32, 'little', signed=True)".format(name))
 
         elif 'double' == arg.type:
             builder.write("struct.pack('<d', {})".format(name))
