@@ -1,7 +1,8 @@
+import struct
 import time
 
 from ..errors import BrokenAuthKeyError
-from ..extensions import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader
 
 
 class MtProtoPlainSender:
@@ -25,14 +26,9 @@ class MtProtoPlainSender:
         """Sends a plain packet (auth_key_id = 0) containing the
            given message body (data)
         """
-        with BinaryWriter(known_length=len(data) + 20) as writer:
-            writer.write_long(0)
-            writer.write_long(self._get_new_msg_id())
-            writer.write_int(len(data))
-            writer.write(data)
-
-            packet = writer.get_bytes()
-            self._connection.send(packet)
+        self._connection.send(
+            struct.pack('<QQi', 0, self._get_new_msg_id(), len(data)) + data
+        )
 
     def receive(self):
         """Receives a plain packet, returning the body of the response"""
