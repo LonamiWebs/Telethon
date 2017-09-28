@@ -57,7 +57,7 @@ class UpdateState:
         with self._updates_lock:
             # Insert at the beginning so the very next poll causes an error
             # TODO Should this reset the pts and such?
-            self._updates.insert(0, error)
+            self._updates.appendleft(error)
             self._updates_available.set()
 
     def check_error(self):
