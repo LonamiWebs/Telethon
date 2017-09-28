@@ -3,7 +3,7 @@ import struct
 from . import TLObject, GzipPacked
 
 
-class Message(TLObject):
+class TLMessage(TLObject):
     """https://core.telegram.org/mtproto/service_messages#simple-container"""
     def __init__(self, session, request):
         super().__init__()

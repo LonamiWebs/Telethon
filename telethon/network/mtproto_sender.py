@@ -10,7 +10,7 @@ from ..errors import (
     rpc_message_to_error
 )
 from ..extensions import BinaryReader
-from ..tl import Message, MessageContainer, GzipPacked
+from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
 
@@ -69,13 +69,13 @@ class MtProtoSender:
         self._send_acknowledges()
 
         # Finally send our packed request(s)
-        messages = [Message(self.session, r) for r in requests]
+        messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
 
         if len(messages) == 1:
             message = messages[0]
         else:
-            message = Message(self.session, MessageContainer(messages))
+            message = TLMessage(self.session, MessageContainer(messages))
 
         self._send_message(message)
 
@@ -83,7 +83,7 @@ class MtProtoSender:
         """Sends a messages acknowledge for all those who _need_confirmation"""
         if self._need_confirmation:
             self._send_message(
-                Message(self.session, MsgsAck(self._need_confirmation))
+                TLMessage(self.session, MsgsAck(self._need_confirmation))
             )
             del self._need_confirmation[:]
 
