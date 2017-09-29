@@ -18,7 +18,7 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError,
     PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
 )
-from .network import ConnectionMode
+from .network import Connection, ConnectionMode, MtProtoSender
 from .tl import Session, TLObject
 from .tl.functions import PingRequest
 from .tl.functions.account import (
@@ -146,6 +146,11 @@ class TelegramClient(TelegramBareClient):
         # Constantly read for results and updates from within the main client
         self._recv_thread = None
 
+        # Identifier of the main thread (the one that called .connect()).
+        # This will be used to create new connections from any other thread,
+        # so that requests can be sent in parallel.
+        self._main_thread_ident = None
+
         # Default PingRequest delay
         self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
@@ -162,6 +167,8 @@ class TelegramClient(TelegramBareClient):
 
            exported_auth is meant for internal purposes and can be ignored.
         """
+        self._main_thread_ident = threading.get_ident()
+
         if socks and self._recv_thread:
             # Treat proxy errors specially since they're not related to
             # Telegram itself, but rather to the proxy. If any happens on
@@ -246,23 +253,40 @@ class TelegramClient(TelegramBareClient):
         """
         # This is only valid when the read thread is reconnecting,
         # that is, the connection lock is locked.
-        if self._on_read_thread() and not self._connect_lock.locked():
+        on_read_thread = self._on_read_thread()
+        if on_read_thread and not self._connect_lock.locked():
             return  # Just ignore, we would be raising and crashing the thread
 
         self.updates.check_error()
+
+        # Determine the sender to be used (main or a new connection)
+        # TODO Polish this so it's nicer
+        on_main_thread = threading.get_ident() == self._main_thread_ident
+        if on_main_thread or on_read_thread:
+            sender = self._sender
+        else:
+            conn = Connection(
+                self.session.server_address, self.session.port,
+                mode=self._sender.connection._mode,
+                proxy=self._sender.connection.conn.proxy,
+                timeout=self._sender.connection.get_timeout()
+            )
+            sender = MtProtoSender(self.session, conn)
+            sender.connect()
 
         try:
             # We should call receive from this thread if there's no background
             # thread reading or if the server disconnected us and we're trying
             # to reconnect. This is because the read thread may either be
             # locked also trying to reconnect or we may be said thread already.
-            call_receive = \
+            call_receive = not on_main_thread or \
                 self._recv_thread is None or self._connect_lock.locked()
 
             return super().invoke(
                 *requests,
                 call_receive=call_receive,
-                retries=kwargs.get('retries', 5)
+                retries=kwargs.get('retries', 5),
+                sender=sender
             )
 
         except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
@@ -283,6 +307,10 @@ class TelegramClient(TelegramBareClient):
                 raise
             while self._user_connected and not self._reconnect():
                 sleep(0.1)  # Retry forever until we can send the request
+
+        finally:
+            if sender != self._sender:
+                sender.disconnect()
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke

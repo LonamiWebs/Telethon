@@ -290,7 +290,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, *requests, call_receive=True, retries=5):
+    def invoke(self, *requests, call_receive=True, retries=5, sender=None):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            If 'updates' is not None, all read update object will be put
@@ -307,13 +307,16 @@ class TelegramBareClient:
         if retries <= 0:
             raise ValueError('Number of retries reached 0.')
 
+        if sender is None:
+            sender = self._sender
+
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
                 x.confirm_received.clear()
                 x.rpc_error = None
 
-            self._sender.send(*requests)
+            sender.send(*requests)
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
                 # switching between constant read or not on the fly.
@@ -321,11 +324,11 @@ class TelegramBareClient:
                 # in which case a Lock would be required for .receive().
                 for x in requests:
                     x.confirm_received.wait(
-                        self._sender.connection.get_timeout()
+                        sender.connection.get_timeout()
                     )
             else:
                 while not all(x.confirm_received.is_set() for x in requests):
-                    self._sender.receive(update_state=self.updates)
+                    sender.receive(update_state=self.updates)
 
         except TimeoutError:
             pass  # We will just retry
@@ -333,9 +336,13 @@ class TelegramBareClient:
         except ConnectionResetError:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request...')
-            self._reconnect()
+            if sender != self._sender:
+                sender.connect()
+            else:
+                self._reconnect()
 
         except FloodWaitError:
+            sender.disconnect()
             self.disconnect()
             raise
 
