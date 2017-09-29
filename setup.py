@@ -14,7 +14,7 @@ Extra supported commands are:
 # To use a consistent encoding
 from codecs import open
 from sys import argv
-from os import path
+import os
 
 # Always prefer setuptools over distutils
 from setuptools import find_packages, setup
@@ -26,7 +26,23 @@ except Exception as e:
     TelegramClient = None
 
 
-if __name__ == '__main__':
+class TempWorkDir:
+    """Switches the working directory to be the one on which this file lives,
+       while within the 'with' block.
+    """
+    def __init__(self):
+        self.original = None
+
+    def __enter__(self):
+        self.original = os.path.abspath(os.path.curdir)
+        os.chdir(os.path.abspath(os.path.dirname(__file__)))
+        return self
+
+    def __exit__(self, *args):
+        os.chdir(self.original)
+
+
+def main():
     if len(argv) >= 2 and argv[1] == 'gen_tl':
         from telethon_generator.tl_generator import TLGenerator
         generator = TLGenerator('telethon/tl')
@@ -65,10 +81,8 @@ if __name__ == '__main__':
             print('Run `python3', argv[0], 'gen_tl` first.')
             quit()
 
-        here = path.abspath(path.dirname(__file__))
-
         # Get the long description from the README file
-        with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+        with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
         setup(
@@ -112,3 +126,8 @@ if __name__ == '__main__':
             ]),
             install_requires=['pyaes', 'rsa']
         )
+
+
+if __name__ == '__main__':
+    with TempWorkDir():  # Could just use a try/finally but this is + reusable
+        main()
