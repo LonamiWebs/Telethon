@@ -300,15 +300,17 @@ class TLGenerator:
 
         # Write the .to_bytes() function
         builder.writeln('def to_bytes(self):')
-        builder.write("return b''.join((")
+        builder.writeln("return b''.join((")
+        builder.current_indent += 1
 
         # First constructor code, we already know its bytes
-        builder.write('{},'.format(repr(struct.pack('<I', tlobject.id))))
+        builder.writeln('{},'.format(repr(struct.pack('<I', tlobject.id))))
 
         for arg in tlobject.args:
             if TLGenerator.write_to_bytes(builder, arg, tlobject.args):
-                builder.write(',')
+                builder.writeln(',')
 
+        builder.current_indent -= 1
         builder.writeln('))')
         builder.end_block()
 
