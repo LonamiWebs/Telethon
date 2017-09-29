@@ -1,10 +1,7 @@
 import os
-import threading
 from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
-from threading import Thread
-from time import sleep
 
 try:
     import socks
@@ -15,12 +12,10 @@ from . import TelegramBareClient
 from . import helpers as utils
 from .errors import (
     RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
-    PhoneMigrateError, NetworkMigrateError, UserMigrateError,
     PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
 )
-from .network import Connection, ConnectionMode, MtProtoSender
-from .tl import Session, TLObject
-from .tl.functions import PingRequest
+from .network import ConnectionMode
+from .tl import TLObject
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -34,9 +29,6 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest
-)
-from .tl.functions.updates import (
-    GetStateRequest
 )
 from .tl.functions.users import (
     GetUsersRequest
@@ -98,18 +90,6 @@ class TelegramClient(TelegramBareClient):
              system_lang_code = lang_code
              report_errors    = True
         """
-        if not api_id or not api_hash:
-            raise PermissionError(
-                "Your API ID or Hash cannot be empty or None. "
-                "Refer to Telethon's README.rst for more information.")
-
-        # Determine what session object we have
-        if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session)
-        elif not isinstance(session, Session):
-            raise ValueError(
-                'The given session must be a str or a Session instance.')
-
         super().__init__(
             session, api_id, api_hash,
             connection_mode=connection_mode,
@@ -118,186 +98,15 @@ class TelegramClient(TelegramBareClient):
             timeout=timeout
         )
 
-        # Used on connection - the user may modify these and reconnect
-        kwargs['app_version'] = kwargs.get('app_version', self.__version__)
-        for name, value in kwargs.items():
-            if hasattr(self.session, name):
-                setattr(self.session, name, value)
-
-        self._updates_thread = None
+        # Some fields to easy signing in
         self._phone_code_hash = None
         self._phone = None
-
-        # Despite the state of the real connection, keep track of whether
-        # the user has explicitly called .connect() or .disconnect() here.
-        # This information is required by the read thread, who will be the
-        # one attempting to reconnect on the background *while* the user
-        # doesn't explicitly call .disconnect(), thus telling it to stop
-        # retrying. The main thread, knowing there is a background thread
-        # attempting reconnection as soon as it happens, will just sleep.
-        self._user_connected = False
-
-        # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = False
-
-        # Uploaded files cache so subsequent calls are instant
-        self._upload_cache = {}
-
-        # Constantly read for results and updates from within the main client
-        self._recv_thread = None
-
-        # Identifier of the main thread (the one that called .connect()).
-        # This will be used to create new connections from any other thread,
-        # so that requests can be sent in parallel.
-        self._main_thread_ident = None
-
-        # Default PingRequest delay
-        self._last_ping = datetime.now()
-        self._ping_delay = timedelta(minutes=1)
-
-    # endregion
-
-    # region Connecting
-
-    def connect(self, exported_auth=None):
-        """Connects to the Telegram servers, executing authentication if
-           required. Note that authenticating to the Telegram servers is
-           not the same as authenticating the desired user itself, which
-           may require a call (or several) to 'sign_in' for the first time.
-
-           exported_auth is meant for internal purposes and can be ignored.
-        """
-        self._main_thread_ident = threading.get_ident()
-
-        if socks and self._recv_thread:
-            # Treat proxy errors specially since they're not related to
-            # Telegram itself, but rather to the proxy. If any happens on
-            # the read thread forward it to the main thread.
-            try:
-                ok = super().connect(exported_auth=exported_auth)
-            except socks.ProxyConnectionError as e:
-                ok = False
-                # Report the exception to the main thread
-                self.updates.set_error(e)
-        else:
-            ok = super().connect(exported_auth=exported_auth)
-
-        if not ok:
-            return False
-
-        self._user_connected = True
-        try:
-            self.sync_updates()
-            self._set_connected_and_authorized()
-        except UnauthorizedError:
-            self._authorized = False
-
-        return True
-
-    def disconnect(self):
-        """Disconnects from the Telegram server
-           and stops all the spawned threads"""
-        self._user_connected = False
-        self._recv_thread = None
-
-        # This will trigger a "ConnectionResetError", usually, the background
-        # thread would try restarting the connection but since the
-        # ._recv_thread = None, it knows it doesn't have to.
-        super().disconnect()
-
-        # Also disconnect all the cached senders
-        for sender in self._cached_clients.values():
-            sender.disconnect()
-
-        self._cached_clients.clear()
-
-    # endregion
-
-    # region Working with different connections
-
-    def _on_read_thread(self):
-        return self._recv_thread is not None and \
-               threading.get_ident() == self._recv_thread.ident
 
     # endregion
 
     # region Telegram requests functions
 
-    def invoke(self, *requests, **kwargs):
-        """Invokes (sends) one or several MTProtoRequest and returns
-           (receives) their result. An optional named 'retries' parameter
-           can be used, indicating how many times it should retry.
-        """
-        # This is only valid when the read thread is reconnecting,
-        # that is, the connection lock is locked.
-        on_read_thread = self._on_read_thread()
-        if on_read_thread and not self._connect_lock.locked():
-            return  # Just ignore, we would be raising and crashing the thread
-
-        self.updates.check_error()
-
-        # Determine the sender to be used (main or a new connection)
-        # TODO Polish this so it's nicer
-        on_main_thread = threading.get_ident() == self._main_thread_ident
-        if on_main_thread or on_read_thread:
-            sender = self._sender
-        else:
-            conn = Connection(
-                self.session.server_address, self.session.port,
-                mode=self._sender.connection._mode,
-                proxy=self._sender.connection.conn.proxy,
-                timeout=self._sender.connection.get_timeout()
-            )
-            sender = MtProtoSender(self.session, conn)
-            sender.connect()
-
-        try:
-            # We should call receive from this thread if there's no background
-            # thread reading or if the server disconnected us and we're trying
-            # to reconnect. This is because the read thread may either be
-            # locked also trying to reconnect or we may be said thread already.
-            call_receive = not on_main_thread or \
-                self._recv_thread is None or self._connect_lock.locked()
-
-            return super().invoke(
-                *requests,
-                call_receive=call_receive,
-                retries=kwargs.get('retries', 5),
-                sender=sender
-            )
-
-        except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
-            self._logger.debug('DC error when invoking request, '
-                               'attempting to reconnect at DC {}'
-                               .format(e.new_dc))
-
-            # TODO What happens with the background thread here?
-            # For normal use cases, this won't happen, because this will only
-            # be on the very first connection (not authorized, not running),
-            # but may be an issue for people who actually travel?
-            self._reconnect(new_dc=e.new_dc)
-            return self.invoke(*requests)
-
-        except ConnectionResetError as e:
-            if self._connect_lock.locked():
-                # We are connecting and we don't want to reconnect there...
-                raise
-            while self._user_connected and not self._reconnect():
-                sleep(0.1)  # Retry forever until we can send the request
-
-        finally:
-            if sender != self._sender:
-                sender.disconnect()
-
-    # Let people use client(SomeRequest()) instead client.invoke(...)
-    __call__ = invoke
-
     # region Authorization requests
-
-    def is_user_authorized(self):
-        """Has the user been authorized yet
-           (code request sent and confirmed)?"""
-        return self._authorized
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
@@ -990,75 +799,5 @@ class TelegramClient(TelegramBareClient):
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
-
-    # endregion
-
-    # region Updates handling
-
-    def sync_updates(self):
-        """Synchronizes self.updates to their initial state. Will be
-           called automatically on connection if self.updates.enabled = True,
-           otherwise it should be called manually after enabling updates.
-        """
-        self.updates.process(self(GetStateRequest()))
-
-    def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
-        sync = not self.updates.handlers
-        self.updates.handlers.append(handler)
-        if sync:
-            self.sync_updates()
-
-    def remove_update_handler(self, handler):
-        self.updates.handlers.remove(handler)
-
-    def list_update_handlers(self):
-        return self.updates.handlers[:]
-
-    # endregion
-
-    # Constant read
-
-    def _set_connected_and_authorized(self):
-        self._authorized = True
-        if self._recv_thread is None:
-            self._recv_thread = Thread(
-                name='ReadThread', daemon=True,
-                target=self._recv_thread_impl
-            )
-            self._recv_thread.start()
-
-    # By using this approach, another thread will be
-    # created and started upon connection to constantly read
-    # from the other end. Otherwise, manual calls to .receive()
-    # must be performed. The MtProtoSender cannot be connected,
-    # or an error will be thrown.
-    #
-    # This way, sending and receiving will be completely independent.
-    def _recv_thread_impl(self):
-        while self._user_connected:
-            try:
-                if datetime.now() > self._last_ping + self._ping_delay:
-                    self._sender.send(PingRequest(
-                        int.from_bytes(os.urandom(8), 'big', signed=True)
-                    ))
-                    self._last_ping = datetime.now()
-
-                self._sender.receive(update_state=self.updates)
-            except TimeoutError:
-                # No problem.
-                pass
-            except ConnectionResetError:
-                self._logger.debug('Server disconnected us. Reconnecting...')
-                while self._user_connected and not self._reconnect():
-                    sleep(0.1)  # Retry forever, this is instant messaging
-
-            except Exception as e:
-                # Unknown exception, pass it to the main thread
-                self.updates.set_error(e)
-                break
-
-        self._recv_thread = None
 
     # endregion
