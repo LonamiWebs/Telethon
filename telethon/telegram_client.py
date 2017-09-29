@@ -219,29 +219,6 @@ class TelegramClient(TelegramBareClient):
         return self._recv_thread is not None and \
                threading.get_ident() == self._recv_thread.ident
 
-    def create_new_connection(self, on_dc=None, timeout=timedelta(seconds=5)):
-        """Creates a new connection which can be used in parallel
-           with the original TelegramClient. A TelegramBareClient
-           will be returned already connected, and the caller is
-           responsible to disconnect it.
-
-           If 'on_dc' is None, the new client will run on the same
-           data center as the current client (most common case).
-
-           If the client is meant to be used on a different data
-           center, the data center ID should be specified instead.
-        """
-        if on_dc is None:
-            client = TelegramBareClient(
-                self.session, self.api_id, self.api_hash,
-                proxy=self._sender.connection.conn.proxy, timeout=timeout
-            )
-            client.connect()
-        else:
-            client = self._get_exported_client(on_dc, bypass_cache=True)
-
-        return client
-
     # endregion
 
     # region Telegram requests functions
@@ -314,25 +291,6 @@ class TelegramClient(TelegramBareClient):
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
-
-    def invoke_on_dc(self, request, dc_id, reconnect=False):
-        """Invokes the given request on a different DC
-           by making use of the exported MtProtoSenders.
-
-           If 'reconnect=True', then the a reconnection will be performed and
-           ConnectionResetError will be raised if it occurs a second time.
-        """
-        try:
-            client = self._get_exported_client(
-                dc_id, init_connection=reconnect)
-
-            return client.invoke(request)
-
-        except ConnectionResetError:
-            if reconnect:
-                raise
-            else:
-                return self.invoke_on_dc(request, dc_id, reconnect=True)
 
     # region Authorization requests
 
