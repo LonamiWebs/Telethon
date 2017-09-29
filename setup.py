@@ -42,19 +42,23 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
+def gen_tl():
+    from telethon_generator.tl_generator import TLGenerator
+    generator = TLGenerator('telethon/tl')
+    if generator.tlobjects_exist():
+        print('Detected previous TLObjects. Cleaning...')
+        generator.clean_tlobjects()
+
+    print('Generating TLObjects...')
+    generator.generate_tlobjects(
+        'telethon_generator/scheme.tl', import_depth=2
+    )
+    print('Done.')
+
+
 def main():
     if len(argv) >= 2 and argv[1] == 'gen_tl':
-        from telethon_generator.tl_generator import TLGenerator
-        generator = TLGenerator('telethon/tl')
-        if generator.tlobjects_exist():
-            print('Detected previous TLObjects. Cleaning...')
-            generator.clean_tlobjects()
-
-        print('Generating TLObjects...')
-        generator.generate_tlobjects(
-            'telethon_generator/scheme.tl', import_depth=2
-        )
-        print('Done.')
+        gen_tl()
 
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
         from telethon_generator.tl_generator import TLGenerator
@@ -78,8 +82,11 @@ def main():
 
     else:
         if not TelegramClient:
-            print('Run `python3', argv[0], 'gen_tl` first.')
-            quit()
+            gen_tl()
+            from telethon import TelegramClient as TgClient
+            version = TgClient.__version__
+        else:
+            version = TelegramClient.__version__
 
         # Get the long description from the README file
         with open('README.rst', encoding='utf-8') as f:
@@ -89,7 +96,7 @@ def main():
             name='Telethon',
 
             # Versions should comply with PEP440.
-            version=TelegramClient.__version__,
+            version=version,
             description="Full-featured Telegram client library for Python 3",
             long_description=long_description,
 
