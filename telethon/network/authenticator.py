@@ -9,7 +9,7 @@ from ..tl.types import (
 from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
-from ..errors import SecurityError, TypeNotFoundError
+from ..errors import SecurityError
 from ..extensions import BinaryReader
 from ..network import MtProtoPlainSender
 from ..tl.functions import (
@@ -25,7 +25,7 @@ def do_authentication(connection, retries=5):
     while retries:
         try:
             return _do_authentication(connection)
-        except (SecurityError, TypeNotFoundError, NotImplementedError) as e:
+        except (SecurityError, AssertionError, NotImplementedError) as e:
             last_error = e
         retries -= 1
     raise last_error
@@ -48,7 +48,7 @@ def _do_authentication(connection):
 
     res_pq = req_pq_request.result
     if not isinstance(res_pq, ResPQ):
-        raise TypeNotFoundError(type(res_pq).constructor_id)
+        raise AssertionError(res_pq)
 
     if res_pq.nonce != req_pq_request.nonce:
         raise SecurityError('Invalid nonce from server')
@@ -101,7 +101,7 @@ def _do_authentication(connection):
         raise SecurityError('Server DH params fail: TODO')
 
     if not isinstance(server_dh_params, ServerDHParamsOk):
-        raise TypeNotFoundError(type(server_dh_params).constructor_id)
+        raise AssertionError(server_dh_params)
 
     if server_dh_params.nonce != res_pq.nonce:
         raise SecurityError('Invalid nonce from server')
@@ -121,7 +121,7 @@ def _do_authentication(connection):
         reader.read(20)  # hash sum
         server_dh_inner = reader.tgread_object()
         if not isinstance(server_dh_inner, ServerDHInnerData):
-            raise TypeNotFoundError(server_dh_inner)
+            raise AssertionError(server_dh_inner)
 
     if server_dh_inner.nonce != res_pq.nonce:
         print(server_dh_inner.nonce, res_pq.nonce)
