@@ -472,8 +472,8 @@ class TLGenerator:
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
             builder.write("struct.pack('<I', {})".format(
-                ' | '.join('(1 << {} if {} else 0)'.format(
-                    flag.flag_index, 'self.{}'.format(flag.name)
+                ' | '.join('({} if {} else 0)'.format(
+                    1 << flag.flag_index, 'self.{}'.format(flag.name)
                 ) for flag in args if flag.is_flag)
             ))
 
@@ -550,8 +550,8 @@ class TLGenerator:
         was_flag = False
         if arg.is_flag:
             was_flag = True
-            builder.writeln('if (flags & (1 << {})) != 0:'.format(
-                arg.flag_index
+            builder.writeln('if flags & {}:'.format(
+                1 << arg.flag_index
             ))
             # Temporary disable .is_flag not to enter this if
             # again when calling the method recursively
