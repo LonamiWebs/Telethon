@@ -581,7 +581,7 @@ class TelegramClient(TelegramBareClient):
             return reply_to
 
         if isinstance(reply_to, TLObject) and \
-                type(reply_to).subclass_of_id == 0x790009e3:
+                type(reply_to).SUBCLASS_OF_ID == 0x790009e3:
             # hex(crc32(b'Message')) = 0x790009e3
             return reply_to.id
 

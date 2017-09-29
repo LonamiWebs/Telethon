@@ -5,7 +5,7 @@ from . import TLObject
 
 
 class GzipPacked(TLObject):
-    constructor_id = 0x3072cfa1
+    CONSTRUCTOR_ID = 0x3072cfa1
 
     def __init__(self, data):
         super().__init__()
@@ -29,7 +29,7 @@ class GzipPacked(TLObject):
 
     def to_bytes(self):
         # TODO Maybe compress level could be an option
-        return struct.pack('<I', GzipPacked.constructor_id) + \
+        return struct.pack('<I', GzipPacked.CONSTRUCTOR_ID) + \
                TLObject.serialize_bytes(gzip.compress(self.data))
 
     @staticmethod

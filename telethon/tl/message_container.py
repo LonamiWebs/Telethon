@@ -4,7 +4,7 @@ from . import TLObject
 
 
 class MessageContainer(TLObject):
-    constructor_id = 0x73f1f8dc
+    CONSTRUCTOR_ID = 0x73f1f8dc
 
     def __init__(self, messages):
         super().__init__()
@@ -13,7 +13,7 @@ class MessageContainer(TLObject):
 
     def to_bytes(self):
         return struct.pack(
-            '<Ii', MessageContainer.constructor_id, len(self.messages)
+            '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
         ) + b''.join(m.to_bytes() for m in self.messages)
 
     @staticmethod

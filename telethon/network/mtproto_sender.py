@@ -329,7 +329,7 @@ class MtProtoSender:
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string(),
-                    report_method=type(request).constructor_id
+                    report_method=type(request).CONSTRUCTOR_ID
                 )
             else:
                 error = rpc_message_to_error(

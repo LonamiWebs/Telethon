@@ -175,9 +175,10 @@ class TLGenerator:
         builder.writeln('class {}(TLObject):'.format(tlobject.class_name()))
 
         # Class-level variable to store its Telegram's constructor ID
-        builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
-        builder.writeln('subclass_of_id = {}'.format(
-            hex(crc32(tlobject.result.encode('ascii')))))
+        builder.writeln('CONSTRUCTOR_ID = {}'.format(hex(tlobject.id)))
+        builder.writeln('SUBCLASS_OF_ID = {}'.format(
+            hex(crc32(tlobject.result.encode('ascii'))))
+        )
         builder.writeln()
 
         # Flag arguments must go last

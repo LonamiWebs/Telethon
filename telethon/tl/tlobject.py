@@ -9,7 +9,6 @@ class TLObject:
         self.rpc_error = None
 
         # These should be overrode
-        self.constructor_id = 0
         self.content_related = False  # Only requests/functions/queries are
 
     # These should not be overrode

@@ -77,7 +77,7 @@ def get_input_peer(entity):
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputPeer')
 
-    if type(entity).subclass_of_id == 0xc91c90b6:  # crc32(b'InputPeer')
+    if type(entity).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
         return entity
 
     if isinstance(entity, User):
@@ -118,7 +118,7 @@ def get_input_channel(entity):
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputChannel')
 
-    if type(entity).subclass_of_id == 0x40f202fd:  # crc32(b'InputChannel')
+    if type(entity).SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
         return entity
 
     if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
@@ -135,7 +135,7 @@ def get_input_user(entity):
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputUser')
 
-    if type(entity).subclass_of_id == 0xe669bf46:  # crc32(b'InputUser')
+    if type(entity).SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser')
         return entity
 
     if isinstance(entity, User):
@@ -161,7 +161,7 @@ def get_input_document(document):
     if not isinstance(document, TLObject):
         _raise_cast_fail(document, 'InputDocument')
 
-    if type(document).subclass_of_id == 0xf33fdb68:  # crc32(b'InputDocument')
+    if type(document).SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
         return document
 
     if isinstance(document, Document):
@@ -184,7 +184,7 @@ def get_input_photo(photo):
     if not isinstance(photo, TLObject):
         _raise_cast_fail(photo, 'InputPhoto')
 
-    if type(photo).subclass_of_id == 0x846363e0:  # crc32(b'InputPhoto')
+    if type(photo).SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
         return photo
 
     if isinstance(photo, Photo):
@@ -201,7 +201,7 @@ def get_input_geo(geo):
     if not isinstance(geo, TLObject):
         _raise_cast_fail(geo, 'InputGeoPoint')
 
-    if type(geo).subclass_of_id == 0x430d225:  # crc32(b'InputGeoPoint')
+    if type(geo).SUBCLASS_OF_ID == 0x430d225:  # crc32(b'InputGeoPoint')
         return geo
 
     if isinstance(geo, GeoPoint):
@@ -228,7 +228,7 @@ def get_input_media(media, user_caption=None, is_photo=False):
     if not isinstance(media, TLObject):
         _raise_cast_fail(media, 'InputMedia')
 
-    if type(media).subclass_of_id == 0xfaf846f4:  # crc32(b'InputMedia')
+    if type(media).SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
         return media
 
     if isinstance(media, MessageMediaPhoto):
