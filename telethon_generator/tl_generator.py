@@ -392,15 +392,14 @@ class TLGenerator:
            a parameter upon creating the request. Returns False otherwise
         """
         if arg.is_vector:
-            builder.writeln(
-                'self.{0} = [{1}(_x) for _x in {0}]'
-                .format(arg.name, get_input_code)
-            )
-            pass
+            builder.write('self.{0} = [{1}(_x) for _x in {0}]'
+                          .format(arg.name, get_input_code))
         else:
-            builder.writeln(
-                'self.{0} = {1}({0})'.format(arg.name, get_input_code)
-            )
+            builder.write('self.{0} = {1}({0})'
+                          .format(arg.name, get_input_code))
+        builder.writeln(
+            ' if {} else None'.format(arg.name) if arg.is_flag else ''
+        )
 
     @staticmethod
     def get_file_name(tlobject, add_extension=False):
