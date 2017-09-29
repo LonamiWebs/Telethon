@@ -74,9 +74,6 @@ def _raise_cast_fail(entity, target):
 def get_input_peer(entity):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
-    if entity is None:
-        return None
-
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputPeer')
 
@@ -118,9 +115,6 @@ def get_input_peer(entity):
 
 def get_input_channel(entity):
     """Similar to get_input_peer, but for InputChannel's alone"""
-    if entity is None:
-        return None
-
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputChannel')
 
@@ -138,9 +132,6 @@ def get_input_channel(entity):
 
 def get_input_user(entity):
     """Similar to get_input_peer, but for InputUser's alone"""
-    if entity is None:
-        return None
-
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputUser')
 
@@ -167,9 +158,6 @@ def get_input_user(entity):
 
 def get_input_document(document):
     """Similar to get_input_peer, but for documents"""
-    if document is None:
-        return None
-
     if not isinstance(document, TLObject):
         _raise_cast_fail(document, 'InputDocument')
 
@@ -193,9 +181,6 @@ def get_input_document(document):
 
 def get_input_photo(photo):
     """Similar to get_input_peer, but for documents"""
-    if photo is None:
-        return None
-
     if not isinstance(photo, TLObject):
         _raise_cast_fail(photo, 'InputPhoto')
 
@@ -213,9 +198,6 @@ def get_input_photo(photo):
 
 def get_input_geo(geo):
     """Similar to get_input_peer, but for geo points"""
-    if geo is None:
-        return None
-
     if not isinstance(geo, TLObject):
         _raise_cast_fail(geo, 'InputGeoPoint')
 
@@ -243,9 +225,6 @@ def get_input_media(media, user_caption=None, is_photo=False):
        If the media is a file location and is_photo is known to be True,
        it will be treated as an InputMediaUploadedPhoto.
     """
-    if media is None:
-        return None
-
     if not isinstance(media, TLObject):
         _raise_cast_fail(media, 'InputMedia')
 
