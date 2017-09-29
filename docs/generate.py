@@ -199,14 +199,27 @@ def generate_index(folder, original_paths):
 def get_description(arg):
     """Generates a proper description for the given argument"""
     desc = []
+    otherwise = False
     if arg.can_be_inferred:
-        desc.append('If left to None, it will be inferred automatically.')
-    if arg.is_vector:
-        desc.append('A list must be supplied for this argument.')
-    if arg.is_generic:
-        desc.append('A different Request must be supplied for this argument.')
-    if arg.is_flag:
+        desc.append('If left unspecified, it will be inferred automatically.')
+        otherwise = True
+    elif arg.is_flag:
         desc.append('This argument can be omitted.')
+        otherwise = True
+
+    if arg.is_vector:
+        if arg.is_generic:
+            desc.append('A list of other Requests must be supplied.')
+        else:
+            desc.append('A list must be supplied.')
+    elif arg.is_generic:
+        desc.append('A different Request must be supplied for this argument.')
+    else:
+        otherwise = False  # Always reset to false if no other text is added
+
+    if otherwise:
+        desc.insert(1, 'Otherwise,')
+        desc[-1] = desc[-1][:1].lower() + desc[-1][1:]
 
     return ' '.join(desc)
 
