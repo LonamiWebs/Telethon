@@ -496,7 +496,9 @@ class TLGenerator:
 
         elif 'Bool' == arg.type:
             # 0x997275b5 if boolean else 0xbc799737
-            builder.write(r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'")
+            builder.write(
+                r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'".format(name)
+            )
 
         elif 'true' == arg.type:
             pass  # These are actually NOT written! Only used for flags
