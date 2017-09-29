@@ -13,6 +13,7 @@ from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
+from ..tl.functions.auth import LogOutRequest
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -41,10 +42,6 @@ class MtProtoSender:
         self._send_lock = RLock()
         self._recv_lock = RLock()
 
-        # Used when logging out, the only request that seems to use 'ack'
-        # TODO There might be a better way to handle msgs_ack requests
-        self.logging_out = False
-
     def connect(self):
         """Connects to the server"""
         self.connection.connect()
@@ -57,7 +54,6 @@ class MtProtoSender:
         self.connection.close()
         self._need_confirmation.clear()
         self._clear_all_pending()
-        self.logging_out = False
 
     # region Send and receive
 
@@ -201,13 +197,15 @@ class MtProtoSender:
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
             ack = reader.tgread_object()
-            # We only care about ack requests if we're logging out
-            if self.logging_out:
-                for msg_id in ack.msg_ids:
-                    r = self._pop_request(msg_id)
-                    if r:
-                        self._logger.debug('Message ack confirmed', r)
-                        r.confirm_received.set()
+            # Ignore every ack request *unless* when logging out, when it's
+            # when it seems to only make sense. We also need to set a non-None
+            # result since Telegram doesn't send the response for these.
+            for msg_id in ack.msg_ids:
+                r = self._pop_request_of_type(msg_id, LogOutRequest)
+                if r:
+                    r.result = True  # Telegram won't send this value
+                    r.confirm_received()
+                    self._logger.debug('Message ack confirmed', r)
 
             return True
 
@@ -240,6 +238,14 @@ class MtProtoSender:
         message = self._pending_receive.pop(msg_id, None)
         if message:
             return message.request
+
+    def _pop_request_of_type(self, msg_id, t):
+        """Pops a pending REQUEST from self._pending_receive if it matches
+           the given type, or returns None if it's not found/doesn't match.
+        """
+        message = self._pending_receive.get(msg_id, None)
+        if isinstance(message.request, t):
+            return self._pending_receive.pop(msg_id).request
 
     def _clear_all_pending(self):
         for r in self._pending_receive.values():

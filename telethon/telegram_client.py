@@ -392,19 +392,12 @@ class TelegramClient(TelegramBareClient):
     def log_out(self):
         """Logs out and deletes the current session.
            Returns True if everything went okay."""
-        # Special flag when logging out (so the ack request confirms it)
-        self._sender.logging_out = True
-
         try:
             self(LogOutRequest())
-            # The server may have already disconnected us, we still
-            # try to disconnect to make sure.
-            self.disconnect()
-        except (RPCError, ConnectionError):
-            # Something happened when logging out, restore the state back
-            self._sender.logging_out = False
+        except RPCError:
             return False
 
+        self.disconnect()
         self.session.delete()
         self.session = None
         return True
