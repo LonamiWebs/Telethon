@@ -374,6 +374,7 @@ class TelegramBareClient:
             timeout=self._sender.connection.get_timeout()
         )
         client.connect(_exported_auth=export_auth, _sync_updates=False)
+        client._authorized = True  # We exported the auth, so we got auth
         return client
 
     def _get_cdn_client(self, cdn_redirect):
@@ -396,7 +397,8 @@ class TelegramBareClient:
         #
         # This relies on the fact that TelegramBareClient._dc_options is
         # static and it won't be called from this DC (it would fail).
-        client.connect(cdn=True)  # Avoid invoking non-CDN specific methods
+        client.connect(_cdn=True)  # Avoid invoking non-CDN specific methods
+        client._authorized = self._authorized
         return client
 
     # endregion
@@ -481,8 +483,9 @@ class TelegramBareClient:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if self._reconnect_lock.locked():
-                # We are connecting and we don't want to reconnect there...
+            if not self._authorized or self._reconnect_lock.locked():
+                # Only attempt reconnecting if we're authorized and not
+                # reconnecting already.
                 raise
 
             self._logger.debug('Server disconnected us. Reconnecting and '
