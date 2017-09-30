@@ -67,7 +67,7 @@ class TelegramBareClient:
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
-                 process_updates=False,
+                 update_workers=None,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Refer to TelegramClient.__init__ for docs on this method"""
@@ -108,7 +108,7 @@ class TelegramBareClient:
 
         # This member will process updates if enabled.
         # One may change self.updates.enabled at any later point.
-        self.updates = UpdateState(process_updates)
+        self.updates = UpdateState(workers=update_workers)
 
         # Used on connection - the user may modify these and reconnect
         kwargs['app_version'] = kwargs.get('app_version', self.__version__)

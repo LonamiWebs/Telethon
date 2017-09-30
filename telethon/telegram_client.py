@@ -57,7 +57,7 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
-                 process_updates=False,
+                 update_workers=None,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
@@ -71,11 +71,11 @@ class TelegramClient(TelegramBareClient):
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
 
-           If 'process_updates' is set to True, incoming updates will be
-           processed and you must manually call 'self.updates.poll()' from
-           another thread to retrieve the saved update objects, or your
-           memory will fill with these. You may modify the value of
-           'self.updates.polling' at any later point.
+           The integer 'update_workers' represents depending on its value:
+             is None: Updates will *not* be stored in memory.
+             = 0: Another thread is responsible for calling self.updates.poll()
+             > 0: 'update_workers' background threads will be spawned, any
+                  any of them will invoke all the self.updates.handlers.
 
            Despite the value of 'process_updates', if you later call
            '.add_update_handler(...)', updates will also be processed
@@ -94,7 +94,7 @@ class TelegramClient(TelegramBareClient):
             session, api_id, api_hash,
             connection_mode=connection_mode,
             proxy=proxy,
-            process_updates=process_updates,
+            update_workers=update_workers,
             timeout=timeout
         )
 
