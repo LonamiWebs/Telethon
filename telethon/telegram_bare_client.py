@@ -154,7 +154,7 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, _exported_auth=None, _sync_updates=True):
+    def connect(self, _exported_auth=None, _sync_updates=True, cdn=False):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -170,6 +170,9 @@ class TelegramBareClient:
            will FAIL if the client is not connected to the user's
            native data center, raising a "UserMigrateError", and
            calling .disconnect() in the process.
+
+           If 'cdn' is False, methods that are not allowed on such data
+           centers won't be invoked.
         """
         self._main_thread_ident = threading.get_ident()
 
@@ -195,7 +198,7 @@ class TelegramBareClient:
                     self._init_connection(ImportAuthorizationRequest(
                         _exported_auth.id, _exported_auth.bytes
                     ))
-                else:
+                elif not cdn:
                     TelegramBareClient._dc_options = \
                         self._init_connection(GetConfigRequest()).dc_options
 
@@ -204,7 +207,7 @@ class TelegramBareClient:
                     _exported_auth.id, _exported_auth.bytes
                 ))
 
-            if TelegramBareClient._dc_options is None:
+            if TelegramBareClient._dc_options is None and not cdn:
                 TelegramBareClient._dc_options = \
                     self(GetConfigRequest()).dc_options
 
@@ -213,7 +216,7 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates:
+            if _sync_updates and not cdn:
                 try:
                     self.sync_updates()
                     self._set_connected_and_authorized()
@@ -347,6 +350,7 @@ class TelegramBareClient:
             export_auth = None  # Already bound with the auth key
         else:
             # TODO Add a lock, don't allow two threads to create an auth key
+            # (when calling .connect() if there wasn't a previous session).
             # for the same data center.
             dc = self._get_dc(dc_id)
 
@@ -369,6 +373,29 @@ class TelegramBareClient:
             timeout=self._sender.connection.get_timeout()
         )
         client.connect(_exported_auth=export_auth, _sync_updates=False)
+        return client
+
+    def _get_cdn_client(self, cdn_redirect):
+        """Similar to ._get_exported_client, but for CDNs"""
+        session = self._exported_sessions.get(cdn_redirect.dc_id)
+        if not session:
+            dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
+            session = Session(self.session)
+            session.server_address = dc.ip_address
+            session.port = dc.port
+            self._exported_sessions[cdn_redirect.dc_id] = session
+
+        client = TelegramBareClient(
+            session, self.api_id, self.api_hash,
+            proxy=self._sender.connection.conn.proxy,
+            timeout=self._sender.connection.get_timeout()
+        )
+
+        # This will make use of the new RSA keys for this specific CDN.
+        #
+        # This relies on the fact that TelegramBareClient._dc_options is
+        # static and it won't be called from this DC (it would fail).
+        client.connect(cdn=True)  # Avoid invoking non-CDN specific methods
         return client
 
     # endregion
@@ -651,7 +678,7 @@ class TelegramBareClient:
                         if isinstance(result, FileCdnRedirect):
                             cdn_decrypter, result = \
                                 CdnDecrypter.prepare_decrypter(
-                                    client, TelegramBareClient, result
+                                    client, self._get_cdn_client(result), result
                                 )
 
                 except FileMigrateError as e:
