@@ -1,4 +1,5 @@
 import logging
+import threading
 from collections import deque
 from datetime import datetime
 from threading import RLock, Event, Thread
@@ -41,6 +42,9 @@ class UpdateState:
 
         self._updates_available.wait()
         with self._updates_lock:
+            if not self._updates_available.is_set():
+                return
+
             update = self._updates.popleft()
             if not self._updates:
                 self._updates_available.clear()
