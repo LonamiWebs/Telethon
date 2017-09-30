@@ -10,7 +10,7 @@ from ..errors import CdnFileTamperedError
 class CdnDecrypter:
     """Used when downloading a file results in a 'FileCdnRedirect' to
        both prepare the redirect, decrypt the file as it downloads, and
-       ensure the file hasn't been tampered.
+       ensure the file hasn't been tampered. https://core.telegram.org/cdn
     """
     def __init__(self, cdn_client, file_token, cdn_aes, cdn_file_hashes):
         self.client = cdn_client
@@ -19,46 +19,26 @@ class CdnDecrypter:
         self.cdn_file_hashes = cdn_file_hashes
 
     @staticmethod
-    def prepare_decrypter(client, client_cls, cdn_redirect):
+    def prepare_decrypter(client, cdn_client, cdn_redirect):
         """Prepares a CDN decrypter, returning (decrypter, file data).
-           'client' should be the original TelegramBareClient that
-           tried to download the file.
-
-           'client_cls' should be the class of the TelegramBareClient.
+           'client' should be an existing client not connected to a CDN.
+           'cdn_client' should be an already-connected TelegramBareClient
+           with the auth key already created.
         """
-        # TODO Avoid the need for 'client_cls=TelegramBareClient'
-        # https://core.telegram.org/cdn
         cdn_aes = AESModeCTR(
             key=cdn_redirect.encryption_key,
             # 12 first bytes of the IV..4 bytes of the offset (0, big endian)
             iv=cdn_redirect.encryption_iv[:12] + bytes(4)
         )
 
-        # Create a new client on said CDN
-        dc = client._get_dc(cdn_redirect.dc_id, cdn=True)
-        session = Session(client.session)
-        session.server_address = dc.ip_address
-        session.port = dc.port
-        cdn_client = client_cls(  # Avoid importing TelegramBareClient
-            session, client.api_id, client.api_hash,
-            timeout=client._sender.connection.get_timeout()
-        )
-        # This will make use of the new RSA keys for this specific CDN.
-        #
         # We assume that cdn_redirect.cdn_file_hashes are ordered by offset,
         # and that there will be enough of these to retrieve the whole file.
-        #
-        # This relies on the fact that TelegramBareClient._dc_options is
-        # static and it won't be called from this DC (it would fail).
-        cdn_client.connect()
-
-        # CDN client is ready, create the resulting CdnDecrypter
         decrypter = CdnDecrypter(
             cdn_client, cdn_redirect.file_token,
             cdn_aes, cdn_redirect.cdn_file_hashes
         )
 
-        cdn_file = client(GetCdnFileRequest(
+        cdn_file = cdn_client(GetCdnFileRequest(
             file_token=cdn_redirect.file_token,
             offset=cdn_redirect.cdn_file_hashes[0].offset,
             limit=cdn_redirect.cdn_file_hashes[0].limit

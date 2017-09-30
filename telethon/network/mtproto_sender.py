@@ -1,7 +1,6 @@
 import gzip
 import logging
 import struct
-from threading import RLock
 
 from .. import helpers as utils
 from ..crypto import AES
@@ -20,7 +19,12 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender
-       (https://core.telegram.org/mtproto/description)
+       (https://core.telegram.org/mtproto/description).
+
+       Note that this class is not thread-safe, and calling send/receive
+       from two or more threads at the same time is undefined behaviour.
+       Rationale: a new connection should be spawned to send/receive requests
+                  in parallel, so thread-safety (hence locking) isn't needed.
     """
 
     def __init__(self, session, connection):
@@ -37,11 +41,6 @@ class MtProtoSender:
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
 
-        # Sending and receiving are independent, but two threads cannot
-        # send or receive at the same time no matter what.
-        self._send_lock = RLock()
-        self._recv_lock = RLock()
-
     def connect(self):
         """Connects to the server"""
         self.connection.connect()
@@ -54,6 +53,10 @@ class MtProtoSender:
         self.connection.close()
         self._need_confirmation.clear()
         self._clear_all_pending()
+
+    def clone(self):
+        """Creates a copy of this MtProtoSender as a new connection"""
+        return MtProtoSender(self.session, self.connection.clone())
 
     # region Send and receive
 
@@ -93,19 +96,18 @@ class MtProtoSender:
            Any unhandled object (likely updates) will be passed to
            update_state.process(TLObject).
         """
-        with self._recv_lock:
-            try:
-                body = self.connection.recv()
-            except (BufferError, InvalidChecksumError):
-                # TODO BufferError, we should spot the cause...
-                # "No more bytes left"; something wrong happened, clear
-                # everything to be on the safe side, or:
-                #
-                # "This packet should be skipped"; since this may have
-                # been a result for a request, invalidate every request
-                # and just re-invoke them to avoid problems
-                self._clear_all_pending()
-                return
+        try:
+            body = self.connection.recv()
+        except (BufferError, InvalidChecksumError):
+            # TODO BufferError, we should spot the cause...
+            # "No more bytes left"; something wrong happened, clear
+            # everything to be on the safe side, or:
+            #
+            # "This packet should be skipped"; since this may have
+            # been a result for a request, invalidate every request
+            # and just re-invoke them to avoid problems
+            self._clear_all_pending()
+            return
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
@@ -128,8 +130,7 @@ class MtProtoSender:
         cipher_text = AES.encrypt_ige(plain_text, key, iv)
 
         result = key_id + msg_key + cipher_text
-        with self._send_lock:
-            self.connection.send(result)
+        self.connection.send(result)
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
