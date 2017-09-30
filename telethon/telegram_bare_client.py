@@ -201,13 +201,16 @@ class TelegramBareClient:
                     self(GetConfigRequest()).dc_options
 
             # Connection was successful! Try syncing the update state
+            # IF we don't have an exported authorization (hence we're
+            # not in our NATIVE data center or we'd get UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            try:
-                self.sync_updates()
-                self._set_connected_and_authorized()
-            except UnauthorizedError:
-                self._authorized = False
+            if not exported_auth:
+                try:
+                    self.sync_updates()
+                    self._set_connected_and_authorized()
+                except UnauthorizedError:
+                    self._authorized = False
 
             return True
 
