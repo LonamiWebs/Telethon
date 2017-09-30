@@ -497,11 +497,10 @@ class TelegramBareClient:
                     sleep(0.1)  # Retry forever until we can send the request
 
         except ServerError as e:
-            # Telegram is having some issues, sleep a tiny bit and retry
+            # Telegram is having some issues, just retry
             self._logger.debug(
                 '[ERROR] Telegram is having some internal issues', e
             )
-            sleep(2)
 
         except FloodWaitError:
             sender.disconnect()
