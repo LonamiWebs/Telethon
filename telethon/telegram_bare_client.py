@@ -91,6 +91,10 @@ class TelegramBareClient:
         if self.api_id < 20:  # official apps must use obfuscated
             connection_mode = ConnectionMode.TCP_OBFUSCATED
 
+        # This is the main sender, which will be used from the thread
+        # that calls .connect(). Every other thread will spawn a new
+        # temporary connection. The connection on this one is always
+        # kept open so Telegram can send us updates.
         self._sender = MtProtoSender(self.session, Connection(
             self.session.server_address, self.session.port,
             mode=connection_mode, proxy=proxy, timeout=timeout
@@ -370,7 +374,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, *requests, call_receive=True, retries=5):
+    def invoke(self, *requests, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
@@ -382,9 +386,6 @@ class TelegramBareClient:
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
             raise ValueError('You can only invoke requests, not types!')
-
-        if retries <= 0:
-            raise ValueError('Number of retries reached 0.')
 
         # Determine the sender to be used (main or a new connection)
         # TODO Polish this so it's nicer
@@ -401,6 +402,25 @@ class TelegramBareClient:
             sender = MtProtoSender(self.session, conn)
             sender.connect()
 
+        # We should call receive from this thread if there's no background
+        # thread reading or if the server disconnected us and we're trying
+        # to reconnect. This is because the read thread may either be
+        # locked also trying to reconnect or we may be said thread already.
+        call_receive = not on_main_thread or \
+                       self._recv_thread is None or self._connect_lock.locked()
+        try:
+            for _ in range(retries):
+                result = self._invoke(sender, call_receive, *requests)
+                if result:
+                    return result
+
+            if retries <= 0:
+                raise ValueError('Number of retries reached 0.')
+        finally:
+            if sender != self._sender:
+                sender.disconnect()  # Close temporary connections
+
+    def _invoke(self, sender, call_receive, *requests):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -408,13 +428,6 @@ class TelegramBareClient:
                 x.rpc_error = None
 
             sender.send(*requests)
-
-            # We should call receive from this thread if there's no background
-            # thread reading or if the server disconnected us and we're trying
-            # to reconnect. This is because the read thread may either be
-            # locked also trying to reconnect or we may be said thread already.
-            call_receive = not on_main_thread or \
-                self._recv_thread is None or self._connect_lock.locked()
 
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
@@ -441,9 +454,7 @@ class TelegramBareClient:
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self.invoke(
-                *requests, call_receive=call_receive, retries=(retries - 1)
-            )
+            return self._invoke(sender, call_receive, *requests)
 
         except TimeoutError:
             pass  # We will just retry
@@ -477,10 +488,8 @@ class TelegramBareClient:
         except StopIteration:
             if any(x.result is None for x in requests):
                 # "A container may only be accepted or
-                #  rejected by the other party as a whole."
-                return self.invoke(
-                    *requests, call_receive=call_receive, retries=(retries - 1)
-                )
+                # rejected by the other party as a whole."
+                return None
             elif len(requests) == 1:
                 return requests[0].result
             else:
