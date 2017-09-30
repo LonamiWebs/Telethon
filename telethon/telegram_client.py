@@ -59,6 +59,7 @@ class TelegramClient(TelegramBareClient):
                  proxy=None,
                  update_workers=None,
                  timeout=timedelta(seconds=5),
+                 spawn_read_thread=True,
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
 
@@ -77,9 +78,15 @@ class TelegramClient(TelegramBareClient):
              > 0: 'update_workers' background threads will be spawned, any
                   any of them will invoke all the self.updates.handlers.
 
-           Despite the value of 'process_updates', if you later call
-           '.add_update_handler(...)', updates will also be processed
-           and the update objects will be passed to the handlers you added.
+           If 'spawn_read_thread', a background thread will be started once
+           an authorized user has been logged in to Telegram to read items
+           (such as updates and responses) from the network as soon as they
+           occur, which will speed things up.
+
+           If you don't want to spawn any additional threads, pending updates
+           will be read and processed accordingly after invoking a request
+           and not immediately. This is useful if you don't care about updates
+           at all and have set 'update_workers=None'.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -95,6 +102,7 @@ class TelegramClient(TelegramBareClient):
             connection_mode=connection_mode,
             proxy=proxy,
             update_workers=update_workers,
+            spawn_read_thread=spawn_read_thread,
             timeout=timeout
         )
 

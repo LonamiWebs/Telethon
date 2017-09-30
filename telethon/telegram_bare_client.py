@@ -68,6 +68,7 @@ class TelegramBareClient:
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
                  update_workers=None,
+                 spawn_read_thread=True,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Refer to TelegramClient.__init__ for docs on this method"""
@@ -131,7 +132,9 @@ class TelegramBareClient:
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
 
-        # Constantly read for results and updates from within the main client
+        # Constantly read for results and updates from within the main client,
+        # if the user has left enabled such option.
+        self._spawn_read_thread = spawn_read_thread
         self._recv_thread = None
 
         # Identifier of the main thread (the one that called .connect()).
@@ -704,7 +707,7 @@ class TelegramBareClient:
 
     def _set_connected_and_authorized(self):
         self._authorized = True
-        if self._recv_thread is None:
+        if self._spawn_read_thread and self._recv_thread is None:
             self._recv_thread = threading.Thread(
                 name='ReadThread', daemon=True,
                 target=self._recv_thread_impl
