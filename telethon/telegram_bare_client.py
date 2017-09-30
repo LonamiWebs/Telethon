@@ -68,7 +68,7 @@ class TelegramBareClient:
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
                  update_workers=None,
-                 spawn_read_thread=True,
+                 spawn_read_thread=False,
                  timeout=timedelta(seconds=5),
                  **kwargs):
         """Refer to TelegramClient.__init__ for docs on this method"""
