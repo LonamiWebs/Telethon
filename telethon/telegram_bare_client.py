@@ -154,7 +154,7 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, _exported_auth=None, _sync_updates=True, cdn=False):
+    def connect(self, _exported_auth=None, _sync_updates=True, _cdn=False):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -171,7 +171,7 @@ class TelegramBareClient:
            native data center, raising a "UserMigrateError", and
            calling .disconnect() in the process.
 
-           If 'cdn' is False, methods that are not allowed on such data
+           If '_cdn' is False, methods that are not allowed on such data
            centers won't be invoked.
         """
         self._main_thread_ident = threading.get_ident()
@@ -198,7 +198,7 @@ class TelegramBareClient:
                     self._init_connection(ImportAuthorizationRequest(
                         _exported_auth.id, _exported_auth.bytes
                     ))
-                elif not cdn:
+                elif not _cdn:
                     TelegramBareClient._dc_options = \
                         self._init_connection(GetConfigRequest()).dc_options
 
@@ -207,7 +207,7 @@ class TelegramBareClient:
                     _exported_auth.id, _exported_auth.bytes
                 ))
 
-            if TelegramBareClient._dc_options is None and not cdn:
+            if TelegramBareClient._dc_options is None and not _cdn:
                 TelegramBareClient._dc_options = \
                     self(GetConfigRequest()).dc_options
 
@@ -216,7 +216,7 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates and not cdn:
+            if _sync_updates and not _cdn:
                 try:
                     self.sync_updates()
                     self._set_connected_and_authorized()
@@ -231,7 +231,8 @@ class TelegramBareClient:
             self.disconnect()
             return self.connect(
                 _exported_auth=_exported_auth,
-                _sync_updates=_sync_updates
+                _sync_updates=_sync_updates,
+                _cdn=_cdn
             )
 
         except (RPCError, ConnectionError) as error:
