@@ -373,12 +373,6 @@ class TelegramBareClient:
            The invoke will be retried up to 'retries' times before raising
            ValueError().
         """
-        # This is only valid when the read thread is reconnecting,
-        # that is, the connection lock is locked.
-        on_read_thread = self._on_read_thread()
-        if on_read_thread and not self._connect_lock.locked():
-            return  # Just ignore, we would be raising and crashing the thread
-
         # Any error from a background thread will be "posted" and checked here
         self.updates.check_error()
 
@@ -392,7 +386,7 @@ class TelegramBareClient:
         # Determine the sender to be used (main or a new connection)
         # TODO Polish this so it's nicer
         on_main_thread = threading.get_ident() == self._main_thread_ident
-        if on_main_thread or on_read_thread:
+        if on_main_thread or self._on_read_thread():
             sender = self._sender
         else:
             conn = Connection(
