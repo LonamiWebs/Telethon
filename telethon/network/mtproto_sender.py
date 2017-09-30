@@ -54,6 +54,10 @@ class MtProtoSender:
         self._need_confirmation.clear()
         self._clear_all_pending()
 
+    def clone(self):
+        """Creates a copy of this MtProtoSender as a new connection"""
+        return MtProtoSender(self.session, self.connection.clone())
+
     # region Send and receive
 
     def send(self, *requests):

@@ -130,6 +130,13 @@ class Connection:
     def close(self):
         self.conn.close()
 
+    def clone(self):
+        """Creates a copy of this Connection"""
+        return Connection(self.ip, self.port,
+                          mode=self._mode,
+                          proxy=self.conn.proxy,
+                          timeout=self.conn.timeout)
+
     # region Receive message implementations
 
     def recv(self):

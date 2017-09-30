@@ -388,18 +388,11 @@ class TelegramBareClient:
             raise ValueError('You can only invoke requests, not types!')
 
         # Determine the sender to be used (main or a new connection)
-        # TODO Polish this so it's nicer
         on_main_thread = threading.get_ident() == self._main_thread_ident
         if on_main_thread or self._on_read_thread():
             sender = self._sender
         else:
-            conn = Connection(
-                self.session.server_address, self.session.port,
-                mode=self._sender.connection._mode,
-                proxy=self._sender.connection.conn.proxy,
-                timeout=self._sender.connection.get_timeout()
-            )
-            sender = MtProtoSender(self.session, conn)
+            sender = self._sender.clone()
             sender.connect()
 
         # We should call receive from this thread if there's no background
