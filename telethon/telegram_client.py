@@ -103,7 +103,8 @@ class TelegramClient(TelegramBareClient):
             proxy=proxy,
             update_workers=update_workers,
             spawn_read_thread=spawn_read_thread,
-            timeout=timeout
+            timeout=timeout,
+            **kwargs
         )
 
         # Some fields to easy signing in
