@@ -79,11 +79,14 @@ class UpdateState:
         """Raises "StopIterationException" on the worker threads to stop them,
            and also clears all of them off the list
         """
-        with self._updates_lock:
-            # Insert at the beginning so the very next poll causes an error
-            # TODO Should this reset the pts and such?
-            self._updates.appendleft(StopIteration())
-            self._updates_available.set()
+        if self._workers:
+            with self._updates_lock:
+                # Insert at the beginning so the very next poll causes an error
+                # on all the worker threads
+                # TODO Should this reset the pts and such?
+                for _ in range(self._workers):
+                    self._updates.appendleft(StopIteration())
+                self._updates_available.set()
 
         for t in self._worker_threads:
             t.join()
