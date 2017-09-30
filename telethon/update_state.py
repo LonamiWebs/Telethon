@@ -55,7 +55,7 @@ class UpdateState:
                 self._updates_available.clear()
 
         if isinstance(update, Exception):
-            raise update  # Some error was set through .set_error()
+            raise update  # Some error was set through (surely StopIteration)
 
         return update
 
@@ -79,7 +79,12 @@ class UpdateState:
         """Raises "StopIterationException" on the worker threads to stop them,
            and also clears all of them off the list
         """
-        self.set_error(StopIteration())
+        with self._updates_lock:
+            # Insert at the beginning so the very next poll causes an error
+            # TODO Should this reset the pts and such?
+            self._updates.appendleft(StopIteration())
+            self._updates_available.set()
+
         for t in self._worker_threads:
             t.join()
 
@@ -115,21 +120,6 @@ class UpdateState:
                 self._logger.debug(
                     '[ERROR] Unhandled exception on worker {}'.format(wid), e
                 )
-
-    def set_error(self, error):
-        """Sets an error, so that the next call to .poll() will raise it.
-           Can be (and is) used to pass exceptions between threads.
-        """
-        with self._updates_lock:
-            # Insert at the beginning so the very next poll causes an error
-            # TODO Should this reset the pts and such?
-            self._updates.appendleft(error)
-            self._updates_available.set()
-
-    def check_error(self):
-        with self._updates_lock:
-            if self._updates and isinstance(self._updates[0], Exception):
-                raise self._updates.popleft()
 
     def process(self, update):
         """Processes an update object. This method is normally called by

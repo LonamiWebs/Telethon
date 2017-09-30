@@ -411,9 +411,6 @@ class TelegramBareClient:
            The invoke will be retried up to 'retries' times before raising
            ValueError().
         """
-        # Any error from a background thread will be "posted" and checked here
-        self.updates.check_error()
-
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
             raise ValueError('You can only invoke requests, not types!')
@@ -775,9 +772,16 @@ class TelegramBareClient:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever, this is instant messaging
 
-            except Exception as e:
+            except Exception as error:
                 # Unknown exception, pass it to the main thread
-                self.updates.set_error(e)
+                self._logger.debug(
+                    '[ERROR] Unknown error on the read thread, please report',
+                    error
+                )
+                # If something strange happens we don't want to enter an
+                # infinite loop where all we do is raise an exception, so
+                # add a little sleep to avoid the CPU usage going mad.
+                sleep(0.1)
                 break
 
         self._recv_thread = None
