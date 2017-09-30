@@ -118,8 +118,9 @@ class TelegramBareClient:
         # Used on connection - the user may modify these and reconnect
         kwargs['app_version'] = kwargs.get('app_version', self.__version__)
         for name, value in kwargs.items():
-            if hasattr(self.session, name):
-                setattr(self.session, name, value)
+            if not hasattr(self.session, name):
+                raise ValueError('Unknown named parameter', name)
+            setattr(self.session, name, value)
 
         # Despite the state of the real connection, keep track of whether
         # the user has explicitly called .connect() or .disconnect() here.
