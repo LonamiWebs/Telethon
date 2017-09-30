@@ -63,7 +63,7 @@ class UpdateState:
     def check_error(self):
         with self._updates_lock:
             if self._updates and isinstance(self._updates[0], Exception):
-                raise self._updates.pop()
+                raise self._updates.popleft()
 
     def process(self, update):
         """Processes an update object. This method is normally called by
