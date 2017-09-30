@@ -10,7 +10,7 @@ from time import sleep
 from . import helpers as utils
 from .crypto import rsa, CdnDecrypter
 from .errors import (
-    RPCError, BrokenAuthKeyError,
+    RPCError, BrokenAuthKeyError, ServerError,
     FloodWaitError, FileMigrateError, TypeNotFoundError,
     UnauthorizedError, PhoneMigrateError, NetworkMigrateError, UserMigrateError
 )
@@ -495,6 +495,13 @@ class TelegramBareClient:
             else:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
+
+        except ServerError as e:
+            # Telegram is having some issues, sleep a tiny bit and retry
+            self._logger.debug(
+                '[ERROR] Telegram is having some internal issues', e
+            )
+            sleep(2)
 
         except FloodWaitError:
             sender.disconnect()
