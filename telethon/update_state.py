@@ -10,6 +10,8 @@ class UpdateState:
     """Used to hold the current state of processed updates.
        To retrieve an update, .poll() should be called.
     """
+    WORKER_POLL_TIMEOUT = 5.0  # Avoid waiting forever on the workers
+
     def __init__(self, workers=None):
         """
         :param workers: This integer parameter has three possible cases:
@@ -36,9 +38,14 @@ class UpdateState:
         """Returns True if a call to .poll() won't lock"""
         return self._updates_available.is_set()
 
-    def poll(self):
-        """Polls an update or blocks until an update object is available"""
-        self._updates_available.wait()
+    def poll(self, timeout=None):
+        """Polls an update or blocks until an update object is available.
+           If 'timeout is not None', it should be a floating point value,
+           and the method will 'return None' if waiting times out.
+        """
+        if not self._updates_available.wait(timeout=timeout):
+            return
+
         with self._updates_lock:
             if not self._updates_available.is_set():
                 return
@@ -96,10 +103,11 @@ class UpdateState:
     def _worker_loop(self, wid):
         while True:
             try:
-                update = self.poll()
+                update = self.poll(timeout=UpdateState.WORKER_POLL_TIMEOUT)
                 # TODO Maybe people can add different handlers per update type
-                for handler in self.handlers:
-                    handler(update)
+                if update:
+                    for handler in self.handlers:
+                        handler(update)
             except StopIteration:
                 break
             except Exception as e:
