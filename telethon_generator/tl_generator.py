@@ -301,6 +301,26 @@ class TLGenerator:
 
         # Write the .to_bytes() function
         builder.writeln('def to_bytes(self):')
+
+        # Some objects require more than one flag parameter to be set
+        # at the same time. In this case, add an assertion.
+        repeated_args = defaultdict(list)
+        for arg in tlobject.args:
+            if arg.is_flag:
+                repeated_args[arg.flag_index].append(arg)
+
+        for args in repeated_args.values():
+            if len(args) > 1:
+                cnd1 = ('self.{} is None'.format(a.name) for a in args)
+                cnd2 = ('self.{} is not None'.format(a.name) for a in args)
+                builder.writeln(
+                    "assert ({}) or ({}), '{} parameters must all "
+                    "be None or neither be None'".format(
+                        ' and '.join(cnd1), ' and '.join(cnd2),
+                        ', '.join(a.name for a in args)
+                    )
+                )
+
         builder.writeln("return b''.join((")
         builder.current_indent += 1
 
