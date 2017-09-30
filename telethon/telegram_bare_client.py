@@ -104,7 +104,7 @@ class TelegramBareClient:
 
         # Two threads may be calling reconnect() when the connection is lost,
         # we only want one to actually perform the reconnection.
-        self._connect_lock = Lock()
+        self._reconnect_lock = Lock()
 
         # Cache "exported" sessions as 'dc_id: Session' not to recreate
         # them all the time since generating a new key is a relatively
@@ -287,7 +287,7 @@ class TelegramBareClient:
         """
         if new_dc is None:
             # Assume we are disconnected due to some error, so connect again
-            with self._connect_lock:
+            with self._reconnect_lock:
                 # Another thread may have connected again, so check that first
                 if not self.is_connected():
                     return self.connect()
@@ -428,8 +428,8 @@ class TelegramBareClient:
         # thread reading or if the server disconnected us and we're trying
         # to reconnect. This is because the read thread may either be
         # locked also trying to reconnect or we may be said thread already.
-        call_receive = not on_main_thread or \
-                       self._recv_thread is None or self._connect_lock.locked()
+        call_receive = not on_main_thread or self._recv_thread is None \
+                       or self._reconnect_lock.locked()
         try:
             for _ in range(retries):
                 result = self._invoke(sender, call_receive, *requests)
@@ -481,7 +481,7 @@ class TelegramBareClient:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if self._connect_lock.locked():
+            if self._reconnect_lock.locked():
                 # We are connecting and we don't want to reconnect there...
                 raise
 
