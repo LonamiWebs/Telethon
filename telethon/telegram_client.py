@@ -3,9 +3,7 @@ import re
 from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
-
-from .tl.functions import channels
-from .tl.functions import messages
+from pprint import pprint
 
 try:
     import socks
@@ -34,6 +32,10 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest
 )
+
+from .tl.functions import channels
+from .tl.functions import messages
+
 from .tl.functions.users import (
     GetUsersRequest
 )
@@ -366,12 +368,12 @@ class TelegramClient(TelegramBareClient):
         :param entity: ID or Entity of the chat
         :param list message_ids: ID(s) or `Message` object(s) of the message(s) to delete
         :param revoke: Delete the message for everyone or just this client
-        :returns messages.AffectedMessages: Messages affected by deletion.
+        :returns .messages.AffectedMessages: Messages affected by deletion.
         """
 
         if not isinstance(message_ids, list):
             message_ids = [message_ids]
-        message_ids = [m.id if isinstance(m, Message) else m for m in message_ids]
+        message_ids = [m.id if isinstance(m, Message) else int(m) for m in message_ids]
 
         if entity is None:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))

@@ -101,3 +101,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Developer tests
+test.py
