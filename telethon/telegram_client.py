@@ -28,10 +28,13 @@ from .tl.functions.contacts import (
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest
+    SendMessageRequest, GetChatsRequest
 )
 from .tl.functions.users import (
     GetUsersRequest
+)
+from .tl.functions.channels import (
+    GetChannelsRequest
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
@@ -39,8 +42,8 @@ from .tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
-    UpdateNewMessage, UpdateShortSentMessage
-)
+    UpdateNewMessage, UpdateShortSentMessage,
+    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
 from .utils import find_user_or_chat, get_extension
 
@@ -811,13 +814,16 @@ class TelegramClient(TelegramBareClient):
     @lru_cache()
     def get_entity(self, entity):
         """Turns an entity into a valid Telegram user or chat.
-           If "entity" is a string, and starts with '+', or if
-           it is an integer value, it will be resolved as if it
+           If "entity" is a string which can be converted to an integer,
+           or if it starts with '+' it will be resolved as if it
            were a phone number.
 
            If "entity" is a string and doesn't start with '+', or
            it starts with '@', it will be resolved from the username.
            If no exact match is returned, an error will be raised.
+
+           If "entity" is an integer or a "Peer", its information will
+           be returned through a call to self.get_input_peer(entity).
 
            If the entity is neither, and it's not a TLObject, an
            error will be raised.
@@ -825,14 +831,28 @@ class TelegramClient(TelegramBareClient):
         # TODO Maybe cache both the contacts and the entities.
         # If an user cannot be found, force a cache update through
         # a public method (since users may change their username)
+        input_entity = None
         if isinstance(entity, TLObject):
-            return entity
+            # crc32(b'InputPeer') and crc32(b'Peer')
+            if type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687):
+                input_entity = self.get_input_entity(entity)
+            else:
+                # TODO Don't assume it's a valid entity
+                return entity
 
-        if isinstance(entity, int):
-            entity = '+{}'.format(entity)  # Turn it into a phone-like str
+        elif isinstance(entity, int):
+            input_entity = self.get_input_entity(entity)
+
+        if input_entity:
+            if isinstance(input_entity, InputPeerUser):
+                return self(GetUsersRequest([input_entity]))[0]
+            elif isinstance(input_entity, InputPeerChat):
+                return self(GetChatsRequest([input_entity.chat_id]))[0]
+            elif isinstance(input_entity, InputPeerChannel):
+                return self(GetChannelsRequest([input_entity]))[0]
 
         if isinstance(entity, str):
-            if entity.startswith('+'):
+            if entity.startswith('+') or entity.isdigit():
                 contacts = self(GetContactsRequest(0))
                 try:
                     stripped_phone = entity.strip('+')
@@ -861,6 +881,49 @@ class TelegramClient(TelegramBareClient):
 
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
+        )
+
+    def get_input_entity(self, peer):
+        """Gets the input entity given its PeerUser, PeerChat, PeerChannel.
+           If no Peer class is used, peer is assumed to be the integer ID
+           of an User.
+
+           If this Peer hasn't been seen before by the library, all dialogs
+           will loaded, and their entities saved to the session file.
+
+           If even after
+        """
+        is_peer = False
+        if isinstance(peer, int):
+            peer = PeerUser(peer)
+            is_peer = True
+
+        elif isinstance(peer, TLObject):
+            if type(peer).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+                return peer
+            is_peer = type(peer).SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
+
+        if not is_peer:
+            raise ValueError(
+                'Cannot turn "{}" into an input entity.'.format(peer)
+            )
+
+        try:
+            return self.session.get_input_entity(peer)
+        except KeyError:
+            pass
+
+        if self.session.save_entities:
+            # Not found, look in the dialogs (this will save the users)
+            self.get_dialogs(limit=None)
+            try:
+                return self.session.get_input_entity(peer)
+            except KeyError:
+                pass
+
+        raise ValueError(
+            'Could not find the input entity corresponding to "{}".'
+            'Make sure you have encountered this peer before.'.format(peer)
         )
 
     # endregion
