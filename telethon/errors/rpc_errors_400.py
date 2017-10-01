@@ -37,6 +37,15 @@ class ChannelInvalidError(BadRequestError):
         )
 
 
+class ChannelPrivateError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The channel specified is private and you lack permission to '
+            'access it. Another reason may be that you were banned from it.'
+        )
+
+
 class ChatAdminRequiredError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
@@ -399,6 +408,7 @@ rpc_errors_400_all = {
     'BOT_METHOD_INVALID': BotMethodInvalidError,
     'CDN_METHOD_INVALID': CdnMethodInvalidError,
     'CHANNEL_INVALID': ChannelInvalidError,
+    'CHANNEL_PRIVATE': ChannelPrivateError,
     'CHAT_ADMIN_REQUIRED': ChatAdminRequiredError,
     'CHAT_ID_INVALID': ChatIdInvalidError,
     'CONNECTION_LAYER_INVALID': ConnectionLayerInvalidError,
