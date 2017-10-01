@@ -315,7 +315,7 @@ class TelegramClient(TelegramBareClient):
            If 'reply_to' is set to either a message or a message ID,
            the sent message will be replying to such message.
         """
-        entity = self.get_entity(entity)
+        entity = self.get_input_entity(entity)
         request = SendMessageRequest(
             peer=entity,
             message=message,
@@ -377,7 +377,7 @@ class TelegramClient(TelegramBareClient):
            some performance loss.
         """
         result = self(GetHistoryRequest(
-            peer=self.get_entity(entity),
+            peer=self.get_input_entity(entity),
             limit=limit,
             offset_date=offset_date,
             offset_id=offset_id,
@@ -423,7 +423,7 @@ class TelegramClient(TelegramBareClient):
                 max_id = messages.id
 
         return self(ReadHistoryRequest(
-            peer=self.get_entity(entity),
+            peer=self.get_input_entity(entity),
             max_id=max_id
         ))
 
@@ -526,7 +526,7 @@ class TelegramClient(TelegramBareClient):
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
         self(SendMediaRequest(
-            peer=self.get_entity(entity),
+            peer=self.get_input_entity(entity),
             media=media,
             reply_to_msg_id=self._get_reply_to(reply_to)
         ))
