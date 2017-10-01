@@ -907,8 +907,8 @@ class TelegramClient(TelegramBareClient):
            If even after
         """
         if isinstance(peer, str):
-            # Let .get_entity resolve the username or phone
-            return utils.get_input_peer(self.get_entity(peer))
+            # Let .get_entity resolve the username or phone (full entity)
+            peer = self.get_entity(peer)
 
         is_peer = False
         if isinstance(peer, int):
@@ -916,9 +916,12 @@ class TelegramClient(TelegramBareClient):
             is_peer = True
 
         elif isinstance(peer, TLObject):
-            if type(peer).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-                return peer
             is_peer = type(peer).SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
+            if not is_peer:
+                try:
+                    return utils.get_input_peer(peer)
+                except ValueError:
+                    pass
 
         if not is_peer:
             raise ValueError(
