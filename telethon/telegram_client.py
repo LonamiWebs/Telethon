@@ -124,11 +124,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
-        if isinstance(phone, int):
-            phone = str(phone)
-        elif phone.startswith('+'):
-            phone = phone.strip('+')
-
+        phone = self._parse_phone(phone)
         result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
@@ -161,7 +157,7 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            phone = phone or self._phone
+            phone = self._parse_phone(phone)
             phone_code_hash = phone_code_hash or self._phone_code_hash
             if not phone:
                 raise ValueError(
@@ -173,9 +169,8 @@ class TelegramClient(TelegramBareClient):
             try:
                 if isinstance(code, int):
                     code = str(code)
-                result = self(SignInRequest(
-                    phone, phone_code_hash, code
-                ))
+
+                result = self(SignInRequest(phone, phone_code_hash, code))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
@@ -857,7 +852,7 @@ class TelegramClient(TelegramBareClient):
                 return self(GetChannelsRequest([input_entity])).chats[0]
 
         if isinstance(entity, str):
-            stripped_phone = re.sub(r'[+()\s-]', '', entity)
+            stripped_phone = self._parse_phone(entity, ignore_saved=True)
             if stripped_phone.isdigit():
                 contacts = self(GetContactsRequest(0))
                 try:
@@ -887,6 +882,17 @@ class TelegramClient(TelegramBareClient):
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
+
+    def _parse_phone(self, phone, ignore_saved=False):
+        if isinstance(phone, int):
+            phone = str(phone)
+        elif phone:
+            phone = re.sub(r'[+()\s-]', '', phone)
+
+        if ignore_saved:
+            return phone
+        else:
+            return phone or self._phone
 
     def get_input_entity(self, peer):
         """Gets the input entity given its PeerUser, PeerChat, PeerChannel.
