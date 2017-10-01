@@ -11,7 +11,7 @@ except ImportError:
     socks = None
 
 from . import TelegramBareClient
-from . import helpers as utils
+from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
     PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
@@ -47,7 +47,6 @@ from .tl.types import (
     UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
-from .utils import find_user_or_chat, get_extension
 
 
 class TelegramClient(TelegramBareClient):
@@ -184,7 +183,7 @@ class TelegramClient(TelegramBareClient):
         elif password:
             salt = self(GetPasswordRequest()).current_salt
             result = self(CheckPasswordRequest(
-                utils.get_password_hash(password, salt)
+                helpers.get_password_hash(password, salt)
             ))
         elif bot_token:
             result = self(ImportBotAuthorizationRequest(
@@ -285,19 +284,20 @@ class TelegramClient(TelegramBareClient):
                 break
 
             offset_date = r.messages[-1].date
-            offset_peer = find_user_or_chat(r.dialogs[-1].peer, entities,
-                                            entities)
+            offset_peer = utils.find_user_or_chat(
+                r.dialogs[-1].peer, entities, entities
+            )
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
         # Sort by message date
         no_date = datetime.fromtimestamp(0)
-        dialogs = sorted(
+        ds = sorted(
             list(dialogs.values()),
             key=lambda d: getattr(messages[d.top_message], 'date', no_date)
         )
         return (
-            dialogs,
-            [find_user_or_chat(d.peer, entities, entities) for d in dialogs]
+            ds,
+            [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
         )
 
     # endregion
@@ -393,10 +393,13 @@ class TelegramClient(TelegramBareClient):
         total_messages = getattr(result, 'count', len(result.messages))
 
         # Iterate over all the messages and find the sender User
-        entities = [find_user_or_chat(m.from_id, result.users, result.chats)
-                    if m.from_id is not None else
-                    find_user_or_chat(m.to_id, result.users, result.chats)
-                    for m in result.messages]
+        entities = [
+            utils.find_user_or_chat(m.from_id, result.users, result.chats)
+            if m.from_id is not None else
+            utils.find_user_or_chat(m.to_id, result.users, result.chats)
+
+            for m in result.messages
+        ]
 
         return total_messages, result.messages, entities
 
@@ -698,7 +701,7 @@ class TelegramClient(TelegramBareClient):
                 ))
 
         file = self._get_proper_filename(
-            file, 'document', get_extension(mm_doc),
+            file, 'document', utils.get_extension(mm_doc),
             date=date, possible_names=possible_names
         )
 
@@ -895,6 +898,10 @@ class TelegramClient(TelegramBareClient):
 
            If even after
         """
+        if isinstance(peer, str):
+            # Let .get_entity resolve the username or phone
+            return utils.get_input_peer(self.get_entity(peer))
+
         is_peer = False
         if isinstance(peer, int):
             peer = PeerUser(peer)
