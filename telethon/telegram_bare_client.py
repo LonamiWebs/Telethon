@@ -463,20 +463,6 @@ class TelegramBareClient:
                 while not all(x.confirm_received.is_set() for x in requests):
                     sender.receive(update_state=self.updates)
 
-        except (PhoneMigrateError, NetworkMigrateError,
-                UserMigrateError) as e:
-            self._logger.debug(
-                'DC error when invoking request, '
-                'attempting to reconnect at DC {}'.format(e.new_dc)
-            )
-
-            # TODO What happens with the background thread here?
-            # For normal use cases, this won't happen, because this will only
-            # be on the very first connection (not authorized, not running),
-            # but may be an issue for people who actually travel?
-            self._reconnect(new_dc=e.new_dc)
-            return self._invoke(sender, call_receive, *requests)
-
         except TimeoutError:
             pass  # We will just retry
 
@@ -496,17 +482,6 @@ class TelegramBareClient:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
 
-        except ServerError as e:
-            # Telegram is having some issues, just retry
-            self._logger.debug(
-                '[ERROR] Telegram is having some internal issues', e
-            )
-
-        except FloodWaitError:
-            sender.disconnect()
-            self.disconnect()
-            raise
-
         finally:
             if sender != self._sender:
                 sender.disconnect()
@@ -522,6 +497,31 @@ class TelegramBareClient:
                 return requests[0].result
             else:
                 return [x.result for x in requests]
+
+        except (PhoneMigrateError, NetworkMigrateError,
+                UserMigrateError) as e:
+            self._logger.debug(
+                'DC error when invoking request, '
+                'attempting to reconnect at DC {}'.format(e.new_dc)
+            )
+
+            # TODO What happens with the background thread here?
+            # For normal use cases, this won't happen, because this will only
+            # be on the very first connection (not authorized, not running),
+            # but may be an issue for people who actually travel?
+            self._reconnect(new_dc=e.new_dc)
+            return self._invoke(sender, call_receive, *requests)
+
+        except ServerError as e:
+            # Telegram is having some issues, just retry
+            self._logger.debug(
+                '[ERROR] Telegram is having some internal issues', e
+            )
+
+        except FloodWaitError:
+            sender.disconnect()
+            self.disconnect()
+            raise
 
     # Let people use client(SomeRequest()) instead client.invoke(...)
     __call__ = invoke
