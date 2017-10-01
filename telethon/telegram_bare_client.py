@@ -406,7 +406,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def invoke(self, *requests, retries=5):
+    def __call__(self, *requests, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
@@ -440,6 +440,9 @@ class TelegramBareClient:
         finally:
             if sender != self._sender:
                 sender.disconnect()  # Close temporary connections
+
+    # Let people use client.invoke(SomeRequest()) instead client(...)
+    invoke = __call__
 
     def _invoke(self, sender, call_receive, *requests):
         try:
@@ -523,9 +526,6 @@ class TelegramBareClient:
             sender.disconnect()
             self.disconnect()
             raise
-
-    # Let people use client(SomeRequest()) instead client.invoke(...)
-    __call__ = invoke
 
     # Some really basic functionality
 
