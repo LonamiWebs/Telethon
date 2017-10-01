@@ -274,7 +274,7 @@ class TelegramClient(TelegramBareClient):
             for c in r.chats:
                 entities[c.id] = c
 
-            if isinstance(r, DialogsSlice):
+            if not isinstance(r, DialogsSlice):
                 # Don't enter next iteration if we already got all
                 break
 
