@@ -96,7 +96,6 @@ class TelegramBareClient:
         # temporary connection. The connection on this one is always
         # kept open so Telegram can send us updates.
         self._sender = MtProtoSender(self.session, Connection(
-            self.session.server_address, self.session.port,
             mode=connection_mode, proxy=proxy, timeout=timeout
         ))
 
@@ -299,8 +298,8 @@ class TelegramBareClient:
             self.session.auth_key = None  # Force creating new auth_key
             dc = self._get_dc(new_dc)
             ip = dc.ip_address
-            self._sender.connection.ip = self.session.server_address = ip
-            self._sender.connection.port = self.session.port = dc.port
+            self.session.server_address = ip
+            self.session.port = dc.port
             self.session.save()
             return self.connect()
 

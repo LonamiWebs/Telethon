@@ -43,7 +43,7 @@ class MtProtoSender:
 
     def connect(self):
         """Connects to the server"""
-        self.connection.connect()
+        self.connection.connect(self.session.server_address, self.session.port)
 
     def is_connected(self):
         return self.connection.is_connected()

@@ -43,12 +43,9 @@ class Connection:
        work on plain bytes, with no further additions.
     """
 
-    def __init__(self, ip, port, mode=ConnectionMode.TCP_FULL,
+    def __init__(self, mode=ConnectionMode.TCP_FULL,
                  proxy=None, timeout=timedelta(seconds=5)):
-        self.ip = ip
-        self.port = port
         self._mode = mode
-
         self._send_counter = 0
         self._aes_encrypt, self._aes_decrypt = None, None
 
@@ -77,9 +74,9 @@ class Connection:
             setattr(self, 'write', self._write_plain)
             setattr(self, 'read', self._read_plain)
 
-    def connect(self):
+    def connect(self, ip, port):
         try:
-            self.conn.connect(self.ip, self.port)
+            self.conn.connect(ip, port)
         except OSError as e:
             if e.errno == errno.EISCONN:
                 return  # Already connected, no need to re-set everything up
@@ -132,10 +129,9 @@ class Connection:
 
     def clone(self):
         """Creates a copy of this Connection"""
-        return Connection(self.ip, self.port,
-                          mode=self._mode,
-                          proxy=self.conn.proxy,
-                          timeout=self.conn.timeout)
+        return Connection(
+            mode=self._mode, proxy=self.conn.proxy, timeout=self.conn.timeout
+        )
 
     # region Receive message implementations
 
