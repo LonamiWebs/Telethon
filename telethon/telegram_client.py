@@ -284,8 +284,10 @@ class TelegramClient(TelegramBareClient):
             )
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
-        # Sort by message date
-        no_date = datetime.fromtimestamp(0)
+        # Sort by message date. Windows will raise if timestamp is 0,
+        # so we need to set at least one day ahead while still being
+        # the smallest date possible.
+        no_date = datetime.fromtimestamp(86400)
         ds = sorted(
             list(dialogs.values()),
             key=lambda d: getattr(messages[d.top_message], 'date', no_date)
