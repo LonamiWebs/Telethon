@@ -304,12 +304,16 @@ def find_user_or_chat(peer, users, chats):
        Returns None if it was not found"""
     if isinstance(peer, PeerUser):
         peer, where = peer.user_id, users
+    elif isinstance(peer, PeerChat):
+        peer, where = peer.chat_id, chats
+    elif isinstance(peer, PeerChannel):
+        peer, where = peer.channel_id, chats
     else:
-        where = chats
-        if isinstance(peer, PeerChat):
-            peer = peer.chat_id
-        elif isinstance(peer, PeerChannel):
-            peer = peer.channel_id
+        if isinstance(users, dict) and isinstance(chats, dict):
+            where = users
+            where.update(chats)
+        else:
+            where = users + chats
 
     if isinstance(peer, int):
         if isinstance(where, dict):
