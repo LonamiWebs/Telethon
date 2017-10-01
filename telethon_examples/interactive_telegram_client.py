@@ -3,7 +3,9 @@ from getpass import getpass
 
 from telethon import TelegramClient, ConnectionMode
 from telethon.errors import SessionPasswordNeededError
-from telethon.tl.types import UpdateShortChatMessage, UpdateShortMessage
+from telethon.tl.types import (
+    UpdateShortChatMessage, UpdateShortMessage, PeerChat
+)
 from telethon.utils import get_display_name
 
 
@@ -263,35 +265,44 @@ class InteractiveTelegramClient(TelegramClient):
 
     @staticmethod
     def download_progress_callback(downloaded_bytes, total_bytes):
-        InteractiveTelegramClient.print_progress('Downloaded',
-                                                 downloaded_bytes, total_bytes)
+        InteractiveTelegramClient.print_progress(
+            'Downloaded', downloaded_bytes, total_bytes
+        )
 
     @staticmethod
     def upload_progress_callback(uploaded_bytes, total_bytes):
-        InteractiveTelegramClient.print_progress('Uploaded', uploaded_bytes,
-                                                 total_bytes)
+        InteractiveTelegramClient.print_progress(
+            'Uploaded', uploaded_bytes, total_bytes
+        )
 
     @staticmethod
     def print_progress(progress_type, downloaded_bytes, total_bytes):
-        print('{} {} out of {} ({:.2%})'.format(progress_type, bytes_to_string(
-            downloaded_bytes), bytes_to_string(total_bytes), downloaded_bytes /
-                                                total_bytes))
+        print('{} {} out of {} ({:.2%})'.format(
+            progress_type, bytes_to_string(downloaded_bytes),
+            bytes_to_string(total_bytes), downloaded_bytes / total_bytes)
+        )
 
-    @staticmethod
-    def update_handler(update_object):
-        if isinstance(update_object, UpdateShortMessage):
-            if update_object.out:
-                sprint('You sent {} to user #{}'.format(
-                    update_object.message, update_object.user_id))
+    def update_handler(self, update):
+        if isinstance(update, UpdateShortMessage):
+            who = self.get_entity(update.user_id)
+            if update.out:
+                sprint('>> "{}" to user {}'.format(
+                    update.message, get_display_name(who)
+                ))
             else:
-                sprint('[User #{} sent {}]'.format(
-                    update_object.user_id, update_object.message))
+                sprint('<< {} sent "{}"]'.format(
+                    get_display_name(who), update.message
+                ))
 
-        elif isinstance(update_object, UpdateShortChatMessage):
-            if update_object.out:
-                sprint('You sent {} to chat #{}'.format(
-                    update_object.message, update_object.chat_id))
+        elif isinstance(update, UpdateShortChatMessage):
+            which = self.get_entity(PeerChat(update.chat_id))
+            if update.out:
+                sprint('>> sent "{}" to chat {}'.format(
+                    update.message, get_display_name(which)
+                ))
             else:
-                sprint('[Chat #{}, user #{} sent {}]'.format(
-                       update_object.chat_id, update_object.from_id,
-                       update_object.message))
+                who = self.get_entity(update.from_id)
+                sprint('<< {} @ {} sent "{}"'.format(
+                       get_display_name(which), get_display_name(who),
+                       update.message
+                ))
