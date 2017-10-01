@@ -2,6 +2,7 @@
 Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
+import math
 from mimetypes import add_type, guess_extension
 
 from .tl import TLObject
@@ -297,6 +298,41 @@ def get_input_media(media, user_caption=None, is_photo=False):
         return get_input_media(media.media)
 
     _raise_cast_fail(media, 'InputMedia')
+
+
+def get_peer_id(peer, add_mark=False):
+    """Finds the ID of the given peer, and optionally converts it to
+       the "bot api" format if 'add_mark' is set to True.
+    """
+    if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
+        return peer.user_id
+    else:
+        if isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
+            if not add_mark:
+                return peer.chat_id
+
+            # Chats are marked by turning them into negative numbers
+            return -peer.chat_id
+        elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
+            if not add_mark:
+                return peer.channel_id
+
+            # Prepend -100 through math tricks (.to_supergroup() on Madeline)
+            i = peer.channel_id  # IDs will be strictly positive -> log works
+            return -(i + pow(10, math.floor(math.log10(i) + 3)))
+
+    _raise_cast_fail(peer, 'int')
+
+
+def resolve_id(marked_id):
+    """Given a marked ID, returns the original ID and its Peer type"""
+    if marked_id >= 0:
+        return marked_id, PeerUser
+
+    if str(marked_id).startswith('-100'):
+        return int(str(marked_id)[4:]), PeerChannel
+
+    return -marked_id, PeerChat
 
 
 def find_user_or_chat(peer, users, chats):
