@@ -849,12 +849,12 @@ class TelegramClient(TelegramBareClient):
             if isinstance(input_entity, InputPeerUser):
                 return self(GetUsersRequest([input_entity]))[0]
             elif isinstance(input_entity, InputPeerChat):
-                return self(GetChatsRequest([input_entity.chat_id]))[0]
+                return self(GetChatsRequest([input_entity.chat_id])).chats[0]
             elif isinstance(input_entity, InputPeerChannel):
-                return self(GetChannelsRequest([input_entity]))[0]
+                return self(GetChannelsRequest([input_entity])).chats[0]
 
         if isinstance(entity, str):
-            stripped_phone = re.sub(r'[+-()\s]', '', entity)
+            stripped_phone = re.sub(r'[+()\s-]', '', entity)
             if stripped_phone.isdigit():
                 contacts = self(GetContactsRequest(0))
                 try:
