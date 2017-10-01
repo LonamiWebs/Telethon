@@ -118,7 +118,7 @@ class Session:
                     # FIXME We need to import the AuthKey here or otherwise
                     # we get cyclic dependencies.
                     from ..crypto import AuthKey
-                    if data['auth_key_data'] is not None:
+                    if data.get('auth_key_data', None) is not None:
                         key = b64decode(data['auth_key_data'])
                         result.auth_key = AuthKey(data=key)
 

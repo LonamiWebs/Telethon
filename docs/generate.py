@@ -199,14 +199,27 @@ def generate_index(folder, original_paths):
 def get_description(arg):
     """Generates a proper description for the given argument"""
     desc = []
+    otherwise = False
     if arg.can_be_inferred:
-        desc.append('If left to None, it will be inferred automatically.')
-    if arg.is_vector:
-        desc.append('A list must be supplied for this argument.')
-    if arg.is_generic:
-        desc.append('A different Request must be supplied for this argument.')
-    if arg.is_flag:
+        desc.append('If left unspecified, it will be inferred automatically.')
+        otherwise = True
+    elif arg.is_flag:
         desc.append('This argument can be omitted.')
+        otherwise = True
+
+    if arg.is_vector:
+        if arg.is_generic:
+            desc.append('A list of other Requests must be supplied.')
+        else:
+            desc.append('A list must be supplied.')
+    elif arg.is_generic:
+        desc.append('A different Request must be supplied for this argument.')
+    else:
+        otherwise = False  # Always reset to false if no other text is added
+
+    if otherwise:
+        desc.insert(1, 'Otherwise,')
+        desc[-1] = desc[-1][:1].lower() + desc[-1][1:]
 
     return ' '.join(desc)
 
@@ -218,6 +231,7 @@ def generate_documentation(scheme_file):
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
+        '404': '404.html',
         'index_all': 'index.html',
         'index_types': 'types/index.html',
         'index_methods': 'methods/index.html',
@@ -360,7 +374,8 @@ def generate_documentation(scheme_file):
     for tltype, constructors in tltypes.items():
         filename = get_path_for_type(tltype)
         out_dir = os.path.dirname(filename)
-        os.makedirs(out_dir, exist_ok=True)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
 
         # Since we don't have access to the full TLObject, split the type
         if '.' in tltype:
@@ -503,15 +518,26 @@ def generate_documentation(scheme_file):
     methods = sorted(methods, key=lambda m: m.name)
     constructors = sorted(constructors, key=lambda c: c.name)
 
+    def fmt(xs):
+        ys = {x: get_class_name(x) for x in xs}  # cache TLObject: display
+        zs = {}  # create a dict to hold those which have duplicated keys
+        for y in ys.values():
+            zs[y] = y in zs
+        return ', '.join(
+            '"{}.{}"'.format(x.namespace, ys[x])
+            if zs[ys[x]] and getattr(x, 'namespace', None)
+            else '"{}"'.format(ys[x]) for x in xs
+        )
+
+    request_names = fmt(methods)
+    type_names = fmt(types)
+    constructor_names = fmt(constructors)
+
     def fmt(xs, formatter):
         return ', '.join('"{}"'.format(formatter(x)) for x in xs)
 
-    request_names = fmt(methods, get_class_name)
-    type_names = fmt(types, get_class_name)
-    constructor_names = fmt(constructors, get_class_name)
-
     request_urls = fmt(methods, get_create_path_for)
-    type_urls = fmt(types, get_create_path_for)
+    type_urls = fmt(types, get_path_for_type)
     constructor_urls = fmt(constructors, get_create_path_for)
 
     replace_dict = {
@@ -528,13 +554,15 @@ def generate_documentation(scheme_file):
         'constructor_urls': constructor_urls
     }
 
-    with open('../res/core.html') as infile:
-        with open(original_paths['index_all'], 'w') as outfile:
-            text = infile.read()
-            for key, value in replace_dict.items():
-                text = text.replace('{' + key + '}', str(value))
+    shutil.copy('../res/404.html', original_paths['404'])
 
-            outfile.write(text)
+    with open('../res/core.html') as infile,\
+            open(original_paths['index_all'], 'w') as outfile:
+        text = infile.read()
+        for key, value in replace_dict.items():
+            text = text.replace('{' + key + '}', str(value))
+
+        outfile.write(text)
 
     # Everything done
     print('Documentation generated.')
@@ -551,5 +579,8 @@ def copy_resources():
 if __name__ == '__main__':
     os.makedirs('generated', exist_ok=True)
     os.chdir('generated')
-    generate_documentation('../../telethon_generator/scheme.tl')
-    copy_resources()
+    try:
+        generate_documentation('../../telethon_generator/scheme.tl')
+        copy_resources()
+    finally:
+        os.chdir(os.pardir)

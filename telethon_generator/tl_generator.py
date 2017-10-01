@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import struct
 from zlib import crc32
 from collections import defaultdict
 
@@ -107,8 +108,7 @@ class TLGenerator:
                     if tlobject.namespace:
                         builder.write('.' + tlobject.namespace)
 
-                    builder.writeln('.{},'.format(
-                        TLGenerator.get_class_name(tlobject)))
+                    builder.writeln('.{},'.format(tlobject.class_name()))
 
                 builder.current_indent -= 1
                 builder.writeln('}')
@@ -137,13 +137,29 @@ class TLGenerator:
                         x for x in namespace_tlobjects.keys() if x
                     )))
 
+                # Import 'get_input_*' utils
+                # TODO Support them on types too
+                if 'functions' in out_dir:
+                    builder.writeln(
+                        'from {}.utils import get_input_peer, '
+                        'get_input_channel, get_input_user, '
+                        'get_input_media'.format('.' * depth)
+                    )
+
+                # Import 'os' for those needing access to 'os.urandom()'
+                # Currently only 'random_id' needs 'os' to be imported,
+                # for all those TLObjects with arg.can_be_inferred.
+                builder.writeln('import os')
+
+                # Import struct for the .to_bytes(self) serialization
+                builder.writeln('import struct')
+
                 # Generate the class for every TLObject
                 for t in sorted(tlobjects, key=lambda x: x.name):
                     TLGenerator._write_source_code(
                         t, builder, depth, type_constructors
                     )
-                    while builder.current_indent != 0:
-                        builder.end_block()
+                    builder.current_indent = 0
 
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
@@ -154,35 +170,15 @@ class TLGenerator:
            the Type: [Constructors] must be given for proper
            importing and documentation strings.
         """
-        if tlobject.is_function:
-            util_imports = set()
-            for a in tlobject.args:
-                # We can automatically convert some "full" types to
-                # "input only" (like User -> InputPeerUser, etc.)
-                if a.type == 'InputPeer':
-                    util_imports.add('get_input_peer')
-                elif a.type == 'InputChannel':
-                    util_imports.add('get_input_channel')
-                elif a.type == 'InputUser':
-                    util_imports.add('get_input_user')
-
-            if util_imports:
-                builder.writeln('from {}.utils import {}'.format(
-                    '.' * depth, ', '.join(util_imports)))
-
-        if any(a for a in tlobject.args if a.can_be_inferred):
-            # Currently only 'random_id' needs 'os' to be imported
-            builder.writeln('import os')
-
         builder.writeln()
         builder.writeln()
-        builder.writeln('class {}(TLObject):'.format(
-            TLGenerator.get_class_name(tlobject)))
+        builder.writeln('class {}(TLObject):'.format(tlobject.class_name()))
 
         # Class-level variable to store its Telegram's constructor ID
-        builder.writeln('constructor_id = {}'.format(hex(tlobject.id)))
-        builder.writeln('subclass_of_id = {}'.format(
-            hex(crc32(tlobject.result.encode('ascii')))))
+        builder.writeln('CONSTRUCTOR_ID = {}'.format(hex(tlobject.id)))
+        builder.writeln('SUBCLASS_OF_ID = {}'.format(
+            hex(crc32(tlobject.result.encode('ascii'))))
+        )
         builder.writeln()
 
         # Flag arguments must go last
@@ -221,17 +217,10 @@ class TLGenerator:
             builder.writeln('"""')
             for arg in args:
                 if not arg.flag_indicator:
-                    builder.write(
-                        ':param {}: Telegram type: "{}".'
-                        .format(arg.name, arg.type)
-                    )
-                    if arg.is_vector:
-                        builder.write(' Must be a list.'.format(arg.name))
-
-                    if arg.is_generic:
-                        builder.write(' Must be another TLObject request.')
-
-                    builder.writeln()
+                    builder.writeln(':param {} {}:'.format(
+                        arg.type_hint(), arg.name
+                    ))
+                    builder.current_indent -= 1  # It will auto-indent (':')
 
             # We also want to know what type this request returns
             # or to which type this constructor belongs to
@@ -246,12 +235,11 @@ class TLGenerator:
                 builder.writeln('This type has no constructors.')
             elif len(constructors) == 1:
                 builder.writeln('Instance of {}.'.format(
-                    TLGenerator.get_class_name(constructors[0])
+                    constructors[0].class_name()
                 ))
             else:
                 builder.writeln('Instance of either {}.'.format(
-                    ', '.join(TLGenerator.get_class_name(c)
-                              for c in constructors)
+                    ', '.join(c.class_name() for c in constructors)
                 ))
 
             builder.writeln('"""')
@@ -274,56 +262,77 @@ class TLGenerator:
         builder.end_block()
 
         # Write the to_dict(self) method
+        builder.writeln('def to_dict(self, recursive=True):')
         if args:
-            builder.writeln('def to_dict(self):')
             builder.writeln('return {')
-            builder.current_indent += 1
-
-            base_types = ('string', 'bytes', 'int', 'long', 'int128',
-                          'int256', 'double', 'Bool', 'true', 'date')
-
-            for arg in args:
-                builder.write("'{}': ".format(arg.name))
-                if arg.type in base_types:
-                    if arg.is_vector:
-                        builder.write(
-                            '[] if self.{0} is None else self.{0}[:]'
-                            .format(arg.name)
-                        )
-                    else:
-                        builder.write('self.{}'.format(arg.name))
-                else:
-                    if arg.is_vector:
-                        builder.write(
-                            '[] if self.{0} is None else [None '
-                            'if x is None else x.to_dict() for x in self.{0}]'
-                            .format(arg.name)
-                        )
-                    else:
-                        builder.write(
-                            'None if self.{0} is None else self.{0}.to_dict()'
-                            .format(arg.name)
-                        )
-                builder.writeln(',')
-
-            builder.current_indent -= 1
-            builder.writeln("}")
         else:
-            builder.writeln('@staticmethod')
-            builder.writeln('def to_dict():')
-            builder.writeln('return {}')
+            builder.write('return {')
+        builder.current_indent += 1
+
+        base_types = ('string', 'bytes', 'int', 'long', 'int128',
+                      'int256', 'double', 'Bool', 'true', 'date')
+
+        for arg in args:
+            builder.write("'{}': ".format(arg.name))
+            if arg.type in base_types:
+                if arg.is_vector:
+                    builder.write('[] if self.{0} is None else self.{0}[:]'
+                                  .format(arg.name))
+                else:
+                    builder.write('self.{}'.format(arg.name))
+            else:
+                if arg.is_vector:
+                    builder.write(
+                        '([] if self.{0} is None else [None'
+                        ' if x is None else x.to_dict() for x in self.{0}]'
+                        ') if recursive else self.{0}'.format(arg.name)
+                    )
+                else:
+                    builder.write(
+                        '(None if self.{0} is None else self.{0}.to_dict())'
+                        ' if recursive else self.{0}'.format(arg.name)
+                    )
+            builder.writeln(',')
+
+        builder.current_indent -= 1
+        builder.writeln("}")
 
         builder.end_block()
 
-        # Write the on_send(self, writer) function
-        builder.writeln('def on_send(self, writer):')
-        builder.writeln(
-            'writer.write_int({}.constructor_id, signed=False)'
-                .format(TLGenerator.get_class_name(tlobject)))
+        # Write the .to_bytes() function
+        builder.writeln('def to_bytes(self):')
+
+        # Some objects require more than one flag parameter to be set
+        # at the same time. In this case, add an assertion.
+        repeated_args = defaultdict(list)
+        for arg in tlobject.args:
+            if arg.is_flag:
+                repeated_args[arg.flag_index].append(arg)
+
+        for ra in repeated_args.values():
+            if len(ra) > 1:
+                cnd1 = ('self.{} is None'.format(a.name) for a in ra)
+                cnd2 = ('self.{} is not None'.format(a.name) for a in ra)
+                builder.writeln(
+                    "assert ({}) or ({}), '{} parameters must all "
+                    "be None or neither be None'".format(
+                        ' and '.join(cnd1), ' and '.join(cnd2),
+                        ', '.join(a.name for a in ra)
+                    )
+                )
+
+        builder.writeln("return b''.join((")
+        builder.current_indent += 1
+
+        # First constructor code, we already know its bytes
+        builder.writeln('{},'.format(repr(struct.pack('<I', tlobject.id))))
 
         for arg in tlobject.args:
-            TLGenerator.write_onsend_code(builder, arg,
-                                          tlobject.args)
+            if TLGenerator.write_to_bytes(builder, arg, tlobject.args):
+                builder.writeln(',')
+
+        builder.current_indent -= 1
+        builder.writeln('))')
         builder.end_block()
 
         # Write the empty() function, which returns an "empty"
@@ -331,8 +340,8 @@ class TLGenerator:
         builder.writeln('@staticmethod')
         builder.writeln('def empty():')
         builder.writeln('return {}({})'.format(
-            TLGenerator.get_class_name(tlobject), ', '.join(
-                'None' for _ in range(len(args)))))
+            tlobject.class_name(), ', '.join('None' for _ in range(len(args)))
+        ))
         builder.end_block()
 
         # Write the on_response(self, reader) function
@@ -345,18 +354,15 @@ class TLGenerator:
             if tlobject.args:
                 for arg in tlobject.args:
                     TLGenerator.write_onresponse_code(
-                        builder, arg, tlobject.args)
+                        builder, arg, tlobject.args
+                    )
             else:
                 # If there were no arguments, we still need an
                 # on_response method, and hence "pass" if empty
                 builder.writeln('pass')
         builder.end_block()
 
-        # Write the __repr__(self) and __str__(self) functions
-        builder.writeln('def __repr__(self):')
-        builder.writeln("return '{}'".format(repr(tlobject)))
-        builder.end_block()
-
+        # Write the __str__(self) and stringify(self) functions
         builder.writeln('def __str__(self):')
         builder.writeln('return TLObject.pretty_format(self)')
         builder.end_block()
@@ -398,6 +404,8 @@ class TLGenerator:
             TLGenerator.write_get_input(builder, arg, 'get_input_channel')
         elif arg.type == 'InputUser' and tlobject.is_function:
             TLGenerator.write_get_input(builder, arg, 'get_input_user')
+        elif arg.type == 'InputMedia' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_media')
 
         else:
             builder.writeln('self.{0} = {0}'.format(arg.name))
@@ -408,29 +416,14 @@ class TLGenerator:
            a parameter upon creating the request. Returns False otherwise
         """
         if arg.is_vector:
-            builder.writeln(
-                'self.{0} = [{1}(_x) for _x in {0}]'
-                .format(arg.name, get_input_code)
-            )
-            pass
+            builder.write('self.{0} = [{1}(_x) for _x in {0}]'
+                          .format(arg.name, get_input_code))
         else:
-            builder.writeln(
-                'self.{0} = {1}({0})'.format(arg.name, get_input_code)
-            )
-
-    @staticmethod
-    def get_class_name(tlobject):
-        """Gets the class name following the Python style guidelines"""
-
-        # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(),
-                        tlobject.name)
-        result = result[:1].upper() + result[1:].replace(
-            '_', '')  # Replace again to fully ensure!
-        # If it's a function, let it end with "Request" to identify them
-        if tlobject.is_function:
-            result += 'Request'
-        return result
+            builder.write('self.{0} = {1}({0})'
+                          .format(arg.name, get_input_code))
+        builder.writeln(
+            ' if {} else None'.format(arg.name) if arg.is_flag else ''
+        )
 
     @staticmethod
     def get_file_name(tlobject, add_extension=False):
@@ -445,18 +438,17 @@ class TLGenerator:
             return result
 
     @staticmethod
-    def write_onsend_code(builder, arg, args, name=None):
+    def write_to_bytes(builder, arg, args, name=None):
         """
-        Writes the write code for the given argument
+        Writes the .to_bytes() code for the given argument
         :param builder: The source code builder
         :param arg: The argument to write
-        :param args: All the other arguments in TLObject same on_send.
+        :param args: All the other arguments in TLObject same to_bytes.
                      This is required to determine the flags value
         :param name: The name of the argument. Defaults to "self.argname"
                      This argument is an option because it's required when
                      writing Vectors<>
         """
-
         if arg.generic_definition:
             return  # Do nothing, this only specifies a later type
 
@@ -470,73 +462,91 @@ class TLGenerator:
         if arg.is_flag:
             if arg.type == 'true':
                 return  # Exit, since True type is never written
+            elif arg.is_vector:
+                # Vector flags are special since they consist of 3 values,
+                # so we need an extra join here. Note that empty vector flags
+                # should NOT be sent either!
+                builder.write("b'' if not {} else b''.join((".format(name))
             else:
-                builder.writeln('if {}:'.format(name))
+                builder.write("b'' if not {} else (".format(name))
 
         if arg.is_vector:
             if arg.use_vector_id:
-                builder.writeln('writer.write_int(0x1cb5c415, signed=False)')
+                # vector code, unsigned 0x1cb5c415 as little endian
+                builder.write(r"b'\x15\xc4\xb5\x1c',")
 
-            builder.writeln('writer.write_int(len({}))'.format(name))
-            builder.writeln('for _x in {}:'.format(name))
+            builder.write("struct.pack('<i', len({})),".format(name))
+
+            # Cannot unpack the values for the outer tuple through *[(
+            # since that's a Python >3.5 feature, so add another join.
+            builder.write("b''.join(")
+
             # Temporary disable .is_vector, not to enter this if again
-            arg.is_vector = False
-            TLGenerator.write_onsend_code(builder, arg, args, name='_x')
+            # Also disable .is_flag since it's not needed per element
+            old_flag = arg.is_flag
+            arg.is_vector = arg.is_flag = False
+            TLGenerator.write_to_bytes(builder, arg, args, name='x')
             arg.is_vector = True
+            arg.is_flag = old_flag
+
+            builder.write(' for x in {})'.format(name))
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
-            builder.writeln('flags = 0')
-            for flag in args:
-                if flag.is_flag:
-                    builder.writeln('flags |= (1 << {}) if {} else 0'.format(
-                        flag.flag_index, 'self.{}'.format(flag.name)))
-
-            builder.writeln('writer.write_int(flags)')
-            builder.writeln()
+            builder.write("struct.pack('<I', {})".format(
+                ' | '.join('({} if {} else 0)'.format(
+                    1 << flag.flag_index, 'self.{}'.format(flag.name)
+                ) for flag in args if flag.is_flag)
+            ))
 
         elif 'int' == arg.type:
-            builder.writeln('writer.write_int({})'.format(name))
+            # struct.pack is around 4 times faster than int.to_bytes
+            builder.write("struct.pack('<i', {})".format(name))
 
         elif 'long' == arg.type:
-            builder.writeln('writer.write_long({})'.format(name))
+            builder.write("struct.pack('<q', {})".format(name))
 
         elif 'int128' == arg.type:
-            builder.writeln('writer.write_large_int({}, bits=128)'.format(
-                name))
+            builder.write("{}.to_bytes(16, 'little', signed=True)".format(name))
 
         elif 'int256' == arg.type:
-            builder.writeln('writer.write_large_int({}, bits=256)'.format(
-                name))
+            builder.write("{}.to_bytes(32, 'little', signed=True)".format(name))
 
         elif 'double' == arg.type:
-            builder.writeln('writer.write_double({})'.format(name))
+            builder.write("struct.pack('<d', {})".format(name))
 
         elif 'string' == arg.type:
-            builder.writeln('writer.tgwrite_string({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'Bool' == arg.type:
-            builder.writeln('writer.tgwrite_bool({})'.format(name))
+            # 0x997275b5 if boolean else 0xbc799737
+            builder.write(
+                r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'".format(name)
+            )
 
         elif 'true' == arg.type:
             pass  # These are actually NOT written! Only used for flags
 
         elif 'bytes' == arg.type:
-            builder.writeln('writer.tgwrite_bytes({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'date' == arg.type:  # Custom format
-            builder.writeln('writer.tgwrite_date({})'.format(name))
+            # 0 if datetime is None else int(datetime.timestamp())
+            builder.write(
+                r"b'\0\0\0\0' if {0} is None else "
+                r"struct.pack('<I', int({0}.timestamp()))".format(name)
+            )
 
         else:
             # Else it may be a custom type
-            builder.writeln('{}.on_send(writer)'.format(name))
-
-        # End vector and flag blocks if required (if we opened them before)
-        if arg.is_vector:
-            builder.end_block()
+            builder.write('{}.to_bytes()'.format(name))
 
         if arg.is_flag:
-            builder.end_block()
+            builder.write(')')
+            if arg.is_vector:
+                builder.write(')')  # We were using a tuple
+
+        return True  # Something was written
 
     @staticmethod
     def write_onresponse_code(builder, arg, args, name=None):
@@ -562,8 +572,8 @@ class TLGenerator:
         was_flag = False
         if arg.is_flag:
             was_flag = True
-            builder.writeln('if (flags & (1 << {})) != 0:'.format(
-                arg.flag_index
+            builder.writeln('if flags & {}:'.format(
+                1 << arg.flag_index
             ))
             # Temporary disable .is_flag not to enter this if
             # again when calling the method recursively

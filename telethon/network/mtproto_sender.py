@@ -1,41 +1,45 @@
 import gzip
 import logging
-from threading import RLock
+import struct
 
 from .. import helpers as utils
 from ..crypto import AES
-from ..errors import BadMessageError, InvalidChecksumError, rpc_message_to_error
-from ..extensions import BinaryReader, BinaryWriter
+from ..errors import (
+    BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
+    rpc_message_to_error
+)
+from ..extensions import BinaryReader
+from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import MsgsAck
+from ..tl.functions.auth import LogOutRequest
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 
 class MtProtoSender:
     """MTProto Mobile Protocol sender
-       (https://core.telegram.org/mtproto/description)
+       (https://core.telegram.org/mtproto/description).
+
+       Note that this class is not thread-safe, and calling send/receive
+       from two or more threads at the same time is undefined behaviour.
+       Rationale: a new connection should be spawned to send/receive requests
+                  in parallel, so thread-safety (hence locking) isn't needed.
     """
 
-    def __init__(self, connection, session):
+    def __init__(self, session, connection):
         """Creates a new MtProtoSender configured to send messages through
            'connection' and using the parameters from 'session'.
         """
-        self.connection = connection
         self.session = session
+        self.connection = connection
         self._logger = logging.getLogger(__name__)
 
-        self._need_confirmation = []  # Message IDs that need confirmation
-        self._pending_receive = []  # Requests sent waiting to be received
+        # Message IDs that need confirmation
+        self._need_confirmation = []
 
-        # Sending and receiving are independent, but two threads cannot
-        # send or receive at the same time no matter what.
-        self._send_lock = RLock()
-        self._recv_lock = RLock()
-
-        # Used when logging out, the only request that seems to use 'ack'
-        # TODO There might be a better way to handle msgs_ack requests
-        self.logging_out = False
+        # Requests (as msg_id: Message) sent waiting to be received
+        self._pending_receive = {}
 
     def connect(self):
         """Connects to the server"""
@@ -47,33 +51,39 @@ class MtProtoSender:
     def disconnect(self):
         """Disconnects from the server"""
         self.connection.close()
+        self._need_confirmation.clear()
+        self._clear_all_pending()
+
+    def clone(self):
+        """Creates a copy of this MtProtoSender as a new connection"""
+        return MtProtoSender(self.session, self.connection.clone())
 
     # region Send and receive
 
-    def send(self, request):
+    def send(self, *requests):
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
         # If any message needs confirmation send an AckRequest first
         self._send_acknowledges()
 
-        # Finally send our packed request
-        with BinaryWriter() as writer:
-            request.on_send(writer)
-            self._send_packet(writer.get_bytes(), request)
-            self._pending_receive.append(request)
+        # Finally send our packed request(s)
+        messages = [TLMessage(self.session, r) for r in requests]
+        self._pending_receive.update({m.msg_id: m for m in messages})
 
-        # And update the saved session
-        self.session.save()
+        if len(messages) == 1:
+            message = messages[0]
+        else:
+            message = TLMessage(self.session, MessageContainer(messages))
+
+        self._send_message(message)
 
     def _send_acknowledges(self):
         """Sends a messages acknowledge for all those who _need_confirmation"""
         if self._need_confirmation:
-            msgs_ack = MsgsAck(self._need_confirmation)
-            with BinaryWriter() as writer:
-                msgs_ack.on_send(writer)
-                self._send_packet(writer.get_bytes(), msgs_ack)
-
+            self._send_message(
+                TLMessage(self.session, MsgsAck(self._need_confirmation))
+            )
             del self._need_confirmation[:]
 
     def receive(self, update_state):
@@ -86,21 +96,18 @@ class MtProtoSender:
            Any unhandled object (likely updates) will be passed to
            update_state.process(TLObject).
         """
-        with self._recv_lock:
-            try:
-                body = self.connection.recv()
-            except (BufferError, InvalidChecksumError):
-                # TODO BufferError, we should spot the cause...
-                # "No more bytes left"; something wrong happened, clear
-                # everything to be on the safe side, or:
-                #
-                # "This packet should be skipped"; since this may have
-                # been a result for a request, invalidate every request
-                # and just re-invoke them to avoid problems
-                for r in self._pending_receive:
-                    r.confirm_received.set()
-                self._pending_receive.clear()
-                return
+        try:
+            body = self.connection.recv()
+        except (BufferError, InvalidChecksumError):
+            # TODO BufferError, we should spot the cause...
+            # "No more bytes left"; something wrong happened, clear
+            # everything to be on the safe side, or:
+            #
+            # "This packet should be skipped"; since this may have
+            # been a result for a request, invalidate every request
+            # and just re-invoke them to avoid problems
+            self._clear_all_pending()
+            return
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
@@ -110,36 +117,20 @@ class MtProtoSender:
 
     # region Low level processing
 
-    def _send_packet(self, packet, request):
-        """Sends the given packet bytes with the additional
-           information of the original request.
-        """
-        request.request_msg_id = self.session.get_new_msg_id()
+    def _send_message(self, message):
+        """Sends the given Message(TLObject) encrypted through the network"""
 
-        # First calculate plain_text to encrypt it
-        with BinaryWriter() as plain_writer:
-            plain_writer.write_long(self.session.salt, signed=False)
-            plain_writer.write_long(self.session.id, signed=False)
-            plain_writer.write_long(request.request_msg_id)
-            plain_writer.write_int(
-                self.session.generate_sequence(request.content_related))
+        plain_text = \
+            struct.pack('<QQ', self.session.salt, self.session.id) \
+            + message.to_bytes()
 
-            plain_writer.write_int(len(packet))
-            plain_writer.write(packet)
+        msg_key = utils.calc_msg_key(plain_text)
+        key_id = struct.pack('<Q', self.session.auth_key.key_id)
+        key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
+        cipher_text = AES.encrypt_ige(plain_text, key, iv)
 
-            msg_key = utils.calc_msg_key(plain_writer.get_bytes())
-
-            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
-            cipher_text = AES.encrypt_ige(plain_writer.get_bytes(), key, iv)
-
-        # And then finally send the encrypted packet
-        with BinaryWriter() as cipher_writer:
-            cipher_writer.write_long(
-                self.session.auth_key.key_id, signed=False)
-            cipher_writer.write(msg_key)
-            cipher_writer.write(cipher_text)
-            with self._send_lock:
-                self.connection.send(cipher_writer.get_bytes())
+        result = key_id + msg_key + cipher_text
+        self.connection.send(result)
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -149,7 +140,10 @@ class MtProtoSender:
 
         with BinaryReader(body) as reader:
             if len(body) < 8:
-                raise BufferError("Can't decode packet ({})".format(body))
+                if body == b'l\xfe\xff\xff':
+                    raise BrokenAuthKeyError()
+                else:
+                    raise BufferError("Can't decode packet ({})".format(body))
 
             # TODO Check for both auth key ID and msg_key correctness
             reader.read_long()  # remote_auth_key_id
@@ -204,14 +198,15 @@ class MtProtoSender:
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
             ack = reader.tgread_object()
-            for r in self._pending_receive:
-                if r.request_msg_id in ack.msg_ids:
-                    self._logger.debug('Ack found for the a request')
-
-                    if self.logging_out:
-                        self._logger.debug('Message ack confirmed a request')
-                        self._pending_receive.remove(r)
-                        r.confirm_received.set()
+            # Ignore every ack request *unless* when logging out, when it's
+            # when it seems to only make sense. We also need to set a non-None
+            # result since Telegram doesn't send the response for these.
+            for msg_id in ack.msg_ids:
+                r = self._pop_request_of_type(msg_id, LogOutRequest)
+                if r:
+                    r.result = True  # Telegram won't send this value
+                    r.confirm_received()
+                    self._logger.debug('Message ack confirmed', r)
 
             return True
 
@@ -237,13 +232,26 @@ class MtProtoSender:
 
     # region Message handling
 
-    def _pop_request(self, request_msg_id):
-        """Pops a pending request from self._pending_receive, or
-           returns None if it's not found
+    def _pop_request(self, msg_id):
+        """Pops a pending REQUEST from self._pending_receive, or
+           returns None if it's not found.
         """
-        for i in range(len(self._pending_receive)):
-            if self._pending_receive[i].request_msg_id == request_msg_id:
-                return self._pending_receive.pop(i)
+        message = self._pending_receive.pop(msg_id, None)
+        if message:
+            return message.request
+
+    def _pop_request_of_type(self, msg_id, t):
+        """Pops a pending REQUEST from self._pending_receive if it matches
+           the given type, or returns None if it's not found/doesn't match.
+        """
+        message = self._pending_receive.get(msg_id, None)
+        if isinstance(message.request, t):
+            return self._pending_receive.pop(msg_id).request
+
+    def _clear_all_pending(self):
+        for r in self._pending_receive.values():
+            r.confirm_received.set()
+        self._pending_receive.clear()
 
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
@@ -259,22 +267,17 @@ class MtProtoSender:
 
     def _handle_container(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling container')
-        reader.read_int(signed=False)  # code
-        size = reader.read_int()
-        for _ in range(size):
-            inner_msg_id = reader.read_long()
-            reader.read_int()  # inner_sequence
-            inner_length = reader.read_int()
+        for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
 
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
                 if not self._process_msg(inner_msg_id, sequence, reader, state):
-                    reader.set_position(begin_position + inner_length)
+                    reader.set_position(begin_position + inner_len)
             except:
                 # If any error is raised, something went wrong; skip the packet
-                reader.set_position(begin_position + inner_length)
+                reader.set_position(begin_position + inner_len)
                 raise
 
         return True
@@ -306,7 +309,6 @@ class MtProtoSender:
             # sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
-            self.session.save()
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
             return True
@@ -334,7 +336,7 @@ class MtProtoSender:
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string(),
-                    report_method=type(request).constructor_id
+                    report_method=type(request).CONSTRUCTOR_ID
                 )
             else:
                 error = rpc_message_to_error(
@@ -372,11 +374,7 @@ class MtProtoSender:
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
-        reader.read_int(signed=False)  # code
-        packed_data = reader.tgread_bytes()
-        unpacked_data = gzip.decompress(packed_data)
-
-        with BinaryReader(unpacked_data) as compressed_reader:
+        with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
             return self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion

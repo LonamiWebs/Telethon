@@ -9,7 +9,6 @@ class TLObject:
         self.rpc_error = None
 
         # These should be overrode
-        self.constructor_id = 0
         self.content_related = False  # Only requests/functions/queries are
 
     # These should not be overrode
@@ -20,10 +19,13 @@ class TLObject:
         """
         if indent is None:
             if isinstance(obj, TLObject):
-                return '{{{}: {}}}'.format(
-                    type(obj).__name__,
-                    TLObject.pretty_format(obj.to_dict())
-                )
+                children = obj.to_dict(recursive=False)
+                if children:
+                    return '{}: {}'.format(
+                        type(obj).__name__, TLObject.pretty_format(children)
+                    )
+                else:
+                    return type(obj).__name__
             if isinstance(obj, dict):
                 return '{{{}}}'.format(', '.join(
                     '{}: {}'.format(
@@ -41,12 +43,13 @@ class TLObject:
         else:
             result = []
             if isinstance(obj, TLObject):
-                result.append('{')
                 result.append(type(obj).__name__)
-                result.append(': ')
-                result.append(TLObject.pretty_format(
-                    obj.to_dict(), indent
-                ))
+                children = obj.to_dict(recursive=False)
+                if children:
+                    result.append(': ')
+                    result.append(TLObject.pretty_format(
+                        obj.to_dict(recursive=False), indent
+                    ))
 
             elif isinstance(obj, dict):
                 result.append('{\n')
@@ -80,12 +83,43 @@ class TLObject:
 
             return ''.join(result)
 
+    @staticmethod
+    def serialize_bytes(data):
+        """Write bytes by using Telegram guidelines"""
+        if isinstance(data, str):
+            data = data.encode('utf-8')
+
+        r = []
+        if len(data) < 254:
+            padding = (len(data) + 1) % 4
+            if padding != 0:
+                padding = 4 - padding
+
+            r.append(bytes([len(data)]))
+            r.append(data)
+
+        else:
+            padding = len(data) % 4
+            if padding != 0:
+                padding = 4 - padding
+
+            r.append(bytes([
+                254,
+                len(data) % 256,
+                (len(data) >> 8) % 256,
+                (len(data) >> 16) % 256
+            ]))
+            r.append(data)
+
+        r.append(bytes(padding))
+        return b''.join(r)
+
     # These should be overrode
-    def to_dict(self):
+    def to_dict(self, recursive=True):
         return {}
 
-    def on_send(self, writer):
-        pass
+    def to_bytes(self):
+        return b''
 
     def on_response(self, reader):
         pass

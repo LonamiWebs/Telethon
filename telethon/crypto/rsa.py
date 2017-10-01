@@ -1,4 +1,5 @@
 import os
+import struct
 from hashlib import sha1
 try:
     import rsa
@@ -7,7 +8,7 @@ except ImportError:
     rsa = None
     raise ImportError('Missing module "rsa", please install via pip.')
 
-from ..extensions import BinaryWriter
+from ..tl import TLObject
 
 
 # {fingerprint: Crypto.PublicKey.RSA._RSAobj} dictionary
@@ -34,11 +35,10 @@ def _compute_fingerprint(key):
     """For a given Crypto.RSA key, computes its 8-bytes-long fingerprint
        in the same way that Telegram does.
     """
-    with BinaryWriter() as writer:
-        writer.tgwrite_bytes(get_byte_array(key.n))
-        writer.tgwrite_bytes(get_byte_array(key.e))
-        # Telegram uses the last 8 bytes as the fingerprint
-        return sha1(writer.get_bytes()).digest()[-8:]
+    n = TLObject.serialize_bytes(get_byte_array(key.n))
+    e = TLObject.serialize_bytes(get_byte_array(key.e))
+    # Telegram uses the last 8 bytes as the fingerprint
+    return struct.unpack('<q', sha1(n + e).digest()[-8:])[0]
 
 
 def add_key(pub):

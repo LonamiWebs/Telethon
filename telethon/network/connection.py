@@ -1,10 +1,13 @@
 import os
+import struct
 from datetime import timedelta
 from zlib import crc32
 from enum import Enum
 
+import errno
+
 from ..crypto import AESModeCTR
-from ..extensions import BinaryWriter, TcpClient
+from ..extensions import TcpClient
 from ..errors import InvalidChecksumError
 
 
@@ -75,15 +78,24 @@ class Connection:
             setattr(self, 'read', self._read_plain)
 
     def connect(self):
-        self._send_counter = 0
-        self.conn.connect(self.ip, self.port)
+        try:
+            self.conn.connect(self.ip, self.port)
+        except OSError as e:
+            if e.errno == errno.EISCONN:
+                return  # Already connected, no need to re-set everything up
+            else:
+                raise
 
+        self._send_counter = 0
         if self._mode == ConnectionMode.TCP_ABRIDGED:
             self.conn.write(b'\xef')
         elif self._mode == ConnectionMode.TCP_INTERMEDIATE:
             self.conn.write(b'\xee\xee\xee\xee')
         elif self._mode == ConnectionMode.TCP_OBFUSCATED:
             self._setup_obfuscation()
+
+    def get_timeout(self):
+        return self.conn.timeout
 
     def _setup_obfuscation(self):
         # Obfuscated messages secrets cannot start with any of these
@@ -117,6 +129,13 @@ class Connection:
 
     def close(self):
         self.conn.close()
+
+    def clone(self):
+        """Creates a copy of this Connection"""
+        return Connection(self.ip, self.port,
+                          mode=self._mode,
+                          proxy=self.conn.proxy,
+                          timeout=self.conn.timeout)
 
     # region Receive message implementations
 
@@ -164,30 +183,22 @@ class Connection:
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(message) + 12
-        with BinaryWriter(known_length=length) as writer:
-            writer.write_int(length)
-            writer.write_int(self._send_counter)
-            writer.write(message)
-            writer.write_int(crc32(writer.get_bytes()), signed=False)
-            self._send_counter += 1
-            self.write(writer.get_bytes())
+        data = struct.pack('<ii', length, self._send_counter) + message
+        crc = struct.pack('<I', crc32(data))
+        self._send_counter += 1
+        self.write(data + crc)
 
     def _send_intermediate(self, message):
-        with BinaryWriter(known_length=len(message) + 4) as writer:
-            writer.write_int(len(message))
-            writer.write(message)
-            self.write(writer.get_bytes())
+        self.write(struct.pack('<i', len(message)) + message)
 
     def _send_abridged(self, message):
-        with BinaryWriter(known_length=len(message) + 4) as writer:
-            length = len(message) >> 2
-            if length < 127:
-                writer.write_byte(length)
-            else:
-                writer.write_byte(127)
-                writer.write(int.to_bytes(length, 3, 'little'))
-            writer.write(message)
-            self.write(writer.get_bytes())
+        length = len(message) >> 2
+        if length < 127:
+            length = struct.pack('B', length)
+        else:
+            length = b'\x7f' + int.to_bytes(length, 3, 'little')
+
+        self.write(length + message)
 
     # endregion
 

@@ -1,20 +1,21 @@
 import os
-import threading
 from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
-from threading import Thread
+
+try:
+    import socks
+except ImportError:
+    socks = None
 
 from . import TelegramBareClient
 from . import helpers as utils
 from .errors import (
     RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
-    PhoneMigrateError, NetworkMigrateError, UserMigrateError,
     PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
 )
 from .network import ConnectionMode
-from .tl import Session, TLObject
-from .tl.functions import PingRequest
+from .tl import TLObject
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -29,9 +30,6 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest
 )
-from .tl.functions.updates import (
-    GetStateRequest
-)
 from .tl.functions.users import (
     GetUsersRequest
 )
@@ -43,6 +41,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewMessage, UpdateShortSentMessage
 )
+from .tl.types.messages import DialogsSlice
 from .utils import find_user_or_chat, get_extension
 
 
@@ -59,8 +58,9 @@ class TelegramClient(TelegramBareClient):
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
-                 process_updates=False,
+                 update_workers=None,
                  timeout=timedelta(seconds=5),
+                 spawn_read_thread=True,
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
 
@@ -73,15 +73,21 @@ class TelegramClient(TelegramBareClient):
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
 
-           If 'process_updates' is set to True, incoming updates will be
-           processed and you must manually call 'self.updates.poll()' from
-           another thread to retrieve the saved update objects, or your
-           memory will fill with these. You may modify the value of
-           'self.updates.polling' at any later point.
+           The integer 'update_workers' represents depending on its value:
+             is None: Updates will *not* be stored in memory.
+             = 0: Another thread is responsible for calling self.updates.poll()
+             > 0: 'update_workers' background threads will be spawned, any
+                  any of them will invoke all the self.updates.handlers.
 
-           Despite the value of 'process_updates', if you later call
-           '.add_update_handler(...)', updates will also be processed
-           and the update objects will be passed to the handlers you added.
+           If 'spawn_read_thread', a background thread will be started once
+           an authorized user has been logged in to Telegram to read items
+           (such as updates and responses) from the network as soon as they
+           occur, which will speed things up.
+
+           If you don't want to spawn any additional threads, pending updates
+           will be read and processed accordingly after invoking a request
+           and not immediately. This is useful if you don't care about updates
+           at all and have set 'update_workers=None'.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -92,209 +98,54 @@ class TelegramClient(TelegramBareClient):
              system_lang_code = lang_code
              report_errors    = True
         """
-        if not api_id or not api_hash:
-            raise PermissionError(
-                "Your API ID or Hash cannot be empty or None. "
-                "Refer to Telethon's README.rst for more information.")
-
-        # Determine what session object we have
-        if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session)
-        elif not isinstance(session, Session):
-            raise ValueError(
-                'The given session must be a str or a Session instance.')
-
         super().__init__(
             session, api_id, api_hash,
             connection_mode=connection_mode,
             proxy=proxy,
-            process_updates=process_updates,
-            timeout=timeout
+            update_workers=update_workers,
+            spawn_read_thread=spawn_read_thread,
+            timeout=timeout,
+            **kwargs
         )
 
-        # Used on connection - the user may modify these and reconnect
-        kwargs['app_version'] = kwargs.get('app_version', self.__version__)
-        for name, value in kwargs.items():
-            if hasattr(self.session, name):
-                setattr(self.session, name, value)
-
-        self._updates_thread = None
+        # Some fields to easy signing in
         self._phone_code_hash = None
         self._phone = None
-
-        # Uploaded files cache so subsequent calls are instant
-        self._upload_cache = {}
-
-        # Constantly read for results and updates from within the main client
-        self._recv_thread = None
-
-        # Default PingRequest delay
-        self._last_ping = datetime.now()
-        self._ping_delay = timedelta(minutes=1)
-
-    # endregion
-
-    # region Connecting
-
-    def connect(self, exported_auth=None):
-        """Connects to the Telegram servers, executing authentication if
-           required. Note that authenticating to the Telegram servers is
-           not the same as authenticating the desired user itself, which
-           may require a call (or several) to 'sign_in' for the first time.
-
-           exported_auth is meant for internal purposes and can be ignored.
-        """
-        if self._sender and self._sender.is_connected():
-            return
-
-        ok = super().connect(exported_auth=exported_auth)
-        # The main TelegramClient is the only one that will have
-        # constant_read, since it's also the only one who receives
-        # updates and need to be processed as soon as they occur.
-        #
-        # TODO Allow to disable this to avoid the creation of a new thread
-        # if the user is not going to work with updates at all? Whether to
-        # read constantly or not for updates needs to be known before hand,
-        # and further updates won't be able to be added unless allowing to
-        # switch the mode on the fly.
-        if ok:
-            self._recv_thread = Thread(
-                name='ReadThread', daemon=True,
-                target=self._recv_thread_impl
-            )
-            self._recv_thread.start()
-            if self.updates.polling:
-                self.sync_updates()
-
-        return ok
-
-    def disconnect(self):
-        """Disconnects from the Telegram server
-           and stops all the spawned threads"""
-        if not self._sender or not self._sender.is_connected():
-            return
-
-        # The existing thread will close eventually, since it's
-        # only running while the MtProtoSender.is_connected()
-        self._recv_thread = None
-
-        # This will trigger a "ConnectionResetError", usually, the background
-        # thread would try restarting the connection but since the
-        # ._recv_thread = None, it knows it doesn't have to.
-        super().disconnect()
-
-        # Also disconnect all the cached senders
-        for sender in self._cached_clients.values():
-            sender.disconnect()
-
-        self._cached_clients.clear()
-
-    # endregion
-
-    # region Working with different connections
-
-    def create_new_connection(self, on_dc=None, timeout=timedelta(seconds=5)):
-        """Creates a new connection which can be used in parallel
-           with the original TelegramClient. A TelegramBareClient
-           will be returned already connected, and the caller is
-           responsible to disconnect it.
-
-           If 'on_dc' is None, the new client will run on the same
-           data center as the current client (most common case).
-
-           If the client is meant to be used on a different data
-           center, the data center ID should be specified instead.
-        """
-        if on_dc is None:
-            client = TelegramBareClient(
-                self.session, self.api_id, self.api_hash,
-                proxy=self.proxy, timeout=timeout
-            )
-            client.connect()
-        else:
-            client = self._get_exported_client(on_dc, bypass_cache=True)
-
-        return client
 
     # endregion
 
     # region Telegram requests functions
 
-    def invoke(self, request, *args, **kwargs):
-        """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-           An optional 'retries' parameter can be set.
-
-           *args will be ignored.
-        """
-        if self._recv_thread is not None and \
-                threading.get_ident() == self._recv_thread.ident:
-            raise AssertionError('Cannot invoke requests from the ReadThread')
-
-        self.updates.check_error()
-
-        try:
-            # Users may call this method from within some update handler.
-            # If this is the case, then the thread invoking the request
-            # will be the one which should be reading (but is invoking the
-            # request) thus not being available to read it "in the background"
-            # and it's needed to call receive.
-            return super().invoke(
-                request, call_receive=self._recv_thread is None,
-                retries=kwargs.get('retries', 5)
-            )
-
-        except (PhoneMigrateError, NetworkMigrateError, UserMigrateError) as e:
-            self._logger.debug('DC error when invoking request, '
-                               'attempting to reconnect at DC {}'
-                               .format(e.new_dc))
-
-            self.reconnect(new_dc=e.new_dc)
-            return self.invoke(request)
-
-    # Let people use client(SomeRequest()) instead client.invoke(...)
-    __call__ = invoke
-
-    def invoke_on_dc(self, request, dc_id, reconnect=False):
-        """Invokes the given request on a different DC
-           by making use of the exported MtProtoSenders.
-
-           If 'reconnect=True', then the a reconnection will be performed and
-           ConnectionResetError will be raised if it occurs a second time.
-        """
-        try:
-            client = self._get_exported_client(
-                dc_id, init_connection=reconnect)
-
-            return client.invoke(request)
-
-        except ConnectionResetError:
-            if reconnect:
-                raise
-            else:
-                return self.invoke_on_dc(request, dc_id, reconnect=True)
-
     # region Authorization requests
-
-    def is_user_authorized(self):
-        """Has the user been authorized yet
-           (code request sent and confirmed)?"""
-        return self.session and self.get_me() is not None
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
-        result = self(
-            SendCodeRequest(phone, self.api_id, self.api_hash))
+        if isinstance(phone, int):
+            phone = str(phone)
+        elif phone.startswith('+'):
+            phone = phone.strip('+')
+
+        result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
         return result
 
     def sign_in(self, phone=None, code=None,
-                password=None, bot_token=None):
+                password=None, bot_token=None, phone_code_hash=None):
         """Completes the sign in process with the phone number + code pair.
 
            If no phone or code is provided, then the sole password will be used.
            The password should be used after a normal authorization attempt
            has happened and an SessionPasswordNeededError was raised.
+
+           If you're calling .sign_in() on two completely different clients
+           (for example, through an API that creates a new client per phone),
+           you must first call .sign_in(phone) to receive the code, and then
+           with the result such method results, call
+           .sign_in(phone, code, phone_code_hash=result.phone_code_hash).
+
+           If this is done on the same client, the client will fill said values
+           for you.
 
            To login as a bot, only `bot_token` should be provided.
            This should equal to the bot access hash provided by
@@ -306,64 +157,66 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            if self._phone is None:
+            phone = phone or self._phone
+            phone_code_hash = phone_code_hash or self._phone_code_hash
+            if not phone:
                 raise ValueError(
-                    'Please make sure to call send_code_request first.')
+                    'Please make sure to call send_code_request first.'
+                )
+            if not phone_code_hash:
+                raise ValueError('You also need to provide a phone_code_hash.')
 
             try:
                 if isinstance(code, int):
                     code = str(code)
                 result = self(SignInRequest(
-                    self._phone, self._phone_code_hash, code
+                    phone, phone_code_hash, code
                 ))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
                 return None
-
         elif password:
             salt = self(GetPasswordRequest()).current_salt
-            result = self(
-                CheckPasswordRequest(utils.get_password_hash(password, salt)))
-
+            result = self(CheckPasswordRequest(
+                utils.get_password_hash(password, salt)
+            ))
         elif bot_token:
             result = self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
-                api_id=self.api_id, api_hash=self.api_hash))
-
+                api_id=self.api_id, api_hash=self.api_hash
+            ))
         else:
             raise ValueError(
                 'You must provide a phone and a code the first time, '
-                'and a password only if an RPCError was raised before.')
+                'and a password only if an RPCError was raised before.'
+            )
 
+        self._set_connected_and_authorized()
         return result.user
 
     def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        return self(SignUpRequest(
+        result = self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
             first_name=first_name,
             last_name=last_name
-        )).user
+        ))
+
+        self._set_connected_and_authorized()
+        return result.user
 
     def log_out(self):
         """Logs out and deletes the current session.
            Returns True if everything went okay."""
-        # Special flag when logging out (so the ack request confirms it)
-        self._sender.logging_out = True
-
         try:
             self(LogOutRequest())
-            # The server may have already disconnected us, we still
-            # try to disconnect to make sure.
-            self.disconnect()
-        except (RPCError, ConnectionError):
-            # Something happened when logging out, restore the state back
-            self._sender.logging_out = False
+        except RPCError:
             return False
 
+        self.disconnect()
         self.session.delete()
         self.session = None
         return True
@@ -386,22 +239,61 @@ class TelegramClient(TelegramBareClient):
                     offset_id=0,
                     offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [entities])
-           with at least 'limit' items each.
+           with at least 'limit' items each unless all dialogs were consumed.
 
-           If `limit` is 0, all dialogs will (should) retrieved.
+           If `limit` is None, all dialogs will be retrieved (from the given
+           offset) will be retrieved.
+
            The `entities` represent the user, chat or channel
-           corresponding to that dialog.
+           corresponding to that dialog. If it's an integer, not
+           all dialogs may be retrieved at once.
         """
+        if limit is None:
+            limit = float('inf')
 
-        r = self(
-            GetDialogsRequest(
+        dialogs = {}  # Use Dialog.top_message as identifier to avoid dupes
+        messages = {}  # Used later for sorting TODO also return these?
+        entities = {}
+        while len(dialogs) < limit:
+            r = self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=limit))
+                limit=0  # limit 0 often means "as much as possible"
+            ))
+            if not r.dialogs:
+                break
+
+            for d in r.dialogs:
+                dialogs[d.top_message] = d
+            for m in r.messages:
+                messages[m.id] = m
+
+            # We assume users can't have the same ID as a chat
+            for u in r.users:
+                entities[u.id] = u
+            for c in r.chats:
+                entities[c.id] = c
+
+            if isinstance(r, DialogsSlice):
+                # Don't enter next iteration if we already got all
+                break
+
+            offset_date = r.messages[-1].date
+            offset_peer = find_user_or_chat(r.dialogs[-1].peer, entities,
+                                            entities)
+            offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
+
+        # Sort by message date
+        no_date = datetime.fromtimestamp(0)
+        dialogs = sorted(
+            list(dialogs.values()),
+            key=lambda d: getattr(messages[d.top_message], 'date', no_date)
+        )
         return (
-            r.dialogs,
-            [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
+            dialogs,
+            [find_user_or_chat(d.peer, entities, entities) for d in dialogs]
+        )
 
     # endregion
 
@@ -427,7 +319,7 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = self(request)
-        if isinstance(request, UpdateShortSentMessage):
+        if isinstance(result, UpdateShortSentMessage):
             return Message(
                 id=result.id,
                 to_id=entity,
@@ -540,7 +432,7 @@ class TelegramClient(TelegramBareClient):
             return reply_to
 
         if isinstance(reply_to, TLObject) and \
-                type(reply_to).subclass_of_id == 0x790009e3:
+                type(reply_to).SUBCLASS_OF_ID == 0x790009e3:
             # hex(crc32(b'Message')) = 0x790009e3
             return reply_to.id
 
@@ -970,79 +862,5 @@ class TelegramClient(TelegramBareClient):
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
-
-    # endregion
-
-    # region Updates handling
-
-    def sync_updates(self):
-        """Synchronizes self.updates to their initial state. Will be
-           called automatically on connection if self.updates.enabled = True,
-           otherwise it should be called manually after enabling updates.
-        """
-        try:
-            self.updates.process(self(GetStateRequest()))
-            return True
-        except UnauthorizedError:
-            return False
-
-    def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
-        sync = not self.updates.handlers
-        self.updates.handlers.append(handler)
-        if sync:
-            self.sync_updates()
-
-    def remove_update_handler(self, handler):
-        self.updates.handlers.remove(handler)
-
-    def list_update_handlers(self):
-        return self.updates.handlers[:]
-
-    # endregion
-
-    # Constant read
-
-    # By using this approach, another thread will be
-    # created and started upon connection to constantly read
-    # from the other end. Otherwise, manual calls to .receive()
-    # must be performed. The MtProtoSender cannot be connected,
-    # or an error will be thrown.
-    #
-    # This way, sending and receiving will be completely independent.
-    def _recv_thread_impl(self):
-        while self._sender and self._sender.is_connected():
-            try:
-                if datetime.now() > self._last_ping + self._ping_delay:
-                    self._sender.send(PingRequest(
-                        int.from_bytes(os.urandom(8), 'big', signed=True)
-                    ))
-                    self._last_ping = datetime.now()
-
-                self._sender.receive(update_state=self.updates)
-            except AttributeError:
-                # 'NoneType' object has no attribute 'receive'.
-                # The only moment when this can happen is reconnection
-                # was triggered from another thread and the ._sender
-                # was set to None, so close this thread and exit by return.
-                self._recv_thread = None
-                return
-            except TimeoutError:
-                # No problem.
-                pass
-            except ConnectionResetError:
-                if self._recv_thread is not None:
-                    # Do NOT attempt reconnecting unless the connection was
-                    # finished by the user -> ._recv_thread is None
-                    self._logger.debug('Server disconnected us. Reconnecting...')
-                    self._recv_thread = None  # Not running anymore
-                    self.reconnect()
-                    return
-            except Exception as e:
-                # Unknown exception, pass it to the main thread
-                self.updates.set_error(e)
-                self._recv_thread = None
-                return
 
     # endregion

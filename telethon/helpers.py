@@ -47,9 +47,11 @@ def calc_msg_key(data):
 
 def generate_key_data_from_nonce(server_nonce, new_nonce):
     """Generates the key data corresponding to the given nonce"""
-    hash1 = sha1(bytes(new_nonce + server_nonce)).digest()
-    hash2 = sha1(bytes(server_nonce + new_nonce)).digest()
-    hash3 = sha1(bytes(new_nonce + new_nonce)).digest()
+    server_nonce = server_nonce.to_bytes(16, 'little', signed=True)
+    new_nonce = new_nonce.to_bytes(32, 'little', signed=True)
+    hash1 = sha1(new_nonce + server_nonce).digest()
+    hash2 = sha1(server_nonce + new_nonce).digest()
+    hash3 = sha1(new_nonce + new_nonce).digest()
 
     key = hash1 + hash2[:12]
     iv = hash2[12:20] + hash3 + new_nonce[:4]

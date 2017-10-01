@@ -96,6 +96,17 @@ class TLObject:
             result=match.group(3),
             is_function=is_function)
 
+    def class_name(self):
+        """Gets the class name following the Python style guidelines"""
+
+        # Courtesy of http://stackoverflow.com/a/31531797/4759433
+        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), self.name)
+        result = result[:1].upper() + result[1:].replace('_', '')
+        # If it's a function, let it end with "Request" to identify them
+        if self.is_function:
+            result += 'Request'
+        return result
+
     def sorted_args(self):
         """Returns the arguments properly sorted and ready to plug-in
            into a Python's method header (i.e., flags and those which
@@ -197,8 +208,8 @@ class TLArg:
         else:
             self.flag_indicator = False
             self.is_generic = arg_type.startswith('!')
-            self.type = arg_type.lstrip(
-                '!')  # Strip the exclamation mark always to have only the name
+            # Strip the exclamation mark always to have only the name
+            self.type = arg_type.lstrip('!')
 
             # The type may be a flag (flags.IDX?REAL_TYPE)
             # Note that 'flags' is NOT the flags name; this is determined by a previous argument
@@ -232,6 +243,24 @@ class TLArg:
                 self.type = 'date'
 
         self.generic_definition = generic_definition
+
+    def type_hint(self):
+        result = {
+            'int': 'int',
+            'long': 'int',
+            'int128': 'int',
+            'int256': 'int',
+            'string': 'str',
+            'date': 'datetime.datetime | None',  # None date = 0 timestamp
+            'bytes': 'bytes',
+            'true': 'bool',
+        }.get(self.type, 'TLObject')
+        if self.is_vector:
+            result = 'list[{}]'.format(result)
+        if self.is_flag and self.type != 'date':
+            result += ' | None'
+
+        return result
 
     def __str__(self):
         # Find the real type representation by updating it as required

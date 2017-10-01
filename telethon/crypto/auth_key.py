@@ -1,7 +1,8 @@
+import struct
 from hashlib import sha1
 
 from .. import helpers as utils
-from ..extensions import BinaryReader, BinaryWriter
+from ..extensions import BinaryReader
 
 
 class AuthKey:
@@ -17,10 +18,6 @@ class AuthKey:
         """Calculates the new nonce hash based on
            the current class fields' values
         """
-        with BinaryWriter() as writer:
-            writer.write(new_nonce)
-            writer.write_byte(number)
-            writer.write_long(self.aux_hash, signed=False)
-
-            new_nonce_hash = utils.calc_msg_key(writer.get_bytes())
-            return new_nonce_hash
+        new_nonce = new_nonce.to_bytes(32, 'little', signed=True)
+        data = new_nonce + struct.pack('<BQ', number, self.aux_hash)
+        return utils.calc_msg_key(data)

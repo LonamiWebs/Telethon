@@ -8,41 +8,55 @@ from threading import Lock
 
 class TcpClient:
     def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
-        self._proxy = proxy
+        self.proxy = proxy
         self._socket = None
         self._closing_lock = Lock()
 
         if isinstance(timeout, timedelta):
-            self._timeout = timeout.seconds
+            self.timeout = timeout.seconds
         elif isinstance(timeout, int) or isinstance(timeout, float):
-            self._timeout = float(timeout)
+            self.timeout = float(timeout)
         else:
             raise ValueError('Invalid timeout type', type(timeout))
 
     def _recreate_socket(self, mode):
-        if self._proxy is None:
+        if self.proxy is None:
             self._socket = socket.socket(mode, socket.SOCK_STREAM)
         else:
             import socks
             self._socket = socks.socksocket(mode, socket.SOCK_STREAM)
-            if type(self._proxy) is dict:
-                self._socket.set_proxy(**self._proxy)
+            if type(self.proxy) is dict:
+                self._socket.set_proxy(**self.proxy)
             else:  # tuple, list, etc.
-                self._socket.set_proxy(*self._proxy)
+                self._socket.set_proxy(*self.proxy)
+
+        self._socket.settimeout(self.timeout)
 
     def connect(self, ip, port):
         """Connects to the specified IP and port number.
            'timeout' must be given in seconds
         """
-        if not self.connected:
-            if ':' in ip:  # IPv6
-                mode, address = socket.AF_INET6, (ip, port, 0, 0)
-            else:
-                mode, address = socket.AF_INET, (ip, port)
+        if ':' in ip:  # IPv6
+            mode, address = socket.AF_INET6, (ip, port, 0, 0)
+        else:
+            mode, address = socket.AF_INET, (ip, port)
 
-            self._recreate_socket(mode)
-            self._socket.settimeout(self._timeout)
-            self._socket.connect(address)
+        while True:
+            try:
+                while not self._socket:
+                    self._recreate_socket(mode)
+
+                self._socket.connect(address)
+                break  # Successful connection, stop retrying to connect
+            except OSError as e:
+                # There are some errors that we know how to handle, and
+                # the loop will allow us to retry
+                if e.errno == errno.EBADF:
+                    # Bad file descriptor, i.e. socket was closed, set it
+                    # to none to recreate it on the next iteration
+                    self._socket = None
+                else:
+                    raise
 
     def _get_connected(self):
         return self._socket is not None
@@ -67,6 +81,8 @@ class TcpClient:
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
+        if self._socket is None:
+            raise ConnectionResetError()
 
         # TODO Timeout may be an issue when sending the data, Changed in v3.5:
         # The socket timeout is now the maximum total duration to send all data.
@@ -74,13 +90,13 @@ class TcpClient:
             self._socket.sendall(data)
         except socket.timeout as e:
             raise TimeoutError() from e
+        except BrokenPipeError:
+            self._raise_connection_reset()
         except OSError as e:
             if e.errno == errno.EBADF:
                 self._raise_connection_reset()
             else:
                 raise
-        except BrokenPipeError:
-            self._raise_connection_reset()
 
     def read(self, size):
         """Reads (receives) a whole block of 'size bytes
@@ -91,6 +107,9 @@ class TcpClient:
            and it's waiting for more, the timeout will NOT cancel the
            operation. Set to None for no timeout
         """
+        if self._socket is None:
+            raise ConnectionResetError()
+
         # TODO Remove the timeout from this method, always use previous one
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
@@ -100,7 +119,7 @@ class TcpClient:
                 except socket.timeout as e:
                     raise TimeoutError() from e
                 except OSError as e:
-                    if e.errno == errno.EBADF:
+                    if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
                         self._raise_connection_reset()
                     else:
                         raise

@@ -12,34 +12,53 @@ Extra supported commands are:
 """
 
 # To use a consistent encoding
-from subprocess import run
-from shutil import rmtree
 from codecs import open
 from sys import argv
-from os import path
+import os
 
 # Always prefer setuptools over distutils
 from setuptools import find_packages, setup
 
 try:
     from telethon import TelegramClient
-except ImportError:
+except Exception as e:
+    print('Failed to import TelegramClient due to', e)
     TelegramClient = None
 
 
-if __name__ == '__main__':
-    if len(argv) >= 2 and argv[1] == 'gen_tl':
-        from telethon_generator.tl_generator import TLGenerator
-        generator = TLGenerator('telethon/tl')
-        if generator.tlobjects_exist():
-            print('Detected previous TLObjects. Cleaning...')
-            generator.clean_tlobjects()
+class TempWorkDir:
+    """Switches the working directory to be the one on which this file lives,
+       while within the 'with' block.
+    """
+    def __init__(self):
+        self.original = None
 
-        print('Generating TLObjects...')
-        generator.generate_tlobjects(
-            'telethon_generator/scheme.tl', import_depth=2
-        )
-        print('Done.')
+    def __enter__(self):
+        self.original = os.path.abspath(os.path.curdir)
+        os.chdir(os.path.abspath(os.path.dirname(__file__)))
+        return self
+
+    def __exit__(self, *args):
+        os.chdir(self.original)
+
+
+def gen_tl():
+    from telethon_generator.tl_generator import TLGenerator
+    generator = TLGenerator('telethon/tl')
+    if generator.tlobjects_exist():
+        print('Detected previous TLObjects. Cleaning...')
+        generator.clean_tlobjects()
+
+    print('Generating TLObjects...')
+    generator.generate_tlobjects(
+        'telethon_generator/scheme.tl', import_depth=2
+    )
+    print('Done.')
+
+
+def main():
+    if len(argv) >= 2 and argv[1] == 'gen_tl':
+        gen_tl()
 
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
         from telethon_generator.tl_generator import TLGenerator
@@ -48,6 +67,11 @@ if __name__ == '__main__':
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
+        # Need python3.5 or higher, but Telethon is supposed to support 3.x
+        # Place it here since noone should be running ./setup.py pypi anyway
+        from subprocess import run
+        from shutil import rmtree
+
         for x in ('build', 'dist', 'Telethon.egg-info'):
             rmtree(x, ignore_errors=True)
         run('python3 setup.py sdist', shell=True)
@@ -58,20 +82,21 @@ if __name__ == '__main__':
 
     else:
         if not TelegramClient:
-            print('Run `python3', argv[0], 'gen_tl` first.')
-            quit()
-
-        here = path.abspath(path.dirname(__file__))
+            gen_tl()
+            from telethon import TelegramClient as TgClient
+            version = TgClient.__version__
+        else:
+            version = TelegramClient.__version__
 
         # Get the long description from the README file
-        with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+        with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
         setup(
             name='Telethon',
 
             # Versions should comply with PEP440.
-            version=TelegramClient.__version__,
+            version=version,
             description="Full-featured Telegram client library for Python 3",
             long_description=long_description,
 
@@ -108,3 +133,8 @@ if __name__ == '__main__':
             ]),
             install_requires=['pyaes', 'rsa']
         )
+
+
+if __name__ == '__main__':
+    with TempWorkDir():  # Could just use a try/finally but this is + reusable
+        main()

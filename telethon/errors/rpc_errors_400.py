@@ -18,6 +18,15 @@ class BotMethodInvalidError(BadRequestError):
         )
 
 
+class CdnMethodInvalidError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'This method cannot be invoked on a CDN server. Refer to '
+            'https://core.telegram.org/cdn#schema for available methods.'
+        )
+
+
 class ChannelInvalidError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
@@ -134,11 +143,39 @@ class InputMethodInvalidError(BadRequestError):
         )
 
 
+class InputRequestTooLongError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The input request was too long. This may be a bug in the library '
+            'as it can occur when serializing more bytes than it should (like'
+            'appending the vector constructor code at the end of a message).'
+        )
+
+
 class LastNameInvalidError(BadRequestError):
     def __init__(self, **kwargs):
         super(Exception, self).__init__(
             self,
             'The last name is invalid.'
+        )
+
+
+class LimitInvalidError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'An invalid limit was provided. See '
+            'https://core.telegram.org/api/files#downloading-files'
+        )
+
+
+class LocationInvalidError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The location given for a file was invalid. See '
+            'https://core.telegram.org/api/files#downloading-files'
         )
 
 
@@ -189,6 +226,16 @@ class MsgWaitFailedError(BadRequestError):
             self,
             'A waiting call returned an error.'
         )
+
+
+class OffsetInvalidError(BadRequestError):
+    def __init__(self, **kwargs):
+        super(Exception, self).__init__(
+            self,
+            'The given offset was invalid, it must be divisible by 1KB. '
+            'See https://core.telegram.org/api/files#downloading-files'
+        )
+
 
 
 class PasswordHashInvalidError(BadRequestError):
@@ -350,6 +397,7 @@ class UserIdInvalidError(BadRequestError):
 rpc_errors_400_all = {
     'API_ID_INVALID': ApiIdInvalidError,
     'BOT_METHOD_INVALID': BotMethodInvalidError,
+    'CDN_METHOD_INVALID': CdnMethodInvalidError,
     'CHANNEL_INVALID': ChannelInvalidError,
     'CHAT_ADMIN_REQUIRED': ChatAdminRequiredError,
     'CHAT_ID_INVALID': ChatIdInvalidError,
@@ -362,13 +410,17 @@ rpc_errors_400_all = {
     'FILE_PART_INVALID': FilePartInvalidError,
     'FIRSTNAME_INVALID': FirstNameInvalidError,
     'INPUT_METHOD_INVALID': InputMethodInvalidError,
+    'INPUT_REQUEST_TOO_LONG': InputRequestTooLongError,
     'LASTNAME_INVALID': LastNameInvalidError,
+    'LIMIT_INVALID': LimitInvalidError,
+    'LOCATION_INVALID': LocationInvalidError,
     'MD5_CHECKSUM_INVALID': Md5ChecksumInvalidError,
     'MESSAGE_EMPTY': MessageEmptyError,
     'MESSAGE_ID_INVALID': MessageIdInvalidError,
     'MESSAGE_TOO_LONG': MessageTooLongError,
     'MESSAGE_NOT_MODIFIED': MessageNotModifiedError,
     'MSG_WAIT_FAILED': MsgWaitFailedError,
+    'OFFSET_INVALID': OffsetInvalidError,
     'PASSWORD_HASH_INVALID': PasswordHashInvalidError,
     'PEER_ID_INVALID': PeerIdInvalidError,
     'PHONE_CODE_EMPTY': PhoneCodeEmptyError,
