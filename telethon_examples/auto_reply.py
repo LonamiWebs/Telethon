@@ -84,7 +84,7 @@ class NeedsMore(TelegramClient):
                             message=msg.message.replace('.shrug','¯\_(ツ)_/¯')))
                         sleep(1)
 
-f               for trigger in triggers:
+                for trigger in triggers:
                     msg = trigger[1]
                     chan = InputPeerChannel(msg.to_id.channel_id,CHANNELS[msg.to_id.channel_id])
                     log_chat = InputPeerUser(user_id=123456789,access_hash=987654321234567890)
