@@ -148,9 +148,12 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            if self._phone is None:
+            if not self._phone:
+                self._phone = phone
+            if not self._phone:
                 raise ValueError(
-                    'Please make sure to call send_code_request first.')
+                    'Please make sure to call send_code_request first.'
+                )
 
             try:
                 if isinstance(code, int):
