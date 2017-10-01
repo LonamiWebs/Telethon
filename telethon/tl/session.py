@@ -185,11 +185,28 @@ class Session:
         correct = correct_msg_id >> 32
         self.time_offset = correct - now
 
+    def process_entities(self, tlobject):
+        """Processes all the found entities on the given TLObject,
+           unless .save_entities is False, and saves the session file.
+        """
+        if not self.save_entities:
+            return
+
+        # Save all input entities we know of
+        entities = []
+        if hasattr(tlobject, 'chats') and hasattr(tlobject.chats, '__iter__'):
+            entities.extend(tlobject.chats)
+        if hasattr(tlobject, 'users') and hasattr(tlobject.users, '__iter__'):
+            entities.extend(tlobject.users)
+
+        if self.add_entities(entities):
+            self.save()  # Save if any new entities got added
+
     def add_entities(self, entities):
-        """Adds new input entities to the local database of them.
+        """Adds new input entities to the local database unconditionally.
            Unknown types will be ignored.
         """
-        if not entities or not self.save_entities:
+        if not entities:
             return False
 
         new = {}

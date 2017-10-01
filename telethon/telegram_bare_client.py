@@ -494,21 +494,10 @@ class TelegramBareClient:
                 # rejected by the other party as a whole."
                 return None
 
-            # Save all input entities we know of
-            entities = []
-            results = []
-            for x in requests:
-                y = x.result
-                results.append(y)
-                if hasattr(y, 'chats') and hasattr(y.chats, '__iter__'):
-                    entities.extend(y.chats)
-                if hasattr(y, 'users') and hasattr(y.users, '__iter__'):
-                    entities.extend(y.users)
-
-            if self.session.add_entities(entities):
-                self.session.save()  # Save if any new entities got added
-
-            return results[0] if len(results) == 1 else results
+            if len(requests) == 1:
+                return requests[0].result
+            else:
+                return [x.result for x in requests]
 
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:

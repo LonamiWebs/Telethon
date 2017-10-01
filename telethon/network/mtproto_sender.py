@@ -213,14 +213,8 @@ class MtProtoSender:
         # If the code is not parsed manually then it should be a TLObject.
         if code in tlobjects:
             result = reader.tgread_object()
-            if state is None:
-                self._logger.debug(
-                    'Ignoring unhandled TLObject %s', repr(result)
-                )
-            else:
-                self._logger.debug(
-                    'Processing TLObject %s', repr(result)
-                )
+            self.session.process_entities(result)
+            if state:
                 state.process(result)
 
             return True
@@ -364,6 +358,7 @@ class MtProtoSender:
                     reader.seek(-4)
                     request.on_response(reader)
 
+                self.session.process_entities(request.result)
                 request.confirm_received.set()
                 return True
             else:
