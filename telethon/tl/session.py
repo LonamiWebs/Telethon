@@ -39,6 +39,7 @@ class Session:
             self.system_lang_code = session.system_lang_code
             self.lang_pack = session.lang_pack
             self.report_errors = session.report_errors
+            self.save_entities = session.save_entities
 
         else:  # str / None
             self.session_user_id = session_user_id
@@ -51,6 +52,7 @@ class Session:
             self.system_lang_code = self.lang_code
             self.lang_pack = ''
             self.report_errors = True
+            self.save_entities = True
 
         # Cross-thread safety
         self._seq_no_lock = Lock()
@@ -78,16 +80,19 @@ class Session:
 
         with self._save_lock:
             with open('{}.session'.format(self.session_user_id), 'w') as file:
-                json.dump({
+                out_dict = {
                     'port': self.port,
                     'salt': self.salt,
                     'layer': self.layer,
                     'server_address': self.server_address,
                     'auth_key_data':
                         b64encode(self.auth_key.key).decode('ascii')
-                        if self.auth_key else None,
-                    'entities': list(self._input_entities.items())
-                }, file)
+                        if self.auth_key else None
+                }
+                if self.save_entities:
+                    out_dict['entities'] = list(self._input_entities.items())
+
+                json.dump(out_dict, file)
 
     def delete(self):
         """Deletes the current session file"""
@@ -184,7 +189,7 @@ class Session:
         """Adds new input entities to the local database of them.
            Unknown types will be ignored.
         """
-        if not entities:
+        if not entities or not self.save_entities:
             return False
 
         new = {}
