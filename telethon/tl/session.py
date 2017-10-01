@@ -53,7 +53,9 @@ class Session:
             self.report_errors = True
 
         # Cross-thread safety
-        self._lock = Lock()
+        self._seq_no_lock = Lock()
+        self._msg_id_lock = Lock()
+        self._save_lock = Lock()
 
         self.id = helpers.generate_random_long(signed=False)
         self._sequence = 0
@@ -71,7 +73,10 @@ class Session:
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
-        if self.session_user_id:
+        if not self.session_user_id or self._save_lock.locked():
+            return
+
+        with self._save_lock:
             with open('{}.session'.format(self.session_user_id), 'w') as file:
                 json.dump({
                     'port': self.port,
@@ -144,7 +149,7 @@ class Session:
            Note that if confirmed=True, the sequence number
            will be increased by one too
         """
-        with self._lock:
+        with self._seq_no_lock:
             if content_related:
                 result = self._sequence * 2 + 1
                 self._sequence += 1
@@ -161,7 +166,7 @@ class Session:
         # "message identifiers are divisible by 4"
         new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
-        with self._lock:
+        with self._msg_id_lock:
             if self._last_msg_id >= new_msg_id:
                 new_msg_id = self._last_msg_id + 4
 
