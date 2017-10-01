@@ -364,13 +364,14 @@ class TelegramClient(TelegramBareClient):
         the right type of InputPeer.
 
         :param entity: ID or Entity of the chat
-        :param list message_ids: IDs (or a single ID) of the message to delete
+        :param list message_ids: ID(s) or `Message` object(s) of the message(s) to delete
         :param revoke: Delete the message for everyone or just this client
         :returns messages.AffectedMessages: Messages affected by deletion.
         """
 
         if not isinstance(message_ids, list):
             message_ids = [message_ids]
+        message_ids = [m.id if isinstance(m, Message) else m for m in message_ids]
 
         if entity is None:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
