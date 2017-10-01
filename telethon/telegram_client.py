@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
 
+import re
+
 try:
     import socks
 except ImportError:
@@ -852,10 +854,10 @@ class TelegramClient(TelegramBareClient):
                 return self(GetChannelsRequest([input_entity]))[0]
 
         if isinstance(entity, str):
-            if entity.startswith('+') or entity.isdigit():
+            stripped_phone = re.sub(r'[+-()\s]', '', entity)
+            if stripped_phone.isdigit():
                 contacts = self(GetContactsRequest(0))
                 try:
-                    stripped_phone = entity.strip('+')
                     return next(
                         u for u in contacts.users
                         if u.phone and u.phone.endswith(stripped_phone)
