@@ -32,7 +32,6 @@ class UpdateState:
 
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
-        self._setup_workers()
 
     def can_poll(self):
         """Returns True if a call to .poll() won't lock"""
@@ -66,16 +65,16 @@ class UpdateState:
         """Changes the number of workers running.
            If 'n is None', clears all pending updates from memory.
         """
-        self._stop_workers()
+        self.stop_workers()
         self._workers = n
         if n is None:
             self._updates.clear()
         else:
-            self._setup_workers()
+            self.setup_workers()
 
     workers = property(fget=get_workers, fset=set_workers)
 
-    def _stop_workers(self):
+    def stop_workers(self):
         """Raises "StopIterationException" on the worker threads to stop them,
            and also clears all of them off the list
         """
@@ -93,7 +92,7 @@ class UpdateState:
 
         self._worker_threads.clear()
 
-    def _setup_workers(self):
+    def setup_workers(self):
         if self._worker_threads or not self._workers:
             # There already are workers, or workers is None or 0. Do nothing.
             return

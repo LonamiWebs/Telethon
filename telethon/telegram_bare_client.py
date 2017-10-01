@@ -267,6 +267,9 @@ class TelegramBareClient:
         self._user_connected = False
         self._recv_thread = None
 
+        # Stop the workers from the background thread
+        self.updates.stop_workers()
+
         # This will trigger a "ConnectionResetError", for subsequent calls
         # to read or send (from another thread) and usually, the background
         # thread would try restarting the connection but since the
@@ -747,6 +750,7 @@ class TelegramBareClient:
 
     def _set_connected_and_authorized(self):
         self._authorized = True
+        self.updates.setup_workers()
         if self._spawn_read_thread and self._recv_thread is None:
             self._recv_thread = threading.Thread(
                 name='ReadThread', daemon=True,
