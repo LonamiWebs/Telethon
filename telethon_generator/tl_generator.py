@@ -309,15 +309,15 @@ class TLGenerator:
             if arg.is_flag:
                 repeated_args[arg.flag_index].append(arg)
 
-        for args in repeated_args.values():
-            if len(args) > 1:
-                cnd1 = ('self.{} is None'.format(a.name) for a in args)
-                cnd2 = ('self.{} is not None'.format(a.name) for a in args)
+        for ra in repeated_args.values():
+            if len(ra) > 1:
+                cnd1 = ('self.{} is None'.format(a.name) for a in ra)
+                cnd2 = ('self.{} is not None'.format(a.name) for a in ra)
                 builder.writeln(
                     "assert ({}) or ({}), '{} parameters must all "
                     "be None or neither be None'".format(
                         ' and '.join(cnd1), ' and '.join(cnd2),
-                        ', '.join(a.name for a in args)
+                        ', '.join(a.name for a in ra)
                     )
                 )
 
@@ -354,7 +354,8 @@ class TLGenerator:
             if tlobject.args:
                 for arg in tlobject.args:
                     TLGenerator.write_onresponse_code(
-                        builder, arg, tlobject.args)
+                        builder, arg, tlobject.args
+                    )
             else:
                 # If there were no arguments, we still need an
                 # on_response method, and hence "pass" if empty
