@@ -131,12 +131,21 @@ class TelegramClient(TelegramBareClient):
         return result
 
     def sign_in(self, phone=None, code=None,
-                password=None, bot_token=None):
+                password=None, bot_token=None, phone_code_hash=None):
         """Completes the sign in process with the phone number + code pair.
 
            If no phone or code is provided, then the sole password will be used.
            The password should be used after a normal authorization attempt
            has happened and an SessionPasswordNeededError was raised.
+
+           If you're calling .sign_in() on two completely different clients
+           (for example, through an API that creates a new client per phone),
+           you must first call .sign_in(phone) to receive the code, and then
+           with the result such method results, call
+           .sign_in(phone, code, phone_code_hash=result.phone_code_hash).
+
+           If this is done on the same client, the client will fill said values
+           for you.
 
            To login as a bot, only `bot_token` should be provided.
            This should equal to the bot access hash provided by
@@ -148,18 +157,20 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            if not self._phone:
-                self._phone = phone
-            if not self._phone:
+            phone = phone or self._phone
+            phone_code_hash = phone_code_hash or self._phone_code_hash
+            if not phone:
                 raise ValueError(
                     'Please make sure to call send_code_request first.'
                 )
+            if not phone_code_hash:
+                raise ValueError('You also need to provide a phone_code_hash.')
 
             try:
                 if isinstance(code, int):
                     code = str(code)
                 result = self(SignInRequest(
-                    self._phone, self._phone_code_hash, code
+                    phone, phone_code_hash, code
                 ))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
