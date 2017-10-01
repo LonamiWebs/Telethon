@@ -302,24 +302,23 @@ def get_input_media(media, user_caption=None, is_photo=False):
 def find_user_or_chat(peer, users, chats):
     """Finds the corresponding user or chat given a peer.
        Returns None if it was not found"""
-    try:
-        if isinstance(peer, PeerUser):
-            return next(u for u in users if u.id == peer.user_id)
-
-        elif isinstance(peer, PeerChat):
-            return next(c for c in chats if c.id == peer.chat_id)
-
+    if isinstance(peer, PeerUser):
+        peer, where = peer.user_id, users
+    else:
+        where = chats
+        if isinstance(peer, PeerChat):
+            peer = peer.chat_id
         elif isinstance(peer, PeerChannel):
-            return next(c for c in chats if c.id == peer.channel_id)
-
-    except StopIteration: return
+            peer = peer.channel_id
 
     if isinstance(peer, int):
-        try: return next(u for u in users if u.id == peer)
-        except StopIteration: pass
-
-        try: return next(c for c in chats if c.id == peer)
-        except StopIteration: pass
+        if isinstance(where, dict):
+            return where.get(peer)
+        else:
+            try:
+                return next(x for x in where if x.id == peer)
+            except StopIteration:
+                pass
 
 
 def get_appropriated_part_size(file_size):

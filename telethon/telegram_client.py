@@ -41,6 +41,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewMessage, UpdateShortSentMessage
 )
+from .tl.types.messages import DialogsSlice
 from .utils import find_user_or_chat, get_extension
 
 
@@ -224,22 +225,61 @@ class TelegramClient(TelegramBareClient):
                     offset_id=0,
                     offset_peer=InputPeerEmpty()):
         """Returns a tuple of lists ([dialogs], [entities])
-           with at least 'limit' items each.
+           with at least 'limit' items each unless all dialogs were consumed.
 
-           If `limit` is 0, all dialogs will (should) retrieved.
+           If `limit` is None, all dialogs will be retrieved (from the given
+           offset) will be retrieved.
+
            The `entities` represent the user, chat or channel
-           corresponding to that dialog.
+           corresponding to that dialog. If it's an integer, not
+           all dialogs may be retrieved at once.
         """
+        if limit is None:
+            limit = float('inf')
 
-        r = self(
-            GetDialogsRequest(
+        dialogs = {}  # Use Dialog.top_message as identifier to avoid dupes
+        messages = {}  # Used later for sorting TODO also return these?
+        entities = {}
+        while len(dialogs) < limit:
+            r = self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=limit))
+                limit=0  # limit 0 often means "as much as possible"
+            ))
+            if not r.dialogs:
+                break
+
+            for d in r.dialogs:
+                dialogs[d.top_message] = d
+            for m in r.messages:
+                messages[m.id] = m
+
+            # We assume users can't have the same ID as a chat
+            for u in r.users:
+                entities[u.id] = u
+            for c in r.chats:
+                entities[c.id] = c
+
+            if isinstance(r, DialogsSlice):
+                # Don't enter next iteration if we already got all
+                break
+
+            offset_date = r.messages[-1].date
+            offset_peer = find_user_or_chat(r.dialogs[-1].peer, entities,
+                                            entities)
+            offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
+
+        # Sort by message date
+        no_date = datetime.fromtimestamp(0)
+        dialogs = sorted(
+            list(dialogs.values()),
+            key=lambda d: getattr(messages[d.top_message], 'date', no_date)
+        )
         return (
-            r.dialogs,
-            [find_user_or_chat(d.peer, r.users, r.chats) for d in r.dialogs])
+            dialogs,
+            [find_user_or_chat(d.peer, entities, entities) for d in dialogs]
+        )
 
     # endregion
 
