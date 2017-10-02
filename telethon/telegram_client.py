@@ -1,9 +1,8 @@
 import os
+import re
 from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
-
-import re
 
 try:
     import socks
@@ -32,6 +31,10 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest
 )
+
+from .tl.functions import channels
+from .tl.functions import messages
+
 from .tl.functions.users import (
     GetUsersRequest
 )
@@ -348,6 +351,39 @@ class TelegramClient(TelegramBareClient):
 
         return None  # Should not happen
 
+    def delete_messages(self, entity, message_ids, revoke=True):
+        """
+        Deletes a message from a chat, optionally "for everyone" with argument
+        `revoke` set to `True`.
+
+        The `revoke` argument has no effect for Channels and Supergroups,
+        where it inherently behaves as being `True`.
+
+        Note: The `entity` argument can be `None` for normal chats, but it's
+        mandatory to delete messages from Channels and Supergroups. It is also
+        possible to supply a chat_id which will be automatically resolved to
+        the right type of InputPeer.
+
+        :param entity: ID or Entity of the chat
+        :param list message_ids: ID(s) or `Message` object(s) of the message(s) to delete
+        :param revoke: Delete the message for everyone or just this client
+        :returns .messages.AffectedMessages: Messages affected by deletion.
+        """
+
+        if not isinstance(message_ids, list):
+            message_ids = [message_ids]
+        message_ids = [m.id if isinstance(m, Message) else int(m) for m in message_ids]
+
+        if entity is None:
+            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
+
+        entity = self.get_input_entity(entity)
+
+        if isinstance(entity, InputPeerChannel):
+            return self(channels.DeleteMessagesRequest(entity, message_ids))
+        else:
+            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
+
     def get_message_history(self,
                             entity,
                             limit=20,
@@ -437,7 +473,7 @@ class TelegramClient(TelegramBareClient):
             return reply_to
 
         if isinstance(reply_to, TLObject) and \
-                type(reply_to).SUBCLASS_OF_ID == 0x790009e3:
+                        type(reply_to).SUBCLASS_OF_ID == 0x790009e3:
             # hex(crc32(b'Message')) = 0x790009e3
             return reply_to.id
 
@@ -570,8 +606,8 @@ class TelegramClient(TelegramBareClient):
         """
         possible_names = []
         if not isinstance(entity, TLObject) or type(entity).SUBCLASS_OF_ID in (
-                    0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
-            ):
+                0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
+        ):
             # Maybe it is an user or a chat? Or their full versions?
             #
             # The hexadecimal numbers above are simply:
@@ -946,4 +982,4 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-    # endregion
+        # endregion
