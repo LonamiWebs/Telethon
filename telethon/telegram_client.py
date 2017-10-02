@@ -569,7 +569,7 @@ class TelegramClient(TelegramBareClient):
            some performance loss.
         """
         possible_names = []
-        if not isinstance(entity, TLObject) or type(entity).subclass_of_id in (
+        if not isinstance(entity, TLObject) or type(entity).SUBCLASS_OF_ID in (
                     0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
             ):
             # Maybe it is an user or a chat? Or their full versions?
