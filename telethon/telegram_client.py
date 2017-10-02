@@ -1,9 +1,8 @@
 import os
+import re
 from datetime import datetime, timedelta
 from functools import lru_cache
 from mimetypes import guess_type
-
-import re
 
 try:
     import socks
@@ -385,8 +384,6 @@ class TelegramClient(TelegramBareClient):
         else:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-
-
     def get_message_history(self,
                             entity,
                             limit=20,
@@ -435,7 +432,7 @@ class TelegramClient(TelegramBareClient):
             utils.find_user_or_chat(m.to_id, result.users, result.chats)
 
             for m in result.messages
-            ]
+        ]
 
         return total_messages, result.messages, entities
 
