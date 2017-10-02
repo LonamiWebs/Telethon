@@ -1,5 +1,10 @@
 Telethon
 ========
+
+.. image:: https://github.com/LonamiWebs/Telethon/blob/master/docs/assets/img/logo/Logo.png?raw=true
+   :align: center
+   :alt: Telethon Logo
+
 .. epigraph::
 
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
