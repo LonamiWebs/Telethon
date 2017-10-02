@@ -94,11 +94,11 @@ class InteractiveTelegramClient(TelegramClient):
         # Enter a while loop to chat as long as the user wants
         while True:
             # Retrieve the top dialogs
-            dialog_count = 15
+            dialog_count = 10
 
             # Entities represent the user, chat or channel
             # corresponding to the dialog on the same index
-            dialogs, entities = self.get_dialogs(limit=dialog_count)
+            dialogs, entities = self.get_dialogs(dialog_count)
 
             i = None
             while i is None:
@@ -141,7 +141,6 @@ class InteractiveTelegramClient(TelegramClient):
             print('  !h: prints the latest messages (message History).')
             print('  !up <path>: Uploads and sends the Photo from path.')
             print('  !uf <path>: Uploads and sends the File from path.')
-            print('  !d <msg-id>: Deletes a message by its id')
             print('  !dm <msg-id>: Downloads the given message Media (if any).')
             print('  !dp: Downloads the current dialog Profile picture.')
             print()
@@ -206,13 +205,6 @@ class InteractiveTelegramClient(TelegramClient):
                 elif msg.startswith('!uf '):
                     # Slice the message to get the path
                     self.send_document(path=msg[len('!uf '):], entity=entity)
-
-                # Delete messages
-                elif msg.startswith('!d '):
-                    # Slice the message to get message ID
-                    deleted_msg = self.delete_messages(entity, msg[len('!d '):])
-                    print('Deleted. {}'.format(deleted_msg))
-
 
                 # Download media
                 elif msg.startswith('!dm '):
