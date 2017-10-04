@@ -150,6 +150,11 @@ class TelegramBareClient:
         self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
 
+        # Some errors are known but there's nothing we can do from the
+        # background thread. If any of these happens, call .disconnect(),
+        # and raise them next time .invoke() is tried to be called.
+        self._background_error = None
+
     # endregion
 
     # region Connecting
@@ -175,6 +180,7 @@ class TelegramBareClient:
            centers won't be invoked.
         """
         self._main_thread_ident = threading.get_ident()
+        self._background_error = None  # Clear previous errors
 
         try:
             self._sender.connect()
@@ -434,6 +440,9 @@ class TelegramBareClient:
                        or self._reconnect_lock.locked()
         try:
             for _ in range(retries):
+                if self._background_error and on_main_thread:
+                    raise self._background_error
+
                 result = self._invoke(sender, call_receive, *requests)
                 if result:
                     return result
@@ -789,6 +798,19 @@ class TelegramBareClient:
                     '[ERROR] Unknown error on the read thread, please report',
                     error
                 )
+
+                try:
+                    import socks
+                    if isinstance(error, socks.GeneralProxyError):
+                        # This is a known error, and it's not related to
+                        # Telegram but rather to the proxy. Disconnect and
+                        # hand it over to the main thread.
+                        self._background_error = error
+                        self.disconnect()
+                        break
+                except ImportError:
+                    "Not using PySocks, so it can't be a socket error"
+
                 # If something strange happens we don't want to enter an
                 # infinite loop where all we do is raise an exception, so
                 # add a little sleep to avoid the CPU usage going mad.
