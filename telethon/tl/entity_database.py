@@ -130,6 +130,12 @@ class EntityDatabase:
 
     # TODO Allow search by name by tokenizing the input and return a list
 
+    def get_input_entity(self, peer):
+        try:
+            return self._input_entities[utils.get_peer_id(peer, add_mark=True)]
+        except ValueError as e:
+            raise KeyError(peer) from e
+
     def get_input_list(self):
         return list(self._input_entities.items())
 
