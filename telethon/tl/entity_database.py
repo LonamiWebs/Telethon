@@ -117,8 +117,14 @@ class EntityDatabase:
         if isinstance(key, int):
             return self._entities[key]  # normal IDs are assumed users
 
-        if isinstance(key, TLObject) and type(key).SUBCLASS_OF_ID == 0x2d45687:
-            return self._entities[utils.get_peer_id(key, add_mark=True)]
+        if isinstance(key, TLObject):
+            sc = type(key).SUBCLASS_OF_ID
+            if sc == 0x2d45687:
+                # Subclass of "Peer"
+                return self._entities[utils.get_peer_id(key, add_mark=True)]
+            elif sc in {0x2da17977, 0xc5af5d94, 0x6d44b7db}:
+                # Subclass of "User", "Chat" or "Channel"
+                return key
 
         raise KeyError(key)
 
