@@ -304,6 +304,16 @@ def get_peer_id(peer, add_mark=False):
     """Finds the ID of the given peer, and optionally converts it to
        the "bot api" format if 'add_mark' is set to True.
     """
+    if not isinstance(peer, TLObject):
+        if isinstance(peer, int):
+            return peer
+        else:
+            _raise_cast_fail(peer, 'int')
+
+    if type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
+        # Not a Peer or an InputPeer, so first get its Input version
+        peer = get_input_peer(peer)
+
     if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
         return peer.user_id
     else:
@@ -321,11 +331,7 @@ def get_peer_id(peer, add_mark=False):
             i = peer.channel_id  # IDs will be strictly positive -> log works
             return -(i + pow(10, math.floor(math.log10(i) + 3)))
 
-    # Maybe a full entity was given and we just need its ID
-    try:
-        return get_peer_id(get_input_peer(peer), add_mark=add_mark)
-    except ValueError:
-        _raise_cast_fail(peer, 'int')
+    _raise_cast_fail(peer, 'int')
 
 
 def resolve_id(marked_id):
