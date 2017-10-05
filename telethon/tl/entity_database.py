@@ -66,7 +66,7 @@ class EntityDatabase:
                 continue
 
             try:
-                p = utils.get_input_peer(e)
+                p = utils.get_input_peer(e, allow_self=False)
                 new_input[utils.get_peer_id(p, add_mark=True)] = \
                     getattr(p, 'access_hash', 0)  # chats won't have hash
 
@@ -93,7 +93,7 @@ class EntityDatabase:
            "full" means simply not "Input*".
         """
         marked_id = utils.get_peer_id(
-            utils.get_input_peer(entity), add_mark=True
+            utils.get_input_peer(entity, allow_self=False), add_mark=True
         )
         try:
             old_entity = self._entities[marked_id]

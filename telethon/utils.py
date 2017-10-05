@@ -72,7 +72,7 @@ def _raise_cast_fail(entity, target):
                      .format(type(entity).__name__, target))
 
 
-def get_input_peer(entity):
+def get_input_peer(entity, allow_self=True):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A ValueError is raised if the given entity isn't a supported type."""
     if not isinstance(entity, TLObject):
@@ -82,7 +82,7 @@ def get_input_peer(entity):
         return entity
 
     if isinstance(entity, User):
-        if entity.is_self:
+        if entity.is_self and allow_self:
             return InputPeerSelf()
         else:
             return InputPeerUser(entity.id, entity.access_hash)
@@ -312,7 +312,7 @@ def get_peer_id(peer, add_mark=False):
 
     if type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
         # Not a Peer or an InputPeer, so first get its Input version
-        peer = get_input_peer(peer)
+        peer = get_input_peer(peer, allow_self=False)
 
     if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
         return peer.user_id
