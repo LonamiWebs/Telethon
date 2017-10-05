@@ -30,6 +30,10 @@ class EntityDatabase:
             return False
 
         # Save all input entities we know of
+        if not isinstance(tlobject, TLObject) and hasattr(tlobject, '__iter__'):
+            # This may be a list of users already for instance
+            return self.expand(tlobject)
+
         entities = []
         if hasattr(tlobject, 'chats') and hasattr(tlobject.chats, '__iter__'):
             entities.extend(tlobject.chats)
