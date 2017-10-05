@@ -256,11 +256,12 @@ class TelegramClient(TelegramBareClient):
         messages = {}  # Used later for sorting TODO also return these?
         entities = {}
         while len(dialogs) < limit:
+            need = limit - len(dialogs)
             r = self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=0  # limit 0 often means "as much as possible"
+                limit=need if need < float('inf') else 0
             ))
             if not r.dialogs:
                 break
@@ -290,10 +291,12 @@ class TelegramClient(TelegramBareClient):
         # so we need to set at least one day ahead while still being
         # the smallest date possible.
         no_date = datetime.fromtimestamp(86400)
-        ds = sorted(
-            list(dialogs.values()),
+        ds = list(sorted(
+            dialogs.values(),
             key=lambda d: getattr(messages[d.top_message], 'date', no_date)
-        )
+        ))
+        if limit < float('inf'):
+            ds = ds[:limit]
         return (
             ds,
             [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
