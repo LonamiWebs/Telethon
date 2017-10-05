@@ -181,5 +181,8 @@ class Session:
         self.time_offset = correct - now
 
     def process_entities(self, tlobject):
-        if self.entities.process(tlobject):
-            self.save()  # Save if any new entities got added
+        try:
+            if self.entities.process(tlobject):
+                self.save()  # Save if any new entities got added
+        except:
+            pass
