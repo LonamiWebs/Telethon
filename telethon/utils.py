@@ -321,7 +321,11 @@ def get_peer_id(peer, add_mark=False):
             i = peer.channel_id  # IDs will be strictly positive -> log works
             return -(i + pow(10, math.floor(math.log10(i) + 3)))
 
-    _raise_cast_fail(peer, 'int')
+    # Maybe a full entity was given and we just need its ID
+    try:
+        return get_peer_id(get_input_peer(peer), add_mark=add_mark)
+    except ValueError:
+        _raise_cast_fail(peer, 'int')
 
 
 def resolve_id(marked_id):
