@@ -8,8 +8,15 @@ from ..tl.types import User, Chat, Channel
 
 
 class EntityDatabase:
-    def __init__(self, input_list=None, enabled=True):
+    def __init__(self, input_list=None, enabled=True, enabled_full=True):
+        """Creates a new entity database with an initial load of "Input"
+           entities, if any.
+
+           If 'enabled', input entities will be saved. The whole entity
+           will be saved if both 'enabled' and 'enabled_full' are True.
+        """
         self.enabled = enabled
+        self.enabled_full = enabled_full
 
         self._lock = Lock()
         self._entities = {}  # marked_id: user|chat|channel
@@ -63,10 +70,11 @@ class EntityDatabase:
                 new_input[utils.get_peer_id(p, add_mark=True)] = \
                     getattr(p, 'access_hash', 0)  # chats won't have hash
 
-                if isinstance(e, User) \
-                        or isinstance(e, Chat) \
-                        or isinstance(e, Channel):
-                    new.append(e)
+                if self.enabled_full:
+                    if isinstance(e, User) \
+                            or isinstance(e, Chat) \
+                            or isinstance(e, Channel):
+                        new.append(e)
             except ValueError:
                 pass
 
@@ -78,7 +86,8 @@ class EntityDatabase:
             return len(self._input_entities) != before
 
     def _add_full_entity(self, entity):
-        """Adds a "full" entity (User, Chat or Channel, not "Input*").
+        """Adds a "full" entity (User, Chat or Channel, not "Input*"),
+           despite the value of self.enabled and self.enabled_full.
 
            Not to be confused with UserFull, ChatFull, or ChannelFull,
            "full" means simply not "Input*".
