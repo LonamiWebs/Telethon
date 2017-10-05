@@ -1,7 +1,5 @@
 import os
-import re
 from datetime import datetime, timedelta
-from functools import lru_cache
 from mimetypes import guess_type
 
 try:
@@ -17,6 +15,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
+from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -127,7 +126,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
-        phone = self._parse_phone(phone)
+        phone = EntityDatabase.parse_phone(phone) or self._phone
         result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
@@ -160,7 +159,7 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            phone = self._parse_phone(phone)
+            phone = EntityDatabase.parse_phone(phone) or self._phone
             phone_code_hash = phone_code_hash or self._phone_code_hash
             if not phone:
                 raise ValueError(
@@ -897,40 +896,20 @@ class TelegramClient(TelegramBareClient):
         """Gets an entity from the given string, which may be a phone or
            an username, and processes all the found entities on the session.
         """
-        stripped_phone = self._parse_phone(string, ignore_saved=True)
-        if stripped_phone.isdigit():
-            contacts = self(GetContactsRequest(0))
-            self.session.process_entities(contacts)
-            try:
-                return next(
-                    u for u in contacts.users
-                    if u.phone and u.phone.endswith(stripped_phone)
-                )
-            except StopIteration:
-                raise ValueError(
-                    'Could not find user with phone {}, '
-                    'add them to your contacts first'.format(string)
-                )
+        phone = EntityDatabase.parse_phone(string)
+        if phone:
+            entity = phone
+            self.session.process_entities(self(GetContactsRequest(0)))
         else:
             entity = string.strip('@').lower()
             self.session.process_entities(self(ResolveUsernameRequest(entity)))
-            try:
-                return self.session.entities[entity]
-            except KeyError:
-                raise ValueError(
-                    'Could not find user with username {}'.format(entity)
-                )
 
-    def _parse_phone(self, phone, ignore_saved=False):
-        if isinstance(phone, int):
-            phone = str(phone)
-        elif phone:
-            phone = re.sub(r'[+()\s-]', '', phone)
-
-        if ignore_saved:
-            return phone
-        else:
-            return phone or self._phone
+        try:
+            return self.session.entities[entity]
+        except KeyError:
+            raise ValueError(
+                'Could not find user with username {}'.format(entity)
+            )
 
     def get_input_entity(self, peer):
         """Gets the input entity given its PeerUser, PeerChat, PeerChannel.
@@ -940,7 +919,7 @@ class TelegramClient(TelegramBareClient):
            If this Peer hasn't been seen before by the library, all dialogs
            will loaded, and their entities saved to the session file.
 
-           If even after
+           If even after it's not found, a ValueError is raised.
         """
         try:
             # First try to get the entity from cache, otherwise figure it out

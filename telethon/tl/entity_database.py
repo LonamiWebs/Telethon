@@ -1,5 +1,7 @@
 from threading import Lock
 
+import re
+
 from .. import utils
 from ..tl import TLObject
 from ..tl.types import User, Chat, Channel
@@ -19,6 +21,7 @@ class EntityDatabase:
 
         # TODO Allow disabling some extra mappings
         self._username_id = {}  # username: marked_id
+        self._phone_id = {}  # phone: marked_id
 
     def process(self, tlobject):
         """Processes all the found entities on the given TLObject,
@@ -87,18 +90,26 @@ class EntityDatabase:
             old_entity = self._entities[marked_id]
             old_entity.__dict__.update(entity.__dict__)  # Keep old references
 
-            # Update must delete old username
+            # Update must delete old username and phone
             username = getattr(old_entity, 'username', None)
             if username:
                 del self._username_id[username.lower()]
+
+            phone = getattr(old_entity, 'phone', None)
+            if phone:
+                del self._phone_id[phone]
         except KeyError:
             # Add new entity
             self._entities[marked_id] = entity
 
-        # Always update username if any
+        # Always update username or phone if any
         username = getattr(entity, 'username', None)
         if username:
             self._username_id[username.lower()] = marked_id
+
+        phone = getattr(entity, 'phone', None)
+        if phone:
+            self._username_id[phone] = marked_id
 
     def __getitem__(self, key):
         """Accepts a digit only string as phone number,
@@ -113,10 +124,12 @@ class EntityDatabase:
            Note that megagroups are channels with .megagroup = True.
         """
         if isinstance(key, str):
-            # TODO Parse phone properly, currently only usernames
-            key = key.lstrip('@').lower()
-            # TODO Use the client to return from username if not found
-            return self._entities[self._username_id[key]]
+            phone = EntityDatabase.parse_phone(key)
+            if phone:
+                return self._phone_id[phone]
+            else:
+                key = key.lstrip('@').lower()
+                return self._entities[self._username_id[key]]
 
         if isinstance(key, int):
             return self._entities[key]  # normal IDs are assumed users
@@ -139,6 +152,16 @@ class EntityDatabase:
             del self._username_id[target.username]
 
     # TODO Allow search by name by tokenizing the input and return a list
+
+    @staticmethod
+    def parse_phone(phone):
+        """Parses the given phone, or returns None if it's invalid"""
+        if isinstance(phone, int):
+            return str(phone)
+        else:
+            phone = re.sub(r'[+()\s-]', '', str(phone))
+            if phone.isdigit():
+                return phone
 
     def get_input_entity(self, peer):
         try:
