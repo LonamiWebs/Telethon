@@ -1,7 +1,5 @@
 import os
-import re
 from datetime import datetime, timedelta
-from functools import lru_cache
 from mimetypes import guess_type
 
 try:
@@ -17,6 +15,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
+from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -127,7 +126,7 @@ class TelegramClient(TelegramBareClient):
 
     def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
-        phone = self._parse_phone(phone)
+        phone = EntityDatabase.parse_phone(phone) or self._phone
         result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
@@ -160,7 +159,7 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            phone = self._parse_phone(phone)
+            phone = EntityDatabase.parse_phone(phone) or self._phone
             phone_code_hash = phone_code_hash or self._phone_code_hash
             if not phone:
                 raise ValueError(
@@ -849,7 +848,6 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
-    @lru_cache()
     def get_entity(self, entity):
         """Turns an entity into a valid Telegram user or chat.
            If "entity" is a string which can be converted to an integer,
@@ -866,71 +864,52 @@ class TelegramClient(TelegramBareClient):
            If the entity is neither, and it's not a TLObject, an
            error will be raised.
         """
-        # TODO Maybe cache both the contacts and the entities.
-        # If an user cannot be found, force a cache update through
-        # a public method (since users may change their username)
-        input_entity = None
-        if isinstance(entity, TLObject):
-            # crc32(b'InputPeer') and crc32(b'Peer')
-            if type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687):
-                input_entity = self.get_input_entity(entity)
-            else:
-                # TODO Don't assume it's a valid entity
-                return entity
+        try:
+            return self.session.entities[entity]
+        except KeyError:
+            pass
 
-        elif isinstance(entity, int):
-            input_entity = self.get_input_entity(entity)
+        if isinstance(entity, int) or (
+                isinstance(entity, TLObject) and
+                # crc32(b'InputPeer') and crc32(b'Peer')
+                type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
+            ie = self.get_input_entity(entity)
+            if isinstance(ie, InputPeerUser):
+                self.session.process_entities(GetUsersRequest([ie]))
+            elif isinstance(ie, InputPeerChat):
+                self.session.process_entities(GetChatsRequest([ie.chat_id]))
+            elif isinstance(ie, InputPeerChannel):
+                self.session.process_entities(GetChannelsRequest([ie]))
 
-        if input_entity:
-            if isinstance(input_entity, InputPeerUser):
-                return self(GetUsersRequest([input_entity]))[0]
-            elif isinstance(input_entity, InputPeerChat):
-                return self(GetChatsRequest([input_entity.chat_id])).chats[0]
-            elif isinstance(input_entity, InputPeerChannel):
-                return self(GetChannelsRequest([input_entity])).chats[0]
+            # The result of Get*Request has been processed and the entity
+            # cached if it was found.
+            return self.session.entities[ie]
 
         if isinstance(entity, str):
-            stripped_phone = self._parse_phone(entity, ignore_saved=True)
-            if stripped_phone.isdigit():
-                contacts = self(GetContactsRequest(0))
-                try:
-                    return next(
-                        u for u in contacts.users
-                        if u.phone and u.phone.endswith(stripped_phone)
-                    )
-                except StopIteration:
-                    raise ValueError(
-                        'Could not find user with phone {}, '
-                        'add them to your contacts first'.format(entity)
-                    )
-            else:
-                username = entity.strip('@').lower()
-                resolved = self(ResolveUsernameRequest(username))
-                for c in resolved.chats:
-                    if getattr(c, 'username', '').lower() == username:
-                        return c
-                for u in resolved.users:
-                    if getattr(u, 'username', '').lower() == username:
-                        return u
-
-                raise ValueError(
-                    'Could not find user with username {}'.format(entity)
-                )
+            return self._get_entity_from_string(entity)
 
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
 
-    def _parse_phone(self, phone, ignore_saved=False):
-        if isinstance(phone, int):
-            phone = str(phone)
-        elif phone:
-            phone = re.sub(r'[+()\s-]', '', phone)
-
-        if ignore_saved:
-            return phone
+    def _get_entity_from_string(self, string):
+        """Gets an entity from the given string, which may be a phone or
+           an username, and processes all the found entities on the session.
+        """
+        phone = EntityDatabase.parse_phone(string)
+        if phone:
+            entity = phone
+            self.session.process_entities(self(GetContactsRequest(0)))
         else:
-            return phone or self._phone
+            entity = string.strip('@').lower()
+            self.session.process_entities(self(ResolveUsernameRequest(entity)))
+
+        try:
+            return self.session.entities[entity]
+        except KeyError:
+            raise ValueError(
+                'Could not find user with username {}'.format(entity)
+            )
 
     def get_input_entity(self, peer):
         """Gets the input entity given its PeerUser, PeerChat, PeerChannel.
@@ -940,11 +919,16 @@ class TelegramClient(TelegramBareClient):
            If this Peer hasn't been seen before by the library, all dialogs
            will loaded, and their entities saved to the session file.
 
-           If even after
+           If even after it's not found, a ValueError is raised.
         """
+        try:
+            # First try to get the entity from cache, otherwise figure it out
+            self.session.entities.get_input_entity(peer)
+        except KeyError:
+            pass
+
         if isinstance(peer, str):
-            # Let .get_entity resolve the username or phone (full entity)
-            peer = self.get_entity(peer)
+            return utils.get_input_peer(self._get_entity_from_string(peer))
 
         is_peer = False
         if isinstance(peer, int):
@@ -964,16 +948,12 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 
-        try:
-            return self.session.get_input_entity(peer)
-        except KeyError:
-            pass
-
         if self.session.save_entities:
             # Not found, look in the dialogs (this will save the users)
             self.get_dialogs(limit=None)
+
             try:
-                return self.session.get_input_entity(peer)
+                self.session.entities.get_input_entity(peer)
             except KeyError:
                 pass
 
