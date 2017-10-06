@@ -538,7 +538,7 @@ class TelegramClient(TelegramBareClient):
                 # Take the first element by using [0] since it returns a tuple
                 mime_type = guess_type(file)[0]
                 attributes = [
-                    DocumentAttributeFilename(os.path.abspath(file))
+                    DocumentAttributeFilename(os.path.basename(file))
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
                 ]
