@@ -300,38 +300,41 @@ def get_input_media(media, user_caption=None, is_photo=False):
     _raise_cast_fail(media, 'InputMedia')
 
 
-def get_peer_id(peer, add_mark=False):
+def get_peer_id(peer, add_mark=False, get_kind=False):
     """Finds the ID of the given peer, and optionally converts it to
        the "bot api" format if 'add_mark' is set to True.
+
+       If 'get_kind', the kind will be returned as a second value.
     """
+    i, k = None, None  # determined ID and kind
     if not isinstance(peer, TLObject):
         if isinstance(peer, int):
-            return peer
+            i, k = peer, PeerUser
         else:
             _raise_cast_fail(peer, 'int')
 
-    if type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
+    elif type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
         # Not a Peer or an InputPeer, so first get its Input version
         peer = get_input_peer(peer, allow_self=False)
 
     if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
-        return peer.user_id
-    else:
-        if isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
-            if not add_mark:
-                return peer.chat_id
+        i, k = peer.user_id, PeerUser
+    elif isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
+        k = PeerChat
+        # Chats are marked by turning them into negative numbers
+        i = -peer.chat_id if add_mark else peer.chat_id
+    elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
+        k = PeerChannel
+        i = peer.channel_id
+        if add_mark:
+            # Concat -100 through math tricks, .to_supergroup() on Madeline
+            # IDs will be strictly positive -> log works
+            i = -(i + pow(10, math.floor(math.log10(i) + 3)))
 
-            # Chats are marked by turning them into negative numbers
-            return -peer.chat_id
-        elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
-            if not add_mark:
-                return peer.channel_id
+    if i is None:
+        _raise_cast_fail(peer, 'int')
 
-            # Prepend -100 through math tricks (.to_supergroup() on Madeline)
-            i = peer.channel_id  # IDs will be strictly positive -> log works
-            return -(i + pow(10, math.floor(math.log10(i) + 3)))
-
-    _raise_cast_fail(peer, 'int')
+    return (i, k) if get_kind else i  # return kind only if get_kind
 
 
 def resolve_id(marked_id):

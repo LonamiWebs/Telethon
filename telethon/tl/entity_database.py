@@ -4,7 +4,10 @@ import re
 
 from .. import utils
 from ..tl import TLObject
-from ..tl.types import User, Chat, Channel
+from ..tl.types import (
+    User, Chat, Channel, PeerUser, PeerChat, PeerChannel,
+    InputPeerUser, InputPeerChat, InputPeerChannel
+)
 
 
 class EntityDatabase:
@@ -174,9 +177,18 @@ class EntityDatabase:
 
     def get_input_entity(self, peer):
         try:
-            return self._input_entities[utils.get_peer_id(peer, add_mark=True)]
+            i, k = utils.get_peer_id(peer, add_mark=True, get_kind=True)
+            h = self._input_entities[i]
+            if k == PeerUser:
+                return InputPeerUser(i, h)
+            elif k == PeerChat:
+                return InputPeerChat(i)
+            elif k == PeerChannel:
+                return InputPeerChannel(i, h)
+
         except ValueError as e:
             raise KeyError(peer) from e
+        raise KeyError(peer)
 
     def get_input_list(self):
         return list(self._input_entities.items())
