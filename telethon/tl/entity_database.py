@@ -1,5 +1,3 @@
-from threading import Lock
-
 import re
 
 from .. import utils
@@ -20,8 +18,6 @@ class EntityDatabase:
         """
         self.enabled = enabled
         self.enabled_full = enabled_full
-
-        self._lock = Lock()
         self._entities = {}  # marked_id: user|chat|channel
 
         if input_list:
@@ -81,12 +77,11 @@ class EntityDatabase:
             except ValueError:
                 pass
 
-        with self._lock:
-            before = len(self._input_entities)
-            self._input_entities.update(new_input)
-            for e in new:
-                self._add_full_entity(e)
-            return len(self._input_entities) != before
+        before = len(self._input_entities)
+        self._input_entities.update(new_input)
+        for e in new:
+            self._add_full_entity(e)
+        return len(self._input_entities) != before
 
     def _add_full_entity(self, entity):
         """Adds a "full" entity (User, Chat or Channel, not "Input*"),

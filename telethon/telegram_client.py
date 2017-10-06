@@ -52,21 +52,14 @@ from .tl.types.messages import DialogsSlice
 
 
 class TelegramClient(TelegramBareClient):
-    """Full featured TelegramClient meant to extend the basic functionality -
-
-       As opposed to the TelegramBareClient, this one  features downloading
-       media from different data centers, starting a second thread to
-       handle updates, and some very common functionality.
-    """
+    """Full featured TelegramClient meant to extend the basic functionality"""
 
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
-                 update_workers=None,
                  timeout=timedelta(seconds=5),
-                 spawn_read_thread=True,
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
 
@@ -78,22 +71,6 @@ class TelegramClient(TelegramBareClient):
            The 'connection_mode' should be any value under ConnectionMode.
            This will only affect how messages are sent over the network
            and how much processing is required before sending them.
-
-           The integer 'update_workers' represents depending on its value:
-             is None: Updates will *not* be stored in memory.
-             = 0: Another thread is responsible for calling self.updates.poll()
-             > 0: 'update_workers' background threads will be spawned, any
-                  any of them will invoke all the self.updates.handlers.
-
-           If 'spawn_read_thread', a background thread will be started once
-           an authorized user has been logged in to Telegram to read items
-           (such as updates and responses) from the network as soon as they
-           occur, which will speed things up.
-
-           If you don't want to spawn any additional threads, pending updates
-           will be read and processed accordingly after invoking a request
-           and not immediately. This is useful if you don't care about updates
-           at all and have set 'update_workers=None'.
 
            If more named arguments are provided as **kwargs, they will be
            used to update the Session instance. Most common settings are:
@@ -108,8 +85,6 @@ class TelegramClient(TelegramBareClient):
             session, api_id, api_hash,
             connection_mode=connection_mode,
             proxy=proxy,
-            update_workers=update_workers,
-            spawn_read_thread=spawn_read_thread,
             timeout=timeout,
             **kwargs
         )

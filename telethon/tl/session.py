@@ -4,7 +4,6 @@ import platform
 import time
 from base64 import b64encode, b64decode
 from os.path import isfile as file_exists
-from threading import Lock
 
 from .entity_database import EntityDatabase
 from .. import helpers
@@ -51,11 +50,6 @@ class Session:
             self.report_errors = True
             self.save_entities = True
 
-        # Cross-thread safety
-        self._seq_no_lock = Lock()
-        self._msg_id_lock = Lock()
-        self._save_lock = Lock()
-
         self.id = helpers.generate_random_long(signed=False)
         self._sequence = 0
         self.time_offset = 0
@@ -71,24 +65,23 @@ class Session:
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
-        if not self.session_user_id or self._save_lock.locked():
+        if not self.session_user_id:
             return
 
-        with self._save_lock:
-            with open('{}.session'.format(self.session_user_id), 'w') as file:
-                out_dict = {
-                    'port': self.port,
-                    'salt': self.salt,
-                    'layer': self.layer,
-                    'server_address': self.server_address,
-                    'auth_key_data':
-                        b64encode(self.auth_key.key).decode('ascii')
-                        if self.auth_key else None
-                }
-                if self.save_entities:
-                    out_dict['entities'] = self.entities.get_input_list()
+        with open('{}.session'.format(self.session_user_id), 'w') as file:
+            out_dict = {
+                'port': self.port,
+                'salt': self.salt,
+                'layer': self.layer,
+                'server_address': self.server_address,
+                'auth_key_data':
+                    b64encode(self.auth_key.key).decode('ascii')
+                    if self.auth_key else None
+            }
+            if self.save_entities:
+                out_dict['entities'] = self.entities.get_input_list()
 
-                json.dump(out_dict, file)
+            json.dump(out_dict, file)
 
     def delete(self):
         """Deletes the current session file"""
@@ -149,13 +142,12 @@ class Session:
            Note that if confirmed=True, the sequence number
            will be increased by one too
         """
-        with self._seq_no_lock:
-            if content_related:
-                result = self._sequence * 2 + 1
-                self._sequence += 1
-                return result
-            else:
-                return self._sequence * 2
+        if content_related:
+            result = self._sequence * 2 + 1
+            self._sequence += 1
+            return result
+        else:
+            return self._sequence * 2
 
     def get_new_msg_id(self):
         """Generates a new unique message ID based on the current
@@ -166,11 +158,10 @@ class Session:
         # "message identifiers are divisible by 4"
         new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
-        with self._msg_id_lock:
-            if self._last_msg_id >= new_msg_id:
-                new_msg_id = self._last_msg_id + 4
+        if self._last_msg_id >= new_msg_id:
+            new_msg_id = self._last_msg_id + 4
 
-            self._last_msg_id = new_msg_id
+        self._last_msg_id = new_msg_id
 
         return new_msg_id
 

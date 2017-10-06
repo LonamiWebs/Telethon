@@ -3,14 +3,12 @@ import errno
 import socket
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
-from threading import Lock
 
 
 class TcpClient:
     def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
         self.proxy = proxy
         self._socket = None
-        self._closing_lock = Lock()
 
         if isinstance(timeout, timedelta):
             self.timeout = timeout.seconds
@@ -65,19 +63,14 @@ class TcpClient:
 
     def close(self):
         """Closes the connection"""
-        if self._closing_lock.locked():
-            # Already closing, no need to close again (avoid None.close())
-            return
-
-        with self._closing_lock:
-            try:
-                if self._socket is not None:
-                    self._socket.shutdown(socket.SHUT_RDWR)
-                    self._socket.close()
-            except OSError:
-                pass  # Ignore ENOTCONN, EBADF, and any other error when closing
-            finally:
-                self._socket = None
+        try:
+            if self._socket is not None:
+                self._socket.shutdown(socket.SHUT_RDWR)
+                self._socket.close()
+        except OSError:
+            pass  # Ignore ENOTCONN, EBADF, and any other error when closing
+        finally:
+            self._socket = None
 
     def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
