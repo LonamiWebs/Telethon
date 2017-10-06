@@ -877,16 +877,20 @@ class TelegramClient(TelegramBareClient):
                 # crc32(b'InputPeer') and crc32(b'Peer')
                 type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = self.get_input_entity(entity)
+            result = None
             if isinstance(ie, InputPeerUser):
-                self.session.process_entities(GetUsersRequest([ie]))
+                result = self(GetUsersRequest([ie]))
             elif isinstance(ie, InputPeerChat):
-                self.session.process_entities(GetChatsRequest([ie.chat_id]))
+                result = self(GetChatsRequest([ie.chat_id]))
             elif isinstance(ie, InputPeerChannel):
-                self.session.process_entities(GetChannelsRequest([ie]))
+                result = self(GetChannelsRequest([ie]))
 
-            # The result of Get*Request has been processed and the entity
-            # cached if it was found.
-            return self.session.entities[ie]
+            if result:
+                self.session.process_entities(result)
+                try:
+                    return self.session.entities[ie]
+                except KeyError:
+                    pass
 
         if isinstance(entity, str):
             return self._get_entity_from_string(entity)
