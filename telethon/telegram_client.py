@@ -930,7 +930,7 @@ class TelegramClient(TelegramBareClient):
         """
         try:
             # First try to get the entity from cache, otherwise figure it out
-            self.session.entities.get_input_entity(peer)
+            return self.session.entities.get_input_entity(peer)
         except KeyError:
             pass
 
@@ -960,7 +960,7 @@ class TelegramClient(TelegramBareClient):
             self.get_dialogs(limit=None)
 
             try:
-                self.session.entities.get_input_entity(peer)
+                return self.session.entities.get_input_entity(peer)
             except KeyError:
                 pass
 
