@@ -306,10 +306,10 @@ def get_peer_id(peer, add_mark=False, get_kind=False):
 
        If 'get_kind', the kind will be returned as a second value.
     """
-    i, k = None, None  # determined ID and kind
+    # First we assert it's a Peer TLObject, or early return for integers
     if not isinstance(peer, TLObject):
         if isinstance(peer, int):
-            i, k = peer, PeerUser
+            return (peer, PeerUser) if get_kind else peer
         else:
             _raise_cast_fail(peer, 'int')
 
@@ -317,22 +317,24 @@ def get_peer_id(peer, add_mark=False, get_kind=False):
         # Not a Peer or an InputPeer, so first get its Input version
         peer = get_input_peer(peer, allow_self=False)
 
+    # Set the right ID/kind, or raise if the TLObject is not recognised
+    i, k = None, None
     if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
         i, k = peer.user_id, PeerUser
     elif isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
-        k = PeerChat
-        # Chats are marked by turning them into negative numbers
-        i = -peer.chat_id if add_mark else peer.chat_id
+        i, k = peer.chat_id, PeerChat
     elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
-        k = PeerChannel
-        i = peer.channel_id
-        if add_mark:
+        i, k = peer.channel_id, PeerChannel
+    else:
+        _raise_cast_fail(peer, 'int')
+
+    if add_mark:
+        if k == PeerChat:
+            i = -i
+        elif k == PeerChannel:
             # Concat -100 through math tricks, .to_supergroup() on Madeline
             # IDs will be strictly positive -> log works
             i = -(i + pow(10, math.floor(math.log10(i) + 3)))
-
-    if i is None:
-        _raise_cast_fail(peer, 'int')
 
     return (i, k) if get_kind else i  # return kind only if get_kind
 
