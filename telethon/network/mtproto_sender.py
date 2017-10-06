@@ -64,12 +64,16 @@ class MtProtoSender:
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
-        # If any message needs confirmation send an AckRequest first
-        self._send_acknowledges()
-
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
+
+        # Pack everything in the same container if we need to send AckRequests
+        if self._need_confirmation:
+            messages.append(
+                TLMessage(self.session, MsgsAck(self._need_confirmation))
+            )
+            self._need_confirmation.clear()
 
         if len(messages) == 1:
             message = messages[0]
@@ -78,13 +82,9 @@ class MtProtoSender:
 
         self._send_message(message)
 
-    def _send_acknowledges(self):
-        """Sends a messages acknowledge for all those who _need_confirmation"""
-        if self._need_confirmation:
-            self._send_message(
-                TLMessage(self.session, MsgsAck(self._need_confirmation))
-            )
-            del self._need_confirmation[:]
+    def _send_acknowledge(self, msg_id):
+        """Sends a message acknowledge for the given msg_id"""
+        self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
 
     def receive(self, update_state):
         """Receives a single message from the connected endpoint.
@@ -338,8 +338,7 @@ class MtProtoSender:
                 )
 
             # Acknowledge that we received the error
-            self._need_confirmation.append(request_id)
-            self._send_acknowledges()
+            self._send_acknowledge(request_id)
 
             if request:
                 request.rpc_error = error
