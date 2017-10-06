@@ -137,7 +137,7 @@ class TelegramBareClient:
 
     # region Connecting
 
-    def connect(self, _exported_auth=None, _sync_updates=True, _cdn=False):
+    async def connect(self, _exported_auth=None, _sync_updates=True, _cdn=False):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -158,13 +158,13 @@ class TelegramBareClient:
            centers won't be invoked.
         """
         try:
-            self._sender.connect()
+            await self._sender.connect()
             if not self.session.auth_key:
                 # New key, we need to tell the server we're going to use
                 # the latest layer
                 try:
                     self.session.auth_key, self.session.time_offset = \
-                        authenticator.do_authentication(self._sender.connection)
+                        await authenticator.do_authentication(self._sender.connection)
                 except BrokenAuthKeyError:
                     return False
 
@@ -176,21 +176,21 @@ class TelegramBareClient:
 
             if init_connection:
                 if _exported_auth is not None:
-                    self._init_connection(ImportAuthorizationRequest(
+                    await self._init_connection(ImportAuthorizationRequest(
                         _exported_auth.id, _exported_auth.bytes
                     ))
                 elif not _cdn:
                     TelegramBareClient._dc_options = \
-                        self._init_connection(GetConfigRequest()).dc_options
+                        (await self._init_connection(GetConfigRequest())).dc_options
 
             elif _exported_auth is not None:
-                self(ImportAuthorizationRequest(
+                await self(ImportAuthorizationRequest(
                     _exported_auth.id, _exported_auth.bytes
                 ))
 
             if TelegramBareClient._dc_options is None and not _cdn:
                 TelegramBareClient._dc_options = \
-                    self(GetConfigRequest()).dc_options
+                    (await self(GetConfigRequest())).dc_options
 
             # Connection was successful! Try syncing the update state
             # UNLESS '_sync_updates' is False (we probably are in
@@ -199,7 +199,7 @@ class TelegramBareClient:
             self._user_connected = True
             if _sync_updates and not _cdn:
                 try:
-                    self.sync_updates()
+                    await self.sync_updates()
                     self._set_connected_and_authorized()
                 except UnauthorizedError:
                     self._authorized = False
@@ -227,8 +227,8 @@ class TelegramBareClient:
     def is_connected(self):
         return self._sender.is_connected()
 
-    def _init_connection(self, query=None):
-        result = self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
+    async def _init_connection(self, query=None):
+        result = await self(InvokeWithLayerRequest(LAYER, InitConnectionRequest(
             api_id=self.api_id,
             device_model=self.session.device_model,
             system_version=self.session.system_version,
@@ -249,7 +249,7 @@ class TelegramBareClient:
         # TODO Shall we clear the _exported_sessions, or may be reused?
         pass
 
-    def _reconnect(self, new_dc=None):
+    async def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
            since it's assumed that the connection has been lost and the
            library is reconnecting.
@@ -260,7 +260,7 @@ class TelegramBareClient:
         """
         if new_dc is None:
             # Assume we are disconnected due to some error, so connect again
-            return self.connect()
+            return await self.connect()
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
@@ -269,23 +269,24 @@ class TelegramBareClient:
             self.session.server_address = ip
             self.session.port = dc.port
             self.session.save()
-            return self.connect()
+            return await self.connect()
 
     # endregion
 
     # region Working with different connections/Data Centers
 
-    def _get_dc(self, dc_id, ipv6=False, cdn=False):
+    async def _get_dc(self, dc_id, ipv6=False, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if TelegramBareClient._dc_options is None:
             raise ConnectionError(
                 'Cannot determine the required data center IP address. '
-                'Stabilise a successful initial connection first.')
+                'Stabilise a successful initial connection first.'
+            )
 
         try:
             if cdn:
                 # Ensure we have the latest keys for the CDNs
-                for pk in self(GetCdnConfigRequest()).public_keys:
+                for pk in await (self(GetCdnConfigRequest())).public_keys:
                     rsa.add_key(pk.public_key)
 
             return next(
@@ -297,10 +298,10 @@ class TelegramBareClient:
                 raise
 
             # New configuration, perhaps a new CDN was added?
-            TelegramBareClient._dc_options = self(GetConfigRequest()).dc_options
+            TelegramBareClient._dc_options = await (self(GetConfigRequest())).dc_options
             return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
-    def _get_exported_client(self, dc_id):
+    async def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.
 
            If it's the first time calling the method with a given dc_id,
@@ -317,10 +318,10 @@ class TelegramBareClient:
             # TODO Add a lock, don't allow two threads to create an auth key
             # (when calling .connect() if there wasn't a previous session).
             # for the same data center.
-            dc = self._get_dc(dc_id)
+            dc = await self._get_dc(dc_id)
 
             # Export the current authorization to the new DC.
-            export_auth = self(ExportAuthorizationRequest(dc_id))
+            export_auth = await self(ExportAuthorizationRequest(dc_id))
 
             # Create a temporary session for this IP address, which needs
             # to be different because each auth_key is unique per DC.
@@ -337,15 +338,15 @@ class TelegramBareClient:
             proxy=self._sender.connection.conn.proxy,
             timeout=self._sender.connection.get_timeout()
         )
-        client.connect(_exported_auth=export_auth, _sync_updates=False)
+        await client.connect(_exported_auth=export_auth, _sync_updates=False)
         client._authorized = True  # We exported the auth, so we got auth
         return client
 
-    def _get_cdn_client(self, cdn_redirect):
+    async def _get_cdn_client(self, cdn_redirect):
         """Similar to ._get_exported_client, but for CDNs"""
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
-            dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
+            dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = Session(self.session)
             session.server_address = dc.ip_address
             session.port = dc.port
@@ -361,7 +362,7 @@ class TelegramBareClient:
         #
         # This relies on the fact that TelegramBareClient._dc_options is
         # static and it won't be called from this DC (it would fail).
-        client.connect(_cdn=True)  # Avoid invoking non-CDN specific methods
+        await client.connect(_cdn=True)  # Avoid invoking non-CDN methods
         client._authorized = self._authorized
         return client
 
@@ -369,7 +370,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5):
+    async def __call__(self, *requests, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
@@ -384,7 +385,7 @@ class TelegramBareClient:
 
         try:
             for _ in range(retries):
-                result = self._invoke(sender, *requests)
+                result = await self._invoke(sender, *requests)
                 if result:
                     return result
 
@@ -396,16 +397,16 @@ class TelegramBareClient:
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, sender, *requests):
+    async def _invoke(self, sender, *requests):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
                 x.confirm_received.clear()
                 x.rpc_error = None
 
-            sender.send(*requests)
+            await sender.send(*requests)
             while not all(x.confirm_received.is_set() for x in requests):
-                sender.receive(update_state=self.updates)
+                await sender.receive(update_state=self.updates)
 
         except TimeoutError:
             pass  # We will just retry
@@ -420,9 +421,9 @@ class TelegramBareClient:
 
             if sender != self._sender:
                 # TODO Try reconnecting forever too?
-                sender.connect()
+                await sender.connect()
             else:
-                while self._user_connected and not self._reconnect():
+                while self._user_connected and not await self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
 
         finally:
@@ -449,8 +450,8 @@ class TelegramBareClient:
                 'attempting to reconnect at DC {}'.format(e.new_dc)
             )
 
-            self._reconnect(new_dc=e.new_dc)
-            return self._invoke(sender, *requests)
+            await self._reconnect(new_dc=e.new_dc)
+            return await self._invoke(sender, *requests)
 
         except ServerError as e:
             # Telegram is having some issues, just retry
@@ -474,7 +475,7 @@ class TelegramBareClient:
 
     # region Uploading media
 
-    def upload_file(self,
+    async def upload_file(self,
                     file,
                     part_size_kb=None,
                     file_name=None,
@@ -537,7 +538,7 @@ class TelegramBareClient:
                 else:
                     request = SaveFilePartRequest(file_id, part_index, part)
 
-                result = self(request)
+                result = await self(request)
                 if result:
                     if not is_large:
                         # No need to update the hash if it's a large file
@@ -568,7 +569,7 @@ class TelegramBareClient:
 
     # region Downloading media
 
-    def download_file(self,
+    async def download_file(self,
                       input_location,
                       file,
                       part_size_kb=None,
@@ -616,18 +617,20 @@ class TelegramBareClient:
                     if cdn_decrypter:
                         result = cdn_decrypter.get_file()
                     else:
-                        result = client(GetFileRequest(
+                        result = await client(GetFileRequest(
                             input_location, offset, part_size
                         ))
 
                         if isinstance(result, FileCdnRedirect):
                             cdn_decrypter, result = \
                                 CdnDecrypter.prepare_decrypter(
-                                    client, self._get_cdn_client(result), result
+                                    client,
+                                    await self._get_cdn_client(result),
+                                    result
                                 )
 
                 except FileMigrateError as e:
-                    client = self._get_exported_client(e.new_dc)
+                    client = await self._get_exported_client(e.new_dc)
                     continue
 
                 offset_index += 1
@@ -657,12 +660,12 @@ class TelegramBareClient:
 
     # region Updates handling
 
-    def sync_updates(self):
+    async def sync_updates(self):
         """Synchronizes self.updates to their initial state. Will be
            called automatically on connection if self.updates.enabled = True,
            otherwise it should be called manually after enabling updates.
         """
-        self.updates.process(self(GetStateRequest()))
+        self.updates.process(await self(GetStateRequest()))
 
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,

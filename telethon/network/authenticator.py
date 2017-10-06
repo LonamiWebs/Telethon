@@ -17,21 +17,21 @@ from ..tl.functions import (
 )
 
 
-def do_authentication(connection, retries=5):
+async def do_authentication(connection, retries=5):
     if not retries or retries < 0:
         retries = 1
 
     last_error = None
     while retries:
         try:
-            return _do_authentication(connection)
+            return await _do_authentication(connection)
         except (SecurityError, AssertionError, NotImplementedError) as e:
             last_error = e
         retries -= 1
     raise last_error
 
 
-def _do_authentication(connection):
+async def _do_authentication(connection):
     """Executes the authentication process with the Telegram servers.
        If no error is raised, returns both the authorization key and the
        time offset.
@@ -42,8 +42,8 @@ def _do_authentication(connection):
     req_pq_request = ReqPqRequest(
         nonce=int.from_bytes(os.urandom(16), 'big', signed=True)
     )
-    sender.send(req_pq_request.to_bytes())
-    with BinaryReader(sender.receive()) as reader:
+    await sender.send(req_pq_request.to_bytes())
+    with BinaryReader(await sender.receive()) as reader:
         req_pq_request.on_response(reader)
 
     res_pq = req_pq_request.result
@@ -90,10 +90,10 @@ def _do_authentication(connection):
         public_key_fingerprint=target_fingerprint,
         encrypted_data=cipher_text
     )
-    sender.send(req_dh_params.to_bytes())
+    await sender.send(req_dh_params.to_bytes())
 
     # Step 2 response: DH Exchange
-    with BinaryReader(sender.receive()) as reader:
+    with BinaryReader(await sender.receive()) as reader:
         req_dh_params.on_response(reader)
 
     server_dh_params = req_dh_params.result
@@ -157,10 +157,10 @@ def _do_authentication(connection):
         server_nonce=res_pq.server_nonce,
         encrypted_data=client_dh_encrypted,
     )
-    sender.send(set_client_dh.to_bytes())
+    await sender.send(set_client_dh.to_bytes())
 
     # Step 3 response: Complete DH Exchange
-    with BinaryReader(sender.receive()) as reader:
+    with BinaryReader(await sender.receive()) as reader:
         set_client_dh.on_response(reader)
 
     dh_gen = set_client_dh.result

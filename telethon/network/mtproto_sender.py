@@ -41,9 +41,9 @@ class MtProtoSender:
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
 
-    def connect(self):
+    async def connect(self):
         """Connects to the server"""
-        self.connection.connect(self.session.server_address, self.session.port)
+        await self.connection.connect(self.session.server_address, self.session.port)
 
     def is_connected(self):
         return self.connection.is_connected()
@@ -60,7 +60,7 @@ class MtProtoSender:
 
     # region Send and receive
 
-    def send(self, *requests):
+    async def send(self, *requests):
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
@@ -80,13 +80,13 @@ class MtProtoSender:
         else:
             message = TLMessage(self.session, MessageContainer(messages))
 
-        self._send_message(message)
+        await self._send_message(message)
 
-    def _send_acknowledge(self, msg_id):
+    async def _send_acknowledge(self, msg_id):
         """Sends a message acknowledge for the given msg_id"""
-        self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
+        await self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
 
-    def receive(self, update_state):
+    async def receive(self, update_state):
         """Receives a single message from the connected endpoint.
 
            This method returns nothing, and will only affect other parts
@@ -97,7 +97,7 @@ class MtProtoSender:
            update_state.process(TLObject).
         """
         try:
-            body = self.connection.recv()
+            body = await self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
@@ -111,13 +111,13 @@ class MtProtoSender:
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
-            self._process_msg(remote_msg_id, remote_seq, reader, update_state)
+            await self._process_msg(remote_msg_id, remote_seq, reader, update_state)
 
     # endregion
 
     # region Low level processing
 
-    def _send_message(self, message):
+    async def _send_message(self, message):
         """Sends the given Message(TLObject) encrypted through the network"""
 
         plain_text = \
@@ -130,7 +130,7 @@ class MtProtoSender:
         cipher_text = AES.encrypt_ige(plain_text, key, iv)
 
         result = key_id + msg_key + cipher_text
-        self.connection.send(result)
+        await self.connection.send(result)
 
     def _decode_msg(self, body):
         """Decodes an received encrypted message body bytes"""
@@ -163,7 +163,7 @@ class MtProtoSender:
 
         return message, remote_msg_id, remote_sequence
 
-    def _process_msg(self, msg_id, sequence, reader, state):
+    async def _process_msg(self, msg_id, sequence, reader, state):
         """Processes and handles a Telegram message.
 
            Returns True if the message was handled correctly and doesn't
@@ -178,22 +178,22 @@ class MtProtoSender:
 
         # The following codes are "parsed manually"
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
-            return self._handle_rpc_result(msg_id, sequence, reader)
+            return await self._handle_rpc_result(msg_id, sequence, reader)
 
         if code == 0x347773c5:  # pong
-            return self._handle_pong(msg_id, sequence, reader)
+            return await self._handle_pong(msg_id, sequence, reader)
 
         if code == 0x73f1f8dc:  # msg_container
-            return self._handle_container(msg_id, sequence, reader, state)
+            return await self._handle_container(msg_id, sequence, reader, state)
 
         if code == 0x3072cfa1:  # gzip_packed
-            return self._handle_gzip_packed(msg_id, sequence, reader, state)
+            return await self._handle_gzip_packed(msg_id, sequence, reader, state)
 
         if code == 0xedab447b:  # bad_server_salt
-            return self._handle_bad_server_salt(msg_id, sequence, reader)
+            return await self._handle_bad_server_salt(msg_id, sequence, reader)
 
         if code == 0xa7eff811:  # bad_msg_notification
-            return self._handle_bad_msg_notification(msg_id, sequence, reader)
+            return await self._handle_bad_msg_notification(msg_id, sequence, reader)
 
         # msgs_ack, it may handle the request we wanted
         if code == 0x62d6b459:
@@ -247,7 +247,7 @@ class MtProtoSender:
             r.confirm_received.set()
         self._pending_receive.clear()
 
-    def _handle_pong(self, msg_id, sequence, reader):
+    async def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
         reader.read_int(signed=False)  # code
         received_msg_id = reader.read_long()
@@ -259,7 +259,7 @@ class MtProtoSender:
 
         return True
 
-    def _handle_container(self, msg_id, sequence, reader, state):
+    async def _handle_container(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling container')
         for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
@@ -267,7 +267,7 @@ class MtProtoSender:
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
-                if not self._process_msg(inner_msg_id, sequence, reader, state):
+                if not await self._process_msg(inner_msg_id, sequence, reader, state):
                     reader.set_position(begin_position + inner_len)
             except:
                 # If any error is raised, something went wrong; skip the packet
@@ -276,7 +276,7 @@ class MtProtoSender:
 
         return True
 
-    def _handle_bad_server_salt(self, msg_id, sequence, reader):
+    async def _handle_bad_server_salt(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad server salt')
         reader.read_int(signed=False)  # code
         bad_msg_id = reader.read_long()
@@ -287,11 +287,11 @@ class MtProtoSender:
 
         request = self._pop_request(bad_msg_id)
         if request:
-            self.send(request)
+            await self.send(request)
 
         return True
 
-    def _handle_bad_msg_notification(self, msg_id, sequence, reader):
+    async def _handle_bad_msg_notification(self, msg_id, sequence, reader):
         self._logger.debug('Handling bad message notification')
         reader.read_int(signed=False)  # code
         reader.read_long()  # request_id
@@ -318,7 +318,7 @@ class MtProtoSender:
         else:
             raise error
 
-    def _handle_rpc_result(self, msg_id, sequence, reader):
+    async def _handle_rpc_result(self, msg_id, sequence, reader):
         self._logger.debug('Handling RPC result')
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
@@ -338,7 +338,7 @@ class MtProtoSender:
                 )
 
             # Acknowledge that we received the error
-            self._send_acknowledge(request_id)
+            await self._send_acknowledge(request_id)
 
             if request:
                 request.rpc_error = error
@@ -366,9 +366,9 @@ class MtProtoSender:
                 self._logger.debug('Lost request will be skipped.')
                 return False
 
-    def _handle_gzip_packed(self, msg_id, sequence, reader, state):
+    async def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
-            return self._process_msg(msg_id, sequence, compressed_reader, state)
+            return await self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion

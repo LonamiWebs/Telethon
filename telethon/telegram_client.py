@@ -99,15 +99,15 @@ class TelegramClient(TelegramBareClient):
 
     # region Authorization requests
 
-    def send_code_request(self, phone):
+    async def send_code_request(self, phone):
         """Sends a code request to the specified phone number"""
         phone = EntityDatabase.parse_phone(phone) or self._phone
-        result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
+        result = await self(SendCodeRequest(phone, self.api_id, self.api_hash))
         self._phone = phone
         self._phone_code_hash = result.phone_code_hash
         return result
 
-    def sign_in(self, phone=None, code=None,
+    async def sign_in(self, phone=None, code=None,
                 password=None, bot_token=None, phone_code_hash=None):
         """Completes the sign in process with the phone number + code pair.
 
@@ -132,7 +132,7 @@ class TelegramClient(TelegramBareClient):
         """
 
         if phone and not code:
-            return self.send_code_request(phone)
+            return await self.send_code_request(phone)
         elif code:
             phone = EntityDatabase.parse_phone(phone) or self._phone
             phone_code_hash = phone_code_hash or self._phone_code_hash
@@ -147,18 +147,18 @@ class TelegramClient(TelegramBareClient):
                 if isinstance(code, int):
                     code = str(code)
 
-                result = self(SignInRequest(phone, phone_code_hash, code))
+                result = await self(SignInRequest(phone, phone_code_hash, code))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
                 return None
         elif password:
-            salt = self(GetPasswordRequest()).current_salt
-            result = self(CheckPasswordRequest(
+            salt = await self(GetPasswordRequest()).current_salt
+            result = await self(CheckPasswordRequest(
                 helpers.get_password_hash(password, salt)
             ))
         elif bot_token:
-            result = self(ImportBotAuthorizationRequest(
+            result = await self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
                 api_id=self.api_id, api_hash=self.api_hash
             ))
@@ -171,9 +171,9 @@ class TelegramClient(TelegramBareClient):
         self._set_connected_and_authorized()
         return result.user
 
-    def sign_up(self, code, first_name, last_name=''):
+    async def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
-        result = self(SignUpRequest(
+        result = await self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash,
             phone_code=code,
@@ -184,11 +184,11 @@ class TelegramClient(TelegramBareClient):
         self._set_connected_and_authorized()
         return result.user
 
-    def log_out(self):
+    async def log_out(self):
         """Logs out and deletes the current session.
            Returns True if everything went okay."""
         try:
-            self(LogOutRequest())
+            await self(LogOutRequest())
         except RPCError:
             return False
 
@@ -197,11 +197,11 @@ class TelegramClient(TelegramBareClient):
         self.session = None
         return True
 
-    def get_me(self):
+    async def get_me(self):
         """Gets "me" (the self user) which is currently authenticated,
            or None if the request fails (hence, not authenticated)."""
         try:
-            return self(GetUsersRequest([InputUserSelf()]))[0]
+            return await self(GetUsersRequest([InputUserSelf()]))[0]
         except UnauthorizedError:
             return None
 
@@ -209,7 +209,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
-    def get_dialogs(self,
+    async def get_dialogs(self,
                     limit=10,
                     offset_date=None,
                     offset_id=0,
@@ -232,7 +232,7 @@ class TelegramClient(TelegramBareClient):
         entities = {}
         while len(dialogs) < limit:
             need = limit - len(dialogs)
-            r = self(GetDialogsRequest(
+            r = await self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
@@ -281,18 +281,18 @@ class TelegramClient(TelegramBareClient):
 
     # region Message requests
 
-    def send_message(self,
-                     entity,
-                     message,
-                     reply_to=None,
-                     link_preview=True):
+    async def send_message(self,
+                           entity,
+                           message,
+                           reply_to=None,
+                           link_preview=True):
         """Sends a message to the given entity (or input peer)
            and returns the sent message as a Telegram object.
 
            If 'reply_to' is set to either a message or a message ID,
            the sent message will be replying to such message.
         """
-        entity = self.get_input_entity(entity)
+        entity = await self.get_input_entity(entity)
         request = SendMessageRequest(
             peer=entity,
             message=message,
@@ -300,7 +300,7 @@ class TelegramClient(TelegramBareClient):
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
-        result = self(request)
+        result = await self(request)
         if isinstance(result, UpdateShortSentMessage):
             return Message(
                 id=result.id,
@@ -328,7 +328,7 @@ class TelegramClient(TelegramBareClient):
 
         return None  # Should not happen
 
-    def delete_messages(self, entity, message_ids, revoke=True):
+    async def delete_messages(self, entity, message_ids, revoke=True):
         """
         Deletes a message from a chat, optionally "for everyone" with argument
         `revoke` set to `True`.
@@ -352,16 +352,16 @@ class TelegramClient(TelegramBareClient):
         message_ids = [m.id if isinstance(m, Message) else int(m) for m in message_ids]
 
         if entity is None:
-            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
+            return await self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-        entity = self.get_input_entity(entity)
+        entity = await self.get_input_entity(entity)
 
         if isinstance(entity, InputPeerChannel):
-            return self(channels.DeleteMessagesRequest(entity, message_ids))
+            return await self(channels.DeleteMessagesRequest(entity, message_ids))
         else:
-            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
+            return await self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    def get_message_history(self,
+    async def get_message_history(self,
                             entity,
                             limit=20,
                             offset_date=None,
@@ -386,8 +386,8 @@ class TelegramClient(TelegramBareClient):
            The entity may be a phone or an username at the expense of
            some performance loss.
         """
-        result = self(GetHistoryRequest(
-            peer=self.get_input_entity(entity),
+        result = await self(GetHistoryRequest(
+            peer=await self.get_input_entity(entity),
             limit=limit,
             offset_date=offset_date,
             offset_id=offset_id,
@@ -413,7 +413,7 @@ class TelegramClient(TelegramBareClient):
 
         return total_messages, result.messages, entities
 
-    def send_read_acknowledge(self, entity, messages=None, max_id=None):
+    async def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """Sends a "read acknowledge" (i.e., notifying the given peer that we've
            read their messages, also known as the "double check").
 
@@ -435,8 +435,8 @@ class TelegramClient(TelegramBareClient):
             else:
                 max_id = messages.id
 
-        return self(ReadHistoryRequest(
-            peer=self.get_input_entity(entity),
+        return await self(ReadHistoryRequest(
+            peer=await self.get_input_entity(entity),
             max_id=max_id
         ))
 
@@ -460,10 +460,10 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
-    def send_file(self, entity, file, caption='',
-                  force_document=False, progress_callback=None,
-                  reply_to=None,
-                  **kwargs):
+    async def send_file(self, entity, file, caption='',
+                        force_document=False, progress_callback=None,
+                        reply_to=None,
+                        **kwargs):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
 
@@ -500,7 +500,7 @@ class TelegramClient(TelegramBareClient):
         if file_hash in self._upload_cache:
             file_handle = self._upload_cache[file_hash]
         else:
-            self._upload_cache[file_hash] = file_handle = self.upload_file(
+            self._upload_cache[file_hash] = file_handle = await self.upload_file(
                 file, progress_callback=progress_callback
             )
 
@@ -538,19 +538,19 @@ class TelegramClient(TelegramBareClient):
 
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
-        self(SendMediaRequest(
-            peer=self.get_input_entity(entity),
+        await self(SendMediaRequest(
+            peer=await self.get_input_entity(entity),
             media=media,
             reply_to_msg_id=self._get_reply_to(reply_to)
         ))
 
-    def send_voice_note(self, entity, file, caption='', upload_progress=None,
+    async def send_voice_note(self, entity, file, caption='', upload_progress=None,
                         reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
-        return self.send_file(entity, file, caption,
-                              upload_progress=upload_progress,
-                              reply_to=reply_to,
-                              is_voice_note=())  # empty tuple is enough
+        return await self.send_file(entity, file, caption,
+                                    upload_progress=upload_progress,
+                                    reply_to=reply_to,
+                                    is_voice_note=())  # empty tuple is enough
 
     def clear_file_cache(self):
         """Calls to .send_file() will cache the remote location of the
@@ -564,7 +564,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Downloading media requests
 
-    def download_profile_photo(self, entity, file=None, download_big=True):
+    async def download_profile_photo(self, entity, file=None, download_big=True):
         """Downloads the profile photo for an user or a chat (channels too).
            Returns None if no photo was provided, or if it was Empty.
 
@@ -590,12 +590,12 @@ class TelegramClient(TelegramBareClient):
             # The hexadecimal numbers above are simply:
             # hex(crc32(x.encode('ascii'))) for x in
             # ('User', 'Chat', 'UserFull', 'ChatFull')
-            entity = self.get_entity(entity)
+            entity = await self.get_entity(entity)
             if not hasattr(entity, 'photo'):
                 # Special case: may be a ChatFull with photo:Photo
                 # This is different from a normal UserProfilePhoto and Chat
                 if hasattr(entity, 'chat_photo'):
-                    return self._download_photo(
+                    return await self._download_photo(
                         entity.chat_photo, file,
                         date=None, progress_callback=None
                     )
@@ -623,7 +623,7 @@ class TelegramClient(TelegramBareClient):
         )
 
         # Download the media with the largest size input file location
-        self.download_file(
+        await self.download_file(
             InputFileLocation(
                 volume_id=photo_location.volume_id,
                 local_id=photo_location.local_id,
@@ -633,7 +633,7 @@ class TelegramClient(TelegramBareClient):
         )
         return file
 
-    def download_media(self, message, file=None, progress_callback=None):
+    async def download_media(self, message, file=None, progress_callback=None):
         """Downloads the media from a specified Message (it can also be
            the message.media) into the desired file (a stream or str),
            optionally finding its extension automatically.
@@ -659,19 +659,19 @@ class TelegramClient(TelegramBareClient):
             media = message
 
         if isinstance(media, MessageMediaPhoto):
-            return self._download_photo(
+            return await self._download_photo(
                 media, file, date, progress_callback
             )
         elif isinstance(media, MessageMediaDocument):
-            return self._download_document(
+            return await self._download_document(
                 media, file, date, progress_callback
             )
         elif isinstance(media, MessageMediaContact):
-            return self._download_contact(
+            return await self._download_contact(
                 media, file
             )
 
-    def _download_photo(self, mm_photo, file, date, progress_callback):
+    async def _download_photo(self, mm_photo, file, date, progress_callback):
         """Specialized version of .download_media() for photos"""
 
         # Determine the photo and its largest size
@@ -683,7 +683,7 @@ class TelegramClient(TelegramBareClient):
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
 
         # Download the media with the largest size input file location
-        self.download_file(
+        await self.download_file(
             InputFileLocation(
                 volume_id=largest_size.volume_id,
                 local_id=largest_size.local_id,
@@ -695,7 +695,7 @@ class TelegramClient(TelegramBareClient):
         )
         return file
 
-    def _download_document(self, mm_doc, file, date, progress_callback):
+    async def _download_document(self, mm_doc, file, date, progress_callback):
         """Specialized version of .download_media() for documents"""
         document = mm_doc.document
         file_size = document.size
@@ -715,7 +715,7 @@ class TelegramClient(TelegramBareClient):
             date=date, possible_names=possible_names
         )
 
-        self.download_file(
+        await self.download_file(
             InputDocumentFileLocation(
                 id=document.id,
                 access_hash=document.access_hash,
@@ -826,7 +826,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
-    def get_entity(self, entity):
+    async def get_entity(self, entity):
         """Turns an entity into a valid Telegram user or chat.
            If "entity" is a string which can be converted to an integer,
            or if it starts with '+' it will be resolved as if it
@@ -851,15 +851,14 @@ class TelegramClient(TelegramBareClient):
                 isinstance(entity, TLObject) and
                 # crc32(b'InputPeer') and crc32(b'Peer')
                 type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
-            ie = self.get_input_entity(entity)
+            ie = await self.get_input_entity(entity)
             result = None
             if isinstance(ie, InputPeerUser):
-                result = self(GetUsersRequest([ie]))
+                result = await self(GetUsersRequest([ie]))
             elif isinstance(ie, InputPeerChat):
-                result = self(GetChatsRequest([ie.chat_id]))
+                result = await self(GetChatsRequest([ie.chat_id]))
             elif isinstance(ie, InputPeerChannel):
-                result = self(GetChannelsRequest([ie]))
-
+                result = await self(GetChannelsRequest([ie]))
             if result:
                 self.session.process_entities(result)
                 try:
@@ -868,23 +867,23 @@ class TelegramClient(TelegramBareClient):
                     pass
 
         if isinstance(entity, str):
-            return self._get_entity_from_string(entity)
+            return await self._get_entity_from_string(entity)
 
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
 
-    def _get_entity_from_string(self, string):
+    async def _get_entity_from_string(self, string):
         """Gets an entity from the given string, which may be a phone or
            an username, and processes all the found entities on the session.
         """
         phone = EntityDatabase.parse_phone(string)
         if phone:
             entity = phone
-            self.session.process_entities(self(GetContactsRequest(0)))
+            self.session.process_entities(await self(GetContactsRequest(0)))
         else:
             entity = string.strip('@').lower()
-            self.session.process_entities(self(ResolveUsernameRequest(entity)))
+            self.session.process_entities(await self(ResolveUsernameRequest(entity)))
 
         try:
             return self.session.entities[entity]
@@ -893,7 +892,7 @@ class TelegramClient(TelegramBareClient):
                 'Could not find user with username {}'.format(entity)
             )
 
-    def get_input_entity(self, peer):
+    async def get_input_entity(self, peer):
         """Gets the input entity given its PeerUser, PeerChat, PeerChannel.
            If no Peer class is used, peer is assumed to be the integer ID
            of an User.
@@ -910,7 +909,7 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(peer, str):
-            return utils.get_input_peer(self._get_entity_from_string(peer))
+            return utils.get_input_peer(await self._get_entity_from_string(peer))
 
         is_peer = False
         if isinstance(peer, int):
@@ -932,7 +931,7 @@ class TelegramClient(TelegramBareClient):
 
         if self.session.save_entities:
             # Not found, look in the dialogs (this will save the users)
-            self.get_dialogs(limit=None)
+            await self.get_dialogs(limit=None)
 
             try:
                 return self.session.entities.get_input_entity(peer)

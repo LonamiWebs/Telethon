@@ -1,8 +1,11 @@
 # Python rough implementation of a C# TCP client
+import asyncio
 import errno
 import socket
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
+
+loop = asyncio.get_event_loop()
 
 
 class TcpClient:
@@ -30,7 +33,7 @@ class TcpClient:
 
         self._socket.settimeout(self.timeout)
 
-    def connect(self, ip, port):
+    async def connect(self, ip, port):
         """Connects to the specified IP and port number.
            'timeout' must be given in seconds
         """
@@ -44,7 +47,7 @@ class TcpClient:
                 while not self._socket:
                     self._recreate_socket(mode)
 
-                self._socket.connect(address)
+                await loop.sock_connect(self._socket, address)
                 break  # Successful connection, stop retrying to connect
             except OSError as e:
                 # There are some errors that we know how to handle, and
@@ -72,15 +75,13 @@ class TcpClient:
         finally:
             self._socket = None
 
-    def write(self, data):
+    async def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
         if self._socket is None:
             raise ConnectionResetError()
 
-        # TODO Timeout may be an issue when sending the data, Changed in v3.5:
-        # The socket timeout is now the maximum total duration to send all data.
         try:
-            self._socket.sendall(data)
+            await loop.sock_sendall(self._socket, data)
         except socket.timeout as e:
             raise TimeoutError() from e
         except BrokenPipeError:
@@ -91,14 +92,9 @@ class TcpClient:
             else:
                 raise
 
-    def read(self, size):
+    async def read(self, size):
         """Reads (receives) a whole block of 'size bytes
            from the connected peer.
-
-           A timeout can be specified, which will cancel the operation if
-           no data has been read in the specified time. If data was read
-           and it's waiting for more, the timeout will NOT cancel the
-           operation. Set to None for no timeout
         """
         if self._socket is None:
             raise ConnectionResetError()
@@ -108,7 +104,7 @@ class TcpClient:
             bytes_left = size
             while bytes_left != 0:
                 try:
-                    partial = self._socket.recv(bytes_left)
+                    partial = await loop.sock_recv(self._socket, bytes_left)
                 except socket.timeout as e:
                     raise TimeoutError() from e
                 except OSError as e:

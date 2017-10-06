@@ -16,23 +16,23 @@ class MtProtoPlainSender:
         self._last_msg_id = 0
         self._connection = connection
 
-    def connect(self):
-        self._connection.connect()
+    async def connect(self):
+        await self._connection.connect()
 
     def disconnect(self):
         self._connection.close()
 
-    def send(self, data):
+    async def send(self, data):
         """Sends a plain packet (auth_key_id = 0) containing the
            given message body (data)
         """
-        self._connection.send(
+        await self._connection.send(
             struct.pack('<QQi', 0, self._get_new_msg_id(), len(data)) + data
         )
 
-    def receive(self):
+    async def receive(self):
         """Receives a plain packet, returning the body of the response"""
-        body = self._connection.recv()
+        body = await self._connection.recv()
         if body == b'l\xfe\xff\xff':  # -404 little endian signed
             # Broken authorization, must reset the auth key
             raise BrokenAuthKeyError()
