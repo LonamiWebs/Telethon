@@ -615,7 +615,7 @@ class TelegramBareClient:
 
                 try:
                     if cdn_decrypter:
-                        result = cdn_decrypter.get_file()
+                        result = await cdn_decrypter.get_file()
                     else:
                         result = await client(GetFileRequest(
                             input_location, offset, part_size
@@ -623,7 +623,7 @@ class TelegramBareClient:
 
                         if isinstance(result, FileCdnRedirect):
                             cdn_decrypter, result = \
-                                CdnDecrypter.prepare_decrypter(
+                                await CdnDecrypter.prepare_decrypter(
                                     client,
                                     await self._get_cdn_client(result),
                                     result
