@@ -335,32 +335,28 @@ class TLGenerator:
         builder.writeln('))')
         builder.end_block()
 
-        # Write the empty() function, which returns an "empty"
-        # instance, in which all attributes are set to None
+        # Write the static from_reader(reader) function
         builder.writeln('@staticmethod')
-        builder.writeln('def empty():')
+        builder.writeln('def from_reader(reader):')
+        for arg in tlobject.args:
+            TLGenerator.write_read_code(
+                builder, arg, tlobject.args, name='_' + arg.name
+            )
+
         builder.writeln('return {}({})'.format(
-            tlobject.class_name(), ', '.join('None' for _ in range(len(args)))
+            tlobject.class_name(), ', '.join(
+                '{0}=_{0}'.format(a.name) for a in tlobject.sorted_args()
+                if not a.flag_indicator and not a.generic_definition
+            )
         ))
         builder.end_block()
 
-        # Write the on_response(self, reader) function
-        builder.writeln('def on_response(self, reader):')
-        # Do not read constructor's ID, since
-        # that's already been read somewhere else
+        # Only requests can have a different response that's not their
+        # serialized body, that is, we'll be setting their .result.
         if tlobject.is_function:
+            builder.writeln('def on_response(self, reader):')
             TLGenerator.write_request_result_code(builder, tlobject)
-        else:
-            if tlobject.args:
-                for arg in tlobject.args:
-                    TLGenerator.write_onresponse_code(
-                        builder, arg, tlobject.args
-                    )
-            else:
-                # If there were no arguments, we still need an
-                # on_response method, and hence "pass" if empty
-                builder.writeln('pass')
-        builder.end_block()
+            builder.end_block()
 
         # Write the __str__(self) and stringify(self) functions
         builder.writeln('def __str__(self):')
@@ -549,9 +545,10 @@ class TLGenerator:
         return True  # Something was written
 
     @staticmethod
-    def write_onresponse_code(builder, arg, args, name=None):
+    def write_read_code(builder, arg, args, name):
         """
-        Writes the receive code for the given argument
+        Writes the read code for the given argument, setting the
+        arg.name variable to its read value.
 
         :param builder: The source code builder
         :param arg: The argument to write
@@ -565,12 +562,17 @@ class TLGenerator:
         if arg.generic_definition:
             return  # Do nothing, this only specifies a later type
 
-        if name is None:
-            name = 'self.{}'.format(arg.name)
-
         # The argument may be a flag, only write that flag was given!
         was_flag = False
         if arg.is_flag:
+            # Treat 'true' flags as a special case, since they're true if
+            # they're set, and nothing else needs to actually be read.
+            if 'true' == arg.type:
+                builder.writeln(
+                    '{} = bool(flags & {})'.format(name, 1 << arg.flag_index)
+                )
+                return
+
             was_flag = True
             builder.writeln('if flags & {}:'.format(
                 1 << arg.flag_index
@@ -585,11 +587,10 @@ class TLGenerator:
                 builder.writeln("reader.read_int()")
 
             builder.writeln('{} = []'.format(name))
-            builder.writeln('_len = reader.read_int()')
-            builder.writeln('for _ in range(_len):')
+            builder.writeln('for _ in range(reader.read_int()):')
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
-            TLGenerator.write_onresponse_code(builder, arg, args, name='_x')
+            TLGenerator.write_read_code(builder, arg, args, name='_x')
             builder.writeln('{}.append(_x)'.format(name))
             arg.is_vector = True
 
@@ -642,7 +643,10 @@ class TLGenerator:
             builder.end_block()
 
         if was_flag:
-            builder.end_block()
+            builder.current_indent -= 1
+            builder.writeln('else:')
+            builder.writeln('{} = None'.format(name))
+            builder.current_indent -= 1
             # Restore .is_flag
             arg.is_flag = True
 

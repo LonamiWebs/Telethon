@@ -121,5 +121,6 @@ class TLObject:
     def to_bytes(self):
         return b''
 
-    def on_response(self, reader):
-        pass
+    @staticmethod
+    def from_reader(reader):
+        return TLObject()

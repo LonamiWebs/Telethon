@@ -131,11 +131,7 @@ class BinaryReader:
             # If there was still no luck, give up
             raise TypeNotFoundError(constructor_id)
 
-        # Create an empty instance of the class and
-        # fill it with the read attributes
-        result = clazz.empty()
-        result.on_response(self)
-        return result
+        return clazz.from_reader(self)
 
     def tgread_vector(self):
         """Reads a vector (a list) of Telegram objects"""
