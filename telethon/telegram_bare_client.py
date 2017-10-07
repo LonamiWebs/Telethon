@@ -445,7 +445,7 @@ class TelegramBareClient:
                     raise self._background_error
 
                 result = self._invoke(sender, call_receive, *requests)
-                if result:
+                if result is not None:
                     return result
 
             raise ValueError('Number of retries reached 0.')
