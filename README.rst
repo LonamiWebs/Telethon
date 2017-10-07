@@ -15,7 +15,7 @@ Installing
   pip install telethon
 
 
-Creating a client
+Creating a Client
 -----------------
 
 .. code:: python
@@ -36,7 +36,7 @@ Creating a client
   me = client.sign_in(code=77777)  # Put whatever code you received here.
 
 
-Doing stuff
+Doing Stuff
 -----------
 
 .. code:: python
@@ -51,7 +51,7 @@ Doing stuff
   client.download_media(messages[0])
 
 
-Next steps
+Next Steps
 ----------
 
 Do you like how Telethon looks? Check the
