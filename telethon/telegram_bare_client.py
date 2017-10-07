@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import warnings
 from datetime import timedelta, datetime
 from hashlib import md5
 from io import BytesIO
@@ -733,6 +734,9 @@ class TelegramBareClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
+        if not self.updates.get_workers:
+            warnings.warn("There are no update workers running, so adding an update handler will have no effect.")
+
         sync = not self.updates.handlers
         self.updates.handlers.append(handler)
         if sync:
