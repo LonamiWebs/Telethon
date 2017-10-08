@@ -482,8 +482,8 @@ class TelegramBareClient:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if not self._authorized or self._reconnect_lock.locked():
-                # Only attempt reconnecting if we're authorized and not
+            if not self._user_connected or self._reconnect_lock.locked():
+                # Only attempt reconnecting if the user called connect and not
                 # reconnecting already.
                 raise
 
