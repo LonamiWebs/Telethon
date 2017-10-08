@@ -873,9 +873,9 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(entity, int) or (
-                isinstance(entity, TLObject) and
+                    isinstance(entity, TLObject) and
                 # crc32(b'InputPeer') and crc32(b'Peer')
-                type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
+                        type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = self.get_input_entity(entity)
             result = None
             if isinstance(ie, InputPeerUser):
