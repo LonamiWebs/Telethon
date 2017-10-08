@@ -20,8 +20,8 @@ from .tl.types import (
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument,
-    InputMediaUploadedPhoto,
-    DocumentAttributeFilename)
+    InputMediaUploadedPhoto, DocumentAttributeFilename, photos
+)
 
 
 def get_display_name(entity):
@@ -187,6 +187,9 @@ def get_input_photo(photo):
 
     if type(photo).SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
         return photo
+
+    if isinstance(photo, photos.Photo):
+        photo = photo.photo
 
     if isinstance(photo, Photo):
         return InputPhoto(id=photo.id, access_hash=photo.access_hash)

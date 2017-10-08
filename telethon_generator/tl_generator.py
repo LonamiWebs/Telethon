@@ -143,7 +143,7 @@ class TLGenerator:
                     builder.writeln(
                         'from {}.utils import get_input_peer, '
                         'get_input_channel, get_input_user, '
-                        'get_input_media'.format('.' * depth)
+                        'get_input_media, get_input_photo'.format('.' * depth)
                     )
 
                 # Import 'os' for those needing access to 'os.urandom()'
@@ -402,6 +402,8 @@ class TLGenerator:
             TLGenerator.write_get_input(builder, arg, 'get_input_user')
         elif arg.type == 'InputMedia' and tlobject.is_function:
             TLGenerator.write_get_input(builder, arg, 'get_input_media')
+        elif arg.type == 'InputPhoto' and tlobject.is_function:
+            TLGenerator.write_get_input(builder, arg, 'get_input_photo')
 
         else:
             builder.writeln('self.{0} = {0}'.format(arg.name))
