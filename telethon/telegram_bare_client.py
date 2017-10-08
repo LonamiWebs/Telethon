@@ -534,10 +534,16 @@ class TelegramBareClient:
                 '[ERROR] Telegram is having some internal issues', e
             )
 
-        except FloodWaitError:
-            sender.disconnect()
-            self.disconnect()
-            raise
+        except FloodWaitError as e:
+            if e.seconds > self.session.flood_sleep_threshold | 0:
+                sender.disconnect()
+                self.disconnect()
+                raise
+
+            self._logger.debug(
+                'Sleep of %d seconds below threshold, sleeping' % e.seconds
+            )
+            sleep(e.seconds)
 
     # Some really basic functionality
 
