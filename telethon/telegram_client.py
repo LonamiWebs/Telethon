@@ -956,9 +956,17 @@ class TelegramClient(TelegramBareClient):
             )
 
         if self.session.save_entities:
-            # Not found, look in the dialogs (this will save the users)
-            self.get_dialogs(limit=None)
-
+            # Not found, look in the latest dialogs.
+            # This is useful if for instance someone just sent a message but
+            # the updates didn't specify who, as this person or chat should
+            # be in the latest dialogs.
+            self(GetDialogsRequest(
+                offset_date=None,
+                offset_id=0,
+                offset_peer=InputPeerEmpty(),
+                limit=0,
+                exclude_pinned=True
+            ))
             try:
                 return self.session.entities.get_input_entity(peer)
             except KeyError:
