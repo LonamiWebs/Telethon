@@ -1,3 +1,4 @@
+from datetime import datetime
 from threading import Event
 
 
@@ -19,18 +20,14 @@ class TLObject:
         """
         if indent is None:
             if isinstance(obj, TLObject):
-                children = obj.to_dict(recursive=False)
-                if children:
-                    return '{}: {}'.format(
-                        type(obj).__name__, TLObject.pretty_format(children)
-                    )
-                else:
-                    return type(obj).__name__
+                return '{}({})'.format(type(obj).__name__, ', '.join(
+                    '{}={}'.format(k, TLObject.pretty_format(v))
+                    for k, v in obj.to_dict(recursive=False).items()
+                ))
             if isinstance(obj, dict):
                 return '{{{}}}'.format(', '.join(
-                    '{}: {}'.format(
-                        k, TLObject.pretty_format(v)
-                    ) for k, v in obj.items()
+                    '{}: {}'.format(k, TLObject.pretty_format(v))
+                    for k, v in obj.items()
                 ))
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 return repr(obj)
@@ -38,31 +35,36 @@ class TLObject:
                 return '[{}]'.format(
                     ', '.join(TLObject.pretty_format(x) for x in obj)
                 )
+            elif isinstance(obj, datetime):
+                return 'datetime.fromtimestamp({})'.format(obj.timestamp())
             else:
-                return str(obj)
+                return repr(obj)
         else:
             result = []
-            if isinstance(obj, TLObject):
-                result.append(type(obj).__name__)
-                children = obj.to_dict(recursive=False)
-                if children:
-                    result.append(': ')
-                    result.append(TLObject.pretty_format(
-                        obj.to_dict(recursive=False), indent
-                    ))
+            if isinstance(obj, TLObject) or isinstance(obj, dict):
+                if isinstance(obj, dict):
+                    d = obj
+                    start, end, sep = '{', '}', ': '
+                else:
+                    d = obj.to_dict(recursive=False)
+                    start, end, sep = '(', ')', '='
+                    result.append(type(obj).__name__)
 
-            elif isinstance(obj, dict):
-                result.append('{\n')
-                indent += 1
-                for k, v in obj.items():
+                result.append(start)
+                if d:
+                    result.append('\n')
+                    indent += 1
+                    for k, v in d.items():
+                        result.append('\t' * indent)
+                        result.append(k)
+                        result.append(sep)
+                        result.append(TLObject.pretty_format(v, indent))
+                        result.append(',\n')
+                    result.pop()  # last ',\n'
+                    indent -= 1
+                    result.append('\n')
                     result.append('\t' * indent)
-                    result.append(k)
-                    result.append(': ')
-                    result.append(TLObject.pretty_format(v, indent))
-                    result.append(',\n')
-                indent -= 1
-                result.append('\t' * indent)
-                result.append('}')
+                result.append(end)
 
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 result.append(repr(obj))
@@ -78,8 +80,13 @@ class TLObject:
                 result.append('\t' * indent)
                 result.append(']')
 
+            elif isinstance(obj, datetime):
+                result.append('datetime.fromtimestamp(')
+                result.append(repr(obj.timestamp()))
+                result.append(')')
+
             else:
-                result.append(str(obj))
+                result.append(repr(obj))
 
             return ''.join(result)
 
