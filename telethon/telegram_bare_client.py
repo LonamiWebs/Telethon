@@ -271,17 +271,15 @@ class TelegramBareClient:
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        self._user_connected = False
-        self._recv_thread = None
-
-        # Stop the workers from the background thread
+        self._user_connected = False  # This will stop recv_thread's loop
         self.updates.stop_workers()
 
-        # This will trigger a "ConnectionResetError", for subsequent calls
-        # to read or send (from another thread) and usually, the background
-        # thread would try restarting the connection but since the
-        # ._recv_thread = None, it knows it doesn't have to.
+        # This will trigger a "ConnectionResetError" on the recv_thread,
+        # which won't attempt reconnecting as ._user_connected is False.
         self._sender.disconnect()
+
+        if self._recv_thread:
+            self._recv_thread.join()
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
         pass
