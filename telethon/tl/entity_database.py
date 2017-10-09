@@ -177,8 +177,10 @@ class EntityDatabase:
 
     def get_input_entity(self, peer):
         try:
-            i, k = utils.get_peer_id(peer, add_mark=True, get_kind=True)
-            h = self._input_entities[i]
+            i = utils.get_peer_id(peer, add_mark=True)
+            h = self._input_entities[i]  # we store the IDs marked
+            i, k = utils.resolve_id(i)  # removes the mark and returns kind
+
             if k == PeerUser:
                 return InputPeerUser(i, h)
             elif k == PeerChat:
