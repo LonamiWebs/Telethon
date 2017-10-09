@@ -688,10 +688,8 @@ class TelegramBareClient:
         cdn_decrypter = None
 
         try:
-            offset_index = 0
+            offset = 0
             while True:
-                offset = offset_index * part_size
-
                 try:
                     if cdn_decrypter:
                         result = cdn_decrypter.get_file()
@@ -710,7 +708,7 @@ class TelegramBareClient:
                     client = self._get_exported_client(e.new_dc)
                     continue
 
-                offset_index += 1
+                offset += part_size
 
                 # If we have received no data (0 bytes), the file is over
                 # So there is nothing left to download and write
