@@ -15,6 +15,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
+from .tl.custom import Draft
 from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
@@ -28,8 +29,8 @@ from .tl.functions.contacts import (
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest, GetChatsRequest
-)
+    SendMessageRequest, GetChatsRequest,
+    GetAllDraftsRequest)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -302,9 +303,20 @@ class TelegramClient(TelegramBareClient):
             [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
         )
 
-    # endregion
+    def get_drafts(self):  # TODO: Ability to provide a `filter`
+        """
+        Gets all open draft messages.
 
-    # region Message requests
+        Returns a list of custom `Draft` objects that are easy to work with: You can call
+        `draft.set_message('text')` to change the message, or delete it through `draft.delete()`.
+
+        :return List[telethon.tl.custom.Draft]: A list of open drafts
+        """
+        response = self(GetAllDraftsRequest())
+        self.session.process_entities(response)
+        self.session.generate_sequence(response.seq)
+        drafts = [Draft._from_update(self, u) for u in response.updates]
+        return drafts
 
     def send_message(self,
                      entity,
@@ -873,9 +885,9 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(entity, int) or (
-                isinstance(entity, TLObject) and
+                    isinstance(entity, TLObject) and
                 # crc32(b'InputPeer') and crc32(b'Peer')
-                type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
+                        type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = self.get_input_entity(entity)
             result = None
             if isinstance(ie, InputPeerUser):
