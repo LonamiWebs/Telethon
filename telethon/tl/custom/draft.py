@@ -13,10 +13,10 @@ class Draft:
         self._client = client
         self._peer = peer
 
-        self.text = draft.message,
-        self.date = draft.date,
-        self.no_webpage = draft.no_webpage,
-        self.reply_to_msg_id = draft.reply_to_msg_id,
+        self.text = draft.message
+        self.date = draft.date
+        self.no_webpage = draft.no_webpage
+        self.reply_to_msg_id = draft.reply_to_msg_id
         self.entities = draft.entities
 
     @classmethod
