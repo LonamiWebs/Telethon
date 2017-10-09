@@ -148,8 +148,8 @@ class EntityDatabase:
 
         if isinstance(key, TLObject):
             sc = type(key).SUBCLASS_OF_ID
-            if sc == 0x2d45687:
-                # Subclass of "Peer"
+            if sc in {0x2d45687, 0xc91c90b6}:
+                # Subclass of "Peer" or "InputPeer"
                 return self._entities[utils.get_peer_id(key, add_mark=True)]
             elif sc in {0x2da17977, 0xc5af5d94, 0x6d44b7db}:
                 # Subclass of "User", "Chat" or "Channel"
