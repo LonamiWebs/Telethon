@@ -2,6 +2,8 @@ import os
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 
+from telethon.tl.custom import Draft
+
 try:
     import socks
 except ImportError:
@@ -28,8 +30,8 @@ from .tl.functions.contacts import (
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest, GetChatsRequest
-)
+    SendMessageRequest, GetChatsRequest,
+    GetAllDraftsRequest)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -302,9 +304,20 @@ class TelegramClient(TelegramBareClient):
             [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
         )
 
-    # endregion
+    def get_drafts(self):  # TODO: Ability to provide a `filter`
+        """
+        Gets all open draft messages.
 
-    # region Message requests
+        Returns a list of custom `Draft` objects that are easy to work with: You can call
+        `draft.set_message('text')` to change the message, or delete it through `draft.delete()`.
+
+        :return List[telethon.tl.custom.Draft]: A list of open drafts
+        """
+        response = self(GetAllDraftsRequest())
+        self.session.process_entities(response)
+        self.session.generate_sequence(response.seq)
+        drafts = [Draft._from_update(self, u) for u in response.updates]
+        return drafts
 
     def send_message(self,
                      entity,
