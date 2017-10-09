@@ -2,8 +2,6 @@ import os
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 
-from telethon.tl.custom import Draft
-
 try:
     import socks
 except ImportError:
@@ -17,6 +15,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
+from .tl.custom import Draft
 from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
