@@ -889,20 +889,19 @@ class TelegramClient(TelegramBareClient):
                 # crc32(b'InputPeer') and crc32(b'Peer')
                         type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = self.get_input_entity(entity)
-            result = None
             if isinstance(ie, InputPeerUser):
-                result = self(GetUsersRequest([ie]))
+                self(GetUsersRequest([ie]))
             elif isinstance(ie, InputPeerChat):
-                result = self(GetChatsRequest([ie.chat_id]))
+                self(GetChatsRequest([ie.chat_id]))
             elif isinstance(ie, InputPeerChannel):
-                result = self(GetChannelsRequest([ie]))
-
-            if result:
-                self.session.process_entities(result)
-                try:
-                    return self.session.entities[ie]
-                except KeyError:
-                    pass
+                self(GetChannelsRequest([ie]))
+            try:
+                # session.process_entities has been called in the MtProtoSender
+                # with the result of these calls, so they should now be on the
+                # entities database.
+                return self.session.entities[ie]
+            except KeyError:
+                pass
 
         if isinstance(entity, str):
             return self._get_entity_from_string(entity)
@@ -918,11 +917,11 @@ class TelegramClient(TelegramBareClient):
         phone = EntityDatabase.parse_phone(string)
         if phone:
             entity = phone
-            self.session.process_entities(self(GetContactsRequest(0)))
+            self(GetContactsRequest(0))
         else:
             entity = string.strip('@').lower()
-            self.session.process_entities(self(ResolveUsernameRequest(entity)))
-
+            self(ResolveUsernameRequest(entity))
+        # MtProtoSender will call .process_entities on the requests made
         try:
             return self.session.entities[entity]
         except KeyError:
