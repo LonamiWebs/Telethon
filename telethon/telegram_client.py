@@ -500,9 +500,13 @@ class TelegramClient(TelegramBareClient):
     def send_file(self, entity, file, caption='',
                   force_document=False, progress_callback=None,
                   reply_to=None,
+                  attributes=None,
                   **kwargs):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
+           Note that if a byte array or a stream is given, a filename
+           or its type won't be inferred, and it will be sent as an
+           "unnamed application/octet-stream".
 
            An optional caption can also be specified for said file.
 
@@ -518,6 +522,10 @@ class TelegramClient(TelegramBareClient):
            takes two parameters, (bytes_uploaded, total_bytes).
 
            The "reply_to" parameter works exactly as the one on .send_message.
+
+           If "attributes" is set to be a list of DocumentAttribute's, these
+           will override the automatically inferred ones (so that you can
+           modify the file name of the file sent for instance).
 
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -549,16 +557,28 @@ class TelegramClient(TelegramBareClient):
                 # Determine mime-type and attributes
                 # Take the first element by using [0] since it returns a tuple
                 mime_type = guess_type(file)[0]
-                attributes = [
+                attr_dict = {
+                    DocumentAttributeFilename:
                     DocumentAttributeFilename(os.path.basename(file))
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
-                ]
+                }
             else:
-                attributes = [DocumentAttributeFilename('unnamed')]
+                attr_dict = {
+                    DocumentAttributeFilename:
+                    DocumentAttributeFilename('unnamed')
+                }
 
             if 'is_voice_note' in kwargs:
-                attributes.append(DocumentAttributeAudio(0, voice=True))
+                attr_dict[DocumentAttributeAudio] = \
+                    DocumentAttributeAudio(0, voice=True)
+
+            # Now override the attributes if any. As we have a dict of
+            # {cls: instance}, we can override any class with the list
+            # of attributes provided by the user easily.
+            if attributes:
+                for a in attributes:
+                    attr_dict[type(a)] = a
 
             # Ensure we have a mime type, any; but it cannot be None
             # 'The "octet-stream" subtype is used to indicate that a body
@@ -569,7 +589,7 @@ class TelegramClient(TelegramBareClient):
             media = InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
-                attributes=attributes,
+                attributes=list(attr_dict.values()),
                 caption=caption
             )
 
