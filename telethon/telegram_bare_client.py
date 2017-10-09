@@ -297,10 +297,13 @@ class TelegramBareClient:
             # Assume we are disconnected due to some error, so connect again
             with self._reconnect_lock:
                 # Another thread may have connected again, so check that first
-                if not self.is_connected():
-                    return self.connect()
-                else:
+                if self.is_connected():
                     return True
+
+                try:
+                    return self.connect()
+                except ConnectionResetError:
+                    return False
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
