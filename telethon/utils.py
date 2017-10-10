@@ -42,6 +42,7 @@ def get_display_name(entity):
 
     return '(unknown)'
 
+
 # For some reason, .webp (stickers' format) is not registered
 add_type('image/webp', '.webp')
 
@@ -370,6 +371,14 @@ def find_user_or_chat(peer, users, chats):
                 return next(x for x in where if x.id == peer)
             except StopIteration:
                 pass
+
+
+def find_message(update):
+    if update.message:
+        if update.message.message:
+            return update.message.message
+        return update.message
+    return None
 
 
 def get_appropriated_part_size(file_size):
