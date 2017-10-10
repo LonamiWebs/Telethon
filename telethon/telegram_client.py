@@ -51,7 +51,6 @@ from .tl.types import (
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
 
-
 class TelegramClient(TelegramBareClient):
     """Full featured TelegramClient meant to extend the basic functionality -
 
@@ -803,12 +802,18 @@ class TelegramClient(TelegramBareClient):
             f = file
 
         try:
+            # Remove these pesky characters
+            first_name = first_name.replace(';','')
+            if last_name is None:
+                last_name = ''
+            else:
+                last_name = last_name.replace(';','')
             f.write('BEGIN:VCARD\n')
             f.write('VERSION:4.0\n')
             f.write('N:{};{};;;\n'.format(
-                first_name, last_name if last_name else '')
+                first_name, last_name)
             )
-            f.write('FN:{}\n'.format(' '.join((first_name, last_name))))
+            f.write('FN:{} {}\n'.format(first_name, last_name)
             f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
                 phone_number))
             f.write('END:VCARD\n')
