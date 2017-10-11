@@ -11,7 +11,7 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
-from ..tl.types import MsgsAck
+from ..tl.types import MsgsAck, Pong
 from ..tl.functions.auth import LogOutRequest
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -249,12 +249,13 @@ class MtProtoSender:
 
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
-        reader.read_int(signed=False)  # code
-        received_msg_id = reader.read_long()
+        pong = reader.tgread_object()
+        assert isinstance(pong, Pong)
 
-        request = self._pop_request(received_msg_id)
+        request = self._pop_request(pong.msg_id)
         if request:
             self._logger.debug('Pong confirmed a request')
+            request.result = pong
             request.confirm_received.set()
 
         return True
