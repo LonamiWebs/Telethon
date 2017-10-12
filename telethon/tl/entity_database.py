@@ -125,8 +125,13 @@ class EntityDatabase:
 
     def _parse_key(self, key):
         """Parses the given string, integer or TLObject key into a
-           marked user ID ready for use on self._entities. Raises
-           ValueError if it cannot be parsed.
+           marked user ID ready for use on self._entities.
+
+           If a callable key is given, the entity will be passed to the
+           function, and if it returns a true-like value, the marked ID
+           for such entity will be returned.
+
+           Raises ValueError if it cannot be parsed.
         """
         if isinstance(key, str):
             phone = EntityDatabase.parse_phone(key)
@@ -144,20 +149,15 @@ class EntityDatabase:
         if isinstance(key, TLObject):
             return utils.get_peer_id(key, add_mark=True)
 
+        if callable(key):
+            for k, v in self._entities.items():
+                if key(v):
+                    return k
+
         raise ValueError()
 
     def __getitem__(self, key):
-        """Accepts a digit only string as phone number,
-           otherwise it's treated as an username.
-
-           If an integer is given, it's treated as the ID of the desired User.
-           The ID given won't try to be guessed as the ID of a chat or channel,
-           as there may be an user with that ID, and it would be unreliable.
-
-           If a Peer is given (PeerUser, PeerChat, PeerChannel),
-           its specific entity is retrieved as User, Chat or Channel.
-           Note that megagroups are channels with .megagroup = True.
-        """
+        """See the ._parse_key() docstring for possible values of the key"""
         try:
             return self._entities[self._parse_key(key)]
         except (ValueError, KeyError) as e:
