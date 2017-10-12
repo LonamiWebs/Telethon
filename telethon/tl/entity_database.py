@@ -123,6 +123,29 @@ class EntityDatabase:
         if phone:
             self._username_id[phone] = marked_id
 
+    def _parse_key(self, key):
+        """Parses the given string, integer or TLObject key into a
+           marked user ID ready for use on self._entities. Raises
+           ValueError if it cannot be parsed.
+        """
+        if isinstance(key, str):
+            phone = EntityDatabase.parse_phone(key)
+            try:
+                if phone:
+                    return self._phone_id[phone]
+                else:
+                    return self._username_id[key.lstrip('@').lower()]
+            except KeyError as e:
+                raise ValueError() from e
+
+        if isinstance(key, int):
+            return key  # normal IDs are assumed users
+
+        if isinstance(key, TLObject):
+            return utils.get_peer_id(key, add_mark=True)
+
+        raise ValueError()
+
     def __getitem__(self, key):
         """Accepts a digit only string as phone number,
            otherwise it's treated as an username.
@@ -135,35 +158,29 @@ class EntityDatabase:
            its specific entity is retrieved as User, Chat or Channel.
            Note that megagroups are channels with .megagroup = True.
         """
-        if isinstance(key, str):
-            phone = EntityDatabase.parse_phone(key)
-            if phone:
-                return self._phone_id[phone]
-            else:
-                key = key.lstrip('@').lower()
-                return self._entities[self._username_id[key]]
-
-        if isinstance(key, int):
-            return self._entities[key]  # normal IDs are assumed users
-
-        if isinstance(key, TLObject):
-            sc = type(key).SUBCLASS_OF_ID
-            if sc in {0x2d45687, 0xc91c90b6}:
-                # Subclass of "Peer" or "InputPeer"
-                return self._entities[utils.get_peer_id(key, add_mark=True)]
-            elif sc in {0x2da17977, 0xc5af5d94, 0x6d44b7db}:
-                # Subclass of "User", "Chat" or "Channel"
-                return key
-
-        raise KeyError(key)
+        try:
+            return self._entities[self._parse_key(key)]
+        except (ValueError, KeyError) as e:
+            raise KeyError(key) from e
 
     def __delitem__(self, key):
-        target = self[key]
-        del self._entities[key]
-        if getattr(target, 'username'):
-            del self._username_id[target.username]
+        try:
+            old = self._entities.pop(self._parse_key(key))
+            # Try removing the username and phone (if pop didn't fail),
+            # since the entity may have no username or phone, just ignore
+            # errors. It should be there if we popped the entity correctly.
+            try:
+                del self._username_id[getattr(old, 'username', None)]
+            except KeyError:
+                pass
 
-    # TODO Allow search by name by tokenizing the input and return a list
+            try:
+                del self._phone_id[getattr(old, 'phone', None)]
+            except KeyError:
+                pass
+
+        except (ValueError, KeyError) as e:
+            raise KeyError(key) from e
 
     @staticmethod
     def parse_phone(phone):
