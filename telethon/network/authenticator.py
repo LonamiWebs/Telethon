@@ -124,7 +124,6 @@ def _do_authentication(connection):
             raise AssertionError(server_dh_inner)
 
     if server_dh_inner.nonce != res_pq.nonce:
-        print(server_dh_inner.nonce, res_pq.nonce)
         raise SecurityError('Invalid nonce in encrypted answer')
 
     if server_dh_inner.server_nonce != res_pq.server_nonce:
