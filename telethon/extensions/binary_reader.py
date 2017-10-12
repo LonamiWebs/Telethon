@@ -129,6 +129,7 @@ class BinaryReader:
                 return False
 
             # If there was still no luck, give up
+            self.seek(-4)  # Go back
             raise TypeNotFoundError(constructor_id)
 
         return clazz.from_reader(self)
