@@ -351,25 +351,26 @@ class MtProtoSender:
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
             self._logger.debug('Read RPC error: %s', str(error))
-        else:
-            if request:
-                self._logger.debug('Reading request response')
-                if inner_code == 0x3072cfa1:  # GZip packed
-                    unpacked_data = gzip.decompress(reader.tgread_bytes())
-                    with BinaryReader(unpacked_data) as compressed_reader:
-                        request.on_response(compressed_reader)
-                else:
-                    reader.seek(-4)
-                    request.on_response(reader)
+            return True  # All contents were read okay
 
-                self.session.process_entities(request.result)
-                request.confirm_received.set()
-                return True
+        elif request:
+            self._logger.debug('Reading request response')
+            if inner_code == 0x3072cfa1:  # GZip packed
+                unpacked_data = gzip.decompress(reader.tgread_bytes())
+                with BinaryReader(unpacked_data) as compressed_reader:
+                    request.on_response(compressed_reader)
             else:
-                # If it's really a result for RPC from previous connection
-                # session, it will be skipped by the handle_container()
-                self._logger.debug('Lost request will be skipped.')
-                return False
+                reader.seek(-4)
+                request.on_response(reader)
+
+            self.session.process_entities(request.result)
+            request.confirm_received.set()
+            return True
+
+        # If it's really a result for RPC from previous connection
+        # session, it will be skipped by the handle_container()
+        self._logger.debug('Lost request will be skipped.')
+        return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
