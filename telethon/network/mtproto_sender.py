@@ -11,7 +11,10 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
-from ..tl.types import MsgsAck, Pong, BadServerSalt, BadMsgNotification
+from ..tl.types import (
+    MsgsAck, Pong, BadServerSalt, BadMsgNotification,
+    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
+)
 from ..tl.functions.auth import LogOutRequest
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -195,6 +198,15 @@ class MtProtoSender:
         if code == BadMsgNotification.CONSTRUCTOR_ID:
             return self._handle_bad_msg_notification(msg_id, sequence, reader)
 
+        if code == MsgDetailedInfo.CONSTRUCTOR_ID:
+            return self._handle_msg_detailed_info(msg_id, sequence, reader)
+
+        if code == MsgNewDetailedInfo.CONSTRUCTOR_ID:
+            return self._handle_msg_new_detailed_info(msg_id, sequence, reader)
+
+        if code == NewSessionCreated.CONSTRUCTOR_ID:
+            return self._handle_new_session_created(msg_id, sequence, reader)
+
         if code == MsgsAck.CONSTRUCTOR_ID:  # may handle the request we wanted
             ack = reader.tgread_object()
             assert isinstance(ack, MsgsAck)
@@ -322,6 +334,30 @@ class MtProtoSender:
             return True
         else:
             raise error
+
+    def _handle_msg_detailed_info(self, msg_id, sequence, reader):
+        msg_new = reader.tgread_object()
+        assert isinstance(msg_new, MsgDetailedInfo)
+
+        # TODO For now, simply ack msg_new.answer_msg_id
+        # Relevant tdesktop source code: https://goo.gl/VvpCC6
+        self._send_acknowledge(msg_new.answer_msg_id)
+        return True
+
+    def _handle_msg_new_detailed_info(self, msg_id, sequence, reader):
+        msg_new = reader.tgread_object()
+        assert isinstance(msg_new, MsgNewDetailedInfo)
+
+        # TODO For now, simply ack msg_new.answer_msg_id
+        # Relevant tdesktop source code: https://goo.gl/G7DPsR
+        self._send_acknowledge(msg_new.answer_msg_id)
+        return True
+
+    def _handle_new_session_created(self, msg_id, sequence, reader):
+        new_session = reader.tgread_object()
+        assert isinstance(new_session, NewSessionCreated)
+        # TODO https://goo.gl/LMyN7A
+        return True
 
     def _handle_rpc_result(self, msg_id, sequence, reader):
         self._logger.debug('Handling RPC result')
