@@ -244,7 +244,7 @@ class MtProtoSender:
            the given type, or returns None if it's not found/doesn't match.
         """
         message = self._pending_receive.get(msg_id, None)
-        if isinstance(message.request, t):
+        if message and isinstance(message.request, t):
             return self._pending_receive.pop(msg_id).request
 
     def _clear_all_pending(self):
