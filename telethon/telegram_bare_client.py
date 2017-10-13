@@ -537,8 +537,6 @@ class TelegramBareClient:
 
         except FloodWaitError as e:
             if e.seconds > self.session.flood_sleep_threshold | 0:
-                sender.disconnect()
-                self.disconnect()
                 raise
 
             self._logger.debug(
