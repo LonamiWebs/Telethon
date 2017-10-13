@@ -808,8 +808,9 @@ class TelegramBareClient:
 
                 try:
                     import socks
-                    if isinstance(error, socks.GeneralProxyError) or \
-                            isinstance(error, socks.ProxyConnectionError):
+                    if isinstance(error, (
+                            socks.GeneralProxyError, socks.ProxyConnectionError
+                    )):
                         # This is a known error, and it's not related to
                         # Telegram but rather to the proxy. Disconnect and
                         # hand it over to the main thread.

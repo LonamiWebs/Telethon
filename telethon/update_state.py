@@ -149,8 +149,7 @@ class UpdateState:
                     self._updates.append(update.update)
                     self._updates_available.set()
 
-                elif isinstance(update, tl.Updates) or \
-                        isinstance(update, tl.UpdatesCombined):
+                elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
                     self._updates.extend(update.updates)
                     self._updates_available.set()
 

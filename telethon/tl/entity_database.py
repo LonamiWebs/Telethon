@@ -74,9 +74,7 @@ class EntityDatabase:
                     getattr(p, 'access_hash', 0)  # chats won't have hash
 
                 if self.enabled_full:
-                    if isinstance(e, User) \
-                            or isinstance(e, Chat) \
-                            or isinstance(e, Channel):
+                    if isinstance(e, (User, Chat, Channel)):
                         new.append(e)
             except ValueError:
                 pass

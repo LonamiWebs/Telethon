@@ -37,7 +37,7 @@ def get_display_name(entity):
         else:
             return '(No name)'
 
-    if isinstance(entity, Chat) or isinstance(entity, Channel):
+    if isinstance(entity, (Chat, Channel)):
         return entity.title
 
     return '(unknown)'
@@ -50,8 +50,7 @@ def get_extension(media):
     """Gets the corresponding extension for any Telegram media"""
 
     # Photos are always compressed as .jpg by Telegram
-    if (isinstance(media, UserProfilePhoto) or isinstance(media, ChatPhoto) or
-            isinstance(media, MessageMediaPhoto)):
+    if isinstance(media, (UserProfilePhoto, ChatPhoto, MessageMediaPhoto)):
         return '.jpg'
 
     # Documents will come with a mime type
@@ -87,12 +86,10 @@ def get_input_peer(entity, allow_self=True):
         else:
             return InputPeerUser(entity.id, entity.access_hash)
 
-    if any(isinstance(entity, c) for c in (
-            Chat, ChatEmpty, ChatForbidden)):
+    if isinstance(entity, (Chat, ChatEmpty, ChatForbidden)):
         return InputPeerChat(entity.id)
 
-    if any(isinstance(entity, c) for c in (
-            Channel, ChannelForbidden)):
+    if isinstance(entity, (Channel, ChannelForbidden)):
         return InputPeerChannel(entity.id, entity.access_hash)
 
     # Less common cases
@@ -122,7 +119,7 @@ def get_input_channel(entity):
     if type(entity).SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
         return entity
 
-    if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+    if isinstance(entity, (Channel, ChannelForbidden)):
         return InputChannel(entity.id, entity.access_hash)
 
     if isinstance(entity, InputPeerChannel):
@@ -266,7 +263,7 @@ def get_input_media(media, user_caption=None, is_photo=False):
     if isinstance(media, MessageMediaGame):
         return InputMediaGame(id=media.game.id)
 
-    if isinstance(media, ChatPhoto) or isinstance(media, UserProfilePhoto):
+    if isinstance(media, (ChatPhoto, UserProfilePhoto)):
         if isinstance(media.photo_big, FileLocationUnavailable):
             return get_input_media(media.photo_small, is_photo=True)
         else:
@@ -291,10 +288,9 @@ def get_input_media(media, user_caption=None, is_photo=False):
             venue_id=media.venue_id
         )
 
-    if any(isinstance(media, t) for t in (
+    if isinstance(media, (
             MessageMediaEmpty, MessageMediaUnsupported,
-            FileLocationUnavailable, ChatPhotoEmpty,
-            UserProfilePhotoEmpty)):
+            ChatPhotoEmpty, UserProfilePhotoEmpty, FileLocationUnavailable)):
         return InputMediaEmpty()
 
     if isinstance(media, Message):
@@ -319,11 +315,11 @@ def get_peer_id(peer, add_mark=False):
         peer = get_input_peer(peer, allow_self=False)
 
     # Set the right ID/kind, or raise if the TLObject is not recognised
-    if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
+    if isinstance(peer, (PeerUser, InputPeerUser)):
         return peer.user_id
-    elif isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
+    elif isinstance(peer, (PeerChat, InputPeerChat)):
         return -peer.chat_id if add_mark else peer.chat_id
-    elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
+    elif isinstance(peer, (PeerChannel, InputPeerChannel)):
         i = peer.channel_id
         if add_mark:
             # Concat -100 through math tricks, .to_supergroup() on Madeline
