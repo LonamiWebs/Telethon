@@ -321,6 +321,7 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
+                     entities=[],
                      reply_to=None,
                      link_preview=True):
         """Sends a message to the given entity (or input peer)
