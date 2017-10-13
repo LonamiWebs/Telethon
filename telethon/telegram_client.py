@@ -47,7 +47,7 @@ from .tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
-    UpdateNewMessage, UpdateShortSentMessage,
+    UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
 
@@ -359,7 +359,7 @@ class TelegramClient(TelegramBareClient):
                     break
 
         for update in result.updates:
-            if isinstance(update, UpdateNewMessage):
+            if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
                 if update.message.id == msg_id:
                     return update.message
 
