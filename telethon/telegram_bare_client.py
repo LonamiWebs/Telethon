@@ -601,7 +601,7 @@ class TelegramBareClient:
         is_large = file_size > 10 * 1024 * 1024
         part_count = (file_size + part_size - 1) // part_size
 
-        file_id = utils.generate_random_long()
+        file_id = utils.random_long()
         hash_md5 = md5()
 
         stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)

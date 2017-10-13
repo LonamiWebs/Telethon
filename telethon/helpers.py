@@ -1,13 +1,14 @@
 """Various helpers not related to the Telegram API itself"""
+import struct
 from hashlib import sha1, sha256
 import os
 
 # region Multiple utilities
 
 
-def generate_random_long(signed=True):
+def random_long(signed=True):
     """Generates a random long integer (8 bytes), which is optionally signed"""
-    return int.from_bytes(os.urandom(8), signed=signed, byteorder='little')
+    return struct.unpack('<q' if signed else '<Q', os.urandom(8))[0]
 
 
 def ensure_parent_dir_exists(file_path):
@@ -71,5 +72,15 @@ def get_password_hash(pw, current_salt):
 
     pw_hash = current_salt + data + current_salt
     return sha256(pw_hash).digest()
+
+
+def reinterpret(value, fmt, endian='<'):
+    """Reinterprets the given value from its original format to its new
+       format, for instance, reinterpret(-1, 'qQ') -> -1 as unsigned.
+    """
+    return struct.unpack(
+        endian + fmt[1], struct.pack(endian + fmt[0], value)
+    )[0]
+
 
 # endregion

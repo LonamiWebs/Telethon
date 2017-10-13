@@ -1,19 +1,24 @@
 import os
+import struct
 import time
+from datetime import datetime, timedelta
 from hashlib import sha1
 
-from ..tl.types import (
-    ResPQ, PQInnerData, ServerDHParamsFail, ServerDHParamsOk,
-    ServerDHInnerData, ClientDHInnerData, DhGenOk, DhGenRetry, DhGenFail
-)
 from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
 from ..errors import SecurityError
 from ..extensions import BinaryReader
 from ..network import MtProtoPlainSender
+from ..tl import TLMessage, TLObject
 from ..tl.functions import (
     ReqPqRequest, ReqDHParamsRequest, SetClientDHParamsRequest
+)
+from ..tl.functions.auth import BindTempAuthKeyRequest
+from ..tl.types import (
+    ResPQ, PQInnerData, ServerDHParamsFail, ServerDHParamsOk,
+    ServerDHInnerData, ClientDHInnerData, DhGenOk, DhGenRetry, DhGenFail,
+    BindAuthKeyInner
 )
 
 
@@ -188,6 +193,65 @@ def _do_authentication(connection):
 
     else:
         raise NotImplementedError('DH Gen unknown: {}'.format(dh_gen))
+
+
+def bind_temp_auth_key(temp_auth_key, auth_key, sender):
+    """
+    :param TempAuthKey temp_auth_key:
+    :param AuthKey auth_key:
+    :param MtProtoSender sender:
+    """
+    assert sender.session.auth_key.key_id == temp_auth_key.key_id
+    bind_inner = BindAuthKeyInner(
+        nonce=utils.random_long(),
+        temp_auth_key_id=utils.reinterpret(temp_auth_key.key_id, 'Qq'),
+        perm_auth_key_id=utils.reinterpret(sender.session.auth_key.key_id, 'Qq'),
+        temp_session_id=utils.reinterpret(sender.session.id, 'Qq'),
+        expires_at=datetime.now() + timedelta(days=1)
+    )
+    inner_message = TLMessage(sender.session, bind_inner)
+    inner_message.seq_no = 0
+
+    # TODO Copy paste from MtProtoSender._send_message
+    plain_text = (
+        os.urandom(16)  # random unsigned salt + random unsigned id
+        + inner_message.to_bytes()
+    )
+    msg_key = utils.calc_msg_key(plain_text)
+    key_id = struct.pack('<Q', auth_key.key_id)
+    key, iv = utils.calc_key(auth_key.key, msg_key, client=True)
+    cipher_text = AES.encrypt_ige(plain_text, key, iv)
+    encrypted_inner_message = key_id + msg_key + cipher_text
+
+    # Now perform the actual request
+    request = BindTempAuthKeyRequest(
+        perm_auth_key_id=utils.reinterpret(auth_key.key_id, 'Qq'),
+        nonce=bind_inner.nonce,
+        expires_at=bind_inner.expires_at,
+        encrypted_message=TLObject.serialize_bytes(encrypted_inner_message)
+    )
+
+    message = TLMessage(sender.session, request)
+    message.msg_id = inner_message.msg_id
+
+    # TODO Copy paste from MtProtoSender._send_message
+    plain_text = \
+        struct.pack('<QQ', sender.session.salt, sender.session.id) \
+        + message.to_bytes()
+
+    msg_key = utils.calc_msg_key(plain_text)
+    key_id = struct.pack('<Q', temp_auth_key.key_id)
+    key, iv = utils.calc_key(temp_auth_key.key, msg_key, client=True)
+    cipher_text = AES.encrypt_ige(plain_text, key, iv)
+    encrypted_message = key_id + msg_key + cipher_text
+
+    sender._pending_receive[message.msg_id] = message
+    sender.connection.send(encrypted_message)
+    while not request.confirm_received.is_set():
+        sender.receive(update_state=None)
+
+    print('Success?')
+    print(request.result.stringify())
 
 
 def get_int(byte_array, signed=True):

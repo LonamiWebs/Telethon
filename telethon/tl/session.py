@@ -58,7 +58,7 @@ class Session:
         self._msg_id_lock = Lock()
         self._save_lock = Lock()
 
-        self.id = helpers.generate_random_long(signed=False)
+        self.id = helpers.random_long(signed=False)
         self._sequence = 0
         self.time_offset = 0
         self._last_msg_id = 0  # Long

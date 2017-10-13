@@ -51,6 +51,8 @@ destroy_auth_key_ok#f660e1d4 = DestroyAuthKeyRes;
 destroy_auth_key_none#0a9f2259 = DestroyAuthKeyRes;
 destroy_auth_key_fail#ea109b13 = DestroyAuthKeyRes;
 
+bind_auth_key_inner#75a3f765 nonce:long temp_auth_key_id:long perm_auth_key_id:long temp_session_id:long expires_at:int = BindAuthKeyInner;
+
 ---functions---
 
 req_pq#60469778 nonce:int128 = ResPQ;

@@ -21,3 +21,9 @@ class AuthKey:
         new_nonce = new_nonce.to_bytes(32, 'little', signed=True)
         data = new_nonce + struct.pack('<BQ', number, self.aux_hash)
         return utils.calc_msg_key(data)
+
+
+class TempAuthKey(AuthKey):
+    def __init__(self, data, expires_at):
+        super().__init__(data)
+        self.expires_at = expires_at
