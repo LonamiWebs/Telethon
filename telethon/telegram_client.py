@@ -334,7 +334,7 @@ class TelegramClient(TelegramBareClient):
         request = SendMessageRequest(
             peer=entity,
             message=message,
-            entities=[],
+            entities=entities,
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
