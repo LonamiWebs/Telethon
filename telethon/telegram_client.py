@@ -253,7 +253,7 @@ class TelegramClient(TelegramBareClient):
         if limit is None:
             limit = float('inf')
 
-        dialogs = {}  # Use Dialog.top_message as identifier to avoid dupes
+        dialogs = {}  # Use peer id as identifier to avoid dupes
         messages = {}  # Used later for sorting TODO also return these?
         entities = {}
         while len(dialogs) < limit:
@@ -268,7 +268,7 @@ class TelegramClient(TelegramBareClient):
                 break
 
             for d in r.dialogs:
-                dialogs[d.top_message] = d
+                dialogs[utils.get_peer_id(d.peer, True)] = d
             for m in r.messages:
                 messages[m.id] = m
 
