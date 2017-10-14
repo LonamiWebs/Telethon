@@ -58,7 +58,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.1'
+    __version__ = '0.15.2'
 
     # TODO Make this thread-safe, all connections share the same DC
     _dc_options = None
