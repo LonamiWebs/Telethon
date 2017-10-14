@@ -416,11 +416,25 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5):
+    def _get_sender(self, on_main_thread=None):
+        """Gets the appropriated sender based on the current thread"""
+        if on_main_thread is None:
+            on_main_thread = threading.get_ident() == self._main_thread_ident
+
+        if on_main_thread or self._on_read_thread():
+            sender = self._sender
+        else:
+            sender = self._sender.clone()
+            sender.connect()
+        return sender
+
+    def __call__(self, *requests, retries=5, sender=None):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
            ValueError().
+
+           If 'sender' is not None, it will override the sender to be used.
         """
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
@@ -428,11 +442,7 @@ class TelegramBareClient:
 
         # Determine the sender to be used (main or a new connection)
         on_main_thread = threading.get_ident() == self._main_thread_ident
-        if on_main_thread or self._on_read_thread():
-            sender = self._sender
-        else:
-            sender = self._sender.clone()
-            sender.connect()
+        sender = sender or self._get_sender(on_main_thread=on_main_thread)
 
         # We should call receive from this thread if there's no background
         # thread reading or if the server disconnected us and we're trying
@@ -686,6 +696,10 @@ class TelegramBareClient:
 
         # The used client will change if FileMigrateError occurs
         client = self
+        # TODO Keeping just another variable for a sender feels messy, improve.
+        # This is done not to call .connect() for every single piece of the
+        # file we'll be trying to download, if we were from another thread.
+        sender = self._get_sender()
         cdn_decrypter = None
 
         try:
@@ -697,7 +711,7 @@ class TelegramBareClient:
                     else:
                         result = client(GetFileRequest(
                             input_location, offset, part_size
-                        ))
+                        ), sender=sender)
 
                         if isinstance(result, FileCdnRedirect):
                             cdn_decrypter, result = \
@@ -706,7 +720,11 @@ class TelegramBareClient:
                                 )
 
                 except FileMigrateError as e:
+                    if sender != self._sender:
+                        sender.disconnect()
                     client = self._get_exported_client(e.new_dc)
+                    # Client connected on this thread -> uses the right sender
+                    sender = None
                     continue
 
                 offset += part_size
@@ -721,6 +739,8 @@ class TelegramBareClient:
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
+            if sender != self._sender:
+                sender.disconnect()
             if client != self:
                 client.disconnect()
 
