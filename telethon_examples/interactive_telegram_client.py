@@ -158,8 +158,11 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    total_count, messages, senders = self.get_message_history(
+                    try:
+                        total_count, messages, senders = self.get_message_history(
                         entity, limit=10)
+                    except:
+                        continue
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
