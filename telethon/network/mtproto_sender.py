@@ -217,7 +217,7 @@ class MtProtoSender:
                 r = self._pop_request_of_type(msg_id, LogOutRequest)
                 if r:
                     r.result = True  # Telegram won't send this value
-                    r.confirm_received()
+                    r.confirm_received.set()
                     self._logger.debug('Message ack confirmed', r)
 
             return True
