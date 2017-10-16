@@ -1,4 +1,5 @@
 import logging
+import pickle
 from collections import deque
 from datetime import datetime
 from threading import RLock, Event, Thread
@@ -27,6 +28,7 @@ class UpdateState:
         self._updates_lock = RLock()
         self._updates_available = Event()
         self._updates = deque()
+        self._latest_updates = deque(maxlen=10)
 
         self._logger = logging.getLogger(__name__)
 
@@ -141,6 +143,26 @@ class UpdateState:
 
             self._state.pts = pts
 
+            # TODO There must be a better way to handle updates rather than
+            # keeping a queue with the latest updates only, and handling
+            # the 'pts' correctly should be enough. However some updates
+            # like UpdateUserStatus (even inside UpdateShort) will be called
+            # repeatedly very often if invoking anything inside an update
+            # handler. TODO Figure out why.
+            """
+            client = TelegramClient('anon', api_id, api_hash, update_workers=1)
+            client.connect()
+            def handle(u):
+                client.get_me()
+            client.add_update_handler(handle)
+            input('Enter to exit.')
+            """
+            data = pickle.dumps(update.to_dict())
+            if data in self._latest_updates:
+                return  # Duplicated too
+
+            self._latest_updates.append(data)
+
             if type(update).SUBCLASS_OF_ID == 0x8af52aac:  # crc32(b'Updates')
                 # Expand "Updates" into "Update", and pass these to callbacks.
                 # Since .users and .chats have already been processed, we
@@ -149,8 +171,7 @@ class UpdateState:
                     self._updates.append(update.update)
                     self._updates_available.set()
 
-                elif isinstance(update, tl.Updates) or \
-                        isinstance(update, tl.UpdatesCombined):
+                elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
                     self._updates.extend(update.updates)
                     self._updates_available.set()
 

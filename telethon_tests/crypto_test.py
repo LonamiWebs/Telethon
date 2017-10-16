@@ -107,17 +107,17 @@ class CryptoTests(unittest.TestCase):
 
     @staticmethod
     def test_generate_key_data_from_nonce():
-        server_nonce = b'I am the server nonce.'
-        new_nonce = b'I am a new calculated nonce.'
+        server_nonce = int.from_bytes(b'The 16-bit nonce', byteorder='little')
+        new_nonce = int.from_bytes(b'The new, calculated 32-bit nonce', byteorder='little')
 
         key, iv = utils.generate_key_data_from_nonce(server_nonce, new_nonce)
-        expected_key = b'?\xc4\xbd\xdf\rWU\x8a\xf5\x0f+V\xdc\x96up\x1d\xeeG\x00\x81|\x1eg\x8a\x8f{\xf0y\x80\xda\xde'
-        expected_iv = b'Q\x9dpZ\xb7\xdd\xcb\x82_\xfa\xf4\x90\xecn\x10\x9cD\xd2\x01\x8d\x83\xa0\xa4^\xb8\x91,\x7fI am'
+        expected_key = b'/\xaa\x7f\xa1\xfcs\xef\xa0\x99zh\x03M\xa4\x8e\xb4\xab\x0eE]b\x95|\xfe\xc0\xf8\x1f\xd4\xa0\xd4\xec\x91'
+        expected_iv = b'\xf7\xae\xe3\xc8+=\xc2\xb8\xd1\xe1\x1b\x0e\x10\x07\x9fn\x9e\xdc\x960\x05\xf9\xea\xee\x8b\xa1h The '
 
         assert key == expected_key, 'Key ("{}") does not equal expected ("{}")'.format(
             key, expected_key)
-        assert iv == expected_iv, 'Key ("{}") does not equal expected ("{}")'.format(
-            key, expected_iv)
+        assert iv == expected_iv, 'IV ("{}") does not equal expected ("{}")'.format(
+            iv, expected_iv)
 
     @staticmethod
     def test_fingerprint_from_key():

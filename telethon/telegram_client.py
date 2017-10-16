@@ -15,6 +15,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
+from .tl.custom import Draft
 from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
@@ -28,8 +29,8 @@ from .tl.functions.contacts import (
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest, GetChatsRequest
-)
+    SendMessageRequest, GetChatsRequest,
+    GetAllDraftsRequest)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -46,7 +47,7 @@ from .tl.types import (
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
-    UpdateNewMessage, UpdateShortSentMessage,
+    UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
 
@@ -227,7 +228,7 @@ class TelegramClient(TelegramBareClient):
         if limit is None:
             limit = float('inf')
 
-        dialogs = {}  # Use Dialog.top_message as identifier to avoid dupes
+        dialogs = {}  # Use peer id as identifier to avoid dupes
         messages = {}  # Used later for sorting TODO also return these?
         entities = {}
         while len(dialogs) < limit:
@@ -242,7 +243,7 @@ class TelegramClient(TelegramBareClient):
                 break
 
             for d in r.dialogs:
-                dialogs[d.top_message] = d
+                dialogs[utils.get_peer_id(d.peer, True)] = d
             for m in r.messages:
                 messages[m.id] = m
 
@@ -277,9 +278,20 @@ class TelegramClient(TelegramBareClient):
             [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
         )
 
-    # endregion
+    async def get_drafts(self):  # TODO: Ability to provide a `filter`
+        """
+        Gets all open draft messages.
 
-    # region Message requests
+        Returns a list of custom `Draft` objects that are easy to work with: You can call
+        `draft.set_message('text')` to change the message, or delete it through `draft.delete()`.
+
+        :return List[telethon.tl.custom.Draft]: A list of open drafts
+        """
+        response = await self(GetAllDraftsRequest())
+        self.session.process_entities(response)
+        self.session.generate_sequence(response.seq)
+        drafts = [Draft._from_update(self, u) for u in response.updates]
+        return drafts
 
     async def send_message(self,
                            entity,
@@ -322,7 +334,7 @@ class TelegramClient(TelegramBareClient):
                     break
 
         for update in result.updates:
-            if isinstance(update, UpdateNewMessage):
+            if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
                 if update.message.id == msg_id:
                     return update.message
 
@@ -463,9 +475,13 @@ class TelegramClient(TelegramBareClient):
     async def send_file(self, entity, file, caption='',
                         force_document=False, progress_callback=None,
                         reply_to=None,
+                        attributes=None,
                         **kwargs):
         """Sends a file to the specified entity.
            The file may either be a path, a byte array, or a stream.
+           Note that if a byte array or a stream is given, a filename
+           or its type won't be inferred, and it will be sent as an
+           "unnamed application/octet-stream".
 
            An optional caption can also be specified for said file.
 
@@ -481,6 +497,10 @@ class TelegramClient(TelegramBareClient):
            takes two parameters, (bytes_uploaded, total_bytes).
 
            The "reply_to" parameter works exactly as the one on .send_message.
+
+           If "attributes" is set to be a list of DocumentAttribute's, these
+           will override the automatically inferred ones (so that you can
+           modify the file name of the file sent for instance).
 
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -512,16 +532,28 @@ class TelegramClient(TelegramBareClient):
                 # Determine mime-type and attributes
                 # Take the first element by using [0] since it returns a tuple
                 mime_type = guess_type(file)[0]
-                attributes = [
+                attr_dict = {
+                    DocumentAttributeFilename:
                     DocumentAttributeFilename(os.path.basename(file))
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
-                ]
+                }
             else:
-                attributes = [DocumentAttributeFilename('unnamed')]
+                attr_dict = {
+                    DocumentAttributeFilename:
+                    DocumentAttributeFilename('unnamed')
+                }
 
             if 'is_voice_note' in kwargs:
-                attributes.append(DocumentAttributeAudio(0, voice=True))
+                attr_dict[DocumentAttributeAudio] = \
+                    DocumentAttributeAudio(0, voice=True)
+
+            # Now override the attributes if any. As we have a dict of
+            # {cls: instance}, we can override any class with the list
+            # of attributes provided by the user easily.
+            if attributes:
+                for a in attributes:
+                    attr_dict[type(a)] = a
 
             # Ensure we have a mime type, any; but it cannot be None
             # 'The "octet-stream" subtype is used to indicate that a body
@@ -532,7 +564,7 @@ class TelegramClient(TelegramBareClient):
             media = InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
-                attributes=attributes,
+                attributes=list(attr_dict.values()),
                 caption=caption
             )
 
@@ -852,19 +884,19 @@ class TelegramClient(TelegramBareClient):
                 # crc32(b'InputPeer') and crc32(b'Peer')
                 type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = await self.get_input_entity(entity)
-            result = None
             if isinstance(ie, InputPeerUser):
-                result = await self(GetUsersRequest([ie]))
+                await self(GetUsersRequest([ie]))
             elif isinstance(ie, InputPeerChat):
-                result = await self(GetChatsRequest([ie.chat_id]))
+                await self(GetChatsRequest([ie.chat_id]))
             elif isinstance(ie, InputPeerChannel):
-                result = await self(GetChannelsRequest([ie]))
-            if result:
-                self.session.process_entities(result)
-                try:
-                    return self.session.entities[ie]
-                except KeyError:
-                    pass
+                await self(GetChannelsRequest([ie]))
+            try:
+                # session.process_entities has been called in the MtProtoSender
+                # with the result of these calls, so they should now be on the
+                # entities database.
+                return self.session.entities[ie]
+            except KeyError:
+                pass
 
         if isinstance(entity, str):
             return await self._get_entity_from_string(entity)
@@ -880,10 +912,11 @@ class TelegramClient(TelegramBareClient):
         phone = EntityDatabase.parse_phone(string)
         if phone:
             entity = phone
-            self.session.process_entities(await self(GetContactsRequest(0)))
+            await self(GetContactsRequest(0))
         else:
             entity = string.strip('@').lower()
-            self.session.process_entities(await self(ResolveUsernameRequest(entity)))
+            await self(ResolveUsernameRequest(entity))
+        # MtProtoSender will call .process_entities on the requests made
 
         try:
             return self.session.entities[entity]
@@ -930,9 +963,17 @@ class TelegramClient(TelegramBareClient):
             )
 
         if self.session.save_entities:
-            # Not found, look in the dialogs (this will save the users)
-            await self.get_dialogs(limit=None)
-
+            # Not found, look in the latest dialogs.
+            # This is useful if for instance someone just sent a message but
+            # the updates didn't specify who, as this person or chat should
+            # be in the latest dialogs.
+            await self(GetDialogsRequest(
+                offset_date=None,
+                offset_id=0,
+                offset_peer=InputPeerEmpty(),
+                limit=0,
+                exclude_pinned=True
+            ))
             try:
                 return self.session.entities.get_input_entity(peer)
             except KeyError:

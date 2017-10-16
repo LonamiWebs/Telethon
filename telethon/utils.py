@@ -20,8 +20,8 @@ from .tl.types import (
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument,
-    InputMediaUploadedPhoto,
-    DocumentAttributeFilename)
+    InputMediaUploadedPhoto, DocumentAttributeFilename, photos
+)
 
 
 def get_display_name(entity):
@@ -37,7 +37,7 @@ def get_display_name(entity):
         else:
             return '(No name)'
 
-    if isinstance(entity, Chat) or isinstance(entity, Channel):
+    if isinstance(entity, (Chat, Channel)):
         return entity.title
 
     return '(unknown)'
@@ -50,8 +50,7 @@ def get_extension(media):
     """Gets the corresponding extension for any Telegram media"""
 
     # Photos are always compressed as .jpg by Telegram
-    if (isinstance(media, UserProfilePhoto) or isinstance(media, ChatPhoto) or
-            isinstance(media, MessageMediaPhoto)):
+    if isinstance(media, (UserProfilePhoto, ChatPhoto, MessageMediaPhoto)):
         return '.jpg'
 
     # Documents will come with a mime type
@@ -87,12 +86,10 @@ def get_input_peer(entity, allow_self=True):
         else:
             return InputPeerUser(entity.id, entity.access_hash)
 
-    if any(isinstance(entity, c) for c in (
-            Chat, ChatEmpty, ChatForbidden)):
+    if isinstance(entity, (Chat, ChatEmpty, ChatForbidden)):
         return InputPeerChat(entity.id)
 
-    if any(isinstance(entity, c) for c in (
-            Channel, ChannelForbidden)):
+    if isinstance(entity, (Channel, ChannelForbidden)):
         return InputPeerChannel(entity.id, entity.access_hash)
 
     # Less common cases
@@ -122,7 +119,7 @@ def get_input_channel(entity):
     if type(entity).SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
         return entity
 
-    if isinstance(entity, Channel) or isinstance(entity, ChannelForbidden):
+    if isinstance(entity, (Channel, ChannelForbidden)):
         return InputChannel(entity.id, entity.access_hash)
 
     if isinstance(entity, InputPeerChannel):
@@ -187,6 +184,9 @@ def get_input_photo(photo):
 
     if type(photo).SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
         return photo
+
+    if isinstance(photo, photos.Photo):
+        photo = photo.photo
 
     if isinstance(photo, Photo):
         return InputPhoto(id=photo.id, access_hash=photo.access_hash)
@@ -263,7 +263,7 @@ def get_input_media(media, user_caption=None, is_photo=False):
     if isinstance(media, MessageMediaGame):
         return InputMediaGame(id=media.game.id)
 
-    if isinstance(media, ChatPhoto) or isinstance(media, UserProfilePhoto):
+    if isinstance(media, (ChatPhoto, UserProfilePhoto)):
         if isinstance(media.photo_big, FileLocationUnavailable):
             return get_input_media(media.photo_small, is_photo=True)
         else:
@@ -288,10 +288,9 @@ def get_input_media(media, user_caption=None, is_photo=False):
             venue_id=media.venue_id
         )
 
-    if any(isinstance(media, t) for t in (
+    if isinstance(media, (
             MessageMediaEmpty, MessageMediaUnsupported,
-            FileLocationUnavailable, ChatPhotoEmpty,
-            UserProfilePhotoEmpty)):
+            ChatPhotoEmpty, UserProfilePhotoEmpty, FileLocationUnavailable)):
         return InputMediaEmpty()
 
     if isinstance(media, Message):
@@ -300,16 +299,14 @@ def get_input_media(media, user_caption=None, is_photo=False):
     _raise_cast_fail(media, 'InputMedia')
 
 
-def get_peer_id(peer, add_mark=False, get_kind=False):
+def get_peer_id(peer, add_mark=False):
     """Finds the ID of the given peer, and optionally converts it to
        the "bot api" format if 'add_mark' is set to True.
-
-       If 'get_kind', the kind will be returned as a second value.
     """
     # First we assert it's a Peer TLObject, or early return for integers
     if not isinstance(peer, TLObject):
         if isinstance(peer, int):
-            return (peer, PeerUser) if get_kind else peer
+            return peer
         else:
             _raise_cast_fail(peer, 'int')
 
@@ -318,25 +315,20 @@ def get_peer_id(peer, add_mark=False, get_kind=False):
         peer = get_input_peer(peer, allow_self=False)
 
     # Set the right ID/kind, or raise if the TLObject is not recognised
-    i, k = None, None
-    if isinstance(peer, PeerUser) or isinstance(peer, InputPeerUser):
-        i, k = peer.user_id, PeerUser
-    elif isinstance(peer, PeerChat) or isinstance(peer, InputPeerChat):
-        i, k = peer.chat_id, PeerChat
-    elif isinstance(peer, PeerChannel) or isinstance(peer, InputPeerChannel):
-        i, k = peer.channel_id, PeerChannel
-    else:
-        _raise_cast_fail(peer, 'int')
-
-    if add_mark:
-        if k == PeerChat:
-            i = -i
-        elif k == PeerChannel:
+    if isinstance(peer, (PeerUser, InputPeerUser)):
+        return peer.user_id
+    elif isinstance(peer, (PeerChat, InputPeerChat)):
+        return -peer.chat_id if add_mark else peer.chat_id
+    elif isinstance(peer, (PeerChannel, InputPeerChannel)):
+        i = peer.channel_id
+        if add_mark:
             # Concat -100 through math tricks, .to_supergroup() on Madeline
             # IDs will be strictly positive -> log works
-            i = -(i + pow(10, math.floor(math.log10(i) + 3)))
+            return -(i + pow(10, math.floor(math.log10(i) + 3)))
+        else:
+            return i
 
-    return (i, k) if get_kind else i  # return kind only if get_kind
+    _raise_cast_fail(peer, 'int')
 
 
 def resolve_id(marked_id):
@@ -375,11 +367,7 @@ def find_user_or_chat(peer, users, chats):
 def get_appropriated_part_size(file_size):
     """Gets the appropriated part size when uploading or downloading files,
        given an initial file size"""
-    if file_size <= 1048576:  # 1MB
-        return 32
-    if file_size <= 10485760:  # 10MB
-        return 64
-    if file_size <= 393216000:  # 375MB
+    if file_size <= 104857600:  # 100MB
         return 128
     if file_size <= 786432000:  # 750MB
         return 256

@@ -36,6 +36,7 @@ class Session:
             self.lang_pack = session.lang_pack
             self.report_errors = session.report_errors
             self.save_entities = session.save_entities
+            self.flood_sleep_threshold = session.flood_sleep_threshold
 
         else:  # str / None
             self.session_user_id = session_user_id
@@ -49,6 +50,7 @@ class Session:
             self.lang_pack = ''
             self.report_errors = True
             self.save_entities = True
+            self.flood_sleep_threshold = 60
 
         self.id = helpers.generate_random_long(signed=False)
         self._sequence = 0

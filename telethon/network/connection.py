@@ -143,28 +143,25 @@ class Connection:
         # TODO We don't want another call to this method that could
         # potentially await on another self.read(n). Is this guaranteed
         # by asyncio?
-        packet_length_bytes = await self.read(4)
-        packet_length = int.from_bytes(packet_length_bytes, 'little')
+        packet_len_seq = await self.read(8)  # 4 and 4
+        packet_len, seq = struct.unpack('<ii', packet_len_seq)
 
-        seq_bytes = await self.read(4)
-        seq = int.from_bytes(seq_bytes, 'little')
+        body = await self.read(packet_len - 12)
+        checksum = struct.unpack('<I', await self.read(4))[0]
 
-        body = await self.read(packet_length - 12)
-        checksum = int.from_bytes(await self.read(4), 'little')
-
-        valid_checksum = crc32(packet_length_bytes + seq_bytes + body)
+        valid_checksum = crc32(packet_len_seq + body)
         if checksum != valid_checksum:
             raise InvalidChecksumError(checksum, valid_checksum)
 
         return body
 
     async def _recv_intermediate(self):
-        return await self.read(int.from_bytes(self.read(4), 'little'))
+        return await self.read(struct.unpack('<i', await self.read(4))[0])
 
     async def _recv_abridged(self):
-        length = int.from_bytes(self.read(1), 'little')
+        length = struct.unpack('<B', await self.read(1))[0]
         if length >= 127:
-            length = int.from_bytes(self.read(3) + b'\0', 'little')
+            length = struct.unpack('<i', await self.read(3) + b'\0')[0]
 
         return await self.read(length << 2)
 
