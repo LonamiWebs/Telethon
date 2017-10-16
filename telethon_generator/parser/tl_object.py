@@ -222,7 +222,7 @@ class TLArg:
                 self.type = flag_match.group(2)
 
             # Then check if the type is a Vector<REAL_TYPE>
-            vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)
+            vector_match = re.match(r'[Vv]ector<([\w\d.]+)>', self.type)
             if vector_match:
                 self.is_vector = True
 
