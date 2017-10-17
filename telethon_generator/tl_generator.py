@@ -154,7 +154,7 @@ class TLGenerator:
                 # for all those TLObjects with arg.can_be_inferred.
                 builder.writeln('import os')
 
-                # Import struct for the .to_bytes(self) serialization
+                # Import struct for the .__bytes__(self) serialization
                 builder.writeln('import struct')
 
                 # Generate the class for every TLObject
@@ -302,8 +302,8 @@ class TLGenerator:
 
         builder.end_block()
 
-        # Write the .to_bytes() function
-        builder.writeln('def to_bytes(self):')
+        # Write the .__bytes__() function
+        builder.writeln('def __bytes__(self):')
 
         # Some objects require more than one flag parameter to be set
         # at the same time. In this case, add an assertion.
@@ -441,10 +441,10 @@ class TLGenerator:
     @staticmethod
     def write_to_bytes(builder, arg, args, name=None):
         """
-        Writes the .to_bytes() code for the given argument
+        Writes the .__bytes__() code for the given argument
         :param builder: The source code builder
         :param arg: The argument to write
-        :param args: All the other arguments in TLObject same to_bytes.
+        :param args: All the other arguments in TLObject same __bytes__.
                      This is required to determine the flags value
         :param name: The name of the argument. Defaults to "self.argname"
                      This argument is an option because it's required when
@@ -540,7 +540,7 @@ class TLGenerator:
 
         else:
             # Else it may be a custom type
-            builder.write('{}.to_bytes()'.format(name))
+            builder.write('bytes({})'.format(name))
 
         if arg.is_flag:
             builder.write(')')
