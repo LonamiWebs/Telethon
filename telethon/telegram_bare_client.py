@@ -132,7 +132,7 @@ class TelegramBareClient:
         self._user_connected = False
 
         # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = False
+        self._authorized = None  # None = We don't know yet
 
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
@@ -223,7 +223,7 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates and not _cdn:
+            if self._authorized is None and _sync_updates and not _cdn:
                 try:
                     self.sync_updates()
                     self._set_connected_and_authorized()
@@ -749,10 +749,7 @@ class TelegramBareClient:
         if not self.updates.get_workers:
             warnings.warn("There are no update workers running, so adding an update handler will have no effect.")
 
-        sync = not self.updates.handlers
         self.updates.handlers.append(handler)
-        if sync:
-            self.sync_updates()
 
     def remove_update_handler(self, handler):
         self.updates.handlers.remove(handler)
