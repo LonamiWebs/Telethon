@@ -229,6 +229,8 @@ class TelegramBareClient:
                     self._set_connected_and_authorized()
                 except UnauthorizedError:
                     self._authorized = False
+            elif self._authorized:
+                self._set_connected_and_authorized()
 
             return True
 
