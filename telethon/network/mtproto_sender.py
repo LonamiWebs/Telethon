@@ -270,7 +270,7 @@ class MtProtoSender:
 
     def _clear_all_pending(self):
         for r in self._pending_receive.values():
-            r.confirm_received.request.set()
+            r.request.confirm_received.set()
         self._pending_receive.clear()
 
     def _handle_pong(self, msg_id, sequence, reader):
