@@ -499,10 +499,7 @@ class TelegramBareClient:
             else:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
-
-        finally:
-            if sender != self._sender:
-                sender.disconnect()
+            return None
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)
