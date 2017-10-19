@@ -318,7 +318,7 @@ class TLGenerator:
                 cnd2 = ('not self.{}'.format(a.name) for a in ra)
                 builder.writeln(
                     "assert ({}) or ({}), '{} parameters must all "
-                    "be False-y (like None) or all me True-y''".format(
+                    "be False-y (like None) or all me True-y'".format(
                         ' and '.join(cnd1), ' and '.join(cnd2),
                         ', '.join(a.name for a in ra)
                     )
