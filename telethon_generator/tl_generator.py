@@ -127,10 +127,10 @@ class TLGenerator:
                 # so they all can be serialized and sent, however, only the
                 # functions are "content_related".
                 builder.writeln(
-                    'from {}.tl.tlobject import TLObject'.format('.' * depth)
+                    'from telethon.tl.tlobject import TLObject'.format('.' * depth)
                 )
                 builder.writeln(
-                        'from {}.tl import types'.format('.' * depth)
+                        'import telethon.tl.types'.format('.' * depth)
                 )
 
                 # Add the relative imports to the namespaces,
