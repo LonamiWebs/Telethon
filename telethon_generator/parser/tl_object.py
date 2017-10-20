@@ -98,12 +98,17 @@ class TLObject:
 
     def class_name(self):
         """Gets the class name following the Python style guidelines"""
+        return self.class_name_for(self.name, self.is_function)
 
+    @staticmethod
+    def class_name_for(typename, is_function=False):
+        """Gets the class name following the Python style guidelines"""
         # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), self.name)
+        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(),
+                typename)
         result = result[:1].upper() + result[1:].replace('_', '')
         # If it's a function, let it end with "Request" to identify them
-        if self.is_function:
+        if is_function:
             result += 'Request'
         return result
 
@@ -192,6 +197,7 @@ class TLArg:
         # Default values
         self.is_vector = False
         self.is_flag = False
+        self.skip_constructor_id = False
         self.flag_index = -1
 
         # Special case: some types can be inferred, which makes it
@@ -222,7 +228,7 @@ class TLArg:
                 self.type = flag_match.group(2)
 
             # Then check if the type is a Vector<REAL_TYPE>
-            vector_match = re.match(r'vector<(\w+)>', self.type, re.IGNORECASE)
+            vector_match = re.match(r'[Vv]ector<([\w\d.]+)>', self.type)
             if vector_match:
                 self.is_vector = True
 
@@ -233,6 +239,11 @@ class TLArg:
 
                 # Update the type to match the one inside the vector
                 self.type = vector_match.group(1)
+
+            # See use_vector_id. An example of such case is ipPort in
+            # help.configSpecial
+            if self.type.split('.')[-1][0].islower():
+                self.skip_constructor_id = True
 
             # The name may contain "date" in it, if this is the case and the type is "int",
             # we can safely assume that this should be treated as a "date" object.

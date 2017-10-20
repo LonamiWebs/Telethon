@@ -11,10 +11,10 @@ class MessageContainer(TLObject):
         self.content_related = False
         self.messages = messages
 
-    def to_bytes(self):
+    def __bytes__(self):
         return struct.pack(
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
-        ) + b''.join(m.to_bytes() for m in self.messages)
+        ) + b''.join(bytes(m) for m in self.messages)
 
     @staticmethod
     def iter_read(reader):

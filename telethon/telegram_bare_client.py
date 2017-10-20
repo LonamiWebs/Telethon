@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import warnings
 from datetime import timedelta, datetime
 from hashlib import md5
 from io import BytesIO
@@ -57,7 +58,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.1'
+    __version__ = '0.15.3'
 
     # TODO Make this thread-safe, all connections share the same DC
     _dc_options = None
@@ -131,7 +132,7 @@ class TelegramBareClient:
         self._user_connected = False
 
         # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = False
+        self._authorized = None  # None = We don't know yet
 
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
@@ -222,12 +223,14 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates and not _cdn:
+            if self._authorized is None and _sync_updates and not _cdn:
                 try:
                     self.sync_updates()
                     self._set_connected_and_authorized()
                 except UnauthorizedError:
                     self._authorized = False
+            elif self._authorized:
+                self._set_connected_and_authorized()
 
             return True
 
@@ -270,17 +273,15 @@ class TelegramBareClient:
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
-        self._user_connected = False
-        self._recv_thread = None
-
-        # Stop the workers from the background thread
+        self._user_connected = False  # This will stop recv_thread's loop
         self.updates.stop_workers()
 
-        # This will trigger a "ConnectionResetError", for subsequent calls
-        # to read or send (from another thread) and usually, the background
-        # thread would try restarting the connection but since the
-        # ._recv_thread = None, it knows it doesn't have to.
+        # This will trigger a "ConnectionResetError" on the recv_thread,
+        # which won't attempt reconnecting as ._user_connected is False.
         self._sender.disconnect()
+
+        if self._recv_thread:
+            self._recv_thread.join()
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
         pass
@@ -298,10 +299,13 @@ class TelegramBareClient:
             # Assume we are disconnected due to some error, so connect again
             with self._reconnect_lock:
                 # Another thread may have connected again, so check that first
-                if not self.is_connected():
-                    return self.connect()
-                else:
+                if self.is_connected():
                     return True
+
+                try:
+                    return self.connect()
+                except ConnectionResetError:
+                    return False
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
@@ -428,9 +432,18 @@ class TelegramBareClient:
         on_main_thread = threading.get_ident() == self._main_thread_ident
         if on_main_thread or self._on_read_thread():
             sender = self._sender
+            update_state = self.updates
         else:
             sender = self._sender.clone()
             sender.connect()
+            # We're on another connection, Telegram will resend all the
+            # updates that we haven't acknowledged (potentially entering
+            # an infinite loop if we're calling this in response to an
+            # update event, as it would be received again and again). So
+            # to avoid this we will simply not process updates on these
+            # new temporary connections, as they will be sent and later
+            # acknowledged over the main connection.
+            update_state = None
 
         # We should call receive from this thread if there's no background
         # thread reading or if the server disconnected us and we're trying
@@ -443,8 +456,10 @@ class TelegramBareClient:
                 if self._background_error and on_main_thread:
                     raise self._background_error
 
-                result = self._invoke(sender, call_receive, *requests)
-                if result:
+                result = self._invoke(
+                    sender, call_receive, update_state, *requests
+                )
+                if result is not None:
                     return result
 
             raise ValueError('Number of retries reached 0.')
@@ -455,7 +470,7 @@ class TelegramBareClient:
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, sender, call_receive, *requests):
+    def _invoke(self, sender, call_receive, update_state, *requests):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -475,14 +490,14 @@ class TelegramBareClient:
                     )
             else:
                 while not all(x.confirm_received.is_set() for x in requests):
-                    sender.receive(update_state=self.updates)
+                    sender.receive(update_state=update_state)
 
         except TimeoutError:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if not self._authorized or self._reconnect_lock.locked():
-                # Only attempt reconnecting if we're authorized and not
+            if not self._user_connected or self._reconnect_lock.locked():
+                # Only attempt reconnecting if the user called connect and not
                 # reconnecting already.
                 raise
 
@@ -495,10 +510,7 @@ class TelegramBareClient:
             else:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
-
-        finally:
-            if sender != self._sender:
-                sender.disconnect()
+            return None
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)
@@ -525,7 +537,7 @@ class TelegramBareClient:
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self._invoke(sender, call_receive, *requests)
+            return self._invoke(sender, call_receive, update_state, *requests)
 
         except ServerError as e:
             # Telegram is having some issues, just retry
@@ -533,10 +545,14 @@ class TelegramBareClient:
                 '[ERROR] Telegram is having some internal issues', e
             )
 
-        except FloodWaitError:
-            sender.disconnect()
-            self.disconnect()
-            raise
+        except FloodWaitError as e:
+            if e.seconds > self.session.flood_sleep_threshold | 0:
+                raise
+
+            self._logger.debug(
+                'Sleep of %d seconds below threshold, sleeping' % e.seconds
+            )
+            sleep(e.seconds)
 
     # Some really basic functionality
 
@@ -683,10 +699,8 @@ class TelegramBareClient:
         cdn_decrypter = None
 
         try:
-            offset_index = 0
+            offset = 0
             while True:
-                offset = offset_index * part_size
-
                 try:
                     if cdn_decrypter:
                         result = cdn_decrypter.get_file()
@@ -705,7 +719,7 @@ class TelegramBareClient:
                     client = self._get_exported_client(e.new_dc)
                     continue
 
-                offset_index += 1
+                offset += part_size
 
                 # If we have received no data (0 bytes), the file is over
                 # So there is nothing left to download and write
@@ -742,10 +756,10 @@ class TelegramBareClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        sync = not self.updates.handlers
+        if not self.updates.get_workers:
+            warnings.warn("There are no update workers running, so adding an update handler will have no effect.")
+
         self.updates.handlers.append(handler)
-        if sync:
-            self.sync_updates()
 
     def remove_update_handler(self, handler):
         self.updates.handlers.remove(handler)
@@ -801,7 +815,9 @@ class TelegramBareClient:
 
                 try:
                     import socks
-                    if isinstance(error, socks.GeneralProxyError):
+                    if isinstance(error, (
+                            socks.GeneralProxyError, socks.ProxyConnectionError
+                    )):
                         # This is a known error, and it's not related to
                         # Telegram but rather to the proxy. Disconnect and
                         # hand it over to the main thread.

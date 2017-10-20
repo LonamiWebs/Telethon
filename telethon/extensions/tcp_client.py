@@ -14,7 +14,7 @@ class TcpClient:
 
         if isinstance(timeout, timedelta):
             self.timeout = timeout.seconds
-        elif isinstance(timeout, int) or isinstance(timeout, float):
+        elif isinstance(timeout, (int, float)):
             self.timeout = float(timeout)
         else:
             raise ValueError('Invalid timeout type', type(timeout))

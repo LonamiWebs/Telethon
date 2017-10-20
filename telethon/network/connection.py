@@ -141,28 +141,25 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + str(self._mode))
 
     def _recv_tcp_full(self):
-        packet_length_bytes = self.read(4)
-        packet_length = int.from_bytes(packet_length_bytes, 'little')
+        packet_len_seq = self.read(8)  # 4 and 4
+        packet_len, seq = struct.unpack('<ii', packet_len_seq)
 
-        seq_bytes = self.read(4)
-        seq = int.from_bytes(seq_bytes, 'little')
+        body = self.read(packet_len - 12)
+        checksum = struct.unpack('<I', self.read(4))[0]
 
-        body = self.read(packet_length - 12)
-        checksum = int.from_bytes(self.read(4), 'little')
-
-        valid_checksum = crc32(packet_length_bytes + seq_bytes + body)
+        valid_checksum = crc32(packet_len_seq + body)
         if checksum != valid_checksum:
             raise InvalidChecksumError(checksum, valid_checksum)
 
         return body
 
     def _recv_intermediate(self):
-        return self.read(int.from_bytes(self.read(4), 'little'))
+        return self.read(struct.unpack('<i', self.read(4))[0])
 
     def _recv_abridged(self):
-        length = int.from_bytes(self.read(1), 'little')
+        length = struct.unpack('<B', self.read(1))[0]
         if length >= 127:
-            length = int.from_bytes(self.read(3) + b'\0', 'little')
+            length = struct.unpack('<i', self.read(3) + b'\0')[0]
 
         return self.read(length << 2)
 

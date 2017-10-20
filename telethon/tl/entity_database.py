@@ -74,9 +74,7 @@ class EntityDatabase:
                     getattr(p, 'access_hash', 0)  # chats won't have hash
 
                 if self.enabled_full:
-                    if isinstance(e, User) \
-                            or isinstance(e, Chat) \
-                            or isinstance(e, Channel):
+                    if isinstance(e, (User, Chat, Channel)):
                         new.append(e)
             except ValueError:
                 pass
@@ -123,47 +121,64 @@ class EntityDatabase:
         if phone:
             self._username_id[phone] = marked_id
 
-    def __getitem__(self, key):
-        """Accepts a digit only string as phone number,
-           otherwise it's treated as an username.
+    def _parse_key(self, key):
+        """Parses the given string, integer or TLObject key into a
+           marked user ID ready for use on self._entities.
 
-           If an integer is given, it's treated as the ID of the desired User.
-           The ID given won't try to be guessed as the ID of a chat or channel,
-           as there may be an user with that ID, and it would be unreliable.
+           If a callable key is given, the entity will be passed to the
+           function, and if it returns a true-like value, the marked ID
+           for such entity will be returned.
 
-           If a Peer is given (PeerUser, PeerChat, PeerChannel),
-           its specific entity is retrieved as User, Chat or Channel.
-           Note that megagroups are channels with .megagroup = True.
+           Raises ValueError if it cannot be parsed.
         """
         if isinstance(key, str):
             phone = EntityDatabase.parse_phone(key)
-            if phone:
-                return self._phone_id[phone]
-            else:
-                key = key.lstrip('@').lower()
-                return self._entities[self._username_id[key]]
+            try:
+                if phone:
+                    return self._phone_id[phone]
+                else:
+                    return self._username_id[key.lstrip('@').lower()]
+            except KeyError as e:
+                raise ValueError() from e
 
         if isinstance(key, int):
-            return self._entities[key]  # normal IDs are assumed users
+            return key  # normal IDs are assumed users
 
         if isinstance(key, TLObject):
-            sc = type(key).SUBCLASS_OF_ID
-            if sc == 0x2d45687:
-                # Subclass of "Peer"
-                return self._entities[utils.get_peer_id(key, add_mark=True)]
-            elif sc in {0x2da17977, 0xc5af5d94, 0x6d44b7db}:
-                # Subclass of "User", "Chat" or "Channel"
-                return key
+            return utils.get_peer_id(key, add_mark=True)
 
-        raise KeyError(key)
+        if callable(key):
+            for k, v in self._entities.items():
+                if key(v):
+                    return k
+
+        raise ValueError()
+
+    def __getitem__(self, key):
+        """See the ._parse_key() docstring for possible values of the key"""
+        try:
+            return self._entities[self._parse_key(key)]
+        except (ValueError, KeyError) as e:
+            raise KeyError(key) from e
 
     def __delitem__(self, key):
-        target = self[key]
-        del self._entities[key]
-        if getattr(target, 'username'):
-            del self._username_id[target.username]
+        try:
+            old = self._entities.pop(self._parse_key(key))
+            # Try removing the username and phone (if pop didn't fail),
+            # since the entity may have no username or phone, just ignore
+            # errors. It should be there if we popped the entity correctly.
+            try:
+                del self._username_id[getattr(old, 'username', None)]
+            except KeyError:
+                pass
 
-    # TODO Allow search by name by tokenizing the input and return a list
+            try:
+                del self._phone_id[getattr(old, 'phone', None)]
+            except KeyError:
+                pass
+
+        except (ValueError, KeyError) as e:
+            raise KeyError(key) from e
 
     @staticmethod
     def parse_phone(phone):
@@ -177,8 +192,10 @@ class EntityDatabase:
 
     def get_input_entity(self, peer):
         try:
-            i, k = utils.get_peer_id(peer, add_mark=True, get_kind=True)
-            h = self._input_entities[i]
+            i = utils.get_peer_id(peer, add_mark=True)
+            h = self._input_entities[i]  # we store the IDs marked
+            i, k = utils.resolve_id(i)  # removes the mark and returns kind
+
             if k == PeerUser:
                 return InputPeerUser(i, h)
             elif k == PeerChat:

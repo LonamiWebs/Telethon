@@ -42,7 +42,7 @@ def _do_authentication(connection):
     req_pq_request = ReqPqRequest(
         nonce=int.from_bytes(os.urandom(16), 'big', signed=True)
     )
-    sender.send(req_pq_request.to_bytes())
+    sender.send(bytes(req_pq_request))
     with BinaryReader(sender.receive()) as reader:
         req_pq_request.on_response(reader)
 
@@ -60,12 +60,12 @@ def _do_authentication(connection):
     p, q = rsa.get_byte_array(min(p, q)), rsa.get_byte_array(max(p, q))
     new_nonce = int.from_bytes(os.urandom(32), 'little', signed=True)
 
-    pq_inner_data = PQInnerData(
+    pq_inner_data = bytes(PQInnerData(
         pq=rsa.get_byte_array(pq), p=p, q=q,
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         new_nonce=new_nonce
-    ).to_bytes()
+    ))
 
     # sha_digest + data + random_bytes
     cipher_text, target_fingerprint = None, None
@@ -90,7 +90,7 @@ def _do_authentication(connection):
         public_key_fingerprint=target_fingerprint,
         encrypted_data=cipher_text
     )
-    sender.send(req_dh_params.to_bytes())
+    sender.send(bytes(req_dh_params))
 
     # Step 2 response: DH Exchange
     with BinaryReader(sender.receive()) as reader:
@@ -124,7 +124,6 @@ def _do_authentication(connection):
             raise AssertionError(server_dh_inner)
 
     if server_dh_inner.nonce != res_pq.nonce:
-        print(server_dh_inner.nonce, res_pq.nonce)
         raise SecurityError('Invalid nonce in encrypted answer')
 
     if server_dh_inner.server_nonce != res_pq.server_nonce:
@@ -139,12 +138,12 @@ def _do_authentication(connection):
     gab = pow(g_a, b, dh_prime)
 
     # Prepare client DH Inner Data
-    client_dh_inner = ClientDHInnerData(
+    client_dh_inner = bytes(ClientDHInnerData(
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         retry_id=0,  # TODO Actual retry ID
         g_b=rsa.get_byte_array(gb)
-    ).to_bytes()
+    ))
 
     client_dh_inner_hashed = sha1(client_dh_inner).digest() + client_dh_inner
 
@@ -157,7 +156,7 @@ def _do_authentication(connection):
         server_nonce=res_pq.server_nonce,
         encrypted_data=client_dh_encrypted,
     )
-    sender.send(set_client_dh.to_bytes())
+    sender.send(bytes(set_client_dh))
 
     # Step 3 response: Complete DH Exchange
     with BinaryReader(sender.receive()) as reader:
