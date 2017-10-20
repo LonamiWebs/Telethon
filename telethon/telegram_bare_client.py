@@ -265,7 +265,7 @@ class TelegramBareClient:
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
-            dc = self._get_dc(new_dc)
+            dc = await self._get_dc(new_dc)
             ip = dc.ip_address
             self.session.server_address = ip
             self.session.port = dc.port
@@ -300,7 +300,7 @@ class TelegramBareClient:
 
             # New configuration, perhaps a new CDN was added?
             TelegramBareClient._dc_options = await (self(GetConfigRequest())).dc_options
-            return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
+            return await self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
     async def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.
