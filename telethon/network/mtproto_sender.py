@@ -312,6 +312,7 @@ class MtProtoSender:
         self.session.salt = struct.unpack(
             '<Q', struct.pack('<q', bad_salt.new_server_salt)
         )[0]
+        self.session.save()
 
         request = self._pop_request(bad_salt.bad_msg_id)
         if request:
