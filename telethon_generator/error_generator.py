@@ -59,20 +59,16 @@ def get_class_name(error_code):
 
 def write_error(f, code, name, desc, capture_name):
     f.write(
-        f'\n'
-        f'\n'
-        f'class {name}({get_class_name(code)}):\n'
-        f'    def __init__(self, **kwargs):\n'
-        f'        '
+        '\n\nclass {}({}):\n    def __init__(self, **kwargs):\n        '
+        ''.format(name, get_class_name(code))
     )
     if capture_name:
         f.write(
-            f"self.{capture_name} = int(kwargs.get('capture', 0))\n"
-            f"        "
+            "self.{} = int(kwargs.get('capture', 0))\n        ".format(capture_name)
         )
-    f.write(f'super(Exception, self).__init__(self, {repr(desc)}')
+    f.write('super(Exception, self).__init__(self, {}'.format(repr(desc)))
     if capture_name:
-        f.write(f'.format(self.{capture_name})')
+        f.write('.format(self.{})'.format(capture_name))
     f.write(')\n')
 
 
@@ -132,15 +128,12 @@ def generate_code(output, json_file, errors_desc):
     # Everything ready, generate the code
     with open(output, 'w', encoding='utf-8') as f:
         f.write(
-            f'from .rpc_base_errors import RPCError, BadMessageError, '
-            f'{", ".join(known_base_classes.values())}\n'
+            'from .rpc_base_errors import RPCError, BadMessageError, {}\n'.format(
+                ", ".join(known_base_classes.values()))
         )
         for code, cls in needed_base_classes:
             f.write(
-                f'\n'
-                f'\n'
-                f'class {cls}(RPCError):\n'
-                f'    code = {code}\n'
+                '\n\nclass {}(RPCError):\n    code = {}\n'.format(cls, code)
             )
 
         patterns = []  # Save this dictionary later in the generated code
@@ -166,5 +159,6 @@ def generate_code(output, json_file, errors_desc):
 
         f.write('\n\nrpc_errors_all = {\n')
         for pattern, name in patterns:
-            f.write(f'    {repr(pattern)}: {name},\n')
+            f.write('    {}: {},\n'.format(repr(pattern), name))
         f.write('}\n')
+
