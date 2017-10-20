@@ -2,7 +2,7 @@
 telethon/tl/functions/
 telethon/tl/types/
 telethon/tl/all_tlobjects.py
-telethon/tl/errors/rpc_error_list.py
+telethon/errors/rpc_error_list.py
 
 # User session
 *.session

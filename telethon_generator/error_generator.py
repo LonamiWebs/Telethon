@@ -4,8 +4,6 @@ import urllib.request
 from collections import defaultdict
 
 URL = 'https://rpc.pwrtelegram.xyz/?all'
-OUTPUT = '../telethon/errors/rpc_error_list.py'
-JSON_OUTPUT = 'errors.json'
 
 known_base_classes = {
     303: 'InvalidDCError',
@@ -26,7 +24,7 @@ known_codes = {
 }
 
 
-def fetch_errors(url=URL, output=JSON_OUTPUT):
+def fetch_errors(output, url=URL):
     print('Opening a connection to', url, '...')
     r = urllib.request.urlopen(url)
     print('Checking response...')
@@ -78,7 +76,7 @@ def write_error(f, code, name, desc, capture_name):
     f.write(')\n')
 
 
-def generate_code(json_file=JSON_OUTPUT, output=OUTPUT):
+def generate_code(output, json_file, errors_desc):
     with open(json_file, encoding='utf-8') as f:
         data = json.load(f)
 
@@ -113,7 +111,7 @@ def generate_code(json_file=JSON_OUTPUT, output=OUTPUT):
     # Prefer the descriptions that are related with Telethon way of coding to
     # those that PWRTelegram's API provides.
     telethon_descriptions = {}
-    with open('error_descriptions', encoding='utf-8') as f:
+    with open(errors_desc, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#'):
