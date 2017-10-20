@@ -46,13 +46,14 @@ ERROR_LIST = 'telethon/errors/rpc_error_list.py'
 ERRORS_JSON = 'telethon_generator/errors.json'
 ERRORS_DESC = 'telethon_generator/error_descriptions'
 SCHEME_TL = 'telethon_generator/scheme.tl'
+GENERATOR_DIR = 'telethon/tl'
 IMPORT_DEPTH = 2
 
 
 def gen_tl():
     from telethon_generator.tl_generator import TLGenerator
     from telethon_generator.error_generator import generate_code
-    generator = TLGenerator('telethon/tl')
+    generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
         print('Detected previous TLObjects. Cleaning...')
         generator.clean_tlobjects()
@@ -71,7 +72,7 @@ def main():
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
         from telethon_generator.tl_generator import TLGenerator
         print('Cleaning...')
-        TLGenerator('telethon/tl').clean_tlobjects()
+        TLGenerator(GENERATOR_DIR).clean_tlobjects()
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
