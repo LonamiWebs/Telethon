@@ -412,6 +412,11 @@ class MtProtoSender:
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
+            # We are reentering process_msg, which seemingly the same msg_id
+            # to the self._need_confirmation set. Remove it from there first
+            # to avoid any future conflicts (i.e. if we "ignore" messages
+            # that we are already aware of, see 1a91c02 and old 63dfb1e)
+            self._need_confirmation -= {msg_id}
             return self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion
