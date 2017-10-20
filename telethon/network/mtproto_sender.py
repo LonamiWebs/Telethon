@@ -39,7 +39,7 @@ class MtProtoSender:
         self._logger = logging.getLogger(__name__)
 
         # Message IDs that need confirmation
-        self._need_confirmation = []
+        self._need_confirmation = set()
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
@@ -74,7 +74,7 @@ class MtProtoSender:
         # Pack everything in the same container if we need to send AckRequests
         if self._need_confirmation:
             messages.append(
-                TLMessage(self.session, MsgsAck(self._need_confirmation))
+                TLMessage(self.session, MsgsAck(list(self._need_confirmation)))
             )
             self._need_confirmation.clear()
 
@@ -183,7 +183,7 @@ class MtProtoSender:
             )
             return False
 
-        self._need_confirmation.append(msg_id)
+        self._need_confirmation.add(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
