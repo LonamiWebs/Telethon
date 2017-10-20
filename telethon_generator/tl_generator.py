@@ -117,8 +117,18 @@ class TLGenerator:
     def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
         # namespace_tlobjects: {'namespace', [TLObject]}
         os.makedirs(out_dir, exist_ok=True)
+
+        # Generate __init__.py with  relative imports to the namespaces
+        with open(os.path.join(out_dir, '__init__.py'), 'w', encoding='utf-8') as f, \
+                SourceBuilder(f) as builder:
+            builder.writeln(AUTO_GEN_NOTICE)
+            builder.writeln('from . import {}'.format(', '.join(
+                x for x in namespace_tlobjects.keys() if x
+            )))
+            builder.writeln('from .base import *')
+
         for ns, tlobjects in namespace_tlobjects.items():
-            file = os.path.join(out_dir, ns + '.py' if ns else '__init__.py')
+            file = os.path.join(out_dir, ns + '.py' if ns else 'base.py')
             with open(file, 'w', encoding='utf-8') as f, \
                     SourceBuilder(f) as builder:
                 builder.writeln(AUTO_GEN_NOTICE)
@@ -127,18 +137,8 @@ class TLGenerator:
                 # so they all can be serialized and sent, however, only the
                 # functions are "content_related".
                 builder.writeln(
-                    'from telethon.tl.tlobject import TLObject'.format('.' * depth)
+                    'from {}.tl.tlobject import TLObject'.format('.' * depth)
                 )
-                builder.writeln(
-                        'import telethon.tl.types'.format('.' * depth)
-                )
-
-                # Add the relative imports to the namespaces,
-                # unless we already are in a namespace.
-                if not ns:
-                    builder.writeln('from . import {}'.format(', '.join(
-                        x for x in namespace_tlobjects.keys() if x
-                    )))
 
                 # Import 'get_input_*' utils
                 # TODO Support them on types too
@@ -644,7 +644,8 @@ class TLGenerator:
             if not arg.skip_constructor_id:
                 builder.writeln('{} = reader.tgread_object()'.format(name))
             else:
-                builder.writeln('{} = types.{}.from_reader(reader)'.format(
+                builder.writeln('from . import {}'.format(TLObject.class_name_for(arg.type)))
+                builder.writeln('{} = {}.from_reader(reader)'.format(
                         name, TLObject.class_name_for(arg.type)))
 
         # End vector and flag blocks if required (if we opened them before)

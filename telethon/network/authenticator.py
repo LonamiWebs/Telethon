@@ -6,7 +6,7 @@ from ..tl.types import (
     ResPQ, PQInnerData, ServerDHParamsFail, ServerDHParamsOk,
     ServerDHInnerData, ClientDHInnerData, DhGenOk, DhGenRetry, DhGenFail
 )
-from .. import helpers as utils
+from ..helpers import generate_key_data_from_nonce
 from ..crypto import AES, AuthKey, Factorization
 from ..crypto import rsa
 from ..errors import SecurityError
@@ -110,7 +110,7 @@ def _do_authentication(connection):
         raise SecurityError('Invalid server nonce from server')
 
     # Step 3 sending: Complete DH Exchange
-    key, iv = utils.generate_key_data_from_nonce(
+    key, iv = generate_key_data_from_nonce(
         res_pq.server_nonce, new_nonce
     )
     plain_text_answer = AES.decrypt_ige(
