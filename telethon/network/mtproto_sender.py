@@ -174,15 +174,6 @@ class MtProtoSender:
         """
 
         # TODO Check salt, session_id and sequence_number
-        if msg_id in self._need_confirmation:
-            # We're yet to acknowledge this message already, so just drop it
-            # as we are already aware of it. TODO Should we force acknowledging
-            # all the self._need_confirmation IDs?
-            self._logger.debug(
-                'Ignoring message pending of acknowledge: {}'.format(msg_id)
-            )
-            return False
-
         self._need_confirmation.add(msg_id)
 
         code = reader.read_int(signed=False)
