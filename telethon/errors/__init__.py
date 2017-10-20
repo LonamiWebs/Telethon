@@ -8,15 +8,8 @@ from .common import (
     CdnFileTamperedError
 )
 
-from .rpc_errors import (
-    RPCError, InvalidDCError, BadRequestError, UnauthorizedError,
-    ForbiddenError, NotFoundError, FloodError, ServerError, BadMessageError
-)
-
-from .rpc_errors_303 import *
-from .rpc_errors_400 import *
-from .rpc_errors_401 import *
-from .rpc_errors_420 import *
+# This imports the base errors too, as they're imported there
+from .rpc_error_list import *
 
 
 def report_error(code, message, report_method):
@@ -43,27 +36,31 @@ def rpc_message_to_error(code, message, report_method=None):
             args=(code, message, report_method)
         ).start()
 
-    errors = {
-        303: rpc_errors_303_all,
-        400: rpc_errors_400_all,
-        401: rpc_errors_401_all,
-        420: rpc_errors_420_all
-    }.get(code, None)
+    # Try to get the error by direct look-up, otherwise regex
+    # TODO Maybe regexes could live in a separate dictionary?
+    cls = rpc_errors_all.get(message, None)
+    if cls:
+        return cls()
 
-    if errors is not None:
-        for msg, cls in errors.items():
-            m = re.match(msg, message)
-            if m:
-                extra = int(m.group(1)) if m.groups() else None
-                return cls(extra=extra)
+    for msg_regex, cls in rpc_errors_all.items():
+        m = re.match(msg_regex, message)
+        if m:
+            capture = int(m.group(1)) if m.groups() else None
+            return cls(capture=capture)
 
-    elif code == 403:
+    if code == 400:
+        return BadRequestError(message)
+
+    if code == 401:
+        return UnauthorizedError(message)
+
+    if code == 403:
         return ForbiddenError(message)
 
-    elif code == 404:
+    if code == 404:
         return NotFoundError(message)
 
-    elif code == 500:
+    if code == 500:
         return ServerError(message)
 
     return RPCError('{} (code {})'.format(message, code))
