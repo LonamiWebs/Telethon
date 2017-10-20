@@ -432,9 +432,18 @@ class TelegramBareClient:
         on_main_thread = threading.get_ident() == self._main_thread_ident
         if on_main_thread or self._on_read_thread():
             sender = self._sender
+            update_state = self.updates
         else:
             sender = self._sender.clone()
             sender.connect()
+            # We're on another connection, Telegram will resend all the
+            # updates that we haven't acknowledged (potentially entering
+            # an infinite loop if we're calling this in response to an
+            # update event, as it would be received again and again). So
+            # to avoid this we will simply not process updates on these
+            # new temporary connections, as they will be sent and later
+            # acknowledged over the main connection.
+            update_state = None
 
         # We should call receive from this thread if there's no background
         # thread reading or if the server disconnected us and we're trying
@@ -447,7 +456,9 @@ class TelegramBareClient:
                 if self._background_error and on_main_thread:
                     raise self._background_error
 
-                result = self._invoke(sender, call_receive, *requests)
+                result = self._invoke(
+                    sender, call_receive, update_state, *requests
+                )
                 if result is not None:
                     return result
 
@@ -459,7 +470,7 @@ class TelegramBareClient:
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, sender, call_receive, *requests):
+    def _invoke(self, sender, call_receive, update_state, *requests):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -479,7 +490,7 @@ class TelegramBareClient:
                     )
             else:
                 while not all(x.confirm_received.is_set() for x in requests):
-                    sender.receive(update_state=self.updates)
+                    sender.receive(update_state=update_state)
 
         except TimeoutError:
             pass  # We will just retry
@@ -526,7 +537,7 @@ class TelegramBareClient:
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self._invoke(sender, call_receive, *requests)
+            return self._invoke(sender, call_receive, update_state, *requests)
 
         except ServerError as e:
             # Telegram is having some issues, just retry
