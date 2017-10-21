@@ -56,7 +56,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.2'
+    __version__ = '0.15.3'
 
     # TODO Make this thread-safe, all connections share the same DC
     _dc_options = None
@@ -124,7 +124,7 @@ class TelegramBareClient:
         self._user_connected = False
 
         # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = False
+        self._authorized = None  # None = We don't know yet
 
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
@@ -198,12 +198,14 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates and not _cdn:
+            if self._authorized is None and _sync_updates and not _cdn:
                 try:
                     await self.sync_updates()
                     self._set_connected_and_authorized()
                 except UnauthorizedError:
                     self._authorized = False
+            elif self._authorized:
+                self._set_connected_and_authorized()
 
             return True
 
@@ -383,6 +385,8 @@ class TelegramBareClient:
 
         # TODO Determine the sender to be used (main or a new connection)
         sender = self._sender  # .clone(), .connect()
+        # We're on the same connection so no need to pass update_state=None
+        # to avoid getting messages that we haven't acknowledged yet.
 
         try:
             for _ in range(retries):
@@ -426,10 +430,7 @@ class TelegramBareClient:
             else:
                 while self._user_connected and not await self._reconnect():
                     sleep(0.1)  # Retry forever until we can send the request
-
-        finally:
-            if sender != self._sender:
-                sender.disconnect()
+            return None
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)
@@ -673,13 +674,14 @@ class TelegramBareClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.updates.get_workers:
-            warnings.warn("There are no update workers running, so adding an update handler will have no effect.")
+        if self.updates.workers is None:
+            warnings.warn(
+                "You have not setup any workers, so you won't receive updates."
+                " Pass update_workers=4 when creating the TelegramClient,"
+                " or set client.self.updates.workers = 4"
+            )
 
-        sync = not self.updates.handlers
         self.updates.handlers.append(handler)
-        if sync:
-            self.sync_updates()
 
     def remove_update_handler(self, handler):
         self.updates.handlers.remove(handler)

@@ -39,7 +39,7 @@ class MtProtoSender:
         self._logger = logging.getLogger(__name__)
 
         # Message IDs that need confirmation
-        self._need_confirmation = []
+        self._need_confirmation = set()
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
@@ -74,7 +74,7 @@ class MtProtoSender:
         # Pack everything in the same container if we need to send AckRequests
         if self._need_confirmation:
             messages.append(
-                TLMessage(self.session, MsgsAck(self._need_confirmation))
+                TLMessage(self.session, MsgsAck(list(self._need_confirmation)))
             )
             self._need_confirmation.clear()
 
@@ -125,7 +125,7 @@ class MtProtoSender:
 
         plain_text = \
             struct.pack('<QQ', self.session.salt, self.session.id) \
-            + message.to_bytes()
+            + bytes(message)
 
         msg_key = utils.calc_msg_key(plain_text)
         key_id = struct.pack('<Q', self.session.auth_key.key_id)
@@ -174,7 +174,7 @@ class MtProtoSender:
         """
 
         # TODO Check salt, session_id and sequence_number
-        self._need_confirmation.append(msg_id)
+        self._need_confirmation.add(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
@@ -217,7 +217,7 @@ class MtProtoSender:
                 r = self._pop_request_of_type(msg_id, LogOutRequest)
                 if r:
                     r.result = True  # Telegram won't send this value
-                    r.confirm_received()
+                    r.confirm_received.set()
                     self._logger.debug('Message ack confirmed', r)
 
             return True
@@ -261,7 +261,7 @@ class MtProtoSender:
 
     def _clear_all_pending(self):
         for r in self._pending_receive.values():
-            r.confirm_received.set()
+            r.request.confirm_received.set()
         self._pending_receive.clear()
 
     async def _handle_pong(self, msg_id, sequence, reader):
@@ -303,6 +303,7 @@ class MtProtoSender:
         self.session.salt = struct.unpack(
             '<Q', struct.pack('<q', bad_salt.new_server_salt)
         )[0]
+        self.session.save()
 
         request = self._pop_request(bad_salt.bad_msg_id)
         if request:
@@ -411,6 +412,11 @@ class MtProtoSender:
     async def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         self._logger.debug('Handling gzip packed data')
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
+            # We are reentering process_msg, which seemingly the same msg_id
+            # to the self._need_confirmation set. Remove it from there first
+            # to avoid any future conflicts (i.e. if we "ignore" messages
+            # that we are already aware of, see 1a91c02 and old 63dfb1e)
+            self._need_confirmation -= {msg_id}
             return await self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion

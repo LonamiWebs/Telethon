@@ -125,7 +125,7 @@ class TLObject:
     def to_dict(self, recursive=True):
         return {}
 
-    def to_bytes(self):
+    def __bytes__(self):
         return b''
 
     @staticmethod
