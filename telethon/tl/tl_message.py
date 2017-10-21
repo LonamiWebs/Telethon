@@ -15,3 +15,7 @@ class TLMessage(TLObject):
     def __bytes__(self):
         body = GzipPacked.gzip_if_smaller(self.request)
         return struct.pack('<qii', self.msg_id, self.seq_no, len(body)) + body
+
+    def __str__(self):
+        return 'TLMessage(msg_id={}, seq_no={}, body={})'\
+            .format(self.msg_id, self.seq_no, self.request)

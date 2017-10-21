@@ -16,6 +16,10 @@ class MessageContainer(TLObject):
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
         ) + b''.join(bytes(m) for m in self.messages)
 
+    def __str__(self):
+        return 'MessageContainer(messages=[{}])'\
+            .format(', '.join(str(m) for m in self.messages))
+
     @staticmethod
     def iter_read(reader):
         reader.read_int(signed=False)  # code
