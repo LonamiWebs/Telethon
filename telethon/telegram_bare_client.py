@@ -756,8 +756,12 @@ class TelegramBareClient:
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        if not self.updates.get_workers:
-            warnings.warn("There are no update workers running, so adding an update handler will have no effect.")
+        if self.updates.workers is None:
+            warnings.warn(
+                "You have not setup any workers, so you won't receive updates."
+                " Pass update_workers=4 when creating the TelegramClient,"
+                " or set client.self.updates.workers = 4"
+            )
 
         self.updates.handlers.append(handler)
 
