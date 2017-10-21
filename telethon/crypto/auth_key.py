@@ -1,7 +1,7 @@
 import struct
 from hashlib import sha1
 
-from .. import helpers as utils
+from ..helpers import calc_msg_key
 from ..extensions import BinaryReader
 
 
@@ -20,4 +20,4 @@ class AuthKey:
         """
         new_nonce = new_nonce.to_bytes(32, 'little', signed=True)
         data = new_nonce + struct.pack('<BQ', number, self.aux_hash)
-        return utils.calc_msg_key(data)
+        return calc_msg_key(data)

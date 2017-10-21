@@ -8,7 +8,8 @@ from io import BytesIO
 from threading import Lock
 from time import sleep
 
-from . import helpers as utils
+from .helpers import generate_random_long, ensure_parent_dir_exists
+
 from .crypto import rsa, CdnDecrypter
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError,
@@ -611,7 +612,7 @@ class TelegramBareClient:
         is_large = file_size > 10 * 1024 * 1024
         part_count = (file_size + part_size - 1) // part_size
 
-        file_id = utils.generate_random_long()
+        file_id = generate_random_long()
         hash_md5 = md5()
 
         stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)
@@ -689,7 +690,7 @@ class TelegramBareClient:
 
         if isinstance(file, str):
             # Ensure that we'll be able to download the media
-            utils.ensure_parent_dir_exists(file)
+            ensure_parent_dir_exists(file)
             f = open(file, 'wb')
         else:
             f = file
