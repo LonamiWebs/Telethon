@@ -82,6 +82,9 @@ class MtProtoSender:
             message = messages[0]
         else:
             message = TLMessage(self.session, MessageContainer(messages))
+            # On bad_msg_salt errors, Telegram will reply with the ID of
+            # the container and not the requests it contains, so in case
+            # this happens we need to know to which container they belong.
             for m in messages:
                 m.container_msg_id = message.msg_id
 
@@ -262,7 +265,12 @@ class MtProtoSender:
             return self._pending_receive.pop(msg_id).request
 
     def _pop_requests_of_container(self, container_msg_id):
-        msgs = [msg for msg in self._pending_receive.values() if msg.container_msg_id == container_msg_id]
+        """Pops the pending requests (plural) from self._pending_receive if
+           they were sent on a container that matches container_msg_id.
+        """
+        msgs = [msg for msg in self._pending_receive.values()
+                if msg.container_msg_id == container_msg_id]
+
         requests = [msg.request for msg in msgs]
         for msg in msgs:
             self._pending_receive.pop(msg.msg_id, None)
@@ -274,6 +282,9 @@ class MtProtoSender:
         self._pending_receive.clear()
 
     def _resend_request(self, msg_id):
+        """Re-sends the request that belongs to a certain msg_id. This may
+           also be the msg_id of a container if they were sent in one.
+        """
         request = self._pop_request(msg_id)
         if request:
             return self.send(request)
@@ -322,8 +333,9 @@ class MtProtoSender:
         )[0]
         self.session.save()
 
+        # "the bad_server_salt response is received with the
+        # correct salt, and the message is to be re-sent with it"
         self._resend_request(bad_salt.bad_msg_id)
-
         return True
 
     def _handle_bad_msg_notification(self, msg_id, sequence, reader):
