@@ -11,6 +11,7 @@ class TLMessage(TLObject):
         self.msg_id = session.get_new_msg_id()
         self.seq_no = session.generate_sequence(request.content_related)
         self.request = request
+        self.container_msg_id = None
 
     def __bytes__(self):
         body = GzipPacked.gzip_if_smaller(self.request)
