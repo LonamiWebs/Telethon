@@ -209,12 +209,14 @@ class TelegramBareClient:
             # another data center and this would raise UserMigrateError)
             # to also assert whether the user is logged in or not.
             self._user_connected = True
-            if _sync_updates and not _cdn and not self._authorized:
+            if self._authorized is None and _sync_updates and not _cdn:
                 try:
                     await self.sync_updates()
                     self._set_connected_and_authorized()
                 except UnauthorizedError:
-                    pass
+                    self._authorized = False
+            elif self._authorized:
+                self._set_connected_and_authorized()
 
             return True
 
