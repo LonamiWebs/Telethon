@@ -129,9 +129,11 @@ class TLGenerator:
                 builder.writeln(
                     'from {}.tl.tlobject import TLObject'.format('.' * depth)
                 )
-                builder.writeln(
-                        'from {}.tl import types'.format('.' * depth)
-                )
+                if ns:
+                    # Only import the parent types if we're not in such file
+                    builder.writeln(
+                            'from {}.tl import types'.format('.' * depth)
+                    )
 
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
