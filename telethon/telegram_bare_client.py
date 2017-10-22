@@ -726,7 +726,6 @@ class TelegramBareClient:
 
     async def _recv_loop_impl(self):
         need_reconnect = False
-        timeout = 1
         while self._user_connected:
             try:
                 if need_reconnect:
@@ -741,8 +740,7 @@ class TelegramBareClient:
             except ConnectionError as error:
                 self._logger.debug(error)
                 need_reconnect = True
-                await asyncio.sleep(min(timeout, 15), loop=self._loop)
-                timeout *= 2
+                await asyncio.sleep(1, loop=self._loop)
             except Exception as error:
                 # Unknown exception, pass it to the main thread
                 self._logger.debug(
@@ -769,7 +767,6 @@ class TelegramBareClient:
                 # add a little sleep to avoid the CPU usage going mad.
                 await asyncio.sleep(0.1, loop=self._loop)
                 break
-            timeout = 1
         self._recv_loop = None
 
     # endregion
