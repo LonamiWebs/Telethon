@@ -14,13 +14,16 @@ class MessageContainer(TLObject):
     def to_dict(self, recursive=True):
         return {
             'content_related': self.content_related,
-            'messages': self.messages,
+            'messages':
+                ([] if self.messages is None else [
+                    None if x is None else x.to_dict() for x in self.messages
+                ]) if recursive else self.messages,
         }
 
-    def to_bytes(self):
+    def __bytes__(self):
         return struct.pack(
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
-        ) + b''.join(m.to_bytes() for m in self.messages)
+        ) + b''.join(bytes(m) for m in self.messages)
 
     @staticmethod
     def iter_read(reader):

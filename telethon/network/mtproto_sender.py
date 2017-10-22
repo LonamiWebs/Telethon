@@ -127,7 +127,7 @@ class MtProtoSender:
 
         plain_text = \
             struct.pack('<QQ', self.session.salt, self.session.id) \
-            + message.to_bytes()
+            + bytes(message)
 
         msg_key = utils.calc_msg_key(plain_text)
         key_id = struct.pack('<Q', self.session.auth_key.key_id)

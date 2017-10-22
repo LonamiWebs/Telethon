@@ -42,17 +42,26 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
+ERROR_LIST = 'telethon/errors/rpc_error_list.py'
+ERRORS_JSON = 'telethon_generator/errors.json'
+ERRORS_DESC = 'telethon_generator/error_descriptions'
+SCHEME_TL = 'telethon_generator/scheme.tl'
+GENERATOR_DIR = 'telethon/tl'
+IMPORT_DEPTH = 2
+
+
 def gen_tl():
     from telethon_generator.tl_generator import TLGenerator
-    generator = TLGenerator('telethon/tl')
+    from telethon_generator.error_generator import generate_code
+    generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
         print('Detected previous TLObjects. Cleaning...')
         generator.clean_tlobjects()
 
     print('Generating TLObjects...')
-    generator.generate_tlobjects(
-        'telethon_generator/scheme.tl', import_depth=2
-    )
+    generator.generate_tlobjects(SCHEME_TL, import_depth=IMPORT_DEPTH)
+    print('Generating errors...')
+    generate_code(ERROR_LIST, json_file=ERRORS_JSON, errors_desc=ERRORS_DESC)
     print('Done.')
 
 
@@ -63,7 +72,7 @@ def main():
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
         from telethon_generator.tl_generator import TLGenerator
         print('Cleaning...')
-        TLGenerator('telethon/tl').clean_tlobjects()
+        TLGenerator(GENERATOR_DIR).clean_tlobjects()
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
@@ -79,6 +88,10 @@ def main():
         run('twine upload dist/*', shell=True)
         for x in ('build', 'dist', 'Telethon.egg-info'):
             rmtree(x, ignore_errors=True)
+
+    if len(argv) >= 2 and argv[1] == 'fetch_errors':
+        from telethon_generator.error_generator import fetch_errors
+        fetch_errors(ERRORS_JSON)
 
     else:
         if not TelegramClient:

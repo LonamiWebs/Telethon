@@ -56,7 +56,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.2'
+    __version__ = '0.15.3'
 
     # TODO Make this thread-safe, all connections share the same DC
     _dc_options = None
@@ -133,7 +133,7 @@ class TelegramBareClient:
         self._user_connected = False
 
         # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = False
+        self._authorized = None  # None = We don't know yet
 
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
@@ -288,7 +288,7 @@ class TelegramBareClient:
         else:
             self.disconnect()
             self.session.auth_key = None  # Force creating new auth_key
-            dc = self._get_dc(new_dc)
+            dc = await self._get_dc(new_dc)
             ip = dc.ip_address
             self.session.server_address = ip
             self.session.port = dc.port
@@ -323,7 +323,7 @@ class TelegramBareClient:
 
             # New configuration, perhaps a new CDN was added?
             TelegramBareClient._dc_options = await (self(GetConfigRequest())).dc_options
-            return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
+            return await self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
 
     async def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.
@@ -696,10 +696,7 @@ class TelegramBareClient:
     async def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
-        sync = not self.updates.handlers
         self.updates.handlers.append(handler)
-        if sync:
-            await self.sync_updates()
 
     def remove_update_handler(self, handler):
         self.updates.handlers.remove(handler)

@@ -23,7 +23,7 @@ class TLMessage(TLObject):
             'container_msg_id': self.container_msg_id,
         }
 
-    def to_bytes(self):
+    def __bytes__(self):
         body = GzipPacked.gzip_if_smaller(self.request)
         return struct.pack('<qii', self.msg_id, self.seq_no, len(body)) + body
 
