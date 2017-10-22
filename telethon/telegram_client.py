@@ -106,9 +106,8 @@ class TelegramClient(TelegramBareClient):
         """Sends a code request to the specified phone number"""
         phone = EntityDatabase.parse_phone(phone) or self._phone
         result = await self(SendCodeRequest(phone, self.api_id, self.api_hash))
-        if result:
-            self._phone = phone
-            self._phone_code_hash = result.phone_code_hash
+        self._phone = phone
+        self._phone_code_hash = result.phone_code_hash
         return result
 
     async def sign_in(self, phone=None, code=None,
@@ -172,10 +171,8 @@ class TelegramClient(TelegramBareClient):
                 'and a password only if an RPCError was raised before.'
             )
 
-        if result:
-            self._set_connected_and_authorized()
-            return result.user
-        return result
+        self._set_connected_and_authorized()
+        return result.user
 
     async def sign_up(self, code, first_name, last_name=''):
         """Signs up to Telegram. Make sure you sent a code request first!"""
@@ -187,10 +184,8 @@ class TelegramClient(TelegramBareClient):
             last_name=last_name
         ))
 
-        if result:
-            self._set_connected_and_authorized()
-            return result.user
-        return result
+        self._set_connected_and_authorized()
+        return result.user
 
     async def log_out(self):
         """Logs out and deletes the current session.
@@ -209,7 +204,7 @@ class TelegramClient(TelegramBareClient):
         """Gets "me" (the self user) which is currently authenticated,
            or None if the request fails (hence, not authenticated)."""
         try:
-            return await self(GetUsersRequest([InputUserSelf()]))[0]
+            return (await self(GetUsersRequest([InputUserSelf()])))[0]
         except UnauthorizedError:
             return None
 
@@ -246,7 +241,7 @@ class TelegramClient(TelegramBareClient):
                 offset_peer=offset_peer,
                 limit=need if need < float('inf') else 0
             ))
-            if not r or not r.dialogs:
+            if not r.dialogs:
                 break
 
             for d in r.dialogs:
@@ -295,12 +290,10 @@ class TelegramClient(TelegramBareClient):
         :return List[telethon.tl.custom.Draft]: A list of open drafts
         """
         response = await self(GetAllDraftsRequest())
-        if response:
-            self.session.process_entities(response)
-            self.session.generate_sequence(response.seq)
-            drafts = [Draft._from_update(self, u) for u in response.updates]
-            return drafts
-        return response
+        self.session.process_entities(response)
+        self.session.generate_sequence(response.seq)
+        drafts = [Draft._from_update(self, u) for u in response.updates]
+        return drafts
 
     async def send_message(self,
                            entity,
@@ -322,8 +315,6 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = await self(request)
-        if not result:
-            return result
 
         if isinstance(result, UpdateShortSentMessage):
             return Message(
@@ -419,8 +410,6 @@ class TelegramClient(TelegramBareClient):
             min_id=min_id,
             add_offset=add_offset
         ))
-        if not result:
-            return result
 
         # The result may be a messages slice (not all messages were retrieved)
         # or simply a messages TLObject. In the later case, no "count"
