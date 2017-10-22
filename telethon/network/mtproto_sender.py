@@ -259,10 +259,25 @@ class MtProtoSender:
         if message and isinstance(message.request, t):
             return self._pending_receive.pop(msg_id).request
 
+    def _pop_requests_of_container(self, container_msg_id):
+        msgs = [msg for msg in self._pending_receive.values() if msg.container_msg_id == container_msg_id]
+        requests = [msg.request for msg in msgs]
+        for msg in msgs:
+            self._pending_receive.pop(msg.msg_id, None)
+        return requests
+
     def _clear_all_pending(self):
         for r in self._pending_receive.values():
             r.request.confirm_received.set()
         self._pending_receive.clear()
+
+    def _resend_request(self, msg_id):
+        request = self._pop_request(msg_id)
+        if request:
+            return self.send(request)
+        requests = self._pop_requests_of_container(msg_id)
+        if requests:
+            return self.send(*requests)
 
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
@@ -305,9 +320,7 @@ class MtProtoSender:
         )[0]
         self.session.save()
 
-        request = self._pop_request(bad_salt.bad_msg_id)
-        if request:
-            self.send(request)
+        self._resend_request(bad_salt.bad_msg_id)
 
         return True
 
@@ -323,15 +336,18 @@ class MtProtoSender:
             self.session.update_time_offset(correct_msg_id=msg_id)
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session._sequence += 64
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session._sequence -= 16
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
             raise error
