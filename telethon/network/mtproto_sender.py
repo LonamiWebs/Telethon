@@ -82,6 +82,11 @@ class MtProtoSender:
             message = messages[0]
         else:
             message = TLMessage(self.session, MessageContainer(messages))
+            # On bad_msg_salt errors, Telegram will reply with the ID of
+            # the container and not the requests it contains, so in case
+            # this happens we need to know to which container they belong.
+            for m in messages:
+                m.container_msg_id = message.msg_id
 
         self._send_message(message)
 
@@ -259,10 +264,33 @@ class MtProtoSender:
         if message and isinstance(message.request, t):
             return self._pending_receive.pop(msg_id).request
 
+    def _pop_requests_of_container(self, container_msg_id):
+        """Pops the pending requests (plural) from self._pending_receive if
+           they were sent on a container that matches container_msg_id.
+        """
+        msgs = [msg for msg in self._pending_receive.values()
+                if msg.container_msg_id == container_msg_id]
+
+        requests = [msg.request for msg in msgs]
+        for msg in msgs:
+            self._pending_receive.pop(msg.msg_id, None)
+        return requests
+
     def _clear_all_pending(self):
         for r in self._pending_receive.values():
             r.request.confirm_received.set()
         self._pending_receive.clear()
+
+    def _resend_request(self, msg_id):
+        """Re-sends the request that belongs to a certain msg_id. This may
+           also be the msg_id of a container if they were sent in one.
+        """
+        request = self._pop_request(msg_id)
+        if request:
+            return self.send(request)
+        requests = self._pop_requests_of_container(msg_id)
+        if requests:
+            return self.send(*requests)
 
     def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
@@ -305,10 +333,9 @@ class MtProtoSender:
         )[0]
         self.session.save()
 
-        request = self._pop_request(bad_salt.bad_msg_id)
-        if request:
-            self.send(request)
-
+        # "the bad_server_salt response is received with the
+        # correct salt, and the message is to be re-sent with it"
+        self._resend_request(bad_salt.bad_msg_id)
         return True
 
     def _handle_bad_msg_notification(self, msg_id, sequence, reader):
@@ -323,15 +350,18 @@ class MtProtoSender:
             self.session.update_time_offset(correct_msg_id=msg_id)
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session._sequence += 64
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session._sequence -= 16
+            self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
             raise error
