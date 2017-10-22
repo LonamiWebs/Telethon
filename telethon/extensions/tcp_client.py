@@ -5,6 +5,12 @@ import socket
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 
+MAX_TIMEOUT = 15  # in seconds
+CONN_RESET_ERRNOS = {
+    errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
+    errno.EINVAL, errno.ENOTCONN
+}
+
 
 class TcpClient:
     def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
@@ -51,17 +57,17 @@ class TcpClient:
                 break  # Successful connection, stop retrying to connect
             except ConnectionError:
                 self._socket = None
-                await asyncio.sleep(min(timeout, 15))
-                timeout *= 2
+                await asyncio.sleep(timeout)
+                timeout = min(timeout * 2, MAX_TIMEOUT)
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
-                if e.errno in [errno.EBADF, errno.ENOTSOCK, errno.EINVAL]:
+                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
                     # Bad file descriptor, i.e. socket was closed, set it
                     # to none to recreate it on the next iteration
                     self._socket = None
-                    await asyncio.sleep(min(timeout, 15))
-                    timeout *= 2
+                    await asyncio.sleep(timeout)
+                    timeout = min(timeout * 2, MAX_TIMEOUT)
                 else:
                     raise
 
@@ -94,7 +100,7 @@ class TcpClient:
         except BrokenPipeError:
             self._raise_connection_reset()
         except OSError as e:
-            if e.errno in [errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH, errno.EINVAL, errno.ENOTCONN]:
+            if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset()
             else:
                 raise
@@ -116,7 +122,7 @@ class TcpClient:
                 except asyncio.TimeoutError as e:
                     raise TimeoutError() from e
                 except OSError as e:
-                    if e.errno in [errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH, errno.EINVAL, errno.ENOTCONN]:
+                    if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset()
                     else:
                         raise
