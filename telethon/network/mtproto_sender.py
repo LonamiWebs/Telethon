@@ -82,6 +82,8 @@ class MtProtoSender:
             message = messages[0]
         else:
             message = TLMessage(self.session, MessageContainer(messages))
+            for m in messages:
+                m.container_msg_id = message.msg_id
 
         self._send_message(message)
 
