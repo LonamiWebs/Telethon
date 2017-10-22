@@ -5,6 +5,7 @@ import warnings
 from datetime import timedelta, datetime
 from hashlib import md5
 from io import BytesIO
+from signal import signal, SIGINT, SIGTERM, SIGABRT
 from threading import Lock
 from time import sleep
 
@@ -785,14 +786,31 @@ class TelegramBareClient:
             )
             self._recv_thread.start()
 
-    # By using this approach, another thread will be
-    # created and started upon connection to constantly read
-    # from the other end. Otherwise, manual calls to .receive()
-    # must be performed. The MtProtoSender cannot be connected,
-    # or an error will be thrown.
-    #
-    # This way, sending and receiving will be completely independent.
-    def _recv_thread_impl(self):
+    def _signal_handler(self, signum, frame):
+        if self._user_connected:
+            self.disconnect()
+        else:
+            self._logger.debug('Forcing exit...')
+            os._exit(1)
+
+    def idle(self, stop_signals=(SIGINT, SIGTERM, SIGABRT)):
+        """
+        Idles the program by looping forever and listening for updates
+        until one of the signals are received, which breaks the loop.
+
+        :param stop_signals:
+            Iterable containing signals from the signal module that will
+            be subscribed to TelegramClient.disconnect() (effectively
+            stopping the idle loop), which will be called on receiving one
+            of those signals.
+        :return:
+        """
+        if self._spawn_read_thread and not self._on_read_thread():
+            raise ValueError('Can only idle if spawn_read_thread=False')
+
+        for sig in stop_signals:
+            signal(sig, self._signal_handler)
+
         while self._user_connected:
             try:
                 if datetime.now() > self._last_ping + self._ping_delay:
@@ -810,10 +828,24 @@ class TelegramBareClient:
                 while self._user_connected and not self._reconnect():
                     sleep(0.1)  # Retry forever, this is instant messaging
 
+    # By using this approach, another thread will be
+    # created and started upon connection to constantly read
+    # from the other end. Otherwise, manual calls to .receive()
+    # must be performed. The MtProtoSender cannot be connected,
+    # or an error will be thrown.
+    #
+    # This way, sending and receiving will be completely independent.
+    def _recv_thread_impl(self):
+        # This thread is "idle" (only listening for updates), but also
+        # excepts everything unlike the manual idle because it should
+        # not crash.
+        while self._user_connected:
+            try:
+                self.idle(stop_signals=tuple())
             except Exception as error:
                 # Unknown exception, pass it to the main thread
-                self._logger.debug(
-                    '[ERROR] Unknown error on the read thread, please report',
+                self._logger.error(
+                    'Unknown error on the read thread, please report',
                     error
                 )
 
@@ -835,7 +867,6 @@ class TelegramBareClient:
                 # infinite loop where all we do is raise an exception, so
                 # add a little sleep to avoid the CPU usage going mad.
                 sleep(0.1)
-                break
 
         self._recv_thread = None
 
