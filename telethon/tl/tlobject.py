@@ -1,12 +1,10 @@
 from datetime import datetime
-from threading import Event
 
 
 class TLObject:
     def __init__(self):
         self.request_msg_id = 0  # Long
-
-        self.confirm_received = Event()
+        self.confirm_received = None
         self.rpc_error = None
 
         # These should be overrode

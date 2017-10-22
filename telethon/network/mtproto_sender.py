@@ -1,6 +1,8 @@
 import gzip
 import logging
 import struct
+import asyncio
+from asyncio import Event
 
 from .. import helpers as utils
 from ..crypto import AES
@@ -30,16 +32,14 @@ class MtProtoSender:
                   in parallel, so thread-safety (hence locking) isn't needed.
     """
 
-    def __init__(self, session, connection):
+    def __init__(self, session, connection, loop=None):
         """Creates a new MtProtoSender configured to send messages through
            'connection' and using the parameters from 'session'.
         """
         self.session = session
         self.connection = connection
+        self._loop = loop if loop else asyncio.get_event_loop()
         self._logger = logging.getLogger(__name__)
-
-        # Message IDs that need confirmation
-        self._need_confirmation = []
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
@@ -54,12 +54,11 @@ class MtProtoSender:
     def disconnect(self):
         """Disconnects from the server"""
         self.connection.close()
-        self._need_confirmation.clear()
         self._clear_all_pending()
 
     def clone(self):
         """Creates a copy of this MtProtoSender as a new connection"""
-        return MtProtoSender(self.session, self.connection.clone())
+        return MtProtoSender(self.session, self.connection.clone(), self._loop)
 
     # region Send and receive
 
@@ -67,21 +66,23 @@ class MtProtoSender:
         """Sends the specified MTProtoRequest, previously sending any message
            which needed confirmation."""
 
+        # Prepare the event of every request
+        for r in requests:
+            if r.confirm_received is None:
+                r.confirm_received = Event(loop=self._loop)
+            else:
+                r.confirm_received.clear()
+
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
-
-        # Pack everything in the same container if we need to send AckRequests
-        if self._need_confirmation:
-            messages.append(
-                TLMessage(self.session, MsgsAck(self._need_confirmation))
-            )
-            self._need_confirmation.clear()
 
         if len(messages) == 1:
             message = messages[0]
         else:
             message = TLMessage(self.session, MessageContainer(messages))
+            for m in messages:
+                m.container_msg_id = message.msg_id
 
         await self._send_message(message)
 
@@ -115,6 +116,7 @@ class MtProtoSender:
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
             await self._process_msg(remote_msg_id, remote_seq, reader, update_state)
+            await self._send_acknowledge(remote_msg_id)
 
     # endregion
 
@@ -174,7 +176,6 @@ class MtProtoSender:
         """
 
         # TODO Check salt, session_id and sequence_number
-        self._need_confirmation.append(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
@@ -210,14 +211,14 @@ class MtProtoSender:
         if code == MsgsAck.CONSTRUCTOR_ID:  # may handle the request we wanted
             ack = reader.tgread_object()
             assert isinstance(ack, MsgsAck)
-            # Ignore every ack request *unless* when logging out, when it's
+            # Ignore every ack request *unless* when logging out,
             # when it seems to only make sense. We also need to set a non-None
             # result since Telegram doesn't send the response for these.
             for msg_id in ack.msg_ids:
                 r = self._pop_request_of_type(msg_id, LogOutRequest)
                 if r:
                     r.result = True  # Telegram won't send this value
-                    r.confirm_received()
+                    r.confirm_received.set()
                     self._logger.debug('Message ack confirmed', r)
 
             return True
@@ -259,10 +260,28 @@ class MtProtoSender:
         if message and isinstance(message.request, t):
             return self._pending_receive.pop(msg_id).request
 
+    def _pop_requests_of_container(self, container_msg_id):
+        msgs = [msg for msg in self._pending_receive.values() if msg.container_msg_id == container_msg_id]
+        requests = [msg.request for msg in msgs]
+        for msg in msgs:
+            self._pending_receive.pop(msg.msg_id, None)
+        return requests
+
     def _clear_all_pending(self):
         for r in self._pending_receive.values():
-            r.confirm_received.set()
+            r.request.confirm_received.set()
         self._pending_receive.clear()
+
+    async def _resend_request(self, msg_id):
+        request = self._pop_request(msg_id)
+        if request:
+            self._logger.debug('requests is about to resend')
+            await self.send(request)
+            return
+        requests = self._pop_requests_of_container(msg_id)
+        if requests:
+            self._logger.debug('container of requests is about to resend')
+            await self.send(*requests)
 
     async def _handle_pong(self, msg_id, sequence, reader):
         self._logger.debug('Handling pong')
@@ -303,10 +322,9 @@ class MtProtoSender:
         self.session.salt = struct.unpack(
             '<Q', struct.pack('<q', bad_salt.new_server_salt)
         )[0]
+        self.session.save()
 
-        request = self._pop_request(bad_salt.bad_msg_id)
-        if request:
-            await self.send(request)
+        await self._resend_request(bad_salt.bad_msg_id)
 
         return True
 
@@ -322,15 +340,18 @@ class MtProtoSender:
             self.session.update_time_offset(correct_msg_id=msg_id)
             self._logger.debug('Read Bad Message error: ' + str(error))
             self._logger.debug('Attempting to use the correct time offset.')
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session._sequence += 64
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session._sequence -= 16
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
             raise error
@@ -341,7 +362,6 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/VvpCC6
-        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_msg_new_detailed_info(self, msg_id, sequence, reader):
@@ -350,7 +370,6 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/G7DPsR
-        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_new_session_created(self, msg_id, sequence, reader):
@@ -377,9 +396,6 @@ class MtProtoSender:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string()
                 )
-
-            # Acknowledge that we received the error
-            await self._send_acknowledge(request_id)
 
             if request:
                 request.rpc_error = error

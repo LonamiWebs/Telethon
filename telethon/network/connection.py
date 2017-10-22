@@ -43,13 +43,13 @@ class Connection:
     """
 
     def __init__(self, mode=ConnectionMode.TCP_FULL,
-                 proxy=None, timeout=timedelta(seconds=5)):
+                 proxy=None, timeout=timedelta(seconds=5), loop=None):
         self._mode = mode
         self._send_counter = 0
         self._aes_encrypt, self._aes_decrypt = None, None
 
         # TODO Rename "TcpClient" as some sort of generic socket?
-        self.conn = TcpClient(proxy=proxy, timeout=timeout)
+        self.conn = TcpClient(proxy=proxy, timeout=timeout, loop=loop)
 
         # Sending messages
         if mode == ConnectionMode.TCP_FULL:
@@ -206,7 +206,7 @@ class Connection:
         return await self.conn.read(length)
 
     async def _read_obfuscated(self, length):
-        return await self._aes_decrypt.encrypt(self.conn.read(length))
+        return self._aes_decrypt.encrypt(await self.conn.read(length))
 
     # endregion
 
