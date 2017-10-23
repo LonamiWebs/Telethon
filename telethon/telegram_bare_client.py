@@ -417,7 +417,7 @@ class TelegramBareClient:
             if result is not None:
                 return result
 
-        return None
+        raise ValueError('Number of retries reached 0.')
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
