@@ -129,11 +129,6 @@ class TLGenerator:
                 builder.writeln(
                     'from {}.tl.tlobject import TLObject'.format('.' * depth)
                 )
-                if ns:
-                    # Only import the parent types if we're not in such file
-                    builder.writeln(
-                            'from {}.tl import types'.format('.' * depth)
-                    )
 
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
@@ -646,8 +641,25 @@ class TLGenerator:
             if not arg.skip_constructor_id:
                 builder.writeln('{} = reader.tgread_object()'.format(name))
             else:
-                builder.writeln('{} = types.{}.from_reader(reader)'.format(
-                        name, TLObject.class_name_for(arg.type)))
+                # Import the correct type inline to avoid cyclic imports.
+                # There may be better solutions so that we can just access
+                # all the types before the files have been parsed, but I
+                # don't know of any.
+                sep_index = arg.type.find('.')
+                if sep_index == -1:
+                    ns, t = '.', arg.type
+                else:
+                    ns, t = '.' + arg.type[:sep_index], arg.type[sep_index+1:]
+                class_name = TLObject.class_name_for(t)
+
+                # There would be no need to import the type if we're in the
+                # file with the same namespace, but since it does no harm
+                # and we don't have information about such thing in the
+                # method we just ignore that case.
+                builder.writeln('from {} import {}'.format(ns, class_name))
+                builder.writeln('{} = {}.from_reader(reader)'.format(
+                    name, class_name
+                ))
 
         # End vector and flag blocks if required (if we opened them before)
         if arg.is_vector:
