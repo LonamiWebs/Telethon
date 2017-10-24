@@ -9,7 +9,7 @@ from os import environ
 # or even hardcode them (not recommended)
 
 def main():
-    session_name = 'session'
+    session_name = environ.get('TG_SESSION','session')
     user_phone = environ['TG_PHONE'],
     client = TelegramClient(session_name,
             int(environ['TG_API_ID']), 
