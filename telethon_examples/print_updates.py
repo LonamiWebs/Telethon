@@ -31,7 +31,7 @@ def main():
                 code_ok = client.sign_in(user_phone, code)
             except SessionPasswordNeededError:
                 pw = getpass('Two step verification enabled. Please enter your password: ')
-                client.sign_in(password=pw)
+                code_ok = client.sign_in(password=pw)
     print('INFO: Client initialized succesfully!')
 
     client.add_update_handler(update_handler)
