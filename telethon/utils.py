@@ -142,7 +142,10 @@ def get_input_user(entity):
         else:
             return InputUser(entity.id, entity.access_hash)
 
-    if isinstance(entity, UserEmpty):
+    if isinstance(entity, InputPeerSelf):
+        return InputUserSelf()
+
+    if isinstance(entity, (UserEmpty, InputPeerEmpty)):
         return InputUserEmpty()
 
     if isinstance(entity, UserFull):
