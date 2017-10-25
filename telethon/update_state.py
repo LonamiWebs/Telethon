@@ -119,10 +119,10 @@ class UpdateState:
                         handler(update)
             except StopIteration:
                 break
-            except Exception as e:
+            except:
                 # We don't want to crash a worker thread due to any reason
-                self._logger.debug(
-                    '[ERROR] Unhandled exception on worker {}'.format(wid), e
+                self._logger.exception(
+                    '[ERROR] Unhandled exception on worker {}'.format(wid)
                 )
 
     def process(self, update):
