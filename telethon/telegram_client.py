@@ -48,7 +48,7 @@ from .tl.types import (
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
-    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
+    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, User, Chat)
 from .tl.types.messages import DialogsSlice
 
 
@@ -475,6 +475,55 @@ class TelegramClient(TelegramBareClient):
         ]
 
         return total_messages, result.messages, entities
+
+    def get_all_participants(self,entity):
+        """
+        Returns all the partcipants for the specified entity.
+
+        :param entity:      The entity from whom to retrieve the participants
+
+        :return: A list of participants for the given entity
+        """
+
+        def update_participant_set(participants, participant):
+            """
+            Updates the set of participants for the specified entity.
+
+            :param participants:    Set of participants in the chat or group
+            :param participant:     Participant in the chat or group.
+
+            :return: void
+            """
+            if participant in participants:
+                participants.remove(participant)
+            else:
+                participants.add(participant)
+
+        entity_type = self.get_entity(entity)
+        if isinstance(entity_type,User):
+            return [entity]
+        elif isinstance(entity_type,Chat):
+
+            participants = set()
+            _ ,messages, _ = self.get_message_history(entity)
+
+            while len(messages) > 0:
+                message = messages.pop(0)
+                msg_dict = message.to_dict()
+                if 'action' in msg_dict:
+                    action = msg_dict['action']
+                    if 'users' in action:
+                        users = action['users']
+                        for user in users: update_participant_set(participants,user)
+                    elif 'user_id' in action:
+                        user = action['user_id']
+                        update_participant_set(participants,user)
+                if len(messages) == 0:
+                    _ , messages , _ = self.get_message_history(entity,offset_id=msg_dict['id'])
+
+            return list(participants)
+
+
 
     def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """
