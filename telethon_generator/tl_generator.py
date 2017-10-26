@@ -491,11 +491,15 @@ class TLGenerator:
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
-            builder.write("struct.pack('<I', {})".format(
-                ' | '.join('({} if {} else 0)'.format(
-                    1 << flag.flag_index, 'self.{}'.format(flag.name)
-                ) for flag in args if flag.is_flag)
-            ))
+            if not any(f.is_flag for f in args):
+                # There's a flag indicator, but no flag arguments so it's 0
+                builder.write(r"b'\0\0\0\0'")
+            else:
+                builder.write("struct.pack('<I', {})".format(
+                    ' | '.join('({} if {} else 0)'.format(
+                        1 << flag.flag_index, 'self.{}'.format(flag.name)
+                    ) for flag in args if flag.is_flag)
+                ))
 
         elif 'int' == arg.type:
             # struct.pack is around 4 times faster than int.to_bytes
