@@ -11,7 +11,7 @@ from telethon.errors import SessionPasswordNeededError
 
 def main():
     session_name = environ.get('TG_SESSION', 'session')
-    user_phone = environ['TG_PHONE'],
+    user_phone = environ['TG_PHONE']
     client = TelegramClient(session_name,
                             int(environ['TG_API_ID']),
                             environ['TG_API_HASH'],
