@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import sys
 import unittest
 
 logging.basicConfig(level=logging.DEBUG)
-__log__ = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def test_suite(skip_network=False):
@@ -14,9 +15,9 @@ def test_suite(skip_network=False):
     test_classes = [CryptoTests, ParserTests, TLTests, UtilsTests]
 
     if skip_network:
-        __log__.warning("Skipping network tests")
+        log.warning("Skipping network tests")
     else:
-        __log__.info("Running with network tests")
+        log.info("Running with network tests")
         test_classes.append(NetworkTests)
 
     loader = unittest.TestLoader()
@@ -29,12 +30,17 @@ def test_suite(skip_network=False):
     return unittest.TestSuite(suites_list)
 
 
+def main(skip_network=False):
+    big_suite = test_suite(skip_network=skip_network)
+    runner = unittest.TextTestRunner()
+    failures = runner.run(big_suite)
+    sys.exit(1 if failures else 0)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-n,--skip-network', dest='skip_network',
                         action='store_true')
     args = parser.parse_args()
 
-    big_suite = test_suite(skip_network=args.skip_network)
-    runner = unittest.TextTestRunner()
-    results = runner.run(big_suite)
+    main(skip_network=args.skip_network)
