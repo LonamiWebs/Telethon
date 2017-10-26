@@ -93,8 +93,11 @@ class TLObject:
     @staticmethod
     def serialize_bytes(data):
         """Write bytes by using Telegram guidelines"""
-        if isinstance(data, str):
-            data = data.encode('utf-8')
+        if not isinstance(data, bytes):
+            if isinstance(data, str):
+                data = data.encode('utf-8')
+            else:
+                raise ValueError('bytes or str expected, not', type(data))
 
         r = []
         if len(data) < 254:
