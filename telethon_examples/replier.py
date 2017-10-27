@@ -1,27 +1,36 @@
 #!/usr/bin/env python3
-# A script to automatically send messages based on certain triggers
+"""
+A example script to automatically send messages based on certain triggers.
+
+The script makes uses of environment variables to determine the API ID,
+hash, phone and such to be used. You may want to add these to your .bashrc
+file, including TG_API_ID, TG_API_HASH, TG_PHONE and optionally TG_SESSION.
+
+This script assumes that you have certain files on the working directory,
+such as "xfiles.m4a" or "anytime.png" for some of the automated replies.
+"""
 from getpass import getpass
 from collections import defaultdict
 from datetime import datetime, timedelta
 from os import environ
-# environ is used to get API information from environment variables
-# You could also use a config file, pass them as arguments,
-# or even hardcode them (not recommended)
-from nltk.tokenize import word_tokenize
-# NLTK is used to match specific triggers in messages
+
+import re
+
 from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import UpdateNewChannelMessage, UpdateShortMessage, MessageService
 from telethon.tl.functions.messages import EditMessageRequest
 
-# Uncomment this for debugging
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
-# logging.debug('dbg')
-# logging.info('info')
+"""Uncomment this for debugging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.debug('dbg')
+logging.info('info')
+"""
 
 REACTS = {'emacs': 'Needs more vim',
           'chrome': 'Needs more Firefox'}
+
 
 def setup():
     try:
@@ -32,11 +41,10 @@ def setup():
         global client
         session_name = environ.get('TG_SESSION', 'session')
         user_phone = environ['TG_PHONE']
-        client = TelegramClient(session_name,
-                                int(environ['TG_API_ID']),
-                                environ['TG_API_HASH'],
-                                proxy=None,
-                                update_workers=4)
+        client = TelegramClient(
+            session_name, int(environ['TG_API_ID']), environ['TG_API_HASH'],
+            proxy=None, update_workers=4
+        )
 
         print('INFO: Connecting to Telegram Servers...', end='', flush=True)
         client.connect()
@@ -54,12 +62,13 @@ def setup():
                     password = getpass('Two step verification enabled. '
                                        'Please enter your password: ')
                     code_ok = client.sign_in(password=password)
-        print('INFO: Client initialized succesfully!')
+        print('INFO: Client initialized successfully!')
 
         client.add_update_handler(update_handler)
         input('Press Enter to stop this!\n')
     finally:
         client.disconnect()
+
 
 def update_handler(update):
     global recent_reacts
@@ -74,7 +83,7 @@ def update_handler(update):
 
     # React to messages in supergroups and PMs
     if isinstance(update, UpdateNewChannelMessage):
-        words = word_tokenize(msg.message)
+        words = re.split('\W+', msg.message)
         for trigger, response in REACTS.items():
             if len(recent_reacts[msg.to_id.channel_id]) > 3:
                 break
@@ -82,16 +91,16 @@ def update_handler(update):
             if trigger in words:
                 recent_reacts[msg.to_id.channel_id] = [
                     a for a in recent_reacts[msg.to_id.channel_id] if
-                    datetime.now() - a < timedelta(minutes=10)]
+                    datetime.now() - a < timedelta(minutes=10)
+                ]
                 # Remove recents older than 10 minutes
                 client.send_message(msg.to_id, response, reply_to=msg.id)
                 # Send a reaction
                 recent_reacts[msg.to_id.channel_id].append(datetime.now())
                 # Add this reaction to the recents list
 
-
     if isinstance(update, UpdateShortMessage):
-        words = word_tokenize(msg)
+        words = re.split('\W+', msg)
         for trigger, response in REACTS.items():
             if len(recent_reacts[update.user_id]) > 3:
                 break
@@ -99,12 +108,13 @@ def update_handler(update):
             if trigger in words:
                 recent_reacts[update.user_id] = [
                     a for a in recent_reacts[update.user_id] if
-                    datetime.now() - a < timedelta(minutes=10)]
-                # Remove recents older than 10 minutes
+                    datetime.now() - a < timedelta(minutes=10)
+                ]
+                # Remove recent replies older than 10 minutes
                 client.send_message(update.user_id, response, reply_to=update.id)
                 # Send a reaction
                 recent_reacts[update.user_id].append(datetime.now())
-                # Add this reaction to the recents list
+                # Add this reaction to the list of recent reactions
 
     # Automatically send relevant media when we say certain things
     # When invoking requests, get_input_entity needs to be called manually
@@ -114,9 +124,10 @@ def update_handler(update):
         if msg.message.lower() == 'anytime':
             client.send_file(msg.to_id, 'anytime.png', reply_to=msg.id)
         if '.shrug' in msg.message:
-            client(
-                EditMessageRequest(client.get_input_entity(msg.to_id), msg.id,
-                                   message=msg.message.replace('.shrug', r'¯\_(ツ)_/¯')))
+            client(EditMessageRequest(
+                client.get_input_entity(msg.to_id), msg.id,
+                message=msg.message.replace('.shrug', r'¯\_(ツ)_/¯')
+            ))
  
     if isinstance(update, UpdateShortMessage) and update.out:
         if msg.lower() == 'x files theme':
@@ -124,11 +135,10 @@ def update_handler(update):
         if msg.lower() == 'anytime':
             client.send_file(update.user_id, 'anytime.png', reply_to=update.id)
         if '.shrug' in msg:
-            client(
-                EditMessageRequest(client.get_input_entity(update.user_id), update.id,
-                                   message=msg.replace('.shrug', r'¯\_(ツ)_/¯')))
-
-
+            client(EditMessageRequest(
+                client.get_input_entity(update.user_id), update.id,
+                message=msg.replace('.shrug', r'¯\_(ツ)_/¯')
+            ))
 
 
 if __name__ == '__main__':
