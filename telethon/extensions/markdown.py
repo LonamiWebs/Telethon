@@ -84,8 +84,10 @@ def parse(message, delimiters=None):
                     current = Mode.NONE
                 break
 
-        offset += emojiness(message[i])
-        i += 1
+        if i < len(message):
+            offset += emojiness(message[i])
+            i += 1
+
     if result and not isinstance(result[-1], tuple):
         result.pop()
     return message, result
