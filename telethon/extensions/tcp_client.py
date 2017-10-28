@@ -5,13 +5,18 @@ import socket
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 
-loop = asyncio.get_event_loop()
+MAX_TIMEOUT = 15  # in seconds
+CONN_RESET_ERRNOS = {
+    errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
+    errno.EINVAL, errno.ENOTCONN
+}
 
 
 class TcpClient:
-    def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
+    def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
         self.proxy = proxy
         self._socket = None
+        self._loop = loop if loop else asyncio.get_event_loop()
 
         if isinstance(timeout, timedelta):
             self.timeout = timeout.seconds
@@ -31,7 +36,7 @@ class TcpClient:
             else:  # tuple, list, etc.
                 self._socket.set_proxy(*self.proxy)
 
-        self._socket.settimeout(self.timeout)
+        self._socket.setblocking(False)
 
     async def connect(self, ip, port):
         """Connects to the specified IP and port number.
@@ -42,20 +47,27 @@ class TcpClient:
         else:
             mode, address = socket.AF_INET, (ip, port)
 
+        timeout = 1
         while True:
             try:
-                while not self._socket:
+                if not self._socket:
                     self._recreate_socket(mode)
 
-                await loop.sock_connect(self._socket, address)
+                await self._loop.sock_connect(self._socket, address)
                 break  # Successful connection, stop retrying to connect
+            except ConnectionError:
+                self._socket = None
+                await asyncio.sleep(timeout)
+                timeout = min(timeout * 2, MAX_TIMEOUT)
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
-                if e.errno == errno.EBADF:
+                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
                     # Bad file descriptor, i.e. socket was closed, set it
                     # to none to recreate it on the next iteration
                     self._socket = None
+                    await asyncio.sleep(timeout)
+                    timeout = min(timeout * 2, MAX_TIMEOUT)
                 else:
                     raise
 
@@ -81,13 +93,14 @@ class TcpClient:
             raise ConnectionResetError()
 
         try:
-            await loop.sock_sendall(self._socket, data)
-        except socket.timeout as e:
+            await asyncio.wait_for(self._loop.sock_sendall(self._socket, data),
+                                   timeout=self.timeout, loop=self._loop)
+        except asyncio.TimeoutError as e:
             raise TimeoutError() from e
         except BrokenPipeError:
             self._raise_connection_reset()
         except OSError as e:
-            if e.errno == errno.EBADF:
+            if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset()
             else:
                 raise
@@ -104,11 +117,12 @@ class TcpClient:
             bytes_left = size
             while bytes_left != 0:
                 try:
-                    partial = await loop.sock_recv(self._socket, bytes_left)
-                except socket.timeout as e:
+                    partial = await asyncio.wait_for(self._loop.sock_recv(self._socket, bytes_left),
+                                                     timeout=self.timeout, loop=self._loop)
+                except asyncio.TimeoutError as e:
                     raise TimeoutError() from e
                 except OSError as e:
-                    if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
+                    if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset()
                     else:
                         raise

@@ -11,6 +11,15 @@ class MessageContainer(TLObject):
         self.content_related = False
         self.messages = messages
 
+    def to_dict(self, recursive=True):
+        return {
+            'content_related': self.content_related,
+            'messages':
+                ([] if self.messages is None else [
+                    None if x is None else x.to_dict() for x in self.messages
+                ]) if recursive else self.messages,
+        }
+
     def __bytes__(self):
         return struct.pack(
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
@@ -25,3 +34,9 @@ class MessageContainer(TLObject):
             inner_sequence = reader.read_int()
             inner_length = reader.read_int()
             yield inner_msg_id, inner_sequence, inner_length
+
+    def __str__(self):
+        return TLObject.pretty_format(self)
+
+    def stringify(self):
+        return TLObject.pretty_format(self, indent=0)

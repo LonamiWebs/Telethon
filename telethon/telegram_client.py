@@ -61,6 +61,7 @@ class TelegramClient(TelegramBareClient):
                  connection_mode=ConnectionMode.TCP_FULL,
                  proxy=None,
                  timeout=timedelta(seconds=5),
+                 loop=None,
                  **kwargs):
         """Initializes the Telegram client with the specified API ID and Hash.
 
@@ -87,6 +88,7 @@ class TelegramClient(TelegramBareClient):
             connection_mode=connection_mode,
             proxy=proxy,
             timeout=timeout,
+            loop=loop,
             **kwargs
         )
 
@@ -202,7 +204,7 @@ class TelegramClient(TelegramBareClient):
         """Gets "me" (the self user) which is currently authenticated,
            or None if the request fails (hence, not authenticated)."""
         try:
-            return await self(GetUsersRequest([InputUserSelf()]))[0]
+            return (await self(GetUsersRequest([InputUserSelf()])))[0]
         except UnauthorizedError:
             return None
 
@@ -313,6 +315,7 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         result = await self(request)
+
         if isinstance(result, UpdateShortSentMessage):
             return Message(
                 id=result.id,
