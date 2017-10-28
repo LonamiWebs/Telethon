@@ -821,19 +821,17 @@ class TelegramClient(TelegramBareClient):
 
         try:
             # Remove these pesky characters
-            first_name = first_name.replace(';','')
-            if last_name is None:
-                last_name = ''
-            else:
-                last_name = last_name.replace(';','')
+            first_name = first_name.replace(';', '')
+            last_name = (last_name or '').replace(';', '')
             f.write('BEGIN:VCARD\n')
             f.write('VERSION:4.0\n')
             f.write('N:{};{};;;\n'.format(
                 first_name, last_name)
             )
-            f.write('FN:{} {}\n'.format(first_name, last_name)
+            f.write('FN:{} {}\n'.format(first_name, last_name))
             f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
-                phone_number))
+                phone_number
+            ))
             f.write('END:VCARD\n')
         finally:
             # Only close the stream if we opened it
