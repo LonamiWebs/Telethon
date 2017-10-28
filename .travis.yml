@@ -4,22 +4,23 @@ language: python
 cache: pip
 
 # Tox cannot install pythons, so we set 3.5 as default, use 3.4 already
-# available in container and then include 3.6 in matrix.
+# available in container, and then include 3.6 in matrix.
 python:
   - 3.5
 
 env:
-  - TOXENV=py34
-  - TOXENV=py35
+  matrix:
+    - TOXENV=py34
+    - TOXENV=py35
 
 matrix:
   include:
     - python: 3.6
       env: TOXENV=py36
-    - python: 3.4  # i.e. skip installing 3.5
-      env: TOXENV=lint
-    - python: 3.4
-      env: TOXENV=coverage34
+    - env: TOXENV=coverage
+    - env: TOXENV=lint
+  allow_failures:
+    - env: TOXENV=lint
 
 install:
   - pip install tox
