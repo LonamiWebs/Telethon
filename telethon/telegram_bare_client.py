@@ -9,7 +9,7 @@ from signal import signal, SIGINT, SIGTERM, SIGABRT
 from threading import Lock
 from time import sleep
 
-from . import helpers as utils
+from . import helpers as utils, version
 from .crypto import rsa, CdnDecrypter
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError,
@@ -60,7 +60,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.3'
+    __version__ = version.__version__
 
     # TODO Make this thread-safe, all connections share the same DC
     _config = None  # Server configuration (with .dc_options)
