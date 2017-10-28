@@ -346,6 +346,7 @@ class TelegramClient(TelegramBareClient):
     def send_message(self,
                      entity,
                      message,
+                     entities=[],
                      reply_to=None,
                      link_preview=True):
         """
@@ -361,7 +362,7 @@ class TelegramClient(TelegramBareClient):
         request = SendMessageRequest(
             peer=entity,
             message=message,
-            entities=[],
+            entities=entities,
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
