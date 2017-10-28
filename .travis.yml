@@ -19,7 +19,7 @@ matrix:
     - python: 3.4  # i.e. skip installing 3.5
       env: TOXENV=lint
     - python: 3.4
-      env: TOXENV=coverage
+      env: TOXENV=coverage34
 
 install:
   - pip install tox
@@ -28,7 +28,7 @@ script:
   - tox
 
 after_success:
-  - if [[ $TOXENV =~ coverage ]]; then
+  - if [[ $TOXENV =~ coverage34 ]]; then
     pip install --quiet python-coveralls;
     coveralls --ignore-errors;
     fi
