@@ -19,6 +19,13 @@ import re
 
 # Always prefer setuptools over distutils
 from setuptools import find_packages, setup
+from setuptools.command.develop import develop
+
+
+class Develop(develop):
+    def run(self):
+        super(Develop, self).run()
+        gen_tl()
 
 
 class TempWorkDir:
@@ -133,6 +140,7 @@ def main():
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
                 'try_telethon.py'
             ]),
+            cmdclass={'develop': Develop},
             install_requires=['pyaes', 'rsa']
         )
 
