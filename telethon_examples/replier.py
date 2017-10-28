@@ -31,43 +31,8 @@ logging.info('info')
 REACTS = {'emacs': 'Needs more vim',
           'chrome': 'Needs more Firefox'}
 
-
-def setup():
-    try:
-        global recent_reacts
-        # A list of dates of reactions we've sent, so we can keep track of floods
-        recent_reacts = defaultdict(list)
-
-        global client
-        session_name = environ.get('TG_SESSION', 'session')
-        user_phone = environ['TG_PHONE']
-        client = TelegramClient(
-            session_name, int(environ['TG_API_ID']), environ['TG_API_HASH'],
-            proxy=None, update_workers=4
-        )
-
-        print('INFO: Connecting to Telegram Servers...', end='', flush=True)
-        client.connect()
-        print('Done!')
-
-        if not client.is_user_authorized():
-            print('INFO: Unauthorized user')
-            client.send_code_request(user_phone)
-            code_ok = False
-            while not code_ok:
-                code = input('Enter the auth code: ')
-                try:
-                    code_ok = client.sign_in(user_phone, code)
-                except SessionPasswordNeededError:
-                    password = getpass('Two step verification enabled. '
-                                       'Please enter your password: ')
-                    code_ok = client.sign_in(password=password)
-        print('INFO: Client initialized successfully!')
-
-        client.add_update_handler(update_handler)
-        input('Press Enter to stop this!\n')
-    finally:
-        client.disconnect()
+# A list of dates of reactions we've sent, so we can keep track of floods
+recent_reacts = defaultdict(list)
 
 
 def update_handler(update):
@@ -86,35 +51,32 @@ def update_handler(update):
         words = re.split('\W+', msg.message)
         for trigger, response in REACTS.items():
             if len(recent_reacts[msg.to_id.channel_id]) > 3:
+                # Silently ignore triggers if we've recently sent 3 reactions
                 break
-                # Silently ignore triggers if we've recently sent three reactions
+
             if trigger in words:
+                # Remove recent replies older than 10 minutes
                 recent_reacts[msg.to_id.channel_id] = [
                     a for a in recent_reacts[msg.to_id.channel_id] if
                     datetime.now() - a < timedelta(minutes=10)
                 ]
-                # Remove recents older than 10 minutes
-                client.send_message(msg.to_id, response, reply_to=msg.id)
                 # Send a reaction
+                client.send_message(msg.to_id, response, reply_to=msg.id)
+                # Add this reaction to the list of recent actions
                 recent_reacts[msg.to_id.channel_id].append(datetime.now())
-                # Add this reaction to the recents list
 
     if isinstance(update, UpdateShortMessage):
         words = re.split('\W+', msg)
         for trigger, response in REACTS.items():
             if len(recent_reacts[update.user_id]) > 3:
+                # Silently ignore triggers if we've recently sent 3 reactions
                 break
-                # Silently ignore triggers if we've recently sent three reactions
+
             if trigger in words:
-                recent_reacts[update.user_id] = [
-                    a for a in recent_reacts[update.user_id] if
-                    datetime.now() - a < timedelta(minutes=10)
-                ]
-                # Remove recent replies older than 10 minutes
-                client.send_message(update.user_id, response, reply_to=update.id)
                 # Send a reaction
-                recent_reacts[update.user_id].append(datetime.now())
+                client.send_message(update.user_id, response, reply_to=update.id)
                 # Add this reaction to the list of recent reactions
+                recent_reacts[update.user_id].append(datetime.now())
 
     # Automatically send relevant media when we say certain things
     # When invoking requests, get_input_entity needs to be called manually
@@ -142,4 +104,34 @@ def update_handler(update):
 
 
 if __name__ == '__main__':
-    setup()
+    session_name = environ.get('TG_SESSION', 'session')
+    user_phone = environ['TG_PHONE']
+    client = TelegramClient(
+        session_name, int(environ['TG_API_ID']), environ['TG_API_HASH'],
+        proxy=None, update_workers=4
+    )
+    try:
+        print('INFO: Connecting to Telegram Servers...', end='', flush=True)
+        client.connect()
+        print('Done!')
+
+        if not client.is_user_authorized():
+            print('INFO: Unauthorized user')
+            client.send_code_request(user_phone)
+            code_ok = False
+            while not code_ok:
+                code = input('Enter the auth code: ')
+                try:
+                    code_ok = client.sign_in(user_phone, code)
+                except SessionPasswordNeededError:
+                    password = getpass('Two step verification enabled. '
+                                       'Please enter your password: ')
+                    code_ok = client.sign_in(password=password)
+        print('INFO: Client initialized successfully!')
+
+        client.add_update_handler(update_handler)
+        input('Press Enter to stop this!\n')
+    except KeyboardInterrupt:
+        pass
+    finally:
+        client.disconnect()
