@@ -7,7 +7,8 @@ import re
 from enum import Enum
 
 from ..tl.types import (
-    MessageEntityBold, MessageEntityItalic, MessageEntityCode, MessageEntityPre
+    MessageEntityBold, MessageEntityItalic, MessageEntityCode,
+    MessageEntityPre, MessageEntityTextUrl
 )
 
 
@@ -18,6 +19,7 @@ class Mode(Enum):
     ITALIC = 2
     CODE = 3
     PRE = 4
+    URL = 5
 
 
 EMOJI_PATTERN = re.compile(
@@ -48,12 +50,19 @@ def emojiness(char):
         return 3
 
 
-def parse(message, delimiters=None):
+def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
     """
     Parses the given message and returns the stripped message and a list
     of tuples containing (start, end, mode) using the specified delimiters
     dictionary (or default if None).
+
+    The url_re(gex) must contain two matching groups: the text to be
+    clickable and the URL itself.
     """
+    if url_re:
+        if isinstance(url_re, str):
+            url_re = re.compile(url_re)
+
     if not delimiters:
         if delimiters is not None:
             return message, []
@@ -70,19 +79,35 @@ def parse(message, delimiters=None):
     offset = 0
     i = 0
     while i < len(message):
-        for d, m in delimiters.items():
-            if message[i:i + len(d)] == d and current in (Mode.NONE, m):
-                if message[i + len(d):i + 2 * len(d)] == d:
-                    continue  # ignore two consecutive delimiters
+        if current == Mode.NONE:
+            url_match = url_re.match(message, pos=i)
+            if url_match:
+                message = ''.join((
+                    message[:url_match.start()],
+                    url_match.group(1),
+                    message[url_match.end():]
+                ))
+                emoji_len = sum(emojiness(c) for c in url_match.group(1))
+                result.append((
+                    offset,
+                    i + emoji_len,
+                    (Mode.URL, url_match.group(2))
+                ))
+                i += len(url_match.group(1))
+        else:
+            for d, m in delimiters.items():
+                if message[i:i + len(d)] == d and current in (Mode.NONE, m):
+                    if message[i + len(d):i + 2 * len(d)] == d:
+                        continue  # ignore two consecutive delimiters
 
-                message = message[:i] + message[i + len(d):]
-                if current == Mode.NONE:
-                    result.append(offset)
-                    current = m
-                else:
-                    result[-1] = (result[-1], offset, current)
-                    current = Mode.NONE
-                break
+                    message = message[:i] + message[i + len(d):]
+                    if current == Mode.NONE:
+                        result.append(offset)
+                        current = m
+                    else:
+                        result[-1] = (result[-1], offset, current)
+                        current = Mode.NONE
+                    break
 
         if i < len(message):
             offset += emojiness(message[i])
@@ -98,6 +123,10 @@ def parse_tg(message, delimiters=None):
     message, tuples = parse(message, delimiters=delimiters)
     result = []
     for start, end, mode in tuples:
+        extra = None
+        if isinstance(mode, tuple):
+            mode, extra = mode
+
         if mode == Mode.BOLD:
             result.append(MessageEntityBold(start, end - start))
         elif mode == Mode.ITALIC:
@@ -106,4 +135,6 @@ def parse_tg(message, delimiters=None):
             result.append(MessageEntityCode(start, end - start))
         elif mode == Mode.PRE:
             result.append(MessageEntityPre(start, end - start, ''))
+        elif mode == Mode.URL:
+            result.append(MessageEntityTextUrl(start, end - start, extra))
     return message, result
