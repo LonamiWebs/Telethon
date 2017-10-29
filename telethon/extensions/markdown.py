@@ -70,6 +70,16 @@ EMOJI_RANGES = (
 )
 
 
+DEFAULT_DELIMITERS = {
+    '**': Mode.BOLD,
+    '__': Mode.ITALIC,
+    '`': Mode.CODE,
+    '```': Mode.PRE
+}
+
+DEFAULT_URL_RE = re.compile(r'\[(.+?)\]\((.+?)\)')
+
+
 def is_emoji(char):
     """Returns True if 'char' looks like an emoji"""
     char = ord(char)
@@ -92,7 +102,7 @@ def emojiness(char):
         return 3
 
 
-def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
+def parse(message, delimiters=None, url_re=None):
     """
     Parses the given message and returns the stripped message and a list
     of tuples containing (start, end, mode) using the specified delimiters
@@ -101,20 +111,16 @@ def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
     The url_re(gex) must contain two matching groups: the text to be
     clickable and the URL itself.
     """
-    if url_re:
+    if url_re is None:
+        url_re = DEFAULT_URL_RE
+    elif url_re:
         if isinstance(url_re, str):
             url_re = re.compile(url_re)
 
     if not delimiters:
         if delimiters is not None:
             return message, []
-
-        delimiters = {
-            '**': Mode.BOLD,
-            '__': Mode.ITALIC,
-            '`': Mode.CODE,
-            '```': Mode.PRE
-        }
+        delimiters = DEFAULT_DELIMITERS
 
     result = []
     current = Mode.NONE
@@ -122,7 +128,7 @@ def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
     i = 0
     while i < len(message):
         url_match = None
-        if current == Mode.NONE:
+        if url_re and current == Mode.NONE:
             url_match = url_re.match(message, pos=i)
             if url_match:
                 message = ''.join((
