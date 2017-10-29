@@ -20,11 +20,11 @@ def sprint(string, *args, **kwargs):
 
 
 def print_title(title):
-    # Clear previous window
-    print('\n')
-    print('=={}=='.format('=' * len(title)))
+    """Helper function to print titles to the console more nicely"""
+    sprint('\n')
+    sprint('=={}=='.format('=' * len(title)))
     sprint('= {} ='.format(title))
-    print('=={}=='.format('=' * len(title)))
+    sprint('=={}=='.format('=' * len(title)))
 
 
 def bytes_to_string(byte_count):
@@ -34,8 +34,9 @@ def bytes_to_string(byte_count):
         byte_count /= 1024
         suffix_index += 1
 
-    return '{:.2f}{}'.format(byte_count,
-                             [' bytes', 'KB', 'MB', 'GB', 'TB'][suffix_index])
+    return '{:.2f}{}'.format(
+        byte_count, [' bytes', 'KB', 'MB', 'GB', 'TB'][suffix_index]
+    )
 
 
 class InteractiveTelegramClient(TelegramClient):
@@ -48,13 +49,38 @@ class InteractiveTelegramClient(TelegramClient):
     """
     def __init__(self, session_user_id, user_phone, api_id, api_hash,
                  proxy=None):
+        """
+        Initializes the InteractiveTelegramClient.
+        :param session_user_id: Name of the *.session file.
+        :param user_phone: The phone of the user that will login.
+        :param api_id: Telegram's api_id acquired through my.telegram.org.
+        :param api_hash: Telegram's api_hash.
+        :param proxy: Optional proxy tuple/dictionary.
+        """
         print_title('Initialization')
 
         print('Initializing interactive example...')
+
+        # The first step is to initialize the TelegramClient, as we are
+        # subclassing it, we need to call super().__init__(). On a more
+        # normal case you would want 'client = TelegramClient(...)'
         super().__init__(
+            # These parameters should be passed always, session name and API
             session_user_id, api_id, api_hash,
+
+            # You can optionally change the connection mode by using this enum.
+            # This changes how much data will be sent over the network with
+            # every request, and how it will be formatted. Default is
+            # ConnectionMode.TCP_FULL, and smallest is TCP_TCP_ABRIDGED.
             connection_mode=ConnectionMode.TCP_ABRIDGED,
+
+            # If you're using a proxy, set it here.
             proxy=proxy,
+
+            # If you want to receive updates, you need to start one or more
+            # "update workers" which are background threads that will allow
+            # you to run things when your update handlers (callbacks) are
+            # called with an Update object.
             update_workers=1
         )
 
@@ -62,6 +88,8 @@ class InteractiveTelegramClient(TelegramClient):
         # so it can be downloaded if the user wants
         self.found_media = set()
 
+        # Calling .connect() may return False, so you need to assert it's
+        # True before continuing. Otherwise you may want to retry as done here.
         print('Connecting to Telegram servers...')
         if not self.connect():
             print('Initial connection failed. Retrying...')
@@ -69,18 +97,24 @@ class InteractiveTelegramClient(TelegramClient):
                 print('Could not connect to Telegram servers.')
                 return
 
-        # Then, ensure we're authorized and have access
+        # If the user hasn't called .sign_in() or .sign_up() yet, they won't
+        # be authorized. The first thing you must do is authorize. Calling
+        # .sign_in() should only be done once as the information is saved on
+        # the *.session file so you don't need to enter the code every time.
         if not self.is_user_authorized():
             print('First run. Sending code request...')
-            self.send_code_request(user_phone)
+            self.sign_in(user_phone)
 
             self_user = None
             while self_user is None:
                 code = input('Enter the code you just received: ')
                 try:
-                    self_user = self.sign_in(user_phone, code)
+                    self_user = self.sign_in(code=code)
 
-                # Two-step verification may be enabled
+                # Two-step verification may be enabled, and .sign_in will
+                # raise this error. If that's the case ask for the password.
+                # Note that getpass() may not work on PyCharm due to a bug,
+                # if that's the case simply change it for input().
                 except SessionPasswordNeededError:
                     pw = getpass('Two step verification is enabled. '
                                  'Please enter your password: ')
@@ -88,16 +122,22 @@ class InteractiveTelegramClient(TelegramClient):
                     self_user = self.sign_in(password=pw)
 
     def run(self):
-        # Listen for updates
+        """Main loop of the TelegramClient, will wait for user action"""
+
+        # Once everything is ready, we can add an update handler. Every
+        # update object will be passed to the self.update_handler method,
+        # where we can process it as we need.
         self.add_update_handler(self.update_handler)
 
         # Enter a while loop to chat as long as the user wants
         while True:
-            # Retrieve the top dialogs
+            # Retrieve the top dialogs. You can set the limit to None to
+            # retrieve all of them if you wish, but beware that may take
+            # a long time if you have hundreds of them.
             dialog_count = 15
 
             # Entities represent the user, chat or channel
-            # corresponding to the dialog on the same index
+            # corresponding to the dialog on the same index.
             dialogs, entities = self.get_dialogs(limit=dialog_count)
 
             i = None
@@ -119,6 +159,12 @@ class InteractiveTelegramClient(TelegramClient):
                 if i == '!q':
                     return
                 if i == '!l':
+                    # Logging out will cause the user to need to reenter the
+                    # code next time they want to use the library, and will
+                    # also delete the *.session file off the filesystem.
+                    #
+                    # This is not the same as simply calling .disconnect(),
+                    # which simply shuts down everything gracefully.
                     self.log_out()
                     return
 
@@ -158,8 +204,8 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    total_count, messages, senders = self.get_message_history(
-                        entity, limit=10)
+                    total_count, messages, senders = \
+                        self.get_message_history(entity, limit=10)
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
@@ -237,6 +283,7 @@ class InteractiveTelegramClient(TelegramClient):
                         entity, msg, link_preview=False)
 
     def send_photo(self, path, entity):
+        """Sends the file located at path to the desired entity as a photo"""
         self.send_file(
             entity, path,
             progress_callback=self.upload_progress_callback
@@ -244,6 +291,7 @@ class InteractiveTelegramClient(TelegramClient):
         print('Photo sent!')
 
     def send_document(self, path, entity):
+        """Sends the file located at path to the desired entity as a document"""
         self.send_file(
             entity, path,
             force_document=True,
@@ -252,6 +300,9 @@ class InteractiveTelegramClient(TelegramClient):
         print('Document sent!')
 
     def download_media_by_id(self, media_id):
+        """Given a message ID, finds the media this message contained and
+           downloads it.
+        """
         try:
             # The user may have entered a non-integer string!
             msg_media_id = int(media_id)
@@ -291,6 +342,11 @@ class InteractiveTelegramClient(TelegramClient):
         )
 
     def update_handler(self, update):
+        """Callback method for received Updates"""
+
+        # We have full control over what we want to do with the updates.
+        # In our case we only want to react to chat messages, so we use
+        # isinstance() to behave accordingly on these cases.
         if isinstance(update, UpdateShortMessage):
             who = self.get_entity(update.user_id)
             if update.out:

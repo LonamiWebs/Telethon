@@ -154,11 +154,10 @@ def generate_code(output, json_file, errors_desc):
                 patterns.append((pattern, name))
                 capture = capture_names.get(name, 'x') if has_captures else None
                 # TODO Some errors have the same name but different code,
-                # split this accross different files?
+                # split this across different files?
                 write_error(f, error_code, name, description, capture)
 
         f.write('\n\nrpc_errors_all = {\n')
         for pattern, name in patterns:
             f.write('    {}: {},\n'.format(repr(pattern), name))
         f.write('}\n')
-

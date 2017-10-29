@@ -104,8 +104,7 @@ class TLObject:
     def class_name_for(typename, is_function=False):
         """Gets the class name following the Python style guidelines"""
         # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(),
-                typename)
+        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), typename)
         result = result[:1].upper() + result[1:].replace('_', '')
         # If it's a function, let it end with "Request" to identify them
         if is_function:
