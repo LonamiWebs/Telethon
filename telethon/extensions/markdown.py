@@ -22,19 +22,30 @@ class Mode(Enum):
     URL = 5
 
 
-EMOJI_PATTERN = re.compile(
-    '['
-    '\U0001F600-\U0001F64F'  # emoticons
-    '\U0001F300-\U0001F5FF'  # symbols & pictographs
-    '\U0001F680-\U0001F6FF'  # transport & map symbols
-    '\U0001F1E0-\U0001F1FF'  # flags (iOS)
-    ']+', flags=re.UNICODE
+# using telethon_generator/emoji_ranges.py
+EMOJI_RANGES = (
+    (8596, 8601), (8617, 8618), (8986, 8987), (9193, 9203), (9208, 9210),
+    (9642, 9643), (9723, 9726), (9728, 9733), (9735, 9746), (9748, 9751),
+    (9754, 9884), (9886, 9905), (9907, 9953), (9956, 9983), (9985, 9988),
+    (9992, 10002), (10035, 10036), (10067, 10069), (10083, 10087),
+    (10133, 10135), (10548, 10549), (11013, 11015), (11035, 11036),
+    (126976, 127166), (127169, 127183), (127185, 127231), (127245, 127247),
+    (127340, 127345), (127358, 127359), (127377, 127386), (127405, 127487),
+    (127489, 127503), (127538, 127546), (127548, 127551), (127561, 128419),
+    (128421, 128591), (128640, 128767), (128884, 128895), (128981, 129023),
+    (129036, 129039), (129096, 129103), (129114, 129119), (129160, 129167),
+    (129198, 129338), (129340, 129342), (129344, 129349), (129351, 129355),
+    (129357, 129471), (129473, 131069)
 )
 
 
 def is_emoji(char):
     """Returns True if 'char' looks like an emoji"""
-    return bool(EMOJI_PATTERN.match(char))
+    char = ord(char)
+    for start, end in EMOJI_RANGES:
+        if start <= char <= end:
+            return True
+    return False
 
 
 def emojiness(char):
@@ -44,7 +55,7 @@ def emojiness(char):
     """
     if not is_emoji(char):
         return 1
-    if ord(char) < ord('🤐'):
+    if ord(char) < 129296:
         return 2
     else:
         return 3
