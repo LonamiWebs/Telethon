@@ -275,12 +275,10 @@ class MtProtoSender:
     async def _resend_request(self, msg_id):
         request = self._pop_request(msg_id)
         if request:
-            self._logger.debug('requests is about to resend')
             await self.send(request)
             return
         requests = self._pop_requests_of_container(msg_id)
         if requests:
-            self._logger.debug('container of requests is about to resend')
             await self.send(*requests)
 
     async def _handle_pong(self, msg_id, sequence, reader):
@@ -362,6 +360,7 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/VvpCC6
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_msg_new_detailed_info(self, msg_id, sequence, reader):
@@ -370,6 +369,7 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/G7DPsR
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_new_session_created(self, msg_id, sequence, reader):

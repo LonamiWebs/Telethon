@@ -1,5 +1,4 @@
 import struct
-import logging
 
 from . import TLObject, GzipPacked
 
@@ -13,7 +12,6 @@ class TLMessage(TLObject):
         self.seq_no = session.generate_sequence(request.content_related)
         self.request = request
         self.container_msg_id = None
-        logging.getLogger(__name__).debug(self)
 
     def to_dict(self, recursive=True):
         return {

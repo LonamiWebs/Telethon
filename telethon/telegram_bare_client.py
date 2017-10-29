@@ -693,7 +693,7 @@ class TelegramBareClient:
         """
         self.updates.process(await self(GetStateRequest()))
 
-    async def add_update_handler(self, handler):
+    def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
         self.updates.handlers.append(handler)
