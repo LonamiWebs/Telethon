@@ -90,6 +90,7 @@ def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
     offset = 0
     i = 0
     while i < len(message):
+        url_match = None
         if current == Mode.NONE:
             url_match = url_re.match(message, pos=i)
             if url_match:
@@ -105,7 +106,7 @@ def parse(message, delimiters=None, url_re=r'\[(.+?)\]\((.+?)\)'):
                     (Mode.URL, url_match.group(2))
                 ))
                 i += len(url_match.group(1))
-        else:
+        if not url_match:
             for d, m in delimiters.items():
                 if message[i:i + len(d)] == d and current in (Mode.NONE, m):
                     if message[i + len(d):i + 2 * len(d)] == d:
