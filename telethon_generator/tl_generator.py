@@ -129,9 +129,6 @@ class TLGenerator:
                 builder.writeln(
                     'from {}.tl.tlobject import TLObject'.format('.' * depth)
                 )
-                builder.writeln(
-                        'from {}.tl import types'.format('.' * depth)
-                )
 
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
@@ -494,11 +491,15 @@ class TLGenerator:
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
-            builder.write("struct.pack('<I', {})".format(
-                ' | '.join('({} if {} else 0)'.format(
-                    1 << flag.flag_index, 'self.{}'.format(flag.name)
-                ) for flag in args if flag.is_flag)
-            ))
+            if not any(f.is_flag for f in args):
+                # There's a flag indicator, but no flag arguments so it's 0
+                builder.write(r"b'\0\0\0\0'")
+            else:
+                builder.write("struct.pack('<I', {})".format(
+                    ' | '.join('({} if {} else 0)'.format(
+                        1 << flag.flag_index, 'self.{}'.format(flag.name)
+                    ) for flag in args if flag.is_flag)
+                ))
 
         elif 'int' == arg.type:
             # struct.pack is around 4 times faster than int.to_bytes
@@ -644,8 +645,25 @@ class TLGenerator:
             if not arg.skip_constructor_id:
                 builder.writeln('{} = reader.tgread_object()'.format(name))
             else:
-                builder.writeln('{} = types.{}.from_reader(reader)'.format(
-                        name, TLObject.class_name_for(arg.type)))
+                # Import the correct type inline to avoid cyclic imports.
+                # There may be better solutions so that we can just access
+                # all the types before the files have been parsed, but I
+                # don't know of any.
+                sep_index = arg.type.find('.')
+                if sep_index == -1:
+                    ns, t = '.', arg.type
+                else:
+                    ns, t = '.' + arg.type[:sep_index], arg.type[sep_index+1:]
+                class_name = TLObject.class_name_for(t)
+
+                # There would be no need to import the type if we're in the
+                # file with the same namespace, but since it does no harm
+                # and we don't have information about such thing in the
+                # method we just ignore that case.
+                builder.writeln('from {} import {}'.format(ns, class_name))
+                builder.writeln('{} = {}.from_reader(reader)'.format(
+                    name, class_name
+                ))
 
         # End vector and flag blocks if required (if we opened them before)
         if arg.is_vector:

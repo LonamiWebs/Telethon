@@ -1,11 +1,11 @@
 import re
 
-from .. import utils
 from ..tl import TLObject
 from ..tl.types import (
     User, Chat, Channel, PeerUser, PeerChat, PeerChannel,
     InputPeerUser, InputPeerChat, InputPeerChannel
 )
+from .. import utils  # Keep this line the last to maybe fix #357
 
 
 class EntityDatabase:

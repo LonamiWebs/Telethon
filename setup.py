@@ -89,7 +89,7 @@ def main():
         for x in ('build', 'dist', 'Telethon.egg-info'):
             rmtree(x, ignore_errors=True)
 
-    if len(argv) >= 2 and argv[1] == 'fetch_errors':
+    elif len(argv) >= 2 and argv[1] == 'fetch_errors':
         from telethon_generator.error_generator import fetch_errors
         fetch_errors(ERRORS_JSON)
 
