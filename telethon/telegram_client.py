@@ -51,6 +51,7 @@ from .tl.types import (
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
 
+
 class TelegramClient(TelegramBareClient):
     """Full featured TelegramClient meant to extend the basic functionality -
 
@@ -825,13 +826,9 @@ class TelegramClient(TelegramBareClient):
             last_name = (last_name or '').replace(';', '')
             f.write('BEGIN:VCARD\n')
             f.write('VERSION:4.0\n')
-            f.write('N:{};{};;;\n'.format(
-                first_name, last_name)
-            )
+            f.write('N:{};{};;;\n'.format(first_name, last_name))
             f.write('FN:{} {}\n'.format(first_name, last_name))
-            f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(
-                phone_number
-            ))
+            f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(phone_number))
             f.write('END:VCARD\n')
         finally:
             # Only close the stream if we opened it
@@ -1042,4 +1039,4 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-        # endregion
+    # endregion
