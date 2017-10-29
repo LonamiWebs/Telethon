@@ -13,10 +13,20 @@ class TLMessage(TLObject):
         self.request = request
         self.container_msg_id = None
 
+    def to_dict(self, recursive=True):
+        return {
+            'msg_id': self.msg_id,
+            'seq_no': self.seq_no,
+            'request': self.request,
+            'container_msg_id': self.container_msg_id,
+        }
+
     def __bytes__(self):
         body = GzipPacked.gzip_if_smaller(self.request)
         return struct.pack('<qii', self.msg_id, self.seq_no, len(body)) + body
 
     def __str__(self):
-        return 'TLMessage(msg_id={}, seq_no={}, body={})'\
-            .format(self.msg_id, self.seq_no, self.request)
+        return TLObject.pretty_format(self)
+
+    def stringify(self):
+        return TLObject.pretty_format(self, indent=0)
