@@ -24,7 +24,12 @@ class EntityDatabase:
         self._entities = {}  # marked_id: user|chat|channel
 
         if input_list:
-            self._input_entities = {k: v for k, v in input_list}
+            # TODO For compatibility reasons some sessions were saved with
+            # 'access_hash': null in the JSON session file. Drop these, as
+            # it means we don't have access to such InputPeers. Issue #354.
+            self._input_entities = {
+                k: v for k, v in input_list if v is not None
+            }
         else:
             self._input_entities = {}  # marked_id: hash
 
@@ -69,8 +74,17 @@ class EntityDatabase:
 
             try:
                 p = utils.get_input_peer(e, allow_self=False)
-                new_input[utils.get_peer_id(p, add_mark=True)] = \
-                    getattr(p, 'access_hash', 0)  # chats won't have hash
+                marked_id = utils.get_peer_id(p, add_mark=True)
+
+                if isinstance(p, InputPeerChat):
+                    # Chats don't have a hash
+                    new_input[marked_id] = 0
+                elif p.access_hash:
+                    # Some users and channels seem to be returned without
+                    # an 'access_hash', meaning Telegram doesn't want you
+                    # to access them. This is the reason behind ensuring
+                    # that the 'access_hash' is non-zero. See issue #354.
+                    new_input[marked_id] = p.access_hash
 
                 if self.enabled_full:
                     if isinstance(e, (User, Chat, Channel)):

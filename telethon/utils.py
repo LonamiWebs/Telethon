@@ -84,13 +84,13 @@ def get_input_peer(entity, allow_self=True):
         if entity.is_self and allow_self:
             return InputPeerSelf()
         else:
-            return InputPeerUser(entity.id, entity.access_hash)
+            return InputPeerUser(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, (Chat, ChatEmpty, ChatForbidden)):
         return InputPeerChat(entity.id)
 
     if isinstance(entity, (Channel, ChannelForbidden)):
-        return InputPeerChannel(entity.id, entity.access_hash)
+        return InputPeerChannel(entity.id, entity.access_hash or 0)
 
     # Less common cases
     if isinstance(entity, UserEmpty):
@@ -120,7 +120,7 @@ def get_input_channel(entity):
         return entity
 
     if isinstance(entity, (Channel, ChannelForbidden)):
-        return InputChannel(entity.id, entity.access_hash)
+        return InputChannel(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, InputPeerChannel):
         return InputChannel(entity.channel_id, entity.access_hash)
@@ -140,7 +140,7 @@ def get_input_user(entity):
         if entity.is_self:
             return InputUserSelf()
         else:
-            return InputUser(entity.id, entity.access_hash)
+            return InputUser(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, InputPeerSelf):
         return InputUserSelf()
