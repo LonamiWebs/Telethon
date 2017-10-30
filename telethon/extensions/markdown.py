@@ -134,7 +134,7 @@ def parse(message, delimiters=None, url_re=None):
                 emoji_len = sum(emojiness(c) for c in url_match.group(1))
                 result.append((
                     offset,
-                    i + emoji_len,
+                    offset + emoji_len,
                     (Mode.URL, url_match.group(2))
                 ))
                 i += len(url_match.group(1))
