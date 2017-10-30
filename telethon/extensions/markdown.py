@@ -91,15 +91,10 @@ def is_emoji(char):
 
 def emojiness(char):
     """
-    Returns the "emojiness" of an emoji, or how many characters it counts as.
-    1 if it's not an emoji, 2 usual, 3 "special" (seem to count more).
+    Returns 2 if the character is an emoji, or 1 otherwise.
+    This seems to be the length Telegram uses for offsets and lengths.
     """
-    if not is_emoji(char):
-        return 1
-    if ord(char) < 129296:
-        return 2
-    else:
-        return 3
+    return 2 if is_emoji(char) else 1
 
 
 def parse(message, delimiters=None, url_re=None):
