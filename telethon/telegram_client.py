@@ -50,6 +50,8 @@ from .tl.types import (
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
 from .tl.types.messages import DialogsSlice
+from .extensions import markdown
+
 
 
 class TelegramClient(TelegramBareClient):
@@ -348,21 +350,39 @@ class TelegramClient(TelegramBareClient):
                      entity,
                      message,
                      reply_to=None,
+                     parse_mode=None,
                      link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
-        :param str | int | User | Chat | Channel entity: To who will it be sent.
-        :param str message: The message to be sent.
-        :param int | Message reply_to: Whether to reply to a message or not.
-        :param link_preview: Should the link preview be shown?
+        :param str | int | User | Chat | Channel entity:
+            To who will it be sent.
+        :param str message:
+            The message to be sent.
+        :param int | Message reply_to:
+            Whether to reply to a message or not.
+        :param str parse_mode:
+            Can be 'md' or 'markdown' for markdown-like parsing, in a similar
+            fashion how official clients work.
+        :param link_preview:
+            Should the link preview be shown?
+
         :return Message: the sent message
         """
         entity = self.get_input_entity(entity)
+        if parse_mode:
+            parse_mode = parse_mode.lower()
+            if parse_mode in {'md', 'markdown'}:
+                message, msg_entities = markdown.parse_tg(message)
+            else:
+                raise ValueError('Unknown parsing mode', parse_mode)
+        else:
+            msg_entities = []
+
         request = SendMessageRequest(
             peer=entity,
             message=message,
-            entities=[],
+            entities=msg_entities,
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
