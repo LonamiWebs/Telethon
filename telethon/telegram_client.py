@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 
@@ -48,7 +49,8 @@ from .tl.types import (
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
-    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
+    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty
+)
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
 
@@ -458,43 +460,91 @@ class TelegramClient(TelegramBareClient):
         """
         Gets the message history for the specified entity
 
-        :param entity:      The entity from whom to retrieve the message history
-        :param limit:       Number of messages to be retrieved
-        :param offset_date: Offset date (messages *previous* to this date will be retrieved)
-        :param offset_id:   Offset message ID (only messages *previous* to the given ID will be retrieved)
-        :param max_id:      All the messages with a higher (newer) ID or equal to this will be excluded
-        :param min_id:      All the messages with a lower (older) ID or equal to this will be excluded
-        :param add_offset:  Additional message offset (all of the specified offsets + this offset = older messages)
+        :param entity:
+            The entity from whom to retrieve the message history.
+        :param limit:
+            Number of messages to be retrieved. Due to limitations with the API
+            retrieving more than 3000 messages will take longer than half a
+            minute (or even more based on previous calls). The limit may also
+            be None, which would eventually return the whole history.
+        :param offset_date:
+            Offset date (messages *previous* to this date will be retrieved).
+        :param offset_id:
+            Offset message ID (only messages *previous* to the given ID will
+            be retrieved).
+        :param max_id:
+            All the messages with a higher (newer) ID or equal to this will
+            be excluded
+        :param min_id:
+            All the messages with a lower (older) ID or equal to this will
+            be excluded.
+        :param add_offset:
+            Additional message offset
+            (all of the specified offsets + this offset = older messages).
 
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        result = self(GetHistoryRequest(
-            peer=self.get_input_entity(entity),
-            limit=limit,
-            offset_date=offset_date,
-            offset_id=offset_id,
-            max_id=max_id,
-            min_id=min_id,
-            add_offset=add_offset
-        ))
+        limit = float('inf') if limit is None else int(limit)
+        total_messages = 0
+        messages = []
+        entities = {}
+        while len(messages) < limit:
+            # Telegram has a hard limit of 100
+            real_limit = min(limit - len(messages), 100)
+            result = self(GetHistoryRequest(
+                peer=self.get_input_entity(entity),
+                limit=real_limit,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                max_id=max_id,
+                min_id=min_id,
+                add_offset=add_offset
+            ))
+            messages.extend(
+                m for m in result.messages if not isinstance(m, MessageEmpty)
+            )
+            total_messages = getattr(result, 'count', len(result.messages))
 
-        # The result may be a messages slice (not all messages were retrieved)
-        # or simply a messages TLObject. In the later case, no "count"
-        # attribute is specified, so the total messages count is simply
-        # the count of retrieved messages
-        total_messages = getattr(result, 'count', len(result.messages))
+            # TODO We can potentially use self.session.database, but since
+            # it might be disabled, use a local dictionary.
+            for u in result.users:
+                entities[utils.get_peer_id(u, add_mark=True)] = u
+            for c in result.chats:
+                entities[utils.get_peer_id(c, add_mark=True)] = c
 
-        # Iterate over all the messages and find the sender User
-        entities = [
-            utils.find_user_or_chat(m.from_id, result.users, result.chats)
-            if m.from_id is not None else
-            utils.find_user_or_chat(m.to_id, result.users, result.chats)
+            if len(result.messages) < real_limit:
+                break
 
-            for m in result.messages
-        ]
+            offset_id = result.messages[-1].id
+            offset_date = result.messages[-1].date
 
-        return total_messages, result.messages, entities
+            # Telegram limit seems to be 3000 messages within 30 seconds in
+            # batches of 100 messages each request (since the FloodWait was
+            # of 30 seconds). If the limit is greater than that, we will
+            # sleep 1s between each request.
+            if limit > 3000:
+                time.sleep(1)
+
+        # In a new list with the same length as the messages append
+        # their senders, so people can zip(messages, senders).
+        senders = []
+        for m in messages:
+            if m.from_id:
+                who = entities[utils.get_peer_id(m.from_id, add_mark=True)]
+            elif getattr(m, 'fwd_from', None):
+                # .from_id is optional, so this is the sanest fallback.
+                who = entities[utils.get_peer_id(
+                    m.fwd_from.from_id or m.fwd_from.channel_id,
+                    add_mark=True
+                )]
+            else:
+                # If there's not even a FwdHeader, fallback to the sender
+                # being where the message was sent.
+                who = entities[utils.get_peer_id(m.to_id, add_mark=True)]
+            senders.append(who)
+
+        return total_messages, messages, senders
 
     def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """
