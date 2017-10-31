@@ -485,7 +485,16 @@ class TelegramClient(TelegramBareClient):
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
+        entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
+        if limit == 0:
+            # No messages, but we still need to know the total message count
+            result = self(GetHistoryRequest(
+                peer=self.get_input_entity(entity), limit=1,
+                offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0
+            ))
+            return getattr(result, 'count', len(result.messages)), [], []
+
         total_messages = 0
         messages = []
         entities = {}
@@ -493,7 +502,7 @@ class TelegramClient(TelegramBareClient):
             # Telegram has a hard limit of 100
             real_limit = min(limit - len(messages), 100)
             result = self(GetHistoryRequest(
-                peer=self.get_input_entity(entity),
+                peer=entity,
                 limit=real_limit,
                 offset_date=offset_date,
                 offset_id=offset_id,
