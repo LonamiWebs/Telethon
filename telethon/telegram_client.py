@@ -279,22 +279,21 @@ class TelegramClient(TelegramBareClient):
             The peer to be used as an offset.
         :return: A tuple of lists ([dialogs], [entities]).
         """
-        if limit is None:
-            limit = float('inf')
+        limit = float('inf') if limit is None else int(limit)
+        if limit == 0:
+            return [], []
 
         dialogs = {}  # Use peer id as identifier to avoid dupes
         messages = {}  # Used later for sorting TODO also return these?
         entities = {}
         while len(dialogs) < limit:
-            need = limit - len(dialogs)
+            real_limit = min(limit - len(dialogs), 100)
             r = self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=need if need < float('inf') else 0
+                limit=real_limit
             ))
-            if not r.dialogs:
-                break
 
             for d in r.dialogs:
                 dialogs[utils.get_peer_id(d.peer, True)] = d
@@ -307,8 +306,9 @@ class TelegramClient(TelegramBareClient):
             for c in r.chats:
                 entities[c.id] = c
 
-            if not isinstance(r, DialogsSlice):
-                # Don't enter next iteration if we already got all
+            if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
+                # Less than we requested means we reached the end, or
+                # we didn't get a DialogsSlice which means we got all.
                 break
 
             offset_date = r.messages[-1].date
