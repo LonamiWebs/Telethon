@@ -43,13 +43,11 @@ def parse(message, delimiters=None, url_re=None):
     The url_re(gex) must contain two matching groups: the text to be
     clickable and the URL itself, and be utf-16le encoded.
     """
-    # Work on byte level with the utf-16le encoding to get the offsets right.
-    # The offset will just be half the index we're at.
     if url_re is None:
         url_re = DEFAULT_URL_RE
     elif url_re:
-        if isinstance(url_re, str):
-            url_re = re.compile(url_re.encode('utf-16le'))
+        if isinstance(url_re, bytes):
+            url_re = re.compile(url_re)
 
     if not delimiters:
         if delimiters is not None:
@@ -58,15 +56,22 @@ def parse(message, delimiters=None, url_re=None):
 
     delimiters = {k.encode('utf-16le'): v for k, v in delimiters.items()}
 
+    # Cannot use a for loop because we need to skip some indices
     i = 0
     result = []
     current = Mode.NONE
+
+    # Work on byte level with the utf-16le encoding to get the offsets right.
+    # The offset will just be half the index we're at.
     message = message.encode('utf-16le')
     while i < len(message):
         url_match = None
         if url_re and current == Mode.NONE:
+            # If we're not inside a previous match since Telegram doesn't allow
+            # nested message entities, try matching the URL from the i'th pos.
             url_match = url_re.match(message, pos=i)
             if url_match:
+                # Replace the whole match with only the inline URL text.
                 message = b''.join((
                     message[:url_match.start()],
                     url_match.group(1),
@@ -85,10 +90,20 @@ def parse(message, delimiters=None, url_re=None):
 
         if not url_match:
             for d, m in delimiters.items():
-                if message[i:i + len(d)] == d and current in (Mode.NONE, m):
-                    if message[i + len(d):i + 2 * len(d)] == d:
-                        continue  # ignore two consecutive delimiters
+                # Slice the string at the current i'th position to see if
+                # it matches the current delimiter d.
+                if message[i:i + len(d)] == d:
+                    if current != Mode.NONE and current != m:
+                        # We were inside another delimiter/mode, ignore this.
+                        continue
 
+                    if message[i + len(d):i + 2 * len(d)] == d:
+                        # The same delimiter can't be right afterwards, if
+                        # this were the case we would match empty strings
+                        # like `` which we don't want to.
+                        continue
+
+                    # Get rid of the delimiter by slicing it away
                     message = message[:i] + message[i + len(d):]
                     if current == Mode.NONE:
                         result.append(i // 2)
@@ -101,10 +116,13 @@ def parse(message, delimiters=None, url_re=None):
                         i -= 2  # Delimiter matched and gone, go back 1 char
                     break
 
-        if i < len(message):
-            i += 2
+        # Next iteration, utf-16 encoded characters need 2 bytes.
+        i += 2
 
     if result and not isinstance(result[-1], tuple):
+        # We may have found some a delimiter but not its ending pair. If
+        # that's the case we want to get rid of it before returning.
+        # TODO Should probably insert such delimiter back in the string.
         result.pop()
 
     return message.decode('utf-16le'), result
