@@ -11,8 +11,6 @@ from ..tl.types import (
     MessageEntityPre, MessageEntityTextUrl
 )
 
-def tg_string_len(s):
-    return len(s.encode('utf-16le')) // 2
 
 class Mode(Enum):
     """Different modes supported by Telegram's Markdown"""
@@ -31,7 +29,10 @@ DEFAULT_DELIMITERS = {
     '```': Mode.PRE
 }
 
-DEFAULT_URL_RE = re.compile(r'\[(.+?)\]\((.+?)\)')
+# Regex used to match utf-16le encoded r'\[(.+?)\]\((.+?)\)',
+# reason why there's '\0' after every match-literal character.
+DEFAULT_URL_RE = re.compile(b'\\[\0(.+)\\]\0\\(\0(.+?)\\)\0')
+
 
 def parse(message, delimiters=None, url_re=None):
     """
@@ -40,40 +41,45 @@ def parse(message, delimiters=None, url_re=None):
     dictionary (or default if None).
 
     The url_re(gex) must contain two matching groups: the text to be
-    clickable and the URL itself.
+    clickable and the URL itself, and be utf-16le encoded.
     """
+    # Work on byte level with the utf-16le encoding to get the offsets right.
+    # The offset will just be half the index we're at.
     if url_re is None:
         url_re = DEFAULT_URL_RE
     elif url_re:
         if isinstance(url_re, str):
-            url_re = re.compile(url_re)
+            url_re = re.compile(url_re.encode('utf-16le'))
 
     if not delimiters:
         if delimiters is not None:
             return message, []
         delimiters = DEFAULT_DELIMITERS
 
+    delimiters = {k.encode('utf-16le'): v for k, v in delimiters.items()}
+
+    i = 0
     result = []
     current = Mode.NONE
-    offset = 0
-    i = 0
+    message = message.encode('utf-16le')
     while i < len(message):
         url_match = None
         if url_re and current == Mode.NONE:
             url_match = url_re.match(message, pos=i)
             if url_match:
-                message = ''.join((
+                message = b''.join((
                     message[:url_match.start()],
                     url_match.group(1),
                     message[url_match.end():]
                 ))
 
                 result.append((
-                    offset,
-                    offset + tg_string_len(url_match.group(1)),
-                    (Mode.URL, url_match.group(2))
+                    i // 2,
+                    (i + len(url_match.group(1))) // 2,
+                    (Mode.URL, url_match.group(2).decode('utf-16le'))
                 ))
                 i += len(url_match.group(1))
+
         if not url_match:
             for d, m in delimiters.items():
                 if message[i:i + len(d)] == d and current in (Mode.NONE, m):
@@ -82,21 +88,20 @@ def parse(message, delimiters=None, url_re=None):
 
                     message = message[:i] + message[i + len(d):]
                     if current == Mode.NONE:
-                        result.append(offset)
+                        result.append(i // 2)
                         current = m
                     else:
-                        result[-1] = (result[-1], offset, current)
+                        result[-1] = (result[-1], i // 2, current)
                         current = Mode.NONE
                     break
 
         if i < len(message):
-            offset += tg_string_len(message[i])
-            i += 1
+            i += 2
 
     if result and not isinstance(result[-1], tuple):
         result.pop()
 
-    return message, result
+    return message.decode('utf-16le'), result
 
 
 def parse_tg(message, delimiters=None):
