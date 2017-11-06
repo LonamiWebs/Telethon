@@ -31,7 +31,7 @@ DEFAULT_DELIMITERS = {
 
 # Regex used to match utf-16le encoded r'\[(.+?)\]\((.+?)\)',
 # reason why there's '\0' after every match-literal character.
-DEFAULT_URL_RE = re.compile(b'\\[\0(.+)\\]\0\\(\0(.+?)\\)\0')
+DEFAULT_URL_RE = re.compile(b'\\[\0(.+?)\\]\0\\(\0(.+?)\\)\0')
 
 
 def parse(message, delimiters=None, url_re=None):
