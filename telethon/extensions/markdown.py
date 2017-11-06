@@ -78,7 +78,10 @@ def parse(message, delimiters=None, url_re=None):
                     (i + len(url_match.group(1))) // 2,
                     (Mode.URL, url_match.group(2).decode('utf-16le'))
                 ))
-                i += len(url_match.group(1))
+                # We matched the delimiter which is now gone, and we'll add
+                # +2 before next iteration which will make us skip a character.
+                # Go back by one utf-16 encoded character (-2) to avoid it.
+                i += len(url_match.group(1)) - 2
 
         if not url_match:
             for d, m in delimiters.items():
@@ -90,9 +93,12 @@ def parse(message, delimiters=None, url_re=None):
                     if current == Mode.NONE:
                         result.append(i // 2)
                         current = m
+                        # No need to i -= 2 here because it's been already
+                        # checked that next character won't be a delimiter.
                     else:
                         result[-1] = (result[-1], i // 2, current)
                         current = Mode.NONE
+                        i -= 2  # Delimiter matched and gone, go back 1 char
                     break
 
         if i < len(message):
