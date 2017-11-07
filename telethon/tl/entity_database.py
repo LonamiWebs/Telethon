@@ -132,7 +132,7 @@ class EntityDatabase:
 
         phone = getattr(entity, 'phone', None)
         if phone:
-            self._username_id[phone] = marked_id
+            self._phone_id[phone] = marked_id
 
     def _parse_key(self, key):
         """Parses the given string, integer or TLObject key into a
