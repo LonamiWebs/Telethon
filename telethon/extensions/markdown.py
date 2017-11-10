@@ -4,29 +4,17 @@ for use within the library, which attempts to handle emojies correctly,
 since they seem to count as two characters and it's a bit strange.
 """
 import re
-from enum import Enum
-
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityTextUrl
 )
 
 
-class Mode(Enum):
-    """Different modes supported by Telegram's Markdown"""
-    NONE = 0
-    BOLD = 1
-    ITALIC = 2
-    CODE = 3
-    PRE = 4
-    URL = 5
-
-
 DEFAULT_DELIMITERS = {
-    '**': Mode.BOLD,
-    '__': Mode.ITALIC,
-    '`': Mode.CODE,
-    '```': Mode.PRE
+    '**': MessageEntityBold,
+    '__': MessageEntityItalic,
+    '`': MessageEntityCode,
+    '```': MessageEntityPre
 }
 
 # Regex used to match utf-16le encoded r'\[(.+?)\]\((.+?)\)',
@@ -37,8 +25,8 @@ DEFAULT_URL_RE = re.compile(b'\\[\0(.+?)\\]\0\\(\0(.+?)\\)\0')
 def parse(message, delimiters=None, url_re=None):
     """
     Parses the given message and returns the stripped message and a list
-    of tuples containing (start, end, mode) using the specified delimiters
-    dictionary (or default if None).
+    of MessageEntity* using the specified delimiters dictionary (or default
+    if None). The dictionary should be a mapping {delimiter: entity class}.
 
     The url_re(gex) must contain two matching groups: the text to be
     clickable and the URL itself, and be utf-16le encoded.
@@ -59,14 +47,14 @@ def parse(message, delimiters=None, url_re=None):
     # Cannot use a for loop because we need to skip some indices
     i = 0
     result = []
-    current = Mode.NONE
+    current = None
 
     # Work on byte level with the utf-16le encoding to get the offsets right.
     # The offset will just be half the index we're at.
     message = message.encode('utf-16le')
     while i < len(message):
         url_match = None
-        if url_re and current == Mode.NONE:
+        if url_re and current is None:
             # If we're not inside a previous match since Telegram doesn't allow
             # nested message entities, try matching the URL from the i'th pos.
             url_match = url_re.match(message, pos=i)
@@ -78,10 +66,9 @@ def parse(message, delimiters=None, url_re=None):
                     message[url_match.end():]
                 ))
 
-                result.append((
-                    i // 2,
-                    (i + len(url_match.group(1))) // 2,
-                    (Mode.URL, url_match.group(2).decode('utf-16le'))
+                result.append(MessageEntityTextUrl(
+                    offset=i // 2, length=len(url_match.group(1)) // 2,
+                    url=url_match.group(2).decode('utf-16le')
                 ))
                 # We matched the delimiter which is now gone, and we'll add
                 # +2 before next iteration which will make us skip a character.
@@ -93,7 +80,7 @@ def parse(message, delimiters=None, url_re=None):
                 # Slice the string at the current i'th position to see if
                 # it matches the current delimiter d.
                 if message[i:i + len(d)] == d:
-                    if current != Mode.NONE and current != m:
+                    if current is not None and not isinstance(current, m):
                         # We were inside another delimiter/mode, ignore this.
                         continue
 
@@ -105,46 +92,25 @@ def parse(message, delimiters=None, url_re=None):
 
                     # Get rid of the delimiter by slicing it away
                     message = message[:i] + message[i + len(d):]
-                    if current == Mode.NONE:
-                        result.append(i // 2)
-                        current = m
+                    if current is None:
+                        if m == MessageEntityPre:
+                            # Special case, also has 'lang'
+                            current = MessageEntityPre(i // 2, None, '')
+                        else:
+                            current = m(i // 2, None)
                         # No need to i -= 2 here because it's been already
                         # checked that next character won't be a delimiter.
                     else:
-                        result[-1] = (result[-1], i // 2, current)
-                        current = Mode.NONE
+                        current.length = (i // 2) - current.offset
+                        result.append(current)
+                        current = None
                         i -= 2  # Delimiter matched and gone, go back 1 char
                     break
 
         # Next iteration, utf-16 encoded characters need 2 bytes.
         i += 2
 
-    if result and not isinstance(result[-1], tuple):
-        # We may have found some a delimiter but not its ending pair. If
-        # that's the case we want to get rid of it before returning.
-        # TODO Should probably insert such delimiter back in the string.
-        result.pop()
+    # We may have found some a delimiter but not its ending pair.
+    # TODO Should probably insert such delimiter back in the string.
 
     return message.decode('utf-16le'), result
-
-
-def parse_tg(message, delimiters=None):
-    """Similar to parse(), but returns a list of MessageEntity's"""
-    message, tuples = parse(message, delimiters=delimiters)
-    result = []
-    for start, end, mode in tuples:
-        extra = None
-        if isinstance(mode, tuple):
-            mode, extra = mode
-
-        if mode == Mode.BOLD:
-            result.append(MessageEntityBold(start, end - start))
-        elif mode == Mode.ITALIC:
-            result.append(MessageEntityItalic(start, end - start))
-        elif mode == Mode.CODE:
-            result.append(MessageEntityCode(start, end - start))
-        elif mode == Mode.PRE:
-            result.append(MessageEntityPre(start, end - start, ''))
-        elif mode == Mode.URL:
-            result.append(MessageEntityTextUrl(start, end - start, extra))
-    return message, result

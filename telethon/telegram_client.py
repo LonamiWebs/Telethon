@@ -388,7 +388,7 @@ class TelegramClient(TelegramBareClient):
         if parse_mode:
             parse_mode = parse_mode.lower()
             if parse_mode in {'md', 'markdown'}:
-                message, msg_entities = markdown.parse_tg(message)
+                message, msg_entities = markdown.parse(message)
             else:
                 raise ValueError('Unknown parsing mode', parse_mode)
         else:
