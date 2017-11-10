@@ -9,6 +9,11 @@ from ..tl.types import (
 from .. import utils  # Keep this line the last to maybe fix #357
 
 
+USERNAME_RE = re.compile(
+    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+)
+
+
 class EntityDatabase:
     def __init__(self, input_list=None, enabled=True, enabled_full=True):
         """Creates a new entity database with an initial load of "Input"
@@ -153,7 +158,8 @@ class EntityDatabase:
                 if phone:
                     return self._phone_id[phone]
                 else:
-                    return self._username_id[key.lstrip('@').lower()]
+                    username, _ = EntityDatabase.parse_username(key)
+                    return self._username_id[username.lower()]
             except KeyError as e:
                 raise ValueError() from e
 
@@ -205,6 +211,19 @@ class EntityDatabase:
             phone = re.sub(r'[+()\s-]', '', str(phone))
             if phone.isdigit():
                 return phone
+
+    @staticmethod
+    def parse_username(username):
+        """Parses the given username or channel access hash, given
+           a string, username or URL. Returns a tuple consisting of
+           both the stripped username and whether it is a joinchat/ hash.
+        """
+        username = username.strip()
+        m = USERNAME_RE.match(username)
+        if m:
+            return username[m.end():], bool(m.group(1))
+        else:
+            return username, False
 
     def get_input_entity(self, peer):
         try:

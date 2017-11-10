@@ -30,8 +30,9 @@ from .tl.functions.contacts import (
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest, GetChatsRequest,
-    GetAllDraftsRequest)
+    SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
+    CheckChatInviteRequest
+)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -49,11 +50,11 @@ from .tl.types import (
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
-    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty
+    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
+    ChatInvite, ChatInviteAlready
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
-
 
 
 class TelegramClient(TelegramBareClient):
@@ -1053,8 +1054,18 @@ class TelegramClient(TelegramBareClient):
             entity = phone
             self(GetContactsRequest(0))
         else:
-            entity = string.strip('@').lower()
-            self(ResolveUsernameRequest(entity))
+            entity, is_join_chat = EntityDatabase.parse_username(string)
+            if is_join_chat:
+                invite = self(CheckChatInviteRequest(entity))
+                if isinstance(invite, ChatInvite):
+                    # If it's an invite to a chat, the user must join before
+                    # for the link to be resolved and work, otherwise raise.
+                    if invite.channel:
+                        return invite.channel
+                elif isinstance(invite, ChatInviteAlready):
+                    return invite.chat
+            else:
+                self(ResolveUsernameRequest(entity))
         # MtProtoSender will call .process_entities on the requests made
         try:
             return self.session.entities[entity]
