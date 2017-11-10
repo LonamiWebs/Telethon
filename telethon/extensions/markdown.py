@@ -48,12 +48,12 @@ def parse(message, delimiters=None, url_re=None):
     i = 0
     result = []
     current = None
+    end_delimiter = None
 
     # Work on byte level with the utf-16le encoding to get the offsets right.
     # The offset will just be half the index we're at.
     message = message.encode('utf-16le')
     while i < len(message):
-        url_match = None
         if url_re and current is None:
             # If we're not inside a previous match since Telegram doesn't allow
             # nested message entities, try matching the URL from the i'th pos.
@@ -70,42 +70,46 @@ def parse(message, delimiters=None, url_re=None):
                     offset=i // 2, length=len(url_match.group(1)) // 2,
                     url=url_match.group(2).decode('utf-16le')
                 ))
-                # We matched the delimiter which is now gone, and we'll add
-                # +2 before next iteration which will make us skip a character.
-                # Go back by one utf-16 encoded character (-2) to avoid it.
-                i += len(url_match.group(1)) - 2
+                i += len(url_match.group(1))
+                # Next loop iteration, don't check delimiters, since
+                # a new inline URL might be right after this one.
+                continue
 
-        if not url_match:
+        if end_delimiter is None:
+            # We're not expecting any delimiter, so check them all
             for d, m in delimiters.items():
                 # Slice the string at the current i'th position to see if
-                # it matches the current delimiter d.
-                if message[i:i + len(d)] == d:
-                    if current is not None and not isinstance(current, m):
-                        # We were inside another delimiter/mode, ignore this.
-                        continue
+                # it matches the current delimiter d, otherwise skip it.
+                if message[i:i + len(d)] != d:
+                    continue
 
-                    if message[i + len(d):i + 2 * len(d)] == d:
-                        # The same delimiter can't be right afterwards, if
-                        # this were the case we would match empty strings
-                        # like `` which we don't want to.
-                        continue
+                if message[i + len(d):i + 2 * len(d)] == d:
+                    # The same delimiter can't be right afterwards, if
+                    # this were the case we would match empty strings
+                    # like `` which we don't want to.
+                    continue
 
-                    # Get rid of the delimiter by slicing it away
-                    message = message[:i] + message[i + len(d):]
-                    if current is None:
-                        if m == MessageEntityPre:
-                            # Special case, also has 'lang'
-                            current = MessageEntityPre(i // 2, None, '')
-                        else:
-                            current = m(i // 2, None)
-                        # No need to i -= 2 here because it's been already
-                        # checked that next character won't be a delimiter.
-                    else:
-                        current.length = (i // 2) - current.offset
-                        result.append(current)
-                        current = None
-                        i -= 2  # Delimiter matched and gone, go back 1 char
-                    break
+                # Get rid of the delimiter by slicing it away
+                message = message[:i] + message[i + len(d):]
+                if m == MessageEntityPre:
+                    # Special case, also has 'lang'
+                    current = m(i // 2, None, '')
+                else:
+                    current = m(i // 2, None)
+
+                end_delimiter = d  # We expect the same delimiter.
+                break
+
+        elif message[i:i + len(end_delimiter)] == end_delimiter:
+            message = message[:i] + message[i + len(end_delimiter):]
+            current.length = (i // 2) - current.offset
+            result.append(current)
+            current, end_delimiter = None, None
+            # Don't increment i here as we matched a delimiter,
+            # and there may be a new one right after. This is
+            # different than when encountering the first delimiter,
+            # as we already know there won't be the same right after.
+            continue
 
         # Next iteration, utf-16 encoded characters need 2 bytes.
         i += 2
