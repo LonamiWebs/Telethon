@@ -76,17 +76,20 @@ class EntityDatabase:
                 p = utils.get_input_peer(e, allow_self=False)
                 marked_id = utils.get_peer_id(p, add_mark=True)
 
+                has_hash = False
                 if isinstance(p, InputPeerChat):
                     # Chats don't have a hash
                     new_input[marked_id] = 0
+                    has_hash = True
                 elif p.access_hash:
                     # Some users and channels seem to be returned without
                     # an 'access_hash', meaning Telegram doesn't want you
                     # to access them. This is the reason behind ensuring
                     # that the 'access_hash' is non-zero. See issue #354.
                     new_input[marked_id] = p.access_hash
+                    has_hash = True
 
-                if self.enabled_full:
+                if self.enabled_full and has_hash:
                     if isinstance(e, (User, Chat, Channel)):
                         new.append(e)
             except ValueError:
