@@ -51,7 +51,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
-    ChatInvite, ChatInviteAlready
+    ChatInvite, ChatInviteAlready, PeerChannel
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
@@ -558,7 +558,7 @@ class TelegramClient(TelegramBareClient):
             elif getattr(m, 'fwd_from', None):
                 # .from_id is optional, so this is the sanest fallback.
                 who = entities[utils.get_peer_id(
-                    m.fwd_from.from_id or m.fwd_from.channel_id,
+                    m.fwd_from.from_id or PeerChannel(m.fwd_from.channel_id),
                     add_mark=True
                 )]
             else:
