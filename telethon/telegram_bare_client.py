@@ -74,7 +74,7 @@ class TelegramBareClient:
 
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
-                 use_v6=False,
+                 use_ipv6=False,
                  proxy=None,
                  update_workers=None,
                  spawn_read_thread=False,
@@ -86,6 +86,8 @@ class TelegramBareClient:
                 "Your API ID or Hash cannot be empty or None. "
                 "Refer to Telethon's README.rst for more information.")
 
+        self._use_ipv6 = use_ipv6
+        
         # Determine what session object we have
         if isinstance(session, str) or session is None:
             session = Session.try_load_or_create_new(session)
@@ -97,7 +99,7 @@ class TelegramBareClient:
         if not session.server_address:
             session.port = DEFAULT_PORT
             session.server_address = \
-                DEFAULT_IPV6_IP if use_v6 else DEFAULT_IPV4_IP
+                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP
 
         self.session = session
         self.api_id = int(api_id)
@@ -298,7 +300,7 @@ class TelegramBareClient:
         return self._recv_thread is not None and \
                threading.get_ident() == self._recv_thread.ident
 
-    def _get_dc(self, dc_id, ipv6=False, cdn=False):
+    def _get_dc(self, dc_id, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if not TelegramBareClient._config:
             TelegramBareClient._config = self(GetConfigRequest())
@@ -311,7 +313,7 @@ class TelegramBareClient:
 
             return next(
                 dc for dc in TelegramBareClient._config.dc_options
-                if dc.id == dc_id and bool(dc.ipv6) == ipv6 and bool(dc.cdn) == cdn
+                if dc.id == dc_id and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
             )
         except StopIteration:
             if not cdn:
@@ -319,7 +321,7 @@ class TelegramBareClient:
 
             # New configuration, perhaps a new CDN was added?
             TelegramBareClient._config = self(GetConfigRequest())
-            return self._get_dc(dc_id, ipv6=ipv6, cdn=cdn)
+            return self._get_dc(dc_id, cdn=cdn)
 
     def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.
