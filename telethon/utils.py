@@ -19,7 +19,7 @@ from .tl.types import (
     DocumentEmpty, InputDocumentEmpty, Message, GeoPoint, InputGeoPoint,
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
-    FileLocationUnavailable, InputMediaUploadedDocument,
+    FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos
 )
 
@@ -325,8 +325,13 @@ def get_peer_id(peer, add_mark=False):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
         return -peer.chat_id if add_mark else peer.chat_id
-    elif isinstance(peer, (PeerChannel, InputPeerChannel)):
-        i = peer.channel_id
+    elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
+        if isinstance(peer, ChannelFull):
+            # Special case: .get_input_peer can't return InputChannel from
+            # ChannelFull since it doesn't have an .access_hash attribute.
+            i = peer.id
+        else:
+            i = peer.channel_id
         if add_mark:
             # Concat -100 through math tricks, .to_supergroup() on Madeline
             # IDs will be strictly positive -> log works
