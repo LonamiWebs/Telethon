@@ -18,7 +18,7 @@ class Session:
        If you think the session has been compromised, close all the sessions
        through an official Telegram client to revoke the authorization.
     """
-    def __init__(self, session_user_id):
+    def __init__(self, session_user_id, use_v6=False):
         """session_user_id should either be a string or another Session.
            Note that if another session is given, only parameters like
            those required to init a connection will be copied.
@@ -64,7 +64,10 @@ class Session:
         self._last_msg_id = 0  # Long
 
         # These values will be saved
-        self.server_address = '91.108.56.165'
+        if use_v6:
+            self.server_address = '[2001:67c:4e8:f002::a]'
+        else:
+            self.server_address = '91.108.56.165'
         self.port = 443
         self.auth_key = None
         self.layer = 0
@@ -109,15 +112,15 @@ class Session:
                 for f in os.listdir('.') if f.endswith('.session')]
 
     @staticmethod
-    def try_load_or_create_new(session_user_id):
+    def try_load_or_create_new(session_user_id, use_v6=False):
         """Loads a saved session_user_id.session or creates a new one.
            If session_user_id=None, later .save()'s will have no effect.
         """
         if session_user_id is None:
-            return Session(None)
+            return Session(None, use_v6)
         else:
             path = '{}.session'.format(session_user_id)
-            result = Session(session_user_id)
+            result = Session(session_user_id, use_v6)
             if not file_exists(path):
                 return result
 

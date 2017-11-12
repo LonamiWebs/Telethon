@@ -69,6 +69,7 @@ class TelegramClient(TelegramBareClient):
 
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
+                 use_v6=False,
                  proxy=None,
                  update_workers=None,
                  timeout=timedelta(seconds=5),
@@ -113,6 +114,7 @@ class TelegramClient(TelegramBareClient):
         super().__init__(
             session, api_id, api_hash,
             connection_mode=connection_mode,
+            use_v6=use_v6,
             proxy=proxy,
             update_workers=update_workers,
             spawn_read_thread=spawn_read_thread,

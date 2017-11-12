@@ -69,6 +69,7 @@ class TelegramBareClient:
 
     def __init__(self, session, api_id, api_hash,
                  connection_mode=ConnectionMode.TCP_FULL,
+                 use_v6=False,
                  proxy=None,
                  update_workers=None,
                  spawn_read_thread=False,
@@ -82,7 +83,7 @@ class TelegramBareClient:
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session)
+            session = Session.try_load_or_create_new(session, use_v6)
         elif not isinstance(session, Session):
             raise ValueError(
                 'The given session must be a str or a Session instance.'
