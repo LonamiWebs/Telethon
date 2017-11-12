@@ -39,6 +39,11 @@ from .update_state import UpdateState
 from .utils import get_appropriated_part_size
 
 
+DEFAULT_IPV4_IP = '149.154.167.51'
+DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
+DEFAULT_PORT = 443
+
+
 class TelegramBareClient:
     """Bare Telegram Client with just the minimum -
 
@@ -83,11 +88,16 @@ class TelegramBareClient:
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session, use_v6)
+            session = Session.try_load_or_create_new(session)
         elif not isinstance(session, Session):
             raise ValueError(
                 'The given session must be a str or a Session instance.'
             )
+
+        if not session.server_address:
+            session.port = DEFAULT_PORT
+            session.server_address = \
+                DEFAULT_IPV6_IP if use_v6 else DEFAULT_IPV4_IP
 
         self.session = session
         self.api_id = int(api_id)
