@@ -99,6 +99,9 @@ def get_input_peer(entity, allow_self=True):
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
 
+    if isinstance(entity, InputUserSelf):
+        return InputPeerSelf()
+
     if isinstance(entity, UserFull):
         return get_input_peer(entity.user)
 
