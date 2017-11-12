@@ -428,7 +428,10 @@ class TelegramBareClient:
                 result = self._invoke(
                     sender, call_receive, update_state, *requests
                 )
-                if result is not None:
+                if result is None:
+                    sleep(1)
+                    self._reconnect()
+                else:
                     return result
 
             raise ValueError('Number of retries reached 0.')
