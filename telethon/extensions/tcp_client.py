@@ -59,7 +59,7 @@ class TcpClient:
                     raise
 
     def _get_connected(self):
-        return self._socket is not None
+        return self._socket is not None and self._socket.fileno() > 0
 
     connected = property(fget=_get_connected)
 
