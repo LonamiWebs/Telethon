@@ -204,12 +204,10 @@ class TelegramBareClient:
             self.disconnect()
             return self.connect(_sync_updates=_sync_updates)
 
-        except (RPCError, ConnectionError) as error:
+        except (RPCError, ConnectionError):
             # Probably errors from the previous session, ignore them
             self.disconnect()
-            self._logger.debug(
-                'Could not stabilise initial connection: {}'.format(error)
-            )
+            self._logger.exception('Could not stabilise initial connection.')
             return False
 
     def is_connected(self):
