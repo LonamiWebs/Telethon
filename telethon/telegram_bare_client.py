@@ -254,16 +254,13 @@ class TelegramBareClient:
            connects to the new data center.
         """
         if new_dc is None:
-            # Assume we are disconnected due to some error, so connect again
-            with self._reconnect_lock:
-                # Another thread may have connected again, so check that first
-                if self.is_connected():
-                    return True
+            if self.is_connected():
+                return True
 
-                try:
-                    return self.connect()
-                except ConnectionResetError:
-                    return False
+            try:
+                return self.connect()
+            except ConnectionResetError:
+                return False
         else:
             # Since we're reconnecting possibly due to a UserMigrateError,
             # we need to first know the Data Centers we can connect to. Do
@@ -430,7 +427,16 @@ class TelegramBareClient:
                 )
                 if result is None:
                     sleep(1)
-                    self._reconnect()
+                    self._logger.debug('RPC failed. Attempting reconnection.')
+                    # The ReadThread has priority when attempting reconnection,
+                    # since this thread is constantly running while __call__ is
+                    # only done sometimes. Here try connecting only once/retry.
+                    if sender == self._sender:
+                        if not self._reconnect_lock.locked():
+                            with self._reconnect_lock:
+                                self._reconnect()
+                    else:
+                        sender.connect()
                 else:
                     return result
 
@@ -494,21 +500,12 @@ class TelegramBareClient:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if not self._user_connected or self._reconnect_lock.locked():
-                # Only attempt reconnecting if the user called connect and not
-                # reconnecting already.
-                raise
-
-            self._logger.debug('Server disconnected us. Reconnecting and '
-                               'resending request...')
-
-            if sender != self._sender:
-                # TODO Try reconnecting forever too?
-                sender.connect()
+            if self._user_connected:
+                # Server disconnected us, __call__ will try reconnecting.
+                return None
             else:
-                while self._user_connected and not self._reconnect():
-                    sleep(0.1)  # Retry forever until we can send the request
-            return None
+                # User never called .connect(), so raise this error.
+                raise
 
         if init_connection:
             # We initialized the connection successfully, even if
@@ -828,8 +825,9 @@ class TelegramBareClient:
                 pass
             except ConnectionResetError:
                 self._logger.debug('Server disconnected us. Reconnecting...')
-                while self._user_connected and not self._reconnect():
-                    sleep(0.1)  # Retry forever, this is instant messaging
+                with self._reconnect_lock:
+                    while self._user_connected and not self._reconnect():
+                        sleep(0.1)  # Retry forever, this is instant messaging
 
     # By using this approach, another thread will be
     # created and started upon connection to constantly read
@@ -864,12 +862,7 @@ class TelegramBareClient:
                         self.disconnect()
                         break
                 except ImportError:
-                    "Not using PySocks, so it can't be a socket error"
-
-                # If something strange happens we don't want to enter an
-                # infinite loop where all we do is raise an exception, so
-                # add a little sleep to avoid the CPU usage going mad.
-                sleep(0.1)
+                    "Not using PySocks, so it can't be a proxy error"
 
         self._recv_thread = None
 
