@@ -375,6 +375,7 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/VvpCC6
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_msg_new_detailed_info(self, msg_id, sequence, reader):
@@ -383,6 +384,7 @@ class MtProtoSender:
 
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/G7DPsR
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
     async def _handle_new_session_created(self, msg_id, sequence, reader):

@@ -444,7 +444,7 @@ class TelegramBareClient:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request... (%d)' % retry)
             await self._reconnect()
-            if not self._sender.is_connected():
+            if not self.is_connected():
                 await asyncio.sleep(retry + 1, loop=self._loop)
             return None
 
@@ -694,7 +694,7 @@ class TelegramBareClient:
         """
         self.updates.process(await self(GetStateRequest()))
 
-    async def add_update_handler(self, handler):
+    def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
           an update, as its parameter) and listens for updates"""
         self.updates.handlers.append(handler)

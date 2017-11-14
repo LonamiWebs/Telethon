@@ -1,5 +1,4 @@
 import struct
-import logging
 
 from . import TLObject, GzipPacked
 
