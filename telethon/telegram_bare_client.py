@@ -444,7 +444,7 @@ class TelegramBareClient:
             self._logger.debug('Server disconnected us. Reconnecting and '
                                'resending request... (%d)' % retry)
             await self._reconnect()
-            if not self._sender.is_connected():
+            if not self.is_connected():
                 await asyncio.sleep(retry + 1, loop=self._loop)
             return None
 
