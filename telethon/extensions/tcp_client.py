@@ -11,8 +11,10 @@ CONN_RESET_ERRNOS = {
     errno.EINVAL, errno.ENOTCONN, errno.EHOSTUNREACH,
     errno.ECONNREFUSED, errno.ECONNRESET, errno.ECONNABORTED,
     errno.ENETDOWN, errno.ENETRESET, errno.ECONNABORTED,
-    errno.EHOSTDOWN,
+    errno.EHOSTDOWN, errno.EPIPE, errno.ESHUTDOWN
 }
+# catched: EHOSTUNREACH, ECONNREFUSED, ECONNRESET, ENETUNREACH
+# ConnectionError: EPIPE, ESHUTDOWN, ECONNABORTED, ECONNREFUSED, ECONNRESET
 
 
 class TcpClient:
@@ -58,16 +60,9 @@ class TcpClient:
 
                 await self._loop.sock_connect(self._socket, address)
                 break  # Successful connection, stop retrying to connect
-            except ConnectionError:
-                self._socket = None
-                await asyncio.sleep(timeout)
-                timeout = min(timeout * 2, MAX_TIMEOUT)
             except OSError as e:
-                # There are some errors that we know how to handle, and
-                # the loop will allow us to retry
-                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
-                    # Bad file descriptor, i.e. socket was closed, set it
-                    # to none to recreate it on the next iteration
+                # ConnectionError + (errno.EBADF, errno.ENOTSOCK, errno.EINVAL)
+                if e.errno in CONN_RESET_ERRNOS:
                     self._socket = None
                     await asyncio.sleep(timeout)
                     timeout = min(timeout * 2, MAX_TIMEOUT)
@@ -103,8 +98,6 @@ class TcpClient:
             )
         except asyncio.TimeoutError as e:
             raise TimeoutError() from e
-        except BrokenPipeError:
-            self._raise_connection_reset()
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset()
