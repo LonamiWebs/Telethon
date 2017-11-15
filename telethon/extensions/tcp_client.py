@@ -8,7 +8,10 @@ from io import BytesIO, BufferedWriter
 MAX_TIMEOUT = 15  # in seconds
 CONN_RESET_ERRNOS = {
     errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
-    errno.EINVAL, errno.ENOTCONN
+    errno.EINVAL, errno.ENOTCONN, errno.EHOSTUNREACH,
+    errno.ECONNREFUSED, errno.ECONNRESET, errno.ECONNABORTED,
+    errno.ENETDOWN, errno.ENETRESET, errno.ECONNABORTED,
+    errno.EHOSTDOWN,
 }
 
 
