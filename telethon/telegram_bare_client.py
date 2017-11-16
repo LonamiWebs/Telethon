@@ -1,12 +1,12 @@
 import logging
 import os
 import asyncio
-from datetime import timedelta, datetime
+from datetime import timedelta
 from hashlib import md5
 from io import BytesIO
 from asyncio import Lock
 
-from . import helpers as utils
+from . import helpers as utils, version
 from .crypto import rsa, CdnDecrypter
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError,
@@ -57,7 +57,7 @@ class TelegramBareClient:
     """
 
     # Current TelegramClient version
-    __version__ = '0.15.3'
+    __version__ = version.__version__
 
     # TODO Make this thread-safe, all connections share the same DC
     _config = None  # Server configuration (with .dc_options)
@@ -188,12 +188,10 @@ class TelegramBareClient:
             self.disconnect()
             return await self.connect(_sync_updates=_sync_updates)
 
-        except (RPCError, ConnectionError) as error:
+        except (RPCError, ConnectionError):
             # Probably errors from the previous session, ignore them
             self.disconnect()
-            self._logger.debug(
-                'Could not stabilise initial connection: {}'.format(error)
-            )
+            self._logger.exception('Could not stabilise initial connection.')
             return False
 
     def is_connected(self):
@@ -232,7 +230,6 @@ class TelegramBareClient:
             # Assume we are disconnected due to some error, so connect again
             try:
                 await self._reconnect_lock.acquire()
-                # Another thread may have connected again, so check that first
                 if self.is_connected():
                     return True
 
@@ -383,6 +380,12 @@ class TelegramBareClient:
             if result is not None:
                 return result
 
+            await asyncio.sleep(retry + 1, loop=self._loop)
+            self._logger.debug('RPC failed. Attempting reconnection.')
+            if not self._reconnect_lock.locked():
+                with await self._reconnect_lock:
+                    self._reconnect()
+
         raise ValueError('Number of retries reached 0.')
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
@@ -436,17 +439,12 @@ class TelegramBareClient:
             pass  # We will just retry
 
         except ConnectionResetError:
-            if not self._user_connected or self._reconnect_lock.locked():
-                # Only attempt reconnecting if the user called connect and not
-                # reconnecting already.
+            if self._user_connected:
+                # Server disconnected us, __call__ will try reconnecting.
+                return None
+            else:
+                # User never called .connect(), so raise this error.
                 raise
-
-            self._logger.debug('Server disconnected us. Reconnecting and '
-                               'resending request... (%d)' % retry)
-            await self._reconnect()
-            if not self.is_connected():
-                await asyncio.sleep(retry + 1, loop=self._loop)
-            return None
 
         if init_connection:
             # We initialized the connection successfully, even if
@@ -740,11 +738,10 @@ class TelegramBareClient:
                 self._logger.debug(error)
                 need_reconnect = True
                 await asyncio.sleep(1, loop=self._loop)
-            except Exception as error:
+            except Exception:
                 # Unknown exception, pass it to the main thread
-                self._logger.debug(
-                    '[ERROR] Unknown error on the read loop, please report',
-                    error
+                self._logger.exception(
+                    'Unknown error on the read loop, please report.'
                 )
 
                 try:
@@ -762,10 +759,6 @@ class TelegramBareClient:
                 except ImportError:
                     "Not using PySocks, so it can't be a socket error"
 
-                # If something strange happens we don't want to enter an
-                # infinite loop where all we do is raise an exception, so
-                # add a little sleep to avoid the CPU usage going mad.
-                await asyncio.sleep(0.1, loop=self._loop)
                 break
 
         self._recv_loop = None

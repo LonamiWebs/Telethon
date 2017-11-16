@@ -8,6 +8,11 @@ from ..tl.types import (
 from .. import utils  # Keep this line the last to maybe fix #357
 
 
+USERNAME_RE = re.compile(
+    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+)
+
+
 class EntityDatabase:
     def __init__(self, input_list=None, enabled=True, enabled_full=True):
         """Creates a new entity database with an initial load of "Input"
@@ -21,7 +26,12 @@ class EntityDatabase:
         self._entities = {}  # marked_id: user|chat|channel
 
         if input_list:
-            self._input_entities = {k: v for k, v in input_list}
+            # TODO For compatibility reasons some sessions were saved with
+            # 'access_hash': null in the JSON session file. Drop these, as
+            # it means we don't have access to such InputPeers. Issue #354.
+            self._input_entities = {
+                k: v for k, v in input_list if v is not None
+            }
         else:
             self._input_entities = {}  # marked_id: hash
 
@@ -66,10 +76,22 @@ class EntityDatabase:
 
             try:
                 p = utils.get_input_peer(e, allow_self=False)
-                new_input[utils.get_peer_id(p, add_mark=True)] = \
-                    getattr(p, 'access_hash', 0)  # chats won't have hash
+                marked_id = utils.get_peer_id(p, add_mark=True)
 
-                if self.enabled_full:
+                has_hash = False
+                if isinstance(p, InputPeerChat):
+                    # Chats don't have a hash
+                    new_input[marked_id] = 0
+                    has_hash = True
+                elif p.access_hash:
+                    # Some users and channels seem to be returned without
+                    # an 'access_hash', meaning Telegram doesn't want you
+                    # to access them. This is the reason behind ensuring
+                    # that the 'access_hash' is non-zero. See issue #354.
+                    new_input[marked_id] = p.access_hash
+                    has_hash = True
+
+                if self.enabled_full and has_hash:
                     if isinstance(e, (User, Chat, Channel)):
                         new.append(e)
             except ValueError:
@@ -114,7 +136,7 @@ class EntityDatabase:
 
         phone = getattr(entity, 'phone', None)
         if phone:
-            self._username_id[phone] = marked_id
+            self._phone_id[phone] = marked_id
 
     def _parse_key(self, key):
         """Parses the given string, integer or TLObject key into a
@@ -132,7 +154,8 @@ class EntityDatabase:
                 if phone:
                     return self._phone_id[phone]
                 else:
-                    return self._username_id[key.lstrip('@').lower()]
+                    username, _ = EntityDatabase.parse_username(key)
+                    return self._username_id[username.lower()]
             except KeyError as e:
                 raise ValueError() from e
 
@@ -184,6 +207,19 @@ class EntityDatabase:
             phone = re.sub(r'[+()\s-]', '', str(phone))
             if phone.isdigit():
                 return phone
+
+    @staticmethod
+    def parse_username(username):
+        """Parses the given username or channel access hash, given
+           a string, username or URL. Returns a tuple consisting of
+           both the stripped username and whether it is a joinchat/ hash.
+        """
+        username = username.strip()
+        m = USERNAME_RE.match(username)
+        if m:
+            return username[m.end():], bool(m.group(1))
+        else:
+            return username, False
 
     def get_input_entity(self, peer):
         try:

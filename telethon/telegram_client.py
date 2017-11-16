@@ -1,6 +1,9 @@
 import os
+import time
 from datetime import datetime, timedelta
 from mimetypes import guess_type
+
+import asyncio
 
 try:
     import socks
@@ -22,15 +25,16 @@ from .tl.functions.account import (
 )
 from .tl.functions.auth import (
     CheckPasswordRequest, LogOutRequest, SendCodeRequest, SignInRequest,
-    SignUpRequest, ImportBotAuthorizationRequest
+    SignUpRequest, ResendCodeRequest, ImportBotAuthorizationRequest
 )
 from .tl.functions.contacts import (
     GetContactsRequest, ResolveUsernameRequest
 )
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
-    SendMessageRequest, GetChatsRequest,
-    GetAllDraftsRequest)
+    SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
+    CheckChatInviteRequest
+)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -48,8 +52,12 @@ from .tl.types import (
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
-    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel)
+    PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
+    ChatInvite, ChatInviteAlready, PeerChannel
+)
 from .tl.types.messages import DialogsSlice
+from .extensions import markdown
+
 
 class TelegramClient(TelegramBareClient):
     """Full featured TelegramClient meant to extend the basic functionality"""
@@ -101,16 +109,29 @@ class TelegramClient(TelegramBareClient):
 
     # region Authorization requests
 
-    async def send_code_request(self, phone):
+    async def send_code_request(self, phone, force_sms=False):
         """Sends a code request to the specified phone number.
 
-        :param str | int phone: The phone to which the code will be sent.
-        :return auth.SentCode: Information about the result of the request.
+        :param str | int phone:
+            The phone to which the code will be sent.
+        :param bool force_sms:
+            Whether to force sending as SMS. You should call it at least
+            once before without this set to True first.
+        :return auth.SentCode:
+            Information about the result of the request.
         """
         phone = EntityDatabase.parse_phone(phone) or self._phone
-        result = await self(SendCodeRequest(phone, self.api_id, self.api_hash))
+        if force_sms:
+            if not self._phone_code_hash:
+                raise ValueError(
+                    'You must call this method without force_sms at least once.'
+                )
+            result = await self(ResendCodeRequest(phone, self._phone_code_hash))
+        else:
+            result = await self(SendCodeRequest(phone, self.api_id, self.api_hash))
+            self._phone_code_hash = result.phone_code_hash
+
         self._phone = phone
-        self._phone_code_hash = result.phone_code_hash
         return result
 
     async def sign_in(self, phone=None, code=None,
@@ -251,22 +272,21 @@ class TelegramClient(TelegramBareClient):
             The peer to be used as an offset.
         :return: A tuple of lists ([dialogs], [entities]).
         """
-        if limit is None:
-            limit = float('inf')
+        limit = float('inf') if limit is None else int(limit)
+        if limit == 0:
+            return [], []
 
         dialogs = {}  # Use peer id as identifier to avoid dupes
         messages = {}  # Used later for sorting TODO also return these?
         entities = {}
         while len(dialogs) < limit:
-            need = limit - len(dialogs)
+            real_limit = min(limit - len(dialogs), 100)
             r = await self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=need if need < float('inf') else 0
+                limit=real_limit
             ))
-            if not r.dialogs:
-                break
 
             for d in r.dialogs:
                 dialogs[utils.get_peer_id(d.peer, True)] = d
@@ -279,8 +299,9 @@ class TelegramClient(TelegramBareClient):
             for c in r.chats:
                 entities[c.id] = c
 
-            if not isinstance(r, DialogsSlice):
-                # Don't enter next iteration if we already got all
+            if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
+                # Less than we requested means we reached the end, or
+                # we didn't get a DialogsSlice which means we got all.
                 break
 
             offset_date = r.messages[-1].date
@@ -324,21 +345,39 @@ class TelegramClient(TelegramBareClient):
                            entity,
                            message,
                            reply_to=None,
+                           parse_mode=None,
                            link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
-        :param str | int | User | Chat | Channel entity: To who will it be sent.
-        :param str message: The message to be sent.
-        :param int | Message reply_to: Whether to reply to a message or not.
-        :param link_preview: Should the link preview be shown?
+        :param str | int | User | Chat | Channel entity:
+            To who will it be sent.
+        :param str message:
+            The message to be sent.
+        :param int | Message reply_to:
+            Whether to reply to a message or not.
+        :param str parse_mode:
+            Can be 'md' or 'markdown' for markdown-like parsing, in a similar
+            fashion how official clients work.
+        :param link_preview:
+            Should the link preview be shown?
+
         :return Message: the sent message
         """
         entity = await self.get_input_entity(entity)
+        if parse_mode:
+            parse_mode = parse_mode.lower()
+            if parse_mode in {'md', 'markdown'}:
+                message, msg_entities = markdown.parse(message)
+            else:
+                raise ValueError('Unknown parsing mode', parse_mode)
+        else:
+            msg_entities = []
+
         request = SendMessageRequest(
             peer=entity,
             message=message,
-            entities=[],
+            entities=msg_entities,
             no_webpage=not link_preview,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
@@ -415,43 +454,100 @@ class TelegramClient(TelegramBareClient):
         """
         Gets the message history for the specified entity
 
-        :param entity:      The entity from whom to retrieve the message history
-        :param limit:       Number of messages to be retrieved
-        :param offset_date: Offset date (messages *previous* to this date will be retrieved)
-        :param offset_id:   Offset message ID (only messages *previous* to the given ID will be retrieved)
-        :param max_id:      All the messages with a higher (newer) ID or equal to this will be excluded
-        :param min_id:      All the messages with a lower (older) ID or equal to this will be excluded
-        :param add_offset:  Additional message offset (all of the specified offsets + this offset = older messages)
+        :param entity:
+            The entity from whom to retrieve the message history.
+        :param limit:
+            Number of messages to be retrieved. Due to limitations with the API
+            retrieving more than 3000 messages will take longer than half a
+            minute (or even more based on previous calls). The limit may also
+            be None, which would eventually return the whole history.
+        :param offset_date:
+            Offset date (messages *previous* to this date will be retrieved).
+        :param offset_id:
+            Offset message ID (only messages *previous* to the given ID will
+            be retrieved).
+        :param max_id:
+            All the messages with a higher (newer) ID or equal to this will
+            be excluded
+        :param min_id:
+            All the messages with a lower (older) ID or equal to this will
+            be excluded.
+        :param add_offset:
+            Additional message offset
+            (all of the specified offsets + this offset = older messages).
 
         :return: A tuple containing total message count and two more lists ([messages], [senders]).
                  Note that the sender can be null if it was not found!
         """
-        result = await self(GetHistoryRequest(
-            peer=await self.get_input_entity(entity),
-            limit=limit,
-            offset_date=offset_date,
-            offset_id=offset_id,
-            max_id=max_id,
-            min_id=min_id,
-            add_offset=add_offset
-        ))
+        entity = await self.get_input_entity(entity)
+        limit = float('inf') if limit is None else int(limit)
+        if limit == 0:
+            # No messages, but we still need to know the total message count
+            result = await self(GetHistoryRequest(
+                peer=entity, limit=1,
+                offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0
+            ))
+            return getattr(result, 'count', len(result.messages)), [], []
 
-        # The result may be a messages slice (not all messages were retrieved)
-        # or simply a messages TLObject. In the later case, no "count"
-        # attribute is specified, so the total messages count is simply
-        # the count of retrieved messages
-        total_messages = getattr(result, 'count', len(result.messages))
+        total_messages = 0
+        messages = []
+        entities = {}
+        while len(messages) < limit:
+            # Telegram has a hard limit of 100
+            real_limit = min(limit - len(messages), 100)
+            result = await self(GetHistoryRequest(
+                peer=entity,
+                limit=real_limit,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                max_id=max_id,
+                min_id=min_id,
+                add_offset=add_offset
+            ))
+            messages.extend(
+                m for m in result.messages if not isinstance(m, MessageEmpty)
+            )
+            total_messages = getattr(result, 'count', len(result.messages))
 
-        # Iterate over all the messages and find the sender User
-        entities = [
-            utils.find_user_or_chat(m.from_id, result.users, result.chats)
-            if m.from_id is not None else
-            utils.find_user_or_chat(m.to_id, result.users, result.chats)
+            # TODO We can potentially use self.session.database, but since
+            # it might be disabled, use a local dictionary.
+            for u in result.users:
+                entities[utils.get_peer_id(u, add_mark=True)] = u
+            for c in result.chats:
+                entities[utils.get_peer_id(c, add_mark=True)] = c
 
-            for m in result.messages
-        ]
+            if len(result.messages) < real_limit:
+                break
 
-        return total_messages, result.messages, entities
+            offset_id = result.messages[-1].id
+            offset_date = result.messages[-1].date
+
+            # Telegram limit seems to be 3000 messages within 30 seconds in
+            # batches of 100 messages each request (since the FloodWait was
+            # of 30 seconds). If the limit is greater than that, we will
+            # sleep 1s between each request.
+            if limit > 3000:
+                await asyncio.sleep(1, loop=self._loop)
+
+        # In a new list with the same length as the messages append
+        # their senders, so people can zip(messages, senders).
+        senders = []
+        for m in messages:
+            if m.from_id:
+                who = entities[utils.get_peer_id(m.from_id, add_mark=True)]
+            elif getattr(m, 'fwd_from', None):
+                # .from_id is optional, so this is the sanest fallback.
+                who = entities[utils.get_peer_id(
+                    m.fwd_from.from_id or PeerChannel(m.fwd_from.channel_id),
+                    add_mark=True
+                )]
+            else:
+                # If there's not even a FwdHeader, fallback to the sender
+                # being where the message was sent.
+                who = entities[utils.get_peer_id(m.to_id, add_mark=True)]
+            senders.append(who)
+
+        return total_messages, messages, senders
 
     async def send_read_acknowledge(self, entity, messages=None, max_id=None):
         """
@@ -938,8 +1034,18 @@ class TelegramClient(TelegramBareClient):
             entity = phone
             await self(GetContactsRequest(0))
         else:
-            entity = string.strip('@').lower()
-            await self(ResolveUsernameRequest(entity))
+            entity, is_join_chat = EntityDatabase.parse_username(string)
+            if is_join_chat:
+                invite = await self(CheckChatInviteRequest(entity))
+                if isinstance(invite, ChatInvite):
+                    # If it's an invite to a chat, the user must join before
+                    # for the link to be resolved and work, otherwise raise.
+                    if invite.channel:
+                        return invite.channel
+                elif isinstance(invite, ChatInviteAlready):
+                    return invite.chat
+            else:
+                await self(ResolveUsernameRequest(entity))
         # MtProtoSender will call .process_entities on the requests made
 
         try:
