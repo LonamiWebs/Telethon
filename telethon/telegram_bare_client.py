@@ -843,9 +843,8 @@ class TelegramBareClient:
                 self.idle(stop_signals=tuple())
             except Exception as error:
                 # Unknown exception, pass it to the main thread
-                self._logger.error(
-                    'Unknown error on the read thread, please report',
-                    error
+                self._logger.exception(
+                    'Unknown error on the read thread, please report'
                 )
 
                 try:
