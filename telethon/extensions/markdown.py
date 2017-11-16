@@ -4,6 +4,9 @@ for use within the library, which attempts to handle emojies correctly,
 since they seem to count as two characters and it's a bit strange.
 """
 import re
+
+from telethon.tl import TLObject
+
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityTextUrl
@@ -124,3 +127,23 @@ def parse(message, delimiters=None, url_re=None):
         )
 
     return message.decode('utf-16le'), result
+
+
+def get_inner_text(text, entity):
+    """Gets the inner text that's surrounded by the given entity or entities.
+       For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
+    """
+    if not isinstance(entity, TLObject) and hasattr(entity, '__iter__'):
+        multiple = True
+    else:
+        entity = [entity]
+        multiple = False
+
+    text = text.encode('utf-16le')
+    result = []
+    for e in entity:
+        start = e.offset * 2
+        end = (e.offset + e.length) * 2
+        result.append(text[start:end].decode('utf-16le'))
+
+    return result if multiple else result[0]
