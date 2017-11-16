@@ -2,6 +2,7 @@
 import asyncio
 import errno
 import socket
+import logging
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 
@@ -22,6 +23,7 @@ class TcpClient:
         self.proxy = proxy
         self._socket = None
         self._loop = loop if loop else asyncio.get_event_loop()
+        self._logger = logging.getLogger(__name__)
 
         if isinstance(timeout, timedelta):
             self.timeout = timeout.seconds
@@ -58,9 +60,16 @@ class TcpClient:
                 if not self._socket:
                     self._recreate_socket(mode)
 
-                await self._loop.sock_connect(self._socket, address)
+                await asyncio.wait_for(
+                    self._loop.sock_connect(self._socket, address),
+                    timeout=self.timeout,
+                    loop=self._loop
+                )
                 break  # Successful connection, stop retrying to connect
+            except asyncio.TimeoutError as e:
+                raise TimeoutError() from e
             except OSError as e:
+                self._logger.debug('Connect exception: %r' % e)
                 # ConnectionError + (errno.EBADF, errno.ENOTSOCK, errno.EINVAL)
                 if e.errno in CONN_RESET_ERRNOS:
                     self._socket = None
@@ -99,6 +108,7 @@ class TcpClient:
         except asyncio.TimeoutError as e:
             raise TimeoutError() from e
         except OSError as e:
+            self._logger.debug('Write exception: %r' % e)
             if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset()
             else:
@@ -123,6 +133,7 @@ class TcpClient:
                 except asyncio.TimeoutError as e:
                     raise TimeoutError() from e
                 except OSError as e:
+                    self._logger.debug('Read exception: %r' % e)
                     if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset()
                     else:
