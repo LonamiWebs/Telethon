@@ -738,7 +738,7 @@ class TelegramBareClient:
                 self._logger.debug(error)
                 need_reconnect = True
                 await asyncio.sleep(1, loop=self._loop)
-            except Exception:
+            except Exception as error:
                 # Unknown exception, pass it to the main thread
                 self._logger.exception(
                     'Unknown error on the read loop, please report.'
