@@ -96,7 +96,9 @@ class TelegramBareClient:
                 'The given session must be a str or a Session instance.'
             )
 
-        if not session.server_address:
+        # ':' in session.server_address is True if it's an IPv6 address
+        if (not session.server_address or
+                (':' in session.server_address) != use_ipv6):
             session.port = DEFAULT_PORT
             session.server_address = \
                 DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP
