@@ -117,7 +117,10 @@ def parse(message, delimiters=None, url_re=None):
     # We may have found some a delimiter but not its ending pair.
     # If this is the case, we want to insert the delimiter character back.
     if current is not None:
-        message = \
-            message[:current.offset] + end_delimiter + message[current.offset:]
+        message = (
+            message[:2 * current.offset]
+            + end_delimiter
+            + message[2 * current.offset:]
+        )
 
     return message.decode('utf-16le'), result
