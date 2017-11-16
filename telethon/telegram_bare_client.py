@@ -423,20 +423,20 @@ class TelegramBareClient:
                 result = self._invoke(
                     sender, call_receive, update_state, *requests
                 )
-                if result is None:
-                    sleep(1)
-                    self._logger.debug('RPC failed. Attempting reconnection.')
-                    # The ReadThread has priority when attempting reconnection,
-                    # since this thread is constantly running while __call__ is
-                    # only done sometimes. Here try connecting only once/retry.
-                    if sender == self._sender:
-                        if not self._reconnect_lock.locked():
-                            with self._reconnect_lock:
-                                self._reconnect()
-                    else:
-                        sender.connect()
-                else:
+                if result is not None:
                     return result
+
+                self._logger.debug('RPC failed. Attempting reconnection.')
+                sleep(1)
+                # The ReadThread has priority when attempting reconnection,
+                # since this thread is constantly running while __call__ is
+                # only done sometimes. Here try connecting only once/retry.
+                if sender == self._sender:
+                    if not self._reconnect_lock.locked():
+                        with self._reconnect_lock:
+                            self._reconnect()
+                else:
+                    sender.connect()
 
             raise ValueError('Number of retries reached 0.')
         finally:
