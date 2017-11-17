@@ -5,7 +5,7 @@ since they seem to count as two characters and it's a bit strange.
 """
 import re
 
-from telethon.tl import TLObject
+from ..tl import TLObject
 
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
