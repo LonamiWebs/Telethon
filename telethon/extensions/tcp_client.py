@@ -18,6 +18,9 @@ CONN_RESET_ERRNOS = {
 
 
 class TcpClient:
+    class SocketClosed(ConnectionError):
+        pass
+
     def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
         self.proxy = proxy
         self._socket = None
@@ -100,7 +103,7 @@ class TcpClient:
             loop=self._loop
         )
         if not self.connected:
-            raise ConnectionResetError('Socket has closed')
+            raise self.SocketClosed()
         if not done:
             raise TimeoutError()
         return await done.pop()
@@ -111,6 +114,8 @@ class TcpClient:
             raise ConnectionResetError('No connection')
         try:
             await self._wait_close(self.sock_sendall(data))
+        except self.SocketClosed:
+            raise ConnectionResetError('Socket has closed')
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset(e)
@@ -128,6 +133,8 @@ class TcpClient:
                     raise ConnectionResetError('No connection')
                 try:
                     partial = await self._wait_close(self.sock_recv(bytes_left))
+                except self.SocketClosed:
+                    raise ConnectionResetError('Socket has closed')
                 except OSError as e:
                     if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset(e)
