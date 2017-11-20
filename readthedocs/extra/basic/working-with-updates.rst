@@ -1,3 +1,5 @@
+.. _working-with-updates:
+
 ====================
 Working with Updates
 ====================

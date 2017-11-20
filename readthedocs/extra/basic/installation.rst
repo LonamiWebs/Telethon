@@ -64,15 +64,23 @@ so you can still run the library wherever Python is available!
 
 Sending Requests
 *****************
-    `Here <https://github.com/lonamiwebs/telethon/wiki/Session-Files>`__
+
+    .. note::
+        Read here: :ref:`sending-requests`
+
 
 Working with updates
 **********************
-    `Here <https://github.com/lonamiwebs/telethon/wiki/Working-with-Updates>`__
+
+    .. note::
+        Read here: :ref:`working-with-updates`
+
 
 Accessing the full API
 ***********************
-    `Here <https://github.com/lonamiwebs/telethon/wiki/Accessing-the-Full-API>`__
+
+    .. note::
+        Read here: :ref:`accessing-the-full-api`
 
 
 __ https://github.com/ricmoo/pyaes

@@ -1,3 +1,5 @@
+.. _accessing-the-full-api:
+
 ==========================
 Accessing the Full API
 ==========================

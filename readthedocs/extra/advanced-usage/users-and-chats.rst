@@ -6,6 +6,7 @@ Users and Chats
     Make sure you have gone through :ref:`prelude` already!
 
 .. contents::
+    :depth: 2
 
 .. _retrieving-an-entity:
 
