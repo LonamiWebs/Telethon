@@ -13,7 +13,7 @@ Simple Installation
 
    ``pip install telethon``
 
-**More details**: :ref:`installation`
+   **More details**: :ref:`installation`
 
 
 Creating a client
@@ -36,7 +36,7 @@ Creating a client
        client.sign_in(phone=phone)
        me = client.sign_in(code=77777)  # Put whatever code you received here.
 
-**More details**: `Click here <https://github.com/lonamiwebs/telethon/wiki/Creating-a-Client>`_
+   **More details**: :ref:`creating-a-client`
 
 
 Simple Stuff
