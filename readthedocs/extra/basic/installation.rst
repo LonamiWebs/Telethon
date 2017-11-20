@@ -11,11 +11,12 @@ To install Telethon, simply do:
 
     ``pip install telethon``
 
-If you get something like ``"SyntaxError: invalid syntax"`` or any other error while installing, it's probably because ``pip`` defaults to Python 2, which is not supported. Use ``pip3`` instead.
+If you get something like ``"SyntaxError: invalid syntax"`` or any other error while installing,
+it's probably because ``pip`` defaults to Python 2, which is not supported. Use ``pip3`` instead.
 
 If you already have the library installed, upgrade with:
 
-    ``pip install --upgrade telethon``.
+    ``pip install --upgrade telethon``
 
 You can also install the library directly from GitHub or a fork:
 
@@ -61,26 +62,6 @@ If ``libssl`` is available on your system, it will also be used wherever encrypt
 If neither of these are available, a pure Python callback will be used instead,
 so you can still run the library wherever Python is available!
 
-
-Sending Requests
-*****************
-
-    .. note::
-        Read here: :ref:`sending-requests`
-
-
-Working with updates
-**********************
-
-    .. note::
-        Read here: :ref:`working-with-updates`
-
-
-Accessing the full API
-***********************
-
-    .. note::
-        Read here: :ref:`accessing-the-full-api`
 
 
 __ https://github.com/ricmoo/pyaes
