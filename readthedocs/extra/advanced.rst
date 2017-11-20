@@ -1,8 +1,4 @@
-
-
-*****************
-Examples
-*****************
+.. _prelude:
 
 Prelude
 ---------
@@ -46,20 +42,6 @@ If the examples aren't enough, you're strongly advised to read the source code
 for the InteractiveTelegramClient_ for an overview on how you could build your next script.
 This example shows a basic usage more than enough in most cases. Even reading the source
 for the TelegramClient_ may help a lot!
-
-
-Signing In
---------------
-
-.. toctree::
-    examples-signing-in
-
-
-Working with messages
------------------------
-
-.. toctree::
-    examples-working-with-messages
 
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py

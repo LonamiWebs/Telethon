@@ -2,6 +2,10 @@
 Signing In
 =========================
 
+.. note::
+    Make sure you have gone through :ref:`prelude` already!
+
+
 Two Factor Authorization (2FA)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

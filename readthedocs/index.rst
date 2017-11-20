@@ -10,24 +10,49 @@ Pure Python 3 Telegram client library. Official Site `here <https://lonamiwebs.g
 
 
 
-****************
-Getting Started
-****************
+.. _installation-and-usage:
+
 .. toctree::
-   extra/getting_started
+   :maxdepth: 2
+   :caption: Installation and Simple Usage
+
+   extra/basic/getting-started
+   extra/basic/installation
+   extra/basic/creating-a-client
+   extra/basic/sessions
+   extra/basic/sending-requests
+   extra/basic/working-with-updates
+   extra/basic/accessing-the-full-api
 
 
-***************
-Examples
-***************
+.. _Advanced-usage:
+
 .. toctree::
-   extra/examples
+   :maxdepth: 2
+   :caption: Advanced Usage
+
+   extra/advanced
+   extra/advanced-usage/signing-in
+   extra/advanced-usage/working-with-messages
+   extra/advanced-usage/users-and-chats
+   extra/advanced-usage/bots
 
 
-***************
-Modules
-***************
+.. _Troubleshooting:
+
 .. toctree::
+   :maxdepth: 2
+   :caption: Troubleshooting
+
+   extra/troubleshooting/enable-logging
+   extra/troubleshooting/deleted-limited-or-deactivated-accounts
+   extra/troubleshooting/rpc-errors
+
+
+
+.. toctree::
+   :caption: Telethon modules
+
    telethon
 
 

@@ -2,6 +2,10 @@
 Working with messages
 =========================
 
+.. note::
+    Make sure you have gone through :ref:`prelude` already!
+
+
 Forwarding messages
 *******************
 
