@@ -996,7 +996,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
-    def get_entity(self, entity):
+    def get_entity(self, entity, force_fetch=False):
         """
         Turns the given entity into a valid Telegram user or chat.
 
@@ -1014,12 +1014,20 @@ class TelegramClient(TelegramBareClient):
 
             If the entity is neither, and it's not a TLObject, an
             error will be raised.
+
+        :param force_fetch:
+            If True, the entity cache is bypassed and the entity is fetched
+            again with an API call. Defaults to False to avoid unnecessary
+            calls, but since a cached version would be returned, the entity
+            may be out of date.
         :return:
         """
-        try:
-            return self.session.entities[entity]
-        except KeyError:
-            pass
+        if not force_fetch:
+            # Try to use cache unless we want to force a fetch
+            try:
+                return self.session.entities[entity]
+            except KeyError:
+                pass
 
         if isinstance(entity, int) or (
                     isinstance(entity, TLObject) and
