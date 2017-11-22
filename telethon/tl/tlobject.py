@@ -36,7 +36,7 @@ class TLObject:
                     ', '.join(TLObject.pretty_format(x) for x in obj)
                 )
             elif isinstance(obj, datetime):
-                return 'datetime.fromtimestamp({})'.format(obj.timestamp())
+                return 'datetime.utcfromtimestamp({})'.format(obj.timestamp())
             else:
                 return repr(obj)
         else:
@@ -81,7 +81,7 @@ class TLObject:
                 result.append(']')
 
             elif isinstance(obj, datetime):
-                result.append('datetime.fromtimestamp(')
+                result.append('datetime.utcfromtimestamp(')
                 result.append(repr(obj.timestamp()))
                 result.append(')')
 

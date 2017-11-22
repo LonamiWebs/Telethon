@@ -113,7 +113,7 @@ class BinaryReader:
            into a Python datetime object
         """
         value = self.read_int()
-        return None if value == 0 else datetime.fromtimestamp(value)
+        return None if value == 0 else datetime.utcfromtimestamp(value)
 
     def tgread_object(self):
         """Reads a Telegram object"""
