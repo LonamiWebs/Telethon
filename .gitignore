@@ -1,4 +1,7 @@
-.idea
+# Docs
+_build/
+
+# Generated code
 telethon/tl/functions/
 telethon/tl/types/
 telethon/tl/all_tlobjects.py

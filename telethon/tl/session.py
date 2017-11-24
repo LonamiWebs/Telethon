@@ -58,8 +58,8 @@ class Session:
         self._last_msg_id = 0  # Long
 
         # These values will be saved
-        self.server_address = '91.108.56.165'
-        self.port = 443
+        self.server_address = None
+        self.port = None
         self.auth_key = None
         self.layer = 0
         self.salt = 0  # Unsigned long

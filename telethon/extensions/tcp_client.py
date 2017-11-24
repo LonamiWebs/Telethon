@@ -43,6 +43,12 @@ class TcpClient:
            'timeout' must be given in seconds
         """
         if ':' in ip:  # IPv6
+            # The address needs to be surrounded by [] as discussed on PR#425
+            if not ip.startswith('['):
+                ip = '[' + ip
+            if not ip.endswith(']'):
+                ip = ip + ']'
+
             mode, address = socket.AF_INET6, (ip, port, 0, 0)
         else:
             mode, address = socket.AF_INET, (ip, port)
