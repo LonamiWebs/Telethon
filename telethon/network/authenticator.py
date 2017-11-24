@@ -113,8 +113,10 @@ def _do_authentication(connection):
     key, iv = utils.generate_key_data_from_nonce(
         res_pq.server_nonce, new_nonce
     )
-    if server_dh_params.encrypted_answer % 16 != 0:
-        raise SecurityError('AES block size missmatch')
+    if len(server_dh_params.encrypted_answer) % 16 != 0:
+        # See PR#453
+        raise SecurityError('AES block size mismatch')
+
     plain_text_answer = AES.decrypt_ige(
         server_dh_params.encrypted_answer, key, iv
     )
