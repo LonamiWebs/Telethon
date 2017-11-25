@@ -24,6 +24,12 @@ DEFAULT_DELIMITERS = {
 # reason why there's '\0' after every match-literal character.
 DEFAULT_URL_RE = re.compile(b'\\[\0(.+?)\\]\0\\(\0(.+?)\\)\0')
 
+# Reverse operation for DEFAULT_URL_RE. {0} for text, {1} for URL.
+DEFAULT_URL_FORMAT = '[{0}]({1})'
+
+# Encoding to be used
+ENC = 'utf-16le'
+
 
 def parse(message, delimiters=None, url_re=None):
     """
@@ -45,7 +51,7 @@ def parse(message, delimiters=None, url_re=None):
             return message, []
         delimiters = DEFAULT_DELIMITERS
 
-    delimiters = {k.encode('utf-16le'): v for k, v in delimiters.items()}
+    delimiters = {k.encode(ENC): v for k, v in delimiters.items()}
 
     # Cannot use a for loop because we need to skip some indices
     i = 0
@@ -55,7 +61,7 @@ def parse(message, delimiters=None, url_re=None):
 
     # Work on byte level with the utf-16le encoding to get the offsets right.
     # The offset will just be half the index we're at.
-    message = message.encode('utf-16le')
+    message = message.encode(ENC)
     while i < len(message):
         if url_re and current is None:
             # If we're not inside a previous match since Telegram doesn't allow
@@ -71,7 +77,7 @@ def parse(message, delimiters=None, url_re=None):
 
                 result.append(MessageEntityTextUrl(
                     offset=i // 2, length=len(url_match.group(1)) // 2,
-                    url=url_match.group(2).decode('utf-16le')
+                    url=url_match.group(2).decode(ENC)
                 ))
                 i += len(url_match.group(1))
                 # Next loop iteration, don't check delimiters, since
@@ -126,24 +132,71 @@ def parse(message, delimiters=None, url_re=None):
             + message[2 * current.offset:]
         )
 
-    return message.decode('utf-16le'), result
+    return message.decode(ENC), result
+
+
+def unparse(text, entities, delimiters=None, url_fmt=None):
+    """
+    Performs the reverse operation to .parse(), effectively returning
+    markdown-like syntax given a normal text and its MessageEntity's.
+
+    :param text: the text to be reconverted into markdown.
+    :param entities: the MessageEntity's applied to the text.
+    :return: a markdown-like text representing the combination of both inputs.
+    """
+    if not delimiters:
+        if delimiters is not None:
+            return text
+        delimiters = DEFAULT_DELIMITERS
+
+    if url_fmt is None:
+        url_fmt = DEFAULT_URL_FORMAT
+
+    if isinstance(entities, TLObject):
+        entities = (entities,)
+    else:
+        entities = tuple(sorted(entities, key=lambda e: e.offset, reverse=True))
+
+    # Reverse the delimiters, and encode them as utf16
+    delimiters = {v: k.encode(ENC) for k, v in delimiters.items()}
+    text = text.encode(ENC)
+    for entity in entities:
+        s = entity.offset * 2
+        e = (entity.offset + entity.length) * 2
+        delimiter = delimiters.get(type(entity), None)
+        if delimiter:
+            text = text[:s] + delimiter + text[s:e] + delimiter + text[e:]
+        elif isinstance(entity, MessageEntityTextUrl) and url_fmt:
+            # If byte-strings supported .format(), we, could have converted
+            # the str url_fmt to a byte-string with the following regex:
+            # re.sub(b'{\0\s*(?:([01])\0)?\s*}\0',rb'{\1}',url_fmt.encode(ENC))
+            #
+            # This would preserve {}, {0} and {1}.
+            # Alternatively (as it's done), we can decode/encode it every time.
+            text = (
+                text[:s] +
+                url_fmt.format(text[s:e].decode(ENC), entity.url).encode(ENC) +
+                text[e:]
+            )
+
+    return text.decode(ENC)
 
 
 def get_inner_text(text, entity):
     """Gets the inner text that's surrounded by the given entity or entities.
        For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
     """
-    if not isinstance(entity, TLObject) and hasattr(entity, '__iter__'):
-        multiple = True
-    else:
-        entity = [entity]
+    if isinstance(entity, TLObject):
+        entity = (entity,)
         multiple = False
+    else:
+        multiple = True
 
-    text = text.encode('utf-16le')
+    text = text.encode(ENC)
     result = []
     for e in entity:
         start = e.offset * 2
         end = (e.offset + e.length) * 2
-        result.append(text[start:end].decode('utf-16le'))
+        result.append(text[start:end].decode(ENC))
 
     return result if multiple else result[0]
