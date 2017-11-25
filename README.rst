@@ -20,6 +20,7 @@ Creating a client
 
 .. code:: python
 
+  import asyncio
   from telethon import TelegramClient
 
   # These example values won't work. You must get your own api_id and
@@ -35,6 +36,7 @@ Creating a client
       await client.sign_in(phone_number)
       me = await client.sign_in(code=input('Code: '))
 
+  asyncio.get_event_loop().run_until_complete(main())
 
 Doing stuff
 -----------
