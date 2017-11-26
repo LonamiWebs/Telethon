@@ -1,9 +1,21 @@
+"""
+This module holds a fast Factorization class.
+"""
 from random import randint
 
 
 class Factorization:
+    """
+    Simple module to factorize large numbers really quickly.
+    """
     @classmethod
     def factorize(cls, pq):
+        """
+        Factorizes the given large integer.
+
+        :param pq: the prime pair pq.
+        :return: a tuple containing the two factors p and q.
+        """
         if pq % 2 == 0:
             return 2, pq // 2
 
@@ -39,6 +51,13 @@ class Factorization:
 
     @staticmethod
     def gcd(a, b):
+        """
+        Calculates the Greatest Common Divisor.
+
+        :param a: the first number.
+        :param b: the second number.
+        :return: GCD(a, b)
+        """
         while b:
             a, b = b, a % b
 

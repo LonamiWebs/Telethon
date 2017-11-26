@@ -1,6 +1,8 @@
+"""
+This module holds the CdnDecrypter utility class.
+"""
 from hashlib import sha256
 
-from ..tl import Session
 from ..tl.functions.upload import GetCdnFileRequest, ReuploadCdnFileRequest
 from ..tl.types.upload import CdnFileReuploadNeeded, CdnFile
 from ..crypto import AESModeCTR
@@ -8,11 +10,20 @@ from ..errors import CdnFileTamperedError
 
 
 class CdnDecrypter:
-    """Used when downloading a file results in a 'FileCdnRedirect' to
-       both prepare the redirect, decrypt the file as it downloads, and
-       ensure the file hasn't been tampered. https://core.telegram.org/cdn
+    """
+    Used when downloading a file results in a 'FileCdnRedirect' to
+    both prepare the redirect, decrypt the file as it downloads, and
+    ensure the file hasn't been tampered. https://core.telegram.org/cdn
     """
     def __init__(self, cdn_client, file_token, cdn_aes, cdn_file_hashes):
+        """
+        Initializes the CDN decrypter.
+
+        :param cdn_client: a client connected to a CDN.
+        :param file_token: the token of the file to be used.
+        :param cdn_aes: the AES CTR used to decrypt the file.
+        :param cdn_file_hashes: the hashes the decrypted file must match.
+        """
         self.client = cdn_client
         self.file_token = file_token
         self.cdn_aes = cdn_aes
@@ -20,10 +31,13 @@ class CdnDecrypter:
 
     @staticmethod
     def prepare_decrypter(client, cdn_client, cdn_redirect):
-        """Prepares a CDN decrypter, returning (decrypter, file data).
-           'client' should be an existing client not connected to a CDN.
-           'cdn_client' should be an already-connected TelegramBareClient
-           with the auth key already created.
+        """
+        Prepares a new CDN decrypter.
+
+        :param client: a TelegramClient connected to the main servers.
+        :param cdn_client: a new client connected to the CDN.
+        :param cdn_redirect: the redirect file object that caused this call.
+        :return: (CdnDecrypter, first chunk file data)
         """
         cdn_aes = AESModeCTR(
             key=cdn_redirect.encryption_key,
@@ -60,8 +74,11 @@ class CdnDecrypter:
         return decrypter, cdn_file
 
     def get_file(self):
-        """Calls GetCdnFileRequest and decrypts its bytes.
-           Also ensures that the file hasn't been tampered.
+        """
+        Calls GetCdnFileRequest and decrypts its bytes.
+        Also ensures that the file hasn't been tampered.
+
+        :return: the CdnFile result.
         """
         if self.cdn_file_hashes:
             cdn_hash = self.cdn_file_hashes.pop(0)
@@ -77,6 +94,12 @@ class CdnDecrypter:
 
     @staticmethod
     def check(data, cdn_hash):
-        """Checks the integrity of the given data"""
+        """
+        Checks the integrity of the given data.
+        Raises CdnFileTamperedError if the integrity check fails.
+
+        :param data: the data to be hashed.
+        :param cdn_hash: the expected hash.
+        """
         if sha256(data).digest() != cdn_hash.hash:
             raise CdnFileTamperedError()

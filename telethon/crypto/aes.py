@@ -1,3 +1,6 @@
+"""
+AES IGE implementation in Python. This module may use libssl if available.
+"""
 import os
 import pyaes
 from . import libssl
@@ -9,10 +12,15 @@ if libssl.AES is not None:
 else:
     # Fallback to a pure Python implementation
     class AES:
+        """
+        Class that servers as an interface to encrypt and decrypt
+        text through the AES IGE mode.
+        """
         @staticmethod
         def decrypt_ige(cipher_text, key, iv):
-            """Decrypts the given text in 16-bytes blocks by using the
-               given key and 32-bytes initialization vector
+            """
+            Decrypts the given text in 16-bytes blocks by using the
+            given key and 32-bytes initialization vector.
             """
             iv1 = iv[:len(iv) // 2]
             iv2 = iv[len(iv) // 2:]
@@ -42,8 +50,9 @@ else:
 
         @staticmethod
         def encrypt_ige(plain_text, key, iv):
-            """Encrypts the given text in 16-bytes blocks by using the
-               given key and 32-bytes initialization vector
+            """
+            Encrypts the given text in 16-bytes blocks by using the
+            given key and 32-bytes initialization vector.
             """
 
             # Add random padding iff it's not evenly divisible by 16 already

@@ -1,3 +1,6 @@
+"""
+This module holds an AES IGE class, if libssl is available on the system.
+"""
 import os
 import ctypes
 from ctypes.util import find_library
@@ -35,14 +38,23 @@ else:
     AES_DECRYPT = ctypes.c_int(0)
 
     class AES_KEY(ctypes.Structure):
+        """Helper class representing an AES key"""
         _fields_ = [
             ('rd_key', ctypes.c_uint32 * (4*(AES_MAXNR + 1))),
             ('rounds', ctypes.c_uint),
         ]
 
     class AES:
+        """
+        Class that servers as an interface to encrypt and decrypt
+        text through the AES IGE mode, using the system's libssl.
+        """
         @staticmethod
         def decrypt_ige(cipher_text, key, iv):
+            """
+            Decrypts the given text in 16-bytes blocks by using the
+            given key and 32-bytes initialization vector.
+            """
             aeskey = AES_KEY()
             ckey = (ctypes.c_ubyte * len(key))(*key)
             cklen = ctypes.c_int(len(key)*8)
@@ -65,6 +77,10 @@ else:
 
         @staticmethod
         def encrypt_ige(plain_text, key, iv):
+            """
+            Encrypts the given text in 16-bytes blocks by using the
+            given key and 32-bytes initialization vector.
+            """
             # Add random padding iff it's not evenly divisible by 16 already
             if len(plain_text) % 16 != 0:
                 padding_count = 16 - len(plain_text) % 16
