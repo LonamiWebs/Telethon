@@ -71,6 +71,16 @@ def main():
         print('Done.')
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
+        # (Re)generate the code to make sure we don't push without it
+        gen_tl()
+
+        # Try importing the telethon module to assert it has no errors
+        try:
+            import telethon
+        except:
+            print('Packaging for PyPi aborted, importing the module failed.')
+            return
+
         # Need python3.5 or higher, but Telethon is supposed to support 3.x
         # Place it here since noone should be running ./setup.py pypi anyway
         from subprocess import run
