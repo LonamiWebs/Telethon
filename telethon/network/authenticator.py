@@ -1,3 +1,7 @@
+"""
+This module contains several functions that authenticate the client machine
+with Telegram's servers, effectively creating an authorization key.
+"""
 import os
 import time
 from hashlib import sha1
@@ -18,6 +22,14 @@ from ..tl.functions import (
 
 
 def do_authentication(connection, retries=5):
+    """
+    Performs the authentication steps on the given connection.
+    Raises an error if all attempts fail.
+
+    :param connection: the connection to be used (must be connected).
+    :param retries: how many times should we retry on failure.
+    :return:
+    """
     if not retries or retries < 0:
         retries = 1
 
@@ -32,9 +44,11 @@ def do_authentication(connection, retries=5):
 
 
 def _do_authentication(connection):
-    """Executes the authentication process with the Telegram servers.
-       If no error is raised, returns both the authorization key and the
-       time offset.
+    """
+    Executes the authentication process with the Telegram servers.
+
+    :param connection: the connection to be used (must be connected).
+    :return: returns a (authorization key, time offset) tuple.
     """
     sender = MtProtoPlainSender(connection)
 
@@ -195,8 +209,12 @@ def _do_authentication(connection):
 
 
 def get_int(byte_array, signed=True):
-    """Gets the specified integer from its byte array.
-       This should be used by the authenticator,
-       who requires the data to be in big endian
+    """
+    Gets the specified integer from its byte array.
+    This should be used by this module alone, as it works with big endian.
+
+    :param byte_array: the byte array representing th integer.
+    :param signed: whether the number is signed or not.
+    :return: the integer representing the given byte array.
     """
     return int.from_bytes(byte_array, byteorder='big', signed=signed)

@@ -1,3 +1,7 @@
+"""
+This module holds both the Connection class and the ConnectionMode enum,
+which specifies the protocol to be used by the Connection.
+"""
 import os
 import struct
 from datetime import timedelta
@@ -35,16 +39,24 @@ class ConnectionMode(Enum):
 
 
 class Connection:
-    """Represents an abstract connection (TCP, TCP abridged...).
-       'mode' must be any of the ConnectionMode enumeration.
+    """
+    Represents an abstract connection (TCP, TCP abridged...).
+    'mode' must be any of the ConnectionMode enumeration.
 
-       Note that '.send()' and '.recv()' refer to messages, which
-       will be packed accordingly, whereas '.write()' and '.read()'
-       work on plain bytes, with no further additions.
+    Note that '.send()' and '.recv()' refer to messages, which
+    will be packed accordingly, whereas '.write()' and '.read()'
+    work on plain bytes, with no further additions.
     """
 
     def __init__(self, mode=ConnectionMode.TCP_FULL,
                  proxy=None, timeout=timedelta(seconds=5)):
+        """
+        Initializes a new connection.
+
+        :param mode: the ConnectionMode to be used.
+        :param proxy: whether to use a proxy or not.
+        :param timeout: timeout to be used for all operations.
+        """
         self._mode = mode
         self._send_counter = 0
         self._aes_encrypt, self._aes_decrypt = None, None
@@ -75,6 +87,12 @@ class Connection:
             setattr(self, 'read', self._read_plain)
 
     def connect(self, ip, port):
+        """
+        Estabilishes a connection to IP:port.
+
+        :param ip: the IP to connect to.
+        :param port: the port to connect to.
+        """
         try:
             self.conn.connect(ip, port)
         except OSError as e:
@@ -92,9 +110,13 @@ class Connection:
             self._setup_obfuscation()
 
     def get_timeout(self):
+        """Returns the timeout used by the connection."""
         return self.conn.timeout
 
     def _setup_obfuscation(self):
+        """
+        Sets up the obfuscated protocol.
+        """
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee' * 4)
         while True:
@@ -122,13 +144,19 @@ class Connection:
         self.conn.write(bytes(random))
 
     def is_connected(self):
+        """
+        Determines whether the connection is alive or not.
+
+        :return: true if it's connected.
+        """
         return self.conn.connected
 
     def close(self):
+        """Closes the connection."""
         self.conn.close()
 
     def clone(self):
-        """Creates a copy of this Connection"""
+        """Creates a copy of this Connection."""
         return Connection(
             mode=self._mode, proxy=self.conn.proxy, timeout=self.conn.timeout
         )
@@ -141,6 +169,15 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + str(self._mode))
 
     def _recv_tcp_full(self):
+        """
+        Receives a message from the network,
+        internally encoded using the TCP full protocol.
+
+        May raise InvalidChecksumError if the received data doesn't
+        match its valid checksum.
+
+        :return: the read message payload.
+        """
         packet_len_seq = self.read(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
 
@@ -154,9 +191,21 @@ class Connection:
         return body
 
     def _recv_intermediate(self):
+        """
+        Receives a message from the network,
+        internally encoded using the TCP intermediate protocol.
+
+        :return: the read message payload.
+        """
         return self.read(struct.unpack('<i', self.read(4))[0])
 
     def _recv_abridged(self):
+        """
+        Receives a message from the network,
+        internally encoded using the TCP abridged protocol.
+
+        :return: the read message payload.
+        """
         length = struct.unpack('<B', self.read(1))[0]
         if length >= 127:
             length = struct.unpack('<i', self.read(3) + b'\0')[0]
@@ -173,6 +222,12 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + str(self._mode))
 
     def _send_tcp_full(self, message):
+        """
+        Encapsulates and sends the given message payload
+        using the TCP full mode (length, sequence, message, crc32).
+
+        :param message: the message to be sent.
+        """
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(message) + 12
@@ -182,9 +237,21 @@ class Connection:
         self.write(data + crc)
 
     def _send_intermediate(self, message):
+        """
+        Encapsulates and sends the given message payload
+        using the TCP intermediate mode (length, message).
+
+        :param message: the message to be sent.
+        """
         self.write(struct.pack('<i', len(message)) + message)
 
     def _send_abridged(self, message):
+        """
+        Encapsulates and sends the given message payload
+        using the TCP abridged mode (short length, message).
+
+        :param message: the message to be sent.
+        """
         length = len(message) >> 2
         if length < 127:
             length = struct.pack('B', length)
@@ -201,9 +268,21 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + str(self._mode))
 
     def _read_plain(self, length):
+        """
+        Reads data from the socket connection.
+
+        :param length: how many bytes should be read.
+        :return: a byte sequence with len(data) == length
+        """
         return self.conn.read(length)
 
     def _read_obfuscated(self, length):
+        """
+        Reads data and decrypts from the socket connection.
+
+        :param length: how many bytes should be read.
+        :return: the decrypted byte sequence with len(data) == length
+        """
         return self._aes_decrypt.encrypt(
             self.conn.read(length)
         )
@@ -216,9 +295,20 @@ class Connection:
         raise ValueError('Invalid connection mode specified: ' + str(self._mode))
 
     def _write_plain(self, data):
+        """
+        Writes the given data through the socket connection.
+
+        :param data: the data in bytes to be written.
+        """
         self.conn.write(data)
 
     def _write_obfuscated(self, data):
+        """
+        Writes the given data through the socket connection,
+        using the obfuscated mode (AES encryption is applied on top).
+
+        :param data: the data in bytes to be written.
+        """
         self.conn.write(self._aes_encrypt.encrypt(data))
 
     # endregion
