@@ -165,8 +165,6 @@ class UpdateState:
             elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
                 for u in update.updates:
                     self._updates.put(u)
-            elif not isinstance(update, tl.UpdatesTooLong):
-                # TODO Handle "Updates too long"
-                self._updates.put(update)
+            # TODO Handle "tl.UpdatesTooLong"
             else:
                 self._updates.put(update)
