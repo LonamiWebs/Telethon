@@ -163,27 +163,22 @@ class UpdateState:
 
             self._latest_updates.append(data)
 
-            if type(update).SUBCLASS_OF_ID == 0x8af52aac:  # crc32(b'Updates')
-                # Expand "Updates" into "Update", and pass these to callbacks.
-                # Since .users and .chats have already been processed, we
-                # don't need to care about those either.
-                if isinstance(update, tl.UpdateShort):
-                    self._updates.append(update.update)
-                    self._updates_available.set()
+            if isinstance(update, tl.UpdateShort):
+                self._updates.append(update.update)
+                self._updates_available.set()
 
-                elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
-                    self._updates.extend(update.updates)
-                    self._updates_available.set()
+            # Expand "Updates" into "Update", and pass these to callbacks.
+            # Since .users and .chats have already been processed, we
+            # don't need to care about those either.
+            elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
+                self._updates.extend(update.updates)
+                self._updates_available.set()
 
-                elif not isinstance(update, tl.UpdatesTooLong):
-                    # TODO Handle "Updates too long"
-                    self._updates.append(update)
-                    self._updates_available.set()
-
-            elif type(update).SUBCLASS_OF_ID == 0x9f89304e:  # crc32(b'Update')
+            elif not isinstance(update, tl.UpdatesTooLong):
+                # TODO Handle "Updates too long"
                 self._updates.append(update)
                 self._updates_available.set()
+
             else:
-                self._logger.debug('Ignoring "update" of type {}'.format(
-                    type(update).__name__)
-                )
+                self._updates.append(update)
+                self._updates_available.set()
