@@ -99,6 +99,7 @@ class TelegramBareClient:
         self._sender = MtProtoSender(
             self.session,
             Connection(mode=connection_mode, proxy=proxy, timeout=timeout, loop=self._loop),
+            self._updates_handler,
             self._loop
         )
 
@@ -426,7 +427,7 @@ class TelegramBareClient:
                 )
             else:
                 while not all(x.confirm_received.is_set() for x in requests):
-                    await self._sender.receive(update_state=self.updates)
+                    await self._sender.receive()
 
         except BrokenAuthKeyError:
             self._logger.error('Broken auth key, a new one will be generated')
@@ -705,6 +706,10 @@ class TelegramBareClient:
     def list_update_handlers(self):
         return self.updates.handlers[:]
 
+    def _updates_handler(self, updates):
+        self.session.process_entities(updates)
+        self.updates.process(updates)
+
     # endregion
 
     # Constant read
@@ -732,7 +737,7 @@ class TelegramBareClient:
                         # Retry forever, this is instant messaging
                         await asyncio.sleep(0.1, loop=self._loop)
 
-                await self._sender.receive(update_state=self.updates)
+                await self._sender.receive()
             except TimeoutError:
                 # No problem.
                 pass

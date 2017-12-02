@@ -37,6 +37,7 @@ class Session:
             self.report_errors = session.report_errors
             self.save_entities = session.save_entities
             self.flood_sleep_threshold = session.flood_sleep_threshold
+            self.user_id = session.user_id
 
         else:  # str / None
             self.session_user_id = session_user_id
@@ -51,6 +52,7 @@ class Session:
             self.report_errors = True
             self.save_entities = True
             self.flood_sleep_threshold = 60
+            self.user_id = 0
 
         self.id = helpers.generate_random_long(signed=False)
         self._sequence = 0
@@ -78,7 +80,8 @@ class Session:
                 'server_address': self.server_address,
                 'auth_key_data':
                     b64encode(self.auth_key.key).decode('ascii')
-                    if self.auth_key else None
+                    if self.auth_key else None,
+                'user_id': self.user_id
             }
             if self.save_entities:
                 out_dict['entities'] = self.entities.get_input_list()
@@ -122,6 +125,7 @@ class Session:
                     result.layer = data.get('layer', result.layer)
                     result.server_address = \
                         data.get('server_address', result.server_address)
+                    result.user_id = data.get('user_id', result.user_id)
 
                     # FIXME We need to import the AuthKey here or otherwise
                     # we get cyclic dependencies.
