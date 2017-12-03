@@ -1,6 +1,7 @@
 import json
 import os
 import platform
+import struct
 import time
 from base64 import b64encode, b64decode
 from os.path import isfile as file_exists
@@ -58,7 +59,7 @@ class Session:
         self._msg_id_lock = Lock()
         self._save_lock = Lock()
 
-        self.id = helpers.generate_random_long(signed=False)
+        self.id = helpers.generate_random_long(signed=True)
         self._sequence = 0
         self.time_offset = 0
         self._last_msg_id = 0  # Long
@@ -68,7 +69,7 @@ class Session:
         self.port = None
         self.auth_key = None
         self.layer = 0
-        self.salt = 0  # Unsigned long
+        self.salt = 0  # Signed long
         self.entities = EntityDatabase()  # Known and cached entities
 
     def save(self):
@@ -126,6 +127,10 @@ class Session:
                     data = json.load(file)
                     result.port = data.get('port', result.port)
                     result.salt = data.get('salt', result.salt)
+                    # Keep while migrating from unsigned to signed salt
+                    result.salt = struct.unpack(
+                        'q', struct.pack('Q', result.salt))[0]
+
                     result.layer = data.get('layer', result.layer)
                     result.server_address = \
                         data.get('server_address', result.server_address)

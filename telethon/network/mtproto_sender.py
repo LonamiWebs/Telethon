@@ -155,7 +155,7 @@ class MtProtoSender:
         :param message: the TLMessage to be sent.
         """
         plain_text = \
-            struct.pack('<QQ', self.session.salt, self.session.id) \
+            struct.pack('<qQ', self.session.salt, self.session.id) \
             + bytes(message)
 
         msg_key = utils.calc_msg_key(plain_text)
@@ -401,10 +401,7 @@ class MtProtoSender:
         bad_salt = reader.tgread_object()
         assert isinstance(bad_salt, BadServerSalt)
 
-        # Our salt is unsigned, but the objects work with signed salts
-        self.session.salt = struct.unpack(
-            '<Q', struct.pack('<q', bad_salt.new_server_salt)
-        )[0]
+        self.session.salt = bad_salt.new_server_salt
         self.session.save()
 
         # "the bad_server_salt response is received with the
