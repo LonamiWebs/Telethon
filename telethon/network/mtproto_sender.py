@@ -490,6 +490,7 @@ class MtProtoSender:
         """
         new_session = reader.tgread_object()
         assert isinstance(new_session, NewSessionCreated)
+        self.session.salt = new_session.server_salt
         # TODO https://goo.gl/LMyN7A
         return True
 
