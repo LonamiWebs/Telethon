@@ -155,7 +155,7 @@ class MtProtoSender:
         :param message: the TLMessage to be sent.
         """
         plain_text = \
-            struct.pack('<qQ', self.session.salt, self.session.id) \
+            struct.pack('<qq', self.session.salt, self.session.id) \
             + bytes(message)
 
         msg_key = utils.calc_msg_key(plain_text)
