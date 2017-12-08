@@ -687,21 +687,17 @@ class TLGenerator:
                          will be written
         """
         if tlobject.result.startswith('Vector<'):
-            # Vector results are a bit special since they can also be composed
-            # of integer values and such; however, the result of requests is
-            # not parsed as arguments are and it's a bit harder to tell which
-            # is which.
-            if tlobject.result == 'Vector<int>':
+            # Check if Vector contents are boxed or not
+            # We're implying that constructor names always
+            # start with lowecase and types start with uppercase
+            match = re.match(r'Vector<([\w\d]+)>', tlobject.result)
+            if match and match.group(1).lower():
+                inner_type = match.group(1)
+                # not boxed
                 builder.writeln('reader.read_int()  # Vector id')
                 builder.writeln('count = reader.read_int()')
                 builder.writeln(
-                    'self.result = [reader.read_int() for _ in range(count)]'
-                )
-            elif tlobject.result == 'Vector<long>':
-                builder.writeln('reader.read_int()  # Vector id')
-                builder.writeln('count = reader.read_long()')
-                builder.writeln(
-                    'self.result = [reader.read_long() for _ in range(count)]'
+                    'self.result = [reader.read_{}() for _ in range(count)]'.format(inner_type)
                 )
             else:
                 builder.writeln('self.result = reader.tgread_vector()')
