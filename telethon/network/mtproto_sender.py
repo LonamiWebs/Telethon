@@ -15,8 +15,8 @@ from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification,
-    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo,
-    RpcError)
+    MsgNewDetailedInfo, MsgDetailedInfo, RpcError,
+    MsgsStateReq, MsgsStateInfo, MsgsAllInfo, MsgResendReq)
 from ..tl.functions.auth import LogOutRequest
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -121,7 +121,6 @@ class MtProtoSender:
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
             await self._process_msg(remote_msg_id, remote_seq, reader)
-            await self._send_acknowledge(remote_msg_id)
 
     # endregion
 
@@ -191,6 +190,7 @@ class MtProtoSender:
 
         # The following codes are "parsed manually"
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
+            await self._send_acknowledge(msg_id)
             return await self._handle_rpc_result(msg_id, sequence, reader)
 
         if code == Pong.CONSTRUCTOR_ID:
@@ -204,6 +204,14 @@ class MtProtoSender:
 
         if code == BadServerSalt.CONSTRUCTOR_ID:
             return await self._handle_bad_server_salt(msg_id, sequence, reader)
+
+        if code in (MsgsStateReq.CONSTRUCTOR_ID, MsgResendReq.CONSTRUCTOR_ID):
+            # just answer we don't know anything
+            return await self._handle_msgs_state_forgotten(msg_id, sequence, reader)
+
+        if code == MsgsAllInfo.CONSTRUCTOR_ID:
+            # not interesting now
+            return True
 
         if code == BadMsgNotification.CONSTRUCTOR_ID:
             return await self._handle_bad_msg_notification(msg_id, sequence, reader)
@@ -231,6 +239,7 @@ class MtProtoSender:
 
         # If the code is not parsed manually then it should be a TLObject.
         if code in tlobjects:
+            await self._send_acknowledge(msg_id)
             result = reader.tgread_object()
             self.updates_handler(result)
             return True
@@ -337,6 +346,11 @@ class MtProtoSender:
         # correct salt, and the message is to be re-sent with it"
         await self._resend_request(bad_salt.bad_msg_id)
 
+        return True
+
+    async def _handle_msgs_state_forgotten(self, msg_id, sequence, reader):
+        req = reader.tgread_object()
+        await self._send_message(TLMessage(self.session, MsgsStateInfo(msg_id, chr(1) * len(req.msg_ids))))
         return True
 
     async def _handle_bad_msg_notification(self, msg_id, sequence, reader):
