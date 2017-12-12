@@ -54,10 +54,11 @@ class MtProtoSender:
     def is_connected(self):
         return self.connection.is_connected()
 
-    def disconnect(self):
+    def disconnect(self, clear_pendings=True):
         """Disconnects from the server"""
         self.connection.close()
-        self._clear_all_pending()
+        if clear_pendings:
+            self._clear_all_pending()
 
     # region Send and receive
 
@@ -75,6 +76,7 @@ class MtProtoSender:
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
+        msg_ids = [m.msg_id for m in messages]
 
         if len(messages) == 1:
             message = messages[0]
@@ -87,6 +89,12 @@ class MtProtoSender:
                 m.container_msg_id = message.msg_id
 
         await self._send_message(message)
+        return msg_ids
+
+    def forget_pendings(self, msg_ids):
+        for msg_id in msg_ids:
+            if msg_id in self._pending_receive:
+                del self._pending_receive[msg_id]
 
     async def _send_acknowledge(self, msg_id):
         """Sends a message acknowledge for the given msg_id"""
