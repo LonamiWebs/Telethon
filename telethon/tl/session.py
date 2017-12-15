@@ -128,8 +128,9 @@ class Session:
                     result.port = data.get('port', result.port)
                     result.salt = data.get('salt', result.salt)
                     # Keep while migrating from unsigned to signed salt
-                    result.salt = struct.unpack(
-                        'q', struct.pack('Q', result.salt))[0]
+                    if result.salt > 0:
+                        result.salt = struct.unpack(
+                            'q', struct.pack('Q', result.salt))[0]
 
                     result.layer = data.get('layer', result.layer)
                     result.server_address = \
