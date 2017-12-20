@@ -4,8 +4,6 @@ from threading import Event
 
 class TLObject:
     def __init__(self):
-        self.request_msg_id = 0  # Long
-
         self.confirm_received = Event()
         self.rpc_error = None
 
