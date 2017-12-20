@@ -7,6 +7,8 @@ from threading import RLock, Thread
 
 from .tl import types as tl
 
+__log__ = logging.getLogger(__name__)
+
 
 class UpdateState:
     """Used to hold the current state of processed updates.
@@ -29,8 +31,6 @@ class UpdateState:
         self._updates_lock = RLock()
         self._updates = Queue()
         self._latest_updates = deque(maxlen=10)
-
-        self._logger = logging.getLogger(__name__)
 
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
@@ -115,9 +115,7 @@ class UpdateState:
                 break
             except:
                 # We don't want to crash a worker thread due to any reason
-                self._logger.exception(
-                    '[ERROR] Unhandled exception on worker {}'.format(wid)
-                )
+                __log__.exception('Unhandled exception on worker %d', wid)
 
     def process(self, update):
         """Processes an update object. This method is normally called by
@@ -128,11 +126,13 @@ class UpdateState:
 
         with self._updates_lock:
             if isinstance(update, tl.updates.State):
+                __log__.debug('Saved new updates state')
                 self._state = update
                 return  # Nothing else to be done
 
             pts = getattr(update, 'pts', self._state.pts)
             if hasattr(update, 'pts') and pts <= self._state.pts:
+                __log__.info('Ignoring %s, already have it', update)
                 return  # We already handled this update
 
             self._state.pts = pts
@@ -153,6 +153,7 @@ class UpdateState:
             """
             data = pickle.dumps(update.to_dict())
             if data in self._latest_updates:
+                __log__.info('Ignoring %s, already have it', update)
                 return  # Duplicated too
 
             self._latest_updates.append(data)

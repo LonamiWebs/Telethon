@@ -21,7 +21,7 @@ from ..tl.types import (
 )
 from ..tl.functions.auth import LogOutRequest
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+__log__ = logging.getLogger(__name__)
 
 
 class MtProtoSender:
@@ -46,7 +46,6 @@ class MtProtoSender:
         """
         self.session = session
         self.connection = connection
-        self._logger = logging.getLogger(__name__)
 
         # Message IDs that need confirmation
         self._need_confirmation = set()
@@ -137,6 +136,9 @@ class MtProtoSender:
             # "This packet should be skipped"; since this may have
             # been a result for a request, invalidate every request
             # and just re-invoke them to avoid problems
+            __log__.exception('Error while receiving server response. '
+                              '%d pending request(s) will be ignored',
+                              len(self._pending_receive))
             self._clear_all_pending()
             return
 
@@ -218,7 +220,7 @@ class MtProtoSender:
         code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        # The following codes are "parsed manually"
+        __log__.debug('Processing server message with ID %s', hex(code))
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
             return self._handle_rpc_result(msg_id, sequence, reader)
 
@@ -257,7 +259,6 @@ class MtProtoSender:
                 if r:
                     r.result = True  # Telegram won't send this value
                     r.confirm_received.set()
-                    self._logger.debug('Message ack confirmed', r)
 
             return True
 
@@ -270,11 +271,9 @@ class MtProtoSender:
 
             return True
 
-        self._logger.debug(
-            '[WARN] Unknown message: {}, data left in the buffer: {}'
-            .format(
-                hex(code), repr(reader.get_bytes()[reader.tell_position():])
-            )
+        __log__.warning(
+            'Unknown message with ID %d, data left in the buffer %s',
+            hex(code), repr(reader.get_bytes()[reader.tell_position():])
         )
         return False
 
@@ -351,13 +350,11 @@ class MtProtoSender:
         :param reader: the reader containing the Pong.
         :return: true, as it always succeeds.
         """
-        self._logger.debug('Handling pong')
         pong = reader.tgread_object()
         assert isinstance(pong, Pong)
 
         request = self._pop_request(pong.msg_id)
         if request:
-            self._logger.debug('Pong confirmed a request')
             request.result = pong
             request.confirm_received.set()
 
@@ -372,7 +369,6 @@ class MtProtoSender:
         :param reader: the reader containing the MessageContainer.
         :return: true, as it always succeeds.
         """
-        self._logger.debug('Handling container')
         for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
 
@@ -397,7 +393,6 @@ class MtProtoSender:
         :param reader: the reader containing the BadServerSalt.
         :return: true, as it always succeeds.
         """
-        self._logger.debug('Handling bad server salt')
         bad_salt = reader.tgread_object()
         assert isinstance(bad_salt, BadServerSalt)
 
@@ -418,28 +413,29 @@ class MtProtoSender:
         :param reader: the reader containing the BadMessageError.
         :return: true, as it always succeeds.
         """
-        self._logger.debug('Handling bad message notification')
         bad_msg = reader.tgread_object()
         assert isinstance(bad_msg, BadMsgNotification)
 
         error = BadMessageError(bad_msg.error_code)
+        __log__.warning('Read bad msg notification %s: %s', bad_msg, error)
         if bad_msg.error_code in (16, 17):
             # sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
-            self._logger.debug('Read Bad Message error: ' + str(error))
-            self._logger.debug('Attempting to use the correct time offset.')
+            __log__.info('Attempting to use the correct time offset')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session._sequence += 64
+            __log__.info('Attempting to set the right higher sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session._sequence -= 16
+            __log__.info('Attempting to set the right lower sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
@@ -504,7 +500,6 @@ class MtProtoSender:
         :return: true if the request ID to which this result belongs is found,
                  false otherwise (meaning nothing was read).
         """
-        self._logger.debug('Handling RPC result')
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
@@ -530,11 +525,9 @@ class MtProtoSender:
                 request.confirm_received.set()
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
-            self._logger.debug('Read RPC error: %s', str(error))
             return True  # All contents were read okay
 
         elif request:
-            self._logger.debug('Reading request response')
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
                 with BinaryReader(unpacked_data) as compressed_reader:
@@ -549,7 +542,7 @@ class MtProtoSender:
 
         # If it's really a result for RPC from previous connection
         # session, it will be skipped by the handle_container()
-        self._logger.debug('Lost request will be skipped.')
+        __log__.warning('Lost request will be skipped')
         return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
@@ -561,7 +554,6 @@ class MtProtoSender:
         :param reader: the reader containing the GzipPacked.
         :return: the result of processing the packed message.
         """
-        self._logger.debug('Handling gzip packed data')
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
             # We are reentering process_msg, which seemingly the same msg_id
             # to the self._need_confirmation set. Remove it from there first

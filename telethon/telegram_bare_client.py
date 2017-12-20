@@ -43,6 +43,8 @@ DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
 
+__log__ = logging.getLogger(__name__)
+
 
 class TelegramBareClient:
     """Bare Telegram Client with just the minimum -
@@ -117,8 +119,6 @@ class TelegramBareClient:
             mode=connection_mode, proxy=proxy, timeout=timeout
         ))
 
-        self._logger = logging.getLogger(__name__)
-
         # Two threads may be calling reconnect() when the connection is lost,
         # we only want one to actually perform the reconnection.
         self._reconnect_lock = Lock()
@@ -191,11 +191,15 @@ class TelegramBareClient:
            native data center, raising a "UserMigrateError", and
            calling .disconnect() in the process.
         """
+        __log__.info('Connecting to %s:%d...',
+                     self.session.server_address, self.session.port)
+
         self._main_thread_ident = threading.get_ident()
         self._background_error = None  # Clear previous errors
 
         try:
             self._sender.connect()
+            __log__.info('Connection success!')
 
             # Connection was successful! Try syncing the update state
             # UNLESS '_sync_updates' is False (we probably are in
@@ -215,14 +219,15 @@ class TelegramBareClient:
 
         except TypeNotFoundError as e:
             # This is fine, probably layer migration
-            self._logger.debug('Found invalid item, probably migrating', e)
+            __log__.warning('Connection failed, got unexpected type with ID '
+                            '%s. Migrating?', hex(e.invalid_constructor_id))
             self.disconnect()
             return self.connect(_sync_updates=_sync_updates)
 
-        except (RPCError, ConnectionError):
+        except (RPCError, ConnectionError) as e:
             # Probably errors from the previous session, ignore them
+            __log__.error('Connection failed due to %s', e)
             self.disconnect()
-            self._logger.exception('Could not stabilise initial connection.')
             return False
 
     def is_connected(self):
@@ -244,14 +249,19 @@ class TelegramBareClient:
     def disconnect(self):
         """Disconnects from the Telegram server
            and stops all the spawned threads"""
+        __log__.info('Disconnecting...')
         self._user_connected = False  # This will stop recv_thread's loop
+
+        __log__.debug('Stopping all workers...')
         self.updates.stop_workers()
 
         # This will trigger a "ConnectionResetError" on the recv_thread,
         # which won't attempt reconnecting as ._user_connected is False.
+        __log__.debug('Disconnecting the socket...')
         self._sender.disconnect()
 
         if self._recv_thread:
+            __log__.debug('Joining the read thread...')
             self._recv_thread.join()
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
@@ -268,17 +278,21 @@ class TelegramBareClient:
         """
         if new_dc is None:
             if self.is_connected():
+                __log__.info('Reconnection aborted: already connected')
                 return True
 
             try:
+                __log__.info('Attempting reconnection...')
                 return self.connect()
-            except ConnectionResetError:
+            except ConnectionResetError as e:
+                __log__.warning('Reconnection failed due to %s', e)
                 return False
         else:
             # Since we're reconnecting possibly due to a UserMigrateError,
             # we need to first know the Data Centers we can connect to. Do
             # that before disconnecting.
             dc = self._get_dc(new_dc)
+            __log__.info('Reconnecting to new data center %s', dc)
 
             self.session.server_address = dc.ip_address
             self.session.port = dc.port
@@ -340,6 +354,7 @@ class TelegramBareClient:
             dc = self._get_dc(dc_id)
 
             # Export the current authorization to the new DC.
+            __log__.info('Exporting authorization for data center %s', dc)
             export_auth = self(ExportAuthorizationRequest(dc_id))
 
             # Create a temporary session for this IP address, which needs
@@ -352,6 +367,7 @@ class TelegramBareClient:
             session.port = dc.port
             self._exported_sessions[dc_id] = session
 
+        __log__.info('Creating exported new client')
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
@@ -363,7 +379,7 @@ class TelegramBareClient:
                 id=export_auth.id, bytes=export_auth.bytes
             ))
         elif export_auth is not None:
-            self._logger.warning('Unknown return export_auth type', export_auth)
+            __log__.warning('Unknown export auth type %s', export_auth)
 
         client._authorized = True  # We exported the auth, so we got auth
         return client
@@ -378,6 +394,7 @@ class TelegramBareClient:
             session.port = dc.port
             self._exported_sessions[cdn_redirect.dc_id] = session
 
+        __log__.info('Creating new CDN client')
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
@@ -407,12 +424,23 @@ class TelegramBareClient:
                    x.content_related for x in requests):
             raise ValueError('You can only invoke requests, not types!')
 
+        # For logging purposes
+        if len(requests) == 1:
+            which = type(requests[0]).__name__
+        else:
+            which = '{} requests ({})'.format(
+                len(requests), [type(x).__name__ for x in requests])
+
         # Determine the sender to be used (main or a new connection)
         on_main_thread = threading.get_ident() == self._main_thread_ident
         if on_main_thread or self._on_read_thread():
+            __log__.debug('Invoking %s from main thread', which)
             sender = self._sender
             update_state = self.updates
         else:
+            __log__.debug('Invoking %s from background thread. '
+                          'Creating temporary connection', which)
+
             sender = self._sender.clone()
             sender.connect()
             # We're on another connection, Telegram will resend all the
@@ -431,7 +459,7 @@ class TelegramBareClient:
         call_receive = not on_main_thread or self._recv_thread is None \
                        or self._reconnect_lock.locked()
         try:
-            for _ in range(retries):
+            for attempt in range(retries):
                 if self._background_error and on_main_thread:
                     raise self._background_error
 
@@ -441,7 +469,9 @@ class TelegramBareClient:
                 if result is not None:
                     return result
 
-                self._logger.debug('RPC failed. Attempting reconnection.')
+                __log__.warning('Invoking %s failed %d times, '
+                                'reconnecting and retrying',
+                                [str(x) for x in requests], attempt + 1)
                 sleep(1)
                 # The ReadThread has priority when attempting reconnection,
                 # since this thread is constantly running while __call__ is
@@ -475,11 +505,13 @@ class TelegramBareClient:
             if not self.session.auth_key:
                 # New key, we need to tell the server we're going to use
                 # the latest layer and initialize the connection doing so.
+                __log__.info('Need to generate new auth key before invoking')
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(self._sender.connection)
                 init_connection = True
 
             if init_connection:
+                __log__.info('Initializing a new connection while invoking')
                 if len(requests) == 1:
                     requests = [self._wrap_init_connection(requests[0])]
                 else:
@@ -506,13 +538,14 @@ class TelegramBareClient:
                     sender.receive(update_state=update_state)
 
         except BrokenAuthKeyError:
-            self._logger.error('Broken auth key, a new one will be generated')
+            __log__.error('Authorization key seems broken and was invalid!')
             self.session.auth_key = None
 
         except TimeoutError:
-            pass  # We will just retry
+            __log__.warning('Invoking timed out')  # We will just retry
 
         except ConnectionResetError:
+            __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
                 return None
@@ -541,10 +574,6 @@ class TelegramBareClient:
 
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:
-            self._logger.debug(
-                'DC error when invoking request, '
-                'attempting to reconnect at DC {}'.format(e.new_dc)
-            )
 
             # TODO What happens with the background thread here?
             # For normal use cases, this won't happen, because this will only
@@ -555,17 +584,13 @@ class TelegramBareClient:
 
         except ServerError as e:
             # Telegram is having some issues, just retry
-            self._logger.debug(
-                '[ERROR] Telegram is having some internal issues', e
-            )
+            __log__.error('Telegram servers are having internal errors %s', e)
 
         except FloodWaitError as e:
+            __log__.warning('Request invoked too often, wait %ds', e.seconds)
             if e.seconds > self.session.flood_sleep_threshold | 0:
                 raise
 
-            self._logger.debug(
-                'Sleep of %d seconds below threshold, sleeping' % e.seconds
-            )
             sleep(e.seconds)
 
     # Some really basic functionality
@@ -628,6 +653,8 @@ class TelegramBareClient:
         file_id = utils.generate_random_long()
         hash_md5 = md5()
 
+        __log__.info('Uploading file of %d bytes in %d chunks of %d',
+                     file_size, part_count, part_size)
         stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)
         try:
             for part_index in range(part_count):
@@ -644,6 +671,7 @@ class TelegramBareClient:
 
                 result = self(request)
                 if result:
+                    __log__.debug('Uploaded %d/%d', part_index, part_count)
                     if not is_large:
                         # No need to update the hash if it's a large file
                         hash_md5.update(part)
@@ -712,6 +740,7 @@ class TelegramBareClient:
         client = self
         cdn_decrypter = None
 
+        __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:
             offset = 0
             while True:
@@ -724,12 +753,14 @@ class TelegramBareClient:
                         ))
 
                         if isinstance(result, FileCdnRedirect):
+                            __log__.info('File lives in a CDN')
                             cdn_decrypter, result = \
                                 CdnDecrypter.prepare_decrypter(
                                     client, self._get_cdn_client(result), result
                                 )
 
                 except FileMigrateError as e:
+                    __log__.info('File lives in another DC')
                     client = self._get_exported_client(e.new_dc)
                     continue
 
@@ -742,6 +773,7 @@ class TelegramBareClient:
                     return getattr(result, 'type', '')
 
                 f.write(result.bytes)
+                __log__.debug('Saved %d more bytes', len(result.bytes))
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
@@ -803,7 +835,6 @@ class TelegramBareClient:
         if self._user_connected:
             self.disconnect()
         else:
-            self._logger.debug('Forcing exit...')
             os._exit(1)
 
     def idle(self, stop_signals=(SIGINT, SIGTERM, SIGABRT)):
@@ -824,6 +855,11 @@ class TelegramBareClient:
         for sig in stop_signals:
             signal(sig, self._signal_handler)
 
+        if self._on_read_thread():
+            __log__.info('Starting to wait for items from the network')
+        else:
+            __log__.info('Idling to receive items from the network')
+
         while self._user_connected:
             try:
                 if datetime.now() > self._last_ping + self._ping_delay:
@@ -832,15 +868,20 @@ class TelegramBareClient:
                     ))
                     self._last_ping = datetime.now()
 
+                __log__.debug('Receiving items from the network...')
                 self._sender.receive(update_state=self.updates)
             except TimeoutError:
-                # No problem.
-                pass
+                # No problem
+                __log__.info('Receiving items from the network timed out')
             except ConnectionResetError:
-                self._logger.debug('Server disconnected us. Reconnecting...')
+                if self._user_connected:
+                    __log__.error('Connection was reset while receiving '
+                                  'items. Reconnecting')
                 with self._reconnect_lock:
                     while self._user_connected and not self._reconnect():
                         sleep(0.1)  # Retry forever, this is instant messaging
+
+        __log__.info('Connection closed by the user, not reading anymore')
 
     # By using this approach, another thread will be
     # created and started upon connection to constantly read
@@ -857,10 +898,9 @@ class TelegramBareClient:
             try:
                 self.idle(stop_signals=tuple())
             except Exception as error:
+                __log__.exception('Unknown exception in the read thread! '
+                                  'Disconnecting and leaving it to main thread')
                 # Unknown exception, pass it to the main thread
-                self._logger.exception(
-                    'Unknown error on the read thread, please report'
-                )
 
                 try:
                     import socks
