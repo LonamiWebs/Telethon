@@ -113,7 +113,7 @@ class TcpClient:
             self._socket.sendall(data)
         except socket.timeout as e:
             raise TimeoutError() from e
-        except (BrokenPipeError, ConnectionAbortedError):
+        except ConnectionError:
             self._raise_connection_reset()
         except OSError as e:
             if e.errno == errno.EBADF:
@@ -139,10 +139,7 @@ class TcpClient:
                     partial = self._socket.recv(bytes_left)
                 except socket.timeout as e:
                     raise TimeoutError() from e
-                except ConnectionAbortedError:
-                    # ConnectionAbortedError: [WinError 10053]
-                    # An established connection was aborted by
-                    # the software in your host machine.
+                except ConnectionError:
                     self._raise_connection_reset()
                 except OSError as e:
                     if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
