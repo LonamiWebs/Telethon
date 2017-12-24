@@ -1,5 +1,7 @@
+import itertools
 import os
 import time
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 
@@ -16,7 +18,7 @@ from .errors import (
 )
 from .network import ConnectionMode
 from .tl import TLObject
-from .tl.custom import Draft
+from .tl.custom import Draft, Dialog
 from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
@@ -294,15 +296,14 @@ class TelegramClient(TelegramBareClient):
             The message ID to be used as an offset.
         :param offset_peer:
             The peer to be used as an offset.
-        :return: A tuple of lists ([dialogs], [entities]).
+
+        :return List[telethon.tl.custom.Dialog]: A list dialogs.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
             return [], []
 
-        dialogs = {}  # Use peer id as identifier to avoid dupes
-        messages = {}  # Used later for sorting TODO also return these?
-        entities = {}
+        dialogs = OrderedDict()  # Use peer id as identifier to avoid dupes
         while len(dialogs) < limit:
             real_limit = min(limit - len(dialogs), 100)
             r = self(GetDialogsRequest(
@@ -312,16 +313,13 @@ class TelegramClient(TelegramBareClient):
                 limit=real_limit
             ))
 
-            for d in r.dialogs:
-                dialogs[utils.get_peer_id(d.peer, True)] = d
-            for m in r.messages:
-                messages[m.id] = m
+            messages = {m.id: m for m in r.messages}
+            entities = {utils.get_peer_id(x, add_mark=True): x
+                        for x in itertools.chain(r.users, r.chats)}
 
-            # We assume users can't have the same ID as a chat
-            for u in r.users:
-                entities[u.id] = u
-            for c in r.chats:
-                entities[c.id] = c
+            for d in r.dialogs:
+                dialogs[utils.get_peer_id(d.peer, add_mark=True)] = \
+                    Dialog(self, d, entities, messages)
 
             if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
@@ -334,20 +332,8 @@ class TelegramClient(TelegramBareClient):
             )
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
-        # Sort by message date. Windows will raise if timestamp is 0,
-        # so we need to set at least one day ahead while still being
-        # the smallest date possible.
-        no_date = datetime.fromtimestamp(86400)
-        ds = list(sorted(
-            dialogs.values(),
-            key=lambda d: getattr(messages[d.top_message], 'date', no_date)
-        ))
-        if limit < float('inf'):
-            ds = ds[:limit]
-        return (
-            ds,
-            [utils.find_user_or_chat(d.peer, entities, entities) for d in ds]
-        )
+        dialogs = list(dialogs.values())
+        return dialogs[:limit] if limit < float('inf') else dialogs
 
     def get_drafts(self):  # TODO: Ability to provide a `filter`
         """

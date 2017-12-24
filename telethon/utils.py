@@ -35,12 +35,12 @@ def get_display_name(entity):
         elif entity.last_name:
             return entity.last_name
         else:
-            return '(No name)'
+            return ''
 
-    if isinstance(entity, (Chat, Channel)):
+    elif isinstance(entity, (Chat, Channel)):
         return entity.title
 
-    return '(unknown)'
+    return ''
 
 # For some reason, .webp (stickers' format) is not registered
 add_type('image/webp', '.webp')
