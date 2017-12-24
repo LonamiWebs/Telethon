@@ -138,23 +138,24 @@ class TelegramClient(TelegramBareClient):
         :param str | int phone:
             The phone to which the code will be sent.
         :param bool force_sms:
-            Whether to force sending as SMS. You should call it at least
-            once before without this set to True first.
+            Whether to force sending as SMS.
         :return auth.SentCode:
             Information about the result of the request.
         """
         phone = EntityDatabase.parse_phone(phone) or self._phone
-        if force_sms:
-            if not self._phone_code_hash:
-                raise ValueError(
-                    'You must call this method without force_sms at least once.'
-                )
-            result = self(ResendCodeRequest(phone, self._phone_code_hash))
-        else:
+
+        if not self._phone_code_hash:
             result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
             self._phone_code_hash = result.phone_code_hash
+        else:
+            force_sms = True
 
         self._phone = phone
+
+        if force_sms:
+            result = self(ResendCodeRequest(phone, self._phone_code_hash))
+            self._phone_code_hash = result.phone_code_hash
+
         return result
 
     def sign_in(self, phone=None, code=None,
