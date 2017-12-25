@@ -1,4 +1,6 @@
-# Python rough implementation of a C# TCP client
+"""
+This module holds a rough implementation of the C# TCP client.
+"""
 import errno
 import socket
 from datetime import timedelta
@@ -7,7 +9,14 @@ from threading import Lock
 
 
 class TcpClient:
+    """A simple TCP client to ease the work with sockets and proxies."""
     def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
+        """
+        Initializes the TCP client.
+
+        :param proxy: the proxy to be used, if any.
+        :param timeout: the timeout for connect, read and write operations.
+        """
         self.proxy = proxy
         self._socket = None
         self._closing_lock = Lock()
@@ -33,10 +42,19 @@ class TcpClient:
         self._socket.settimeout(self.timeout)
 
     def connect(self, ip, port):
-        """Connects to the specified IP and port number.
-           'timeout' must be given in seconds
+        """
+        Tries connecting forever  to IP:port unless an OSError is raised.
+
+        :param ip: the IP to connect to.
+        :param port: the port to connect to.
         """
         if ':' in ip:  # IPv6
+            # The address needs to be surrounded by [] as discussed on PR#425
+            if not ip.startswith('['):
+                ip = '[' + ip
+            if not ip.endswith(']'):
+                ip = ip + ']'
+
             mode, address = socket.AF_INET6, (ip, port, 0, 0)
         else:
             mode, address = socket.AF_INET, (ip, port)
@@ -59,12 +77,13 @@ class TcpClient:
                     raise
 
     def _get_connected(self):
-        return self._socket is not None
+        """Determines whether the client is connected or not."""
+        return self._socket is not None and self._socket.fileno() >= 0
 
     connected = property(fget=_get_connected)
 
     def close(self):
-        """Closes the connection"""
+        """Closes the connection."""
         if self._closing_lock.locked():
             # Already closing, no need to close again (avoid None.close())
             return
@@ -80,7 +99,11 @@ class TcpClient:
                 self._socket = None
 
     def write(self, data):
-        """Writes (sends) the specified bytes to the connected peer"""
+        """
+        Writes (sends) the specified bytes to the connected peer.
+
+        :param data: the data to send.
+        """
         if self._socket is None:
             raise ConnectionResetError()
 
@@ -90,7 +113,7 @@ class TcpClient:
             self._socket.sendall(data)
         except socket.timeout as e:
             raise TimeoutError() from e
-        except BrokenPipeError:
+        except ConnectionError:
             self._raise_connection_reset()
         except OSError as e:
             if e.errno == errno.EBADF:
@@ -99,13 +122,11 @@ class TcpClient:
                 raise
 
     def read(self, size):
-        """Reads (receives) a whole block of 'size bytes
-           from the connected peer.
+        """
+        Reads (receives) a whole block of size bytes from the connected peer.
 
-           A timeout can be specified, which will cancel the operation if
-           no data has been read in the specified time. If data was read
-           and it's waiting for more, the timeout will NOT cancel the
-           operation. Set to None for no timeout
+        :param size: the size of the block to be read.
+        :return: the read data with len(data) == size.
         """
         if self._socket is None:
             raise ConnectionResetError()
@@ -118,6 +139,8 @@ class TcpClient:
                     partial = self._socket.recv(bytes_left)
                 except socket.timeout as e:
                     raise TimeoutError() from e
+                except ConnectionError:
+                    self._raise_connection_reset()
                 except OSError as e:
                     if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
                         self._raise_connection_reset()
@@ -135,5 +158,6 @@ class TcpClient:
             return buffer.raw.getvalue()
 
     def _raise_connection_reset(self):
+        """Disconnects the client and raises ConnectionResetError."""
         self.close()  # Connection reset -> flag as socket closed
         raise ConnectionResetError('The server has closed the connection.')

@@ -19,7 +19,7 @@ from .tl.types import (
     DocumentEmpty, InputDocumentEmpty, Message, GeoPoint, InputGeoPoint,
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
-    FileLocationUnavailable, InputMediaUploadedDocument,
+    FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos
 )
 
@@ -35,12 +35,12 @@ def get_display_name(entity):
         elif entity.last_name:
             return entity.last_name
         else:
-            return '(No name)'
+            return ''
 
-    if isinstance(entity, (Chat, Channel)):
+    elif isinstance(entity, (Chat, Channel)):
         return entity.title
 
-    return '(unknown)'
+    return ''
 
 # For some reason, .webp (stickers' format) is not registered
 add_type('image/webp', '.webp')
@@ -84,13 +84,13 @@ def get_input_peer(entity, allow_self=True):
         if entity.is_self and allow_self:
             return InputPeerSelf()
         else:
-            return InputPeerUser(entity.id, entity.access_hash)
+            return InputPeerUser(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, (Chat, ChatEmpty, ChatForbidden)):
         return InputPeerChat(entity.id)
 
     if isinstance(entity, (Channel, ChannelForbidden)):
-        return InputPeerChannel(entity.id, entity.access_hash)
+        return InputPeerChannel(entity.id, entity.access_hash or 0)
 
     # Less common cases
     if isinstance(entity, UserEmpty):
@@ -98,6 +98,9 @@ def get_input_peer(entity, allow_self=True):
 
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
+
+    if isinstance(entity, InputUserSelf):
+        return InputPeerSelf()
 
     if isinstance(entity, UserFull):
         return get_input_peer(entity.user)
@@ -120,7 +123,7 @@ def get_input_channel(entity):
         return entity
 
     if isinstance(entity, (Channel, ChannelForbidden)):
-        return InputChannel(entity.id, entity.access_hash)
+        return InputChannel(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, InputPeerChannel):
         return InputChannel(entity.channel_id, entity.access_hash)
@@ -140,7 +143,7 @@ def get_input_user(entity):
         if entity.is_self:
             return InputUserSelf()
         else:
-            return InputUser(entity.id, entity.access_hash)
+            return InputUser(entity.id, entity.access_hash or 0)
 
     if isinstance(entity, InputPeerSelf):
         return InputUserSelf()
@@ -322,8 +325,13 @@ def get_peer_id(peer, add_mark=False):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
         return -peer.chat_id if add_mark else peer.chat_id
-    elif isinstance(peer, (PeerChannel, InputPeerChannel)):
-        i = peer.channel_id
+    elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
+        if isinstance(peer, ChannelFull):
+            # Special case: .get_input_peer can't return InputChannel from
+            # ChannelFull since it doesn't have an .access_hash attribute.
+            i = peer.id
+        else:
+            i = peer.channel_id
         if add_mark:
             # Concat -100 through math tricks, .to_supergroup() on Madeline
             # IDs will be strictly positive -> log works

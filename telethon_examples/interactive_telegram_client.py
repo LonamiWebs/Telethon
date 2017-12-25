@@ -354,7 +354,7 @@ class InteractiveTelegramClient(TelegramClient):
                     update.message, get_display_name(who)
                 ))
             else:
-                sprint('<< {} sent "{}"]'.format(
+                sprint('<< {} sent "{}"'.format(
                     get_display_name(who), update.message
                 ))
 

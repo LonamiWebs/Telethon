@@ -1,3 +1,7 @@
+"""
+This module contains the class used to communicate with Telegram's servers
+encrypting every packet, and relies on a valid AuthKey in the used Session.
+"""
 import gzip
 import logging
 import struct
@@ -17,7 +21,7 @@ from ..tl.types import (
 )
 from ..tl.functions.auth import LogOutRequest
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+__log__ = logging.getLogger(__name__)
 
 
 class MtProtoSender:
@@ -31,12 +35,17 @@ class MtProtoSender:
     """
 
     def __init__(self, session, connection):
-        """Creates a new MtProtoSender configured to send messages through
-           'connection' and using the parameters from 'session'.
+        """
+        Initializes a new MTProto sender.
+
+        :param session:
+            the Session to be used with this sender. Must contain the IP and
+            port of the server, salt, ID, and AuthKey,
+        :param connection:
+            the Connection to be used.
         """
         self.session = session
         self.connection = connection
-        self._logger = logging.getLogger(__name__)
 
         # Message IDs that need confirmation
         self._need_confirmation = set()
@@ -45,28 +54,36 @@ class MtProtoSender:
         self._pending_receive = {}
 
     def connect(self):
-        """Connects to the server"""
+        """Connects to the server."""
         self.connection.connect(self.session.server_address, self.session.port)
 
     def is_connected(self):
+        """
+        Determines whether the sender is connected or not.
+
+        :return: true if the sender is connected.
+        """
         return self.connection.is_connected()
 
     def disconnect(self):
-        """Disconnects from the server"""
+        """Disconnects from the server."""
         self.connection.close()
         self._need_confirmation.clear()
         self._clear_all_pending()
 
     def clone(self):
-        """Creates a copy of this MtProtoSender as a new connection"""
+        """Creates a copy of this MtProtoSender as a new connection."""
         return MtProtoSender(self.session, self.connection.clone())
 
     # region Send and receive
 
     def send(self, *requests):
-        """Sends the specified MTProtoRequest, previously sending any message
-           which needed confirmation."""
+        """
+        Sends the specified TLObject(s) (which must be requests),
+        and acknowledging any message which needed confirmation.
 
+        :param requests: the requests to be sent.
+        """
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
@@ -91,18 +108,23 @@ class MtProtoSender:
         self._send_message(message)
 
     def _send_acknowledge(self, msg_id):
-        """Sends a message acknowledge for the given msg_id"""
+        """Sends a message acknowledge for the given msg_id."""
         self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
 
     def receive(self, update_state):
-        """Receives a single message from the connected endpoint.
+        """
+        Receives a single message from the connected endpoint.
 
-           This method returns nothing, and will only affect other parts
-           of the MtProtoSender such as the updates callback being fired
-           or a pending request being confirmed.
+        This method returns nothing, and will only affect other parts
+        of the MtProtoSender such as the updates callback being fired
+        or a pending request being confirmed.
 
-           Any unhandled object (likely updates) will be passed to
-           update_state.process(TLObject).
+        Any unhandled object (likely updates) will be passed to
+        update_state.process(TLObject).
+
+        :param update_state:
+            the UpdateState that will process all the received
+            Update and Updates objects.
         """
         try:
             body = self.connection.recv()
@@ -114,6 +136,9 @@ class MtProtoSender:
             # "This packet should be skipped"; since this may have
             # been a result for a request, invalidate every request
             # and just re-invoke them to avoid problems
+            __log__.exception('Error while receiving server response. '
+                              '%d pending request(s) will be ignored',
+                              len(self._pending_receive))
             self._clear_all_pending()
             return
 
@@ -126,10 +151,13 @@ class MtProtoSender:
     # region Low level processing
 
     def _send_message(self, message):
-        """Sends the given Message(TLObject) encrypted through the network"""
+        """
+        Sends the given encrypted through the network.
 
+        :param message: the TLMessage to be sent.
+        """
         plain_text = \
-            struct.pack('<QQ', self.session.salt, self.session.id) \
+            struct.pack('<qq', self.session.salt, self.session.id) \
             + bytes(message)
 
         msg_key = utils.calc_msg_key(plain_text)
@@ -141,7 +169,12 @@ class MtProtoSender:
         self.connection.send(result)
 
     def _decode_msg(self, body):
-        """Decodes an received encrypted message body bytes"""
+        """
+        Decodes the body of the payload received from the network.
+
+        :param body: the body to be decoded.
+        :return: a tuple of (decoded message, remote message id, remote seq).
+        """
         message = None
         remote_msg_id = None
         remote_sequence = None
@@ -172,101 +205,114 @@ class MtProtoSender:
         return message, remote_msg_id, remote_sequence
 
     def _process_msg(self, msg_id, sequence, reader, state):
-        """Processes and handles a Telegram message.
-
-           Returns True if the message was handled correctly and doesn't
-           need to be skipped. Returns False otherwise.
         """
+        Processes the message read from the network inside reader.
 
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the BinaryReader that contains the message.
+        :param state: the current UpdateState.
+        :return: true if the message was handled correctly, false otherwise.
+        """
         # TODO Check salt, session_id and sequence_number
         self._need_confirmation.add(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        # The following codes are "parsed manually"
+        # These are a bit of special case, not yet generated by the code gen
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
+            __log__.debug('Processing Remote Procedure Call result')
             return self._handle_rpc_result(msg_id, sequence, reader)
 
-        if code == Pong.CONSTRUCTOR_ID:
-            return self._handle_pong(msg_id, sequence, reader)
-
         if code == MessageContainer.CONSTRUCTOR_ID:
+            __log__.debug('Processing container result')
             return self._handle_container(msg_id, sequence, reader, state)
 
         if code == GzipPacked.CONSTRUCTOR_ID:
+            __log__.debug('Processing gzipped result')
             return self._handle_gzip_packed(msg_id, sequence, reader, state)
 
-        if code == BadServerSalt.CONSTRUCTOR_ID:
-            return self._handle_bad_server_salt(msg_id, sequence, reader)
+        if code not in tlobjects:
+            __log__.warning(
+                'Unknown message with ID %d, data left in the buffer %s',
+                hex(code), repr(reader.get_bytes()[reader.tell_position():])
+            )
+            return False
 
-        if code == BadMsgNotification.CONSTRUCTOR_ID:
-            return self._handle_bad_msg_notification(msg_id, sequence, reader)
+        obj = reader.tgread_object()
+        __log__.debug('Processing %s result', type(obj).__name__)
 
-        if code == MsgDetailedInfo.CONSTRUCTOR_ID:
-            return self._handle_msg_detailed_info(msg_id, sequence, reader)
+        if isinstance(obj, Pong):
+            return self._handle_pong(msg_id, sequence, obj)
 
-        if code == MsgNewDetailedInfo.CONSTRUCTOR_ID:
-            return self._handle_msg_new_detailed_info(msg_id, sequence, reader)
+        if isinstance(obj, BadServerSalt):
+            return self._handle_bad_server_salt(msg_id, sequence, obj)
 
-        if code == NewSessionCreated.CONSTRUCTOR_ID:
-            return self._handle_new_session_created(msg_id, sequence, reader)
+        if isinstance(obj, BadMsgNotification):
+            return self._handle_bad_msg_notification(msg_id, sequence, obj)
 
-        if code == MsgsAck.CONSTRUCTOR_ID:  # may handle the request we wanted
-            ack = reader.tgread_object()
-            assert isinstance(ack, MsgsAck)
+        if isinstance(obj, MsgDetailedInfo):
+            return self._handle_msg_detailed_info(msg_id, sequence, obj)
+
+        if isinstance(obj, MsgNewDetailedInfo):
+            return self._handle_msg_new_detailed_info(msg_id, sequence, obj)
+
+        if isinstance(obj, NewSessionCreated):
+            return self._handle_new_session_created(msg_id, sequence, obj)
+
+        if isinstance(obj, MsgsAck):  # may handle the request we wanted
             # Ignore every ack request *unless* when logging out, when it's
             # when it seems to only make sense. We also need to set a non-None
             # result since Telegram doesn't send the response for these.
-            for msg_id in ack.msg_ids:
+            for msg_id in obj.msg_ids:
                 r = self._pop_request_of_type(msg_id, LogOutRequest)
                 if r:
                     r.result = True  # Telegram won't send this value
                     r.confirm_received.set()
-                    self._logger.debug('Message ack confirmed', r)
 
             return True
 
-        # If the code is not parsed manually then it should be a TLObject.
-        if code in tlobjects:
-            result = reader.tgread_object()
-            self.session.process_entities(result)
-            if state:
-                state.process(result)
+        # If the object isn't any of the above, then it should be an Update.
+        self.session.process_entities(obj)
+        if state:
+            state.process(obj)
 
-            return True
-
-        self._logger.debug(
-            '[WARN] Unknown message: {}, data left in the buffer: {}'
-            .format(
-                hex(code), repr(reader.get_bytes()[reader.tell_position():])
-            )
-        )
-        return False
+        return True
 
     # endregion
 
     # region Message handling
 
     def _pop_request(self, msg_id):
-        """Pops a pending REQUEST from self._pending_receive, or
-           returns None if it's not found.
+        """
+        Pops a pending **request** from self._pending_receive.
+
+        :param msg_id: the ID of the message that belongs to the request.
+        :return: the request, or None if it wasn't found.
         """
         message = self._pending_receive.pop(msg_id, None)
         if message:
             return message.request
 
     def _pop_request_of_type(self, msg_id, t):
-        """Pops a pending REQUEST from self._pending_receive if it matches
-           the given type, or returns None if it's not found/doesn't match.
+        """
+        Pops a pending **request** from self._pending_receive.
+
+        :param msg_id: the ID of the message that belongs to the request.
+        :param t: the type of the desired request.
+        :return: the request matching the type t, or None if it wasn't found.
         """
         message = self._pending_receive.get(msg_id, None)
         if message and isinstance(message.request, t):
             return self._pending_receive.pop(msg_id).request
 
     def _pop_requests_of_container(self, container_msg_id):
-        """Pops the pending requests (plural) from self._pending_receive if
-           they were sent on a container that matches container_msg_id.
+        """
+        Pops pending **requests** from self._pending_receive.
+
+        :param container_msg_id: the ID of the container.
+        :return: the requests that belong to the given container. May be empty.
         """
         msgs = [msg for msg in self._pending_receive.values()
                 if msg.container_msg_id == container_msg_id]
@@ -277,13 +323,19 @@ class MtProtoSender:
         return requests
 
     def _clear_all_pending(self):
+        """
+        Clears all pending requests, and flags them all as received.
+        """
         for r in self._pending_receive.values():
             r.request.confirm_received.set()
         self._pending_receive.clear()
 
     def _resend_request(self, msg_id):
-        """Re-sends the request that belongs to a certain msg_id. This may
-           also be the msg_id of a container if they were sent in one.
+        """
+        Re-sends the request that belongs to a certain msg_id. This may
+        also be the msg_id of a container if they were sent in one.
+
+        :param msg_id: the ID of the request to be resent.
         """
         request = self._pop_request(msg_id)
         if request:
@@ -292,21 +344,31 @@ class MtProtoSender:
         if requests:
             return self.send(*requests)
 
-    def _handle_pong(self, msg_id, sequence, reader):
-        self._logger.debug('Handling pong')
-        pong = reader.tgread_object()
-        assert isinstance(pong, Pong)
+    def _handle_pong(self, msg_id, sequence, pong):
+        """
+        Handles a Pong response.
 
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the Pong.
+        :return: true, as it always succeeds.
+        """
         request = self._pop_request(pong.msg_id)
         if request:
-            self._logger.debug('Pong confirmed a request')
             request.result = pong
             request.confirm_received.set()
 
         return True
 
     def _handle_container(self, msg_id, sequence, reader, state):
-        self._logger.debug('Handling container')
+        """
+        Handles a MessageContainer response.
+
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the MessageContainer.
+        :return: true, as it always succeeds.
+        """
         for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
 
@@ -322,15 +384,16 @@ class MtProtoSender:
 
         return True
 
-    def _handle_bad_server_salt(self, msg_id, sequence, reader):
-        self._logger.debug('Handling bad server salt')
-        bad_salt = reader.tgread_object()
-        assert isinstance(bad_salt, BadServerSalt)
+    def _handle_bad_server_salt(self, msg_id, sequence, bad_salt):
+        """
+        Handles a BadServerSalt response.
 
-        # Our salt is unsigned, but the objects work with signed salts
-        self.session.salt = struct.unpack(
-            '<Q', struct.pack('<q', bad_salt.new_server_salt)
-        )[0]
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the BadServerSalt.
+        :return: true, as it always succeeds.
+        """
+        self.session.salt = bad_salt.new_server_salt
         self.session.save()
 
         # "the bad_server_salt response is received with the
@@ -338,60 +401,91 @@ class MtProtoSender:
         self._resend_request(bad_salt.bad_msg_id)
         return True
 
-    def _handle_bad_msg_notification(self, msg_id, sequence, reader):
-        self._logger.debug('Handling bad message notification')
-        bad_msg = reader.tgread_object()
-        assert isinstance(bad_msg, BadMsgNotification)
+    def _handle_bad_msg_notification(self, msg_id, sequence, bad_msg):
+        """
+        Handles a BadMessageError response.
 
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the BadMessageError.
+        :return: true, as it always succeeds.
+        """
         error = BadMessageError(bad_msg.error_code)
+        __log__.warning('Read bad msg notification %s: %s', bad_msg, error)
         if bad_msg.error_code in (16, 17):
             # sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
-            self._logger.debug('Read Bad Message error: ' + str(error))
-            self._logger.debug('Attempting to use the correct time offset.')
+            __log__.info('Attempting to use the correct time offset')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session._sequence += 64
+            __log__.info('Attempting to set the right higher sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session._sequence -= 16
+            __log__.info('Attempting to set the right lower sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
             raise error
 
-    def _handle_msg_detailed_info(self, msg_id, sequence, reader):
-        msg_new = reader.tgread_object()
-        assert isinstance(msg_new, MsgDetailedInfo)
+    def _handle_msg_detailed_info(self, msg_id, sequence, msg_new):
+        """
+        Handles a MsgDetailedInfo response.
 
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the MsgDetailedInfo.
+        :return: true, as it always succeeds.
+        """
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/VvpCC6
         self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
-    def _handle_msg_new_detailed_info(self, msg_id, sequence, reader):
-        msg_new = reader.tgread_object()
-        assert isinstance(msg_new, MsgNewDetailedInfo)
+    def _handle_msg_new_detailed_info(self, msg_id, sequence, msg_new):
+        """
+        Handles a MsgNewDetailedInfo response.
 
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the MsgNewDetailedInfo.
+        :return: true, as it always succeeds.
+        """
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/G7DPsR
         self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
-    def _handle_new_session_created(self, msg_id, sequence, reader):
-        new_session = reader.tgread_object()
-        assert isinstance(new_session, NewSessionCreated)
+    def _handle_new_session_created(self, msg_id, sequence, new_session):
+        """
+        Handles a NewSessionCreated response.
+
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the NewSessionCreated.
+        :return: true, as it always succeeds.
+        """
+        self.session.salt = new_session.server_salt
         # TODO https://goo.gl/LMyN7A
         return True
 
     def _handle_rpc_result(self, msg_id, sequence, reader):
-        self._logger.debug('Handling RPC result')
+        """
+        Handles a RPCResult response.
+
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the RPCResult.
+        :return: true if the request ID to which this result belongs is found,
+                 false otherwise (meaning nothing was read).
+        """
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
@@ -417,11 +511,9 @@ class MtProtoSender:
                 request.confirm_received.set()
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
-            self._logger.debug('Read RPC error: %s', str(error))
             return True  # All contents were read okay
 
         elif request:
-            self._logger.debug('Reading request response')
             if inner_code == 0x3072cfa1:  # GZip packed
                 unpacked_data = gzip.decompress(reader.tgread_bytes())
                 with BinaryReader(unpacked_data) as compressed_reader:
@@ -436,11 +528,18 @@ class MtProtoSender:
 
         # If it's really a result for RPC from previous connection
         # session, it will be skipped by the handle_container()
-        self._logger.debug('Lost request will be skipped.')
+        __log__.warning('Lost request will be skipped')
         return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
-        self._logger.debug('Handling gzip packed data')
+        """
+        Handles a GzipPacked response.
+
+        :param msg_id: the ID of the message.
+        :param sequence: the sequence of the message.
+        :param reader: the reader containing the GzipPacked.
+        :return: the result of processing the packed message.
+        """
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
             # We are reentering process_msg, which seemingly the same msg_id
             # to the self._need_confirmation set. Remove it from there first
