@@ -86,7 +86,7 @@ class TelegramBareClient:
         if not api_id or not api_hash:
             raise PermissionError(
                 "Your API ID or Hash cannot be empty or None. "
-                "Refer to Telethon's README.rst for more information.")
+                "Refer to Telethon's wiki for more information.")
 
         self._use_ipv6 = use_ipv6
         
