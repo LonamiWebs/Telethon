@@ -311,8 +311,10 @@ class TLGenerator:
 
         for ra in repeated_args.values():
             if len(ra) > 1:
-                cnd1 = ('self.{}'.format(a.name) for a in ra)
-                cnd2 = ('not self.{}'.format(a.name) for a in ra)
+                cnd1 = ('(self.{0} or self.{0} is not None)'
+                        .format(a.name) for a in ra)
+                cnd2 = ('(self.{0} is None or self.{0} is False)'
+                        .format(a.name) for a in ra)
                 builder.writeln(
                     "assert ({}) or ({}), '{} parameters must all "
                     "be False-y (like None) or all me True-y'".format(
