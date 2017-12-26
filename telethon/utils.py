@@ -5,6 +5,8 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 import math
 from mimetypes import add_type, guess_extension
 
+import re
+
 from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
@@ -21,6 +23,11 @@ from .tl.types import (
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos
+)
+
+
+USERNAME_RE = re.compile(
+    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 
 
@@ -303,6 +310,29 @@ def get_input_media(media, user_caption=None, is_photo=False):
         return get_input_media(media.media)
 
     _raise_cast_fail(media, 'InputMedia')
+
+
+def parse_phone(phone):
+    """Parses the given phone, or returns None if it's invalid"""
+    if isinstance(phone, int):
+        return str(phone)
+    else:
+        phone = re.sub(r'[+()\s-]', '', str(phone))
+        if phone.isdigit():
+            return phone
+
+
+def parse_username(username):
+    """Parses the given username or channel access hash, given
+       a string, username or URL. Returns a tuple consisting of
+       both the stripped username and whether it is a joinchat/ hash.
+    """
+    username = username.strip()
+    m = USERNAME_RE.match(username)
+    if m:
+        return username[m.end():], bool(m.group(1))
+    else:
+        return username, False
 
 
 def get_peer_id(peer, add_mark=False):

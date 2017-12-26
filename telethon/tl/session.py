@@ -8,8 +8,12 @@ from base64 import b64decode
 from os.path import isfile as file_exists
 from threading import Lock
 
-from .entity_database import EntityDatabase
-from .. import helpers
+from .. import utils, helpers
+from ..tl import TLObject
+from ..tl.types import (
+    PeerUser, PeerChat, PeerChannel,
+    InputPeerUser, InputPeerChat, InputPeerChannel
+)
 
 EXTENSION = '.session'
 CURRENT_VERSION = 1  # database version
@@ -75,10 +79,9 @@ class Session:
         self._auth_key = None
         self._layer = 0
         self._salt = 0  # Signed long
-        self.entities = EntityDatabase()  # Known and cached entities
 
         # Migrating from .json -> SQL
-        self._check_migrate_json()
+        entities = self._check_migrate_json()
 
         self._conn = sqlite3.connect(self.filename, check_same_thread=False)
         c = self._conn.cursor()
@@ -114,14 +117,20 @@ class Session:
             )
             c.execute(
                 """create table entities (
-                    id integer,
-                    hash integer,
+                    id integer primary key,
+                    hash integer not null,
                     username text,
                     phone integer,
                     name text
                 )"""
             )
             c.execute("insert into version values (1)")
+            # Migrating from JSON -> new table and may have entities
+            if entities:
+                c.executemany(
+                    'insert or replace into entities values (?,?,?,?,?)',
+                    entities
+                )
             c.close()
             self.save()
 
@@ -130,6 +139,8 @@ class Session:
             try:
                 with open(self.filename, encoding='utf-8') as f:
                     data = json.load(f)
+                self.delete()  # Delete JSON file to create database
+
                 self._port = data.get('port', self._port)
                 self._salt = data.get('salt', self._salt)
                 # Keep while migrating from unsigned to signed salt
@@ -146,10 +157,12 @@ class Session:
                     key = b64decode(data['auth_key_data'])
                     self._auth_key = AuthKey(data=key)
 
-                self.entities = EntityDatabase(data.get('entities', []))
-                self.delete()  # Delete JSON file to create database
+                rows = []
+                for p_id, p_hash in data.get('entities', []):
+                    rows.append((p_id, p_hash, None, None, None))
+                return rows
             except (UnicodeDecodeError, json.decoder.JSONDecodeError):
-                pass
+                return []  # No entities
 
     def _upgrade_database(self, old):
         pass
@@ -275,9 +288,103 @@ class Session:
         correct = correct_msg_id >> 32
         self.time_offset = correct - now
 
-    def process_entities(self, tlobject):
-        try:
-            if self.entities.process(tlobject):
-                self.save()  # Save if any new entities got added
-        except:
-            pass
+    # Entity processing
+
+    def process_entities(self, tlo):
+        """Processes all the found entities on the given TLObject,
+           unless .enabled is False.
+
+           Returns True if new input entities were added.
+        """
+        if not self.save_entities:
+            return
+
+        if not isinstance(tlo, TLObject) and hasattr(tlo, '__iter__'):
+            # This may be a list of users already for instance
+            entities = tlo
+        else:
+            entities = []
+            if hasattr(tlo, 'chats') and hasattr(tlo.chats, '__iter__'):
+                entities.extend(tlo.chats)
+            if hasattr(tlo, 'users') and hasattr(tlo.users, '__iter__'):
+                entities.extend(tlo.users)
+            if not entities:
+                return
+
+        rows = []  # Rows to add (id, hash, username, phone, name)
+        for e in entities:
+            if not isinstance(e, TLObject):
+                continue
+            try:
+                p = utils.get_input_peer(e, allow_self=False)
+                marked_id = utils.get_peer_id(p, add_mark=True)
+
+                p_hash = None
+                if isinstance(p, InputPeerChat):
+                    p_hash = 0
+                elif p.access_hash:
+                    # Some users and channels seem to be returned without
+                    # an 'access_hash', meaning Telegram doesn't want you
+                    # to access them. This is the reason behind ensuring
+                    # that the 'access_hash' is non-zero. See issue #354.
+                    p_hash = p.access_hash
+
+                if p_hash is not None:
+                    username = getattr(e, 'username', None)
+                    phone = getattr(e, 'phone', None)
+                    name = utils.get_display_name(e) or None
+                    rows.append((marked_id, p_hash, username, phone, name))
+            except ValueError:
+                pass
+        if not rows:
+            return
+
+        with self._db_lock:
+            self._conn.executemany(
+                'insert or replace into entities values (?,?,?,?,?)', rows
+            )
+        self.save()
+
+    def get_input_entity(self, key):
+        """Parses the given string, integer or TLObject key into a
+           marked entity ID, which is then used to fetch the hash
+           from the database.
+
+           If a callable key is given, every row will be fetched,
+           and passed as a tuple to a function, that should return
+           a true-like value when the desired row is found.
+
+           Raises ValueError if it cannot be found.
+        """
+        c = self._conn.cursor()
+        if isinstance(key, str):
+            phone = utils.parse_phone(key)
+            if phone:
+                c.execute('select id, hash from entities where phone=?',
+                          (phone,))
+            else:
+                username, _ = utils.parse_username(key)
+                c.execute('select id, hash from entities where username=?',
+                          (username,))
+
+        if isinstance(key, TLObject):
+            # crc32(b'InputPeer') and crc32(b'Peer')
+            if type(key).SUBCLASS_OF_ID == 0xc91c90b6:
+                return key
+            key = utils.get_peer_id(key, add_mark=True)
+
+        if isinstance(key, int):
+            c.execute('select id, hash from entities where id=?', (key,))
+
+        result = c.fetchone()
+        if result:
+            i, h = result  # unpack resulting tuple
+            i, k = utils.resolve_id(i)  # removes the mark and returns kind
+            if k == PeerUser:
+                return InputPeerUser(i, h)
+            elif k == PeerChat:
+                return InputPeerChat(i)
+            elif k == PeerChannel:
+                return InputPeerChannel(i, h)
+        else:
+            raise ValueError('Could not find input entity with key ', key)

@@ -19,7 +19,6 @@ from .errors import (
 from .network import ConnectionMode
 from .tl import TLObject
 from .tl.custom import Draft, Dialog
-from .tl.entity_database import EntityDatabase
 from .tl.functions.account import (
     GetPasswordRequest
 )
@@ -144,7 +143,7 @@ class TelegramClient(TelegramBareClient):
         :return auth.SentCode:
             Information about the result of the request.
         """
-        phone = EntityDatabase.parse_phone(phone) or self._phone
+        phone = utils.parse_phone(phone) or self._phone
 
         if not self._phone_code_hash:
             result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
@@ -188,7 +187,7 @@ class TelegramClient(TelegramBareClient):
         if phone and not code:
             return self.send_code_request(phone)
         elif code:
-            phone = EntityDatabase.parse_phone(phone) or self._phone
+            phone = utils.parse_phone(phone) or self._phone
             phone_code_hash = phone_code_hash or self._phone_code_hash
             if not phone:
                 raise ValueError(
@@ -1009,12 +1008,8 @@ class TelegramClient(TelegramBareClient):
             may be out of date.
         :return:
         """
-        if not force_fetch:
-            # Try to use cache unless we want to force a fetch
-            try:
-                return self.session.entities[entity]
-            except KeyError:
-                pass
+        # TODO Actually cache {id: entities} again
+        # >>> if not force_fetch: reuse cached
 
         if isinstance(entity, int) or (
                     isinstance(entity, TLObject) and
@@ -1022,36 +1017,38 @@ class TelegramClient(TelegramBareClient):
                         type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
             ie = self.get_input_entity(entity)
             if isinstance(ie, InputPeerUser):
-                self(GetUsersRequest([ie]))
+                return self(GetUsersRequest([ie]))[0]
             elif isinstance(ie, InputPeerChat):
-                self(GetChatsRequest([ie.chat_id]))
+                return self(GetChatsRequest([ie.chat_id])).chats[0]
             elif isinstance(ie, InputPeerChannel):
-                self(GetChannelsRequest([ie]))
-            try:
-                # session.process_entities has been called in the MtProtoSender
-                # with the result of these calls, so they should now be on the
-                # entities database.
-                return self.session.entities[ie]
-            except KeyError:
-                pass
+                return self(GetChannelsRequest([ie])).chats[0]
 
         if isinstance(entity, str):
-            return self._get_entity_from_string(entity)
+            # TODO This probably can be done better...
+            invite = self._load_entity_from_string(entity)
+            if invite:
+                return invite
+            return self.get_entity(self.session.get_input_entity(entity))
 
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
 
-    def _get_entity_from_string(self, string):
-        """Gets an entity from the given string, which may be a phone or
-           an username, and processes all the found entities on the session.
+    def _load_entity_from_string(self, string):
         """
-        phone = EntityDatabase.parse_phone(string)
+        Loads an entity from the given string, which may be a phone or
+        an username, and processes all the found entities on the session.
+
+        This method will effectively add the found users to the session
+        database, so it can be queried later.
+
+        May return a channel or chat if the string was an invite.
+        """
+        phone = utils.parse_phone(string)
         if phone:
-            entity = phone
             self(GetContactsRequest(0))
         else:
-            entity, is_join_chat = EntityDatabase.parse_username(string)
+            entity, is_join_chat = utils.parse_username(string)
             if is_join_chat:
                 invite = self(CheckChatInviteRequest(entity))
                 if isinstance(invite, ChatInvite):
@@ -1063,13 +1060,6 @@ class TelegramClient(TelegramBareClient):
                     return invite.chat
             else:
                 self(ResolveUsernameRequest(entity))
-        # MtProtoSender will call .process_entities on the requests made
-        try:
-            return self.session.entities[entity]
-        except KeyError:
-            raise ValueError(
-                'Could not find user with username {}'.format(entity)
-            )
 
     def get_input_entity(self, peer):
         """
@@ -1092,12 +1082,15 @@ class TelegramClient(TelegramBareClient):
         """
         try:
             # First try to get the entity from cache, otherwise figure it out
-            return self.session.entities.get_input_entity(peer)
+            return self.session.get_input_entity(peer)
         except KeyError:
             pass
 
         if isinstance(peer, str):
-            return utils.get_input_peer(self._get_entity_from_string(peer))
+            invite = self._load_entity_from_string(peer)
+            if invite:
+                return utils.get_input_peer(invite)
+            return self.session.get_input_entity(peer)
 
         is_peer = False
         if isinstance(peer, int):
@@ -1130,7 +1123,7 @@ class TelegramClient(TelegramBareClient):
                 exclude_pinned=True
             ))
             try:
-                return self.session.entities.get_input_entity(peer)
+                return self.session.get_input_entity(peer)
             except KeyError:
                 pass
 
