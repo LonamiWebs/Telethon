@@ -92,7 +92,7 @@ class TelegramBareClient:
         
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session)
+            session = Session(session)
         elif not isinstance(session, Session):
             raise ValueError(
                 'The given session must be a str or a Session instance.'
