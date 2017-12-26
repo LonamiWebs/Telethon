@@ -23,37 +23,34 @@ class Session:
        If you think the session has been compromised, close all the sessions
        through an official Telegram client to revoke the authorization.
     """
-    def __init__(self, session_user_id):
+    def __init__(self, session_id):
         """session_user_id should either be a string or another Session.
            Note that if another session is given, only parameters like
            those required to init a connection will be copied.
         """
         # These values will NOT be saved
         self.filename = ':memory:'
-        if isinstance(session_user_id, Session):
-            self.session_user_id = None
 
-            # For connection purposes
-            session = session_user_id
-            self.device_model = session.device_model
-            self.system_version = session.system_version
-            self.app_version = session.app_version
-            self.lang_code = session.lang_code
-            self.system_lang_code = session.system_lang_code
-            self.lang_pack = session.lang_pack
-            self.report_errors = session.report_errors
-            self.save_entities = session.save_entities
-            self.flood_sleep_threshold = session.flood_sleep_threshold
-
+        # For connection purposes
+        if isinstance(session_id, Session):
+            self.device_model = session_id.device_model
+            self.system_version = session_id.system_version
+            self.app_version = session_id.app_version
+            self.lang_code = session_id.lang_code
+            self.system_lang_code = session_id.system_lang_code
+            self.lang_pack = session_id.lang_pack
+            self.report_errors = session_id.report_errors
+            self.save_entities = session_id.save_entities
+            self.flood_sleep_threshold = session_id.flood_sleep_threshold
         else:  # str / None
-            if session_user_id:
-                self.filename = session_user_id
+            if session_id:
+                self.filename = session_id
                 if not self.filename.endswith(EXTENSION):
                     self.filename += EXTENSION
 
             system = platform.uname()
-            self.device_model = system.system if system.system else 'Unknown'
-            self.system_version = system.release if system.release else '1.0'
+            self.device_model = system.system or 'Unknown'
+            self.system_version = system.release or '1.0'
             self.app_version = '1.0'  # '0' will provoke error
             self.lang_code = 'en'
             self.system_lang_code = self.lang_code
@@ -62,6 +59,16 @@ class Session:
             self.save_entities = True
             self.flood_sleep_threshold = 60
 
+        self.id = helpers.generate_random_long(signed=True)
+        self._sequence = 0
+        self.time_offset = 0
+        self._last_msg_id = 0  # Long
+
+        # Cross-thread safety
+        self._seq_no_lock = Lock()
+        self._msg_id_lock = Lock()
+        self._db_lock = Lock()
+
         # These values will be saved
         self._server_address = None
         self._port = None
@@ -69,11 +76,6 @@ class Session:
         self._layer = 0
         self._salt = 0  # Signed long
         self.entities = EntityDatabase()  # Known and cached entities
-
-        # Cross-thread safety
-        self._seq_no_lock = Lock()
-        self._msg_id_lock = Lock()
-        self._db_lock = Lock()
 
         # Migrating from .json -> SQL
         self._check_migrate_json()
@@ -122,11 +124,6 @@ class Session:
             c.execute("insert into version values (1)")
             c.close()
             self.save()
-
-        self.id = helpers.generate_random_long(signed=True)
-        self._sequence = 0
-        self.time_offset = 0
-        self._last_msg_id = 0  # Long
 
     def _check_migrate_json(self):
         if file_exists(self.filename):
