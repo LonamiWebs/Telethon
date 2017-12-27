@@ -1079,7 +1079,7 @@ class TelegramClient(TelegramBareClient):
         try:
             # First try to get the entity from cache, otherwise figure it out
             return self.session.get_input_entity(peer)
-        except KeyError:
+        except ValueError:
             pass
 
         if isinstance(peer, str):
