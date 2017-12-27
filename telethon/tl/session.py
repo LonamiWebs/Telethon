@@ -330,7 +330,9 @@ class Session:
                     p_hash = p.access_hash
 
                 if p_hash is not None:
-                    username = getattr(e, 'username', '').lower() or None
+                    username = getattr(e, 'username', None) or None
+                    if username is not None:
+                        username = username.lower()
                     phone = getattr(e, 'phone', None)
                     name = utils.get_display_name(e) or None
                     rows.append((marked_id, p_hash, username, phone, name))
