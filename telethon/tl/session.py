@@ -122,7 +122,7 @@ class Session:
                     username text,
                     phone integer,
                     name text
-                )"""
+                ) without rowid"""
             )
             c.execute("insert into version values (1)")
             # Migrating from JSON -> new table and may have entities
