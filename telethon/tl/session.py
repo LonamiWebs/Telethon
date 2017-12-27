@@ -330,7 +330,7 @@ class Session:
                     p_hash = p.access_hash
 
                 if p_hash is not None:
-                    username = getattr(e, 'username', None)
+                    username = getattr(e, 'username', '').lower() or None
                     phone = getattr(e, 'phone', None)
                     name = utils.get_display_name(e) or None
                     rows.append((marked_id, p_hash, username, phone, name))
@@ -357,6 +357,11 @@ class Session:
            Raises ValueError if it cannot be found.
         """
         c = self._conn.cursor()
+        if isinstance(key, TLObject):
+            if type(key).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+                return key
+            key = utils.get_peer_id(key, add_mark=True)
+
         if isinstance(key, str):
             phone = utils.parse_phone(key)
             if phone:
@@ -366,12 +371,6 @@ class Session:
                 username, _ = utils.parse_username(key)
                 c.execute('select id, hash from entities where username=?',
                           (username,))
-
-        if isinstance(key, TLObject):
-            # crc32(b'InputPeer') and crc32(b'Peer')
-            if type(key).SUBCLASS_OF_ID == 0xc91c90b6:
-                return key
-            key = utils.get_peer_id(key, add_mark=True)
 
         if isinstance(key, int):
             c.execute('select id, hash from entities where id=?', (key,))

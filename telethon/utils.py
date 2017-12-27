@@ -325,14 +325,17 @@ def parse_phone(phone):
 def parse_username(username):
     """Parses the given username or channel access hash, given
        a string, username or URL. Returns a tuple consisting of
-       both the stripped username and whether it is a joinchat/ hash.
+       both the stripped, lowercase username and whether it is
+       a joinchat/ hash (in which case is not lowercase'd).
     """
     username = username.strip()
     m = USERNAME_RE.match(username)
     if m:
-        return username[m.end():], bool(m.group(1))
+        result = username[m.end():]
+        is_invite = bool(m.group(1))
+        return result if is_invite else result.lower(), is_invite
     else:
-        return username, False
+        return username.lower(), False
 
 
 def get_peer_id(peer, add_mark=False):
