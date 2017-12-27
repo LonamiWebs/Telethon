@@ -982,7 +982,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Small utilities to make users' life easier
 
-    def get_entity(self, entity, force_fetch=False):
+    def get_entity(self, entity):
         """
         Turns the given entity into a valid Telegram user or chat.
 
@@ -1001,16 +1001,8 @@ class TelegramClient(TelegramBareClient):
             If the entity is neither, and it's not a TLObject, an
             error will be raised.
 
-        :param force_fetch:
-            If True, the entity cache is bypassed and the entity is fetched
-            again with an API call. Defaults to False to avoid unnecessary
-            calls, but since a cached version would be returned, the entity
-            may be out of date.
-        :return:
+        :return: User, Chat or Channel corresponding to the input entity.
         """
-        # TODO Actually cache {id: entities} again
-        # >>> if not force_fetch: reuse cached
-
         if isinstance(entity, int) or (
                     isinstance(entity, TLObject) and
                 # crc32(b'InputPeer') and crc32(b'Peer')
@@ -1024,33 +1016,33 @@ class TelegramClient(TelegramBareClient):
                 return self(GetChannelsRequest([ie])).chats[0]
 
         if isinstance(entity, str):
-            # TODO This probably can be done better...
-            invite = self._load_entity_from_string(entity)
-            if invite:
-                return invite
-            return self.get_entity(self.session.get_input_entity(entity))
+            return self._get_entity_from_string(entity)
 
         raise ValueError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
 
-    def _load_entity_from_string(self, string):
+    def _get_entity_from_string(self, string):
         """
-        Loads an entity from the given string, which may be a phone or
+        Gets a full entity from the given string, which may be a phone or
         an username, and processes all the found entities on the session.
+        The string may also be a user link, or a channel/chat invite link.
 
-        This method will effectively add the found users to the session
-        database, so it can be queried later.
+        This method has the side effect of adding the found users to the
+        session database, so it can be queried later without API calls,
+        if this option is enabled on the session.
 
-        May return a channel or chat if the string was an invite.
+        Returns the found entity.
         """
         phone = utils.parse_phone(string)
         if phone:
-            self(GetContactsRequest(0))
+            for user in self(GetContactsRequest(0)).users:
+                if user.phone == phone:
+                    return user
         else:
-            entity, is_join_chat = utils.parse_username(string)
+            string, is_join_chat = utils.parse_username(string)
             if is_join_chat:
-                invite = self(CheckChatInviteRequest(entity))
+                invite = self(CheckChatInviteRequest(string))
                 if isinstance(invite, ChatInvite):
                     # If it's an invite to a chat, the user must join before
                     # for the link to be resolved and work, otherwise raise.
@@ -1059,7 +1051,10 @@ class TelegramClient(TelegramBareClient):
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
             else:
-                self(ResolveUsernameRequest(entity))
+                result = self(ResolveUsernameRequest(string))
+                for entity in itertools.chain(result.users, result.chats):
+                    if entity.username.lower() == string:
+                        return entity
 
     def get_input_entity(self, peer):
         """
@@ -1078,7 +1073,8 @@ class TelegramClient(TelegramBareClient):
 
             If in the end the access hash required for the peer was not found,
             a ValueError will be raised.
-        :return:
+
+        :return: InputPeerUser, InputPeerChat or InputPeerChannel.
         """
         try:
             # First try to get the entity from cache, otherwise figure it out
@@ -1087,10 +1083,7 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(peer, str):
-            invite = self._load_entity_from_string(peer)
-            if invite:
-                return utils.get_input_peer(invite)
-            return self.session.get_input_entity(peer)
+            return utils.get_input_peer(self._get_entity_from_string(peer))
 
         is_peer = False
         if isinstance(peer, int):
@@ -1110,22 +1103,22 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 
-        if self.session.save_entities:
-            # Not found, look in the latest dialogs.
-            # This is useful if for instance someone just sent a message but
-            # the updates didn't specify who, as this person or chat should
-            # be in the latest dialogs.
-            self(GetDialogsRequest(
-                offset_date=None,
-                offset_id=0,
-                offset_peer=InputPeerEmpty(),
-                limit=0,
-                exclude_pinned=True
-            ))
-            try:
-                return self.session.get_input_entity(peer)
-            except KeyError:
-                pass
+        # Not found, look in the latest dialogs.
+        # This is useful if for instance someone just sent a message but
+        # the updates didn't specify who, as this person or chat should
+        # be in the latest dialogs.
+        dialogs = self(GetDialogsRequest(
+            offset_date=None,
+            offset_id=0,
+            offset_peer=InputPeerEmpty(),
+            limit=0,
+            exclude_pinned=True
+        ))
+
+        target = utils.get_peer_id(peer, add_mark=True)
+        for entity in itertools.chain(dialogs.users, dialogs.chats):
+            if utils.get_peer_id(entity, add_mark=True) == target:
+                return utils.get_input_peer(entity)
 
         raise ValueError(
             'Could not find the input entity corresponding to "{}".'
