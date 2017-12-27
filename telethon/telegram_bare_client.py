@@ -299,7 +299,7 @@ class TelegramBareClient:
             self.disconnect()
             return self.connect()
 
-    def set_proxy(proxy):
+    def set_proxy(self, proxy):
         """Change the proxy used by the connections.
         """
         if self.is_connected():
