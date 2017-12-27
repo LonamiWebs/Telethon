@@ -954,6 +954,8 @@ class TelegramClient(TelegramBareClient):
                 name = None
 
             if not name:
+                if not date:
+                    date = datetime.now()
                 name = '{}_{}-{:02}-{:02}_{:02}-{:02}-{:02}'.format(
                     kind,
                     date.year, date.month, date.day,
