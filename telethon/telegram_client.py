@@ -14,7 +14,8 @@ from . import TelegramBareClient
 from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
-    PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError
+    PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError,
+    LocationInvalidError
 )
 from .network import ConnectionMode
 from .tl import TLObject
@@ -43,7 +44,7 @@ from .tl.functions.users import (
     GetUsersRequest
 )
 from .tl.functions.channels import (
-    GetChannelsRequest
+    GetChannelsRequest, GetFullChannelRequest
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
@@ -744,6 +745,7 @@ class TelegramClient(TelegramBareClient):
             None if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
         """
+        photo = entity
         possible_names = []
         if not isinstance(entity, TLObject) or type(entity).SUBCLASS_OF_ID in (
                 0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
@@ -769,31 +771,41 @@ class TelegramClient(TelegramBareClient):
             for attr in ('username', 'first_name', 'title'):
                 possible_names.append(getattr(entity, attr, None))
 
-            entity = entity.photo
+            photo = entity.photo
 
-        if not isinstance(entity, UserProfilePhoto) and \
-                not isinstance(entity, ChatPhoto):
+        if not isinstance(photo, UserProfilePhoto) and \
+                not isinstance(photo, ChatPhoto):
             return None
 
-        if download_big:
-            photo_location = entity.photo_big
-        else:
-            photo_location = entity.photo_small
-
+        photo_location = photo.photo_big if download_big else photo.photo_small
         file = self._get_proper_filename(
             file, 'profile_photo', '.jpg',
             possible_names=possible_names
         )
 
         # Download the media with the largest size input file location
-        self.download_file(
-            InputFileLocation(
-                volume_id=photo_location.volume_id,
-                local_id=photo_location.local_id,
-                secret=photo_location.secret
-            ),
-            file
-        )
+        try:
+            self.download_file(
+                InputFileLocation(
+                    volume_id=photo_location.volume_id,
+                    local_id=photo_location.local_id,
+                    secret=photo_location.secret
+                ),
+                file
+            )
+        except LocationInvalidError:
+            # See issue #500, Android app fails as of v4.6.0 (1155).
+            # The fix seems to be using the full channel chat photo.
+            ie = self.get_input_entity(entity)
+            if isinstance(ie, InputPeerChannel):
+                full = self(GetFullChannelRequest(ie))
+                return self._download_photo(
+                    full.full_chat.chat_photo, file,
+                    date=None, progress_callback=None
+                )
+            else:
+                # Until there's a report for chats, no need to.
+                return None
         return file
 
     def download_media(self, message, file=None, progress_callback=None):
@@ -833,7 +845,7 @@ class TelegramClient(TelegramBareClient):
         """Specialized version of .download_media() for photos"""
 
         # Determine the photo and its largest size
-        photo = mm_photo.photo
+        photo = getattr(mm_photo, 'photo', mm_photo)
         largest_size = photo.sizes[-1]
         file_size = largest_size.size
         largest_size = largest_size.location
