@@ -355,12 +355,13 @@ class Session:
 
            Raises ValueError if it cannot be found.
         """
-        c = self._conn.cursor()
         if isinstance(key, TLObject):
+            key = utils.get_input_peer(key)
             if type(key).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
                 return key
             key = utils.get_peer_id(key, add_mark=True)
 
+        c = self._conn.cursor()
         if isinstance(key, str):
             phone = utils.parse_phone(key)
             if phone:
@@ -375,6 +376,7 @@ class Session:
             c.execute('select id, hash from entities where id=?', (key,))
 
         result = c.fetchone()
+        c.close()
         if result:
             i, h = result  # unpack resulting tuple
             i, k = utils.resolve_id(i)  # removes the mark and returns kind
