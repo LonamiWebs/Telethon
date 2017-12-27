@@ -1021,7 +1021,12 @@ class TelegramClient(TelegramBareClient):
         chats = [x.chat_id for x in inputs if isinstance(x, InputPeerChat)]
         channels = [x for x in inputs if isinstance(x, InputPeerChannel)]
         if users:
-            users = self(GetUsersRequest(users))
+            # GetUsersRequest has a limit of 200 per call
+            tmp = []
+            while users:
+                curr, users = users[:200], users[200:]
+                tmp.extend(self(GetUsersRequest(curr)))
+            users = tmp
         if chats:  # TODO Handle chats slice?
             chats = self(GetChatsRequest(chats)).chats
         if channels:
