@@ -318,26 +318,23 @@ class Session:
             try:
                 p = utils.get_input_peer(e, allow_self=False)
                 marked_id = utils.get_peer_id(p, add_mark=True)
-
-                p_hash = None
-                if isinstance(p, InputPeerChat):
-                    p_hash = 0
-                elif p.access_hash:
-                    # Some users and channels seem to be returned without
-                    # an 'access_hash', meaning Telegram doesn't want you
-                    # to access them. This is the reason behind ensuring
-                    # that the 'access_hash' is non-zero. See issue #354.
-                    p_hash = p.access_hash
-
-                if p_hash is not None:
-                    username = getattr(e, 'username', None) or None
-                    if username is not None:
-                        username = username.lower()
-                    phone = getattr(e, 'phone', None)
-                    name = utils.get_display_name(e) or None
-                    rows.append((marked_id, p_hash, username, phone, name))
             except ValueError:
-                pass
+                continue
+
+            p_hash = getattr(p, 'access_hash', 0)
+            if p_hash is None:
+                # Some users and channels seem to be returned without
+                # an 'access_hash', meaning Telegram doesn't want you
+                # to access them. This is the reason behind ensuring
+                # that the 'access_hash' is non-zero. See issue #354.
+                continue
+
+            username = getattr(e, 'username', None) or None
+            if username is not None:
+                username = username.lower()
+            phone = getattr(e, 'phone', None)
+            name = utils.get_display_name(e) or None
+            rows.append((marked_id, p_hash, username, phone, name))
         if not rows:
             return
 
