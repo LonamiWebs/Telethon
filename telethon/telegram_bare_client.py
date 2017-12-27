@@ -299,6 +299,13 @@ class TelegramBareClient:
             self.disconnect()
             return self.connect()
 
+    def set_proxy(self, proxy):
+        """Change the proxy used by the connections.
+        """
+        if self.is_connected():
+            raise RuntimeError("You can't change the proxy while connected.")
+        self._sender.connection.conn.proxy = proxy
+
     # endregion
 
     # region Working with different connections/Data Centers
