@@ -301,7 +301,7 @@ class TelegramClient(TelegramBareClient):
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
-            return [], []
+            return []
 
         dialogs = OrderedDict()  # Use peer id as identifier to avoid dupes
         while len(dialogs) < limit:
