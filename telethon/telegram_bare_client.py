@@ -815,7 +815,7 @@ class TelegramBareClient:
 
     # endregion
 
-    # Constant read
+    # region Constant read
 
     def _set_connected_and_authorized(self):
         self._authorized = True
