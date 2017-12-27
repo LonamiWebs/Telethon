@@ -13,9 +13,8 @@ except ImportError:
 from . import TelegramBareClient
 from . import helpers, utils
 from .errors import (
-    RPCError, UnauthorizedError, InvalidParameterError, PhoneCodeEmptyError,
-    PhoneCodeExpiredError, PhoneCodeHashEmptyError, PhoneCodeInvalidError,
-    LocationInvalidError
+    RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
+    PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError
 )
 from .network import ConnectionMode
 from .tl import TLObject
@@ -381,7 +380,7 @@ class TelegramClient(TelegramBareClient):
             if parse_mode in {'md', 'markdown'}:
                 message, msg_entities = markdown.parse(message)
             else:
-                raise ValueError('Unknown parsing mode', parse_mode)
+                raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
         else:
             msg_entities = []
 
@@ -572,7 +571,7 @@ class TelegramClient(TelegramBareClient):
         """
         if max_id is None:
             if not messages:
-                raise InvalidParameterError(
+                raise ValueError(
                     'Either a message list or a max_id must be provided.')
 
             if hasattr(message, '__iter__'):
@@ -600,7 +599,7 @@ class TelegramClient(TelegramBareClient):
             # hex(crc32(b'Message')) = 0x790009e3
             return reply_to.id
 
-        raise ValueError('Invalid reply_to type: ', type(reply_to))
+        raise TypeError('Invalid reply_to type: {}'.format(type(reply_to)))
 
     # endregion
 
@@ -1053,7 +1052,7 @@ class TelegramClient(TelegramBareClient):
         if isinstance(entity, str):
             return self._get_entity_from_string(entity)
 
-        raise ValueError(
+        raise TypeError(
             'Cannot turn "{}" into any entity (user or chat)'.format(entity)
         )
 
@@ -1128,7 +1127,7 @@ class TelegramClient(TelegramBareClient):
                     pass
 
         if not is_peer:
-            raise ValueError(
+            raise TypeError(
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 

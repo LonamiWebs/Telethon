@@ -90,7 +90,7 @@ class DocsWriter:
     def end_menu(self):
         """Ends an opened menu"""
         if not self.menu_began:
-            raise ValueError('No menu had been started in the first place.')
+            raise RuntimeError('No menu had been started in the first place.')
         self.write('</ul>')
 
     def write_title(self, title, level=1):

@@ -7,9 +7,8 @@ import re
 from threading import Thread
 
 from .common import (
-    ReadCancelledError, InvalidParameterError, TypeNotFoundError,
-    InvalidChecksumError, BrokenAuthKeyError, SecurityError,
-    CdnFileTamperedError
+    ReadCancelledError, TypeNotFoundError, InvalidChecksumError,
+    BrokenAuthKeyError, SecurityError, CdnFileTamperedError
 )
 
 # This imports the base errors too, as they're imported there

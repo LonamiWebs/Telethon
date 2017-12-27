@@ -21,7 +21,7 @@ class Draft:
     @classmethod
     def _from_update(cls, client, update):
         if not isinstance(update, UpdateDraftMessage):
-            raise ValueError(
+            raise TypeError(
                 'You can only create a new `Draft` from a corresponding '
                 '`UpdateDraftMessage` object.'
             )

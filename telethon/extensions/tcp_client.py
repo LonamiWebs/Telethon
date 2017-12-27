@@ -26,7 +26,7 @@ class TcpClient:
         elif isinstance(timeout, (int, float)):
             self.timeout = float(timeout)
         else:
-            raise ValueError('Invalid timeout type', type(timeout))
+            raise TypeError('Invalid timeout type: {}'.format(type(timeout)))
 
     def _recreate_socket(self, mode):
         if self.proxy is None:
