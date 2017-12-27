@@ -987,7 +987,7 @@ class TelegramClient(TelegramBareClient):
         Turns the given entity into a valid Telegram user or chat.
 
         :param entity:
-            The entity to be transformed.
+            The entity (or iterable of entities) to be transformed.
             If it's a string which can be converted to an integer or starts
             with '+' it will be resolved as if it were a phone number.
 
@@ -1003,24 +1003,46 @@ class TelegramClient(TelegramBareClient):
 
         :return: User, Chat or Channel corresponding to the input entity.
         """
-        if isinstance(entity, int) or (
-                    isinstance(entity, TLObject) and
-                # crc32(b'InputPeer') and crc32(b'Peer')
-                        type(entity).SUBCLASS_OF_ID in (0xc91c90b6, 0x2d45687)):
-            ie = self.get_input_entity(entity)
-            if isinstance(ie, InputPeerUser):
-                return self(GetUsersRequest([ie]))[0]
-            elif isinstance(ie, InputPeerChat):
-                return self(GetChatsRequest([ie.chat_id])).chats[0]
-            elif isinstance(ie, InputPeerChannel):
-                return self(GetChannelsRequest([ie])).chats[0]
+        if not isinstance(entity, str) and hasattr(entity, '__iter__'):
+            single = False
+        else:
+            single = True
+            entity = (entity,)
 
-        if isinstance(entity, str):
-            return self._get_entity_from_string(entity)
+        # Group input entities by string (resolve username),
+        # input users (get users), input chat (get chats) and
+        # input channels (get channels) to get the most entities
+        # in the less amount of calls possible.
+        inputs = [
+            x if isinstance(x, str) else self.get_input_entity(x)
+            for x in entity
+        ]
+        users = [x for x in inputs if isinstance(x, InputPeerUser)]
+        chats = [x.chat_id for x in inputs if isinstance(x, InputPeerChat)]
+        channels = [x for x in inputs if isinstance(x, InputPeerChannel)]
+        if users:
+            users = self(GetUsersRequest(users))
+        if chats:  # TODO Handle chats slice?
+            chats = self(GetChatsRequest(chats)).chats
+        if channels:
+            channels = self(GetChannelsRequest(channels)).chats
 
-        raise ValueError(
-            'Cannot turn "{}" into any entity (user or chat)'.format(entity)
-        )
+        # Merge users, chats and channels into a single dictionary
+        id_entity = {
+            utils.get_peer_id(x, add_mark=True): x
+            for x in itertools.chain(users, chats, channels)
+        }
+
+        # We could check saved usernames and put them into the users,
+        # chats and channels list from before. While this would reduce
+        # the amount of ResolveUsername calls, it would fail to catch
+        # username changes.
+        result = [
+            self._get_entity_from_string(x) if isinstance(x, str)
+            else id_entity[utils.get_peer_id(x, add_mark=True)]
+            for x in inputs
+        ]
+        return result[0] if single else result
 
     def _get_entity_from_string(self, string):
         """
