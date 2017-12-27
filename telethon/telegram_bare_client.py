@@ -260,10 +260,6 @@ class TelegramBareClient:
         __log__.debug('Disconnecting the socket...')
         self._sender.disconnect()
 
-        if self._recv_thread:
-            __log__.debug('Joining the read thread...')
-            self._recv_thread.join()
-
         # TODO Shall we clear the _exported_sessions, or may be reused?
         pass
 
