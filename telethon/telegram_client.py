@@ -558,13 +558,13 @@ class TelegramClient(TelegramBareClient):
 
         return total_messages, messages, senders
 
-    def send_read_acknowledge(self, entity, messages=None, max_id=None):
+    def send_read_acknowledge(self, entity, message=None, max_id=None):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
 
         :param entity: The chat where these messages are located.
-        :param messages: Either a list of messages or a single message.
+        :param message: Either a list of messages or a single message.
         :param max_id: Overrides messages, until which message should the
                        acknowledge should be sent.
         :return:
@@ -574,15 +574,16 @@ class TelegramClient(TelegramBareClient):
                 raise InvalidParameterError(
                     'Either a message list or a max_id must be provided.')
 
-            if isinstance(messages, list):
-                max_id = max(msg.id for msg in messages)
+            if hasattr(message, '__iter__'):
+                max_id = max(msg.id for msg in message)
             else:
-                max_id = messages.id
+                max_id = message.id
 
-        return self(ReadHistoryRequest(
-            peer=self.get_input_entity(entity),
-            max_id=max_id
-        ))
+        entity = self.get_input_entity(entity)
+        if entity == InputPeerChannel:
+            return self(channels.ReadHistoryRequest(entity, max_id=max_id))
+        else:
+            return self(messages.ReadHistoryRequest(entity, max_id=max_id))
 
     @staticmethod
     def _get_reply_to(reply_to):
