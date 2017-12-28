@@ -154,6 +154,10 @@ class TelegramBareClient:
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
 
+        # The first request must be in invokeWithLayer(initConnection(X)).
+        # See https://core.telegram.org/api/invoking#saving-client-info.
+        self._first_request = True
+
         # Uploaded files cache so subsequent calls are instant
         self._upload_cache = {}
 
@@ -268,7 +272,7 @@ class TelegramBareClient:
             self._recv_thread.join()
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
-        pass
+        self._first_request = True  # On reconnect it will be first again
 
     def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
@@ -492,10 +496,6 @@ class TelegramBareClient:
     invoke = __call__
 
     def _invoke(self, sender, call_receive, update_state, *requests):
-        # We need to specify the new layer (by initializing a new
-        # connection) if it has changed from the latest known one.
-        init_connection = False  # TODO Only first call
-
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -503,14 +503,11 @@ class TelegramBareClient:
                 x.rpc_error = None
 
             if not self.session.auth_key:
-                # New key, we need to tell the server we're going to use
-                # the latest layer and initialize the connection doing so.
                 __log__.info('Need to generate new auth key before invoking')
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(self._sender.connection)
-                init_connection = True
 
-            if init_connection:
+            if self._first_request:
                 __log__.info('Initializing a new connection while invoking')
                 if len(requests) == 1:
                     requests = [self._wrap_init_connection(requests[0])]
@@ -552,6 +549,9 @@ class TelegramBareClient:
             else:
                 # User never called .connect(), so raise this error.
                 raise
+
+        # Clear the flag if we got this far
+        self._first_request = False
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)
