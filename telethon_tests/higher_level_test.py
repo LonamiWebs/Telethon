@@ -18,7 +18,7 @@ class HigherLevelTests(unittest.TestCase):
     @staticmethod
     def test_cdn_download():
         client = TelegramClient(None, api_id, api_hash)
-        client.session.server_address = '149.154.167.40'
+        client.session.set_dc(0, '149.154.167.40', 80)
         assert client.connect()
 
         try:
