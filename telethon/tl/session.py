@@ -154,7 +154,7 @@ class Session:
                 for p_id, p_hash in data.get('entities', []):
                     rows.append((p_id, p_hash, None, None, None))
                 return rows
-            except (UnicodeDecodeError, json.decoder.JSONDecodeError):
+            except UnicodeDecodeError:
                 return []  # No entities
 
     def _upgrade_database(self, old):
