@@ -107,6 +107,7 @@ class Session:
         else:
             # Tables don't exist, create new ones
             c.execute("create table version (version integer)")
+            c.execute("insert into version values (?)", (CURRENT_VERSION,))
             c.execute(
                 """create table sessions (
                     dc_id integer primary key,
@@ -124,7 +125,6 @@ class Session:
                     name text
                 ) without rowid"""
             )
-            c.execute("insert into version values (1)")
             # Migrating from JSON -> new table and may have entities
             if entities:
                 c.executemany(
