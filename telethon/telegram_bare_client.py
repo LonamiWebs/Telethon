@@ -39,6 +39,7 @@ from .update_state import UpdateState
 from .utils import get_appropriated_part_size
 
 
+DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
@@ -101,9 +102,11 @@ class TelegramBareClient:
         # ':' in session.server_address is True if it's an IPv6 address
         if (not session.server_address or
                 (':' in session.server_address) != use_ipv6):
-            session.port = DEFAULT_PORT
-            session.server_address = \
-                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP
+            session.set_dc(
+                DEFAULT_DC_ID,
+                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
+                DEFAULT_PORT
+            )
 
         self.session = session
         self.api_id = int(api_id)
@@ -294,8 +297,7 @@ class TelegramBareClient:
             dc = self._get_dc(new_dc)
             __log__.info('Reconnecting to new data center %s', dc)
 
-            self.session.server_address = dc.ip_address
-            self.session.port = dc.port
+            self.session.set_dc(dc.id, dc.ip_address, dc.port)
             # auth_key's are associated with a server, which has now changed
             # so it's not valid anymore. Set to None to force recreating it.
             self.session.auth_key = None
@@ -363,8 +365,7 @@ class TelegramBareClient:
             # Construct this session with the connection parameters
             # (system version, device model...) from the current one.
             session = Session(self.session)
-            session.server_address = dc.ip_address
-            session.port = dc.port
+            session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[dc_id] = session
 
         __log__.info('Creating exported new client')
@@ -390,8 +391,7 @@ class TelegramBareClient:
         if not session:
             dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = Session(self.session)
-            session.server_address = dc.ip_address
-            session.port = dc.port
+            session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         __log__.info('Creating new CDN client')
@@ -494,7 +494,7 @@ class TelegramBareClient:
     def _invoke(self, sender, call_receive, update_state, *requests):
         # We need to specify the new layer (by initializing a new
         # connection) if it has changed from the latest known one.
-        init_connection = self.session.layer != LAYER
+        init_connection = False  # TODO Only first call
 
         try:
             # Ensure that we start with no previous errors (i.e. resending)
@@ -552,12 +552,6 @@ class TelegramBareClient:
             else:
                 # User never called .connect(), so raise this error.
                 raise
-
-        if init_connection:
-            # We initialized the connection successfully, even if
-            # a request had an RPC error we have invoked it fine.
-            self.session.layer = LAYER
-            self.session.save()
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)

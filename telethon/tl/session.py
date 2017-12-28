@@ -67,6 +67,7 @@ class Session:
         self._sequence = 0
         self.time_offset = 0
         self._last_msg_id = 0  # Long
+        self.salt = 0  # Long
 
         # Cross-thread safety
         self._seq_no_lock = Lock()
@@ -74,11 +75,10 @@ class Session:
         self._db_lock = Lock()
 
         # These values will be saved
+        self._dc_id = 0
         self._server_address = None
         self._port = None
         self._auth_key = None
-        self._layer = 0
-        self._salt = 0  # Signed long
 
         # Migrating from .json -> SQL
         entities = self._check_migrate_json()
@@ -97,8 +97,7 @@ class Session:
 
             # These values will be saved
             c.execute('select * from sessions')
-            self._server_address, self._port, key, \
-                self._layer, self._salt = c.fetchone()
+            self._dc_id, self._server_address, self._port, key, = c.fetchone()
 
             from ..crypto import AuthKey
             self._auth_key = AuthKey(data=key)
@@ -108,12 +107,11 @@ class Session:
             c.execute("create table version (version integer)")
             c.execute(
                 """create table sessions (
+                    dc_id integer primary key,
                     server_address text,
                     port integer,
-                    auth_key blob,
-                    layer integer,
-                    salt integer
-                )"""
+                    auth_key blob
+                ) without rowid"""
             )
             c.execute(
                 """create table entities (
@@ -142,13 +140,6 @@ class Session:
                 self.delete()  # Delete JSON file to create database
 
                 self._port = data.get('port', self._port)
-                self._salt = data.get('salt', self._salt)
-                # Keep while migrating from unsigned to signed salt
-                if self._salt > 0:
-                    self._salt = struct.unpack(
-                        'q', struct.pack('Q', self._salt))[0]
-
-                self._layer = data.get('layer', self._layer)
                 self._server_address = \
                     data.get('server_address', self._server_address)
 
@@ -169,23 +160,19 @@ class Session:
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
+    def set_dc(self, dc_id, server_address, port):
+        self._dc_id = dc_id
+        self._server_address = server_address
+        self._port = port
+        self._update_session_table()
+
     @property
     def server_address(self):
         return self._server_address
 
-    @server_address.setter
-    def server_address(self, value):
-        self._server_address = value
-        self._update_session_table()
-
     @property
     def port(self):
         return self._port
-
-    @port.setter
-    def port(self, value):
-        self._port = value
-        self._update_session_table()
 
     @property
     def auth_key(self):
@@ -196,34 +183,15 @@ class Session:
         self._auth_key = value
         self._update_session_table()
 
-    @property
-    def layer(self):
-        return self._layer
-
-    @layer.setter
-    def layer(self, value):
-        self._layer = value
-        self._update_session_table()
-
-    @property
-    def salt(self):
-        return self._salt
-
-    @salt.setter
-    def salt(self, value):
-        self._salt = value
-        self._update_session_table()
-
     def _update_session_table(self):
         with self._db_lock:
             c = self._conn.cursor()
             c.execute('delete from sessions')
-            c.execute('insert into sessions values (?,?,?,?,?)', (
+            c.execute('insert into sessions values (?,?,?,?)', (
+                self._dc_id,
                 self._server_address,
                 self._port,
-                self._auth_key.key if self._auth_key else b'',
-                self._layer,
-                self._salt
+                self._auth_key.key if self._auth_key else b''
             ))
             c.close()
 
