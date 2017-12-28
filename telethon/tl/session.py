@@ -97,10 +97,12 @@ class Session:
 
             # These values will be saved
             c.execute('select * from sessions')
-            self._dc_id, self._server_address, self._port, key, = c.fetchone()
+            tuple_ = c.fetchone()
+            if tuple_:
+                self._dc_id, self._server_address, self._port, key, = tuple_
+                from ..crypto import AuthKey
+                self._auth_key = AuthKey(data=key)
 
-            from ..crypto import AuthKey
-            self._auth_key = AuthKey(data=key)
             c.close()
         else:
             # Tables don't exist, create new ones
