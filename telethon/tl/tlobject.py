@@ -1,4 +1,5 @@
-from datetime import datetime
+import struct
+from datetime import datetime, date
 from threading import Event
 
 
@@ -124,6 +125,23 @@ class TLObject:
 
         r.append(bytes(padding))
         return b''.join(r)
+
+    @staticmethod
+    def serialize_datetime(dt):
+        if not dt:
+            return b'\0\0\0\0'
+
+        if isinstance(dt, datetime):
+            dt = int(dt.timestamp())
+        elif isinstance(dt, date):
+            dt = int(datetime(dt.year, dt.month, dt.day, dt).timestamp())
+        elif isinstance(dt, float):
+            dt = int(dt)
+
+        if isinstance(dt, int):
+            return struct.pack('<I', dt)
+
+        raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
     # These should be overrode
     def to_dict(self, recursive=True):

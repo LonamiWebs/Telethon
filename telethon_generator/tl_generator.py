@@ -540,11 +540,7 @@ class TLGenerator:
             builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'date' == arg.type:  # Custom format
-            # 0 if datetime is None else int(datetime.timestamp())
-            builder.write(
-                r"b'\0\0\0\0' if {0} is None else "
-                r"struct.pack('<I', int({0}.timestamp()))".format(name)
-            )
+            builder.write('TLObject.serialize_datetime({})'.format(name))
 
         else:
             # Else it may be a custom type
