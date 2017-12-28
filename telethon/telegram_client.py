@@ -30,7 +30,7 @@ from .tl.functions.contacts import (
     GetContactsRequest, ResolveUsernameRequest
 )
 from .tl.functions.messages import (
-    GetDialogsRequest, GetHistoryRequest, ReadHistoryRequest, SendMediaRequest,
+    GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest
 )
@@ -1091,17 +1091,11 @@ class TelegramClient(TelegramBareClient):
         an username, and processes all the found entities on the session.
         The string may also be a user link, or a channel/chat invite link.
 
-<<<<<<< HEAD
         This method has the side effect of adding the found users to the
         session database, so it can be queried later without API calls,
         if this option is enabled on the session.
-=======
-        raise TypeError(
-            'Cannot turn "{}" into any entity (user or chat)'.format(entity)
-        )
->>>>>>> 6ec6967ff9a2e09aae70b500273075bdfbae975c
 
-        Returns the found entity.
+        Returns the found entity, or raises TypeError if not found.
         """
         phone = utils.parse_phone(string)
         if phone:
@@ -1124,6 +1118,10 @@ class TelegramClient(TelegramBareClient):
                 for entity in itertools.chain(result.users, result.chats):
                     if entity.username.lower() == string:
                         return entity
+
+        raise TypeError(
+            'Cannot turn "{}" into any entity (user or chat)'.format(string)
+        )
 
     def get_input_entity(self, peer):
         """
@@ -1164,7 +1162,7 @@ class TelegramClient(TelegramBareClient):
             if not is_peer:
                 try:
                     return utils.get_input_peer(peer)
-                except ValueError:
+                except TypeError:
                     pass
 
         if not is_peer:
@@ -1189,7 +1187,7 @@ class TelegramClient(TelegramBareClient):
             if utils.get_peer_id(entity, add_mark=True) == target:
                 return utils.get_input_peer(entity)
 
-        raise ValueError(
+        raise TypeError(
             'Could not find the input entity corresponding to "{}".'
             'Make sure you have encountered this peer before.'.format(peer)
         )
