@@ -484,8 +484,12 @@ class TelegramClient(TelegramBareClient):
             Additional message offset
             (all of the specified offsets + this offset = older messages).
 
-        :return: A tuple containing total message count and two more lists ([messages], [senders]).
-                 Note that the sender can be null if it was not found!
+        :return: A list of messages with extra attributes:
+                    .total = total amount of messages in this history
+                    .sender = entity of the sender
+                    .fwd_from.sender = if fwd_from, who sent it originally
+                    .fwd_from.channel = if fwd_from, original channel
+                    .to = entity to which the message was sent
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -537,25 +541,30 @@ class TelegramClient(TelegramBareClient):
             if limit > 3000:
                 time.sleep(1)
 
-        # In a new list with the same length as the messages append
-        # their senders, so people can zip(messages, senders).
-        senders = []
+        # Add a few extra attributes to the Message to make it friendlier.
         for m in messages:
-            if m.from_id:
-                who = entities[utils.get_peer_id(m.from_id, add_mark=True)]
-            elif getattr(m, 'fwd_from', None):
-                # .from_id is optional, so this is the sanest fallback.
-                who = entities[utils.get_peer_id(
-                    m.fwd_from.from_id or PeerChannel(m.fwd_from.channel_id),
-                    add_mark=True
-                )]
-            else:
-                # If there's not even a FwdHeader, fallback to the sender
-                # being where the message was sent.
-                who = entities[utils.get_peer_id(m.to_id, add_mark=True)]
-            senders.append(who)
+            # TODO Better way to return a total without tuples?
+            m.total = total_messages
+            m.sender = (None if not m.from_id else
+                        entities[utils.get_peer_id(m.from_id, add_mark=True)])
 
-        return total_messages, messages, senders
+            if getattr(m, 'fwd_from', None):
+                m.fwd_from.sender = (
+                    None if not m.fwd_from.from_id else
+                    entities[utils.get_peer_id(
+                        m.fwd_from.from_id, add_mark=True
+                    )]
+                )
+                m.fwd_from.channel = (
+                    None if not m.fwd_from.channel_id else
+                    entities[utils.get_peer_id(
+                        PeerChannel(m.fwd_from.channel_id), add_mark=True
+                    )]
+                )
+
+            m.to = entities[utils.get_peer_id(m.to_id, add_mark=True)]
+
+        return messages
 
     def send_read_acknowledge(self, entity, message=None, max_id=None):
         """
