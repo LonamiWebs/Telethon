@@ -341,9 +341,11 @@ class TelegramClient(TelegramBareClient):
             offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
-        dialogs = UserList(dialogs.values())
+        dialogs = UserList(
+            itertools.islice(dialogs.values(), min(limit, len(dialogs)))
+        )
         dialogs.total = total_count
-        return dialogs[:limit] if limit < float('inf') else dialogs
+        return dialogs
 
     def get_drafts(self):  # TODO: Ability to provide a `filter`
         """
