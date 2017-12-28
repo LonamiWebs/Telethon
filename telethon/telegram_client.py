@@ -338,9 +338,8 @@ class TelegramClient(TelegramBareClient):
                 break
 
             offset_date = r.messages[-1].date
-            offset_peer = utils.find_user_or_chat(
-                r.dialogs[-1].peer, entities, entities
-            )
+            offset_peer = entities[
+                utils.get_peer_id(r.dialogs[-1].peer, add_mark=True)]
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
         dialogs = UserList(dialogs.values())

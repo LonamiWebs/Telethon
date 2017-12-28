@@ -386,28 +386,6 @@ def resolve_id(marked_id):
     return -marked_id, PeerChat
 
 
-def find_user_or_chat(peer, users, chats):
-    """Finds the corresponding user or chat given a peer.
-       Returns None if it was not found"""
-    if isinstance(peer, PeerUser):
-        peer, where = peer.user_id, users
-    else:
-        where = chats
-        if isinstance(peer, PeerChat):
-            peer = peer.chat_id
-        elif isinstance(peer, PeerChannel):
-            peer = peer.channel_id
-
-    if isinstance(peer, int):
-        if isinstance(where, dict):
-            return where.get(peer)
-        else:
-            try:
-                return next(x for x in where if x.id == peer)
-            except StopIteration:
-                pass
-
-
 def get_appropriated_part_size(file_size):
     """Gets the appropriated part size when uploading or downloading files,
        given an initial file size"""
