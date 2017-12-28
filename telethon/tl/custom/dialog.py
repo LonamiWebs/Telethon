@@ -17,7 +17,7 @@ class Dialog:
         self.message = messages.get(dialog.top_message, None)
         self.date = getattr(self.message, 'date', None)
 
-        self.entity = entities[utils.get_peer_id(dialog.peer, add_mark=True)]
+        self.entity = entities[utils.get_peer_id(dialog.peer)]
         self.input_entity = utils.get_input_peer(self.entity)
         self.name = utils.get_display_name(self.entity)
 

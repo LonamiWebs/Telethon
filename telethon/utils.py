@@ -338,9 +338,14 @@ def parse_username(username):
         return username.lower(), False
 
 
-def get_peer_id(peer, add_mark=False):
-    """Finds the ID of the given peer, and optionally converts it to
-       the "bot api" format if 'add_mark' is set to True.
+def get_peer_id(peer):
+    """
+    Finds the ID of the given peer, and converts it to the "bot api" format
+    so it the peer can be identified back. User ID is left unmodified,
+    chat ID is negated, and channel ID is prefixed with -100.
+
+    The original ID and the peer type class can be returned with
+    a call to utils.resolve_id(marked_id).
     """
     # First we assert it's a Peer TLObject, or early return for integers
     if not isinstance(peer, TLObject):
@@ -357,7 +362,7 @@ def get_peer_id(peer, add_mark=False):
     if isinstance(peer, (PeerUser, InputPeerUser)):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
-        return -peer.chat_id if add_mark else peer.chat_id
+        return -peer.chat_id
     elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
         if isinstance(peer, ChannelFull):
             # Special case: .get_input_peer can't return InputChannel from
@@ -365,12 +370,9 @@ def get_peer_id(peer, add_mark=False):
             i = peer.id
         else:
             i = peer.channel_id
-        if add_mark:
-            # Concat -100 through math tricks, .to_supergroup() on Madeline
-            # IDs will be strictly positive -> log works
-            return -(i + pow(10, math.floor(math.log10(i) + 3)))
-        else:
-            return i
+        # Concat -100 through math tricks, .to_supergroup() on Madeline
+        # IDs will be strictly positive -> log works
+        return -(i + pow(10, math.floor(math.log10(i) + 3)))
 
     _raise_cast_fail(peer, 'int')
 

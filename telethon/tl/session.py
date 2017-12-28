@@ -285,7 +285,7 @@ class Session:
                 continue
             try:
                 p = utils.get_input_peer(e, allow_self=False)
-                marked_id = utils.get_peer_id(p, add_mark=True)
+                marked_id = utils.get_peer_id(p)
             except ValueError:
                 continue
 
@@ -327,7 +327,7 @@ class Session:
             key = utils.get_input_peer(key)
             if type(key).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
                 return key
-            key = utils.get_peer_id(key, add_mark=True)
+            key = utils.get_peer_id(key)
 
         c = self._conn.cursor()
         if isinstance(key, str):

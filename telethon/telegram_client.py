@@ -325,11 +325,11 @@ class TelegramClient(TelegramBareClient):
 
             total_count = getattr(r, 'count', len(r.dialogs))
             messages = {m.id: m for m in r.messages}
-            entities = {utils.get_peer_id(x, add_mark=True): x
+            entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
 
             for d in r.dialogs:
-                dialogs[utils.get_peer_id(d.peer, add_mark=True)] = \
+                dialogs[utils.get_peer_id(d.peer)] = \
                     Dialog(self, d, entities, messages)
 
             if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
@@ -338,8 +338,7 @@ class TelegramClient(TelegramBareClient):
                 break
 
             offset_date = r.messages[-1].date
-            offset_peer = entities[
-                utils.get_peer_id(r.dialogs[-1].peer, add_mark=True)]
+            offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
         dialogs = UserList(dialogs.values())
@@ -536,9 +535,9 @@ class TelegramClient(TelegramBareClient):
             # TODO We can potentially use self.session.database, but since
             # it might be disabled, use a local dictionary.
             for u in result.users:
-                entities[utils.get_peer_id(u, add_mark=True)] = u
+                entities[utils.get_peer_id(u)] = u
             for c in result.chats:
-                entities[utils.get_peer_id(c, add_mark=True)] = c
+                entities[utils.get_peer_id(c)] = c
 
             if len(result.messages) < real_limit:
                 break
@@ -558,23 +557,21 @@ class TelegramClient(TelegramBareClient):
         for m in messages:
             # TODO Better way to return a total without tuples?
             m.sender = (None if not m.from_id else
-                        entities[utils.get_peer_id(m.from_id, add_mark=True)])
+                        entities[utils.get_peer_id(m.from_id)])
 
             if getattr(m, 'fwd_from', None):
                 m.fwd_from.sender = (
                     None if not m.fwd_from.from_id else
-                    entities[utils.get_peer_id(
-                        m.fwd_from.from_id, add_mark=True
-                    )]
+                    entities[utils.get_peer_id(m.fwd_from.from_id)]
                 )
                 m.fwd_from.channel = (
                     None if not m.fwd_from.channel_id else
                     entities[utils.get_peer_id(
-                        PeerChannel(m.fwd_from.channel_id), add_mark=True
+                        PeerChannel(m.fwd_from.channel_id)
                     )]
                 )
 
-            m.to = entities[utils.get_peer_id(m.to_id, add_mark=True)]
+            m.to = entities[utils.get_peer_id(m.to_id)]
 
         return messages
 
@@ -1073,7 +1070,7 @@ class TelegramClient(TelegramBareClient):
 
         # Merge users, chats and channels into a single dictionary
         id_entity = {
-            utils.get_peer_id(x, add_mark=True): x
+            utils.get_peer_id(x): x
             for x in itertools.chain(users, chats, channels)
         }
 
@@ -1083,7 +1080,7 @@ class TelegramClient(TelegramBareClient):
         # username changes.
         result = [
             self._get_entity_from_string(x) if isinstance(x, str)
-            else id_entity[utils.get_peer_id(x, add_mark=True)]
+            else id_entity[utils.get_peer_id(x)]
             for x in inputs
         ]
         return result[0] if single else result
@@ -1185,9 +1182,9 @@ class TelegramClient(TelegramBareClient):
             exclude_pinned=True
         ))
 
-        target = utils.get_peer_id(peer, add_mark=True)
+        target = utils.get_peer_id(peer)
         for entity in itertools.chain(dialogs.users, dialogs.chats):
-            if utils.get_peer_id(entity, add_mark=True) == target:
+            if utils.get_peer_id(entity) == target:
                 return utils.get_input_peer(entity)
 
         raise TypeError(
