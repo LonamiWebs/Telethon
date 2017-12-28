@@ -52,7 +52,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
-    ChatInvite, ChatInviteAlready, PeerChannel
+    ChatInvite, ChatInviteAlready, PeerChannel, Photo
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
@@ -848,7 +848,7 @@ class TelegramClient(TelegramBareClient):
             date = datetime.now()
             media = message
 
-        if isinstance(media, MessageMediaPhoto):
+        if isinstance(media, (MessageMediaPhoto, Photo)):
             return self._download_photo(
                 media, file, date, progress_callback
             )
@@ -861,11 +861,15 @@ class TelegramClient(TelegramBareClient):
                 media, file
             )
 
-    def _download_photo(self, mm_photo, file, date, progress_callback):
+    def _download_photo(self, photo, file, date, progress_callback):
         """Specialized version of .download_media() for photos"""
 
         # Determine the photo and its largest size
-        photo = getattr(mm_photo, 'photo', mm_photo)
+        if isinstance(photo, MessageMediaPhoto):
+            photo = photo.photo
+        if not isinstance(photo, Photo):
+            return
+
         largest_size = photo.sizes[-1]
         file_size = largest_size.size
         largest_size = largest_size.location
