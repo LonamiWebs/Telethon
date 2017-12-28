@@ -7,13 +7,6 @@ class ReadCancelledError(Exception):
         super().__init__(self, 'The read operation was cancelled.')
 
 
-class InvalidParameterError(Exception):
-    """
-    Occurs when an invalid parameter is given, for example,
-    when either A or B are required but none is given.
-    """
-
-
 class TypeNotFoundError(Exception):
     """
     Occurs when a type is not found, for example,

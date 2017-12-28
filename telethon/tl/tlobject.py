@@ -97,7 +97,8 @@ class TLObject:
             if isinstance(data, str):
                 data = data.encode('utf-8')
             else:
-                raise ValueError('bytes or str expected, not', type(data))
+                raise TypeError(
+                    'bytes or str expected, not {}'.format(type(data)))
 
         r = []
         if len(data) < 254:

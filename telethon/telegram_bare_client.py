@@ -85,7 +85,7 @@ class TelegramBareClient:
                  **kwargs):
         """Refer to TelegramClient.__init__ for docs on this method"""
         if not api_id or not api_hash:
-            raise PermissionError(
+            raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
                 "Refer to Telethon's wiki for more information.")
 
@@ -95,7 +95,7 @@ class TelegramBareClient:
         if isinstance(session, str) or session is None:
             session = Session(session)
         elif not isinstance(session, Session):
-            raise ValueError(
+            raise TypeError(
                 'The given session must be a str or a Session instance.'
             )
 
@@ -425,11 +425,11 @@ class TelegramBareClient:
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
-           ValueError().
+           RuntimeError().
         """
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
-            raise ValueError('You can only invoke requests, not types!')
+            raise TypeError('You can only invoke requests, not types!')
 
         # For logging purposes
         if len(requests) == 1:
@@ -490,7 +490,7 @@ class TelegramBareClient:
                 else:
                     sender.connect()
 
-            raise ValueError('Number of retries reached 0.')
+            raise RuntimeError('Number of retries reached 0.')
         finally:
             if sender != self._sender:
                 sender.disconnect()  # Close temporary connections
@@ -676,8 +676,8 @@ class TelegramBareClient:
                     if progress_callback:
                         progress_callback(stream.tell(), file_size)
                 else:
-                    raise ValueError('Failed to upload file part {}.'
-                                     .format(part_index))
+                    raise RuntimeError(
+                        'Failed to upload file part {}.'.format(part_index))
         finally:
             stream.close()
 
@@ -847,7 +847,7 @@ class TelegramBareClient:
         :return:
         """
         if self._spawn_read_thread and not self._on_read_thread():
-            raise ValueError('Can only idle if spawn_read_thread=False')
+            raise RuntimeError('Can only idle if spawn_read_thread=False')
 
         for sig in stop_signals:
             signal(sig, self._signal_handler)

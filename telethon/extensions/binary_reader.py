@@ -6,7 +6,7 @@ from datetime import datetime
 from io import BufferedReader, BytesIO
 from struct import unpack
 
-from ..errors import InvalidParameterError, TypeNotFoundError
+from ..errors import TypeNotFoundError
 from ..tl.all_tlobjects import tlobjects
 
 
@@ -22,8 +22,7 @@ class BinaryReader:
         elif stream:
             self.stream = stream
         else:
-            raise InvalidParameterError(
-                'Either bytes or a stream must be provided')
+            raise ValueError('Either bytes or a stream must be provided')
 
         self.reader = BufferedReader(self.stream)
         self._last = None  # Should come in handy to spot -404 errors
@@ -110,7 +109,7 @@ class BinaryReader:
         elif value == 0xbc799737:  # boolFalse
             return False
         else:
-            raise ValueError('Invalid boolean code {}'.format(hex(value)))
+            raise RuntimeError('Invalid boolean code {}'.format(hex(value)))
 
     def tgread_date(self):
         """Reads and converts Unix time (used by Telegram)
@@ -141,7 +140,7 @@ class BinaryReader:
     def tgread_vector(self):
         """Reads a vector (a list) of Telegram objects."""
         if 0x1cb5c415 != self.read_int(signed=False):
-            raise ValueError('Invalid constructor code, vector was expected')
+            raise RuntimeError('Invalid constructor code, vector was expected')
 
         count = self.read_int()
         return [self.tgread_object() for _ in range(count)]

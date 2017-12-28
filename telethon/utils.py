@@ -74,13 +74,13 @@ def get_extension(media):
 
 
 def _raise_cast_fail(entity, target):
-    raise ValueError('Cannot cast {} to any kind of {}.'
-                     .format(type(entity).__name__, target))
+    raise TypeError('Cannot cast {} to any kind of {}.'.format(
+        type(entity).__name__, target))
 
 
 def get_input_peer(entity, allow_self=True):
     """Gets the input peer for the given "entity" (user, chat or channel).
-       A ValueError is raised if the given entity isn't a supported type."""
+       A TypeError is raised if the given entity isn't a supported type."""
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputPeer')
 
