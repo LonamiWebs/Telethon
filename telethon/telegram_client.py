@@ -1,7 +1,7 @@
 import itertools
 import os
 import time
-from collections import OrderedDict
+from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
 from mimetypes import guess_type
 
@@ -296,12 +296,23 @@ class TelegramClient(TelegramBareClient):
         :param offset_peer:
             The peer to be used as an offset.
 
-        :return List[telethon.tl.custom.Dialog]: A list dialogs.
+        :return UserList[telethon.tl.custom.Dialog]:
+            A list dialogs, with an additional .total attribute on the list.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
-            return []
+            # Special case, get a single dialog and determine count
+            dialogs = self(GetDialogsRequest(
+                offset_date=offset_date,
+                offset_id=offset_id,
+                offset_peer=offset_peer,
+                limit=1
+            ))
+            result = UserList()
+            result.total = getattr(dialogs, 'count', len(dialogs.dialogs))
+            return result
 
+        total_count = 0
         dialogs = OrderedDict()  # Use peer id as identifier to avoid dupes
         while len(dialogs) < limit:
             real_limit = min(limit - len(dialogs), 100)
@@ -312,6 +323,7 @@ class TelegramClient(TelegramBareClient):
                 limit=real_limit
             ))
 
+            total_count = getattr(r, 'count', len(r.dialogs))
             messages = {m.id: m for m in r.messages}
             entities = {utils.get_peer_id(x, add_mark=True): x
                         for x in itertools.chain(r.users, r.chats)}
@@ -331,7 +343,8 @@ class TelegramClient(TelegramBareClient):
             )
             offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
 
-        dialogs = list(dialogs.values())
+        dialogs = UserList(dialogs.values())
+        dialogs.total = total_count
         return dialogs[:limit] if limit < float('inf') else dialogs
 
     def get_drafts(self):  # TODO: Ability to provide a `filter`
@@ -485,7 +498,7 @@ class TelegramClient(TelegramBareClient):
             (all of the specified offsets + this offset = older messages).
 
         :return: A list of messages with extra attributes:
-                    .total = total amount of messages in this history
+                    .total = (on the list) total amount of messages sent
                     .sender = entity of the sender
                     .fwd_from.sender = if fwd_from, who sent it originally
                     .fwd_from.channel = if fwd_from, original channel
@@ -502,7 +515,7 @@ class TelegramClient(TelegramBareClient):
             return getattr(result, 'count', len(result.messages)), [], []
 
         total_messages = 0
-        messages = []
+        messages = UserList()
         entities = {}
         while len(messages) < limit:
             # Telegram has a hard limit of 100
@@ -542,9 +555,9 @@ class TelegramClient(TelegramBareClient):
                 time.sleep(1)
 
         # Add a few extra attributes to the Message to make it friendlier.
+        messages.total = total_messages
         for m in messages:
             # TODO Better way to return a total without tuples?
-            m.total = total_messages
             m.sender = (None if not m.from_id else
                         entities[utils.get_peer_id(m.from_id, add_mark=True)])
 
