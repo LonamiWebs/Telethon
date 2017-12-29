@@ -336,10 +336,12 @@ class Session:
            Raises ValueError if it cannot be found.
         """
         if isinstance(key, TLObject):
-            key = utils.get_input_peer(key)
-            if type(key).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-                return key
-            key = utils.get_peer_id(key)
+            try:
+                # Try to early return if this key can be casted as input peer
+                return utils.get_input_peer(key)
+            except TypeError:
+                # Otherwise, get the ID of the peer
+                key = utils.get_peer_id(key)
 
         c = self._conn.cursor()
         if isinstance(key, str):
