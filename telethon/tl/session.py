@@ -168,6 +168,17 @@ class Session:
         self._port = port
         self._update_session_table()
 
+        # Fetch the auth_key corresponding to this data center
+        c = self._conn.cursor()
+        c.execute('select auth_key from sessions')
+        tuple_ = c.fetchone()
+        if tuple_:
+            from ..crypto import AuthKey
+            self._auth_key = AuthKey(data=tuple_[0])
+        else:
+            self._auth_key = None
+        c.close()
+
     @property
     def server_address(self):
         return self._server_address
@@ -188,8 +199,7 @@ class Session:
     def _update_session_table(self):
         with self._db_lock:
             c = self._conn.cursor()
-            c.execute('delete from sessions')
-            c.execute('insert into sessions values (?,?,?,?)', (
+            c.execute('insert or replace into sessions values (?,?,?,?)', (
                 self._dc_id,
                 self._server_address,
                 self._port,
