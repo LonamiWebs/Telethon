@@ -138,15 +138,15 @@ class InteractiveTelegramClient(TelegramClient):
 
             # Entities represent the user, chat or channel
             # corresponding to the dialog on the same index.
-            dialogs, entities = self.get_dialogs(limit=dialog_count)
+            dialogs = self.get_dialogs(limit=dialog_count)
 
             i = None
             while i is None:
                 print_title('Dialogs window')
 
                 # Display them so the user can choose
-                for i, entity in enumerate(entities, start=1):
-                    sprint('{}. {}'.format(i, get_display_name(entity)))
+                for i, dialog in enumerate(dialogs, start=1):
+                    sprint('{}. {}'.format(i, get_display_name(dialog.entity)))
 
                 # Let the user decide who they want to talk to
                 print()
@@ -177,7 +177,7 @@ class InteractiveTelegramClient(TelegramClient):
                     i = None
 
             # Retrieve the selected user (or chat, or channel)
-            entity = entities[i]
+            entity = dialogs[i].entity
 
             # Show some information
             print_title('Chat with "{}"'.format(get_display_name(entity)))
