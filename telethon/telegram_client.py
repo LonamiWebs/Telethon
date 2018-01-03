@@ -527,7 +527,8 @@ class TelegramClient(TelegramBareClient):
                 offset_id=offset_id,
                 max_id=max_id,
                 min_id=min_id,
-                add_offset=add_offset
+                add_offset=add_offset,
+                hash=0
             ))
             messages.extend(
                 m for m in result.messages if not isinstance(m, MessageEmpty)
