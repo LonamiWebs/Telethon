@@ -631,6 +631,7 @@ class TelegramClient(TelegramBareClient):
                   force_document=False, progress_callback=None,
                   reply_to=None,
                   attributes=None,
+                  thumb=None,
                   **kwargs):
         """
         Sends a file to the specified entity.
@@ -658,6 +659,8 @@ class TelegramClient(TelegramBareClient):
         :param attributes:
             Optional attributes that override the inferred ones, like
             DocumentAttributeFilename and so on.
+        :param thumb:
+            Optional thumbnail (for videos).
         :param kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -716,11 +719,16 @@ class TelegramClient(TelegramBareClient):
             if not mime_type:
                 mime_type = 'application/octet-stream'
 
+            input_kw = {}
+            if thumb:
+                input_kw['thumb'] = self.upload_file(thumb)
+
             media = InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption
+                caption=caption,
+                **input_kw
             )
 
         # Once the media type is properly specified and the file uploaded,
