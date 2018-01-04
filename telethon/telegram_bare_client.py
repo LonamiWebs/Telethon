@@ -507,6 +507,7 @@ class TelegramBareClient:
 
             if not self.session.auth_key:
                 __log__.info('Need to generate new auth key before invoking')
+                self._first_request = True
                 self.session.auth_key, self.session.time_offset = \
                     authenticator.do_authentication(self._sender.connection)
 
