@@ -624,6 +624,9 @@ class TelegramBareClient:
              part_size_kb = get_appropriated_part_size(file_size)
              file_name    = os.path.basename(file_path)
         """
+        if isinstance(file, (InputFile, InputFileBig)):
+            return file  # Already uploaded
+
         if isinstance(file, str):
             file_size = os.path.getsize(file)
         elif isinstance(file, bytes):
