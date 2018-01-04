@@ -363,6 +363,22 @@ class TelegramClient(TelegramBareClient):
         drafts = [Draft._from_update(self, u) for u in response.updates]
         return drafts
 
+    @staticmethod
+    def _get_response_message(request, result):
+        # Telegram seems to send updateMessageID first, then updateNewMessage,
+        # however let's not rely on that just in case.
+        msg_id = None
+        for update in result.updates:
+            if isinstance(update, UpdateMessageID):
+                if update.random_id == request.random_id:
+                    msg_id = update.id
+                    break
+
+        for update in result.updates:
+            if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
+                if update.message.id == msg_id:
+                    return update.message
+
     def send_message(self,
                      entity,
                      message,
@@ -415,21 +431,7 @@ class TelegramClient(TelegramBareClient):
                 entities=result.entities
             )
 
-        # Telegram seems to send updateMessageID first, then updateNewMessage,
-        # however let's not rely on that just in case.
-        msg_id = None
-        for update in result.updates:
-            if isinstance(update, UpdateMessageID):
-                if update.random_id == request.random_id:
-                    msg_id = update.id
-                    break
-
-        for update in result.updates:
-            if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
-                if update.message.id == msg_id:
-                    return update.message
-
-        return None  # Should not happen
+        return self._get_response_message(request, result)
 
     def delete_messages(self, entity, message_ids, revoke=True):
         """
@@ -629,6 +631,7 @@ class TelegramClient(TelegramBareClient):
                   force_document=False, progress_callback=None,
                   reply_to=None,
                   attributes=None,
+                  thumb=None,
                   **kwargs):
         """
         Sends a file to the specified entity.
@@ -656,6 +659,8 @@ class TelegramClient(TelegramBareClient):
         :param attributes:
             Optional attributes that override the inferred ones, like
             DocumentAttributeFilename and so on.
+        :param thumb:
+            Optional thumbnail (for videos).
         :param kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -714,20 +719,28 @@ class TelegramClient(TelegramBareClient):
             if not mime_type:
                 mime_type = 'application/octet-stream'
 
+            input_kw = {}
+            if thumb:
+                input_kw['thumb'] = self.upload_file(thumb)
+
             media = InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption
+                caption=caption,
+                **input_kw
             )
 
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
-        self(SendMediaRequest(
+        request = SendMediaRequest(
             peer=self.get_input_entity(entity),
             media=media,
             reply_to_msg_id=self._get_reply_to(reply_to)
-        ))
+        )
+        result = self(request)
+
+        return self._get_response_message(request, result)
 
     def send_voice_note(self, entity, file, caption='', upload_progress=None,
                         reply_to=None):
