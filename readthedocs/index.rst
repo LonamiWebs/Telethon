@@ -3,11 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+====================================
 Welcome to Telethon's documentation!
 ====================================
 
-Pure Python 3 Telegram client library. Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
 
+Pure Python 3 Telegram client library.
+Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
+Please follow the links below to get you started.
 
 
 .. _installation-and-usage:
@@ -19,10 +22,9 @@ Pure Python 3 Telegram client library. Official Site `here <https://lonamiwebs.g
    extra/basic/getting-started
    extra/basic/installation
    extra/basic/creating-a-client
-   extra/basic/sessions
-   extra/basic/sending-requests
+   extra/basic/telegram-client
+   extra/basic/entities
    extra/basic/working-with-updates
-   extra/basic/accessing-the-full-api
 
 
 .. _Advanced-usage:
@@ -31,11 +33,19 @@ Pure Python 3 Telegram client library. Official Site `here <https://lonamiwebs.g
    :maxdepth: 2
    :caption: Advanced Usage
 
-   extra/advanced
-   extra/advanced-usage/signing-in
-   extra/advanced-usage/working-with-messages
-   extra/advanced-usage/users-and-chats
-   extra/advanced-usage/bots
+   extra/advanced-usage/accessing-the-full-api
+   extra/advanced-usage/sessions
+
+
+.. _Examples:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples
+
+   extra/examples/working-with-messages
+   extra/examples/chats-and-channels
+   extra/examples/bots
 
 
 .. _Troubleshooting:
@@ -49,12 +59,35 @@ Pure Python 3 Telegram client library. Official Site `here <https://lonamiwebs.g
    extra/troubleshooting/rpc-errors
 
 
+.. _Developing:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developing
+
+   extra/developing/philosophy.rst
+   extra/developing/api-status.rst
+   extra/developing/test-servers.rst
+   extra/developing/project-structure.rst
+   extra/developing/coding-style.rst
+   extra/developing/understanding-the-type-language.rst
+   extra/developing/tips-for-porting-the-project.rst
+   extra/developing/telegram-api-in-other-languages.rst
+
+
+.. _Wall-of-shame:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Wall of Shame
+
+   extra/wall-of-shame.rst
+
 
 .. toctree::
    :caption: Telethon modules
 
    telethon
-
 
 
 Indices and tables

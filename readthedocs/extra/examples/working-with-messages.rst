@@ -1,20 +1,18 @@
-=========================
+=====================
 Working with messages
-=========================
-
-.. note::
-    Make sure you have gone through :ref:`prelude` already!
+=====================
 
 
 Forwarding messages
 *******************
 
-Note that ForwardMessageRequest_ (note it's Message, singular) will *not* work if channels are involved.
-This is because channel (and megagroups) IDs are not unique, so you also need to know who the sender is
-(a parameter this request doesn't have).
+Note that ForwardMessageRequest_ (note it's Message, singular) will *not*
+work if channels are involved. This is because channel (and megagroups) IDs
+are not unique, so you also need to know who the sender is (a parameter this
+request doesn't have).
 
-Either way, you are encouraged to use ForwardMessagesRequest_ (note it's Message*s*, plural) *always*,
-since it is more powerful, as follows:
+Either way, you are encouraged to use ForwardMessagesRequest_ (note it's
+Message*s*, plural) *always*, since it is more powerful, as follows:
 
     .. code-block:: python
 
@@ -31,14 +29,16 @@ since it is more powerful, as follows:
             to_peer=to_entity  # who are we forwarding them to?
         ))
 
-The named arguments are there for clarity, although they're not needed because they appear in order.
-You can obviously just wrap a single message on the list too, if that's all you have.
+The named arguments are there for clarity, although they're not needed because
+they appear in order. You can obviously just wrap a single message on the list
+too, if that's all you have.
 
 
 Searching Messages
 *******************
 
-Messages are searched through the obvious SearchRequest_, but you may run into issues_. A valid example would be:
+Messages are searched through the obvious SearchRequest_, but you may run
+into issues_. A valid example would be:
 
     .. code-block:: python
 
@@ -46,27 +46,32 @@ Messages are searched through the obvious SearchRequest_, but you may run into i
             entity, 'query', InputMessagesFilterEmpty(), None, None, 0, 0, 100
         ))
 
-It's important to note that the optional parameter ``from_id`` has been left omitted and thus defaults to ``None``.
-Changing it to InputUserEmpty_, as one could think to specify "no user", won't work because this parameter is a flag,
+It's important to note that the optional parameter ``from_id`` has been left
+omitted and thus defaults to ``None``. Changing it to InputUserEmpty_, as one
+could think to specify "no user", won't work because this parameter is a flag,
 and it being unspecified has a different meaning.
 
-If one were to set ``from_id=InputUserEmpty()``, it would filter messages from "empty" senders,
-which would likely match no users.
+If one were to set ``from_id=InputUserEmpty()``, it would filter messages
+from "empty" senders, which would likely match no users.
 
-If you get a ``ChatAdminRequiredError`` on a channel, it's probably because you tried setting the ``from_id`` filter,
-and as the error says, you can't do that. Leave it set to ``None`` and it should work.
+If you get a ``ChatAdminRequiredError`` on a channel, it's probably because
+you tried setting the ``from_id`` filter, and as the error says, you can't
+do that. Leave it set to ``None`` and it should work.
 
-As with every method, make sure you use the right ID/hash combination for your ``InputUser`` or ``InputChat``,
-or you'll likely run into errors like ``UserIdInvalidError``.
+As with every method, make sure you use the right ID/hash combination for
+your ``InputUser`` or ``InputChat``, or you'll likely run into errors like
+``UserIdInvalidError``.
 
 
 Sending stickers
-*****************
+****************
 
-Stickers are nothing else than ``files``, and when you successfully retrieve the stickers for a certain sticker set,
-all you will have are ``handles`` to these files. Remember, the files Telegram holds on their servers can be referenced
-through this pair of ID/hash (unique per user), and you need to use this handle when sending a "document" message.
-This working example will send yourself the very first sticker you have:
+Stickers are nothing else than ``files``, and when you successfully retrieve
+the stickers for a certain sticker set, all you will have are ``handles`` to
+these files. Remember, the files Telegram holds on their servers can be
+referenced through this pair of ID/hash (unique per user), and you need to
+use this handle when sending a "document" message. This working example will
+send yourself the very first sticker you have:
 
     .. code-block:: python
 
