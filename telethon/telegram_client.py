@@ -52,7 +52,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
-    ChatInvite, ChatInviteAlready, PeerChannel, Photo
+    ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
@@ -1202,6 +1202,8 @@ class TelegramClient(TelegramBareClient):
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
             else:
+                if string in ('me', 'self'):
+                    return self.get_me()
                 result = self(ResolveUsernameRequest(string))
                 for entity in itertools.chain(result.users, result.chats):
                     if entity.username.lower() == string:
@@ -1239,6 +1241,8 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(peer, str):
+            if peer in ('me', 'self'):
+                return InputPeerSelf()
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
         is_peer = False
