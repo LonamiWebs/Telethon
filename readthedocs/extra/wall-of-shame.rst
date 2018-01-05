@@ -1,3 +1,8 @@
+=============
+Wall of Shame
+=============
+
+
 This project has an
 `issues <https://github.com/LonamiWebs/Telethon/issues>`__ section for
 you to file **issues** whenever you encounter any when working with the

@@ -50,8 +50,7 @@ Basic Usage
        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
        client.download_profile_photo(me)
-       total, messages, senders = client.get_message_history('username')
+       messages = client.get_message_history('username')
        client.download_media(messages[0])
 
    **More details**: :ref:`telegram-client`
-

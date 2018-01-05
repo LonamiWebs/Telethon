@@ -65,4 +65,3 @@ __ https://github.com/ricmoo/pyaes
 __ https://pypi.python.org/pypi/pyaes
 __ https://github.com/sybrenstuvel/python-rsa/
 __ https://pypi.python.org/pypi/rsa/3.4.2
-__ https://github.com/LonamiWebs/Telethon/issues/199

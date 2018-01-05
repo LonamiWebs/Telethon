@@ -98,7 +98,7 @@ Two Factor Authorization (2FA)
 
 If you have Two Factor Authorization (from now on, 2FA) enabled on your
 account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
-`SessionPasswordNeededError`. When this happens, just
+``SessionPasswordNeededError``. When this happens, just
 :meth:`telethon.TelegramClient.sign_in` again with a ``password=``:
 
     .. code-block:: python
@@ -113,7 +113,7 @@ account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
             client.sign_in(password=getpass.getpass())
 
 
-If you don't have 2FA enabled, but you would like to do so through Telethon,
+If you don't have 2FA enabled, but you would like to do so through the library,
 take as example the following code snippet:
 
     .. code-block:: python
@@ -146,4 +146,4 @@ for the tip!
 
 
 __ https://github.com/Anorov/PySocks#installation
-__ https://github.com/Anorov/PySocks#usage-1%3E
+__ https://github.com/Anorov/PySocks#usage-1

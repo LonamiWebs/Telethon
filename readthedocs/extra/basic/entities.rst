@@ -34,22 +34,22 @@ you're able to just do this:
 
     .. code-block:: python
 
-        # dialogs are the "conversations you have open"
-        # this method returns a list of Dialog, which
-        # have the .entity attribute and other information.
+        # Dialogs are the "conversations you have open".
+        # This method returns a list of Dialog, which
+        # has the .entity attribute and other information.
         dialogs = client.get_dialogs(limit=200)
 
-        # all of these work and do the same
+        # All of these work and do the same.
         lonami = client.get_entity('lonami')
         lonami = client.get_entity('t.me/lonami')
         lonami = client.get_entity('https://telegram.dog/lonami')
 
-        # other kind of entities
+        # Other kind of entities.
         channel = client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
         contact = client.get_entity('+34xxxxxxxxx')
         friend  = client.get_entity(friend_id)
 
-        # using peers/input peers (note that the API may return these)
+        # Using Peer/InputPeer (note that the API may return these)
         # users, chats and channels may all have the same ID, so it's
         # necessary to wrap (at least) chat and channels inside Peer.
         from telethon.tl.types import PeerUser, PeerChat, PeerChannel
@@ -79,7 +79,7 @@ possible, making zero API calls most of the time. When a request is made,
 if you provided the full entity, e.g. an ``User``, the library will convert
 it to the required ``InputPeer`` automatically for you.
 
-**You should always favour ``.get_input_entity()``** over ``.get_entity()``
+**You should always favour** ``.get_input_entity()`` **over** ``.get_entity()``
 for this reason! Calling the latter will always make an API call to get
 the most recent information about said entity, but invoking requests don't
 need this information, just the ``InputPeer``. Only use ``.get_entity()``

@@ -34,7 +34,7 @@ instance through ``curl``. A JSON response will be returned.
 
     curl https://rpc.pwrtelegram.xyz/?for=messages.sendMessage
 
-**Number of ``RPC_CALL_FAIL``\ 's**:
+**Number of** ``RPC_CALL_FAIL``:
 
 .. code:: bash
 

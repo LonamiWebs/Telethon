@@ -59,11 +59,66 @@ from .extensions import markdown
 
 
 class TelegramClient(TelegramBareClient):
-    """Full featured TelegramClient meant to extend the basic functionality -
+    """
+    Initializes the Telegram client with the specified API ID and Hash.
 
-       As opposed to the TelegramBareClient, this one  features downloading
-       media from different data centers, starting a second thread to
-       handle updates, and some very common functionality.
+    Args:
+        session (:obj:`str` | :obj:`Session` | :obj:`None`):
+            The file name of the session file to be used if a string is
+            given (it may be a full path), or the Session instance to be
+            used otherwise. If it's ``None``, the session will not be saved,
+            and you should call :meth:`.log_out()` when you're done.
+
+        api_id (:obj:`int` | :obj:`str`):
+            The API ID you obtained from https://my.telegram.org.
+
+        api_hash (:obj:`str`):
+            The API ID you obtained from https://my.telegram.org.
+
+        connection_mode (:obj:`ConnectionMode`, optional):
+            The connection mode to be used when creating a new connection
+            to the servers. Defaults to the ``TCP_FULL`` mode.
+            This will only affect how messages are sent over the network
+            and how much processing is required before sending them.
+
+        use_ipv6 (:obj:`bool`, optional):
+            Whether to connect to the servers through IPv6 or not.
+            By default this is ``False`` as IPv6 support is not
+            too widespread yet.
+
+        proxy (:obj:`tuple` | :obj:`dict`, optional):
+            A tuple consisting of ``(socks.SOCKS5, 'host', port)``.
+            See https://github.com/Anorov/PySocks#usage-1 for more.
+
+        update_workers (:obj:`int`, optional):
+            If specified, represents how many extra threads should
+            be spawned to handle incoming updates, and updates will
+            be kept in memory until they are processed. Note that
+            you must set this to at least ``0`` if you want to be
+            able to process updates through :meth:`updates.poll()`.
+
+        timeout (:obj:`int` | :obj:`float` | :obj:`timedelta`, optional):
+            The timeout to be used when receiving responses from
+            the network. Defaults to 5 seconds.
+
+        spawn_read_thread (:obj:`bool`, optional):
+            Whether to use an extra background thread or not. Defaults
+            to ``True`` so receiving items from the network happens
+            instantly, as soon as they arrive. Can still be disabled
+            if you want to run the library without any additional thread.
+
+    Kwargs:
+        Extra parameters will be forwarded to the ``Session`` file.
+        Most relevant parameters are:
+
+            .. code-block:: python
+
+                 device_model     = platform.node()
+                 system_version   = platform.system()
+                 app_version      = TelegramClient.__version__
+                 lang_code        = 'en'
+                 system_lang_code = lang_code
+                 report_errors    = True
     """
 
     # region Initialization
@@ -76,42 +131,6 @@ class TelegramClient(TelegramBareClient):
                  timeout=timedelta(seconds=5),
                  spawn_read_thread=True,
                  **kwargs):
-        """Initializes the Telegram client with the specified API ID and Hash.
-
-           Session can either be a `str` object (filename for the .session)
-           or it can be a `Session` instance (in which case list_sessions()
-           would probably not work). Pass 'None' for it to be a temporary
-           session - remember to '.log_out()'!
-
-           The 'connection_mode' should be any value under ConnectionMode.
-           This will only affect how messages are sent over the network
-           and how much processing is required before sending them.
-
-           The integer 'update_workers' represents depending on its value:
-             is None: Updates will *not* be stored in memory.
-             = 0: Another thread is responsible for calling self.updates.poll()
-             > 0: 'update_workers' background threads will be spawned, any
-                  any of them will invoke all the self.updates.handlers.
-
-           If 'spawn_read_thread', a background thread will be started once
-           an authorized user has been logged in to Telegram to read items
-           (such as updates and responses) from the network as soon as they
-           occur, which will speed things up.
-
-           If you don't want to spawn any additional threads, pending updates
-           will be read and processed accordingly after invoking a request
-           and not immediately. This is useful if you don't care about updates
-           at all and have set 'update_workers=None'.
-
-           If more named arguments are provided as **kwargs, they will be
-           used to update the Session instance. Most common settings are:
-             device_model     = platform.node()
-             system_version   = platform.system()
-             app_version      = TelegramClient.__version__
-             lang_code        = 'en'
-             system_lang_code = lang_code
-             report_errors    = True
-        """
         super().__init__(
             session, api_id, api_hash,
             connection_mode=connection_mode,
@@ -134,13 +153,17 @@ class TelegramClient(TelegramBareClient):
     # region Authorization requests
 
     def send_code_request(self, phone, force_sms=False):
-        """Sends a code request to the specified phone number.
+        """
+        Sends a code request to the specified phone number.
 
-        :param str | int phone:
-            The phone to which the code will be sent.
-        :param bool force_sms:
-            Whether to force sending as SMS.
-        :return auth.SentCode:
+        Args:
+            phone (:obj:`str` | :obj:`int`):
+                The phone to which the code will be sent.
+
+            force_sms (:obj:`bool`, optional):
+                Whether to force sending as SMS.
+
+        Returns:
             Information about the result of the request.
         """
         phone = utils.parse_phone(phone) or self._phone
@@ -165,23 +188,30 @@ class TelegramClient(TelegramBareClient):
         Starts or completes the sign in process with the given phone number
         or code that Telegram sent.
 
-        :param str | int phone:
-            The phone to send the code to if no code was provided, or to
-            override the phone that was previously used with these requests.
-        :param str | int code:
-            The code that Telegram sent.
-        :param str password:
-            2FA password, should be used if a previous call raised
-            SessionPasswordNeededError.
-        :param str bot_token:
-            Used to sign in as a bot. Not all requests will be available.
-            This should be the hash the @BotFather gave you.
-        :param str phone_code_hash:
-            The hash returned by .send_code_request. This can be set to None
-            to use the last hash known.
+        Args:
+            phone (:obj:`str` | :obj:`int`):
+                The phone to send the code to if no code was provided,
+                or to override the phone that was previously used with
+                these requests.
 
-        :return auth.SentCode | User:
-            The signed in user, or the information about .send_code_request().
+            code (:obj:`str` | :obj:`int`):
+                The code that Telegram sent.
+
+            password (:obj:`str`):
+                2FA password, should be used if a previous call raised
+                SessionPasswordNeededError.
+
+            bot_token (:obj:`str`):
+                Used to sign in as a bot. Not all requests will be available.
+                This should be the hash the @BotFather gave you.
+
+            phone_code_hash (:obj:`str`):
+                The hash returned by .send_code_request. This can be set to None
+                to use the last hash known.
+
+        Returns:
+            The signed in user, or the information about
+            :meth:`.send_code_request()`.
         """
 
         if phone and not code:
@@ -229,10 +259,18 @@ class TelegramClient(TelegramBareClient):
         Signs up to Telegram if you don't have an account yet.
         You must call .send_code_request(phone) first.
 
-        :param str | int code: The code sent by Telegram
-        :param str first_name: The first name to be used by the new account.
-        :param str last_name: Optional last name.
-        :return User: The new created user.
+        Args:
+            code (:obj:`str` | :obj:`int`):
+                The code sent by Telegram
+
+            first_name (:obj:`str`):
+                The first name to be used by the new account.
+
+            last_name (:obj:`str`, optional)
+                Optional last name.
+
+        Returns:
+            The new created user.
         """
         result = self(SignUpRequest(
             phone_number=self._phone,
@@ -246,9 +284,11 @@ class TelegramClient(TelegramBareClient):
         return result.user
 
     def log_out(self):
-        """Logs out Telegram and deletes the current *.session file.
+        """
+        Logs out Telegram and deletes the current *.session file.
 
-        :return bool: True if the operation was successful.
+        Returns:
+            True if the operation was successful.
         """
         try:
             self(LogOutRequest())
@@ -265,7 +305,8 @@ class TelegramClient(TelegramBareClient):
         Gets "me" (the self user) which is currently authenticated,
         or None if the request fails (hence, not authenticated).
 
-        :return User: Your own user.
+        Returns:
+            Your own user.
         """
         try:
             return self(GetUsersRequest([InputUserSelf()]))[0]
@@ -284,19 +325,24 @@ class TelegramClient(TelegramBareClient):
         """
         Gets N "dialogs" (open "chats" or conversations with other people).
 
-        :param limit:
-            How many dialogs to be retrieved as maximum. Can be set to None
-            to retrieve all dialogs. Note that this may take whole minutes
-            if you have hundreds of dialogs, as Telegram will tell the library
-            to slow down through a FloodWaitError.
-        :param offset_date:
-            The offset date to be used.
-        :param offset_id:
-            The message ID to be used as an offset.
-        :param offset_peer:
-            The peer to be used as an offset.
+        Args:
+            limit (:obj:`int` | :obj:`None`):
+                How many dialogs to be retrieved as maximum. Can be set to
+                ``None`` to retrieve all dialogs. Note that this may take
+                whole minutes if you have hundreds of dialogs, as Telegram
+                will tell the library to slow down through a
+                ``FloodWaitError``.
 
-        :return UserList[telethon.tl.custom.Dialog]:
+            offset_date (:obj:`datetime`, optional):
+                The offset date to be used.
+
+            offset_id (:obj:`int`, optional):
+                The message ID to be used as an offset.
+
+            offset_peer (:obj:`InputPeer`, optional):
+                The peer to be used as an offset.
+
+        Returns:
             A list dialogs, with an additional .total attribute on the list.
         """
         limit = float('inf') if limit is None else int(limit)
@@ -351,11 +397,10 @@ class TelegramClient(TelegramBareClient):
         """
         Gets all open draft messages.
 
-        Returns a list of custom `Draft` objects that are easy to work with:
-          You can call `draft.set_message('text')` to change the message,
-          or delete it through `draft.delete()`.
-
-        :return List[telethon.tl.custom.Draft]: A list of open drafts
+        Returns:
+            A list of custom ``Draft`` objects that are easy to work with:
+            You can call :meth:`draft.set_message('text')` to change the message,
+            or delete it through :meth:`draft.delete()`.
         """
         response = self(GetAllDraftsRequest())
         self.session.process_entities(response)
@@ -365,6 +410,7 @@ class TelegramClient(TelegramBareClient):
 
     @staticmethod
     def _get_response_message(request, result):
+        """Extracts the response message known a request and Update result"""
         # Telegram seems to send updateMessageID first, then updateNewMessage,
         # however let's not rely on that just in case.
         msg_id = None
@@ -388,19 +434,26 @@ class TelegramClient(TelegramBareClient):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
-        :param str | int | User | Chat | Channel entity:
-            To who will it be sent.
-        :param str message:
-            The message to be sent.
-        :param int | Message reply_to:
-            Whether to reply to a message or not.
-        :param str parse_mode:
-            Can be 'md' or 'markdown' for markdown-like parsing, in a similar
-            fashion how official clients work.
-        :param link_preview:
-            Should the link preview be shown?
+        Args:
+            entity (:obj:`entity`):
+                To who will it be sent.
 
-        :return Message: the sent message
+            message (:obj:`str`):
+                The message to be sent.
+
+            reply_to (:obj:`int` | :obj:`Message`, optional):
+                Whether to reply to a message or not. If an integer is provided,
+                it should be the ID of the message that it should reply to.
+
+            parse_mode (:obj:`str`, optional):
+                Can be 'md' or 'markdown' for markdown-like parsing, in a similar
+                fashion how official clients work.
+
+            link_preview (:obj:`bool`, optional):
+                Should the link preview be shown?
+
+        Returns:
+            the sent message
         """
         entity = self.get_input_entity(entity)
         if parse_mode:
@@ -435,21 +488,25 @@ class TelegramClient(TelegramBareClient):
 
     def delete_messages(self, entity, message_ids, revoke=True):
         """
-        Deletes a message from a chat, optionally "for everyone" with argument
-        `revoke` set to `True`.
+        Deletes a message from a chat, optionally "for everyone".
 
-        The `revoke` argument has no effect for Channels and Megagroups,
-        where it inherently behaves as being `True`.
+        Args:
+            entity (:obj:`entity`):
+                From who the message will be deleted. This can actually
+                be ``None`` for normal chats, but **must** be present
+                for channels and megagroups.
 
-        Note: The `entity` argument can be `None` for normal chats, but it's
-        mandatory to delete messages from Channels and Megagroups. It is also
-        possible to supply a chat_id which will be automatically resolved to
-        the right type of InputPeer.
+            message_ids (:obj:`list` | :obj:`int` | :obj:`Message`):
+                The IDs (or ID) or messages to be deleted.
 
-        :param entity: ID or Entity of the chat
-        :param list message_ids: ID(s) or `Message` object(s) of the message(s) to delete
-        :param revoke: Delete the message for everyone or just this client
-        :returns .messages.AffectedMessages: Messages affected by deletion.
+            revoke (:obj:`bool`, optional):
+                Whether the message should be deleted for everyone or not.
+                By default it has the opposite behaviour of official clients,
+                and it will delete the message for everyone.
+                This has no effect on channels or megagroups.
+
+        Returns:
+            The affected messages.
         """
 
         if not isinstance(message_ids, list):
@@ -477,34 +534,45 @@ class TelegramClient(TelegramBareClient):
         """
         Gets the message history for the specified entity
 
-        :param entity:
-            The entity from whom to retrieve the message history.
-        :param limit:
-            Number of messages to be retrieved. Due to limitations with the API
-            retrieving more than 3000 messages will take longer than half a
-            minute (or even more based on previous calls). The limit may also
-            be None, which would eventually return the whole history.
-        :param offset_date:
-            Offset date (messages *previous* to this date will be retrieved).
-        :param offset_id:
-            Offset message ID (only messages *previous* to the given ID will
-            be retrieved).
-        :param max_id:
-            All the messages with a higher (newer) ID or equal to this will
-            be excluded
-        :param min_id:
-            All the messages with a lower (older) ID or equal to this will
-            be excluded.
-        :param add_offset:
-            Additional message offset
-            (all of the specified offsets + this offset = older messages).
+        Args:
+            entity (:obj:`entity`):
+                The entity from whom to retrieve the message history.
 
-        :return: A list of messages with extra attributes:
-                    .total = (on the list) total amount of messages sent
-                    .sender = entity of the sender
-                    .fwd_from.sender = if fwd_from, who sent it originally
-                    .fwd_from.channel = if fwd_from, original channel
-                    .to = entity to which the message was sent
+            limit (:obj:`int` | :obj:`None`, optional):
+                Number of messages to be retrieved. Due to limitations with
+                the API retrieving more than 3000 messages will take longer
+                than half a minute (or even more based on previous calls).
+                The limit may also be ``None``, which would eventually return
+                the whole history.
+
+            offset_date (:obj:`datetime`):
+                Offset date (messages *previous* to this date will be
+                retrieved). Exclusive.
+
+            offset_id (:obj:`int`):
+                Offset message ID (only messages *previous* to the given
+                ID will be retrieved). Exclusive.
+
+            max_id (:obj:`int`):
+                All the messages with a higher (newer) ID or equal to this will
+                be excluded
+
+            min_id (:obj:`int`):
+                All the messages with a lower (older) ID or equal to this will
+                be excluded.
+
+            add_offset (:obj:`int`):
+                Additional message offset (all of the specified offsets +
+                this offset = older messages).
+
+        Returns:
+            A list of messages with extra attributes:
+
+                * ``.total`` = (on the list) total amount of messages sent.
+                * ``.sender`` = entity of the sender.
+                * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
+                * ``.fwd_from.channel`` = if fwd_from, original channel.
+                * ``.to`` = entity to which the message was sent.
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -585,11 +653,16 @@ class TelegramClient(TelegramBareClient):
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
 
-        :param entity: The chat where these messages are located.
-        :param message: Either a list of messages or a single message.
-        :param max_id: Overrides messages, until which message should the
-                       acknowledge should be sent.
-        :return:
+        Args:
+            entity (:obj:`entity`):
+                The chat where these messages are located.
+
+            message (:obj:`list` | :obj:`Message`):
+                Either a list of messages or a single message.
+
+            max_id (:obj:`int`):
+                Overrides messages, until which message should the
+                acknowledge should be sent.
         """
         if max_id is None:
             if not messages:
@@ -636,35 +709,47 @@ class TelegramClient(TelegramBareClient):
         """
         Sends a file to the specified entity.
 
-        :param entity:
-            Who will receive the file.
-        :param file:
-            The path of the file, byte array, or stream that will be sent.
-            Note that if a byte array or a stream is given, a filename
-            or its type won't be inferred, and it will be sent as an
-            "unnamed application/octet-stream".
+        Args:
+            entity (:obj:`entity`):
+                Who will receive the file.
 
-            Subsequent calls with the very same file will result in
-            immediate uploads, unless .clear_file_cache() is called.
-        :param caption:
-            Optional caption for the sent media message.
-        :param force_document:
-            If left to False and the file is a path that ends with .png, .jpg
-            and such, the file will be sent as a photo. Otherwise always as
-            a document.
-        :param progress_callback:
-            A callback function accepting two parameters: (sent bytes, total)
-        :param reply_to:
-            Same as reply_to from .send_message().
-        :param attributes:
-            Optional attributes that override the inferred ones, like
-            DocumentAttributeFilename and so on.
-        :param thumb:
-            Optional thumbnail (for videos).
-        :param kwargs:
+            file (:obj:`str` | :obj:`bytes` | :obj:`file`):
+                The path of the file, byte array, or stream that will be sent.
+                Note that if a byte array or a stream is given, a filename
+                or its type won't be inferred, and it will be sent as an
+                "unnamed application/octet-stream".
+
+                Subsequent calls with the very same file will result in
+                immediate uploads, unless ``.clear_file_cache()`` is called.
+
+            caption (:obj:`str`, optional):
+                Optional caption for the sent media message.
+
+            force_document (:obj:`bool`, optional):
+                If left to ``False`` and the file is a path that ends with
+                ``.png``, ``.jpg`` and such, the file will be sent as a photo.
+                Otherwise always as a document.
+
+            progress_callback (:obj:`callable`, optional):
+                A callback function accepting two parameters:
+                ``(sent bytes, total)``.
+
+            reply_to (:obj:`int` | :obj:`Message`):
+                Same as reply_to from .send_message().
+
+            attributes (:obj:`list`, optional):
+                Optional attributes that override the inferred ones, like
+                ``DocumentAttributeFilename`` and so on.
+
+            thumb (:obj:`str` | :obj:`bytes` | :obj:`file`):
+                Optional thumbnail (for videos).
+
+        Kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
-        :return:
+
+       Returns:
+           The message containing the sent file.
         """
         as_photo = False
         if isinstance(file, str):
@@ -766,15 +851,19 @@ class TelegramClient(TelegramBareClient):
         """
         Downloads the profile photo of the given entity (user/chat/channel).
 
-        :param entity:
-            From who the photo will be downloaded.
-        :param file:
-            The output file path, directory, or stream-like object.
-            If the path exists and is a file, it will be overwritten.
-        :param download_big:
-            Whether to use the big version of the available photos.
-        :return:
-            None if no photo was provided, or if it was Empty. On success
+        Args:
+            entity (:obj:`entity`):
+                From who the photo will be downloaded.
+
+            file (:obj:`str` | :obj:`file`, optional):
+                The output file path, directory, or stream-like object.
+                If the path exists and is a file, it will be overwritten.
+
+            download_big (:obj:`bool`, optional):
+                Whether to use the big version of the available photos.
+
+        Returns:
+            ``None`` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
         """
         photo = entity
@@ -843,14 +932,21 @@ class TelegramClient(TelegramBareClient):
     def download_media(self, message, file=None, progress_callback=None):
         """
         Downloads the given media, or the media from a specified Message.
-        :param message:
+
+        message (:obj:`Message` | :obj:`Media`):
             The media or message containing the media that will be downloaded.
-        :param file:
+
+        file (:obj:`str` | :obj:`file`, optional):
             The output file path, directory, or stream-like object.
             If the path exists and is a file, it will be overwritten.
-        :param progress_callback:
-            A callback function accepting two parameters: (recv bytes, total)
-        :return:
+
+        progress_callback (:obj:`callable`, optional):
+            A callback function accepting two parameters:
+            ``(recv bytes, total)``.
+
+        Returns:
+            ``None`` if no media was provided, or if it was Empty. On success
+            the file path is returned since it may differ from the one given.
         """
         # TODO This won't work for messageService
         if isinstance(message, Message):
@@ -1038,7 +1134,7 @@ class TelegramClient(TelegramBareClient):
         """
         Turns the given entity into a valid Telegram user or chat.
 
-        :param entity:
+        entity (:obj:`str` | :obj:`int` | :obj:`Peer` | :obj:`InputPeer`):
             The entity (or iterable of entities) to be transformed.
             If it's a string which can be converted to an integer or starts
             with '+' it will be resolved as if it were a phone number.
@@ -1053,7 +1149,9 @@ class TelegramClient(TelegramBareClient):
             If the entity is neither, and it's not a TLObject, an
             error will be raised.
 
-        :return: User, Chat or Channel corresponding to the input entity.
+        Returns:
+            ``User``, ``Chat`` or ``Channel`` corresponding to the input
+            entity.
         """
         if not isinstance(entity, str) and hasattr(entity, '__iter__'):
             single = False
@@ -1145,19 +1243,20 @@ class TelegramClient(TelegramBareClient):
         use this kind of InputUser, InputChat and so on, so this is the
         most suitable call to make for those cases.
 
-        :param peer:
+        entity (:obj:`str` | :obj:`int` | :obj:`Peer` | :obj:`InputPeer`):
             The integer ID of an user or otherwise either of a
-            PeerUser, PeerChat or PeerChannel, for which to get its
-            Input* version.
+            ``PeerUser``, ``PeerChat`` or ``PeerChannel``, for
+            which to get its ``Input*`` version.
 
-            If this Peer hasn't been seen before by the library, the top
+            If this ``Peer`` hasn't been seen before by the library, the top
             dialogs will be loaded and their entities saved to the session
             file (unless this feature was disabled explicitly).
 
             If in the end the access hash required for the peer was not found,
             a ValueError will be raised.
 
-        :return: InputPeerUser, InputPeerChat or InputPeerChannel.
+        Returns:
+            ``InputPeerUser``, ``InputPeerChat`` or ``InputPeerChannel``.
         """
         try:
             # First try to get the entity from cache, otherwise figure it out

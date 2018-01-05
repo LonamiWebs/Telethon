@@ -7,8 +7,8 @@ RPC stands for Remote Procedure Call, and when Telethon raises an
 methods incorrectly (wrong parameters, wrong permissions, or even
 something went wrong on Telegram's server). The most common are:
 
--  ``FloodError`` (420), the same request was repeated many times. Must
-   wait ``.seconds``.
+-  ``FloodWaitError`` (420), the same request was repeated many times.
+   Must wait ``.seconds`` (you can access this parameter).
 -  ``SessionPasswordNeededError``, if you have setup two-steps
    verification on Telegram.
 -  ``CdnFileTamperedError``, if the media you were trying to download
