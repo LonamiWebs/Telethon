@@ -317,10 +317,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
-    def get_dialogs(self,
-                    limit=10,
-                    offset_date=None,
-                    offset_id=0,
+    def get_dialogs(self, limit=10, offset_date=None, offset_id=0,
                     offset_peer=InputPeerEmpty()):
         """
         Gets N "dialogs" (open "chats" or conversations with other people).
@@ -425,11 +422,7 @@ class TelegramClient(TelegramBareClient):
                 if update.message.id == msg_id:
                     return update.message
 
-    def send_message(self,
-                     entity,
-                     message,
-                     reply_to=None,
-                     parse_mode=None,
+    def send_message(self, entity, message, reply_to=None, parse_mode=None,
                      link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
@@ -523,14 +516,8 @@ class TelegramClient(TelegramBareClient):
         else:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    def get_message_history(self,
-                            entity,
-                            limit=20,
-                            offset_date=None,
-                            offset_id=0,
-                            max_id=0,
-                            min_id=0,
-                            add_offset=0):
+    def get_message_history(self, entity, limit=20, offset_date=None,
+                            offset_id=0, max_id=0, min_id=0, add_offset=0):
         """
         Gets the message history for the specified entity
 

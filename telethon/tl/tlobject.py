@@ -134,7 +134,7 @@ class TLObject:
         if isinstance(dt, datetime):
             dt = int(dt.timestamp())
         elif isinstance(dt, date):
-            dt = int(datetime(dt.year, dt.month, dt.day, dt).timestamp())
+            dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
         elif isinstance(dt, float):
             dt = int(dt)
 

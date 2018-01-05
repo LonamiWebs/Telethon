@@ -3,9 +3,16 @@ This module holds a rough implementation of the C# TCP client.
 """
 import errno
 import socket
+import time
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 from threading import Lock
+
+MAX_TIMEOUT = 15  # in seconds
+CONN_RESET_ERRNOS = {
+    errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
+    errno.EINVAL, errno.ENOTCONN
+}
 
 
 class TcpClient:
@@ -59,6 +66,7 @@ class TcpClient:
         else:
             mode, address = socket.AF_INET, (ip, port)
 
+        timeout = 1
         while True:
             try:
                 while not self._socket:
@@ -69,10 +77,12 @@ class TcpClient:
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
-                if e.errno == errno.EBADF:
+                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
                     # Bad file descriptor, i.e. socket was closed, set it
                     # to none to recreate it on the next iteration
                     self._socket = None
+                    time.sleep(timeout)
+                    timeout = min(timeout * 2, MAX_TIMEOUT)
                 else:
                     raise
 
@@ -105,7 +115,7 @@ class TcpClient:
         :param data: the data to send.
         """
         if self._socket is None:
-            raise ConnectionResetError()
+            self._raise_connection_reset()
 
         # TODO Timeout may be an issue when sending the data, Changed in v3.5:
         # The socket timeout is now the maximum total duration to send all data.
@@ -116,7 +126,7 @@ class TcpClient:
         except ConnectionError:
             self._raise_connection_reset()
         except OSError as e:
-            if e.errno == errno.EBADF:
+            if e.errno in CONN_RESET_ERRNOS:
                 self._raise_connection_reset()
             else:
                 raise
@@ -129,7 +139,7 @@ class TcpClient:
         :return: the read data with len(data) == size.
         """
         if self._socket is None:
-            raise ConnectionResetError()
+            self._raise_connection_reset()
 
         # TODO Remove the timeout from this method, always use previous one
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
@@ -142,7 +152,7 @@ class TcpClient:
                 except ConnectionError:
                     self._raise_connection_reset()
                 except OSError as e:
-                    if e.errno == errno.EBADF or e.errno == errno.ENOTSOCK:
+                    if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset()
                     else:
                         raise

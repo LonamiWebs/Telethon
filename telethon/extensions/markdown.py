@@ -192,10 +192,10 @@ def get_inner_text(text, entity):
     :param entity: the entity or entities that must be matched.
     :return: a single result or a list of the text surrounded by the entities.
     """
-    if not isinstance(entity, TLObject) and hasattr(entity, '__iter__'):
+    if isinstance(entity, TLObject):
+        entity = (entity,)
         multiple = True
     else:
-        entity = [entity]
         multiple = False
 
     text = text.encode(ENC)
