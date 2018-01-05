@@ -158,9 +158,6 @@ class TelegramBareClient:
         # See https://core.telegram.org/api/invoking#saving-client-info.
         self._first_request = True
 
-        # Uploaded files cache so subsequent calls are instant
-        self._upload_cache = {}
-
         # Constantly read for results and updates from within the main client,
         # if the user has left enabled such option.
         self._spawn_read_thread = spawn_read_thread
@@ -639,6 +636,7 @@ class TelegramBareClient:
             file = file.read()
             file_size = len(file)
 
+        # File will now either be a string or bytes
         if not part_size_kb:
             part_size_kb = get_appropriated_part_size(file_size)
 
@@ -649,18 +647,40 @@ class TelegramBareClient:
         if part_size % 1024 != 0:
             raise ValueError('The part size must be evenly divisible by 1024')
 
+        # Set a default file name if None was specified
+        file_id = utils.generate_random_long()
+        if not file_name:
+            if isinstance(file, str):
+                file_name = os.path.basename(file)
+            else:
+                file_name = str(file_id)
+
         # Determine whether the file is too big (over 10MB) or not
         # Telegram does make a distinction between smaller or larger files
         is_large = file_size > 10 * 1024 * 1024
+        if not is_large:
+            # Calculate the MD5 hash before anything else.
+            # As this needs to be done always for small files,
+            # might as well do it before anything else and
+            # check the cache.
+            if isinstance(file, str):
+                with open(file, 'rb') as stream:
+                    file = stream.read()
+            hash_md5 = md5(file)
+            tuple_ = self.session.get_file(hash_md5.digest(), file_size)
+            if tuple_:
+                __log__.info('File was already cached, not uploading again')
+                return InputFile(name=file_name,
+                    md5_checksum=tuple_[0], id=tuple_[2], parts=tuple_[3])
+        else:
+            hash_md5 = None
+
         part_count = (file_size + part_size - 1) // part_size
-
-        file_id = utils.generate_random_long()
-        hash_md5 = md5()
-
         __log__.info('Uploading file of %d bytes in %d chunks of %d',
                      file_size, part_count, part_size)
-        stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)
-        try:
+
+        with open(file, 'rb') if isinstance(file, str) else BytesIO(file) \
+                as stream:
             for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
                 part = stream.read(part_size)
@@ -675,29 +695,19 @@ class TelegramBareClient:
 
                 result = self(request)
                 if result:
-                    __log__.debug('Uploaded %d/%d', part_index, part_count)
-                    if not is_large:
-                        # No need to update the hash if it's a large file
-                        hash_md5.update(part)
-
+                    __log__.debug('Uploaded %d/%d', part_index + 1, part_count)
                     if progress_callback:
                         progress_callback(stream.tell(), file_size)
                 else:
                     raise RuntimeError(
                         'Failed to upload file part {}.'.format(part_index))
-        finally:
-            stream.close()
-
-        # Set a default file name if None was specified
-        if not file_name:
-            if isinstance(file, str):
-                file_name = os.path.basename(file)
-            else:
-                file_name = str(file_id)
 
         if is_large:
             return InputFileBig(file_id, part_count, file_name)
         else:
+            self.session.cache_file(
+                hash_md5.digest(), file_size, file_id, part_count)
+
             return InputFile(file_id, part_count, file_name,
                              md5_checksum=hash_md5.hexdigest())
 

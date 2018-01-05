@@ -759,13 +759,8 @@ class TelegramClient(TelegramBareClient):
                 for ext in ('.png', '.jpg', '.gif', '.jpeg')
             )
 
-        file_hash = hash(file)
-        if file_hash in self._upload_cache:
-            file_handle = self._upload_cache[file_hash]
-        else:
-            self._upload_cache[file_hash] = file_handle = self.upload_file(
-                file, progress_callback=progress_callback
-            )
+        file_handle = self.upload_file(
+            file, progress_callback=progress_callback)
 
         if as_photo and not force_document:
             media = InputMediaUploadedPhoto(file_handle, caption)
@@ -834,14 +829,6 @@ class TelegramClient(TelegramBareClient):
                               upload_progress=upload_progress,
                               reply_to=reply_to,
                               is_voice_note=())  # empty tuple is enough
-
-    def clear_file_cache(self):
-        """Calls to .send_file() will cache the remote location of the
-           uploaded files so that subsequent files can be immediate, so
-           uploading the same file path will result in using the cached
-           version. To avoid this a call to this method should be made.
-        """
-        self._upload_cache.clear()
 
     # endregion
 

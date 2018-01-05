@@ -2,7 +2,6 @@ import json
 import os
 import platform
 import sqlite3
-import struct
 import time
 from base64 import b64decode
 from os.path import isfile as file_exists
@@ -16,7 +15,7 @@ from ..tl.types import (
 )
 
 EXTENSION = '.session'
-CURRENT_VERSION = 1  # database version
+CURRENT_VERSION = 2  # database version
 
 
 class Session:
@@ -93,6 +92,8 @@ class Session:
             version = c.fetchone()[0]
             if version != CURRENT_VERSION:
                 self._upgrade_database(old=version)
+                c.execute("delete from version")
+                c.execute("insert into version values (?)", (CURRENT_VERSION,))
                 self.save()
 
             # These values will be saved
@@ -123,6 +124,17 @@ class Session:
                     username text,
                     phone integer,
                     name text
+                ) without rowid"""
+            )
+            # Save file_size along with md5_digest
+            # to make collisions even more unlikely.
+            c.execute(
+                """create table sent_files (
+                    md5_digest blob,
+                    file_size integer,
+                    file_id integer,
+                    part_count integer,
+                    primary key(md5_digest, file_size)
                 ) without rowid"""
             )
             # Migrating from JSON -> new table and may have entities
@@ -158,7 +170,17 @@ class Session:
                 return []  # No entities
 
     def _upgrade_database(self, old):
-        pass
+        if old == 1:
+            self._conn.execute(
+                """create table sent_files (
+                    md5_digest blob,
+                    file_size integer,
+                    file_id integer,
+                    part_count integer,
+                    primary key(md5_digest, file_size)
+                ) without rowid"""
+            )
+            old = 2
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
@@ -370,3 +392,19 @@ class Session:
                 return InputPeerChannel(i, h)
         else:
             raise ValueError('Could not find input entity with key ', key)
+
+    # File processing
+
+    def get_file(self, md5_digest, file_size):
+        return self._conn.execute(
+            'select * from sent_files '
+            'where md5_digest = ? and file_size = ?', (md5_digest, file_size)
+        ).fetchone()
+
+    def cache_file(self, md5_digest, file_size, file_id, part_count):
+        with self._db_lock:
+            self._conn.execute(
+                'insert into sent_files values (?,?,?,?)',
+                (md5_digest, file_size, file_id, part_count)
+            )
+        self.save()
