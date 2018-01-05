@@ -10,7 +10,8 @@ Welcome to Telethon's documentation!
 
 Pure Python 3 Telegram client library.
 Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
-Please follow the links below to get you started.
+Please follow the links below to get you started, and remember
+to read the :ref:`changelog` when you upgrade!
 
 
 .. _installation-and-usage:
