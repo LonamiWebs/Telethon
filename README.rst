@@ -54,7 +54,7 @@ Doing stuff
 Next steps
 ----------
 
-Do you like how Telethon looks? Check the
-`wiki over GitHub <https://github.com/LonamiWebs/Telethon/wiki>`_ for a
-more in-depth explanation, with examples, troubleshooting issues, and more
-useful information.
+Do you like how Telethon looks? Check out
+`Read The Docs <http://telethon.rtfd.io/>`_
+for a more in-depth explanation, with examples,
+troubleshooting issues, and more useful information.
