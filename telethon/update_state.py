@@ -6,6 +6,8 @@ from datetime import datetime
 
 from .tl import types as tl
 
+__log__ = logging.getLogger(__name__)
+
 
 class UpdateState:
     """Used to hold the current state of processed updates.
@@ -32,11 +34,13 @@ class UpdateState:
            the library itself.
         """
         if isinstance(update, tl.updates.State):
+            __log__.debug('Saved new updates state')
             self._state = update
             return  # Nothing else to be done
 
         pts = getattr(update, 'pts', self._state.pts)
         if hasattr(update, 'pts') and pts <= self._state.pts:
+            __log__.info('Ignoring %s, already have it', update)
             return  # We already handled this update
 
         self._state.pts = pts
@@ -57,28 +61,21 @@ class UpdateState:
         """
         data = pickle.dumps(update.to_dict())
         if data in self._latest_updates:
+            __log__.info('Ignoring %s, already have it', update)
             return  # Duplicated too
 
         self._latest_updates.append(data)
 
-        if type(update).SUBCLASS_OF_ID == 0x8af52aac:  # crc32(b'Updates')
-            # Expand "Updates" into "Update", and pass these to callbacks.
-            # Since .users and .chats have already been processed, we
-            # don't need to care about those either.
-            if isinstance(update, tl.UpdateShort):
-                self.handle_update(update.update)
+        # Expand "Updates" into "Update", and pass these to callbacks.
+        # Since .users and .chats have already been processed, we
+        # don't need to care about those either.
+        if isinstance(update, tl.UpdateShort):
+            self.handle_update(update.update)
 
-            elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
-                for upd in update.updates:
-                    self.handle_update(upd)
+        elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
+            for upd in update.updates:
+                self.handle_update(upd)
 
-            elif not isinstance(update, tl.UpdatesTooLong):
-                # TODO Handle "Updates too long"
-                self.handle_update(update)
-
-        elif type(update).SUBCLASS_OF_ID == 0x9f89304e:  # crc32(b'Update')
-            self.handle_update(update)
+        # TODO Handle "Updates too long"
         else:
-            self._logger.debug('Ignoring "update" of type {}'.format(
-                type(update).__name__)
-            )
+            self.handle_update(update)

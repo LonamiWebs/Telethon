@@ -311,8 +311,10 @@ class TLGenerator:
 
         for ra in repeated_args.values():
             if len(ra) > 1:
-                cnd1 = ('self.{}'.format(a.name) for a in ra)
-                cnd2 = ('not self.{}'.format(a.name) for a in ra)
+                cnd1 = ('(self.{0} or self.{0} is not None)'
+                        .format(a.name) for a in ra)
+                cnd2 = ('(self.{0} is None or self.{0} is False)'
+                        .format(a.name) for a in ra)
                 builder.writeln(
                     "assert ({}) or ({}), '{} parameters must all "
                     "be False-y (like None) or all me True-y'".format(
@@ -464,9 +466,11 @@ class TLGenerator:
                 # Vector flags are special since they consist of 3 values,
                 # so we need an extra join here. Note that empty vector flags
                 # should NOT be sent either!
-                builder.write("b'' if not {} else b''.join((".format(name))
+                builder.write("b'' if {0} is None or {0} is False "
+                              "else b''.join((".format(name))
             else:
-                builder.write("b'' if not {} else (".format(name))
+                builder.write("b'' if {0} is None or {0} is False "
+                              "else (".format(name))
 
         if arg.is_vector:
             if arg.use_vector_id:
@@ -495,11 +499,14 @@ class TLGenerator:
                 # There's a flag indicator, but no flag arguments so it's 0
                 builder.write(r"b'\0\0\0\0'")
             else:
-                builder.write("struct.pack('<I', {})".format(
-                    ' | '.join('({} if {} else 0)'.format(
-                        1 << flag.flag_index, 'self.{}'.format(flag.name)
-                    ) for flag in args if flag.is_flag)
-                ))
+                builder.write("struct.pack('<I', ")
+                builder.write(
+                    ' | '.join('(0 if {0} is None or {0} is False else {1})'
+                               .format('self.{}'.format(flag.name),
+                                       1 << flag.flag_index)
+                               for flag in args if flag.is_flag)
+                )
+                builder.write(')')
 
         elif 'int' == arg.type:
             # struct.pack is around 4 times faster than int.to_bytes
@@ -533,11 +540,7 @@ class TLGenerator:
             builder.write('TLObject.serialize_bytes({})'.format(name))
 
         elif 'date' == arg.type:  # Custom format
-            # 0 if datetime is None else int(datetime.timestamp())
-            builder.write(
-                r"b'\0\0\0\0' if {0} is None else "
-                r"struct.pack('<I', int({0}.timestamp()))".format(name)
-            )
+            builder.write('TLObject.serialize_datetime({})'.format(name))
 
         else:
             # Else it may be a custom type

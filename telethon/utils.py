@@ -5,6 +5,8 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 import math
 from mimetypes import add_type, guess_extension
 
+import re
+
 from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
@@ -24,6 +26,11 @@ from .tl.types import (
 )
 
 
+USERNAME_RE = re.compile(
+    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+)
+
+
 def get_display_name(entity):
     """Gets the input peer for the given "entity" (user, chat or channel)
        Returns None if it was not found"""
@@ -35,12 +42,12 @@ def get_display_name(entity):
         elif entity.last_name:
             return entity.last_name
         else:
-            return '(No name)'
+            return ''
 
-    if isinstance(entity, (Chat, Channel)):
+    elif isinstance(entity, (Chat, Channel)):
         return entity.title
 
-    return '(unknown)'
+    return ''
 
 # For some reason, .webp (stickers' format) is not registered
 add_type('image/webp', '.webp')
@@ -67,13 +74,13 @@ def get_extension(media):
 
 
 def _raise_cast_fail(entity, target):
-    raise ValueError('Cannot cast {} to any kind of {}.'
-                     .format(type(entity).__name__, target))
+    raise TypeError('Cannot cast {} to any kind of {}.'.format(
+        type(entity).__name__, target))
 
 
 def get_input_peer(entity, allow_self=True):
     """Gets the input peer for the given "entity" (user, chat or channel).
-       A ValueError is raised if the given entity isn't a supported type."""
+       A TypeError is raised if the given entity isn't a supported type."""
     if not isinstance(entity, TLObject):
         _raise_cast_fail(entity, 'InputPeer')
 
@@ -305,9 +312,40 @@ def get_input_media(media, user_caption=None, is_photo=False):
     _raise_cast_fail(media, 'InputMedia')
 
 
-def get_peer_id(peer, add_mark=False):
-    """Finds the ID of the given peer, and optionally converts it to
-       the "bot api" format if 'add_mark' is set to True.
+def parse_phone(phone):
+    """Parses the given phone, or returns None if it's invalid"""
+    if isinstance(phone, int):
+        return str(phone)
+    else:
+        phone = re.sub(r'[+()\s-]', '', str(phone))
+        if phone.isdigit():
+            return phone
+
+
+def parse_username(username):
+    """Parses the given username or channel access hash, given
+       a string, username or URL. Returns a tuple consisting of
+       both the stripped, lowercase username and whether it is
+       a joinchat/ hash (in which case is not lowercase'd).
+    """
+    username = username.strip()
+    m = USERNAME_RE.match(username)
+    if m:
+        result = username[m.end():]
+        is_invite = bool(m.group(1))
+        return result if is_invite else result.lower(), is_invite
+    else:
+        return username.lower(), False
+
+
+def get_peer_id(peer):
+    """
+    Finds the ID of the given peer, and converts it to the "bot api" format
+    so it the peer can be identified back. User ID is left unmodified,
+    chat ID is negated, and channel ID is prefixed with -100.
+
+    The original ID and the peer type class can be returned with
+    a call to utils.resolve_id(marked_id).
     """
     # First we assert it's a Peer TLObject, or early return for integers
     if not isinstance(peer, TLObject):
@@ -324,7 +362,7 @@ def get_peer_id(peer, add_mark=False):
     if isinstance(peer, (PeerUser, InputPeerUser)):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
-        return -peer.chat_id if add_mark else peer.chat_id
+        return -peer.chat_id
     elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
         if isinstance(peer, ChannelFull):
             # Special case: .get_input_peer can't return InputChannel from
@@ -332,12 +370,9 @@ def get_peer_id(peer, add_mark=False):
             i = peer.id
         else:
             i = peer.channel_id
-        if add_mark:
-            # Concat -100 through math tricks, .to_supergroup() on Madeline
-            # IDs will be strictly positive -> log works
-            return -(i + pow(10, math.floor(math.log10(i) + 3)))
-        else:
-            return i
+        # Concat -100 through math tricks, .to_supergroup() on Madeline
+        # IDs will be strictly positive -> log works
+        return -(i + pow(10, math.floor(math.log10(i) + 3)))
 
     _raise_cast_fail(peer, 'int')
 
@@ -351,28 +386,6 @@ def resolve_id(marked_id):
         return int(str(marked_id)[4:]), PeerChannel
 
     return -marked_id, PeerChat
-
-
-def find_user_or_chat(peer, users, chats):
-    """Finds the corresponding user or chat given a peer.
-       Returns None if it was not found"""
-    if isinstance(peer, PeerUser):
-        peer, where = peer.user_id, users
-    else:
-        where = chats
-        if isinstance(peer, PeerChat):
-            peer = peer.chat_id
-        elif isinstance(peer, PeerChannel):
-            peer = peer.channel_id
-
-    if isinstance(peer, int):
-        if isinstance(where, dict):
-            return where.get(peer)
-        else:
-            try:
-                return next(x for x in where if x.id == peer)
-            except StopIteration:
-                pass
 
 
 def get_appropriated_part_size(file_size):

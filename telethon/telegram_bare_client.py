@@ -36,9 +36,12 @@ from .update_state import UpdateState
 from .utils import get_appropriated_part_size
 
 
+DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
+
+__log__ = logging.getLogger(__name__)
 
 
 class TelegramBareClient:
@@ -78,17 +81,17 @@ class TelegramBareClient:
                  **kwargs):
         """Refer to TelegramClient.__init__ for docs on this method"""
         if not api_id or not api_hash:
-            raise PermissionError(
+            raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
-                "Refer to Telethon's README.rst for more information.")
+                "Refer to Telethon's wiki for more information.")
 
         self._use_ipv6 = use_ipv6
         
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session.try_load_or_create_new(session)
+            session = Session(session)
         elif not isinstance(session, Session):
-            raise ValueError(
+            raise TypeError(
                 'The given session must be a str or a Session instance.'
             )
 
@@ -97,9 +100,11 @@ class TelegramBareClient:
         # ':' in session.server_address is True if it's an IPv6 address
         if (not session.server_address or
                 (':' in session.server_address) != use_ipv6):
-            session.port = DEFAULT_PORT
-            session.server_address = \
-                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP
+            session.set_dc(
+                DEFAULT_DC_ID,
+                DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
+                DEFAULT_PORT
+            )
 
         self.session = session
         self.api_id = int(api_id)
@@ -117,10 +122,8 @@ class TelegramBareClient:
             self._loop
         )
 
-        self._logger = logging.getLogger(__name__)
-
-        # Two coroutines may be calling reconnect() when the connection is lost,
-        # we only want one to actually perform the reconnection.
+        # Two coroutines may be calling reconnect() when the connection
+        # is lost, we only want one to actually perform the reconnection.
         self._reconnect_lock = Lock(loop=self._loop)
 
         # Cache "exported" sessions as 'dc_id: Session' not to recreate
@@ -151,8 +154,9 @@ class TelegramBareClient:
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
 
-        # Uploaded files cache so subsequent calls are instant
-        self._upload_cache = {}
+        # The first request must be in invokeWithLayer(initConnection(X)).
+        # See https://core.telegram.org/api/invoking#saving-client-info.
+        self._first_request = True
 
         self._recv_loop = None
         self._ping_loop = None
@@ -178,8 +182,12 @@ class TelegramBareClient:
            native data center, raising a "UserMigrateError", and
            calling .disconnect() in the process.
         """
+        __log__.info('Connecting to %s:%d...',
+                     self.session.server_address, self.session.port)
+
         try:
             await self._sender.connect()
+            __log__.info('Connection success!')
 
             # Connection was successful! Try syncing the update state
             # UNLESS '_sync_updates' is False (we probably are in
@@ -199,14 +207,15 @@ class TelegramBareClient:
 
         except TypeNotFoundError as e:
             # This is fine, probably layer migration
-            self._logger.debug('Found invalid item, probably migrating', e)
+            __log__.warning('Connection failed, got unexpected type with ID '
+                            '%s. Migrating?', hex(e.invalid_constructor_id))
             self.disconnect()
             return await self.connect(_sync_updates=_sync_updates)
 
-        except (RPCError, ConnectionError):
+        except (RPCError, ConnectionError) as e:
             # Probably errors from the previous session, ignore them
+            __log__.error('Connection failed due to %s', e)
             self.disconnect()
-            self._logger.exception('Could not stabilise initial connection.')
             return False
 
     def is_connected(self):
@@ -227,10 +236,14 @@ class TelegramBareClient:
 
     def disconnect(self):
         """Disconnects from the Telegram server"""
+        __log__.info('Disconnecting...')
         self._user_connected = False
         self._sender.disconnect()
         # TODO Shall we clear the _exported_sessions, or may be reused?
-        pass
+        self._first_request = True  # On reconnect it will be first again
+
+    def __del__(self):
+        self.disconnect()
 
     async def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
@@ -246,10 +259,13 @@ class TelegramBareClient:
             try:
                 await self._reconnect_lock.acquire()
                 if self.is_connected():
+                    __log__.info('Reconnection aborted: already connected')
                     return True
 
+                __log__.info('Attempting reconnection...')
                 return await self.connect()
             except ConnectionResetError:
+                __log__.warning('Reconnection failed due to %s', e)
                 return False
             finally:
                 self._reconnect_lock.release()
@@ -258,15 +274,22 @@ class TelegramBareClient:
             # we need to first know the Data Centers we can connect to. Do
             # that before disconnecting.
             dc = await self._get_dc(new_dc)
+            __log__.info('Reconnecting to new data center %s', dc)
 
-            self.session.server_address = dc.ip_address
-            self.session.port = dc.port
+            self.session.set_dc(dc.id, dc.ip_address, dc.port)
             # auth_key's are associated with a server, which has now changed
             # so it's not valid anymore. Set to None to force recreating it.
             self.session.auth_key = None
             self.session.save()
             self.disconnect()
             return await self.connect()
+
+    def set_proxy(self, proxy):
+        """Change the proxy used by the connections.
+        """
+        if self.is_connected():
+            raise RuntimeError("You can't change the proxy while connected.")
+        self._sender.connection.conn.proxy = proxy
 
     # endregion
 
@@ -315,6 +338,7 @@ class TelegramBareClient:
             dc = await self._get_dc(dc_id)
 
             # Export the current authorization to the new DC.
+            __log__.info('Exporting authorization for data center %s', dc)
             export_auth = await self(ExportAuthorizationRequest(dc_id))
 
             # Create a temporary session for this IP address, which needs
@@ -323,10 +347,10 @@ class TelegramBareClient:
             # Construct this session with the connection parameters
             # (system version, device model...) from the current one.
             session = Session(self.session)
-            session.server_address = dc.ip_address
-            session.port = dc.port
+            session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[dc_id] = session
 
+        __log__.info('Creating exported new client')
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
@@ -339,7 +363,7 @@ class TelegramBareClient:
                 id=export_auth.id, bytes=export_auth.bytes
             ))
         elif export_auth is not None:
-            self._logger.warning('Unknown return export_auth type', export_auth)
+            __log__.warning('Unknown export auth type %s', export_auth)
 
         client._authorized = True  # We exported the auth, so we got auth
         return client
@@ -350,10 +374,10 @@ class TelegramBareClient:
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = Session(self.session)
-            session.server_address = dc.ip_address
-            session.port = dc.port
+            session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
+        __log__.info('Creating new CDN client')
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
@@ -378,11 +402,20 @@ class TelegramBareClient:
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
-           ValueError().
+           RuntimeError().
         """
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
-            raise ValueError('You can only invoke requests, not types!')
+            raise TypeError('You can only invoke requests, not types!')
+
+        # For logging purposes
+        if len(requests) == 1:
+            which = type(requests[0]).__name__
+        else:
+            which = '{} requests ({})'.format(
+                len(requests), [type(x).__name__ for x in requests])
+
+        __log__.debug('Invoking %s', which)
 
         # We should call receive from this thread if there's no background
         # thread reading or if the server disconnected us and we're trying
@@ -395,35 +428,34 @@ class TelegramBareClient:
             if result is not None:
                 return result
 
+            __log__.warning('Invoking %s failed %d times, '
+                            'reconnecting and retrying',
+                            [str(x) for x in requests], retry + 1)
+
             await asyncio.sleep(retry + 1, loop=self._loop)
-            self._logger.debug('RPC failed. Attempting reconnection.')
             if not self._reconnect_lock.locked():
                 with await self._reconnect_lock:
                     self._reconnect()
 
-        raise ValueError('Number of retries reached 0.')
+        raise RuntimeError('Number of retries reached 0.')
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
     async def _invoke(self, call_receive, retry, *requests):
-        # We need to specify the new layer (by initializing a new
-        # connection) if it has changed from the latest known one.
-        init_connection = self.session.layer != LAYER
-
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
                 x.rpc_error = None
 
             if not self.session.auth_key:
-                # New key, we need to tell the server we're going to use
-                # the latest layer and initialize the connection doing so.
+                __log__.info('Need to generate new auth key before invoking')
+                self._first_request = True
                 self.session.auth_key, self.session.time_offset = \
                     await authenticator.do_authentication(self._sender.connection)
-                init_connection = True
 
-            if init_connection:
+            if self._first_request:
+                __log__.info('Initializing a new connection while invoking')
                 if len(requests) == 1:
                     requests = [self._wrap_init_connection(requests[0])]
                 else:
@@ -447,13 +479,14 @@ class TelegramBareClient:
                     await self._sender.receive(update_state=self.updates)
 
         except BrokenAuthKeyError:
-            self._logger.error('Broken auth key, a new one will be generated')
+            __log__.error('Authorization key seems broken and was invalid!')
             self.session.auth_key = None
 
         except TimeoutError:
-            pass  # We will just retry
+            __log__.warning('Invoking timed out')  # We will just retry
 
         except ConnectionResetError:
+            __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
                 return None
@@ -461,11 +494,8 @@ class TelegramBareClient:
                 # User never called .connect(), so raise this error.
                 raise
 
-        if init_connection:
-            # We initialized the connection successfully, even if
-            # a request had an RPC error we have invoked it fine.
-            self.session.layer = LAYER
-            self.session.save()
+        # Clear the flag if we got this far
+        self._first_request = False
 
         try:
             raise next(x.rpc_error for x in requests if x.rpc_error)
@@ -482,27 +512,19 @@ class TelegramBareClient:
 
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:
-            self._logger.debug(
-                'DC error when invoking request, '
-                'attempting to reconnect at DC {}'.format(e.new_dc)
-            )
 
             await self._reconnect(new_dc=e.new_dc)
             return None
 
         except ServerError as e:
             # Telegram is having some issues, just retry
-            self._logger.debug(
-                '[ERROR] Telegram is having some internal issues', e
-            )
+            __log__.error('Telegram servers are having internal errors %s', e)
 
         except FloodWaitError as e:
+            __log__.warning('Request invoked too often, wait %ds', e.seconds)
             if e.seconds > self.session.flood_sleep_threshold | 0:
                 raise
 
-            self._logger.debug(
-                'Sleep of %d seconds below threshold, sleeping' % e.seconds
-            )
             await asyncio.sleep(e.seconds, loop=self._loop)
             return None
 
@@ -540,6 +562,9 @@ class TelegramBareClient:
              part_size_kb = get_appropriated_part_size(file_size)
              file_name    = os.path.basename(file_path)
         """
+        if isinstance(file, (InputFile, InputFileBig)):
+            return file  # Already uploaded
+
         if isinstance(file, str):
             file_size = os.path.getsize(file)
         elif isinstance(file, bytes):
@@ -548,6 +573,7 @@ class TelegramBareClient:
             file = file.read()
             file_size = len(file)
 
+        # File will now either be a string or bytes
         if not part_size_kb:
             part_size_kb = get_appropriated_part_size(file_size)
 
@@ -558,16 +584,40 @@ class TelegramBareClient:
         if part_size % 1024 != 0:
             raise ValueError('The part size must be evenly divisible by 1024')
 
+        # Set a default file name if None was specified
+        file_id = utils.generate_random_long()
+        if not file_name:
+            if isinstance(file, str):
+                file_name = os.path.basename(file)
+            else:
+                file_name = str(file_id)
+
         # Determine whether the file is too big (over 10MB) or not
         # Telegram does make a distinction between smaller or larger files
         is_large = file_size > 10 * 1024 * 1024
+        if not is_large:
+            # Calculate the MD5 hash before anything else.
+            # As this needs to be done always for small files,
+            # might as well do it before anything else and
+            # check the cache.
+            if isinstance(file, str):
+                with open(file, 'rb') as stream:
+                    file = stream.read()
+            hash_md5 = md5(file)
+            tuple_ = self.session.get_file(hash_md5.digest(), file_size)
+            if tuple_:
+                __log__.info('File was already cached, not uploading again')
+                return InputFile(name=file_name,
+                    md5_checksum=tuple_[0], id=tuple_[2], parts=tuple_[3])
+        else:
+            hash_md5 = None
+
         part_count = (file_size + part_size - 1) // part_size
+        __log__.info('Uploading file of %d bytes in %d chunks of %d',
+                     file_size, part_count, part_size)
 
-        file_id = utils.generate_random_long()
-        hash_md5 = md5()
-
-        stream = open(file, 'rb') if isinstance(file, str) else BytesIO(file)
-        try:
+        with open(file, 'rb') if isinstance(file, str) else BytesIO(file) \
+                as stream:
             for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
                 part = stream.read(part_size)
@@ -582,28 +632,19 @@ class TelegramBareClient:
 
                 result = await self(request)
                 if result:
-                    if not is_large:
-                        # No need to update the hash if it's a large file
-                        hash_md5.update(part)
-
+                    __log__.debug('Uploaded %d/%d', part_index + 1, part_count)
                     if progress_callback:
                         progress_callback(stream.tell(), file_size)
                 else:
-                    raise ValueError('Failed to upload file part {}.'
-                                     .format(part_index))
-        finally:
-            stream.close()
-
-        # Set a default file name if None was specified
-        if not file_name:
-            if isinstance(file, str):
-                file_name = os.path.basename(file)
-            else:
-                file_name = str(file_id)
+                    raise RuntimeError(
+                        'Failed to upload file part {}.'.format(part_index))
 
         if is_large:
             return InputFileBig(file_id, part_count, file_name)
         else:
+            self.session.cache_file(
+                hash_md5.digest(), file_size, file_id, part_count)
+
             return InputFile(file_id, part_count, file_name,
                              md5_checksum=hash_md5.hexdigest())
 
@@ -650,6 +691,7 @@ class TelegramBareClient:
         client = self
         cdn_decrypter = None
 
+        __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:
             offset = 0
             while True:
@@ -662,6 +704,7 @@ class TelegramBareClient:
                         ))
 
                         if isinstance(result, FileCdnRedirect):
+                            __log__.info('File lives in a CDN')
                             cdn_decrypter, result = \
                                 await CdnDecrypter.prepare_decrypter(
                                     client,
@@ -670,6 +713,7 @@ class TelegramBareClient:
                                 )
 
                 except FileMigrateError as e:
+                    __log__.info('File lives in another DC')
                     client = await self._get_exported_client(e.new_dc)
                     continue
 
@@ -682,6 +726,7 @@ class TelegramBareClient:
                     return getattr(result, 'type', '')
 
                 f.write(result.bytes)
+                __log__.debug('Saved %d more bytes', len(result.bytes))
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
@@ -736,28 +781,30 @@ class TelegramBareClient:
         self._ping_loop = None
 
     async def _recv_loop_impl(self):
+        __log__.info('Starting to wait for items from the network')
         need_reconnect = False
         while self._user_connected:
             try:
                 if need_reconnect:
+                    __log__.info('Attempting reconnection from read loop')
                     need_reconnect = False
                     while self._user_connected and not await self._reconnect():
                         # Retry forever, this is instant messaging
                         await asyncio.sleep(0.1, loop=self._loop)
 
+                __log__.debug('Receiving items from the network...')
                 await self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem.
-                pass
+                __log__.info('Receiving items from the network timed out')
             except ConnectionError as error:
-                self._logger.debug(error)
                 need_reconnect = True
+                __log__.error('Connection was reset while receiving items')
                 await asyncio.sleep(1, loop=self._loop)
             except Exception as error:
                 # Unknown exception, pass it to the main thread
-                self._logger.exception(
-                    'Unknown error on the read loop, please report.'
-                )
+                __log__.exception('Unknown exception in the read thread! '
+                                  'Disconnecting and leaving it to main thread')
 
                 try:
                     import socks

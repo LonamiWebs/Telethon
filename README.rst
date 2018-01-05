@@ -53,16 +53,16 @@ if you're new with ``asyncio``.
   await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
   await client.download_profile_photo(me)
-  total, messages, senders = await client.get_message_history('username')
+  messages = await client.get_message_history('username')
   await client.download_media(messages[0])
 
 
 Next steps
 ----------
 
-Do you like how Telethon looks? Check the
-`wiki over GitHub <https://github.com/LonamiWebs/Telethon/wiki>`_ for a
-more in-depth explanation, with examples, troubleshooting issues, and more
-useful information. Note that the examples there are written for the threaded
-version, not the one using asyncio. However, you just need to await every
-remote call.
+Do you like how Telethon looks? Check out
+`Read The Docs <http://telethon.rtfd.io/>`_
+for a more in-depth explanation, with examples, troubleshooting issues,
+and more useful information. Note that the examples there are written for
+the threaded version, not the one using asyncio. However, you just need to
+await every remote call.

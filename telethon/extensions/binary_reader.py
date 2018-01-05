@@ -1,9 +1,12 @@
+"""
+This module contains the BinaryReader utility class.
+"""
 import os
 from datetime import datetime
 from io import BufferedReader, BytesIO
 from struct import unpack
 
-from ..errors import InvalidParameterError, TypeNotFoundError
+from ..errors import TypeNotFoundError
 from ..tl.all_tlobjects import tlobjects
 
 
@@ -19,8 +22,7 @@ class BinaryReader:
         elif stream:
             self.stream = stream
         else:
-            raise InvalidParameterError(
-                'Either bytes or a stream must be provided')
+            raise ValueError('Either bytes or a stream must be provided')
 
         self.reader = BufferedReader(self.stream)
         self._last = None  # Should come in handy to spot -404 errors
@@ -30,32 +32,32 @@ class BinaryReader:
     # "All numbers are written as little endian."
     # https://core.telegram.org/mtproto
     def read_byte(self):
-        """Reads a single byte value"""
+        """Reads a single byte value."""
         return self.read(1)[0]
 
     def read_int(self, signed=True):
-        """Reads an integer (4 bytes) value"""
+        """Reads an integer (4 bytes) value."""
         return int.from_bytes(self.read(4), byteorder='little', signed=signed)
 
     def read_long(self, signed=True):
-        """Reads a long integer (8 bytes) value"""
+        """Reads a long integer (8 bytes) value."""
         return int.from_bytes(self.read(8), byteorder='little', signed=signed)
 
     def read_float(self):
-        """Reads a real floating point (4 bytes) value"""
+        """Reads a real floating point (4 bytes) value."""
         return unpack('<f', self.read(4))[0]
 
     def read_double(self):
-        """Reads a real floating point (8 bytes) value"""
+        """Reads a real floating point (8 bytes) value."""
         return unpack('<d', self.read(8))[0]
 
     def read_large_int(self, bits, signed=True):
-        """Reads a n-bits long integer value"""
+        """Reads a n-bits long integer value."""
         return int.from_bytes(
             self.read(bits // 8), byteorder='little', signed=signed)
 
     def read(self, length):
-        """Read the given amount of bytes"""
+        """Read the given amount of bytes."""
         result = self.reader.read(length)
         if len(result) != length:
             raise BufferError(
@@ -67,7 +69,7 @@ class BinaryReader:
         return result
 
     def get_bytes(self):
-        """Gets the byte array representing the current buffer as a whole"""
+        """Gets the byte array representing the current buffer as a whole."""
         return self.stream.getvalue()
 
     # endregion
@@ -75,8 +77,9 @@ class BinaryReader:
     # region Telegram custom reading
 
     def tgread_bytes(self):
-        """Reads a Telegram-encoded byte array,
-           without the need of specifying its length
+        """
+        Reads a Telegram-encoded byte array, without the need of
+        specifying its length.
         """
         first_byte = self.read_byte()
         if first_byte == 254:
@@ -95,28 +98,28 @@ class BinaryReader:
         return data
 
     def tgread_string(self):
-        """Reads a Telegram-encoded string"""
+        """Reads a Telegram-encoded string."""
         return str(self.tgread_bytes(), encoding='utf-8', errors='replace')
 
     def tgread_bool(self):
-        """Reads a Telegram boolean value"""
+        """Reads a Telegram boolean value."""
         value = self.read_int(signed=False)
         if value == 0x997275b5:  # boolTrue
             return True
         elif value == 0xbc799737:  # boolFalse
             return False
         else:
-            raise ValueError('Invalid boolean code {}'.format(hex(value)))
+            raise RuntimeError('Invalid boolean code {}'.format(hex(value)))
 
     def tgread_date(self):
         """Reads and converts Unix time (used by Telegram)
-           into a Python datetime object
+           into a Python datetime object.
         """
         value = self.read_int()
         return None if value == 0 else datetime.utcfromtimestamp(value)
 
     def tgread_object(self):
-        """Reads a Telegram object"""
+        """Reads a Telegram object."""
         constructor_id = self.read_int(signed=False)
         clazz = tlobjects.get(constructor_id, None)
         if clazz is None:
@@ -135,9 +138,9 @@ class BinaryReader:
         return clazz.from_reader(self)
 
     def tgread_vector(self):
-        """Reads a vector (a list) of Telegram objects"""
+        """Reads a vector (a list) of Telegram objects."""
         if 0x1cb5c415 != self.read_int(signed=False):
-            raise ValueError('Invalid constructor code, vector was expected')
+            raise RuntimeError('Invalid constructor code, vector was expected')
 
         count = self.read_int()
         return [self.tgread_object() for _ in range(count)]
@@ -145,21 +148,23 @@ class BinaryReader:
     # endregion
 
     def close(self):
+        """Closes the reader, freeing the BytesIO stream."""
         self.reader.close()
 
     # region Position related
 
     def tell_position(self):
-        """Tells the current position on the stream"""
+        """Tells the current position on the stream."""
         return self.reader.tell()
 
     def set_position(self, position):
-        """Sets the current position on the stream"""
+        """Sets the current position on the stream."""
         self.reader.seek(position)
 
     def seek(self, offset):
-        """Seeks the stream position given an offset from the
-           current position. The offset may be negative
+        """
+        Seeks the stream position given an offset from the current position.
+        The offset may be negative.
         """
         self.reader.seek(offset, os.SEEK_CUR)
 

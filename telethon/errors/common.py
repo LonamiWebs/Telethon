@@ -2,20 +2,16 @@
 
 
 class ReadCancelledError(Exception):
-    """Occurs when a read operation was cancelled"""
+    """Occurs when a read operation was cancelled."""
     def __init__(self):
         super().__init__(self, 'The read operation was cancelled.')
 
 
-class InvalidParameterError(Exception):
-    """Occurs when an invalid parameter is given, for example,
-    when either A or B are required but none is given"""
-
-
 class TypeNotFoundError(Exception):
-    """Occurs when a type is not found, for example,
-    when trying to read a TLObject with an invalid constructor code"""
-
+    """
+    Occurs when a type is not found, for example,
+    when trying to read a TLObject with an invalid constructor code.
+    """
     def __init__(self, invalid_constructor_id):
         super().__init__(
             self, 'Could not find a matching Constructor ID for the TLObject '
@@ -27,6 +23,10 @@ class TypeNotFoundError(Exception):
 
 
 class InvalidChecksumError(Exception):
+    """
+    Occurs when using the TCP full mode and the checksum of a received
+    packet doesn't match the expected checksum.
+    """
     def __init__(self, checksum, valid_checksum):
         super().__init__(
             self,
@@ -39,6 +39,9 @@ class InvalidChecksumError(Exception):
 
 
 class BrokenAuthKeyError(Exception):
+    """
+    Occurs when the authorization key for a data center is not valid.
+    """
     def __init__(self):
         super().__init__(
             self,
@@ -47,6 +50,9 @@ class BrokenAuthKeyError(Exception):
 
 
 class SecurityError(Exception):
+    """
+    Generic security error, mostly used when generating a new AuthKey.
+    """
     def __init__(self, *args):
         if not args:
             args = ['A security check failed.']
@@ -54,6 +60,10 @@ class SecurityError(Exception):
 
 
 class CdnFileTamperedError(SecurityError):
+    """
+    Occurs when there's a hash mismatch between the decrypted CDN file
+    and its expected hash.
+    """
     def __init__(self):
         super().__init__(
             'The CDN file has been altered and its download cancelled.'

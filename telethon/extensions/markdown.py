@@ -33,12 +33,13 @@ ENC = 'utf-16le'
 
 def parse(message, delimiters=None, url_re=None):
     """
-    Parses the given message and returns the stripped message and a list
-    of MessageEntity* using the specified delimiters dictionary (or default
-    if None). The dictionary should be a mapping {delimiter: entity class}.
+    Parses the given markdown message and returns its stripped representation
+    plus a list of the MessageEntity's that were found.
 
-    The url_re(gex) must contain two matching groups: the text to be
-    clickable and the URL itself, and be utf-16le encoded.
+    :param message: the message with markdown-like syntax to be parsed.
+    :param delimiters: the delimiters to be used, {delimiter: type}.
+    :param url_re: the URL bytes regex to be used. Must have two groups.
+    :return: a tuple consisting of (clean message, [message entities]).
     """
     if url_re is None:
         url_re = DEFAULT_URL_RE
@@ -183,8 +184,13 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
 
 
 def get_inner_text(text, entity):
-    """Gets the inner text that's surrounded by the given entity or entities.
-       For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
+    """
+    Gets the inner text that's surrounded by the given entity or entities.
+    For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
+
+    :param text: the original text.
+    :param entity: the entity or entities that must be matched.
+    :return: a single result or a list of the text surrounded by the entities.
     """
     if isinstance(entity, TLObject):
         entity = (entity,)

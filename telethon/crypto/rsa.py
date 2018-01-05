@@ -1,3 +1,6 @@
+"""
+This module holds several utilities regarding RSA and server fingerprints.
+"""
 import os
 import struct
 from hashlib import sha1
@@ -32,8 +35,11 @@ def get_byte_array(integer):
 
 
 def _compute_fingerprint(key):
-    """For a given Crypto.RSA key, computes its 8-bytes-long fingerprint
-       in the same way that Telegram does.
+    """
+    Given a RSA key, computes its fingerprint like Telegram does.
+
+    :param key: the Crypto.RSA key.
+    :return: its 8-bytes-long fingerprint.
     """
     n = TLObject.serialize_bytes(get_byte_array(key.n))
     e = TLObject.serialize_bytes(get_byte_array(key.e))
@@ -49,8 +55,14 @@ def add_key(pub):
 
 
 def encrypt(fingerprint, data):
-    """Given the fingerprint of a previously added RSA key, encrypt its data
-       in the way Telegram requires us to do so (sha1(data) + data + padding)
+    """
+    Encrypts the given data known the fingerprint to be used
+    in the way Telegram requires us to do so (sha1(data) + data + padding)
+
+    :param fingerprint: the fingerprint of the RSA key.
+    :param data: the data to be encrypted.
+    :return:
+        the cipher text, or None if no key matching this fingerprint is found.
     """
     global _server_keys
     key = _server_keys.get(fingerprint, None)

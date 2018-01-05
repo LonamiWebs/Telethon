@@ -1,11 +1,14 @@
+"""
+This module holds all the base and automatically generated errors that the
+Telegram API has. See telethon_generator/errors.json for more.
+"""
 import urllib.request
 import re
 from threading import Thread
 
 from .common import (
-    ReadCancelledError, InvalidParameterError, TypeNotFoundError,
-    InvalidChecksumError, BrokenAuthKeyError, SecurityError,
-    CdnFileTamperedError
+    ReadCancelledError, TypeNotFoundError, InvalidChecksumError,
+    BrokenAuthKeyError, SecurityError, CdnFileTamperedError
 )
 
 # This imports the base errors too, as they're imported there
@@ -13,6 +16,13 @@ from .rpc_error_list import *
 
 
 def report_error(code, message, report_method):
+    """
+    Reports an RPC error to pwrtelegram.
+
+    :param code: the integer code of the error (like 400).
+    :param message: the message representing the error.
+    :param report_method: the constructor ID of the function that caused it.
+    """
     try:
         # Ensure it's signed
         report_method = int.from_bytes(
@@ -30,6 +40,14 @@ def report_error(code, message, report_method):
 
 
 def rpc_message_to_error(code, message, report_method=None):
+    """
+    Converts a Telegram's RPC Error to a Python error.
+
+    :param code: the integer code of the error (like 400).
+    :param message: the message representing the error.
+    :param report_method: if present, the ID of the method that caused it.
+    :return: the RPCError as a Python exception that represents this error.
+    """
     if report_method is not None:
         Thread(
             target=report_error,

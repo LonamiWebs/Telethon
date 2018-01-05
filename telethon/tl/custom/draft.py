@@ -21,7 +21,7 @@ class Draft:
     @classmethod
     def _from_update(cls, client, update):
         if not isinstance(update, UpdateDraftMessage):
-            raise ValueError(
+            raise TypeError(
                 'You can only create a new `Draft` from a corresponding '
                 '`UpdateDraftMessage` object.'
             )
@@ -29,14 +29,14 @@ class Draft:
         return cls(client=client, peer=update.peer, draft=update.draft)
 
     @property
-    def entity(self):
-        return self._client.get_entity(self._peer)
+    async def entity(self):
+        return await self._client.get_entity(self._peer)
 
     @property
-    def input_entity(self):
-        return self._client.get_input_entity(self._peer)
+    async def input_entity(self):
+        return await self._client.get_input_entity(self._peer)
 
-    def set_message(self, text, no_webpage=None, reply_to_msg_id=None, entities=None):
+    async def set_message(self, text, no_webpage=None, reply_to_msg_id=None, entities=None):
         """
         Changes the draft message on the Telegram servers. The changes are
         reflected in this object. Changing only individual attributes like for
@@ -56,7 +56,7 @@ class Draft:
         :param list entities: A list of formatting entities
         :return bool: `True` on success
         """
-        result = self._client(SaveDraftRequest(
+        result = await self._client(SaveDraftRequest(
             peer=self._peer,
             message=text,
             no_webpage=no_webpage,
@@ -72,9 +72,9 @@ class Draft:
 
         return result
 
-    def delete(self):
+    async def delete(self):
         """
         Deletes this draft
         :return bool: `True` on success
         """
-        return self.set_message(text='')
+        return await self.set_message(text='')

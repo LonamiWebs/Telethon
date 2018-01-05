@@ -1,3 +1,6 @@
+"""
+This module holds a rough implementation of the C# TCP client.
+"""
 # Python rough implementation of a C# TCP client
 import asyncio
 import errno
@@ -13,7 +16,14 @@ CONN_RESET_ERRNOS = {
 
 
 class TcpClient:
+    """A simple TCP client to ease the work with sockets and proxies."""
     def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
+        """
+        Initializes the TCP client.
+
+        :param proxy: the proxy to be used, if any.
+        :param timeout: the timeout for connect, read and write operations.
+        """
         self.proxy = proxy
         self._socket = None
         self._loop = loop if loop else asyncio.get_event_loop()
@@ -23,7 +33,7 @@ class TcpClient:
         elif isinstance(timeout, (int, float)):
             self.timeout = float(timeout)
         else:
-            raise ValueError('Invalid timeout type', type(timeout))
+            raise TypeError('Invalid timeout type: {}'.format(type(timeout)))
 
     def _recreate_socket(self, mode):
         if self.proxy is None:
@@ -39,8 +49,11 @@ class TcpClient:
         self._socket.setblocking(False)
 
     async def connect(self, ip, port):
-        """Connects to the specified IP and port number.
-           'timeout' must be given in seconds
+        """
+        Tries connecting forever  to IP:port unless an OSError is raised.
+
+        :param ip: the IP to connect to.
+        :param port: the port to connect to.
         """
         if ':' in ip:  # IPv6
             # The address needs to be surrounded by [] as discussed on PR#425
@@ -78,12 +91,13 @@ class TcpClient:
                     raise
 
     def _get_connected(self):
+        """Determines whether the client is connected or not."""
         return self._socket is not None and self._socket.fileno() >= 0
 
     connected = property(fget=_get_connected)
 
     def close(self):
-        """Closes the connection"""
+        """Closes the connection."""
         try:
             if self._socket is not None:
                 self._socket.shutdown(socket.SHUT_RDWR)
@@ -94,7 +108,11 @@ class TcpClient:
             self._socket = None
 
     async def write(self, data):
-        """Writes (sends) the specified bytes to the connected peer"""
+        """
+        Writes (sends) the specified bytes to the connected peer.
+
+        :param data: the data to send.
+        """
         if self._socket is None:
             self._raise_connection_reset()
 
@@ -106,7 +124,7 @@ class TcpClient:
             )
         except asyncio.TimeoutError as e:
             raise TimeoutError() from e
-        except BrokenPipeError:
+        except ConnectionError:
             self._raise_connection_reset()
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
@@ -115,8 +133,11 @@ class TcpClient:
                 raise
 
     async def read(self, size):
-        """Reads (receives) a whole block of 'size bytes
-           from the connected peer.
+        """
+        Reads (receives) a whole block of size bytes from the connected peer.
+
+        :param size: the size of the block to be read.
+        :return: the read data with len(data) == size.
         """
 
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
@@ -132,6 +153,8 @@ class TcpClient:
                     )
                 except asyncio.TimeoutError as e:
                     raise TimeoutError() from e
+                except ConnectionError:
+                    self._raise_connection_reset()
                 except OSError as e:
                     if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset()
@@ -149,6 +172,7 @@ class TcpClient:
             return buffer.raw.getvalue()
 
     def _raise_connection_reset(self):
+        """Disconnects the client and raises ConnectionResetError."""
         self.close()  # Connection reset -> flag as socket closed
         raise ConnectionResetError('The server has closed the connection.')
 

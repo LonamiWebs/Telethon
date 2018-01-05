@@ -17,11 +17,13 @@ class TLParser:
 
             # Read all the lines from the .tl file
             for line in file:
+                # Strip comments from the line
+                comment_index = line.find('//')
+                if comment_index != -1:
+                    line = line[:comment_index]
+
                 line = line.strip()
-
-                # Ensure that the line is not a comment
-                if line and not line.startswith('//'):
-
+                if line:
                     # Check whether the line is a type change
                     # (types <-> functions) or not
                     match = re.match('---(\w+)---', line)

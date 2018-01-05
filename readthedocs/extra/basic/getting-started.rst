@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+===============
+Getting Started
+===============
 
-=================
-Getting Started!
-=================
 
 Simple Installation
-*********************
+*******************
 
    ``pip install telethon``
 
@@ -17,7 +17,7 @@ Simple Installation
 
 
 Creating a client
-**************
+*****************
 
    .. code-block:: python
 
@@ -39,8 +39,9 @@ Creating a client
    **More details**: :ref:`creating-a-client`
 
 
-Simple Stuff
-**************
+Basic Usage
+***********
+
    .. code-block:: python
 
        print(me.stringify())
@@ -49,6 +50,7 @@ Simple Stuff
        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
        client.download_profile_photo(me)
-       total, messages, senders = client.get_message_history('username')
+       messages = client.get_message_history('username')
        client.download_media(messages[0])
 
+   **More details**: :ref:`telegram-client`

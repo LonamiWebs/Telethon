@@ -1,9 +1,9 @@
-from datetime import datetime
+import struct
+from datetime import datetime, date
 
 
 class TLObject:
     def __init__(self):
-        self.request_msg_id = 0  # Long
         self.confirm_received = None
         self.rpc_error = None
 
@@ -97,7 +97,8 @@ class TLObject:
             if isinstance(data, str):
                 data = data.encode('utf-8')
             else:
-                raise ValueError('bytes or str expected, not', type(data))
+                raise TypeError(
+                    'bytes or str expected, not {}'.format(type(data)))
 
         r = []
         if len(data) < 254:
@@ -123,6 +124,23 @@ class TLObject:
 
         r.append(bytes(padding))
         return b''.join(r)
+
+    @staticmethod
+    def serialize_datetime(dt):
+        if not dt:
+            return b'\0\0\0\0'
+
+        if isinstance(dt, datetime):
+            dt = int(dt.timestamp())
+        elif isinstance(dt, date):
+            dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
+        elif isinstance(dt, float):
+            dt = int(dt)
+
+        if isinstance(dt, int):
+            return struct.pack('<I', dt)
+
+        raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
     # These should be overrode
     def to_dict(self, recursive=True):
