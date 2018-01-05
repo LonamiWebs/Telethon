@@ -10,7 +10,7 @@ from .. import helpers as utils
 from ..crypto import AES
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
-    rpc_message_to_error
+    rpc_message_to_error, SecurityError
 )
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
@@ -191,8 +191,11 @@ class MtProtoSender:
             msg_key = reader.read(16)
 
             key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
+            data = reader.read(len(body) - reader.tell_position())
+            if len(data) % 16 != 0:
+                raise SecurityError('AES block size missmatch')
             plain_text = AES.decrypt_ige(
-                reader.read(len(body) - reader.tell_position()), key, iv)
+                data, key, iv)
 
             with BinaryReader(plain_text) as plain_text_reader:
                 plain_text_reader.read_long()  # remote_salt
