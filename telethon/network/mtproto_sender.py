@@ -337,12 +337,10 @@ class MtProtoSender:
         """
         request = self._pop_request(msg_id)
         if request:
-            self._logger.debug('Resending request')
             await self.send(request)
             return
         requests = self._pop_requests_of_container(msg_id)
         if requests:
-            self._logger.debug('Resending container of requests')
             await self.send(*requests)
 
     def _handle_pong(self, msg_id, sequence, pong):
