@@ -49,7 +49,7 @@ Breaking changes
 Both lists have a ``.total`` attribute so you can still know how many
 dialogs/messages are in total.
 
-New stuff
+Additions
 ~~~~~~~~~
 
 -  The mentioned use of ``sqlite3`` for the session file.
@@ -183,8 +183,8 @@ Bug fixes
 -  Code generation was using f-strings, which are only supported on
    Python ≥3.6.
 
-Other changes
-~~~~~~~~~~~~~
+Internal changes
+~~~~~~~~~~~~~~~~
 
 -  The ``auth_key`` generation has been moved from ``.connect()`` to
    ``.invoke()``. There were some issues were ``.connect()`` failed and
@@ -227,25 +227,8 @@ Bug fixes and new small features (v0.15.2)
 This release primarly focuses on a few bug fixes and enhancements.
 Although more stuff may have broken along the way.
 
-.. bug-fixes-3:
-
-Bug fixes:
-~~~~~~~~~~
-
--  ``.get_input_entity`` was failing for IDs and other cases, also
-   making more requests than it should.
--  Use ``basename`` instead ``abspath`` when sending a file. You can now
-   also override the attributes.
--  ``EntityDatabase.__delitem__`` wasn't working.
--  ``.send_message()`` was failing with channels.
--  ``.get_dialogs(limit=None)`` should now return all the dialogs
-   correctly.
--  Temporary fix for abusive duplicated updates.
-
-.. enhancements-1:
-
-Enhancements:
-~~~~~~~~~~~~~
+Enhancements
+~~~~~~~~~~~~
 
 -  You will be warned if you call ``.add_update_handler`` with no
    ``update_workers``.
@@ -260,10 +243,27 @@ Enhancements:
 -  You can use a callable key for the ``EntityDatabase``, so it can be
    any filter you need.
 
+.. bug-fixes-3:
+
+Bug fixes
+~~~~~~~~~
+
+-  ``.get_input_entity`` was failing for IDs and other cases, also
+   making more requests than it should.
+-  Use ``basename`` instead ``abspath`` when sending a file. You can now
+   also override the attributes.
+-  ``EntityDatabase.__delitem__`` wasn't working.
+-  ``.send_message()`` was failing with channels.
+-  ``.get_dialogs(limit=None)`` should now return all the dialogs
+   correctly.
+-  Temporary fix for abusive duplicated updates.
+
+.. enhancements-1:
+
 .. internal-changes-1:
 
-Internal changes:
-~~~~~~~~~~~~~~~~~
+Internal changes
+~~~~~~~~~~~~~~~~
 
 -  MsgsAck is now sent in a container rather than its own request.
 -  ``.get_input_photo`` is now used in the generated code.
@@ -295,16 +295,26 @@ for a certain user through
 ``client.session.entities.clear_cache(entity=None)``, which will clear
 all if no entity is given.
 
-More things:
 
-- ``.sign_in`` accepts phones as integers.
-- ``.get_dialogs()`` doesn't fail on Windows anymore, and returns the
-  right amount of dialogs.
+Additions
+~~~~~~~~~
+
 - New method to ``.delete_messages()``.
 - New ``ChannelPrivateError`` class.
+
+Enhancements
+~~~~~~~~~~~~
+
+- ``.sign_in`` accepts phones as integers.
 - Changing the IP to which you connect to is as simple as
   ``client.session.server_address = 'ip'``, since now the
   server address is always queried from the session.
+
+Bug fixes
+~~~~~~~~~
+
+- ``.get_dialogs()`` doesn't fail on Windows anymore, and returns the
+  right amount of dialogs.
 - ``GeneralProxyError`` should be passed to the main thread
   again, so that you can handle it.
 
@@ -316,8 +326,15 @@ Updates Overhaul Update (v0.15)
 After hundreds of lines changed on a major refactor, *it's finally
 here*. It's the **Updates Overhaul Update**; let's get right into it!
 
-New stuff and enhancements
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+-  ``.create_new_connection()`` is gone for good. No need to deal with
+   this manually since new connections are now handled on demand by the
+   library itself.
+
+Enhancements
+~~~~~~~~~~~~
 
 -  You can **invoke** requests from **update handlers**. And **any other
    thread**. A new temporary will be made, so that you can be sending
@@ -338,10 +355,6 @@ New stuff and enhancements
 -  New ``.get_input_entity`` method, which makes use of the above
    feature. You **should use this** when a request needs a
    ``InputPeer``, rather than the whole entity (although both work).
-
-Less important enhancements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 -  Assert that either all or None dependent-flag parameters are set
    before sending the request.
 -  Phone numbers can have dashes, spaces, or parenthesis. They'll be
@@ -349,15 +362,8 @@ Less important enhancements
 -  You can override the phone and its hash on ``.sign_in()``, if you're
    creating a new ``TelegramClient`` on two different places.
 
-Compatibility breaks
-~~~~~~~~~~~~~~~~~~~~
-
--  ``.create_new_connection()`` is gone for good. No need to deal with
-   this manually since new connections are now handled on demand by the
-   library itself.
-
-Bugs fixed
-~~~~~~~~~~
+Bug fixes
+~~~~~~~~~
 
 -  ``.log_out()`` was consuming all retries. It should work just fine
    now.
@@ -403,18 +409,22 @@ Serialization bug fixes (v0.14.2)
 
 *Published at 2017/09/29*
 
-Two bug fixes, one of them quite **important**, related to the
-serialization. Every object or request that had to serialize a
-``True/False`` type was always being serialized as ``false``!
+Bug fixes
+~~~~~~~~~
 
-Another bug that didn't allow you to leave as ``None`` flag parameters
-that needed a list has been fixed.
+- **Important**, related to the serialization. Every object or request
+  that had to serialize a ``True/False`` type was always being serialized
+  as ``false``!
+- Another bug that didn't allow you to leave as ``None`` flag parameters
+  that needed a list has been fixed.
 
-Other internal changes include a somewhat more readable ``.to_bytes()``
-function and pre-computing the flag instead using bit shifting. The
-``TLObject.constructor_id`` has been renamed to
-``TLObject.CONSTRUCTOR_ID``, and ``.subclass_of_id`` is also uppercase
-now.
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Other internal changes include a somewhat more readable ``.to_bytes()``
+  function and pre-computing the flag instead using bit shifting. The
+  ``TLObject.constructor_id`` has been renamed to ``TLObject.CONSTRUCTOR_ID``,
+  and ``.subclass_of_id`` is also uppercase now.
 
 Farewell, BinaryWriter (v0.14.1)
 ================================
@@ -427,13 +437,18 @@ serializing TLObjects, and this release finally removes it. The speed up
 when serializing things to bytes should now be over twice as fast
 wherever it's needed.
 
-Other internal changes include using proper classes (including the
-generated code) for generating authorization keys and to write out
-``TLMessage``\ 's.
+Bug fixes
+~~~~~~~~~
 
-For **bug fixes**, this version is again compatible with Python 3.x
-versions **below 3.5** (there was a method call that was Python 3.5 and
-above).
+- This version is again compatible with Python 3.x versions **below 3.5**
+  (there was a method call that was Python 3.5 and above).
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Using proper classes (including the generated code) for generating
+  authorization keys and to write out ``TLMessage``\ 's.
+
 
 Several requests at once and upload compression (v0.14)
 =======================================================
@@ -442,6 +457,9 @@ Several requests at once and upload compression (v0.14)
 
 New major release, since I've decided that these two features are big
 enough:
+
+Additions
+~~~~~~~~~
 
 - Requests larger than 512 bytes will be **compressed through
   gzip**, and if the result is smaller, this will be uploaded instead.
@@ -454,15 +472,20 @@ Internally, another important change. The ``.on_send`` function on the
 my tests, this has always been over twice as fast serializing objects,
 although more replacements need to be done, so please report any issues.
 
-Besides this:
+Enhancements
+~~~~~~~~~~~~
+- Implemented ``.get_input_media`` helper methods. Now you can even use
+  another message as input media!
+
+
+Bug fixes
+~~~~~~~~~
 
 - Downloading media from CDNs wasn't working (wrong
   access to a parameter).
 - Correct type hinting.
 - Added a tiny sleep when trying to perform automatic reconnection.
 - Error reporting is done in the background, and has a shorter timeout.
-- Implemented ``.get_input_media`` helper methods. Now you can even use
-  another message as input media!
 - ``setup.py`` used to fail with wrongly generated code.
 
 Quick fix-up (v0.13.6)
@@ -529,8 +552,8 @@ Enhancements
 
 .. other-changes-1:
 
-Other changes
-~~~~~~~~~~~~~
+Internal changes
+~~~~~~~~~~~~~~~~
 
 -  ``TLObject.__repr__`` doesn't show the original TL definition
    anymore, it was a lot of clutter. If you have any complaints open an
@@ -547,8 +570,8 @@ More bug fixes and enhancements (v0.13.4)
 
 .. new-stuff-1:
 
-New stuff:
-~~~~~~~~~~
+Additions
+~~~~~~~~~
 
 -  ``TelegramClient`` now exposes a ``.is_connected()`` method.
 -  Initial authorization on a new data center will retry up to 5 times
@@ -558,18 +581,14 @@ New stuff:
 
 .. bugs-fixed-1:
 
-Bugs fixed:
-~~~~~~~~~~~
+Bug fixes
+~~~~~~~~~~
 
 -  Now you should be able to sign in even if you have
    ``process_updates=True`` and no previous session.
 -  Some errors and methods are documented a bit clearer.
 -  ``.send_message()`` could randomly fail, as the returned type was not
    expected.
-
-Things that should reduce the amount of crashes:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 -  ``TimeoutError`` is now ignored, since the request will be retried up
    to 5 times by default.
 -  "-404" errors (``BrokenAuthKeyError``\ 's) are now detected when
@@ -579,8 +598,8 @@ Things that should reduce the amount of crashes:
 -  Attempt at fixing some "NoneType has no attribute…" errors (with the
    ``.sender``).
 
-Other internal changes:
-~~~~~~~~~~~~~~~~~~~~~~~
+Internal changes
+~~~~~~~~~~~~~~~~
 
 -  Calling ``GetConfigRequest`` is now made less often.
 -  The ``initial_query`` parameter from ``.connect()`` is gone, as it's
@@ -596,8 +615,8 @@ Bug fixes and enhancements (v0.13.3)
 
 .. bugs-fixed-2:
 
-Bugs fixed
-----------
+Bug fixes
+---------
 
 -  **Reconnection** used to fail because it tried invoking things from
    the ``ReadThread``.
@@ -640,7 +659,8 @@ an in-depth description on how to work with updates now. Notice that you
 cannot invoke requests from within handlers anymore, only the
 ``v.0.13.1`` patch allowed you to do so.
 
-**Other fixes**:
+Bug fixes
+~~~~~~~~~
 
 - Periodic pings are back.
 - The username regex mentioned on ``UsernameInvalidError`` was invalid,
@@ -723,8 +743,8 @@ Enhancements
 -  ``TelegramClient.sign_in`` will call ``.send_code_request`` if no
    ``code`` was provided.
 
-Deprecation:
-------------
+Deprecation
+-----------
 
 -  ``.sign_up`` does *not* take a ``phone`` argument anymore. Change
    this or you will be using ``phone`` as ``code``, and it will fail!
@@ -771,7 +791,8 @@ The biggest news for this update are that downloading media from CDN's
 (you'll often encounter this when working with popular channels) now
 **works**.
 
-Some bug fixes:
+Bug fixes
+~~~~~~~~~
 
 - The method used to download documents crashed because
   two lines were swapped.
@@ -802,8 +823,8 @@ This update is overall an attempt to make Telethon a bit more user
 friendly, along with some other stability enhancements, although it
 brings quite a few changes.
 
-Things that will probably break your code
------------------------------------------
+Breaking changes
+----------------
 
 -  The ``TelegramClient`` methods ``.send_photo_file()``,
    ``.send_document_file()`` and ``.send_media_file()`` are now a
@@ -817,8 +838,8 @@ Things that will probably break your code
    ``.download_photo()``, ``.download_document()`` and
    ``.download_contact()`` still exist, but are private.
 
-More new stuff
---------------
+Additions
+---------
 
 -  Updated to **layer 70**!
 -  Both downloading and uploading now support **stream-like objects**.
@@ -845,10 +866,9 @@ Bug fixes
 -  More checks to ensure that the connection is flagged correctly as
    either connected or not.
 
-Bug additions
--------------
+.. note::
 
--  Downloading files from CDN's will **not work** yet (something new
+   Downloading files from CDN's will **not work** yet (something new
    that comes with layer 70).
 
 --------------
@@ -936,8 +956,8 @@ anymore.
 
 .. bugs-fixed-3:
 
-Bugs fixed:
------------
+Bugs fixes
+~~~~~~~~~~
 
 -  Fixed some errors when installing Telethon via ``pip`` (for those
    using either source distributions or a Python version ≤ 3.5).
@@ -958,7 +978,9 @@ On a different order of things, ``.connect()`` also features a timeout.
 Notice that the ``timeout=`` is **not** passed as a **parameter**
 anymore, and is instead specified when creating the ``TelegramClient``.
 
-Some other bug fixes:
+Bug fixes
+~~~~~~~~~
+
 - Fixed some name class when a request had a ``.msg_id`` parameter.
 - The correct amount of random bytes is now used in DH request
 - Fixed ``CONNECTION_APP_VERSION_EMPTY`` when using temporary sessions.
@@ -972,8 +994,8 @@ Support for parallel connections (v0.11)
 *This update brings a lot of changes, so it would be nice if you could*
 **read the whole change log**!
 
-Things that may break your code
--------------------------------
+Breaking changes
+----------------
 
 -  Every Telegram error has now its **own class**, so it's easier to
    fine-tune your ``except``\ 's.
@@ -984,8 +1006,8 @@ Things that may break your code
 -  The ``InteractiveTelegramClient`` is **not** shipped with ``pip``
    anymore.
 
-New features
-------------
+Additions
+---------
 
 -  A new, more **lightweight class** has been added. The
    ``TelegramBareClient`` is now the base of the normal
@@ -1018,7 +1040,7 @@ Bug fixes
    previously sent (possibly called from a different thread).*" *should*
    not happen anymore.
 
-Minor highlights
+Internal changes
 ----------------
 
 -  Some fixes to the ``JsonSession``.
@@ -1047,15 +1069,20 @@ resistant to upgrades.
     that's okay, but you will have to manually delete the ``*.session`` file,
     and logout from that session from an official client.
 
-Other highlights:
+Additions
+~~~~~~~~~
 
 - New ``.get_me()`` function to get the **current** user.
 - ``.is_user_authorized()`` is now more reliable.
 - New nice button to copy the ``from telethon.tl.xxx.yyy import Yyy``
   on the online documentation.
+- **More error codes** added to the ``errors`` file.
+
+Enhancements
+~~~~~~~~~~~~
+
 - Everything on the documentation is now, theoretically, **sorted
   alphabetically**.
-- **More error codes** added to the ``errors`` file.
 - No second thread is spawned unless one or more update handlers are added.
 
 Full support for different DCs and ++stable (v0.10)
@@ -1068,7 +1095,8 @@ order of things, **reconnection** is now performed automatically every
 time Telegram decides to kick us off their servers, so now Telethon can
 really run **forever and ever**! In theory.
 
-Another important highlights:
+Enhancements
+~~~~~~~~~~~~
 
 -  **Documentation** improvements, such as showing the return type.
 -  The ``msg_id too low/high`` error should happen **less often**, if
@@ -1095,7 +1123,8 @@ not handled properly. Now they are, so you should be able to login
 directly, without needing to delete the ``*.session`` file anymore.
 Notice that downloading from a different DC is still a WIP.
 
-Some highlights:
+Enhancements
+~~~~~~~~~~~~
 
 - Updates thread is only started after a successful login.
 - Files meant to be ran by the user now use **shebangs** and
@@ -1117,14 +1146,16 @@ General improvements (v0.9)
 | Scheme layer used: 66 |
 +-----------------------+
 
-This release features:
+Additions
+~~~~~~~~~
 
 - The **documentation**, available online
   `here <https://lonamiwebs.github.io/Telethon/>`__, has a new search bar.
 - Better **cross-thread safety** by using ``threading.Event``.
 - More improvements for running Telethon during a **long period of time**.
 
-With the following bug fixes:
+Bug fixes
+~~~~~~~~~
 
 - **Avoid a certain crash on login** (occurred if an unexpected object
   ID was received).
@@ -1134,7 +1165,8 @@ With the following bug fixes:
 - The ``UpdatesThread`` is now a daemon, and should cause less issues.
 - Temporary sessions didn't actually work (with ``session=None``).
 
-Minor notes:
+Internal changes
+~~~~~~~~~~~~~~~~
 
 - ``.get_dialogs(count=`` was renamed to ``.get_dialogs(limit=``.
 
@@ -1143,7 +1175,8 @@ Bot login and proxy support (v0.8)
 
 *Published at 2017/04/14*
 
-This release features:
+Additions
+~~~~~~~~~
 
 -  **Bot login**, thanks to @JuanPotato for hinting me about how to do
    it.
@@ -1151,7 +1184,8 @@ This release features:
 -  **Logging support**, used by passing ``--telethon-log=DEBUG`` (or
    ``INFO``) as a command line argument.
 
-With the following bug fixes:
+Bug fixes
+~~~~~~~~~
 
 - Connection fixes, such as avoiding connection until ``.connect()`` is
   explicitly invoked.
