@@ -4,6 +4,7 @@ import struct
 from hashlib import sha1, sha256
 
 from telethon.crypto import AES
+from telethon.errors import SecurityError
 from telethon.extensions import BinaryReader
 
 
@@ -39,7 +40,7 @@ def pack_message(session, message):
 
     # "msg_key = substr (msg_key_large, 8, 16)"
     msg_key = msg_key_large[8:24]
-    aes_key, aes_iv = calc_key_2(session.auth_key.key, msg_key, True)
+    aes_key, aes_iv = calc_key(session.auth_key.key, msg_key, True)
 
     key_id = struct.pack('<Q', session.auth_key.key_id)
     return key_id + msg_key + AES.encrypt_ige(data + padding, aes_key, aes_iv)
@@ -48,43 +49,32 @@ def pack_message(session, message):
 def unpack_message(session, reader):
     """Unpacks a message following MtProto 2.0 guidelines"""
     # See https://core.telegram.org/mtproto/description
-    reader.read_long(signed=False)  # remote_auth_key_id
+    if reader.read_long(signed=False) != session.auth_key.key_id:
+        raise SecurityError('Server replied with an invalid auth key')
 
     msg_key = reader.read(16)
-    aes_key, aes_iv = calc_key_2(session.auth_key.key, msg_key, False)
+    aes_key, aes_iv = calc_key(session.auth_key.key, msg_key, False)
     data = BinaryReader(AES.decrypt_ige(reader.read(), aes_key, aes_iv))
 
     data.read_long()  # remote_salt
-    data.read_long()  # remote_session_id
+    if data.read_long() != session.id:
+        raise SecurityError('Server replied with a wrong session ID')
+
     remote_msg_id = data.read_long()
     remote_sequence = data.read_int()
     msg_len = data.read_int()
     message = data.read(msg_len)
 
+    # https://core.telegram.org/mtproto/security_guidelines
+    # Sections "checking sha256 hash" and "message length"
+    if msg_key != sha256(
+            session.auth_key.key[96:96 + 32] + data.get_bytes()).digest()[8:24]:
+        raise SecurityError("Received msg_key doesn't match with expected one")
+
     return message, remote_msg_id, remote_sequence
 
 
-def calc_key(shared_key, msg_key, client):
-    """
-    Calculate the key based on Telegram guidelines,
-    specifying whether it's the client or not.
-    """
-    x = 0 if client else 8
-
-    sha1a = sha1(msg_key + shared_key[x:x + 32]).digest()
-    sha1b = sha1(shared_key[x + 32:x + 48] + msg_key +
-                 shared_key[x + 48:x + 64]).digest()
-
-    sha1c = sha1(shared_key[x + 64:x + 96] + msg_key).digest()
-    sha1d = sha1(msg_key + shared_key[x + 96:x + 128]).digest()
-
-    key = sha1a[0:8] + sha1b[8:20] + sha1c[4:16]
-    iv = sha1a[8:20] + sha1b[0:8] + sha1c[16:20] + sha1d[0:8]
-
-    return key, iv
-
-
-def calc_key_2(auth_key, msg_key, client):
+def calc_key(auth_key, msg_key, client):
     """
     Calculate the key based on Telegram guidelines
     for MtProto 2, specifying whether it's the client or not.
