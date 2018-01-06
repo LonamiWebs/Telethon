@@ -56,8 +56,11 @@ class BinaryReader:
         return int.from_bytes(
             self.read(bits // 8), byteorder='little', signed=signed)
 
-    def read(self, length):
+    def read(self, length=None):
         """Read the given amount of bytes."""
+        if length is None:
+            return self.reader.read()
+
         result = self.reader.read(length)
         if len(result) != length:
             raise BufferError(
