@@ -323,12 +323,19 @@ class Session:
             except ValueError:
                 continue
 
-            p_hash = getattr(p, 'access_hash', 0)
-            if p_hash is None:
-                # Some users and channels seem to be returned without
-                # an 'access_hash', meaning Telegram doesn't want you
-                # to access them. This is the reason behind ensuring
-                # that the 'access_hash' is non-zero. See issue #354.
+            if isinstance(p, (InputPeerUser, InputPeerChannel)):
+                if not p.access_hash:
+                    # Some users and channels seem to be returned without
+                    # an 'access_hash', meaning Telegram doesn't want you
+                    # to access them. This is the reason behind ensuring
+                    # that the 'access_hash' is non-zero. See issue #354.
+                    # Note that this checks for zero or None, see #392.
+                    continue
+                else:
+                    p_hash = p.access_hash
+            elif isinstance(p, InputPeerChat):
+                p_hash = 0
+            else:
                 continue
 
             username = getattr(e, 'username', None) or None
