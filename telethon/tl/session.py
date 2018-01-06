@@ -231,6 +231,12 @@ class Session:
     def _update_session_table(self):
         with self._db_lock:
             c = self._conn.cursor()
+            # While we can save multiple rows into the sessions table
+            # currently we only want to keep ONE as the tables don't
+            # tell us which auth_key's are usable and will work. Needs
+            # some more work before being able to save auth_key's for
+            # multiple DCs. Probably done differently.
+            c.execute('delete from sessions')
             c.execute('insert or replace into sessions values (?,?,?,?)', (
                 self._dc_id,
                 self._server_address,
