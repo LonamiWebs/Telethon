@@ -17,11 +17,12 @@ something went wrong on Telegram's server). The most common are:
    said operation on a chat or channel. Try avoiding filters, i.e. when
    searching messages.
 
-The generic classes for different error codes are: \* ``InvalidDCError``
-(303), the request must be repeated on another DC. \*
-``BadRequestError`` (400), the request contained errors. \*
-``UnauthorizedError`` (401), the user is not authorized yet. \*
-``ForbiddenError`` (403), privacy violation error. \* ``NotFoundError``
-(404), make sure you're invoking ``Request``\ 's!
+The generic classes for different error codes are:
+
+- ``InvalidDCError`` (303), the request must be repeated on another DC.
+- ``BadRequestError`` (400), the request contained errors.
+- ``UnauthorizedError`` (401), the user is not authorized yet.
+- ``ForbiddenError`` (403), privacy violation error.
+- ``NotFoundError`` (404), make sure you're invoking ``Request``\ 's!
 
 If the error is not recognised, it will only be an ``RPCError``.
