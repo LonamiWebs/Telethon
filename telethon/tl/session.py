@@ -107,36 +107,34 @@ class Session:
             c.close()
         else:
             # Tables don't exist, create new ones
-            c.execute("create table version (version integer)")
-            c.execute("insert into version values (?)", (CURRENT_VERSION,))
-            c.execute(
-                """create table sessions (
+            self._create_table(
+                c,
+                "version (version integer primary key)"
+                ,
+                """sessions (
                     dc_id integer primary key,
                     server_address text,
                     port integer,
                     auth_key blob
-                ) without rowid"""
-            )
-            c.execute(
-                """create table entities (
+                )"""
+                ,
+                """entities (
                     id integer primary key,
                     hash integer not null,
                     username text,
                     phone integer,
                     name text
-                ) without rowid"""
-            )
-            # Save file_size along with md5_digest
-            # to make collisions even more unlikely.
-            c.execute(
-                """create table sent_files (
+                )"""
+                ,
+                """sent_files (
                     md5_digest blob,
                     file_size integer,
                     file_id integer,
                     part_count integer,
                     primary key(md5_digest, file_size)
-                ) without rowid"""
+                )"""
             )
+            c.execute("insert into version values (?)", (CURRENT_VERSION,))
             # Migrating from JSON -> new table and may have entities
             if entities:
                 c.executemany(
@@ -170,17 +168,29 @@ class Session:
                 return []  # No entities
 
     def _upgrade_database(self, old):
+        c = self._conn.cursor()
         if old == 1:
-            self._conn.execute(
-                """create table sent_files (
-                    md5_digest blob,
-                    file_size integer,
-                    file_id integer,
-                    part_count integer,
-                    primary key(md5_digest, file_size)
-                ) without rowid"""
-            )
+            self._create_table(c,"""sent_files (
+                md5_digest blob,
+                file_size integer,
+                file_id integer,
+                part_count integer,
+                primary key(md5_digest, file_size)
+            )""")
             old = 2
+        c.close()
+
+    def _create_table(self, c, *definitions):
+        """
+        Creates a table given its definition 'name (columns).
+        If the sqlite version is >= 3.8.2, it will use "without rowid".
+        See http://www.sqlite.org/releaselog/3_8_2.html.
+        """
+        required = (3, 8, 2)
+        sqlite_v = tuple(int(x) for x in sqlite3.sqlite_version.split('.'))
+        extra = ' without rowid' if sqlite_v >= required else ''
+        for definition in definitions:
+            c.execute('create table {}{}'.format(definition, extra))
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
