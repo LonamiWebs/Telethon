@@ -5,6 +5,7 @@ encrypting every packet, and relies on a valid AuthKey in the used Session.
 import gzip
 import logging
 import struct
+from threading import Lock
 
 from .. import helpers as utils
 from ..crypto import AES
@@ -53,6 +54,9 @@ class MtProtoSender:
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
 
+        # Multithreading
+        self._send_lock = Lock()
+
     def connect(self):
         """Connects to the server."""
         self.connection.connect(self.session.server_address, self.session.port)
@@ -70,10 +74,6 @@ class MtProtoSender:
         self.connection.close()
         self._need_confirmation.clear()
         self._clear_all_pending()
-
-    def clone(self):
-        """Creates a copy of this MtProtoSender as a new connection."""
-        return MtProtoSender(self.session, self.connection.clone())
 
     # region Send and receive
 
@@ -156,7 +156,8 @@ class MtProtoSender:
 
         :param message: the TLMessage to be sent.
         """
-        self.connection.send(utils.pack_message(self.session, message))
+        with self._send_lock:
+            self.connection.send(utils.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
