@@ -4,6 +4,7 @@ for use within the library, which attempts to handle emojies correctly,
 since they seem to count as two characters and it's a bit strange.
 """
 import re
+import struct
 
 from ..tl import TLObject
 
@@ -20,15 +21,24 @@ DEFAULT_DELIMITERS = {
     '```': MessageEntityPre
 }
 
-# Regex used to match utf-16le encoded r'\[(.+?)\]\((.+?)\)',
-# reason why there's '\0' after every match-literal character.
-DEFAULT_URL_RE = re.compile(b'\\[\0(.+?)\\]\0\\(\0(.+?)\\)\0')
+# Regex used to match r'\[(.+?)\]\((.+?)\)' (for URLs.
+DEFAULT_URL_RE = re.compile(r'\[(.+?)\]\((.+?)\)')
 
 # Reverse operation for DEFAULT_URL_RE. {0} for text, {1} for URL.
 DEFAULT_URL_FORMAT = '[{0}]({1})'
 
-# Encoding to be used
-ENC = 'utf-16le'
+
+def _add_surrogate(text):
+    return ''.join(
+        # SMP -> Surrogate Pairs (Telegram offsets are calculated with these).
+        # See https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview for more.
+        ''.join(chr(y) for y in struct.unpack('<HH', x.encode('utf-16le')))
+        if (0x10000 <= ord(x) <= 0x10FFFF) else x for x in text
+    )
+
+
+def _del_surrogate(text):
+    return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
 def parse(message, delimiters=None, url_re=None):
@@ -43,16 +53,13 @@ def parse(message, delimiters=None, url_re=None):
     """
     if url_re is None:
         url_re = DEFAULT_URL_RE
-    elif url_re:
-        if isinstance(url_re, bytes):
-            url_re = re.compile(url_re)
+    elif isinstance(url_re, str):
+        url_re = re.compile(url_re)
 
     if not delimiters:
         if delimiters is not None:
             return message, []
         delimiters = DEFAULT_DELIMITERS
-
-    delimiters = {k.encode(ENC): v for k, v in delimiters.items()}
 
     # Cannot use a for loop because we need to skip some indices
     i = 0
@@ -62,7 +69,7 @@ def parse(message, delimiters=None, url_re=None):
 
     # Work on byte level with the utf-16le encoding to get the offsets right.
     # The offset will just be half the index we're at.
-    message = message.encode(ENC)
+    message = _add_surrogate(message)
     while i < len(message):
         if url_re and current is None:
             # If we're not inside a previous match since Telegram doesn't allow
@@ -70,15 +77,15 @@ def parse(message, delimiters=None, url_re=None):
             url_match = url_re.match(message, pos=i)
             if url_match:
                 # Replace the whole match with only the inline URL text.
-                message = b''.join((
+                message = ''.join((
                     message[:url_match.start()],
                     url_match.group(1),
                     message[url_match.end():]
                 ))
 
                 result.append(MessageEntityTextUrl(
-                    offset=i // 2, length=len(url_match.group(1)) // 2,
-                    url=url_match.group(2).decode(ENC)
+                    offset=i, length=len(url_match.group(1)),
+                    url=_del_surrogate(url_match.group(2))
                 ))
                 i += len(url_match.group(1))
                 # Next loop iteration, don't check delimiters, since
@@ -103,16 +110,16 @@ def parse(message, delimiters=None, url_re=None):
                 message = message[:i] + message[i + len(d):]
                 if m == MessageEntityPre:
                     # Special case, also has 'lang'
-                    current = m(i // 2, None, '')
+                    current = m(i, None, '')
                 else:
-                    current = m(i // 2, None)
+                    current = m(i, None)
 
                 end_delimiter = d  # We expect the same delimiter.
                 break
 
         elif message[i:i + len(end_delimiter)] == end_delimiter:
             message = message[:i] + message[i + len(end_delimiter):]
-            current.length = (i // 2) - current.offset
+            current.length = i - current.offset
             result.append(current)
             current, end_delimiter = None, None
             # Don't increment i here as we matched a delimiter,
@@ -121,19 +128,19 @@ def parse(message, delimiters=None, url_re=None):
             # as we already know there won't be the same right after.
             continue
 
-        # Next iteration, utf-16 encoded characters need 2 bytes.
-        i += 2
+        # Next iteration
+        i += 1
 
     # We may have found some a delimiter but not its ending pair.
     # If this is the case, we want to insert the delimiter character back.
     if current is not None:
         message = (
-            message[:2 * current.offset]
+            message[:current.offset]
             + end_delimiter
-            + message[2 * current.offset:]
+            + message[current.offset:]
         )
 
-    return message.decode(ENC), result
+    return _del_surrogate(message), result
 
 
 def unparse(text, entities, delimiters=None, url_fmt=None):
@@ -158,29 +165,21 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     else:
         entities = tuple(sorted(entities, key=lambda e: e.offset, reverse=True))
 
-    # Reverse the delimiters, and encode them as utf16
-    delimiters = {v: k.encode(ENC) for k, v in delimiters.items()}
-    text = text.encode(ENC)
+    text = _add_surrogate(text)
     for entity in entities:
-        s = entity.offset * 2
-        e = (entity.offset + entity.length) * 2
+        s = entity.offset
+        e = entity.offset + entity.length
         delimiter = delimiters.get(type(entity), None)
         if delimiter:
             text = text[:s] + delimiter + text[s:e] + delimiter + text[e:]
         elif isinstance(entity, MessageEntityTextUrl) and url_fmt:
-            # If byte-strings supported .format(), we, could have converted
-            # the str url_fmt to a byte-string with the following regex:
-            # re.sub(b'{\0\s*(?:([01])\0)?\s*}\0',rb'{\1}',url_fmt.encode(ENC))
-            #
-            # This would preserve {}, {0} and {1}.
-            # Alternatively (as it's done), we can decode/encode it every time.
             text = (
                 text[:s] +
-                url_fmt.format(text[s:e].decode(ENC), entity.url).encode(ENC) +
+                _add_surrogate(url_fmt.format(text[s:e], entity.url)) +
                 text[e:]
             )
 
-    return text.decode(ENC)
+    return _del_surrogate(text)
 
 
 def get_inner_text(text, entity):
@@ -198,11 +197,11 @@ def get_inner_text(text, entity):
     else:
         multiple = False
 
-    text = text.encode(ENC)
+    text = _add_surrogate(text)
     result = []
     for e in entity:
-        start = e.offset * 2
-        end = (e.offset + e.length) * 2
-        result.append(text[start:end].decode(ENC))
+        start = e.offset
+        end = e.offset + e.length
+        result.append(_del_surrogate(text[start:end]))
 
     return result if multiple else result[0]
