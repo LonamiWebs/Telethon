@@ -184,7 +184,8 @@ class TelegramClient(TelegramBareClient):
 
         return result
 
-    def start(self, phone=None, bot_token=None, code_callback=None, password_callback=None):
+    def start(self, phone=None, bot_token=None, force_sms=False, code_callback=None,
+              password_callback=None):
         """Convenience method to interactively connect and authorize.
 
         Example usage:
@@ -197,13 +198,20 @@ class TelegramClient(TelegramBareClient):
         provided that will be used to obtain the Telegram login code and 2FA password,
         respectively. They will default to the `input()` function from the standard library.
 
-        :param phone: The Telegram user's phone number to log in as a user
-        :param bot_token: Bot Token obtained by @BotFather to log in as a bot
-        :param code_callback: optional. A callable that will be used to retrieve the Telegram login
-        code
-        :param password_callback: optional. A callable that will be used to retrieve the user's
-        2FA password
-        :return: This client
+        Args:
+            phone (:obj:`str` | :obj:`int`):
+                The phone to which the code will be sent.
+            bot_token (:obj:`str`):
+                Bot Token obtained by @BotFather to log in as a bot.
+            force_sms (:obj:`bool`, optional):
+                Whether to force sending as SMS.
+            code_callback (:obj:`callable`, optional):
+                A callable that will be used to retrieve the Telegram login code.
+            password_callback (:obj:`callable`, optional):
+                A callable that will be used to retrieve the user's 2FA password.
+
+        Returns:
+            :obj:`TelegramClient`: This client.
         """
 
         if code_callback is None:
@@ -833,14 +841,14 @@ class TelegramClient(TelegramBareClient):
                 mime_type = guess_type(file)[0]
                 attr_dict = {
                     DocumentAttributeFilename:
-                    DocumentAttributeFilename(os.path.basename(file))
+                        DocumentAttributeFilename(os.path.basename(file))
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
                 }
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
-                    DocumentAttributeFilename('unnamed')
+                        DocumentAttributeFilename('unnamed')
                 }
 
             if 'is_voice_note' in kwargs:
@@ -1359,4 +1367,4 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-    # endregion
+        # endregion
