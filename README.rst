@@ -12,7 +12,7 @@ Installing
 
 .. code:: sh
 
-  pip install telethon
+  pip3 install telethon
 
 
 Creating a client
