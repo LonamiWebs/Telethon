@@ -2,12 +2,13 @@ import json
 import os
 import platform
 import sqlite3
+import struct
 import time
 from base64 import b64decode
 from os.path import isfile as file_exists
 from threading import Lock
 
-from .. import utils, helpers
+from .. import utils
 from ..tl import TLObject
 from ..tl.types import (
     PeerUser, PeerChat, PeerChannel,
@@ -62,7 +63,7 @@ class Session:
             self.save_entities = True
             self.flood_sleep_threshold = 60
 
-        self.id = helpers.generate_random_long(signed=True)
+        self.id = struct.unpack('q', os.urandom(8))[0]
         self._sequence = 0
         self.time_offset = 0
         self._last_msg_id = 0  # Long
