@@ -662,7 +662,7 @@ class TelegramClient(TelegramBareClient):
                 max_id = message.id
 
         entity = self.get_input_entity(entity)
-        if entity == InputPeerChannel:
+        if isinstance(entity, InputPeerChannel):
             return self(channels.ReadHistoryRequest(entity, max_id=max_id))
         else:
             return self(messages.ReadHistoryRequest(entity, max_id=max_id))
