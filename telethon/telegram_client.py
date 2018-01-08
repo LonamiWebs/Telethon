@@ -142,8 +142,9 @@ class TelegramClient(TelegramBareClient):
             **kwargs
         )
 
-        # Some fields to easy signing in
-        self._phone_code_hash = None
+        # Some fields to easy signing in. Let {phone: hash} be
+        # a dictionary because the user may change their mind.
+        self._phone_code_hash = {}
         self._phone = None
 
     # endregion
@@ -167,18 +168,19 @@ class TelegramClient(TelegramBareClient):
             Information about the result of the request.
         """
         phone = utils.parse_phone(phone) or self._phone
+        phone_hash = self._phone_code_hash.get(phone)
 
-        if not self._phone_code_hash:
+        if not phone_hash:
             result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
-            self._phone_code_hash = result.phone_code_hash
+            self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
         else:
             force_sms = True
 
         self._phone = phone
 
         if force_sms:
-            result = self(ResendCodeRequest(phone, self._phone_code_hash))
-            self._phone_code_hash = result.phone_code_hash
+            result = self(ResendCodeRequest(phone, phone_hash))
+            self._phone_code_hash[phone] = result.phone_code_hash
 
         return result
 
@@ -218,7 +220,9 @@ class TelegramClient(TelegramBareClient):
             return self.send_code_request(phone)
         elif code:
             phone = utils.parse_phone(phone) or self._phone
-            phone_code_hash = phone_code_hash or self._phone_code_hash
+            phone_code_hash = \
+                phone_code_hash or self._phone_code_hash.get(phone, None)
+
             if not phone:
                 raise ValueError(
                     'Please make sure to call send_code_request first.'
@@ -274,7 +278,7 @@ class TelegramClient(TelegramBareClient):
         """
         result = self(SignUpRequest(
             phone_number=self._phone,
-            phone_code_hash=self._phone_code_hash,
+            phone_code_hash=self._phone_code_hash.get(self._phone, ''),
             phone_code=code,
             first_name=first_name,
             last_name=last_name
