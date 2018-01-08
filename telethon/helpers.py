@@ -91,11 +91,6 @@ def calc_key(auth_key, msg_key, client):
     return aes_key, aes_iv
 
 
-def calc_msg_key(data):
-    """Calculates the message key from the given data"""
-    return sha1(data).digest()[4:20]
-
-
 def generate_key_data_from_nonce(server_nonce, new_nonce):
     """Generates the key data corresponding to the given nonce"""
     server_nonce = server_nonce.to_bytes(16, 'little', signed=True)

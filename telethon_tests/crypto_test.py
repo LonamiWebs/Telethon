@@ -100,13 +100,6 @@ class CryptoTests(unittest.TestCase):
             expected_iv, iv)
 
     @staticmethod
-    def test_calc_msg_key():
-        value = utils.calc_msg_key(b'Some random message')
-        expected = b'\xdfAa\xfc\x10\xab\x89\xd2\xfe\x19C\xf1\xdd~\xbf\x81'
-        assert value == expected, 'Value ("{}") does not equal expected ("{}")'.format(
-            value, expected)
-
-    @staticmethod
     def test_generate_key_data_from_nonce():
         server_nonce = int.from_bytes(b'The 16-bit nonce', byteorder='little')
         new_nonce = int.from_bytes(b'The new, calculated 32-bit nonce', byteorder='little')
