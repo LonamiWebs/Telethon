@@ -77,7 +77,8 @@ class TcpClient:
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
-                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
+                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL,
+                               errno.ECONNREFUSED):
                     # Bad file descriptor, i.e. socket was closed, set it
                     # to none to recreate it on the next iteration
                     self._socket = None
