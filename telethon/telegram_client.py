@@ -14,8 +14,8 @@ from . import TelegramBareClient
 from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
-    PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError
-)
+    PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
+    SessionPasswordNeededError)
 from .network import ConnectionMode
 from .tl import TLObject
 from .tl.custom import Draft, Dialog
@@ -183,6 +183,76 @@ class TelegramClient(TelegramBareClient):
             self._phone_code_hash[phone] = result.phone_code_hash
 
         return result
+
+    def start(self, phone=None, bot_token=None, code_callback=None, password_callback=None):
+        """Convenience method to interactively connect and authorize.
+
+        Example usage:
+            >>> client = TelegramClient(session_id, api_id, api_hash).start(phone_number)
+            Please enter the code you received: 12345
+            Please enter your password: *******
+            (You are now logged in)
+
+        Custom `code_callback` and `password_callback` functions without arguments can be
+        provided that will be used to obtain the Telegram login code and 2FA password,
+        respectively. They will default to the `input()` function from the standard library.
+
+        :param phone: The Telegram user's phone number to log in as a user
+        :param bot_token: Bot Token obtained by @BotFather to log in as a bot
+        :param code_callback: optional. A callable that will be used to retrieve the Telegram login
+        code
+        :param password_callback: optional. A callable that will be used to retrieve the user's
+        2FA password
+        :return: This client
+        """
+
+        if code_callback is None:
+            code_callback = lambda: input("Please enter the code you received: ")
+        else:
+            if not callable(code_callback):
+                raise ValueError("The code_callback parameter needs to be a callable function that "
+                                 "returns the code you received by Telegram.")
+
+        if password_callback is None:
+            password_callback = lambda: input("Please enter your password: ")
+        else:
+            if not callable(password_callback):
+                raise ValueError("The password_callback parameter needs to be a callable function "
+                                 "that returns your Telegram password.")
+
+        if (phone and bot_token) or (not phone and not bot_token):
+            raise ValueError(
+                'You must provide either a phone number or a bot token.'
+            )
+
+        if not self.is_connected():
+            self.connect()
+
+        if self.is_user_authorized():
+            return self
+
+        if bot_token:
+            self(ImportBotAuthorizationRequest(
+                flags=0, bot_auth_token=bot_token,
+                api_id=self.api_id, api_hash=self.api_hash
+            ))
+        elif phone or self._phone:
+            phone = phone or self._phone
+            self.send_code_request(phone)
+            provided_code = str(code_callback())
+            try:
+                # Normal login
+                self.sign_in(phone, provided_code)
+            except SessionPasswordNeededError:
+                # 2FA
+                provided_password = str(password_callback())
+                salt = self(GetPasswordRequest()).current_salt
+                self(CheckPasswordRequest(
+                    helpers.get_password_hash(provided_password, salt)
+                ))
+
+        self._set_connected_and_authorized()
+        return self  # We return self to allow chaining .start() with the initializer
 
     def sign_in(self, phone=None, code=None,
                 password=None, bot_token=None, phone_code_hash=None):
