@@ -70,7 +70,7 @@ Checking a link without joining
 
 If you don't need to join but rather check whether it's a group or a
 channel, you can use the `CheckChatInviteRequest`__, which takes in
-the `hash`__ of said channel or group.
+the hash of said channel or group.
 
 __ https://lonamiwebs.github.io/Telethon/constructors/chat.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel.html
@@ -80,7 +80,6 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
-__ https://github.com/LonamiWebs/Telethon/wiki/Joining-a-chat-or-channel#joining-a-private-chat-or-channel
 
 
 Retrieving all chat members (channels too)
