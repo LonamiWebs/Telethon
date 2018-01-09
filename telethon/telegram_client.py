@@ -1,5 +1,6 @@
 import itertools
 import os
+import sys
 import time
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
@@ -184,8 +185,7 @@ class TelegramClient(TelegramBareClient):
 
         return result
 
-    def start(self, phone=None, bot_token=None, force_sms=False, code_callback=None,
-              password_callback=None):
+    def start(self, phone=None, password=None, bot_token=None, force_sms=False, code_callback=None):
         """Convenience method to interactively connect and authorize.
 
         Example usage:
@@ -194,21 +194,21 @@ class TelegramClient(TelegramBareClient):
             Please enter your password: *******
             (You are now logged in)
 
-        Custom `code_callback` and `password_callback` functions without arguments can be
-        provided that will be used to obtain the Telegram login code and 2FA password,
-        respectively. They will default to the `input()` function from the standard library.
+        A custom `code_callback` function without arguments can be provided that will be used to
+        obtain the Telegram login code. It will default to the `input()` function from
+        the standard library.
 
         Args:
             phone (:obj:`str` | :obj:`int`):
                 The phone to which the code will be sent.
+            password (:obj:`callable`, optional):
+                The password for 2FA.
             bot_token (:obj:`str`):
                 Bot Token obtained by @BotFather to log in as a bot.
             force_sms (:obj:`bool`, optional):
-                Whether to force sending as SMS.
+                Whether to force sending the code request as SMS.
             code_callback (:obj:`callable`, optional):
                 A callable that will be used to retrieve the Telegram login code.
-            password_callback (:obj:`callable`, optional):
-                A callable that will be used to retrieve the user's 2FA password.
 
         Returns:
             :obj:`TelegramClient`: This client.
@@ -221,13 +221,6 @@ class TelegramClient(TelegramBareClient):
                 raise ValueError("The code_callback parameter needs to be a callable function that "
                                  "returns the code you received by Telegram.")
 
-        if password_callback is None:
-            password_callback = lambda: input("Please enter your password: ")
-        else:
-            if not callable(password_callback):
-                raise ValueError("The password_callback parameter needs to be a callable function "
-                                 "that returns your Telegram password.")
-
         if (phone and bot_token) or (not phone and not bot_token):
             raise ValueError(
                 'You must provide either a phone number or a bot token.'
@@ -239,6 +232,8 @@ class TelegramClient(TelegramBareClient):
         if self.is_user_authorized():
             return self
 
+        two_step_detected = False
+
         if bot_token:
             self(ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
@@ -246,18 +241,43 @@ class TelegramClient(TelegramBareClient):
             ))
         elif phone or self._phone:
             phone = phone or self._phone
-            self.send_code_request(phone)
-            provided_code = str(code_callback())
+
+            self.send_code_request(phone, force_sms)
+
+            attempts = 0
+            while attempts < 3:
+                try:
+                    # Normal login
+                    provided_code = str(code_callback())
+
+                    # raises SessionPasswordNeededError if 2FA enabled
+                    signed_in = bool(self.sign_in(phone, provided_code))
+                    if signed_in:
+                        print("Signed in successfully as {}".format(self.get_me()))
+                        break
+
+                except SessionPasswordNeededError:
+                    two_step_detected = True
+                    break
+                except (PhoneCodeEmptyError, PhoneCodeExpiredError,
+                        PhoneCodeHashEmptyError, PhoneCodeInvalidError) as e:
+                    print("Invalid code. Please try again...", file=sys.stderr)
+                    attempts += 1
+            else:
+                raise RuntimeError("Three consecutive sign-in attempts failed. Aborting...")
+
+        if two_step_detected:
+            if not password:
+                raise ValueError("Two-step verification is enabled for this account. "
+                                 "Plase provide the 'password' argument to 'start()'.")
+            salt = self(GetPasswordRequest()).current_salt
             try:
-                # Normal login
-                self.sign_in(phone, provided_code)
-            except SessionPasswordNeededError:
-                # 2FA
-                provided_password = str(password_callback())
-                salt = self(GetPasswordRequest()).current_salt
                 self(CheckPasswordRequest(
-                    helpers.get_password_hash(provided_password, salt)
+                    helpers.get_password_hash(str(password), salt)
                 ))
+            except Exception as e:
+                raise ValueError("Invalid password for two-step verification.\n"
+                                 "Nested Exception is: {}".format(e))
 
         self._set_connected_and_authorized()
         return self  # We return self to allow chaining .start() with the initializer
@@ -315,8 +335,8 @@ class TelegramClient(TelegramBareClient):
                 result = self(SignInRequest(phone, phone_code_hash, code))
 
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
-                    PhoneCodeHashEmptyError, PhoneCodeInvalidError):
-                return None
+                    PhoneCodeHashEmptyError, PhoneCodeInvalidError) as e:
+                raise e  # Hand responsibility to the user
         elif password:
             salt = self(GetPasswordRequest()).current_salt
             result = self(CheckPasswordRequest(
@@ -388,7 +408,7 @@ class TelegramClient(TelegramBareClient):
         or None if the request fails (hence, not authenticated).
 
         Returns:
-            Your own user.
+            :obj:`User`: Your own user.
         """
         try:
             return self(GetUsersRequest([InputUserSelf()]))[0]
