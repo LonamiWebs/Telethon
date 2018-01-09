@@ -14,6 +14,15 @@ Please follow the links below to get you started, and remember
 to read the :ref:`changelog` when you upgrade!
 
 
+What is this?
+*************
+
+Telegram is a popular messaging application. This library is meant
+to make it easy for you to write Python programs that can interact
+with Telegram. Think of it as a wrapper that has already done the
+heavy job for you, so you can focus on developing an application.
+
+
 .. _installation-and-usage:
 
 .. toctree::

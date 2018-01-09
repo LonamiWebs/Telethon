@@ -7,6 +7,16 @@ Telethon
 **Telethon** is Telegram client implementation in **Python 3** which uses
 the latest available API of Telegram. Remember to use **pip3** to install!
 
+
+What is this?
+-------------
+
+Telegram is a popular messaging application. This library is meant
+to make it easy for you to write Python programs that can interact
+with Telegram. Think of it as a wrapper that has already done the
+heavy job for you, so you can focus on developing an application.
+
+
 Installing
 ----------
 
