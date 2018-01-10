@@ -163,7 +163,8 @@ class Session:
 
                 rows = []
                 for p_id, p_hash in data.get('entities', []):
-                    rows.append((p_id, p_hash, None, None, None))
+                    if p_hash is not None:
+                        rows.append((p_id, p_hash, None, None, None))
                 return rows
             except UnicodeDecodeError:
                 return []  # No entities
