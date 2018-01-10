@@ -13,8 +13,9 @@ from . import helpers as utils, version
 from .crypto import rsa, CdnDecrypter
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError,
-    FloodWaitError, FileMigrateError, TypeNotFoundError,
-    UnauthorizedError, PhoneMigrateError, NetworkMigrateError, UserMigrateError
+    FloodWaitError, FloodTestPhoneWaitError, FileMigrateError,
+    TypeNotFoundError, UnauthorizedError, PhoneMigrateError,
+    NetworkMigrateError, UserMigrateError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .tl import TLObject, Session
@@ -546,7 +547,7 @@ class TelegramBareClient:
             # Telegram is having some issues, just retry
             __log__.error('Telegram servers are having internal errors %s', e)
 
-        except FloodWaitError as e:
+        except (FloodWaitError, FloodTestPhoneWaitError) as e:
             __log__.warning('Request invoked too often, wait %ds', e.seconds)
             if e.seconds > self.session.flood_sleep_threshold | 0:
                 raise

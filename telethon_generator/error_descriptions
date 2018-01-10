@@ -63,3 +63,4 @@ SESSION_REVOKED=The authorization has been invalidated, because of the user term
 USER_ALREADY_PARTICIPANT=The authenticated user is already a participant of the chat
 USER_DEACTIVATED=The user has been deleted/deactivated
 FLOOD_WAIT_X=A wait of {} seconds is required
+FLOOD_TEST_PHONE_WAIT_X=A wait of {} seconds is required in the test servers

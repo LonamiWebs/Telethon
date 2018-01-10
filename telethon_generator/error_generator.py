@@ -79,7 +79,9 @@ def generate_code(output, json_file, errors_desc):
     errors = defaultdict(set)
     # PWRTelegram's API doesn't return all errors, which we do need here.
     # Add some special known-cases manually first.
-    errors[420].add('FLOOD_WAIT_X')
+    errors[420].update((
+        'FLOOD_WAIT_X', 'FLOOD_TEST_PHONE_WAIT_X'
+    ))
     errors[401].update((
         'AUTH_KEY_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'
     ))
@@ -118,6 +120,7 @@ def generate_code(output, json_file, errors_desc):
     # Names for the captures, or 'x' if unknown
     capture_names = {
         'FloodWaitError': 'seconds',
+        'FloodTestPhoneWaitError': 'seconds',
         'FileMigrateError': 'new_dc',
         'NetworkMigrateError': 'new_dc',
         'PhoneMigrateError': 'new_dc',
