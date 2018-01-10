@@ -32,7 +32,7 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
-    CheckChatInviteRequest
+    CheckChatInviteRequest, ReadMentionsRequest
 )
 
 from .tl.functions import channels
@@ -639,7 +639,8 @@ class TelegramClient(TelegramBareClient):
 
         return messages
 
-    def send_read_acknowledge(self, entity, message=None, max_id=None):
+    def send_read_acknowledge(self, entity, message=None, max_id=None,
+                              clear_mentions=False):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
@@ -654,22 +655,37 @@ class TelegramClient(TelegramBareClient):
             max_id (:obj:`int`):
                 Overrides messages, until which message should the
                 acknowledge should be sent.
+
+            clear_mentions (:obj:`bool`):
+                Whether the mention badge should be cleared (so that
+                there are no more mentions) or not for the given entity.
+
+                If no message is provided, this will be the only action
+                taken.
         """
         if max_id is None:
-            if not messages:
+            if message:
+                if hasattr(message, '__iter__'):
+                    max_id = max(msg.id for msg in message)
+                else:
+                    max_id = message.id
+            elif not clear_mentions:
                 raise ValueError(
                     'Either a message list or a max_id must be provided.')
 
-            if hasattr(message, '__iter__'):
-                max_id = max(msg.id for msg in message)
-            else:
-                max_id = message.id
-
         entity = self.get_input_entity(entity)
-        if isinstance(entity, InputPeerChannel):
-            return self(channels.ReadHistoryRequest(entity, max_id=max_id))
-        else:
-            return self(messages.ReadHistoryRequest(entity, max_id=max_id))
+        if clear_mentions:
+            self(ReadMentionsRequest(entity))
+            if max_id is None:
+                return True
+
+        if max_id is not None:
+            if isinstance(entity, InputPeerChannel):
+                return self(channels.ReadHistoryRequest(entity, max_id=max_id))
+            else:
+                return self(messages.ReadHistoryRequest(entity, max_id=max_id))
+
+        return False
 
     @staticmethod
     def _get_reply_to(reply_to):
