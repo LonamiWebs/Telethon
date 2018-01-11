@@ -247,21 +247,17 @@ class TelegramClient(TelegramBareClient):
             self.sign_in(bot_token=bot_token)
             return self
 
-        two_step_detected = False
-        self.send_code_request(phone, force_sms)
-
         me = None
         attempts = 0
         max_attempts = 3
+        two_step_detected = False
+
+        self.send_code_request(phone, force_sms=force_sms)
         while attempts < max_attempts:
             try:
-                # Normal login
-                provided_code = str(code_callback())
-
-                # raises SessionPasswordNeededError if 2FA enabled
-                me = self.sign_in(phone, provided_code)
-                if me:
-                    break
+                # Raises SessionPasswordNeededError if 2FA enabled
+                me = self.sign_in(phone, code_callback())
+                break
             except SessionPasswordNeededError:
                 two_step_detected = True
                 break
@@ -319,7 +315,7 @@ class TelegramClient(TelegramBareClient):
             :meth:`.send_code_request()`.
         """
 
-        if phone and not code:
+        if phone and not code and not password:
             return self.send_code_request(phone)
         elif code:
             phone = utils.parse_phone(phone) or self._phone
@@ -333,15 +329,9 @@ class TelegramClient(TelegramBareClient):
             if not phone_code_hash:
                 raise ValueError('You also need to provide a phone_code_hash.')
 
-            try:
-                if isinstance(code, int):
-                    code = str(code)
-
-                result = self(SignInRequest(phone, phone_code_hash, code))
-
-            except (PhoneCodeEmptyError, PhoneCodeExpiredError,
-                    PhoneCodeHashEmptyError, PhoneCodeInvalidError) as e:
-                raise e  # Hand responsibility to the user
+            # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
+            # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
+            result = self(SignInRequest(phone, phone_code_hash, str(code)))
         elif password:
             salt = self(GetPasswordRequest()).current_salt
             result = self(CheckPasswordRequest(
