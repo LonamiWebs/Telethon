@@ -508,14 +508,14 @@ class TelegramBareClient:
         except TimeoutError:
             __log__.warning('Invoking timed out')  # We will just retry
 
-        except ConnectionResetError:
+        except ConnectionResetError as e:
             __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
                 return None
             else:
                 # User never called .connect(), so raise this error.
-                raise
+                raise RuntimeError('Tried to invoke without .connect()') from e
 
         # Clear the flag if we got this far
         self._first_request = False
