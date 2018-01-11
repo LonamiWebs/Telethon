@@ -76,6 +76,22 @@ As a full example:
             me = client.sign_in(phone_number, input('Enter code: '))
 
 
+All of this, however, can be done through a call to ``.start()``:
+
+    .. code-block:: python
+
+        client = TelegramClient('anon', api_id, api_hash)
+        client.start()
+
+
+The code shown is just what ``.start()`` will be doing behind the scenes
+(with a few extra checks), so that you know how to sign in case you want
+to avoid using ``input()`` (the default) for whatever reason.
+
+You can use either, as both will work. Determining which
+is just a matter of taste, and how much control you need.
+
+
 .. note::
     If you want to use a **proxy**, you have to `install PySocks`__
     (via pip or manual) and then set the appropriated parameters:
@@ -112,6 +128,9 @@ account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
         except SessionPasswordNeededError:
             client.sign_in(password=getpass.getpass())
 
+
+The mentioned ``.start()`` method will handle this for you as well, but
+you must set the ``password=`` parameter beforehand (it won't be asked).
 
 If you don't have 2FA enabled, but you would like to do so through the library,
 take as example the following code snippet:
