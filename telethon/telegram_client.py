@@ -185,45 +185,56 @@ class TelegramClient(TelegramBareClient):
 
         return result
 
-    def start(self, phone=None, password=None, bot_token=None, force_sms=False, code_callback=None):
-        """Convenience method to interactively connect and authorize.
+    def start(self, phone=None, password=None, bot_token=None,
+              force_sms=False, code_callback=None):
+        """
+        Convenience method to interactively connect and sign in if required,
+        also taking into consideration that 2FA may be enabled in the account.
 
         Example usage:
-            >>> client = TelegramClient(session_id, api_id, api_hash).start(phone_number)
+            >>> client = TelegramClient(session, api_id, api_hash).start(phone)
             Please enter the code you received: 12345
             Please enter your password: *******
             (You are now logged in)
 
-        A custom `code_callback` function without arguments can be provided that will be used to
-        obtain the Telegram login code. It will default to the `input()` function from
-        the standard library.
-
         Args:
             phone (:obj:`str` | :obj:`int`):
                 The phone to which the code will be sent.
+
             password (:obj:`callable`, optional):
-                The password for 2FA.
+                The password for 2 Factor Authentication (2FA).
+                This is only required if it is enabled in your account.
+
             bot_token (:obj:`str`):
                 Bot Token obtained by @BotFather to log in as a bot.
+                Cannot be specified with `phone` (only one of either allowed).
+
             force_sms (:obj:`bool`, optional):
                 Whether to force sending the code request as SMS.
+                This only makes sense when signing in with a `phone`.
+
             code_callback (:obj:`callable`, optional):
-                A callable that will be used to retrieve the Telegram login code.
+                A callable that will be used to retrieve the Telegram
+                login code. Defaults to `input()`.
 
         Returns:
-            :obj:`TelegramClient`: This client.
+            :obj:`TelegramClient`:
+                This client, so initialization can be chained with `.start()`.
         """
 
         if code_callback is None:
-            code_callback = lambda: input("Please enter the code you received: ")
-        else:
-            if not callable(code_callback):
-                raise ValueError("The code_callback parameter needs to be a callable function that "
-                                 "returns the code you received by Telegram.")
+            def code_callback():
+                return input('Please enter the code you received: ')
+        elif not callable(code_callback):
+            raise ValueError(
+                'The code_callback parameter needs to be a callable '
+                'function that returns the code you received by Telegram.'
+            )
 
         if (phone and bot_token) or (not phone and not bot_token):
             raise ValueError(
-                'You must provide either a phone number or a bot token.'
+                'You must provide either a phone number or a bot token, '
+                'not both (or neither).'
             )
 
         if not self.is_connected():
@@ -232,55 +243,49 @@ class TelegramClient(TelegramBareClient):
         if self.is_user_authorized():
             return self
 
-        two_step_detected = False
-
         if bot_token:
-            self(ImportBotAuthorizationRequest(
-                flags=0, bot_auth_token=bot_token,
-                api_id=self.api_id, api_hash=self.api_hash
-            ))
-        elif phone or self._phone:
-            phone = phone or self._phone
+            self.sign_in(bot_token=bot_token)
+            return self
 
-            self.send_code_request(phone, force_sms)
+        two_step_detected = False
+        self.send_code_request(phone, force_sms)
 
-            attempts = 0
-            while attempts < 3:
-                try:
-                    # Normal login
-                    provided_code = str(code_callback())
+        me = None
+        attempts = 0
+        max_attempts = 3
+        while attempts < max_attempts:
+            try:
+                # Normal login
+                provided_code = str(code_callback())
 
-                    # raises SessionPasswordNeededError if 2FA enabled
-                    signed_in = bool(self.sign_in(phone, provided_code))
-                    if signed_in:
-                        print("Signed in successfully as {}".format(self.get_me()))
-                        break
-
-                except SessionPasswordNeededError:
-                    two_step_detected = True
+                # raises SessionPasswordNeededError if 2FA enabled
+                me = self.sign_in(phone, provided_code)
+                if me:
                     break
-                except (PhoneCodeEmptyError, PhoneCodeExpiredError,
-                        PhoneCodeHashEmptyError, PhoneCodeInvalidError) as e:
-                    print("Invalid code. Please try again...", file=sys.stderr)
-                    attempts += 1
-            else:
-                raise RuntimeError("Three consecutive sign-in attempts failed. Aborting...")
+            except SessionPasswordNeededError:
+                two_step_detected = True
+                break
+            except (PhoneCodeEmptyError, PhoneCodeExpiredError,
+                    PhoneCodeHashEmptyError, PhoneCodeInvalidError):
+                print('Invalid code. Please try again.', file=sys.stderr)
+                attempts += 1
+        else:
+            raise RuntimeError(
+                '{} consecutive sign-in attempts failed. Aborting'
+                .format(max_attempts)
+            )
 
         if two_step_detected:
             if not password:
-                raise ValueError("Two-step verification is enabled for this account. "
-                                 "Plase provide the 'password' argument to 'start()'.")
-            salt = self(GetPasswordRequest()).current_salt
-            try:
-                self(CheckPasswordRequest(
-                    helpers.get_password_hash(str(password), salt)
-                ))
-            except Exception as e:
-                raise ValueError("Invalid password for two-step verification.\n"
-                                 "Nested Exception is: {}".format(e))
+                raise ValueError(
+                    "Two-step verification is enabled for this account. "
+                    "Please provide the 'password' argument to 'start()'."
+                )
+            me = self.sign_in(phone=phone, password=password)
 
-        self._set_connected_and_authorized()
-        return self  # We return self to allow chaining .start() with the initializer
+        # We won't reach here if any step failed (exit by exception)
+        print('Signed in successfully as', utils.get_display_name(me))
+        return self
 
     def sign_in(self, phone=None, code=None,
                 password=None, bot_token=None, phone_code_hash=None):
