@@ -1,5 +1,6 @@
 import itertools
 import os
+import sys
 import time
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
@@ -14,8 +15,8 @@ from . import TelegramBareClient
 from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
-    PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError
-)
+    PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
+    SessionPasswordNeededError)
 from .network import ConnectionMode
 from .tl import TLObject
 from .tl.custom import Draft, Dialog
@@ -184,6 +185,104 @@ class TelegramClient(TelegramBareClient):
 
         return result
 
+    def start(self, phone=None, password=None, bot_token=None,
+              force_sms=False, code_callback=None):
+        """
+        Convenience method to interactively connect and sign in if required,
+        also taking into consideration that 2FA may be enabled in the account.
+
+        Example usage:
+            >>> client = TelegramClient(session, api_id, api_hash).start(phone)
+            Please enter the code you received: 12345
+            Please enter your password: *******
+            (You are now logged in)
+
+        Args:
+            phone (:obj:`str` | :obj:`int`):
+                The phone to which the code will be sent.
+
+            password (:obj:`callable`, optional):
+                The password for 2 Factor Authentication (2FA).
+                This is only required if it is enabled in your account.
+
+            bot_token (:obj:`str`):
+                Bot Token obtained by @BotFather to log in as a bot.
+                Cannot be specified with `phone` (only one of either allowed).
+
+            force_sms (:obj:`bool`, optional):
+                Whether to force sending the code request as SMS.
+                This only makes sense when signing in with a `phone`.
+
+            code_callback (:obj:`callable`, optional):
+                A callable that will be used to retrieve the Telegram
+                login code. Defaults to `input()`.
+
+        Returns:
+            :obj:`TelegramClient`:
+                This client, so initialization can be chained with `.start()`.
+        """
+
+        if code_callback is None:
+            def code_callback():
+                return input('Please enter the code you received: ')
+        elif not callable(code_callback):
+            raise ValueError(
+                'The code_callback parameter needs to be a callable '
+                'function that returns the code you received by Telegram.'
+            )
+
+        if (phone and bot_token) or (not phone and not bot_token):
+            raise ValueError(
+                'You must provide either a phone number or a bot token, '
+                'not both (or neither).'
+            )
+
+        if not self.is_connected():
+            self.connect()
+
+        if self.is_user_authorized():
+            return self
+
+        if bot_token:
+            self.sign_in(bot_token=bot_token)
+            return self
+
+        me = None
+        attempts = 0
+        max_attempts = 3
+        two_step_detected = False
+
+        self.send_code_request(phone, force_sms=force_sms)
+        while attempts < max_attempts:
+            try:
+                # Raises SessionPasswordNeededError if 2FA enabled
+                me = self.sign_in(phone, code_callback())
+                break
+            except SessionPasswordNeededError:
+                two_step_detected = True
+                break
+            except (PhoneCodeEmptyError, PhoneCodeExpiredError,
+                    PhoneCodeHashEmptyError, PhoneCodeInvalidError):
+                print('Invalid code. Please try again.', file=sys.stderr)
+                attempts += 1
+        else:
+            raise RuntimeError(
+                '{} consecutive sign-in attempts failed. Aborting'
+                .format(max_attempts)
+            )
+
+        if two_step_detected:
+            if not password:
+                raise ValueError(
+                    "Two-step verification is enabled for this account. "
+                    "Please provide the 'password' argument to 'start()'."
+                )
+            me = self.sign_in(phone=phone, password=password)
+
+        # We won't reach here if any step failed (exit by exception)
+        print('Signed in successfully as', utils.get_display_name(me))
+        return self
+
     def sign_in(self, phone=None, code=None,
                 password=None, bot_token=None, phone_code_hash=None):
         """
@@ -216,7 +315,7 @@ class TelegramClient(TelegramBareClient):
             :meth:`.send_code_request()`.
         """
 
-        if phone and not code:
+        if phone and not code and not password:
             return self.send_code_request(phone)
         elif code:
             phone = utils.parse_phone(phone) or self._phone
@@ -230,15 +329,9 @@ class TelegramClient(TelegramBareClient):
             if not phone_code_hash:
                 raise ValueError('You also need to provide a phone_code_hash.')
 
-            try:
-                if isinstance(code, int):
-                    code = str(code)
-
-                result = self(SignInRequest(phone, phone_code_hash, code))
-
-            except (PhoneCodeEmptyError, PhoneCodeExpiredError,
-                    PhoneCodeHashEmptyError, PhoneCodeInvalidError):
-                return None
+            # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
+            # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
+            result = self(SignInRequest(phone, phone_code_hash, str(code)))
         elif password:
             salt = self(GetPasswordRequest()).current_salt
             result = self(CheckPasswordRequest(
@@ -310,7 +403,7 @@ class TelegramClient(TelegramBareClient):
         or None if the request fails (hence, not authenticated).
 
         Returns:
-            Your own user.
+            :obj:`User`: Your own user.
         """
         try:
             return self(GetUsersRequest([InputUserSelf()]))[0]
@@ -779,14 +872,14 @@ class TelegramClient(TelegramBareClient):
                 mime_type = guess_type(file)[0]
                 attr_dict = {
                     DocumentAttributeFilename:
-                    DocumentAttributeFilename(os.path.basename(file))
+                        DocumentAttributeFilename(os.path.basename(file))
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
                 }
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
-                    DocumentAttributeFilename('unnamed')
+                        DocumentAttributeFilename('unnamed')
                 }
 
             if 'is_voice_note' in kwargs:
@@ -1305,4 +1398,4 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-    # endregion
+        # endregion

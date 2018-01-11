@@ -39,11 +39,7 @@ Creating a client
   phone = '+34600000000'
 
   client = TelegramClient('session_name', api_id, api_hash)
-  client.connect()
-
-  # If you already have a previous 'session_name.session' file, skip this.
-  client.sign_in(phone=phone)
-  me = client.sign_in(code=77777)  # Put whatever code you received here.
+  client.start()
 
 
 Doing stuff
