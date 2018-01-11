@@ -14,6 +14,47 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+MtProto 2.0 (v0.16.1)
+=====================
+
+*Published at 2018/01/11*
+
++-----------------------+
+| Scheme layer used: 74 |
++-----------------------+
+
+The library is now using MtProto 2.0! This shouldn't really affect you
+as an end user, but at least it means the library will be ready by the
+time MtProto 1.0 is deprecated.
+
+Additions
+~~~~~~~~~
+
+- New ``.start()`` method, to make the library avoid boilerplate code.
+- ``.send_file`` accepts a new optional ``thumbnail`` parameter, and
+  returns the ``Message`` with the sent file.
+
+
+Bug fixes
+~~~~~~~~~
+
+- The library uses again only a single connection. Less updates are
+  be dropped now, and the performance is even better than using temporary
+  connections.
+- ``without rowid`` will only be used on the ``*.session`` if supported.
+- Phone code hash is associated with phone, so you can change your mind
+  when calling ``.sign_in()``.
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- File cache now relies on the hash of the file uploaded instead its path,
+  and is now persistent in the ``*.session`` file. Report any bugs on this!
+- Clearer error when invoking without being connected.
+- Markdown parser doesn't work on bytes anymore (which makes it cleaner).
+
+
 Sessions as sqlite databases (v0.16)
 ====================================
 
