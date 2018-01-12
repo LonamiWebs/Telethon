@@ -11,7 +11,7 @@ Getting Started
 Simple Installation
 *******************
 
-   ``pip install telethon``
+   ``pip3 install telethon``
 
    **More details**: :ref:`installation`
 
