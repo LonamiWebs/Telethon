@@ -12,9 +12,8 @@ To install Telethon, simply do:
 
     ``pip3 install telethon``
 
-If you get something like ``"Command not found"`` or any other
-error while installing/importing the library, it's probably because you only have python3.
-Try using just ``pip``
+Needless to say, you must have Python 3 and PyPi installed in your system.
+See https://python.org and https://pypi.python.org/pypi/pip for more.
 
 If you already have the library installed, upgrade with:
 
