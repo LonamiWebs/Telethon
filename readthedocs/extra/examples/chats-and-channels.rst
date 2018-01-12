@@ -41,7 +41,7 @@ enough information to join! The part after the
 example, is the ``hash`` of the chat or channel. Now you can use
 `ImportChatInviteRequest`__ as follows:
 
-    .. -block:: python
+    .. code-block:: python
 
         from telethon.tl.functions.messages import ImportChatInviteRequest
         updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
