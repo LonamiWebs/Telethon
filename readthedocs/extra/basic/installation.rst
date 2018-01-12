@@ -10,21 +10,21 @@ Automatic Installation
 
 To install Telethon, simply do:
 
-    ``pip install telethon``
+    ``pip3 install telethon``
 
-If you get something like ``"SyntaxError: invalid syntax"`` or any other
-error while installing/importing the library, it's probably because ``pip``
-defaults to Python 2, which is not supported. Use ``pip3`` instead.
+If you get something like ``"Command not found"`` or any other
+error while installing/importing the library, it's probably because you only have python3.
+Try using just ``pip``
 
 If you already have the library installed, upgrade with:
 
-    ``pip install --upgrade telethon``
+    ``pip3 install --upgrade telethon``
 
 You can also install the library directly from GitHub or a fork:
 
    .. code-block:: sh
 
-        # pip install git+https://github.com/LonamiWebs/Telethon.git
+        # pip3 install git+https://github.com/LonamiWebs/Telethon.git
         or
         $ git clone https://github.com/LonamiWebs/Telethon.git
         $ cd Telethon/
@@ -39,7 +39,7 @@ Manual Installation
 1. Install the required ``pyaes`` (`GitHub`__ | `PyPi`__) and
    ``rsa`` (`GitHub`__ | `PyPi`__) modules:
 
-    ``sudo -H pip install pyaes rsa``
+    ``sudo -H pip3 install pyaes rsa``
 
 2. Clone Telethon's GitHub repository:
    ``git clone https://github.com/LonamiWebs/Telethon.git``
