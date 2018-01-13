@@ -232,14 +232,10 @@ class TelegramClient(TelegramBareClient):
             )
 
         if not phone and not bot_token:
-            value = input('Please enter your phone/bot token: ')
-            phone = utils.parse_phone(phone)
-            if not phone:
-                bot_token = value
-                print("Note: input doesn't look like a phone, "
-                      "using as bot token")
+            while not phone:
+                phone = utils.parse_phone(input('Please enter your phone: '))
 
-        if phone and bot_token:
+        elif phone and bot_token:
             raise ValueError(
                 'You must provide either a phone number or a bot token, '
                 'not both (or neither).'
