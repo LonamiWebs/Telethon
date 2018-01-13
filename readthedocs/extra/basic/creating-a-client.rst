@@ -31,7 +31,6 @@ one is very simple:
         # Use your own values here
         api_id = 12345
         api_hash = '0123456789abcdef0123456789abcdef'
-        phone_number = '+34600000000'
 
         client = TelegramClient('some_name', api_id, api_hash)
 
@@ -54,6 +53,7 @@ If you're not authorized, you need to ``.sign_in()``:
 
     .. code-block:: python
 
+        phone_number = '+34600000000'
         client.send_code_request(phone_number)
         myself = client.sign_in(phone_number, input('Enter code: '))
         # If .sign_in raises PhoneNumberUnoccupiedError, use .sign_up instead
@@ -86,7 +86,9 @@ All of this, however, can be done through a call to ``.start()``:
 
 The code shown is just what ``.start()`` will be doing behind the scenes
 (with a few extra checks), so that you know how to sign in case you want
-to avoid using ``input()`` (the default) for whatever reason.
+to avoid using ``input()`` (the default) for whatever reason. If no phone
+or bot token is provided, you will be asked one through ``input()``. The
+method also accepts a ``phone=`` and ``bot_token`` parameters.
 
 You can use either, as both will work. Determining which
 is just a matter of taste, and how much control you need.
