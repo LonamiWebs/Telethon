@@ -1403,3 +1403,13 @@ class TelegramClient(TelegramBareClient):
         )
 
         # endregion
+
+    def join (self):
+        """
+        Join all the threads spwaned for read; 
+        if there is no thread, join will return 
+        """
+
+        # If there is no thread to join, just return
+        if self._recv_thread is None: return
+        else: self._recv_thread.join()
