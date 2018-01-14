@@ -2,10 +2,11 @@
 RPC Errors
 ==========
 
-RPC stands for Remote Procedure Call, and when Telethon raises an
-``RPCError``, it's most likely because you have invoked some of the API
+RPC stands for Remote Procedure Call, and when the library raises
+a ``RPCError``, it's because you have invoked some of the API
 methods incorrectly (wrong parameters, wrong permissions, or even
-something went wrong on Telegram's server). The most common are:
+something went wrong on Telegram's server). All the errors are
+available in :ref:`telethon-errors-package`, but some examples are:
 
 -  ``FloodWaitError`` (420), the same request was repeated many times.
    Must wait ``.seconds`` (you can access this parameter).
