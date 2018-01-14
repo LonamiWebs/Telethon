@@ -163,6 +163,7 @@ class TelegramBareClient:
         # if the user has left enabled such option.
         self._spawn_read_thread = spawn_read_thread
         self._recv_thread = None
+        self._idling = threading.Event()
 
         # Default PingRequest delay
         self._last_ping = datetime.now()
@@ -438,8 +439,9 @@ class TelegramBareClient:
 
         # Determine the sender to be used (main or a new connection)
         __log__.debug('Invoking %s', which)
+        call_receive = \
+            not self._idling.is_set() or self._reconnect_lock.locked()
 
-        call_receive = self._recv_thread is None or self._reconnect_lock.locked()
         for retry in range(retries):
             result = self._invoke(call_receive, *requests)
             if result is not None:
@@ -829,6 +831,7 @@ class TelegramBareClient:
         if self._spawn_read_thread and not self._on_read_thread():
             raise RuntimeError('Can only idle if spawn_read_thread=False')
 
+        self._idling.set()
         for sig in stop_signals:
             signal(sig, self._signal_handler)
 
@@ -857,7 +860,11 @@ class TelegramBareClient:
                 with self._reconnect_lock:
                     while self._user_connected and not self._reconnect():
                         sleep(0.1)  # Retry forever, this is instant messaging
+            except:
+                self._idling.clear()
+                raise
 
+        self._idling.clear()
         __log__.info('Connection closed by the user, not reading anymore')
 
     # By using this approach, another thread will be
