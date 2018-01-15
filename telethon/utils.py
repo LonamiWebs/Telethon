@@ -312,6 +312,12 @@ def get_input_media(media, user_caption=None, is_photo=False):
     _raise_cast_fail(media, 'InputMedia')
 
 
+def is_image(file):
+    """Returns True if the file extension looks like an image file"""
+    return (isinstance(file, str) and
+            bool(re.search(r'\.(png|jpe?g|gif)$', file, re.IGNORECASE)))
+
+
 def parse_phone(phone):
     """Parses the given phone, or returns None if it's invalid"""
     if isinstance(phone, int):

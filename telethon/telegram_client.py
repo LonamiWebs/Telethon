@@ -33,7 +33,8 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
-    CheckChatInviteRequest, ReadMentionsRequest
+    CheckChatInviteRequest, ReadMentionsRequest,
+    SendMultiMediaRequest, UploadMediaRequest
 )
 
 from .tl.functions import channels
@@ -53,7 +54,8 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
-    ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf
+    ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
+    InputSingleMedia, InputMediaPhoto, InputPhoto
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
@@ -512,15 +514,21 @@ class TelegramClient(TelegramBareClient):
 
     @staticmethod
     def _get_response_message(request, result):
-        """Extracts the response message known a request and Update result"""
+        """
+        Extracts the response message known a request and Update result.
+        The request may also be the ID of the message to match.
+        """
         # Telegram seems to send updateMessageID first, then updateNewMessage,
         # however let's not rely on that just in case.
-        msg_id = None
-        for update in result.updates:
-            if isinstance(update, UpdateMessageID):
-                if update.random_id == request.random_id:
-                    msg_id = update.id
-                    break
+        if isinstance(request, int):
+            msg_id = request
+        else:
+            msg_id = None
+            for update in result.updates:
+                if isinstance(update, UpdateMessageID):
+                    if update.random_id == request.random_id:
+                        msg_id = update.id
+                        break
 
         for update in result.updates:
             if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
@@ -861,21 +869,34 @@ class TelegramClient(TelegramBareClient):
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
 
-       Returns:
-           The message containing the sent file.
+        Returns:
+            The message (or messages) containing the sent file.
         """
-        as_photo = False
-        if isinstance(file, str):
-            lowercase_file = file.lower()
-            as_photo = any(
-                lowercase_file.endswith(ext)
-                for ext in ('.png', '.jpg', '.gif', '.jpeg')
-            )
+        # First check if the user passed an iterable, in which case
+        # we may want to send as an album if all are photo files.
+        if hasattr(file, '__iter__'):
+            # Convert to tuple so we can iterate several times
+            file = tuple(x for x in file)
+            if all(utils.is_image(x) for x in file):
+                return self._send_album(
+                    entity, file, caption=caption,
+                    progress_callback=progress_callback, reply_to=reply_to,
+                    allow_cache=allow_cache
+                )
+            # Not all are images, so send all the files one by one
+            return [
+                self.send_file(
+                    entity, x, allow_cache=False,
+                    caption=caption, force_document=force_document,
+                    progress_callback=progress_callback, reply_to=reply_to,
+                    attributes=attributes, thumb=thumb, **kwargs
+                ) for x in file
+            ]
 
         file_handle = self.upload_file(
             file, progress_callback=progress_callback, allow_cache=allow_cache)
 
-        if as_photo and not force_document:
+        if utils.is_image(file) and not force_document:
             media = InputMediaUploadedPhoto(file_handle, caption)
         else:
             mime_type = None
@@ -945,13 +966,51 @@ class TelegramClient(TelegramBareClient):
                 attributes=attributes, thumb=thumb, **kwargs
             )
 
-    def send_voice_note(self, entity, file, caption='', upload_progress=None,
+    def send_voice_note(self, entity, file, caption='', progress_callback=None,
                         reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
         return self.send_file(entity, file, caption,
-                              upload_progress=upload_progress,
+                              progress_callback=progress_callback,
                               reply_to=reply_to,
                               is_voice_note=())  # empty tuple is enough
+
+    def _send_album(self, entity, files, caption='',
+                    progress_callback=None, reply_to=None,
+                    allow_cache=True):
+        """Specialized version of .send_file for albums"""
+        entity = self.get_input_entity(entity)
+        reply_to = self._get_reply_to(reply_to)
+        try:
+            # Need to upload the media first
+            media = [
+                self(UploadMediaRequest(entity, InputMediaUploadedPhoto(
+                    self.upload_file(file),
+                    caption=caption
+                )))
+                for file in files
+            ]
+            # Now we can construct the multi-media request
+            result = self(SendMultiMediaRequest(
+                entity, reply_to_msg_id=reply_to, multi_media=[
+                    InputSingleMedia(InputMediaPhoto(
+                        InputPhoto(m.photo.id, m.photo.access_hash),
+                        caption=caption
+                    ))
+                    for m in media
+                ]
+            ))
+            return [
+                self._get_response_message(update.id, result)
+                for update in result.updates
+                if isinstance(update, UpdateMessageID)
+            ]
+        except FilePartMissingError:
+            if not allow_cache:
+                raise
+            return self._send_album(
+                entity, files, allow_cache=False, caption=caption,
+                progress_callback=progress_callback, reply_to=reply_to
+            )
 
     # endregion
 
@@ -1421,4 +1480,4 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-        # endregion
+    # endregion
