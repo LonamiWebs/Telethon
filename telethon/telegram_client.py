@@ -185,7 +185,9 @@ class TelegramClient(TelegramBareClient):
 
         return result
 
-    def start(self, phone=None, password=None, bot_token=None,
+    def start(self,
+              phone=lambda: input('Please enter your phone: '),
+              password=None, bot_token=None,
               force_sms=False, code_callback=None):
         """
         Convenience method to interactively connect and sign in if required,
@@ -198,8 +200,9 @@ class TelegramClient(TelegramBareClient):
             (You are now logged in)
 
         Args:
-            phone (:obj:`str` | :obj:`int`):
-                The phone to which the code will be sent.
+            phone (:obj:`str` | :obj:`int` | :obj:`callable`):
+                The phone (or callable without arguments to get it)
+                to which the code will be sent.
 
             password (:obj:`callable`, optional):
                 The password for 2 Factor Authentication (2FA).
@@ -232,14 +235,11 @@ class TelegramClient(TelegramBareClient):
             )
 
         if not phone and not bot_token:
-            while not phone:
-                phone = utils.parse_phone(input('Please enter your phone: '))
+            raise ValueError('No phone number or bot token provided.')
 
-        elif phone and bot_token:
-            raise ValueError(
-                'You must provide either a phone number or a bot token, '
-                'not both (or neither).'
-            )
+        if phone and bot_token:
+            raise ValueError('Both a phone and a bot token provided, '
+                             'must only provide one of either')
 
         if not self.is_connected():
             self.connect()
@@ -250,6 +250,10 @@ class TelegramClient(TelegramBareClient):
         if bot_token:
             self.sign_in(bot_token=bot_token)
             return self
+
+        # Turn the callable into a valid phone number
+        while callable(phone):
+            phone = utils.parse_phone(phone()) or phone
 
         me = None
         attempts = 0
