@@ -16,7 +16,7 @@ from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
-    SessionPasswordNeededError)
+    SessionPasswordNeededError, FilePartMissingError)
 from .network import ConnectionMode
 from .tl import TLObject
 from .tl.custom import Draft, Dialog
@@ -813,6 +813,7 @@ class TelegramClient(TelegramBareClient):
                   reply_to=None,
                   attributes=None,
                   thumb=None,
+                  allow_cache=True,
                   **kwargs):
         """
         Sends a file to the specified entity.
@@ -849,8 +850,12 @@ class TelegramClient(TelegramBareClient):
                 Optional attributes that override the inferred ones, like
                 ``DocumentAttributeFilename`` and so on.
 
-            thumb (:obj:`str` | :obj:`bytes` | :obj:`file`):
+            thumb (:obj:`str` | :obj:`bytes` | :obj:`file`, optional):
                 Optional thumbnail (for videos).
+
+            allow_cache (:obj:`bool`, optional):
+                Whether to allow using the cached version stored in the
+                database or not. Defaults to ``True`` to avoid reuploads.
 
         Kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
@@ -868,7 +873,7 @@ class TelegramClient(TelegramBareClient):
             )
 
         file_handle = self.upload_file(
-            file, progress_callback=progress_callback)
+            file, progress_callback=progress_callback, allow_cache=allow_cache)
 
         if as_photo and not force_document:
             media = InputMediaUploadedPhoto(file_handle, caption)
@@ -926,9 +931,19 @@ class TelegramClient(TelegramBareClient):
             media=media,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
-        result = self(request)
-
-        return self._get_response_message(request, result)
+        try:
+            return self._get_response_message(request, self(request))
+        except FilePartMissingError:
+            # After a while, cached files are invalidated and this
+            # error is raised. The file needs to be uploaded again.
+            if not allow_cache:
+                raise
+            return self.send_file(
+                entity, file, allow_cache=False,
+                caption=caption, force_document=force_document,
+                progress_callback=progress_callback, reply_to=reply_to,
+                attributes=attributes, thumb=thumb, **kwargs
+            )
 
     def send_voice_note(self, entity, file, caption='', upload_progress=None,
                         reply_to=None):

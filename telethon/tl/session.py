@@ -433,3 +433,11 @@ class Session:
                 (md5_digest, file_size, file_id, part_count)
             )
         self.save()
+
+    def clear_file(self, md5_digest, file_size):
+        with self._db_lock:
+            self._conn.execute(
+                'delete from sent_files where '
+                'md5_digest = ? and file_size = ?', (md5_digest, file_size)
+            )
+        self.save()

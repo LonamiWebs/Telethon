@@ -571,6 +571,7 @@ class TelegramBareClient:
                     file,
                     part_size_kb=None,
                     file_name=None,
+                    allow_cache=True,
                     progress_callback=None):
         """Uploads the specified file and returns a handle (an instance
            of InputFile or InputFileBig, as required) which can be later used.
@@ -633,10 +634,12 @@ class TelegramBareClient:
                     file = stream.read()
             hash_md5 = md5(file)
             tuple_ = self.session.get_file(hash_md5.digest(), file_size)
-            if tuple_:
+            if tuple_ and allow_cache:
                 __log__.info('File was already cached, not uploading again')
                 return InputFile(name=file_name,
                     md5_checksum=tuple_[0], id=tuple_[2], parts=tuple_[3])
+            elif tuple_ and not allow_cache:
+                self.session.clear_file(hash_md5.digest(), file_size)
         else:
             hash_md5 = None
 
