@@ -728,7 +728,6 @@ class TelegramClient(TelegramBareClient):
         # Add a few extra attributes to the Message to make it friendlier.
         messages.total = total_messages
         for m in messages:
-            # TODO Better way to return a total without tuples?
             m.sender = (None if not m.from_id else
                         entities[utils.get_peer_id(m.from_id)])
 
