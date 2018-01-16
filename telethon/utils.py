@@ -248,15 +248,17 @@ def get_input_media(media, user_caption=None, is_photo=False):
     if isinstance(media, MessageMediaPhoto):
         return InputMediaPhoto(
             id=get_input_photo(media.photo),
-            caption=media.caption if user_caption is None else user_caption,
-            ttl_seconds=media.ttl_seconds
+            ttl_seconds=media.ttl_seconds,
+            caption=((media.caption if user_caption is None else user_caption)
+                     or '')
         )
 
     if isinstance(media, MessageMediaDocument):
         return InputMediaDocument(
             id=get_input_document(media.document),
-            caption=media.caption if user_caption is None else user_caption,
-            ttl_seconds=media.ttl_seconds
+            ttl_seconds=media.ttl_seconds,
+            caption=((media.caption if user_caption is None else user_caption)
+                     or '')
         )
 
     if isinstance(media, FileLocation):
@@ -298,7 +300,8 @@ def get_input_media(media, user_caption=None, is_photo=False):
             title=media.title,
             address=media.address,
             provider=media.provider,
-            venue_id=media.venue_id
+            venue_id=media.venue_id,
+            venue_type=''
         )
 
     if isinstance(media, (
