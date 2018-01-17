@@ -873,7 +873,7 @@ class TelegramClient(TelegramBareClient):
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
-        if hasattr(file, '__iter__'):
+        if not isinstance(file, str) and hasattr(file, '__iter__'):
             # Convert to tuple so we can iterate several times
             file = tuple(x for x in file)
             if all(utils.is_image(x) for x in file):
