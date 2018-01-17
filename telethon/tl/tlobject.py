@@ -132,3 +132,6 @@ class TLObject:
     @staticmethod
     def from_reader(reader):
         return TLObject()
+
+    def __repr__(self):
+        return self.__str__()
