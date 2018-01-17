@@ -983,7 +983,7 @@ class TelegramClient(TelegramBareClient):
             # Need to upload the media first
             media = [
                 self(UploadMediaRequest(entity, InputMediaUploadedPhoto(
-                    self.upload_file(file),
+                    self.upload_file(file, allow_cache=allow_cache),
                     caption=caption
                 )))
                 for file in files
