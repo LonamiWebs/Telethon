@@ -633,13 +633,6 @@ class TelegramBareClient:
                 with open(file, 'rb') as stream:
                     file = stream.read()
             hash_md5 = md5(file)
-            tuple_ = self.session.get_file(hash_md5.digest(), file_size)
-            if tuple_ and allow_cache:
-                __log__.info('File was already cached, not uploading again')
-                return InputFile(name=file_name,
-                    md5_checksum=tuple_[0], id=tuple_[2], parts=tuple_[3])
-            elif tuple_ and not allow_cache:
-                self.session.clear_file(hash_md5.digest(), file_size)
         else:
             hash_md5 = None
 
@@ -673,9 +666,6 @@ class TelegramBareClient:
         if is_large:
             return InputFileBig(file_id, part_count, file_name)
         else:
-            self.session.cache_file(
-                hash_md5.digest(), file_size, file_id, part_count)
-
             return InputFile(file_id, part_count, file_name,
                              md5_checksum=hash_md5.hexdigest())
 
