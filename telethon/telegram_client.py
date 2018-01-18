@@ -6,15 +6,15 @@ import sys
 import time
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
+from io import BytesIO
 from mimetypes import guess_type
 
-from io import BytesIO
-
-from telethon.crypto import CdnDecrypter
-from telethon.tl.functions.upload import (
-    SaveBigFilePartRequest,  SaveFilePartRequest, GetFileRequest
+from .crypto import CdnDecrypter
+from .tl.custom import InputSizedFile
+from .tl.functions.upload import (
+    SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
 )
-from telethon.tl.types.upload import FileCdnRedirect
+from .tl.types.upload import FileCdnRedirect
 
 try:
     import socks
@@ -26,7 +26,7 @@ from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
-    SessionPasswordNeededError, FilePartMissingError, FileMigrateError
+    SessionPasswordNeededError, FileMigrateError
 )
 from .network import ConnectionMode
 from .tl import TLObject
@@ -977,10 +977,9 @@ class TelegramClient(TelegramBareClient):
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
         msg = self._get_response_message(request, self(request))
-        if msg and isinstance(file_handle, InputFile):
+        if msg and isinstance(file_handle, InputSizedFile):
             # There was a response message and we didn't use cached
             # version, so cache whatever we just sent to the database.
-            # Note that the InputFile was modified to have md5/size.
             md5, size = file_handle.md5, file_handle.size
             if as_image:
                 to_cache = utils.get_input_photo(msg.media.photo)
@@ -1078,8 +1077,8 @@ class TelegramClient(TelegramBareClient):
                 ``(sent bytes, total)``.
 
         Returns:
-            The InputFile (or InputFileBig if >10MB) with two extra
-            attributes: ``.md5`` (its ``.digest()``) and ``size``.
+            ``InputFileBig`` if the file size is larger than 10MB,
+            ``InputSizedFile`` (subclass of ``InputFile``) otherwise.
         """
         if isinstance(file, (InputFile, InputFileBig)):
             return file  # Already uploaded
@@ -1161,14 +1160,11 @@ class TelegramClient(TelegramBareClient):
                         'Failed to upload file part {}.'.format(part_index))
 
         if is_large:
-            result = InputFileBig(file_id, part_count, file_name)
+            return InputFileBig(file_id, part_count, file_name)
         else:
-            result = InputFile(file_id, part_count, file_name,
-                               md5_checksum=hash_md5.hexdigest())
-
-        result.md5 = hash_md5.digest()
-        result.size = file_size
-        return result
+            return InputSizedFile(
+                file_id, part_count, file_name, md5=hash_md5, size=file_size
+            )
 
     # endregion
 
