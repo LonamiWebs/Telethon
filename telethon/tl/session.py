@@ -445,7 +445,7 @@ class Session:
         tuple_ = self._conn.execute(
             'select id, hash from sent_files '
             'where md5_digest = ? and file_size = ? and type = ?',
-            (md5_digest, file_size, _SentFileType.from_type(cls))
+            (md5_digest, file_size, _SentFileType.from_type(cls).value)
         ).fetchone()
         if tuple_:
             # Both allowed classes have (id, access_hash) as parameters
@@ -459,7 +459,7 @@ class Session:
             self._conn.execute(
                 'insert into sent_files values (?,?,?,?,?)', (
                     md5_digest, file_size,
-                    _SentFileType.from_type(type(instance)),
+                    _SentFileType.from_type(type(instance)).value,
                     instance.id, instance.access_hash
             ))
         self.save()
