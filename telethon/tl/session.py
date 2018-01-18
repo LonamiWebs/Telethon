@@ -5,6 +5,7 @@ import sqlite3
 import struct
 import time
 from base64 import b64decode
+from enum import Enum
 from os.path import isfile as file_exists
 from threading import Lock
 
@@ -12,11 +13,26 @@ from .. import utils
 from ..tl import TLObject
 from ..tl.types import (
     PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel
+    InputPeerUser, InputPeerChat, InputPeerChannel,
+    InputPhoto, InputDocument
 )
 
 EXTENSION = '.session'
-CURRENT_VERSION = 2  # database version
+CURRENT_VERSION = 3  # database version
+
+
+class _SentFileType(Enum):
+    DOCUMENT = 0
+    PHOTO = 1
+
+    @staticmethod
+    def from_type(cls):
+        if cls == InputDocument:
+            return _SentFileType.DOCUMENT
+        elif cls == InputPhoto:
+            return _SentFileType.PHOTO
+        else:
+            raise ValueError('The cls must be either InputDocument/InputPhoto')
 
 
 class Session:
@@ -130,9 +146,10 @@ class Session:
                 """sent_files (
                     md5_digest blob,
                     file_size integer,
-                    file_id integer,
-                    part_count integer,
-                    primary key(md5_digest, file_size)
+                    type integer,
+                    id integer,
+                    hash integer,
+                    primary key(md5_digest, file_size, type)
                 )"""
             )
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
@@ -171,18 +188,22 @@ class Session:
 
     def _upgrade_database(self, old):
         c = self._conn.cursor()
-        if old == 1:
-            self._create_table(c,"""sent_files (
-                md5_digest blob,
-                file_size integer,
-                file_id integer,
-                part_count integer,
-                primary key(md5_digest, file_size)
-            )""")
-            old = 2
+        # old == 1 doesn't have the old sent_files so no need to drop
+        if old == 2:
+            # Old cache from old sent_files lasts then a day anyway, drop
+            c.execute('drop table sent_files')
+        self._create_table(c, """sent_files (
+            md5_digest blob,
+            file_size integer,
+            type integer,
+            id integer,
+            hash integer,
+            primary key(md5_digest, file_size, type)
+        )""")
         c.close()
 
-    def _create_table(self, c, *definitions):
+    @staticmethod
+    def _create_table(c, *definitions):
         """
         Creates a table given its definition 'name (columns).
         If the sqlite version is >= 3.8.2, it will use "without rowid".
@@ -420,24 +441,25 @@ class Session:
 
     # File processing
 
-    def get_file(self, md5_digest, file_size):
-        return self._conn.execute(
-            'select * from sent_files '
-            'where md5_digest = ? and file_size = ?', (md5_digest, file_size)
+    def get_file(self, md5_digest, file_size, cls):
+        tuple_ = self._conn.execute(
+            'select id, hash from sent_files '
+            'where md5_digest = ? and file_size = ? and type = ?',
+            (md5_digest, file_size, _SentFileType.from_type(cls).value)
         ).fetchone()
+        if tuple_:
+            # Both allowed classes have (id, access_hash) as parameters
+            return cls(tuple_[0], tuple_[1])
 
-    def cache_file(self, md5_digest, file_size, file_id, part_count):
+    def cache_file(self, md5_digest, file_size, instance):
+        if not isinstance(instance, (InputDocument, InputPhoto)):
+            raise TypeError('Cannot cache %s instance' % type(instance))
+
         with self._db_lock:
             self._conn.execute(
-                'insert into sent_files values (?,?,?,?)',
-                (md5_digest, file_size, file_id, part_count)
-            )
-        self.save()
-
-    def clear_file(self, md5_digest, file_size):
-        with self._db_lock:
-            self._conn.execute(
-                'delete from sent_files where '
-                'md5_digest = ? and file_size = ?', (md5_digest, file_size)
-            )
+                'insert or replace into sent_files values (?,?,?,?,?)', (
+                    md5_digest, file_size,
+                    _SentFileType.from_type(type(instance)).value,
+                    instance.id, instance.access_hash
+            ))
         self.save()
