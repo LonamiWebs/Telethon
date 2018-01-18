@@ -457,7 +457,7 @@ class Session:
 
         with self._db_lock:
             self._conn.execute(
-                'insert into sent_files values (?,?,?,?,?)', (
+                'insert or replace into sent_files values (?,?,?,?,?)', (
                     md5_digest, file_size,
                     _SentFileType.from_type(type(instance)).value,
                     instance.id, instance.access_hash

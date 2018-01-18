@@ -66,7 +66,8 @@ from .tl.types import (
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
     ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
-    InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig
+    InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
+    InputDocument, InputMediaDocument
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown
@@ -875,7 +876,9 @@ class TelegramClient(TelegramBareClient):
 
             allow_cache (:obj:`bool`, optional):
                 Whether to allow using the cached version stored in the
-                database or not. Defaults to ``True`` to avoid reuploads.
+                database or not. Defaults to ``True`` to avoid re-uploads.
+                Must be ``False`` if you wish to use different attributes
+                or thumb than those that were used when the file was cached.
 
         Kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
@@ -892,8 +895,7 @@ class TelegramClient(TelegramBareClient):
             if all(utils.is_image(x) for x in file):
                 return self._send_album(
                     entity, file, caption=caption,
-                    progress_callback=progress_callback, reply_to=reply_to,
-                    allow_cache=allow_cache
+                    progress_callback=progress_callback, reply_to=reply_to
                 )
             # Not all are images, so send all the files one by one
             return [
@@ -905,10 +907,20 @@ class TelegramClient(TelegramBareClient):
                 ) for x in file
             ]
 
+        as_image = utils.is_image(file) and not force_document
+        use_cache = InputPhoto if as_image else InputDocument
         file_handle = self.upload_file(
-            file, progress_callback=progress_callback, allow_cache=allow_cache)
+            file, progress_callback=progress_callback,
+            use_cache=use_cache if allow_cache else None
+        )
 
-        if utils.is_image(file) and not force_document:
+        if isinstance(file_handle, use_cache):
+            # File was cached, so an instance of use_cache was returned
+            if as_image:
+                media = InputMediaPhoto(file_handle, caption)
+            else:
+                media = InputMediaDocument(file_handle, caption)
+        elif as_image:
             media = InputMediaUploadedPhoto(file_handle, caption)
         else:
             mime_type = None
@@ -964,19 +976,19 @@ class TelegramClient(TelegramBareClient):
             media=media,
             reply_to_msg_id=self._get_reply_to(reply_to)
         )
-        try:
-            return self._get_response_message(request, self(request))
-        except FilePartMissingError:
-            # After a while, cached files are invalidated and this
-            # error is raised. The file needs to be uploaded again.
-            if not allow_cache:
-                raise
-            return self.send_file(
-                entity, file, allow_cache=False,
-                caption=caption, force_document=force_document,
-                progress_callback=progress_callback, reply_to=reply_to,
-                attributes=attributes, thumb=thumb, **kwargs
-            )
+        msg = self._get_response_message(request, self(request))
+        if msg and isinstance(file_handle, InputFile):
+            # There was a response message and we didn't use cached
+            # version, so cache whatever we just sent to the database.
+            # Note that the InputFile was modified to have md5/size.
+            md5, size = file_handle.md5, file_handle.size
+            if as_image:
+                to_cache = utils.get_input_photo(msg.media.photo)
+            else:
+                to_cache = utils.get_input_document(msg.media.document)
+            self.session.cache_file(md5, size, to_cache)
+
+        return msg
 
     def send_voice_note(self, entity, file, caption='', progress_callback=None,
                         reply_to=None):
@@ -987,48 +999,44 @@ class TelegramClient(TelegramBareClient):
                               is_voice_note=())  # empty tuple is enough
 
     def _send_album(self, entity, files, caption='',
-                    progress_callback=None, reply_to=None,
-                    allow_cache=True):
+                    progress_callback=None, reply_to=None):
         """Specialized version of .send_file for albums"""
+        # We don't care if the user wants to avoid cache, we will use it
+        # anyway. Why? The cached version will be exactly the same thing
+        # we need to produce right now to send albums (uploadMedia), and
+        # cache only makes a difference for documents where the user may
+        # want the attributes used on them to change. Caption's ignored.
         entity = self.get_input_entity(entity)
         reply_to = self._get_reply_to(reply_to)
-        try:
-            # Need to upload the media first
-            media = [
-                self(UploadMediaRequest(entity, InputMediaUploadedPhoto(
-                    self.upload_file(file, allow_cache=allow_cache),
-                    caption=caption
-                )))
-                for file in files
-            ]
-            # Now we can construct the multi-media request
-            result = self(SendMultiMediaRequest(
-                entity, reply_to_msg_id=reply_to, multi_media=[
-                    InputSingleMedia(InputMediaPhoto(
-                        InputPhoto(m.photo.id, m.photo.access_hash),
-                        caption=caption
-                    ))
-                    for m in media
-                ]
-            ))
-            return [
-                self._get_response_message(update.id, result)
-                for update in result.updates
-                if isinstance(update, UpdateMessageID)
-            ]
-        except FilePartMissingError:
-            if not allow_cache:
-                raise
-            return self._send_album(
-                entity, files, allow_cache=False, caption=caption,
-                progress_callback=progress_callback, reply_to=reply_to
-            )
+
+        # Need to upload the media first, but only if they're not cached yet
+        media = []
+        for file in files:
+            # fh will either be InputPhoto or a modified InputFile
+            fh = self.upload_file(file, use_cache=InputPhoto)
+            if not isinstance(fh, InputPhoto):
+                input_photo = utils.get_input_photo(self(UploadMediaRequest(
+                    entity, media=InputMediaUploadedPhoto(fh, caption)
+                )).photo)
+                self.session.cache_file(fh.md5, fh.size, input_photo)
+                fh = input_photo
+            media.append(InputSingleMedia(InputMediaPhoto(fh, caption)))
+
+        # Now we can construct the multi-media request
+        result = self(SendMultiMediaRequest(
+            entity, reply_to_msg_id=reply_to, multi_media=media
+        ))
+        return [
+            self._get_response_message(update.id, result)
+            for update in result.updates
+            if isinstance(update, UpdateMessageID)
+        ]
 
     def upload_file(self,
                     file,
                     part_size_kb=None,
                     file_name=None,
-                    allow_cache=True,
+                    use_cache=None,
                     progress_callback=None):
         """
         Uploads the specified file and returns a handle (an instance of
@@ -1058,15 +1066,20 @@ class TelegramClient(TelegramBareClient):
                 If not specified, the name will be taken from the ``file``
                 and if this is not a ``str``, it will be ``"unnamed"``.
 
-            allow_cache (:obj:`bool`, optional):
-                Whether to allow reusing the file from cache or not. Unused.
+            use_cache (:obj:`type`, optional):
+                The type of cache to use (currently either ``InputDocument``
+                or ``InputPhoto``). If present and the file is small enough
+                to need the MD5, it will be checked against the database,
+                and if a match is found, the upload won't be made. Instead,
+                an instance of type ``use_cache`` will be returned.
 
             progress_callback (:obj:`callable`, optional):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
         Returns:
-            The InputFile (or InputFileBig if >10MB).
+            The InputFile (or InputFileBig if >10MB) with two extra
+            attributes: ``.md5`` (its ``.digest()``) and ``size``.
         """
         if isinstance(file, (InputFile, InputFileBig)):
             return file  # Already uploaded
@@ -1102,6 +1115,7 @@ class TelegramClient(TelegramBareClient):
         # Determine whether the file is too big (over 10MB) or not
         # Telegram does make a distinction between smaller or larger files
         is_large = file_size > 10 * 1024 * 1024
+        hash_md5 = hashlib.md5()
         if not is_large:
             # Calculate the MD5 hash before anything else.
             # As this needs to be done always for small files,
@@ -1110,9 +1124,13 @@ class TelegramClient(TelegramBareClient):
             if isinstance(file, str):
                 with open(file, 'rb') as stream:
                     file = stream.read()
-            hash_md5 = hashlib.md5(file)
-        else:
-            hash_md5 = None
+            hash_md5.update(file)
+            if use_cache:
+                cached = self.session.get_file(
+                    hash_md5.digest(), file_size, cls=use_cache
+                )
+                if cached:
+                    return cached
 
         part_count = (file_size + part_size - 1) // part_size
         __log__.info('Uploading file of %d bytes in %d chunks of %d',
@@ -1143,10 +1161,14 @@ class TelegramClient(TelegramBareClient):
                         'Failed to upload file part {}.'.format(part_index))
 
         if is_large:
-            return InputFileBig(file_id, part_count, file_name)
+            result = InputFileBig(file_id, part_count, file_name)
         else:
-            return InputFile(file_id, part_count, file_name,
-                             md5_checksum=hash_md5.hexdigest())
+            result = InputFile(file_id, part_count, file_name,
+                               md5_checksum=hash_md5.hexdigest())
+
+        result.md5 = hash_md5.digest()
+        result.size = file_size
+        return result
 
     # endregion
 
