@@ -14,6 +14,52 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+New ``.resolve()`` method (v0.16.2)
+===================================
+
+*Published at 2018/01/19*
+
+The ``TLObject``'s (instances returned by the API and ``Request``'s) have
+now acquired a new ``.resolve()`` method. While this should be used by the
+library alone (when invoking a request), it means that you can now use
+``Peer`` types or even usernames where a ``InputPeer`` is required. The
+object now has access to the ``client``, so that it can fetch the right
+type if needed, or access the session database. Furthermore, you can
+reuse requests that need "autocast" (e.g. you put ``User`` but ``InputPeer``
+was needed), since ``.resolve()`` is called when invoking. Before, it was
+only done on object construction.
+
+Additions
+~~~~~~~~~
+
+- Album support. Just pass a list, tuple or any iterable to ``.send_file()``.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+- ``.start()`` asks for your phone only if required.
+- Better file cache. All files under 10MB, once uploaded, should never be
+  needed to be re-uploaded again, as the sent media is cached to the session.
+
+
+Bug fixes
+~~~~~~~~~
+
+- ``setup.py`` now calls ``gen_tl`` when installing the library if needed.
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The mentioned ``.resolve()`` to perform "autocast", more powerful.
+- Upload and download methods are no longer part of ``TelegramBareClient``.
+- Reuse ``.on_response()``, ``.__str__`` and ``.stringify()``.
+  Only override ``.on_response()`` if necessary (small amount of cases).
+- Reduced "autocast" overhead as much as possible.
+  You shouldn't be penalized if you've provided the right type.
+
+
 MtProto 2.0 (v0.16.1)
 =====================
 
