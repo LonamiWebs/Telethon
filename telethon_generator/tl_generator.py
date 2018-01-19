@@ -146,15 +146,6 @@ class TLGenerator:
                         x for x in namespace_tlobjects.keys() if x
                     )))
 
-                # Import 'get_input_*' utils
-                # TODO Support them on types too
-                if 'functions' in out_dir:
-                    builder.writeln(
-                        'from {}.utils import get_input_peer, '
-                        'get_input_channel, get_input_user, '
-                        'get_input_media, get_input_photo'.format('.' * depth)
-                    )
-
                 # Import 'os' for those needing access to 'os.urandom()'
                 # Currently only 'random_id' needs 'os' to be imported,
                 # for all those TLObjects with arg.can_be_inferred.

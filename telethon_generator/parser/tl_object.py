@@ -264,7 +264,7 @@ class TLArg:
             'date': 'datetime.datetime | None',  # None date = 0 timestamp
             'bytes': 'bytes',
             'true': 'bool',
-        }.get(self.type, 'TLObject')
+        }.get(self.type, self.type)
         if self.is_vector:
             result = 'list[{}]'.format(result)
         if self.is_flag and self.type != 'date':
