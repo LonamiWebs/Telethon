@@ -7,6 +7,7 @@ class TLObject:
     def __init__(self):
         self.confirm_received = Event()
         self.rpc_error = None
+        self.result = None
 
         # These should be overrode
         self.content_related = False  # Only requests/functions/queries are
@@ -142,6 +143,16 @@ class TLObject:
             return struct.pack('<I', dt)
 
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
+
+    # These are nearly always the same for all subclasses
+    def on_response(self, reader):
+        self.result = reader.tgread_object()
+
+    def __str__(self):
+        return TLObject.pretty_format(self)
+
+    def stringify(self):
+        return TLObject.pretty_format(self, indent=0)
 
     # These should be overrode
     def resolve(self, client, utils):

@@ -395,23 +395,30 @@ class TLGenerator:
                 if not a.flag_indicator and not a.generic_definition
             )
         ))
-        builder.end_block()
 
         # Only requests can have a different response that's not their
         # serialized body, that is, we'll be setting their .result.
-        if tlobject.is_function:
+        #
+        # The default behaviour is reading a TLObject too, so no need
+        # to override it unless necessary.
+        if tlobject.is_function and not TLGenerator._is_boxed(tlobject.result):
+            builder.end_block()
             builder.writeln('def on_response(self, reader):')
             TLGenerator.write_request_result_code(builder, tlobject)
-            builder.end_block()
 
-        # Write the __str__(self) and stringify(self) functions
-        builder.writeln('def __str__(self):')
-        builder.writeln('return TLObject.pretty_format(self)')
-        builder.end_block()
-
-        builder.writeln('def stringify(self):')
-        builder.writeln('return TLObject.pretty_format(self, indent=0)')
-        # builder.end_block()  # No need to end the last block
+    @staticmethod
+    def _is_boxed(type_):
+        # https://core.telegram.org/mtproto/serialize#boxed-and-bare-types
+        # TL;DR; boxed types start with uppercase always, so we can use
+        # this to check whether everything in it is boxed or not.
+        #
+        # The API always returns a boxed type, but it may inside a Vector<>
+        # or a namespace, and the Vector may have a not-boxed type. For this
+        # reason we find whatever index, '<' or '.'. If neither are present
+        # we will get -1, and the 0th char is always upper case thus works.
+        # For Vector types and namespaces, it will check in the right place.
+        check_after = max(type_.find('<'), type_.find('.'))
+        return type_[check_after + 1].isupper()
 
     @staticmethod
     def _write_self_assign(builder, arg, get_input_code):
@@ -697,13 +704,13 @@ class TLGenerator:
             # not parsed as arguments are and it's a bit harder to tell which
             # is which.
             if tlobject.result == 'Vector<int>':
-                builder.writeln('reader.read_int()  # Vector id')
+                builder.writeln('reader.read_int()  # Vector ID')
                 builder.writeln('count = reader.read_int()')
                 builder.writeln(
                     'self.result = [reader.read_int() for _ in range(count)]'
                 )
             elif tlobject.result == 'Vector<long>':
-                builder.writeln('reader.read_int()  # Vector id')
+                builder.writeln('reader.read_int()  # Vector ID')
                 builder.writeln('count = reader.read_long()')
                 builder.writeln(
                     'self.result = [reader.read_long() for _ in range(count)]'
