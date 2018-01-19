@@ -15,7 +15,8 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
-from .tl import TLObject, Session
+from .session import Session
+from .tl import TLObject
 from .tl.all_tlobjects import LAYER
 from .tl.functions import (
     InitConnectionRequest, InvokeWithLayerRequest, PingRequest

@@ -9,9 +9,10 @@ from enum import Enum
 from os.path import isfile as file_exists
 from threading import Lock
 
-from .. import utils
-from ..tl import TLObject
-from ..tl.types import (
+from . import utils
+from .crypto import AuthKey
+from .tl import TLObject
+from .tl.types import (
     PeerUser, PeerChat, PeerChannel,
     InputPeerUser, InputPeerChat, InputPeerChannel,
     InputPhoto, InputDocument
@@ -118,7 +119,6 @@ class Session:
             tuple_ = c.fetchone()
             if tuple_:
                 self._dc_id, self._server_address, self._port, key, = tuple_
-                from ..crypto import AuthKey
                 self._auth_key = AuthKey(data=key)
 
             c.close()
@@ -173,7 +173,6 @@ class Session:
                 self._server_address = \
                     data.get('server_address', self._server_address)
 
-                from ..crypto import AuthKey
                 if data.get('auth_key_data', None) is not None:
                     key = b64decode(data['auth_key_data'])
                     self._auth_key = AuthKey(data=key)
@@ -228,7 +227,6 @@ class Session:
         c.execute('select auth_key from sessions')
         tuple_ = c.fetchone()
         if tuple_:
-            from ..crypto import AuthKey
             self._auth_key = AuthKey(data=tuple_[0])
         else:
             self._auth_key = None
