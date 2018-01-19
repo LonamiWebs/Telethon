@@ -556,6 +556,13 @@ class TelegramBareClient:
            (code request sent and confirmed)?"""
         return self._authorized
 
+    def get_input_entity(self, peer):
+        """
+        Stub method, no functionality so that calling
+        ``.get_input_entity()`` from ``.resolve()`` doesn't fail.
+        """
+        return peer
+
     # endregion
 
     # region Updates handling
