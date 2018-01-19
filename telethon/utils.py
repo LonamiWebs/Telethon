@@ -3,11 +3,9 @@ Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
 import math
+import re
 from mimetypes import add_type, guess_extension
 
-import re
-
-from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -24,7 +22,6 @@ from .tl.types import (
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos
 )
-
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
@@ -81,11 +78,11 @@ def _raise_cast_fail(entity, target):
 def get_input_peer(entity, allow_self=True):
     """Gets the input peer for the given "entity" (user, chat or channel).
        A TypeError is raised if the given entity isn't a supported type."""
-    if not isinstance(entity, TLObject):
+    try:
+        if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputPeer')
-
-    if type(entity).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-        return entity
 
     if isinstance(entity, User):
         if entity.is_self and allow_self:
@@ -123,11 +120,11 @@ def get_input_peer(entity, allow_self=True):
 
 def get_input_channel(entity):
     """Similar to get_input_peer, but for InputChannel's alone"""
-    if not isinstance(entity, TLObject):
+    try:
+        if entity.SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputChannel')
-
-    if type(entity).SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
-        return entity
 
     if isinstance(entity, (Channel, ChannelForbidden)):
         return InputChannel(entity.id, entity.access_hash or 0)
@@ -140,11 +137,11 @@ def get_input_channel(entity):
 
 def get_input_user(entity):
     """Similar to get_input_peer, but for InputUser's alone"""
-    if not isinstance(entity, TLObject):
+    try:
+        if entity.SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser'):
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputUser')
-
-    if type(entity).SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser')
-        return entity
 
     if isinstance(entity, User):
         if entity.is_self:
@@ -169,11 +166,11 @@ def get_input_user(entity):
 
 def get_input_document(document):
     """Similar to get_input_peer, but for documents"""
-    if not isinstance(document, TLObject):
+    try:
+        if document.SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument'):
+            return document
+    except AttributeError:
         _raise_cast_fail(document, 'InputDocument')
-
-    if type(document).SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
-        return document
 
     if isinstance(document, Document):
         return InputDocument(id=document.id, access_hash=document.access_hash)
@@ -192,11 +189,11 @@ def get_input_document(document):
 
 def get_input_photo(photo):
     """Similar to get_input_peer, but for documents"""
-    if not isinstance(photo, TLObject):
+    try:
+        if photo.SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto'):
+            return photo
+    except AttributeError:
         _raise_cast_fail(photo, 'InputPhoto')
-
-    if type(photo).SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
-        return photo
 
     if isinstance(photo, photos.Photo):
         photo = photo.photo
@@ -212,11 +209,11 @@ def get_input_photo(photo):
 
 def get_input_geo(geo):
     """Similar to get_input_peer, but for geo points"""
-    if not isinstance(geo, TLObject):
+    try:
+        if geo.SUBCLASS_OF_ID == 0x430d225:  # crc32(b'InputGeoPoint'):
+            return geo
+    except AttributeError:
         _raise_cast_fail(geo, 'InputGeoPoint')
-
-    if type(geo).SUBCLASS_OF_ID == 0x430d225:  # crc32(b'InputGeoPoint')
-        return geo
 
     if isinstance(geo, GeoPoint):
         return InputGeoPoint(lat=geo.lat, long=geo.long)
@@ -239,11 +236,11 @@ def get_input_media(media, user_caption=None, is_photo=False):
        If the media is a file location and is_photo is known to be True,
        it will be treated as an InputMediaUploadedPhoto.
     """
-    if not isinstance(media, TLObject):
+    try:
+        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia'):
+            return media
+    except AttributeError:
         _raise_cast_fail(media, 'InputMedia')
-
-    if type(media).SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
-        return media
 
     if isinstance(media, MessageMediaPhoto):
         return InputMediaPhoto(
@@ -357,15 +354,15 @@ def get_peer_id(peer):
     a call to utils.resolve_id(marked_id).
     """
     # First we assert it's a Peer TLObject, or early return for integers
-    if not isinstance(peer, TLObject):
-        if isinstance(peer, int):
-            return peer
-        else:
-            _raise_cast_fail(peer, 'int')
+    if isinstance(peer, int):
+        return peer
 
-    elif type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
-        # Not a Peer or an InputPeer, so first get its Input version
-        peer = get_input_peer(peer, allow_self=False)
+    try:
+        if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
+            # Not a Peer or an InputPeer, so first get its Input version
+            peer = get_input_peer(peer, allow_self=False)
+    except AttributeError:
+        _raise_cast_fail(peer, 'int')
 
     # Set the right ID/kind, or raise if the TLObject is not recognised
     if isinstance(peer, (PeerUser, InputPeerUser)):

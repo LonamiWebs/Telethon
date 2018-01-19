@@ -818,10 +818,12 @@ class TelegramClient(TelegramBareClient):
         if isinstance(reply_to, int):
             return reply_to
 
-        if isinstance(reply_to, TLObject) and \
-                        type(reply_to).SUBCLASS_OF_ID == 0x790009e3:
-            # hex(crc32(b'Message')) = 0x790009e3
-            return reply_to.id
+        try:
+            if reply_to.SUBCLASS_OF_ID == 0x790009e3:
+                # hex(crc32(b'Message')) = 0x790009e3
+                return reply_to.id
+        except AttributeError:
+            pass
 
         raise TypeError('Invalid reply_to type: {}'.format(type(reply_to)))
 
@@ -1191,9 +1193,14 @@ class TelegramClient(TelegramBareClient):
         """
         photo = entity
         possible_names = []
-        if not isinstance(entity, TLObject) or type(entity).SUBCLASS_OF_ID in (
+        try:
+            is_entity = entity.SUBCLASS_OF_ID in (
                 0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
-        ):
+            )
+        except AttributeError:
+            return None  # Not even a TLObject as attribute access failed
+
+        if is_entity:
             # Maybe it is an user or a chat? Or their full versions?
             #
             # The hexadecimal numbers above are simply:
@@ -1705,14 +1712,13 @@ class TelegramClient(TelegramBareClient):
         if isinstance(peer, int):
             peer = PeerUser(peer)
             is_peer = True
-
-        elif isinstance(peer, TLObject):
-            is_peer = type(peer).SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
-            if not is_peer:
-                try:
+        else:
+            try:
+                is_peer = peer.SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
+                if not is_peer:
                     return utils.get_input_peer(peer)
-                except TypeError:
-                    pass
+            except (AttributeError, TypeError):
+                pass  # Attribute if not TLObject, Type if not "casteable"
 
         if not is_peer:
             raise TypeError(
