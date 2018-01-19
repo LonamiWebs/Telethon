@@ -7,7 +7,7 @@ from signal import signal, SIGINT, SIGTERM, SIGABRT
 from threading import Lock
 from time import sleep
 
-from . import version
+from . import version, utils
 from .crypto import rsa
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError, FloodWaitError,
@@ -419,6 +419,9 @@ class TelegramBareClient:
 
         if self._background_error:
             raise self._background_error
+
+        for request in requests:
+            request.resolve(self, utils)
 
         # For logging purposes
         if len(requests) == 1:

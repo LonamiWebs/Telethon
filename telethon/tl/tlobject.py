@@ -144,6 +144,9 @@ class TLObject:
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
     # These should be overrode
+    def resolve(self, client, utils):
+        pass
+
     def to_dict(self, recursive=True):
         return {}
 
