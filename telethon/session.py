@@ -401,12 +401,16 @@ class Session:
 
            Raises ValueError if it cannot be found.
         """
-        if isinstance(key, TLObject):
-            try:
-                # Try to early return if this key can be casted as input peer
-                return utils.get_input_peer(key)
-            except TypeError:
-                # Otherwise, get the ID of the peer
+        try:
+            if key.SUBCLASS_OF_ID in (0xc91c90b6, 0xe669bf46, 0x40f202fd):
+                # hex(crc32(b'InputPeer', b'InputUser' and b'InputChannel'))
+                # We already have an Input version, so nothing else required
+                return key
+            # Try to early return if this key can be casted as input peer
+            return utils.get_input_peer(key)
+        except (AttributeError, TypeError):
+            # Not a TLObject or can't be cast into InputPeer
+            if isinstance(key, TLObject):
                 key = utils.get_peer_id(key)
 
         c = self._conn.cursor()
