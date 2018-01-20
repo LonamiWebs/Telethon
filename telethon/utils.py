@@ -97,14 +97,17 @@ def get_input_peer(entity, allow_self=True):
         return InputPeerChannel(entity.id, entity.access_hash or 0)
 
     # Less common cases
-    if isinstance(entity, UserEmpty):
-        return InputPeerEmpty()
-
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
 
+    if isinstance(entity, InputChannel):
+        return InputPeerChannel(entity.channel_id, entity.access_hash)
+
     if isinstance(entity, InputUserSelf):
         return InputPeerSelf()
+
+    if isinstance(entity, UserEmpty):
+        return InputPeerEmpty()
 
     if isinstance(entity, UserFull):
         return get_input_peer(entity.user)
