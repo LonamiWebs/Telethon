@@ -19,6 +19,11 @@
            placeholder="Search for requests and types…" />
 
 <div id="searchDiv">
+    <div id="exactMatch" style="display:none;">
+        <b>Exact match:</b>
+        <ul id="exactList" class="together">
+        </ul>
+    </div>
 
     <details open><summary class="title">Methods (<span id="methodsCount">0</span>)</summary>
         <ul id="methodsList" class="together">
@@ -179,6 +184,10 @@ typesCount = document.getElementById("typesCount");
 constructorsList = document.getElementById("constructorsList");
 constructorsCount = document.getElementById("constructorsCount");
 
+// Exact match
+exactMatch = document.getElementById("exactMatch");
+exactList = document.getElementById("exactList");
+
 try {
     requests = [{request_names}];
     types = [{type_names}];
@@ -225,7 +234,9 @@ function buildList(countSpan, resultList, foundElements) {
         result += '</a></li>';
     }
 
-    countSpan.innerHTML = "" + foundElements[0].length;
+    if (countSpan) {
+        countSpan.innerHTML = "" + foundElements[0].length;
+    }
     resultList.innerHTML = result;
 }
 
@@ -245,6 +256,26 @@ function updateSearch() {
         buildList(methodsCount, methodsList, foundRequests);
         buildList(typesCount, typesList, foundTypes);
         buildList(constructorsCount, constructorsList, foundConstructors);
+
+        // Now look for exact matches
+        var original = requests.concat(constructors);
+        var originalu = requestsu.concat(constructorsu);
+        var destination = [];
+        var destinationu = [];
+
+        for (var i = 0; i < original.length; ++i) {
+            if (original[i].toLowerCase().replace("request", "") == query) {
+                destination.push(original[i]);
+                destinationu.push(originalu[i]);
+            }
+        }
+
+        if (destination.length == 0) {
+            exactMatch.style.display = "none";
+        } else {
+            exactMatch.style.display = "";
+            buildList(null, exactList, [destination, destinationu]);
+        }
     } else {
         contentDiv.style.display = "";
         searchDiv.style.display = "none";
