@@ -224,6 +224,16 @@ def get_description(arg):
     return ' '.join(desc)
 
 
+def copy_replace(src, dst, replacements):
+    """Copies the src file into dst applying the replacements dict"""
+    with open(src) as infile, open(dst, 'w') as outfile:
+        outfile.write(re.sub(
+            '|'.join(re.escape(k) for k in replacements),
+            lambda m: str(replacements[m.group(0)]),
+            infile.read()
+        ))
+
+
 def generate_documentation(scheme_file):
     """Generates the documentation HTML files from from scheme.tl to
        /methods and /constructors, etc.
@@ -231,6 +241,7 @@ def generate_documentation(scheme_file):
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
+        'search.js': 'js/search.js',
         '404': '404.html',
         'index_all': 'index.html',
         'index_types': 'types/index.html',
@@ -366,6 +377,10 @@ def generate_documentation(scheme_file):
                 else:
                     docs.write_text('This type has no members.')
 
+            # TODO Bit hacky, make everything like this? (prepending '../')
+            depth = '../' * (2 if tlobject.namespace else 1)
+            docs.add_script(src='prependPath = "{}";'.format(depth))
+            docs.add_script(relative_src=paths['search.js'])
             docs.end_body()
 
     # Find all the available types (which are not the same as the constructors)
@@ -540,36 +555,31 @@ def generate_documentation(scheme_file):
     type_urls = fmt(types, get_path_for_type)
     constructor_urls = fmt(constructors, get_create_path_for)
 
-    replace_dict = {
-        'type_count': len(types),
-        'method_count': len(methods),
-        'constructor_count': len(tlobjects) - len(methods),
-        'layer': layer,
-
-        'request_names': request_names,
-        'type_names': type_names,
-        'constructor_names': constructor_names,
-        'request_urls': request_urls,
-        'type_urls': type_urls,
-        'constructor_urls': constructor_urls
-    }
-
     shutil.copy('../res/404.html', original_paths['404'])
-
-    with open('../res/core.html') as infile,\
-            open(original_paths['index_all'], 'w') as outfile:
-        text = infile.read()
-        for key, value in replace_dict.items():
-            text = text.replace('{' + key + '}', str(value))
-
-        outfile.write(text)
+    copy_replace('../res/core.html', original_paths['index_all'], {
+        '{type_count}': len(types),
+        '{method_count}': len(methods),
+        '{constructor_count}': len(tlobjects) - len(methods),
+        '{layer}': layer,
+    })
+    os.makedirs(os.path.abspath(os.path.join(
+        original_paths['search.js'], os.path.pardir
+    )), exist_ok=True)
+    copy_replace('../res/js/search.js', original_paths['search.js'], {
+        '{request_names}': request_names,
+        '{type_names}': type_names,
+        '{constructor_names}': constructor_names,
+        '{request_urls}': request_urls,
+        '{type_urls}': type_urls,
+        '{constructor_urls}': constructor_urls
+    })
 
     # Everything done
     print('Documentation generated.')
 
 
 def copy_resources():
-    for d in ['css', 'img']:
+    for d in ('css', 'img'):
         os.makedirs(d, exist_ok=True)
 
     shutil.copy('../res/img/arrow.svg', 'img')
