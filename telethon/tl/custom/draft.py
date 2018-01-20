@@ -1,16 +1,18 @@
 from ..functions.messages import SaveDraftRequest
-from ..types import UpdateDraftMessage
+from ..types import UpdateDraftMessage, DraftMessage
 
 
 class Draft:
     """
     Custom class that encapsulates a draft on the Telegram servers, providing
     an abstraction to change the message conveniently. The library will return
-    instances of this class when calling `client.get_drafts()`.
+    instances of this class when calling ``client.get_drafts()``.
     """
     def __init__(self, client, peer, draft):
         self._client = client
         self._peer = peer
+        if not draft:
+            draft = DraftMessage('', None, None, None, None)
 
         self.text = draft.message
         self.date = draft.date

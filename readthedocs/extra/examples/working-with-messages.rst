@@ -3,6 +3,11 @@ Working with messages
 =====================
 
 
+.. note::
+
+    These examples assume you have read :ref:`accessing-the-full-api`.
+
+
 Forwarding messages
 *******************
 

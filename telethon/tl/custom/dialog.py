@@ -24,10 +24,7 @@ class Dialog:
         self.unread_count = dialog.unread_count
         self.unread_mentions_count = dialog.unread_mentions_count
 
-        if dialog.draft:
-            self.draft = Draft(client, dialog.peer, dialog.draft)
-        else:
-            self.draft = None
+        self.draft = Draft(client, dialog.peer, dialog.draft)
 
     def send_message(self, *args, **kwargs):
         """

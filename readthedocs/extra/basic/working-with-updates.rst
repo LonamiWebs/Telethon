@@ -4,6 +4,12 @@
 Working with Updates
 ====================
 
+
+.. note::
+
+    There are plans to make working with updates more friendly. Stay tuned!
+
+
 .. contents::
 
 

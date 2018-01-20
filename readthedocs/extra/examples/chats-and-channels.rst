@@ -3,6 +3,11 @@ Working with Chats and Channels
 ===============================
 
 
+.. note::
+
+    These examples assume you have read :ref:`accessing-the-full-api`.
+
+
 Joining a chat or channel
 *************************
 

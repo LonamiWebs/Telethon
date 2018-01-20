@@ -14,8 +14,10 @@ through a sorted list of everything you can do.
 
 .. note::
 
-    Removing the hand crafted documentation for methods is still
-    a work in progress!
+    The reason to keep both https://lonamiwebs.github.io/Telethon and this
+    documentation alive is that the former allows instant search results
+    as you type, and a "Copy import" button. If you like namespaces, you
+    can also do ``from telethon.tl import types, functions``. Both work.
 
 
 You should also refer to the documentation to see what the objects
@@ -39,8 +41,8 @@ If you're going to use a lot of these, you may do:
 
     .. code-block:: python
     
-        import telethon.tl.functions as tl
-        # We now have access to 'tl.messages.SendMessageRequest'
+        from telethon.tl import types, functions
+        # We now have access to 'functions.messages.SendMessageRequest'
 
 We see that this request must take at least two parameters, a ``peer``
 of type `InputPeer`__, and a ``message`` which is just a Python
@@ -81,6 +83,14 @@ every time its used, simply call ``.get_input_peer``:
 
         from telethon import utils
         peer = utils.get_input_user(entity)
+
+
+.. note::
+
+    Since ``v0.16.2`` this is further simplified. The ``Request`` itself
+    will call ``client.get_input_entity()`` for you when required, but
+    it's good to remember what's happening.
+
 
 After this small parenthesis about ``.get_entity`` versus
 ``.get_input_entity``, we have everything we need. To ``.invoke()`` our

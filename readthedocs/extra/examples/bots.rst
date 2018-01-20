@@ -3,6 +3,11 @@ Bots
 ====
 
 
+.. note::
+
+    These examples assume you have read :ref:`accessing-the-full-api`.
+
+
 Talking to Inline Bots
 **********************
 

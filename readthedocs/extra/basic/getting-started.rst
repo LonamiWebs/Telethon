@@ -1,7 +1,5 @@
-.. Telethon documentation master file, created by
-   sphinx-quickstart on Fri Nov 17 15:36:11 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _getting-started:
+
 
 ===============
 Getting Started
@@ -39,13 +37,36 @@ Basic Usage
 
    .. code-block:: python
 
-       print(me.stringify())
+       # Getting information about yourself
+       print(client.get_me().stringify())
 
-       client.send_message('username', 'Hello! Talking to you from Telethon')
+       # Sending a message (you can use 'me' or 'self' to message yourself)
+       client.send_message('username', 'Hello World from Telethon!')
+
+       # Sending a file
        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-       client.download_profile_photo(me)
+       # Retrieving messages from a chat
+       from telethon import utils
+       for message in client.get_message_history('username', limit=10):
+           print(utils.get_display_name(message.sender), message.message)
+
+       # Listing all the dialogs (conversations you have open)
+       for dialog in client.get_dialogs(limit=10):
+           print(utils.get_display_name(dialog.entity), dialog.draft.message)
+
+       # Downloading profile photos (default path is the working directory)
+       client.download_profile_photo('username')
+
+       # Once you have a message with .media (if message.media)
+       # you can download it using client.download_media():
        messages = client.get_message_history('username')
        client.download_media(messages[0])
 
    **More details**: :ref:`telegram-client`
+
+
+----------
+
+You can continue by clicking on the "More details" link below each
+snippet of code or the "Next" button at the bottom of the page.

@@ -29,7 +29,9 @@ You can also install the library directly from GitHub or a fork:
         $ cd Telethon/
         # pip install -Ue .
 
-If you don't have root access, simply pass the ``--user`` flag to the pip command.
+If you don't have root access, simply pass the ``--user`` flag to the pip
+command. If you want to install a specific branch, append ``@branch`` to
+the end of the first install command.
 
 
 Manual Installation
@@ -49,7 +51,8 @@ Manual Installation
 
 5. Done!
 
-To generate the documentation, ``cd docs`` and then ``python3 generate.py``.
+To generate the `method documentation`__, ``cd docs`` and then
+``python3 generate.py`` (if some pages render bad do it twice).
 
 
 Optional dependencies
@@ -62,5 +65,6 @@ will also work without it.
 
 __ https://github.com/ricmoo/pyaes
 __ https://pypi.python.org/pypi/pyaes
-__ https://github.com/sybrenstuvel/python-rsa/
+__ https://github.com/sybrenstuvel/python-rsa
 __ https://pypi.python.org/pypi/rsa/3.4.2
+__ https://lonamiwebs.github.io/Telethon

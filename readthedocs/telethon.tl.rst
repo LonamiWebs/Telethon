@@ -7,14 +7,6 @@ telethon\.tl package
     telethon.tl.custom
 
 
-telethon\.tl\.entity\_database module
--------------------------------------
-
-.. automodule:: telethon.tl.entity_database
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 telethon\.tl\.gzip\_packed module
 ---------------------------------
 
@@ -27,14 +19,6 @@ telethon\.tl\.message\_container module
 ---------------------------------------
 
 .. automodule:: telethon.tl.message_container
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-telethon\.tl\.session module
-----------------------------
-
-.. automodule:: telethon.tl.session
     :members:
     :undoc-members:
     :show-inheritance:

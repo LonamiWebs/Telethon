@@ -93,6 +93,8 @@ method also accepts a ``phone=`` and ``bot_token`` parameters.
 You can use either, as both will work. Determining which
 is just a matter of taste, and how much control you need.
 
+Remember that you can get yourself at any time with ``client.get_me()``.
+
 
 .. note::
     If you want to use a **proxy**, you have to `install PySocks`__

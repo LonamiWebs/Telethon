@@ -406,7 +406,7 @@ class TelegramClient(TelegramBareClient):
 
     def log_out(self):
         """
-        Logs out Telegram and deletes the current *.session file.
+        Logs out Telegram and deletes the current ``*.session`` file.
 
         Returns:
             True if the operation was successful.
@@ -742,6 +742,10 @@ class TelegramClient(TelegramBareClient):
         # Add a few extra attributes to the Message to make it friendlier.
         messages.total = total_messages
         for m in messages:
+            # To make messages more friendly, always add message
+            # to service messages, and action to normal messages.
+            m.message = getattr(m, 'message', None)
+            m.action = getattr(m, 'action', None)
             m.sender = (None if not m.from_id else
                         entities[utils.get_peer_id(m.from_id)])
 
