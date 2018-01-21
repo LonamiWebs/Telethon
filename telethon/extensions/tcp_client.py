@@ -96,17 +96,19 @@ class TcpClient:
             self._closed.set()
 
     async def _wait_close(self, coro):
-        done, _ = await asyncio.wait(
+        done, running = await asyncio.wait(
             [coro, self._closed.wait()],
             timeout=self.timeout,
             return_when=asyncio.FIRST_COMPLETED,
             loop=self._loop
         )
+        for r in running:
+            r.cancel()
         if not self.connected:
             raise self.SocketClosed()
         if not done:
             raise TimeoutError()
-        return await done.pop()
+        return done.pop().result()
 
     async def write(self, data):
         """Writes (sends) the specified bytes to the connected peer"""
