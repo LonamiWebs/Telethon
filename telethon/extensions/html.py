@@ -157,7 +157,7 @@ def unparse(text, entities):
         elif entity_type == MessageEntityUrl:
             html.append('<a href="{0}">{0}</a>'.format(entity_text))
         elif entity_type == MessageEntityTextUrl:
-            html.append('<a href="{}>{}</a>'
+            html.append('<a href="{}">{}</a>'
                         .format(escape(entity.url), entity_text))
         else:
             skip_entity = True
