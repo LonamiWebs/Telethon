@@ -66,7 +66,7 @@ which use is very straightforward:
         client(AddChatUserRequest(
             chat_id,
             user_to_add,
-            fwd_limit=10  # allow the user to see the 10 last messages
+            fwd_limit=10  # Allow the user to see the 10 last messages
         ))
 
 
@@ -111,8 +111,9 @@ a fixed limit:
         all_participants = []
 
         while True:
-            participants = client.invoke(GetParticipantsRequest(
-                channel, ChannelParticipantsSearch(''), offset, limit
+            participants = client(GetParticipantsRequest(
+                channel, ChannelParticipantsSearch(''), offset, limit,
+                hash=0
             ))
             if not participants.users:
                 break

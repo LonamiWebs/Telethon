@@ -47,12 +47,26 @@ into issues_. A valid example would be:
 
     .. code-block:: python
 
+        from telethon.tl.functions.messages import SearchRequest
+        from telethon.tl.types import InputMessagesFilterEmpty
+
+        filter = InputMessagesFilterEmpty()
         result = client(SearchRequest(
-            entity, 'query', InputMessagesFilterEmpty(), None, None, 0, 0, 100
+            peer=peer,      # On which chat/conversation
+            q='query',      # What to search for
+            filter=filter,  # Filter to use (maybe filter for media)
+            min_date=None,  # Minimum date
+            max_date=None,  # Maximum date
+            offset_id=0,    # ID of the message to use as offset
+            add_offset=0,   # Additional offset
+            limit=10,       # How many results
+            max_id=0,       # Maximum message ID
+            min_id=0,       # Minimum message ID
+            from_id=None    # Who must have sent the message (peer)
         ))
 
-It's important to note that the optional parameter ``from_id`` has been left
-omitted and thus defaults to ``None``. Changing it to InputUserEmpty_, as one
+It's important to note that the optional parameter ``from_id`` could have
+been omitted (defaulting to ``None``). Changing it to InputUserEmpty_, as one
 could think to specify "no user", won't work because this parameter is a flag,
 and it being unspecified has a different meaning.
 
