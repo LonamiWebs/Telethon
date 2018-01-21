@@ -6,6 +6,7 @@ import math
 import re
 from mimetypes import add_type, guess_extension
 
+from .tl.types.contacts import ResolvedPeer
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -20,7 +21,8 @@ from .tl.types import (
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
-    InputMediaUploadedPhoto, DocumentAttributeFilename, photos
+    InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
+    TopPeer, InputNotifyPeer
 )
 
 USERNAME_RE = re.compile(
@@ -362,8 +364,11 @@ def get_peer_id(peer):
 
     try:
         if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
-            # Not a Peer or an InputPeer, so first get its Input version
-            peer = get_input_peer(peer, allow_self=False)
+            if isinstance(peer, (ResolvedPeer, InputNotifyPeer, TopPeer)):
+                peer = peer.peer
+            else:
+                # Not a Peer or an InputPeer, so first get its Input version
+                peer = get_input_peer(peer, allow_self=False)
     except AttributeError:
         _raise_cast_fail(peer, 'int')
 
