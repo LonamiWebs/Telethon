@@ -144,11 +144,12 @@ def unparse(text, entities):
             html.append('<code>{}</code>'.format(entity_text))
         elif entity_type == MessageEntityPre:
             if entity.language:
-                html.append("""<pre>
-                    <code class='language-{}'>
-                        {}
-                    </code>
-                </pre>""".format(entity.language, entity_text))
+                html.append(
+                    "<pre>\n"
+                    "    <code class='language-{}'>\n"
+                    "        {}\n"
+                    "    </code>\n"
+                    "</pre>".format(entity.language, entity_text))
             else:
                 html.append('<pre><code>{}</code></pre>'
                             .format(entity_text))
