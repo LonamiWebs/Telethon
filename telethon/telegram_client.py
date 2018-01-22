@@ -70,7 +70,7 @@ from .tl.types import (
     InputDocument, InputMediaDocument
 )
 from .tl.types.messages import DialogsSlice
-from .extensions import markdown
+from .extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
 
@@ -580,6 +580,8 @@ class TelegramClient(TelegramBareClient):
             parse_mode = parse_mode.lower()
             if parse_mode in {'md', 'markdown'}:
                 message, msg_entities = markdown.parse(message)
+            elif parse_mode.startswith('htm'):
+                message, msg_entities = html.parse(message)
             else:
                 raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
         else:
