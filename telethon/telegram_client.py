@@ -67,7 +67,7 @@ from .tl.types import (
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
     ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
-    InputDocument, InputMediaDocument
+    InputDocument, InputMediaDocument, Document
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -1308,7 +1308,7 @@ class TelegramClient(TelegramBareClient):
             return self._download_photo(
                 media, file, date, progress_callback
             )
-        elif isinstance(media, MessageMediaDocument):
+        elif isinstance(media, (MessageMediaDocument, Document)):
             return self._download_document(
                 media, file, date, progress_callback
             )
@@ -1319,7 +1319,6 @@ class TelegramClient(TelegramBareClient):
 
     def _download_photo(self, photo, file, date, progress_callback):
         """Specialized version of .download_media() for photos"""
-
         # Determine the photo and its largest size
         if isinstance(photo, MessageMediaPhoto):
             photo = photo.photo
@@ -1345,9 +1344,13 @@ class TelegramClient(TelegramBareClient):
         )
         return file
 
-    def _download_document(self, mm_doc, file, date, progress_callback):
+    def _download_document(self, document, file, date, progress_callback):
         """Specialized version of .download_media() for documents"""
-        document = mm_doc.document
+        if isinstance(document, MessageMediaDocument):
+            document = document.document
+        if not isinstance(document, Document):
+            return
+
         file_size = document.size
 
         possible_names = []
@@ -1361,7 +1364,7 @@ class TelegramClient(TelegramBareClient):
                 ))
 
         file = self._get_proper_filename(
-            file, 'document', utils.get_extension(mm_doc),
+            file, 'document', utils.get_extension(document),
             date=date, possible_names=possible_names
         )
 
