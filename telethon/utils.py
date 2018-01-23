@@ -282,9 +282,10 @@ def get_input_media(media, user_caption=None, is_photo=False):
 
     if isinstance(media, (ChatPhoto, UserProfilePhoto)):
         if isinstance(media.photo_big, FileLocationUnavailable):
-            return get_input_media(media.photo_small, is_photo=True)
+            media = media.photo_small
         else:
-            return get_input_media(media.photo_big, is_photo=True)
+            media = media.photo_big
+        return get_input_media(media, user_caption=user_caption, is_photo=True)
 
     if isinstance(media, MessageMediaContact):
         return InputMediaContact(
@@ -312,7 +313,9 @@ def get_input_media(media, user_caption=None, is_photo=False):
         return InputMediaEmpty()
 
     if isinstance(media, Message):
-        return get_input_media(media.media)
+        return get_input_media(
+            media.media, user_caption=user_caption, is_photo=is_photo
+        )
 
     _raise_cast_fail(media, 'InputMedia')
 
