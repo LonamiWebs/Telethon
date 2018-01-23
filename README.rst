@@ -5,7 +5,7 @@ Telethon
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
 **Telethon** is Telegram client implementation in **Python 3** which uses
-the latest available API of Telegram. Remember to use **pip3** to install!
+the latest available API of Telegram.
 
 
 What is this?

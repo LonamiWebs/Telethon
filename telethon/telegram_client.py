@@ -1,4 +1,5 @@
 import hashlib
+import io
 import itertools
 import logging
 import os
@@ -29,7 +30,6 @@ from .errors import (
     SessionPasswordNeededError, FileMigrateError
 )
 from .network import ConnectionMode
-from .tl import TLObject
 from .tl.custom import Draft, Dialog
 from .tl.functions.account import (
     GetPasswordRequest
@@ -915,6 +915,22 @@ class TelegramClient(TelegramBareClient):
                 ) for x in file
             ]
 
+        entity = self.get_input_entity(entity)
+        reply_to = self._get_reply_to(reply_to)
+
+        if not isinstance(file, (str, bytes, io.IOBase)):
+            # The user may pass a Message containing media (or the media,
+            # or anything similar) that should be treated as a file. Try
+            # getting the input media for whatever they passed and send it.
+            try:
+                media = utils.get_input_media(file, user_caption=caption)
+            except TypeError:
+                pass  # Can't turn whatever was given into media
+            else:
+                request = SendMediaRequest(entity, media,
+                                           reply_to_msg_id=reply_to)
+                return self._get_response_message(request, self(request))
+
         as_image = utils.is_image(file) and not force_document
         use_cache = InputPhoto if as_image else InputDocument
         file_handle = self.upload_file(
@@ -979,11 +995,7 @@ class TelegramClient(TelegramBareClient):
 
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
-        request = SendMediaRequest(
-            peer=self.get_input_entity(entity),
-            media=media,
-            reply_to_msg_id=self._get_reply_to(reply_to)
-        )
+        request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to)
         msg = self._get_response_message(request, self(request))
         if msg and isinstance(file_handle, InputSizedFile):
             # There was a response message and we didn't use cached
