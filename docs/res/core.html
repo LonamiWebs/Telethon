@@ -130,8 +130,12 @@ users.getUsers#0d91a548 id:Vector&lt;InputUser&gt; = Vector&lt;User&gt;</pre>
     </li>
     <li id="date"><b>date</b>:
         Although this type is internally used as an <code>int</code>,
-        you can pass a <code>datetime</code> object instead to work
-        with date parameters.
+        you can pass a <code>datetime</code> or <code>date</code> object
+        instead to work with date parameters.<br />
+        Note that the library uses the date in <b>UTC+0</b>, since timezone
+        conversion is not responsibility of the library. Furthermore, this
+        eases converting into any other timezone without the need for a middle
+        step.
     </li>
     </ul>
 
