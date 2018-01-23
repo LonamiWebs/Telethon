@@ -311,7 +311,7 @@ class Session:
         now = time.time()
         nanoseconds = int((now - int(now)) * 1e+9)
         # "message identifiers are divisible by 4"
-        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
+        new_msg_id = ((int(now) + self.time_offset) << 32) | (nanoseconds << 2)
 
         with self._msg_id_lock:
             if self._last_msg_id >= new_msg_id:
