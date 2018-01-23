@@ -501,6 +501,15 @@ class TelegramBareClient:
             __log__.error('Authorization key seems broken and was invalid!')
             self.session.auth_key = None
 
+        except TypeNotFoundError as e:
+            # Only occurs when we call receive. May happen when
+            # we need to reconnect to another DC on login and
+            # Telegram somehow sends old objects (like configOld)
+            self._first_request = True
+            __log__.warning('Read unknown TLObject code ({}). '
+                            'Setting again first_request flag.'
+                            .format(hex(e.invalid_constructor_id)))
+
         except TimeoutError:
             __log__.warning('Invoking timed out')  # We will just retry
 
