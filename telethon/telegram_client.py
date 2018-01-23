@@ -851,7 +851,7 @@ class TelegramClient(TelegramBareClient):
             entity (:obj:`entity`):
                 Who will receive the file.
 
-            file (:obj:`str` | :obj:`bytes` | :obj:`file`):
+            file (:obj:`str` | :obj:`bytes` | :obj:`file` | :obj:`media`):
                 The path of the file, byte array, or stream that will be sent.
                 Note that if a byte array or a stream is given, a filename
                 or its type won't be inferred, and it will be sent as an
@@ -859,6 +859,10 @@ class TelegramClient(TelegramBareClient):
 
                 Subsequent calls with the very same file will result in
                 immediate uploads, unless ``.clear_file_cache()`` is called.
+
+                Furthermore the file may be any media (a message, document,
+                photo or similar) so that it can be resent without the need
+                to download and re-upload it again.
 
             caption (:obj:`str`, optional):
                 Optional caption for the sent media message.
