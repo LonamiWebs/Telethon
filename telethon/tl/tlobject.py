@@ -23,15 +23,10 @@ class TLObject:
                 obj = obj.to_dict()
 
             if isinstance(obj, dict):
-                if '_' in obj:
-                    pre, left, right, sep = obj['_'], '(', ')', '{}={}'
-                else:
-                    pre, left, right, sep = '', '{', '}', '{}: {}'
-
-                mid = ', '.join(sep.format(k, TLObject.pretty_format(v))
-                                for k, v in obj.items() if not pre or k != '_')
-                return '{}{}{}{}'.format(pre, left, mid, right)
-
+                return '{}({})'.format(obj.get('_', 'dict'), ', '.join(
+                    '{}={}'.format(k, TLObject.pretty_format(v))
+                    for k, v in obj.items() if k != '_'
+                ))
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 return repr(obj)
             elif hasattr(obj, '__iter__'):
@@ -50,29 +45,24 @@ class TLObject:
                 obj = obj.to_dict()
 
             if isinstance(obj, dict):
-                if '_' in obj:
-                    pre, left, right, sep = obj['_'], '(', ')', '{}={}'
-                else:
-                    pre, left, right, sep = '', '{', '}', '{}: {}'
-
-                result.append(pre)
-                result.append(left)
+                result.append(obj.get('_', 'dict'))
+                result.append('(')
                 if obj:
                     result.append('\n')
                     indent += 1
                     for k, v in obj.items():
-                        if pre and k == '_':
+                        if k == '_':
                             continue
                         result.append('\t' * indent)
-                        result.append(sep.format(
-                            k, TLObject.pretty_format(v, indent)
-                        ))
+                        result.append(k)
+                        result.append('=')
+                        result.append(TLObject.pretty_format(v, indent))
                         result.append(',\n')
                     result.pop()  # last ',\n'
                     indent -= 1
                     result.append('\n')
                     result.append('\t' * indent)
-                result.append(right)
+                result.append(')')
 
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 result.append(repr(obj))
