@@ -297,17 +297,16 @@ class TLGenerator:
             builder.end_block()
 
         # Write the to_dict(self) method
-        builder.writeln('def to_dict(self, recursive=True):')
-        if args:
-            builder.writeln('return {')
-        else:
-            builder.write('return {')
+        builder.writeln('def to_dict(self):')
+        builder.writeln('return {')
         builder.current_indent += 1
 
         base_types = ('string', 'bytes', 'int', 'long', 'int128',
                       'int256', 'double', 'Bool', 'true', 'date')
 
+        builder.write("'_': '{}'".format(tlobject.class_name()))
         for arg in args:
+            builder.writeln(',')
             builder.write("'{}': ".format(arg.name))
             if arg.type in base_types:
                 if arg.is_vector:
@@ -318,17 +317,17 @@ class TLGenerator:
             else:
                 if arg.is_vector:
                     builder.write(
-                        '([] if self.{0} is None else [None'
-                        ' if x is None else x.to_dict() for x in self.{0}]'
-                        ') if recursive else self.{0}'.format(arg.name)
+                        '[] if self.{0} is None else [None '
+                        'if x is None else x.to_dict() for x in self.{0}]'
+                        .format(arg.name)
                     )
                 else:
                     builder.write(
-                        '(None if self.{0} is None else self.{0}.to_dict())'
-                        ' if recursive else self.{0}'.format(arg.name)
+                        'None if self.{0} is None else self.{0}.to_dict()'
+                        .format(arg.name)
                     )
-            builder.writeln(',')
 
+        builder.writeln()
         builder.current_indent -= 1
         builder.writeln("}")
 

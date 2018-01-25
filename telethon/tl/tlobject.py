@@ -20,15 +20,18 @@ class TLObject:
         """
         if indent is None:
             if isinstance(obj, TLObject):
-                return '{}({})'.format(type(obj).__name__, ', '.join(
-                    '{}={}'.format(k, TLObject.pretty_format(v))
-                    for k, v in obj.to_dict(recursive=False).items()
-                ))
+                obj = obj.to_dict()
+
             if isinstance(obj, dict):
-                return '{{{}}}'.format(', '.join(
-                    '{}: {}'.format(k, TLObject.pretty_format(v))
-                    for k, v in obj.items()
-                ))
+                if '_' in obj:
+                    pre, left, right, sep = obj['_'], '(', ')', '{}={}'
+                else:
+                    pre, left, right, sep = '', '{', '}', '{}: {}'
+
+                mid = ', '.join(sep.format(k, TLObject.pretty_format(v))
+                                for k, v in obj.items() if not pre or k != '_')
+                return '{}{}{}{}'.format(pre, left, mid, right)
+
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 return repr(obj)
             elif hasattr(obj, '__iter__'):
@@ -43,30 +46,33 @@ class TLObject:
                 return repr(obj)
         else:
             result = []
-            if isinstance(obj, TLObject) or isinstance(obj, dict):
-                if isinstance(obj, dict):
-                    d = obj
-                    start, end, sep = '{', '}', ': '
-                else:
-                    d = obj.to_dict(recursive=False)
-                    start, end, sep = '(', ')', '='
-                    result.append(type(obj).__name__)
+            if isinstance(obj, TLObject):
+                obj = obj.to_dict()
 
-                result.append(start)
-                if d:
+            if isinstance(obj, dict):
+                if '_' in obj:
+                    pre, left, right, sep = obj['_'], '(', ')', '{}={}'
+                else:
+                    pre, left, right, sep = '', '{', '}', '{}: {}'
+
+                result.append(pre)
+                result.append(left)
+                if obj:
                     result.append('\n')
                     indent += 1
-                    for k, v in d.items():
+                    for k, v in obj.items():
+                        if pre and k == '_':
+                            continue
                         result.append('\t' * indent)
-                        result.append(k)
-                        result.append(sep)
-                        result.append(TLObject.pretty_format(v, indent))
+                        result.append(sep.format(
+                            k, TLObject.pretty_format(v, indent)
+                        ))
                         result.append(',\n')
                     result.pop()  # last ',\n'
                     indent -= 1
                     result.append('\n')
                     result.append('\t' * indent)
-                result.append(end)
+                result.append(right)
 
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 result.append(repr(obj))
@@ -158,7 +164,7 @@ class TLObject:
     def resolve(self, client, utils):
         pass
 
-    def to_dict(self, recursive=True):
+    def to_dict(self):
         return {}
 
     def __bytes__(self):
