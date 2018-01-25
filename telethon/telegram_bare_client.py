@@ -658,7 +658,7 @@ class TelegramBareClient:
                 self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem
-                __log__.info('Receiving items from the network timed out')
+                __log__.debug('Receiving items from the network timed out')
             except ConnectionResetError:
                 if self._user_connected:
                     __log__.error('Connection was reset while receiving '
