@@ -68,7 +68,7 @@ class TelegramBareClient:
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
-                 connection_mode=ConnectionMode.TCP_FULL,
+                 connection_mode=ConnectionMode.TCP_FULL, *,
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
@@ -592,7 +592,7 @@ class TelegramBareClient:
             warnings.warn(
                 "You have not setup any workers, so you won't receive updates."
                 " Pass update_workers=4 when creating the TelegramClient,"
-                " or set client.self.updates.workers = 4"
+                " or set client.updates.workers = 4"
             )
 
         self.updates.handlers.append(handler)
