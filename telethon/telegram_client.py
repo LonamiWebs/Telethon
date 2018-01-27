@@ -141,7 +141,7 @@ class TelegramClient(TelegramBareClient):
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
-                 connection_mode=ConnectionMode.TCP_FULL,
+                 connection_mode=ConnectionMode.TCP_FULL, *,
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
@@ -203,8 +203,8 @@ class TelegramClient(TelegramBareClient):
 
     def start(self,
               phone=lambda: input('Please enter your phone: '),
-              password=None, bot_token=None,
-              force_sms=False, code_callback=None):
+              password=None, *,
+              bot_token=None, force_sms=False, code_callback=None):
         """
         Convenience method to interactively connect and sign in if required,
         also taking into consideration that 2FA may be enabled in the account.
@@ -308,7 +308,7 @@ class TelegramClient(TelegramBareClient):
         return self
 
     def sign_in(self, phone=None, code=None,
-                password=None, bot_token=None, phone_code_hash=None):
+                password=None, *, bot_token=None, phone_code_hash=None):
         """
         Starts or completes the sign in process with the given phone number
         or code that Telegram sent.
@@ -438,7 +438,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
-    def get_dialogs(self, limit=10, offset_date=None, offset_id=0,
+    def get_dialogs(self, limit=10, *, offset_date=None, offset_id=0,
                     offset_peer=InputPeerEmpty()):
         """
         Gets N "dialogs" (open "chats" or conversations with other people).
@@ -549,8 +549,8 @@ class TelegramClient(TelegramBareClient):
                 if update.message.id == msg_id:
                     return update.message
 
-    def send_message(self, entity, message, reply_to=None, parse_mode=None,
-                     link_preview=True):
+    def send_message(self, entity, message, *,
+                     reply_to=None, parse_mode=None, link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -645,7 +645,7 @@ class TelegramClient(TelegramBareClient):
         else:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    def get_message_history(self, entity, limit=20, offset_date=None,
+    def get_message_history(self, entity, limit=20, *, offset_date=None,
                             offset_id=0, max_id=0, min_id=0, add_offset=0):
         """
         Gets the message history for the specified entity
@@ -767,8 +767,8 @@ class TelegramClient(TelegramBareClient):
 
         return messages
 
-    def send_read_acknowledge(self, entity, message=None, max_id=None,
-                              clear_mentions=False):
+    def send_read_acknowledge(self, entity, message=None, *,
+                              max_id=None, clear_mentions=False):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
@@ -837,7 +837,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
-    def send_file(self, entity, file, caption='',
+    def send_file(self, entity, file, caption='', *,
                   force_document=False, progress_callback=None,
                   reply_to=None,
                   attributes=None,
@@ -1013,15 +1013,15 @@ class TelegramClient(TelegramBareClient):
 
         return msg
 
-    def send_voice_note(self, entity, file, caption='', progress_callback=None,
-                        reply_to=None):
+    def send_voice_note(self, entity, file, caption='', *,
+                        progress_callback=None, reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
         return self.send_file(entity, file, caption,
                               progress_callback=progress_callback,
                               reply_to=reply_to,
                               is_voice_note=())  # empty tuple is enough
 
-    def _send_album(self, entity, files, caption='',
+    def _send_album(self, entity, files, caption='', *,
                     progress_callback=None, reply_to=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
@@ -1055,11 +1055,8 @@ class TelegramClient(TelegramBareClient):
             if isinstance(update, UpdateMessageID)
         ]
 
-    def upload_file(self,
-                    file,
-                    part_size_kb=None,
-                    file_name=None,
-                    use_cache=None,
+    def upload_file(self, file, *,
+                    part_size_kb=None, file_name=None, use_cache=None,
                     progress_callback=None):
         """
         Uploads the specified file and returns a handle (an instance of
@@ -1281,7 +1278,7 @@ class TelegramClient(TelegramBareClient):
                 return None
         return file
 
-    def download_media(self, message, file=None, progress_callback=None):
+    def download_media(self, message, file=None, *, progress_callback=None):
         """
         Downloads the given media, or the media from a specified Message.
 
@@ -1479,11 +1476,8 @@ class TelegramClient(TelegramBareClient):
                 return result
             i += 1
 
-    def download_file(self,
-                      input_location,
-                      file,
-                      part_size_kb=None,
-                      file_size=None,
+    def download_file(self, input_location, file, *,
+                      part_size_kb=None, file_size=None,
                       progress_callback=None):
         """
         Downloads the given input location to a file.
