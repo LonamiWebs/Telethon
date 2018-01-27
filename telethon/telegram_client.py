@@ -647,7 +647,7 @@ class TelegramClient(TelegramBareClient):
 
     def get_message_history(self, entity, limit=20, offset_date=None,
                             offset_id=0, max_id=0, min_id=0, add_offset=0, 
-                            batch_size=100, wait_time=1):
+                            batch_size=100, wait_time=None):
         """
         Gets the message history for the specified entity
 
@@ -683,13 +683,15 @@ class TelegramClient(TelegramBareClient):
                 this offset = older messages).
 
             batch_size (:obj:`int`):
-                Number of messages to be returned by each Telegram API 
-                "getHistory" request. Notice that Telegram has a hard limit 
-                of 100 messages per API call.
+                Messages will be returned in chunks of this size (100 is
+                the maximum). While it makes no sense to modify this value,
+                you are still free to do so.
 
             wait_time (:obj:`int`):
-                Wait time between different "getHistory" requests. Use this
-                parameter to avoid hitting the "FloodWaitError" (see note below).
+                Wait time between different ``GetHistoryRequest``. Use this
+                parameter to avoid hitting the ``FloodWaitError`` as needed.
+                If left to ``None``, it will default to 1 second only if
+                the limit is higher than 3000.
 
         Returns:
             A list of messages with extra attributes:
@@ -701,13 +703,11 @@ class TelegramClient(TelegramBareClient):
                 * ``.to`` = entity to which the message was sent.
 
         Notes:
-            Telegram limit for "getHistory" requests seems to be 3000 messages 
-            within 30 seconds. Therefore, please adjust "batch_size" and 
-            "wait_time" parameters accordingly to avoid incurring into a 
-            "FloodWaitError". For example, if you plan to retrieve more than 3000 
-            messages (i.e. limit=3000 or None) in batches of 100 messages 
-            (i.e. batch_size=100) please make sure to select a wait time of at 
-            least one second (i.e. wait_time=1).
+            Telegram's flood wait limit for ``GetHistoryRequest`` seems to
+            be around 30 seconds per 3000 messages, therefore a sleep of 1
+            second is the default for this limit (or above). You may need
+            an higher limit, so you're free to set the ``batch_size`` that
+            you think may be good.
 
         """
         entity = self.get_input_entity(entity)
@@ -720,12 +720,16 @@ class TelegramClient(TelegramBareClient):
             ))
             return getattr(result, 'count', len(result.messages)), [], []
 
+        if wait_time is None:
+            wait_time = 1 if limit > 3000 else 0
+
+        batch_size = min(max(batch_size, 1), 100)
         total_messages = 0
         messages = UserList()
         entities = {}
         while len(messages) < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - len(messages), min(batch_size,100))
+            real_limit = min(limit - len(messages), batch_size)
             result = self(GetHistoryRequest(
                 peer=entity,
                 limit=real_limit,
@@ -741,8 +745,6 @@ class TelegramClient(TelegramBareClient):
             )
             total_messages = getattr(result, 'count', len(result.messages))
 
-            # TODO We can potentially use self.session.database, but since
-            # it might be disabled, use a local dictionary.
             for u in result.users:
                 entities[utils.get_peer_id(u)] = u
             for c in result.chats:
@@ -753,11 +755,6 @@ class TelegramClient(TelegramBareClient):
 
             offset_id = result.messages[-1].id
             offset_date = result.messages[-1].date
-
-            # Telegram limit seems to be 3000 messages within 30 seconds in
-            # batches of 100 messages each request (since the FloodWait was
-            # of 30 seconds). If the limit is greater than that, we will
-            # sleep 1s between each request.
             time.sleep(wait_time)
 
         # Add a few extra attributes to the Message to make it friendlier.
