@@ -646,7 +646,8 @@ class TelegramClient(TelegramBareClient):
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
     def get_message_history(self, entity, limit=20, offset_date=None,
-                            offset_id=0, max_id=0, min_id=0, add_offset=0):
+                            offset_id=0, max_id=0, min_id=0, add_offset=0, 
+                            batch_size=100, wait_time=1):
         """
         Gets the message history for the specified entity
 
@@ -681,6 +682,15 @@ class TelegramClient(TelegramBareClient):
                 Additional message offset (all of the specified offsets +
                 this offset = older messages).
 
+            batch_size (:obj:`int`):
+                Number of messages to be returned by each Telegram API 
+                "getHistory" request. Notice that Telegram has a hard limit 
+                of 100 messages per API call.
+
+            wait_time (:obj:`int`):
+                Wait time between different "getHistory" requests. Use this
+                parameter to avoid hitting the "FloodWaitError" (see note below).
+
         Returns:
             A list of messages with extra attributes:
 
@@ -689,6 +699,16 @@ class TelegramClient(TelegramBareClient):
                 * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
                 * ``.fwd_from.channel`` = if fwd_from, original channel.
                 * ``.to`` = entity to which the message was sent.
+
+        Notes:
+            Telegram limit for "getHistory" requests seems to be 3000 messages 
+            within 30 seconds. Therefore, please adjust "batch_size" and 
+            "wait_time" parameters accordingly to avoid incurring into a 
+            "FloowWaitError". For example, if you plan to retrieve more than 3000 
+            messages (i.e. limit=3000 or None) in batches of 100 messages 
+            (i.e. batch_size=100) please make sure to select a wait time of at 
+            least one second (i.e. wait_time=1).
+
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -705,7 +725,7 @@ class TelegramClient(TelegramBareClient):
         entities = {}
         while len(messages) < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - len(messages), 100)
+            real_limit = min(limit - len(messages), min(batch_size,100))
             result = self(GetHistoryRequest(
                 peer=entity,
                 limit=real_limit,
@@ -738,8 +758,7 @@ class TelegramClient(TelegramBareClient):
             # batches of 100 messages each request (since the FloodWait was
             # of 30 seconds). If the limit is greater than that, we will
             # sleep 1s between each request.
-            if limit > 3000:
-                time.sleep(1)
+            time.sleep(wait_time)
 
         # Add a few extra attributes to the Message to make it friendlier.
         messages.total = total_messages
