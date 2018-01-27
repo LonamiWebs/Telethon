@@ -704,7 +704,7 @@ class TelegramClient(TelegramBareClient):
             Telegram limit for "getHistory" requests seems to be 3000 messages 
             within 30 seconds. Therefore, please adjust "batch_size" and 
             "wait_time" parameters accordingly to avoid incurring into a 
-            "FloowWaitError". For example, if you plan to retrieve more than 3000 
+            "FloodWaitError". For example, if you plan to retrieve more than 3000 
             messages (i.e. limit=3000 or None) in batches of 100 messages 
             (i.e. batch_size=100) please make sure to select a wait time of at 
             least one second (i.e. wait_time=1).
