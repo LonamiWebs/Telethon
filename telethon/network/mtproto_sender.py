@@ -4,11 +4,9 @@ encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
 import gzip
 import logging
-import struct
 from threading import Lock
 
 from .. import helpers as utils
-from ..crypto import AES
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -16,11 +14,11 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
-    MsgsAck, Pong, BadServerSalt, BadMsgNotification,
+    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
 )
-from ..tl.functions.auth import LogOutRequest
 
 __log__ = logging.getLogger(__name__)
 
@@ -243,6 +241,12 @@ class MtProtoSender:
                     r.confirm_received.set()
 
             return True
+
+        if isinstance(obj, FutureSalts):
+            r = self._pop_request(obj.req_msg_id)
+            if r:
+                r.result = obj
+                r.confirm_received.set()
 
         # If the object isn't any of the above, then it should be an Update.
         self.session.process_entities(obj)
