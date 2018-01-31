@@ -159,6 +159,7 @@ class Session:
                     'insert or replace into entities values (?,?,?,?,?)',
                     entities
                 )
+            self._update_session_table()
             c.close()
             self.save()
 
