@@ -418,7 +418,6 @@ class TelegramClient(TelegramBareClient):
 
         self.disconnect()
         self.session.delete()
-        self.session = None
         return True
 
     def get_me(self):
