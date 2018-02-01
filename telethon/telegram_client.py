@@ -27,7 +27,8 @@ from . import helpers, utils
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
-    SessionPasswordNeededError, FileMigrateError
+    SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
+    PhoneNumberOccupiedError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -204,7 +205,8 @@ class TelegramClient(TelegramBareClient):
     def start(self,
               phone=lambda: input('Please enter your phone: '),
               password=None, bot_token=None,
-              force_sms=False, code_callback=None):
+              force_sms=False, code_callback=None,
+              first_name='New User', last_name=''):
         """
         Convenience method to interactively connect and sign in if required,
         also taking into consideration that 2FA may be enabled in the account.
@@ -235,6 +237,13 @@ class TelegramClient(TelegramBareClient):
             code_callback (:obj:`callable`, optional):
                 A callable that will be used to retrieve the Telegram
                 login code. Defaults to `input()`.
+
+            first_name (:obj:`str`, optional):
+                The first name to be used if signing up. This has no
+                effect if the account already exists and you sign in.
+
+            last_name (:obj:`str`, optional):
+                Similar to the first name, but for the last. Optional.
 
         Returns:
             :obj:`TelegramClient`:
@@ -276,19 +285,28 @@ class TelegramClient(TelegramBareClient):
         max_attempts = 3
         two_step_detected = False
 
-        self.send_code_request(phone, force_sms=force_sms)
+        sent_code = self.send_code_request(phone, force_sms=force_sms)
+        sign_up = not sent_code.phone_registered
         while attempts < max_attempts:
             try:
-                # Raises SessionPasswordNeededError if 2FA enabled
-                me = self.sign_in(phone, code_callback())
+                if sign_up:
+                    me = self.sign_up(code_callback(), first_name, last_name)
+                else:
+                    # Raises SessionPasswordNeededError if 2FA enabled
+                    me = self.sign_in(phone, code_callback())
                 break
             except SessionPasswordNeededError:
                 two_step_detected = True
                 break
+            except PhoneNumberOccupiedError:
+                sign_up = False
+            except PhoneNumberUnoccupiedError:
+                sign_up = True
             except (PhoneCodeEmptyError, PhoneCodeExpiredError,
                     PhoneCodeHashEmptyError, PhoneCodeInvalidError):
                 print('Invalid code. Please try again.', file=sys.stderr)
-                attempts += 1
+
+            attempts += 1
         else:
             raise RuntimeError(
                 '{} consecutive sign-in attempts failed. Aborting'
