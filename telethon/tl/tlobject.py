@@ -144,6 +144,12 @@ class TLObject:
     def on_response(self, reader):
         self.result = reader.tgread_object()
 
+    def __eq__(self, o):
+        return isinstance(o, type(self)) and self.to_dict() == o.to_dict()
+
+    def __ne__(self, o):
+        return not isinstance(o, type(self)) or self.to_dict() != o.to_dict()
+
     def __str__(self):
         return TLObject.pretty_format(self)
 
