@@ -1716,10 +1716,10 @@ class TelegramClient(TelegramBareClient):
             if is_join_chat:
                 invite = self(CheckChatInviteRequest(string))
                 if isinstance(invite, ChatInvite):
-                    # If it's an invite to a chat, the user must join before
-                    # for the link to be resolved and work, otherwise raise.
-                    if invite.channel:
-                        return invite.channel
+                    raise ValueError(
+                        'Cannot get entity from a channel '
+                        '(or group) that you are not part of'
+                    )
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
             else:
