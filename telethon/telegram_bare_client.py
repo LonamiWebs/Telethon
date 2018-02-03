@@ -664,6 +664,14 @@ class TelegramBareClient:
                 with self._reconnect_lock:
                     while self._user_connected and not self._reconnect():
                         sleep(0.1)  # Retry forever, this is instant messaging
+
+                if self.is_connected():
+                    # Telegram seems to kick us every 1024 items received
+                    # from the network not considering things like bad salt.
+                    # We must execute some *high level* request (that's not
+                    # a ping) if we want to receive updates again.
+                    # TODO Test if getDifference works too (better alternative)
+                    self._sender.send(GetStateRequest())
             except:
                 self._idling.clear()
                 raise
