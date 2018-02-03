@@ -255,9 +255,6 @@ class TelegramBareClient:
         self._first_request = True  # On reconnect it will be first again
         self.session.close()
 
-    def __del__(self):
-        self.disconnect()
-
     def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
            since it's assumed that the connection has been lost and the
