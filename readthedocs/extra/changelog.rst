@@ -14,6 +14,51 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Trust the Server with Updates (v0.17)
+=====================================
+
+*Published at 2018/02/03*
+
+The library trusts the server with updates again. The library will *not*
+check for duplicates anymore, and when the server kicks us, it will run
+``GetStateRequest`` so the server starts sending updates again (something
+it wouldn't do unless you invoked something, it seems). But this update
+also brings a few more changes!
+
+Additions
+~~~~~~~~~
+
+- ``TLObject``'s override ``__eq__`` and ``__ne__``, so you can compare them.
+- Added some missing cases on ``.get_input_entity()`` and peer functions.
+- ``obj.to_dict()`` now has a ``'_'`` key with the type used.
+- ``.start()`` can also sign up now.
+- More parameters for ``.get_message_history()``.
+- Updated list of RPC errors.
+- HTML parsing thanks to **@tulir**! It can be used similar to markdown:
+  ``client.send_message(..., parse_mode='html')``.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+- ``client.send_file()`` now accepts ``Message``'s and
+  ``MessageMedia``'s as the ``file`` parameter.
+- Some documentation updates and fixed to clarify certain things.
+- New exact match feature on https://lonamiwebs.github.io/Telethon.
+- Return as early as possible from ``.get_input_entity()`` and similar,
+  to avoid penalizing you for doing this right.
+
+Bug fixes
+~~~~~~~~~
+
+- ``.download_media()`` wouldn't accept a ``Document`` as parameter.
+- The SQLite is now closed properly on disconnection.
+- IPv6 addresses shouldn't use square braces.
+- Fix regarding ``.log_out()``.
+- The time offset wasn't being used (so having wrong system time would
+  cause the library not to work at all).
+
+
 New ``.resolve()`` method (v0.16.2)
 ===================================
 
