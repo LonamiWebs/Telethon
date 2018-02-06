@@ -59,8 +59,8 @@ session file on your Heroku dyno itself. The most complicated is creating
 a custom buildpack to install SQLite >= 3.8.2.
 
 
-Generating a ession File on a Heroku Dyno
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Generating a Session File on a Heroku Dyno
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
     Due to Heroku's ephemeral filesystem all dynamically generated
@@ -98,3 +98,16 @@ directory. Now you can create a git repo on your account and commit
 You cannot ``ssh`` into your Dyno instance because it has crashed, so unless
 you programatically upload this file to a server host this is the only way to
 get it off of your Dyno.
+
+You now have a session file compatible with SQLite <= 3.8.2. Now you can
+programatically fetch this file from an external host (Firebase, S3 etc.)
+and login to your session using the following scaffolded code:
+
+    .. code-block:: python
+
+        fileName, headers = urllib.request.urlretrieve(file_url, 'login.session')
+        client = TelegramClient(os.path.abspath(fileName), api_id, api_hash).start()
+
+.. note::
+    - ``urlretrieve`` will be depreciated, consider using ``requests``.
+    - ``file_url`` represents the location of your file.
