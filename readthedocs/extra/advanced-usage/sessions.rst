@@ -50,7 +50,7 @@ Sessions and Heroku
 -------------------
 
 You probably have a newer version of SQLite installed (>= 3.8.2). Heroku uses
-SQLite 3.7.9 which does not support ``WITHOUT ROWID``. So, If you generated your
+SQLite 3.7.9 which does not support ``WITHOUT ROWID``. If you generated your
 session file on a system with SQLite >= 3.8.2 your session file will not work
 on Heroku's platform and will throw a corrupted schema error.
 
@@ -59,17 +59,18 @@ session file on your Heroku dyno itself. The most complicated is creating
 a custom buildpack to install SQLite >= 3.8.2.
 
 
-Generating Session File on a Heroku Dyno
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Generating a ession File on a Heroku Dyno
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+    Due to Heroku's ephemeral filesystem all dynamically generated
+    files not part of your applications buildpack or codebase are destroyed
+    upon each restart.
 
 .. warning::
     Do not restart your application Dyno at any point prior to retrieving your
-    session file. Constantly creating new session files from Telegram's API will
-    result in a 24 hour rate limit ban**
-
-Due to Heroku's ephemeral filesystem all dynamically generated
-files not part of your applications buildpack or codebase are destroyed upon
-each restart.
+    session file. Constantly creating new session files through Telegram's API
+    will result in a 24 hour rate limit ban.
 
 Using this scaffolded code we can start the authentication process:
 
@@ -80,7 +81,7 @@ Using this scaffolded code we can start the authentication process:
         client.start()
 
 At this point your Dyno will crash because you cannot access stdin. Open your
-Dyno's control panel on the Heroku website and "run console" from the "More"
+Dyno's control panel on the Heroku website and "Run console" from the "More"
 dropdown at the top right. Enter ``bash`` and wait for it to load.
 
 You will automatically be placed into your applications working directory.
@@ -95,3 +96,18 @@ that repo.
 You cannot ssh into your Dyno instance because it has crashed, so unless you
 programatically upload this file to a server host this is the only way to get
 it off of your Dyno.
+
+You now have a session file compatible with SQLite <= 3.8.2. Now you can
+programatically fetch this file from an external host (Firebase, S3 etc.)
+and login to your session using the following scaffolded code:
+
+    .. code-block:: python
+
+        fileName, headers = urllib.request.urlretrieve(file_url, 'login.session')
+        client = TelegramClient(os.path.abspath(fileName), api_id, api_hash,
+                                update_workers=1, spawn_read_thread=False)
+        client.start()
+
+.. note::
+    - ``urlretrieve`` will be depreciated, consider using ``requests``.
+    - ``file_url`` represents the location of your file.
