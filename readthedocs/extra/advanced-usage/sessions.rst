@@ -50,9 +50,9 @@ Sessions and Heroku
 -------------------
 
 You probably have a newer version of SQLite installed (>= 3.8.2). Heroku uses
-SQLite 3.7.9 which does not support ``WITHOUT ROWID``. So, If you generated your
-session file on a system with SQLite >= 3.8.2 your session file will not work
-on Heroku's platform and will throw a corrupted schema error.
+SQLite 3.7.9 which does not support ``WITHOUT ROWID``. So, if you generated
+your session file on a system with SQLite >= 3.8.2 your session file will not
+work on Heroku's platform and will throw a corrupted schema error.
 
 There are multiple ways to solve this, the easiest of which is generating a
 session file on your Heroku dyno itself. The most complicated is creating
@@ -64,8 +64,8 @@ Generating Session File on a Heroku Dyno
 
 .. warning::
     Do not restart your application Dyno at any point prior to retrieving your
-    session file. Constantly creating new session files from Telegram's API will
-    result in a 24 hour rate limit ban**
+    session file. Constantly creating new session files from Telegram's API
+    will result in a 24 hour rate limit ban.
 
 Due to Heroku's ephemeral filesystem all dynamically generated
 files not part of your applications buildpack or codebase are destroyed upon
@@ -75,9 +75,7 @@ Using this scaffolded code we can start the authentication process:
 
     .. code-block:: python
 
-        client = TelegramClient('login.session', api_id, api_hash,
-                                update_workers=1, spawn_read_thread=False)
-        client.start()
+        client = TelegramClient('login.session', api_id, api_hash).start()
 
 At this point your Dyno will crash because you cannot access stdin. Open your
 Dyno's control panel on the Heroku website and "run console" from the "More"
@@ -88,10 +86,10 @@ So run your application ``python app.py`` and now you can complete the input
 requests such as "what is your phone number" etc.
 
 Once you're successfully authenticated exit your application script with
-CTRL + C and ``ls`` to confirm ``login.session`` exists in your current directory.
-Now you can create a git repo on your account and commit ``login.session`` to
-that repo.
+CTRL + C and ``ls`` to confirm ``login.session`` exists in your current
+directory. Now you can create a git repo on your account and commit
+``login.session`` to that repo.
 
-You cannot ssh into your Dyno instance because it has crashed, so unless you
-programatically upload this file to a server host this is the only way to get
-it off of your Dyno.
+You cannot ``ssh`` into your Dyno instance because it has crashed, so unless
+you programatically upload this file to a server host this is the only way to
+get it off of your Dyno.
