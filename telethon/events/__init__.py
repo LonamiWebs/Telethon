@@ -92,7 +92,7 @@ class NewMessage(_EventBuilder):
             return
 
         if self.chats is not None:
-            inside = utils.get_peer_id(event.input_chat) in self.chats
+            inside = utils.get_peer_id(event.message.to_id) in self.chats
             if inside == self.blacklist_chats:
                 # If this chat matches but it's a blacklist ignore.
                 # If it doesn't match but it's a whitelist ignore.
