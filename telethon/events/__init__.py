@@ -1,7 +1,10 @@
 import abc
-from ..tl import types, functions
-from ..extensions import markdown
+import itertools
+
 from .. import utils
+from ..errors import RPCError
+from ..extensions import markdown
+from ..tl import types, functions
 
 
 class _EventBuilder(abc.ABC):
@@ -172,7 +175,9 @@ class NewMessage(_EventBuilder):
             self.message = message
             self._text = None
 
+            self._input_chat = None
             self._chat = None
+            self._input_sender = None
             self._sender = None
 
             self.is_private = isinstance(message.to_id, types.PeerUser)
@@ -189,28 +194,76 @@ class NewMessage(_EventBuilder):
             """Replies to this message"""
             self._client.send_message(self.message.to_id, message)
 
+        def _get_input_entity(self, msg_id, entity_id, chat=None):
+            """
+            Helper function to call GetMessages on the give msg_id and
+            return the input entity whose ID is the given entity ID.
+            """
+            try:
+                if isinstance(chat, types.InputPeerChannel):
+                    result = self._client(
+                        functions.channels.GetMessagesRequest(chat, [msg_id])
+                    )
+                else:
+                    result = self._client(
+                        functions.messages.GetMessagesRequest([msg_id])
+                    )
+            except RPCError:
+                return
+            entity = {
+                utils.get_peer_id(x): x for x in itertools.chain(
+                    getattr(result, 'chats', []),
+                    getattr(result, 'users', []))
+            }.get(entity_id)
+            if entity:
+                return utils.get_input_peer(entity)
+
         @property
         def input_chat(self):
-            # TODO If not found, getMessages to find the sender and chat
-            return self._client.get_input_entity(self.message.to_id)
+            if self._input_chat is None:
+                try:
+                    self._input_chat = self._client.get_input_entity(
+                        self.message.to_id
+                    )
+                except (ValueError, TypeError):
+                    # The library hasn't seen this chat, get the message
+                    if not isinstance(self.message.to_id, types.PeerChannel):
+                        # TODO For channels, getDifference? Maybe looking
+                        # in the dialogs (which is already done) is enough.
+                        self._input_chat = self._get_input_entity(
+                            self.message.id,
+                            utils.get_peer_id(self.message.to_id)
+                        )
+            return self._input_chat
 
         @property
         def chat(self):
-            if self._chat is None:
-                # TODO Assert input entity is not None to avoid weird errors
-                self._chat = self._client.get_entity(self.input_chat)
+            if self._chat is None and self.input_chat:
+                self._chat = self._client.get_entity(self._input_chat)
             return self._chat
 
         @property
         def input_sender(self):
-            # TODO If not found, getMessages to find the sender and chat
+            if self._input_sender is None:
+                try:
+                    self._input_sender = self._client.get_input_entity(
+                        self.message.from_id
+                    )
+                except (ValueError, TypeError):
+                    if isinstance(self.message.to_id, types.PeerChannel):
+                        # We can rely on self.input_chat for this
+                        self._input_sender = self._get_input_entity(
+                            self.message.id,
+                            self.message.from_id,
+                            chat=self.input_chat
+                        )
+
             return self._client.get_input_entity(self.message.from_id)
 
         @property
         def sender(self):
-            if self._sender is None:
-                # TODO Assert input entity is not None to avoid weird errors
-                self._sender = self._client.get_entity(self.input_sender)
+            if self._sender is None and self.input_sender:
+                self._sender = self._client.get_entity(self._input_sender)
             return self._sender
 
         @property
