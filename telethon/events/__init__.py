@@ -63,6 +63,8 @@ class NewMessage(_EventBuilder):
     def build(self, update):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
+            if not isinstance(update.message, types.Message):
+                return  # We don't care about MessageService's here
             event = NewMessage.Event(update.message)
         elif isinstance(update, types.UpdateShortMessage):
             event = NewMessage.Event(types.Message(
