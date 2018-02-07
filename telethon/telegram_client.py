@@ -160,6 +160,8 @@ class TelegramClient(TelegramBareClient):
             **kwargs
         )
 
+        self._event_builders = []
+
         # Some fields to easy signing in. Let {phone: hash} be
         # a dictionary because the user may change their mind.
         self._phone_code_hash = {}
@@ -1620,6 +1622,41 @@ class TelegramClient(TelegramBareClient):
                 f.close()
 
     # endregion
+
+    # endregion
+
+    # region Event handling
+
+    def on(self, event):
+        """
+
+        Turns the given entity into a valid Telegram user or chat.
+
+        Args:
+            event (:obj:`_EventBuilder` | :obj:`type`):
+                The event builder class or instance to be used,
+                for instance ``events.NewMessage``.
+        """
+        if isinstance(event, type):
+            event = event()
+
+        event.resolve(self)
+
+        def decorator(f):
+            self._event_builders.append((event, f))
+            return f
+
+        if self._on_handler not in self.updates.handlers:
+            self.add_update_handler(self._on_handler)
+
+        return decorator
+
+    def _on_handler(self, update):
+        for builder, callback in self._event_builders:
+            event = builder.build(update)
+            if event:
+                event._client = self
+                callback(event)
 
     # endregion
 
