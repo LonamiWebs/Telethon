@@ -190,9 +190,21 @@ class NewMessage(_EventBuilder):
             self.is_reply = bool(message.reply_to_msg_id)
             self._reply_message = None
 
-        def reply(self, message, as_reply=True):
-            """Replies to this message"""
-            self._client.send_message(self.message.to_id, message)
+        def respond(self, *args, **kwargs):
+            """
+            Responds to the message (not as a reply). This is a shorthand for
+            ``client.send_message(event.chat, ...)``.
+            """
+            return self._client.send_message(self.input_chat, *args, **kwargs)
+
+        def reply(self, *args, **kwargs):
+            """
+            Replies to the message (as a reply). This is a shorthand for
+            ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
+            """
+            return self._client.send_message(self.input_chat,
+                                             reply_to=self.message.id,
+                                             *args, **kwargs)
 
         def _get_input_entity(self, msg_id, entity_id, chat=None):
             """
