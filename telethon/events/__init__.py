@@ -317,5 +317,23 @@ class NewMessage(_EventBuilder):
             return self.message.fwd_from
 
         @property
+        def media(self):
+            return self.message.media
+
+        @property
+        def photo(self):
+            if isinstance(self.message.media, types.MessageMediaPhoto):
+                photo = self.message.media.photo
+                if isinstance(photo, types.Photo):
+                    return photo
+
+        @property
+        def document(self):
+            if isinstance(self.message.media, types.MessageMediaDocument):
+                doc = self.message.media.document
+                if isinstance(doc, types.Document):
+                    return doc
+
+        @property
         def out(self):
             return self.message.out
