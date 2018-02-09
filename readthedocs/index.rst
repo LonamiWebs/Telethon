@@ -49,6 +49,7 @@ heavy job for you, so you can focus on developing an application.
 
    extra/advanced-usage/accessing-the-full-api
    extra/advanced-usage/sessions
+   extra/advanced-usage/update-modes
 
 
 .. _Examples:

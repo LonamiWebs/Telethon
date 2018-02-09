@@ -5,144 +5,130 @@ Working with Updates
 ====================
 
 
-.. note::
-
-    There are plans to make working with updates more friendly. Stay tuned!
+The library comes with the :mod:`events` module. *Events* are an abstraction
+over what Telegram calls `updates`__, and are meant to ease simple and common
+usage when dealing with them, since there are many updates. Let's dive in!
 
 
 .. contents::
 
 
-The library can run in four distinguishable modes:
-
-- With no extra threads at all.
-- With an extra thread that receives everything as soon as possible (default).
-- With several worker threads that run your update handlers.
-- A mix of the above.
-
-Since this section is about updates, we'll describe the simplest way to
-work with them.
-
-
-Using multiple workers
-**********************
-
-When you create your client, simply pass a number to the
-``update_workers`` parameter:
-
-    ``client = TelegramClient('session', api_id, api_hash, update_workers=4)``
-
-4 workers should suffice for most cases (this is also the default on
-`Python Telegram Bot`__). You can set this value to more, or even less
-if you need.
-
-The next thing you want to do is to add a method that will be called when
-an `Update`__ arrives:
+Getting Started
+***************
 
     .. code-block:: python
 
-        def callback(update):
-            print('I received', update)
+        from telethon import TelegramClient, events
 
-        client.add_update_handler(callback)
-        # do more work here, or simply sleep!
+        client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
+        client.start()
 
-That's it! Now let's do something more interesting.
-Every time an user talks to use, let's reply to them with the same
-text reversed:
+        @client.on(events.NewMessage)
+        def my_event_handler(event):
+            if 'hello' in event.raw_text:
+                event.reply('hi!')
 
-    .. code-block:: python
-
-        from telethon.tl.types import UpdateShortMessage, PeerUser
-
-        def replier(update):
-            if isinstance(update, UpdateShortMessage) and not update.out:
-                client.send_message(PeerUser(update.user_id), update.message[::-1])
+        client.idle()
 
 
-        client.add_update_handler(replier)
-        input('Press enter to stop this!')
-        client.disconnect()
-
-We only ask you one thing: don't keep this running for too long, or your
-contacts will go mad.
-
-
-Spawning no worker at all
-*************************
-
-All the workers do is loop forever and poll updates from a queue that is
-filled from the ``ReadThread``, responsible for reading every item off
-the network. If you only need a worker and the ``MainThread`` would be
-doing no other job, this is the preferred way. You can easily do the same
-as the workers like so:
+Not much, but there might be some things unclear. What does this code do?
 
     .. code-block:: python
 
-        while True:
-            try:
-                update = client.updates.poll()
-                if not update:
-                    continue
+        from telethon import TelegramClient, events
 
-                print('I received', update)
-            except KeyboardInterrupt:
-                break
-
-        client.disconnect()
-
-Note that ``poll`` accepts a ``timeout=`` parameter, and it will return
-``None`` if other thread got the update before you could or if the timeout
-expired, so it's important to check ``if not update``.
-
-This can coexist with the rest of ``N`` workers, or you can set it to ``0``
-additional workers:
-
-    ``client = TelegramClient('session', api_id, api_hash, update_workers=0)``
-
-You **must** set it to ``0`` (or other number), as it defaults to ``None``
-and there is a different. ``None`` workers means updates won't be processed
-*at all*, so you must set it to some value (``0`` or greater) if you want
-``client.updates.poll()`` to work.
+        client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
+        client.start()
 
 
-Using the main thread instead the ``ReadThread``
-************************************************
-
-If you have no work to do on the ``MainThread`` and you were planning to have
-a ``while True: sleep(1)``, don't do that. Instead, don't spawn the secondary
-``ReadThread`` at all like so:
+This is normal initialization (of course, pass session name, API ID and hash).
+Nothing we don't know already.
 
     .. code-block:: python
 
-        client = TelegramClient(
-            ...
-            spawn_read_thread=False
-        )
+        @client.on(events.NewMessage)
 
-And then ``.idle()`` from the ``MainThread``:
 
-    ``client.idle()``
-
-You can stop it with :kbd:`Control+C`, and you can configure the signals
-to be used in a similar fashion to `Python Telegram Bot`__.
-
-As a complete example:
+This Python decorator will attach itself to the ``my_event_handler``
+definition, and basically means that *on* a ``NewMessage`` *event*,
+the callback function you're about to define will be called:
 
     .. code-block:: python
 
-        def callback(update):
-            print('I received', update)
-
-        client = TelegramClient('session', api_id, api_hash,
-                                update_workers=1, spawn_read_thread=False)
-
-        client.connect()
-        client.add_update_handler(callback)
-        client.idle()  # ends with Ctrl+C
-        client.disconnect()
+        def my_event_handler(event):
+            if 'hello' in event.raw_text:
+                event.reply('hi!')
 
 
-__ https://python-telegram-bot.org/
+If a ``NewMessage`` event occurs, and ``'hello'`` is in the text of the
+message, we ``reply`` to the event with a ``'hi!'`` message.
+
+    .. code-block:: python
+
+        client.idle()
+
+
+Finally, this tells the client that we're done with our code, and want
+to listen for all these events to occur. Of course, you might want to
+do other things instead idling. For this refer to :ref:`update-modes`.
+
+
+More on events
+**************
+
+The ``NewMessage`` event has much more than what was shown. You can access
+the ``.sender`` of the message through that member, or even see if the message
+had ``.media``, a ``.photo`` or a ``.document`` (which you could download with
+for example ``client.download_media(event.photo)``.
+
+If you don't want to ``.reply`` as a reply, you can use the ``.respond()``
+method instead. Of course, there are more events such as ``ChatAction`` or
+``UserUpdate``, and they're all used in the same way. Simply add the
+``@client.on(events.XYZ)`` decorator on the top of your handler and you're
+done! The event that will be passed always is of type ``XYZ.Event`` (for
+instance, ``NewMessage.Event``), except for the ``Raw`` event which just
+passes the ``Update`` object.
+
+You can put the same event on many handlers, and even different events on
+the same handler. You can also have a handler work on only specific chats,
+for example:
+
+
+    .. code-block:: python
+
+        import ast
+        import random
+
+
+        @client.on(events.NewMessage(chats='TelethonOffTopic', incoming=True))
+        def normal_handler(event):
+            if 'roll' in event.raw_text:
+                event.reply(str(random.randint(1, 6)))
+
+
+        @client.on(events.NewMessage(chats='TelethonOffTopic', outgoing=True))
+        def admin_handler(event):
+            if event.raw_text.startswith('eval'):
+                expression = event.raw_text.replace('eval', '').strip()
+                event.reply(str(ast.literal_eval(expression)))
+
+
+You can pass one or more chats to the ``chats`` parameter (as a list or tuple),
+and only events from there will be processed. You can also specify whether you
+want to handle incoming or outgoing messages (those you receive or those you
+send). In this example, people can say ``'roll'`` and you will reply with a
+random number, while if you say ``'eval 4+4'``, you will reply with the
+solution. Try it!
+
+
+Events module
+*************
+
+.. automodule:: telethon.events
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+
 __ https://lonamiwebs.github.io/Telethon/types/update.html
-__ https://github.com/python-telegram-bot/python-telegram-bot/blob/4b3315db6feebafb94edcaa803df52bb49999ced/telegram/ext/updater.py#L460
