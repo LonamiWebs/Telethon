@@ -6,6 +6,7 @@ class TLObject:
     def __init__(self):
         self.confirm_received = None
         self.rpc_error = None
+        self.result = None
 
         # These should be overrode
         self.content_related = False  # Only requests/functions/queries are
@@ -18,14 +19,12 @@ class TLObject:
         """
         if indent is None:
             if isinstance(obj, TLObject):
-                return '{}({})'.format(type(obj).__name__, ', '.join(
-                    '{}={}'.format(k, TLObject.pretty_format(v))
-                    for k, v in obj.to_dict(recursive=False).items()
-                ))
+                obj = obj.to_dict()
+
             if isinstance(obj, dict):
-                return '{{{}}}'.format(', '.join(
-                    '{}: {}'.format(k, TLObject.pretty_format(v))
-                    for k, v in obj.items()
+                return '{}({})'.format(obj.get('_', 'dict'), ', '.join(
+                    '{}={}'.format(k, TLObject.pretty_format(v))
+                    for k, v in obj.items() if k != '_'
                 ))
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 return repr(obj)
@@ -41,30 +40,28 @@ class TLObject:
                 return repr(obj)
         else:
             result = []
-            if isinstance(obj, TLObject) or isinstance(obj, dict):
-                if isinstance(obj, dict):
-                    d = obj
-                    start, end, sep = '{', '}', ': '
-                else:
-                    d = obj.to_dict(recursive=False)
-                    start, end, sep = '(', ')', '='
-                    result.append(type(obj).__name__)
+            if isinstance(obj, TLObject):
+                obj = obj.to_dict()
 
-                result.append(start)
-                if d:
+            if isinstance(obj, dict):
+                result.append(obj.get('_', 'dict'))
+                result.append('(')
+                if obj:
                     result.append('\n')
                     indent += 1
-                    for k, v in d.items():
+                    for k, v in obj.items():
+                        if k == '_':
+                            continue
                         result.append('\t' * indent)
                         result.append(k)
-                        result.append(sep)
+                        result.append('=')
                         result.append(TLObject.pretty_format(v, indent))
                         result.append(',\n')
                     result.pop()  # last ',\n'
                     indent -= 1
                     result.append('\n')
                     result.append('\t' * indent)
-                result.append(end)
+                result.append(')')
 
             elif isinstance(obj, str) or isinstance(obj, bytes):
                 result.append(repr(obj))
@@ -142,8 +139,27 @@ class TLObject:
 
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
+    # These are nearly always the same for all subclasses
+    def on_response(self, reader):
+        self.result = reader.tgread_object()
+
+    def __eq__(self, o):
+        return isinstance(o, type(self)) and self.to_dict() == o.to_dict()
+
+    def __ne__(self, o):
+        return not isinstance(o, type(self)) or self.to_dict() != o.to_dict()
+
+    def __str__(self):
+        return TLObject.pretty_format(self)
+
+    def stringify(self):
+        return TLObject.pretty_format(self, indent=0)
+
     # These should be overrode
-    def to_dict(self, recursive=True):
+    async def resolve(self, client, utils):
+        pass
+
+    def to_dict(self):
         return {}
 
     def __bytes__(self):

@@ -10,9 +10,7 @@ what other programming languages commonly call classes or structs.
 Every definition is written as follows for a Telegram object is defined
 as follows:
 
-.. code:: tl
-
-    name#id argument_name:argument_type = CommonType
+    ``name#id argument_name:argument_type = CommonType``
 
 This means that in a single line you know what the ``TLObject`` name is.
 You know it's unique ID, and you know what arguments it has. It really

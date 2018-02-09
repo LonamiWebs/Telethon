@@ -26,7 +26,9 @@ known_codes = {
 
 def fetch_errors(output, url=URL):
     print('Opening a connection to', url, '...')
-    r = urllib.request.urlopen(url)
+    r = urllib.request.urlopen(urllib.request.Request(
+        url, headers={'User-Agent' : 'Mozilla/5.0'}
+    ))
     print('Checking response...')
     data = json.loads(
         r.read().decode(r.info().get_param('charset') or 'utf-8')
@@ -34,11 +36,11 @@ def fetch_errors(output, url=URL):
     if data.get('ok'):
         print('Response was okay, saving data')
         with open(output, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+            json.dump(data, f, sort_keys=True)
         return True
     else:
         print('The data received was not okay:')
-        print(json.dumps(data, indent=4))
+        print(json.dumps(data, indent=4, sort_keys=True))
         return False
 
 
@@ -79,7 +81,9 @@ def generate_code(output, json_file, errors_desc):
     errors = defaultdict(set)
     # PWRTelegram's API doesn't return all errors, which we do need here.
     # Add some special known-cases manually first.
-    errors[420].add('FLOOD_WAIT_X')
+    errors[420].update((
+        'FLOOD_WAIT_X', 'FLOOD_TEST_PHONE_WAIT_X'
+    ))
     errors[401].update((
         'AUTH_KEY_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'
     ))
@@ -118,6 +122,7 @@ def generate_code(output, json_file, errors_desc):
     # Names for the captures, or 'x' if unknown
     capture_names = {
         'FloodWaitError': 'seconds',
+        'FloodTestPhoneWaitError': 'seconds',
         'FileMigrateError': 'new_dc',
         'NetworkMigrateError': 'new_dc',
         'PhoneMigrateError': 'new_dc',
@@ -161,3 +166,11 @@ def generate_code(output, json_file, errors_desc):
         for pattern, name in patterns:
             f.write('    {}: {},\n'.format(repr(pattern), name))
         f.write('}\n')
+
+
+if __name__ == '__main__':
+    if input('generate (y/n)?: ').lower() == 'y':
+        generate_code('../telethon/errors/rpc_error_list.py',
+                      'errors.json', 'error_descriptions')
+    elif input('fetch (y/n)?: ').lower() == 'y':
+        fetch_errors('errors.json')

@@ -5,14 +5,24 @@ Telethon
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
 **Telethon** is Telegram client implementation in **Python 3** which uses
-the latest available API of Telegram. Remember to use **pip3** to install!
+the latest available API of Telegram.
+
+
+What is this?
+-------------
+
+Telegram is a popular messaging application. This library is meant
+to make it easy for you to write Python programs that can interact
+with Telegram. Think of it as a wrapper that has already done the
+heavy job for you, so you can focus on developing an application.
+
 
 Installing
 ----------
 
 .. code:: sh
 
-  pip install telethon
+  pip3 install telethon
 
 
 Creating a client
@@ -27,14 +37,10 @@ Creating a client
   # api_hash from https://my.telegram.org, under API Development.
   api_id = 12345
   api_hash = '0123456789abcdef0123456789abcdef'
-  phone = '+34600000000'
 
   client = TelegramClient('session_name', api_id, api_hash)
   async def main():
-      await client.connect()
-      # Skip this if you already have a previous 'session_name.session' file
-      await client.sign_in(phone_number)
-      me = await client.sign_in(code=input('Code: '))
+      await client.start()
 
   asyncio.get_event_loop().run_until_complete(main())
 

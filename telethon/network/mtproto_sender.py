@@ -2,14 +2,12 @@
 This module contains the class used to communicate with Telegram's servers
 encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
+import asyncio
 import gzip
 import logging
-import struct
-import asyncio
 from asyncio import Event
 
 from .. import helpers as utils
-from ..crypto import AES
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -17,11 +15,11 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
-    MsgsAck, Pong, BadServerSalt, BadMsgNotification,
+    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
 )
-from ..tl.functions.auth import LogOutRequest
 
 __log__ = logging.getLogger(__name__)
 
@@ -155,17 +153,7 @@ class MtProtoSender:
 
         :param message: the TLMessage to be sent.
         """
-        plain_text = \
-            struct.pack('<qq', self.session.salt, self.session.id) \
-            + bytes(message)
-
-        msg_key = utils.calc_msg_key(plain_text)
-        key_id = struct.pack('<Q', self.session.auth_key.key_id)
-        key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
-        cipher_text = AES.encrypt_ige(plain_text, key, iv)
-
-        result = key_id + msg_key + cipher_text
-        await self.connection.send(result)
+        await self.connection.send(utils.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
@@ -174,34 +162,14 @@ class MtProtoSender:
         :param body: the body to be decoded.
         :return: a tuple of (decoded message, remote message id, remote seq).
         """
-        message = None
-        remote_msg_id = None
-        remote_sequence = None
+        if len(body) < 8:
+            if body == b'l\xfe\xff\xff':
+                raise BrokenAuthKeyError()
+            else:
+                raise BufferError("Can't decode packet ({})".format(body))
 
         with BinaryReader(body) as reader:
-            if len(body) < 8:
-                if body == b'l\xfe\xff\xff':
-                    raise BrokenAuthKeyError()
-                else:
-                    raise BufferError("Can't decode packet ({})".format(body))
-
-            # TODO Check for both auth key ID and msg_key correctness
-            reader.read_long()  # remote_auth_key_id
-            msg_key = reader.read(16)
-
-            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
-            plain_text = AES.decrypt_ige(
-                reader.read(len(body) - reader.tell_position()), key, iv)
-
-            with BinaryReader(plain_text) as plain_text_reader:
-                plain_text_reader.read_long()  # remote_salt
-                plain_text_reader.read_long()  # remote_session_id
-                remote_msg_id = plain_text_reader.read_long()
-                remote_sequence = plain_text_reader.read_int()
-                msg_len = plain_text_reader.read_int()
-                message = plain_text_reader.read(msg_len)
-
-        return message, remote_msg_id, remote_sequence
+            return utils.unpack_message(self.session, reader)
 
     async def _process_msg(self, msg_id, sequence, reader, state):
         """
@@ -270,6 +238,12 @@ class MtProtoSender:
                     r.confirm_received.set()
 
             return True
+
+        if isinstance(obj, FutureSalts):
+            r = self._pop_request(obj.req_msg_id)
+            if r:
+                r.result = obj
+                r.confirm_received.set()
 
         # If the object isn't any of the above, then it should be an Update.
         self.session.process_entities(obj)
@@ -343,7 +317,7 @@ class MtProtoSender:
         if requests:
             await self.send(*requests)
 
-    def _handle_pong(self, msg_id, sequence, pong):
+    async def _handle_pong(self, msg_id, sequence, pong):
         """
         Handles a Pong response.
 

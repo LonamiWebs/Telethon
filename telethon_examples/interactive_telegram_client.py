@@ -84,9 +84,9 @@ class InteractiveTelegramClient(TelegramClient):
             update_workers=1
         )
 
-        # Store all the found media in memory here,
-        # so it can be downloaded if the user wants
-        self.found_media = set()
+        # Store {message.id: message} map here so that we can download
+        # media known the message ID, for every message having media.
+        self.found_media = {}
 
         # Calling .connect() may return False, so you need to assert it's
         # True before continuing. Otherwise you may want to retry as done here.
@@ -204,27 +204,21 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    total_count, messages, senders = \
-                        self.get_message_history(entity, limit=10)
+                    messages = self.get_message_history(entity, limit=10)
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
                     # "[hh:mm] Sender: Message"
-                    for msg, sender in zip(
-                            reversed(messages), reversed(senders)):
-                        # Get the name of the sender if any
-                        if sender:
-                            name = getattr(sender, 'first_name', None)
-                            if not name:
-                                name = getattr(sender, 'title')
-                                if not name:
-                                    name = '???'
-                        else:
-                            name = '???'
+                    for msg in reversed(messages):
+                        # Note that the .sender attribute is only there for
+                        # convenience, the API returns it differently. But
+                        # this shouldn't concern us. See the documentation
+                        # for .get_message_history() for more information.
+                        name = get_display_name(msg.sender)
 
                         # Format the message content
                         if getattr(msg, 'media', None):
-                            self.found_media.add(msg)
+                            self.found_media[msg.id] = msg
                             # The media may or may not have a caption
                             caption = getattr(msg.media, 'caption', '')
                             content = '<{}> {}'.format(
@@ -257,8 +251,7 @@ class InteractiveTelegramClient(TelegramClient):
                 elif msg.startswith('!d '):
                     # Slice the message to get message ID
                     deleted_msg = self.delete_messages(entity, msg[len('!d '):])
-                    print('Deleted. {}'.format(deleted_msg))
-
+                    print('Deleted {}'.format(deleted_msg))
 
                 # Download media
                 elif msg.startswith('!dm '):
@@ -275,12 +268,11 @@ class InteractiveTelegramClient(TelegramClient):
                             'Profile picture downloaded to {}'.format(output)
                         )
                     else:
-                        print('No profile picture found for this user.')
+                        print('No profile picture found for this user!')
 
                 # Send chat message (if any)
                 elif msg:
-                    self.send_message(
-                        entity, msg, link_preview=False)
+                    self.send_message(entity, msg, link_preview=False)
 
     def send_photo(self, path, entity):
         """Sends the file located at path to the desired entity as a photo"""
@@ -304,23 +296,20 @@ class InteractiveTelegramClient(TelegramClient):
            downloads it.
         """
         try:
-            # The user may have entered a non-integer string!
-            msg_media_id = int(media_id)
+            msg = self.found_media[int(media_id)]
+        except (ValueError, KeyError):
+            # ValueError when parsing, KeyError when accessing dictionary
+            print('Invalid media ID given or message not found!')
+            return
 
-            # Search the message ID
-            for msg in self.found_media:
-                if msg.id == msg_media_id:
-                    print('Downloading media to usermedia/...')
-                    os.makedirs('usermedia', exist_ok=True)
-                    output = self.download_media(
-                        msg.media,
-                        file='usermedia/',
-                        progress_callback=self.download_progress_callback
-                    )
-                    print('Media downloaded to {}!'.format(output))
-
-        except ValueError:
-            print('Invalid media ID given!')
+        print('Downloading media to usermedia/...')
+        os.makedirs('usermedia', exist_ok=True)
+        output = self.download_media(
+            msg.media,
+            file='usermedia/',
+            progress_callback=self.download_progress_callback
+        )
+        print('Media downloaded to {}!'.format(output))
 
     @staticmethod
     def download_progress_callback(downloaded_bytes, total_bytes):

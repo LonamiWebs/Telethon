@@ -10,7 +10,21 @@ Welcome to Telethon's documentation!
 
 Pure Python 3 Telegram client library.
 Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
-Please follow the links below to get you started.
+Please follow the links on the index below to navigate from here,
+or use the menu on the left. Remember to read the :ref:`changelog`
+when you upgrade!
+
+.. important::
+   If you're new here, you want to read :ref:`getting-started`.
+
+
+What is this?
+*************
+
+Telegram is a popular messaging application. This library is meant
+to make it easy for you to write Python programs that can interact
+with Telegram. Think of it as a wrapper that has already done the
+heavy job for you, so you can focus on developing an application.
 
 
 .. _installation-and-usage:
@@ -35,6 +49,7 @@ Please follow the links below to get you started.
 
    extra/advanced-usage/accessing-the-full-api
    extra/advanced-usage/sessions
+   extra/advanced-usage/update-modes
 
 
 .. _Examples:
@@ -75,19 +90,20 @@ Please follow the links below to get you started.
    extra/developing/telegram-api-in-other-languages.rst
 
 
-.. _Wall-of-shame:
+.. _More:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Wall of Shame
+   :caption: More
 
+   extra/changelog
    extra/wall-of-shame.rst
 
 
 .. toctree::
    :caption: Telethon modules
 
-   telethon
+   modules
 
 
 Indices and tables

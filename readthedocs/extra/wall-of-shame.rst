@@ -9,27 +9,28 @@ you to file **issues** whenever you encounter any when working with the
 library. Said section is **not** for issues on *your* program but rather
 issues with Telethon itself.
 
-If you have not made the effort to 1. `read through the
-wiki <https://github.com/LonamiWebs/Telethon/wiki>`__ and 2. `look for
-the method you need <https://lonamiwebs.github.io/Telethon/>`__, you
-will end up on the `Wall of
+If you have not made the effort to 1. read through the docs and 2.
+`look for the method you need <https://lonamiwebs.github.io/Telethon/>`__,
+you will end up on the `Wall of
 Shame <https://github.com/LonamiWebs/Telethon/issues?q=is%3Aissue+label%3ARTFM+is%3Aclosed>`__,
 i.e. all issues labeled
 `"RTFM" <http://www.urbandictionary.com/define.php?term=RTFM>`__:
 
-> > **rtfm**
-> > Literally "Read The F\ **king Manual"; a term showing the
-frustration of being bothered with questions so trivial that the asker
-could have quickly figured out the answer on their own with minimal
-effort, usually by reading readily-available documents. People who
-say"RTFM!" might be considered rude, but the true rude ones are the
-annoying people who take absolutely no self-responibility and expect to
-have all the answers handed to them personally.
-> > *"Damn, that's the twelveth time that somebody posted this question
-to the messageboard today! RTFM, already!"*
-> > **\ by Bill M. July 27, 2004*\*
+       **rtfm**
+       Literally "Read The F--king Manual"; a term showing the
+       frustration of being bothered with questions so trivial that the asker
+       could have quickly figured out the answer on their own with minimal
+       effort, usually by reading readily-available documents. People who
+       say"RTFM!" might be considered rude, but the true rude ones are the
+       annoying people who take absolutely no self-responibility and expect to
+       have all the answers handed to them personally.
 
-If you have indeed read the wiki, and have tried looking for the method,
+       *"Damn, that's the twelveth time that somebody posted this question
+       to the messageboard today! RTFM, already!"*
+
+       *by Bill M. July 27, 2004*
+
+If you have indeed read the docs, and have tried looking for the method,
 and yet you didn't find what you need, **that's fine**. Telegram's API
 can have some obscure names at times, and for this reason, there is a
 `"question"

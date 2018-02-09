@@ -14,29 +14,7 @@
 </head>
 <body>
 <div id="main_div">
-    <!-- You can append '?q=query' to the URL to default to a search -->
-    <input id="searchBox" type="text" onkeyup="updateSearch()"
-           placeholder="Search for requests and types…" />
-
-<div id="searchDiv">
-
-    <details open><summary class="title">Methods (<span id="methodsCount">0</span>)</summary>
-        <ul id="methodsList" class="together">
-        </ul>
-    </details>
-
-    <details open><summary class="title">Types (<span id="typesCount">0</span>)</summary>
-        <ul id="typesList" class="together">
-        </ul>
-    </details>
-
-    <details><summary class="title">Constructors (<span id="constructorsCount">0</span>)</summary>
-        <ul id="constructorsList" class="together">
-        </ul>
-    </details>
-</div>
-
-<div id="contentDiv">
+    <noscript>Please enable JavaScript if you would like to use search.</noscript>
     <h1>Telethon API</h1>
     <p>This documentation was generated straight from the <code>scheme.tl</code>
     provided by Telegram. However, there is no official documentation per se
@@ -44,8 +22,15 @@
     page aims to provide easy access to all the available methods, their
     definition and parameters.</p>
 
-    <p>Although this documentation was generated for <i>Telethon</i>, it may
-    be useful for any other Telegram library out there.</p>
+    <p>Please note that when you see this:</p>
+    <pre>---functions---
+users.getUsers#0d91a548 id:Vector&lt;InputUser&gt; = Vector&lt;User&gt;</pre>
+
+    <p>This is <b>not</b> Python code. It's the "TL definition". It's
+    an easy-to-read line that gives a quick overview on the parameters
+    and its result. You don't need to worry about this. See
+    <a href="http://telethon.readthedocs.io/en/latest/extra/developing/understanding-the-type-language.html">here</a>
+    for more details on it.</p>
 
     <h3>Index</h3>
     <ul>
@@ -69,12 +54,12 @@
     <p>Currently there are <b>{method_count} methods</b> available for the layer
     {layer}. The complete list can be seen <a href="methods/index.html">here</a>.
     <br /><br />
-    Methods, also known as <i>requests</i>, are used to interact with
-    the Telegram API itself and are invoked with a call to <code>.invoke()</code>.
-    <b>Only these</b> can be passed to <code>.invoke()</code>! You cannot
-    <code>.invoke()</code> types or constructors, only requests. After this,
-    Telegram will return a <code>result</code>, which may be, for instance,
-    a bunch of messages, some dialogs, users, etc.</p>
+    Methods, also known as <i>requests</i>, are used to interact with the
+    Telegram API itself and are invoked through <code>client(Request(...))</code>.
+    <b>Only these</b> can be used like that! You cannot invoke types or
+    constructors, only requests. After this, Telegram will return a
+    <code>result</code>, which may be, for instance, a bunch of messages,
+    some dialogs, users, etc.</p>
 
     <h3 id="types">Types</h3>
     <p>Currently there are <b>{type_count} types</b>. You can see the full
@@ -145,170 +130,20 @@
     </li>
     <li id="date"><b>date</b>:
         Although this type is internally used as an <code>int</code>,
-        you can pass a <code>datetime</code> object instead to work
-        with date parameters.
+        you can pass a <code>datetime</code> or <code>date</code> object
+        instead to work with date parameters.<br />
+        Note that the library uses the date in <b>UTC+0</b>, since timezone
+        conversion is not responsibility of the library. Furthermore, this
+        eases converting into any other timezone without the need for a middle
+        step.
     </li>
     </ul>
 
     <h3 id="example">Full example</h3>
-    <p>The following example demonstrates:</p>
-    <ol>
-        <li>How to create a <code>TelegramClient</code>.</li>
-        <li>Connecting to the Telegram servers and authorizing an user.</li>
-        <li>Retrieving a list of chats (<i>dialogs</i>).</li>
-        <li>Invoking a request without the built-in methods.</li>
-    </ol>
-    <pre><span class="sh3">#!/usr/bin/python3</span>
-<span class="sh4">from</span> telethon <span class="sh4">import</span> TelegramClient
-<span class="sh4">from</span> telethon.tl.functions.messages <span class="sh4">import</span> GetHistoryRequest
-
-<span class="sh3"># <b>(1)</b> Use your own values here</span>
-api_id   = <span class="sh1">12345</span>
-api_hash = <span class="sh2">'0123456789abcdef0123456789abcdef'</span>
-phone    = <span class="sh2">'+34600000000'</span>
-
-<span class="sh3"># <b>(2)</b> Create the client and connect</span>
-client = TelegramClient(<span class="sh2">'username'</span>, api_id, api_hash)
-client.connect()
-
-<span class="sh3"># Ensure you're authorized</span>
-if not client.is_user_authorized():
-    client.send_code_request(phone)
-    client.sign_in(phone, input(<span class="sh2">'Enter the code: '</span>))
-
-<span class="sh3"># <b>(3)</b> Using built-in methods</span>
-dialogs, entities = client.get_dialogs(<span class="sh1">10</span>)
-entity = entities[<span class="sh1">0</span>]
-
-<span class="sh3"># <b>(4)</b> !! Invoking a request manually !!</span>
-result = <b>client</b>(GetHistoryRequest(
-    entity,
-    limit=<span class="sh1">20</span>,
-    offset_date=<span class="sh1">None</span>,
-    offset_id=<span class="sh1">0</span>,
-    max_id=<span class="sh1">0</span>,
-    min_id=<span class="sh1">0</span>,
-    add_offset=<span class="sh1">0</span>
-))
-
-<span class="sh3"># Now you have access to the first 20 messages</span>
-messages = result.messages</pre>
-
-    <p>As it can be seen, manually calling requests with
-    <code>client(request)</code> (or using the old way, by calling
-    <code>client.invoke(request)</code>) is way more verbose than using the
-    built-in methods (such as <code>client.get_dialogs()</code>).</p>
-
-    <p>However, and
-    given that there are so many methods available, it's impossible to provide
-    a nice interface to things that may change over time. To get full access,
-    however, you're still able to invoke these methods manually.</p>
+    <p>Documentation for this is now
+    <a href="http://telethon.readthedocs.io/en/latest/extra/advanced-usage/accessing-the-full-api.html">here</a>.
+    </p>
 </div>
-
-</div>
-<script>
-contentDiv = document.getElementById("contentDiv");
-searchDiv = document.getElementById("searchDiv");
-searchBox = document.getElementById("searchBox");
-
-// Search lists
-methodsList = document.getElementById("methodsList");
-methodsCount = document.getElementById("methodsCount");
-
-typesList = document.getElementById("typesList");
-typesCount = document.getElementById("typesCount");
-
-constructorsList = document.getElementById("constructorsList");
-constructorsCount = document.getElementById("constructorsCount");
-
-try {
-    requests = [{request_names}];
-    types = [{type_names}];
-    constructors = [{constructor_names}];
-
-    requestsu = [{request_urls}];
-    typesu = [{type_urls}];
-    constructorsu = [{constructor_urls}];
-} catch (e) {
-    requests = [];
-    types = [];
-    constructors = [];
-    requestsu = [];
-    typesu = [];
-    constructorsu = [];
-}
-
-// Given two input arrays "original" and "original urls" and a query,
-// return a pair of arrays with matching "query" elements from "original".
-//
-// TODO Perhaps return an array of pairs instead a pair of arrays (for cache).
-function getSearchArray(original, originalu, query) {
-    var destination = [];
-    var destinationu = [];
-
-    for (var i = 0; i < original.length; ++i) {
-        if (original[i].toLowerCase().indexOf(query) != -1) {
-            destination.push(original[i]);
-            destinationu.push(originalu[i]);
-        }
-    }
-
-    return [destination, destinationu];
-}
-
-// Modify "countSpan" and "resultList" accordingly based on the elements
-// given as [[elements], [element urls]] (both with the same length)
-function buildList(countSpan, resultList, foundElements) {
-    var result = "";
-    for (var i = 0; i < foundElements[0].length; ++i) {
-        result += '<li>';
-        result += '<a href="' + foundElements[1][i] + '">';
-        result += foundElements[0][i];
-        result += '</a></li>';
-    }
-
-    countSpan.innerHTML = "" + foundElements[0].length;
-    resultList.innerHTML = result;
-}
-
-function updateSearch() {
-    if (searchBox.value) {
-        contentDiv.style.display = "none";
-        searchDiv.style.display = "";
-
-        var query = searchBox.value.toLowerCase();
-
-        var foundRequests = getSearchArray(requests, requestsu, query);
-        var foundTypes = getSearchArray(types, typesu, query);
-        var foundConstructors = getSearchArray(
-            constructors, constructorsu, query
-        );
-
-        buildList(methodsCount, methodsList, foundRequests);
-        buildList(typesCount, typesList, foundTypes);
-        buildList(constructorsCount, constructorsList, foundConstructors);
-    } else {
-        contentDiv.style.display = "";
-        searchDiv.style.display = "none";
-    }
-}
-
-function getQuery(name) {
-    var query = window.location.search.substring(1);
-    var vars = query.split("&");
-    for (var i = 0; i != vars.length; ++i) {
-        var pair = vars[i].split("=");
-        if (pair[0] == name)
-            return pair[1];
-    }
-}
-
-var query = getQuery('q');
-if (query) {
-    searchBox.value = query;
-}
-
-updateSearch();
-</script>
+<script src="js/search.js"></script>
 </body>
 </html>

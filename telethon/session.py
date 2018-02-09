@@ -2,19 +2,37 @@ import json
 import os
 import platform
 import sqlite3
+import struct
 import time
 from base64 import b64decode
+from enum import Enum
 from os.path import isfile as file_exists
 
-from .. import utils, helpers
-from ..tl import TLObject
-from ..tl.types import (
+from . import utils
+from .crypto import AuthKey
+from .tl import TLObject
+from .tl.types import (
     PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel
+    InputPeerUser, InputPeerChat, InputPeerChannel,
+    InputPhoto, InputDocument
 )
 
 EXTENSION = '.session'
-CURRENT_VERSION = 2  # database version
+CURRENT_VERSION = 3  # database version
+
+
+class _SentFileType(Enum):
+    DOCUMENT = 0
+    PHOTO = 1
+
+    @staticmethod
+    def from_type(cls):
+        if cls == InputDocument:
+            return _SentFileType.DOCUMENT
+        elif cls == InputPhoto:
+            return _SentFileType.PHOTO
+        else:
+            raise ValueError('The cls must be either InputDocument/InputPhoto')
 
 
 class Session:
@@ -61,7 +79,7 @@ class Session:
             self.save_entities = True
             self.flood_sleep_threshold = 60
 
-        self.id = helpers.generate_random_long(signed=True)
+        self.id = struct.unpack('q', os.urandom(8))[0]
         self._sequence = 0
         self.time_offset = 0
         self._last_msg_id = 0  # Long
@@ -76,8 +94,8 @@ class Session:
         # Migrating from .json -> SQL
         entities = self._check_migrate_json()
 
-        self._conn = sqlite3.connect(self.filename, check_same_thread=False)
-        c = self._conn.cursor()
+        self._conn = None
+        c = self._cursor()
         c.execute("select name from sqlite_master "
                   "where type='table' and name='version'")
         if c.fetchone():
@@ -95,48 +113,47 @@ class Session:
             tuple_ = c.fetchone()
             if tuple_:
                 self._dc_id, self._server_address, self._port, key, = tuple_
-                from ..crypto import AuthKey
                 self._auth_key = AuthKey(data=key)
 
             c.close()
         else:
             # Tables don't exist, create new ones
-            c.execute("create table version (version integer)")
-            c.execute("insert into version values (?)", (CURRENT_VERSION,))
-            c.execute(
-                """create table sessions (
+            self._create_table(
+                c,
+                "version (version integer primary key)"
+                ,
+                """sessions (
                     dc_id integer primary key,
                     server_address text,
                     port integer,
                     auth_key blob
-                ) without rowid"""
-            )
-            c.execute(
-                """create table entities (
+                )"""
+                ,
+                """entities (
                     id integer primary key,
                     hash integer not null,
                     username text,
                     phone integer,
                     name text
-                ) without rowid"""
-            )
-            # Save file_size along with md5_digest
-            # to make collisions even more unlikely.
-            c.execute(
-                """create table sent_files (
+                )"""
+                ,
+                """sent_files (
                     md5_digest blob,
                     file_size integer,
-                    file_id integer,
-                    part_count integer,
-                    primary key(md5_digest, file_size)
-                ) without rowid"""
+                    type integer,
+                    id integer,
+                    hash integer,
+                    primary key(md5_digest, file_size, type)
+                )"""
             )
+            c.execute("insert into version values (?)", (CURRENT_VERSION,))
             # Migrating from JSON -> new table and may have entities
             if entities:
                 c.executemany(
                     'insert or replace into entities values (?,?,?,?,?)',
                     entities
                 )
+            self._update_session_table()
             c.close()
             self.save()
 
@@ -151,30 +168,46 @@ class Session:
                 self._server_address = \
                     data.get('server_address', self._server_address)
 
-                from ..crypto import AuthKey
                 if data.get('auth_key_data', None) is not None:
                     key = b64decode(data['auth_key_data'])
                     self._auth_key = AuthKey(data=key)
 
                 rows = []
                 for p_id, p_hash in data.get('entities', []):
-                    rows.append((p_id, p_hash, None, None, None))
+                    if p_hash is not None:
+                        rows.append((p_id, p_hash, None, None, None))
                 return rows
             except UnicodeDecodeError:
                 return []  # No entities
 
     def _upgrade_database(self, old):
-        if old == 1:
-            self._conn.execute(
-                """create table sent_files (
-                    md5_digest blob,
-                    file_size integer,
-                    file_id integer,
-                    part_count integer,
-                    primary key(md5_digest, file_size)
-                ) without rowid"""
-            )
-            old = 2
+        c = self._cursor()
+        # old == 1 doesn't have the old sent_files so no need to drop
+        if old == 2:
+            # Old cache from old sent_files lasts then a day anyway, drop
+            c.execute('drop table sent_files')
+        self._create_table(c, """sent_files (
+            md5_digest blob,
+            file_size integer,
+            type integer,
+            id integer,
+            hash integer,
+            primary key(md5_digest, file_size, type)
+        )""")
+        c.close()
+
+    @staticmethod
+    def _create_table(c, *definitions):
+        """
+        Creates a table given its definition 'name (columns).
+        If the sqlite version is >= 3.8.2, it will use "without rowid".
+        See http://www.sqlite.org/releaselog/3_8_2.html.
+        """
+        required = (3, 8, 2)
+        sqlite_v = tuple(int(x) for x in sqlite3.sqlite_version.split('.'))
+        extra = ' without rowid' if sqlite_v >= required else ''
+        for definition in definitions:
+            c.execute('create table {}{}'.format(definition, extra))
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
@@ -185,11 +218,10 @@ class Session:
         self._update_session_table()
 
         # Fetch the auth_key corresponding to this data center
-        c = self._conn.cursor()
+        c = self._cursor()
         c.execute('select auth_key from sessions')
         tuple_ = c.fetchone()
         if tuple_:
-            from ..crypto import AuthKey
             self._auth_key = AuthKey(data=tuple_[0])
         else:
             self._auth_key = None
@@ -213,7 +245,13 @@ class Session:
         self._update_session_table()
 
     def _update_session_table(self):
-        c = self._conn.cursor()
+        c = self._cursor()
+        # While we can save multiple rows into the sessions table
+        # currently we only want to keep ONE as the tables don't
+        # tell us which auth_key's are usable and will work. Needs
+        # some more work before being able to save auth_key's for
+        # multiple DCs. Probably done differently.
+        c.execute('delete from sessions')
         c.execute('insert or replace into sessions values (?,?,?,?)', (
             self._dc_id,
             self._server_address,
@@ -225,6 +263,19 @@ class Session:
     def save(self):
         """Saves the current session object as session_user_id.session"""
         self._conn.commit()
+
+    def _cursor(self):
+        """Asserts that the connection is open and returns a cursor"""
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.filename)
+        return self._conn.cursor()
+
+    def close(self):
+        """Closes the connection unless we're working in-memory"""
+        if self.filename != ':memory:':
+            if self._conn is not None:
+                self._conn.close()
+                self._conn = None
 
     def delete(self):
         """Deletes the current session file"""
@@ -265,7 +316,7 @@ class Session:
         now = time.time()
         nanoseconds = int((now - int(now)) * 1e+9)
         # "message identifiers are divisible by 4"
-        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
+        new_msg_id = ((int(now) + self.time_offset) << 32) | (nanoseconds << 2)
 
         if self._last_msg_id >= new_msg_id:
             new_msg_id = self._last_msg_id + 4
@@ -313,12 +364,19 @@ class Session:
             except ValueError:
                 continue
 
-            p_hash = getattr(p, 'access_hash', 0)
-            if p_hash is None:
-                # Some users and channels seem to be returned without
-                # an 'access_hash', meaning Telegram doesn't want you
-                # to access them. This is the reason behind ensuring
-                # that the 'access_hash' is non-zero. See issue #354.
+            if isinstance(p, (InputPeerUser, InputPeerChannel)):
+                if not p.access_hash:
+                    # Some users and channels seem to be returned without
+                    # an 'access_hash', meaning Telegram doesn't want you
+                    # to access them. This is the reason behind ensuring
+                    # that the 'access_hash' is non-zero. See issue #354.
+                    # Note that this checks for zero or None, see #392.
+                    continue
+                else:
+                    p_hash = p.access_hash
+            elif isinstance(p, InputPeerChat):
+                p_hash = 0
+            else:
                 continue
 
             username = getattr(e, 'username', None) or None
@@ -330,7 +388,7 @@ class Session:
         if not rows:
             return
 
-        self._conn.executemany(
+        self._cursor().executemany(
             'insert or replace into entities values (?,?,?,?,?)', rows
         )
         self.save()
@@ -346,15 +404,19 @@ class Session:
 
            Raises ValueError if it cannot be found.
         """
-        if isinstance(key, TLObject):
-            try:
-                # Try to early return if this key can be casted as input peer
-                return utils.get_input_peer(key)
-            except TypeError:
-                # Otherwise, get the ID of the peer
+        try:
+            if key.SUBCLASS_OF_ID in (0xc91c90b6, 0xe669bf46, 0x40f202fd):
+                # hex(crc32(b'InputPeer', b'InputUser' and b'InputChannel'))
+                # We already have an Input version, so nothing else required
+                return key
+            # Try to early return if this key can be casted as input peer
+            return utils.get_input_peer(key)
+        except (AttributeError, TypeError):
+            # Not a TLObject or can't be cast into InputPeer
+            if isinstance(key, TLObject):
                 key = utils.get_peer_id(key)
 
-        c = self._conn.cursor()
+        c = self._cursor()
         if isinstance(key, str):
             phone = utils.parse_phone(key)
             if phone:
@@ -384,15 +446,24 @@ class Session:
 
     # File processing
 
-    def get_file(self, md5_digest, file_size):
-        return self._conn.execute(
-            'select * from sent_files '
-            'where md5_digest = ? and file_size = ?', (md5_digest, file_size)
+    def get_file(self, md5_digest, file_size, cls):
+        tuple_ = self._cursor().execute(
+            'select id, hash from sent_files '
+            'where md5_digest = ? and file_size = ? and type = ?',
+            (md5_digest, file_size, _SentFileType.from_type(cls).value)
         ).fetchone()
+        if tuple_:
+            # Both allowed classes have (id, access_hash) as parameters
+            return cls(tuple_[0], tuple_[1])
 
-    def cache_file(self, md5_digest, file_size, file_id, part_count):
-        self._conn.execute(
-            'insert into sent_files values (?,?,?,?)',
-            (md5_digest, file_size, file_id, part_count)
-        )
+    def cache_file(self, md5_digest, file_size, instance):
+        if not isinstance(instance, (InputDocument, InputPhoto)):
+            raise TypeError('Cannot cache %s instance' % type(instance))
+
+        self._cursor().execute(
+            'insert or replace into sent_files values (?,?,?,?,?)', (
+                md5_digest, file_size,
+                _SentFileType.from_type(type(instance)).value,
+                instance.id, instance.access_hash
+        ))
         self.save()

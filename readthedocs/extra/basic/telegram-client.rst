@@ -43,30 +43,29 @@ how the library refers to either of these:
         lonami = client.get_entity('lonami')
 
 The so called "entities" are another important whole concept on its own,
-and you should
-Note that saving and using these entities will be more important when
-Accessing the Full API. For now, this is a good way to get information
-about an user or chat.
+but for now you don't need to worry about it. Simply know that they are
+a good way to get information about an user, chat or channel.
 
-Other common methods for quick scripts are also available:
+Many other common methods for quick scripts are also available:
 
     .. code-block:: python
 
-        # Sending a message (use an entity/username/etc)
-        client.send_message('TheAyyBot', 'ayy')
+        # Note that you can use 'me' or 'self' to message yourself
+        client.send_message('username', 'Hello World from Telethon!')
 
-        # Sending a photo, or a file
-        client.send_file(myself, '/path/to/the/file.jpg', force_document=True)
+        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-        # Downloading someone's profile photo. File is saved to 'where'
-        where = client.download_profile_photo(someone)
+        # The utils package has some goodies, like .get_display_name()
+        from telethon import utils
+        for message in client.get_message_history('username', limit=10):
+            print(utils.get_display_name(message.sender), message.message)
 
-        # Retrieving the message history
-        messages = client.get_message_history(someone)
+        # Dialogs are the conversations you have open
+        for dialog in client.get_dialogs(limit=10):
+            print(utils.get_display_name(dialog.entity), dialog.draft.message)
 
-        # Downloading the media from a specific message
-        # You can specify either a directory, a filename, or nothing at all
-        where = client.download_media(message, '/path/to/output')
+        # Default path is the working directory
+        client.download_profile_photo('username')
 
         # Call .disconnect() when you're done
         client.disconnect()

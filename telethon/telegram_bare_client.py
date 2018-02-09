@@ -1,20 +1,19 @@
+import asyncio
 import logging
 import os
-import asyncio
-from datetime import timedelta
-from hashlib import md5
-from io import BytesIO
 from asyncio import Lock
+from datetime import timedelta
 
-from . import helpers as utils, version
-from .crypto import rsa, CdnDecrypter
+from . import version, utils
+from .crypto import rsa
 from .errors import (
-    RPCError, BrokenAuthKeyError, ServerError,
-    FloodWaitError, FileMigrateError, TypeNotFoundError,
-    UnauthorizedError, PhoneMigrateError, NetworkMigrateError, UserMigrateError
+    RPCError, BrokenAuthKeyError, ServerError, FloodWaitError,
+    FloodTestPhoneWaitError, TypeNotFoundError, UnauthorizedError,
+    PhoneMigrateError, NetworkMigrateError, UserMigrateError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
-from .tl import TLObject, Session
+from .session import Session
+from .tl import TLObject
 from .tl.all_tlobjects import LAYER
 from .tl.functions import (
     InitConnectionRequest, InvokeWithLayerRequest, PingRequest
@@ -26,15 +25,8 @@ from .tl.functions.help import (
     GetCdnConfigRequest, GetConfigRequest
 )
 from .tl.functions.updates import GetStateRequest
-from .tl.functions.upload import (
-    GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest
-)
-from .tl.types import InputFile, InputFileBig
 from .tl.types.auth import ExportedAuthorization
-from .tl.types.upload import FileCdnRedirect
 from .update_state import UpdateState
-from .utils import get_appropriated_part_size
-
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -83,7 +75,7 @@ class TelegramBareClient:
         if not api_id or not api_hash:
             raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
-                "Refer to Telethon's wiki for more information.")
+                "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
         
@@ -160,6 +152,7 @@ class TelegramBareClient:
 
         self._recv_loop = None
         self._ping_loop = None
+        self._idling = asyncio.Event()
 
         # Default PingRequest delay
         self._ping_delay = timedelta(minutes=1)
@@ -241,9 +234,7 @@ class TelegramBareClient:
         self._sender.disconnect()
         # TODO Shall we clear the _exported_sessions, or may be reused?
         self._first_request = True  # On reconnect it will be first again
-
-    def __del__(self):
-        self.disconnect()
+        self.session.close()
 
     async def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
@@ -264,7 +255,7 @@ class TelegramBareClient:
 
                 __log__.info('Attempting reconnection...')
                 return await self.connect()
-            except ConnectionResetError:
+            except ConnectionResetError as e:
                 __log__.warning('Reconnection failed due to %s', e)
                 return False
             finally:
@@ -408,6 +399,9 @@ class TelegramBareClient:
                    x.content_related for x in requests):
             raise TypeError('You can only invoke requests, not types!')
 
+        for request in requests:
+            await request.resolve(self, utils)
+
         # For logging purposes
         if len(requests) == 1:
             which = type(requests[0]).__name__
@@ -416,12 +410,8 @@ class TelegramBareClient:
                 len(requests), [type(x).__name__ for x in requests])
 
         __log__.debug('Invoking %s', which)
-
-        # We should call receive from this thread if there's no background
-        # thread reading or if the server disconnected us and we're trying
-        # to reconnect. This is because the read thread may either be
-        # locked also trying to reconnect or we may be said thread already.
-        call_receive = self._recv_loop is None
+        call_receive = \
+            not self._idling.is_set() or self._reconnect_lock.locked()
 
         for retry in range(retries):
             result = await self._invoke(call_receive, retry, *requests)
@@ -435,7 +425,7 @@ class TelegramBareClient:
             await asyncio.sleep(retry + 1, loop=self._loop)
             if not self._reconnect_lock.locked():
                 with await self._reconnect_lock:
-                    self._reconnect()
+                    await self._reconnect()
 
         raise RuntimeError('Number of retries reached 0.')
 
@@ -482,17 +472,26 @@ class TelegramBareClient:
             __log__.error('Authorization key seems broken and was invalid!')
             self.session.auth_key = None
 
+        except TypeNotFoundError as e:
+            # Only occurs when we call receive. May happen when
+            # we need to reconnect to another DC on login and
+            # Telegram somehow sends old objects (like configOld)
+            self._first_request = True
+            __log__.warning('Read unknown TLObject code ({}). '
+                            'Setting again first_request flag.'
+                            .format(hex(e.invalid_constructor_id)))
+
         except TimeoutError:
             __log__.warning('Invoking timed out')  # We will just retry
 
-        except ConnectionResetError:
+        except ConnectionResetError as e:
             __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
                 return None
             else:
                 # User never called .connect(), so raise this error.
-                raise
+                raise RuntimeError('Tried to invoke without .connect()') from e
 
         # Clear the flag if we got this far
         self._first_request = False
@@ -514,13 +513,13 @@ class TelegramBareClient:
                 UserMigrateError) as e:
 
             await self._reconnect(new_dc=e.new_dc)
-            return None
+            return await self._invoke(call_receive, retry, *requests)
 
         except ServerError as e:
             # Telegram is having some issues, just retry
             __log__.error('Telegram servers are having internal errors %s', e)
 
-        except FloodWaitError as e:
+        except (FloodWaitError, FloodTestPhoneWaitError) as e:
             __log__.warning('Request invoked too often, wait %ds', e.seconds)
             if e.seconds > self.session.flood_sleep_threshold | 0:
                 raise
@@ -535,211 +534,12 @@ class TelegramBareClient:
            (code request sent and confirmed)?"""
         return self._authorized
 
-    # endregion
-
-    # region Uploading media
-
-    async def upload_file(self,
-                    file,
-                    part_size_kb=None,
-                    file_name=None,
-                    progress_callback=None):
-        """Uploads the specified file and returns a handle (an instance
-           of InputFile or InputFileBig, as required) which can be later used.
-
-           Uploading a file will simply return a "handle" to the file stored
-           remotely in the Telegram servers, which can be later used on. This
-           will NOT upload the file to your own chat.
-
-           'file' may be either a file path, a byte array, or a stream.
-           Note that if the file is a stream it will need to be read
-           entirely into memory to tell its size first.
-
-           If 'progress_callback' is not None, it should be a function that
-           takes two parameters, (bytes_uploaded, total_bytes).
-
-           Default values for the optional parameters if left as None are:
-             part_size_kb = get_appropriated_part_size(file_size)
-             file_name    = os.path.basename(file_path)
+    def get_input_entity(self, peer):
         """
-        if isinstance(file, (InputFile, InputFileBig)):
-            return file  # Already uploaded
-
-        if isinstance(file, str):
-            file_size = os.path.getsize(file)
-        elif isinstance(file, bytes):
-            file_size = len(file)
-        else:
-            file = file.read()
-            file_size = len(file)
-
-        # File will now either be a string or bytes
-        if not part_size_kb:
-            part_size_kb = get_appropriated_part_size(file_size)
-
-        if part_size_kb > 512:
-            raise ValueError('The part size must be less or equal to 512KB')
-
-        part_size = int(part_size_kb * 1024)
-        if part_size % 1024 != 0:
-            raise ValueError('The part size must be evenly divisible by 1024')
-
-        # Set a default file name if None was specified
-        file_id = utils.generate_random_long()
-        if not file_name:
-            if isinstance(file, str):
-                file_name = os.path.basename(file)
-            else:
-                file_name = str(file_id)
-
-        # Determine whether the file is too big (over 10MB) or not
-        # Telegram does make a distinction between smaller or larger files
-        is_large = file_size > 10 * 1024 * 1024
-        if not is_large:
-            # Calculate the MD5 hash before anything else.
-            # As this needs to be done always for small files,
-            # might as well do it before anything else and
-            # check the cache.
-            if isinstance(file, str):
-                with open(file, 'rb') as stream:
-                    file = stream.read()
-            hash_md5 = md5(file)
-            tuple_ = self.session.get_file(hash_md5.digest(), file_size)
-            if tuple_:
-                __log__.info('File was already cached, not uploading again')
-                return InputFile(name=file_name,
-                    md5_checksum=tuple_[0], id=tuple_[2], parts=tuple_[3])
-        else:
-            hash_md5 = None
-
-        part_count = (file_size + part_size - 1) // part_size
-        __log__.info('Uploading file of %d bytes in %d chunks of %d',
-                     file_size, part_count, part_size)
-
-        with open(file, 'rb') if isinstance(file, str) else BytesIO(file) \
-                as stream:
-            for part_index in range(part_count):
-                # Read the file by in chunks of size part_size
-                part = stream.read(part_size)
-
-                # The SavePartRequest is different depending on whether
-                # the file is too large or not (over or less than 10MB)
-                if is_large:
-                    request = SaveBigFilePartRequest(file_id, part_index,
-                                                     part_count, part)
-                else:
-                    request = SaveFilePartRequest(file_id, part_index, part)
-
-                result = await self(request)
-                if result:
-                    __log__.debug('Uploaded %d/%d', part_index + 1, part_count)
-                    if progress_callback:
-                        progress_callback(stream.tell(), file_size)
-                else:
-                    raise RuntimeError(
-                        'Failed to upload file part {}.'.format(part_index))
-
-        if is_large:
-            return InputFileBig(file_id, part_count, file_name)
-        else:
-            self.session.cache_file(
-                hash_md5.digest(), file_size, file_id, part_count)
-
-            return InputFile(file_id, part_count, file_name,
-                             md5_checksum=hash_md5.hexdigest())
-
-    # endregion
-
-    # region Downloading media
-
-    async def download_file(self,
-                      input_location,
-                      file,
-                      part_size_kb=None,
-                      file_size=None,
-                      progress_callback=None):
-        """Downloads the given InputFileLocation to file (a stream or str).
-
-           If 'progress_callback' is not None, it should be a function that
-           takes two parameters, (bytes_downloaded, total_bytes). Note that
-           'total_bytes' simply equals 'file_size', and may be None.
+        Stub method, no functionality so that calling
+        ``.get_input_entity()`` from ``.resolve()`` doesn't fail.
         """
-        if not part_size_kb:
-            if not file_size:
-                part_size_kb = 64  # Reasonable default
-            else:
-                part_size_kb = get_appropriated_part_size(file_size)
-
-        part_size = int(part_size_kb * 1024)
-        # https://core.telegram.org/api/files says:
-        # > part_size % 1024 = 0 (divisible by 1KB)
-        #
-        # But https://core.telegram.org/cdn (more recent) says:
-        # > limit must be divisible by 4096 bytes
-        # So we just stick to the 4096 limit.
-        if part_size % 4096 != 0:
-            raise ValueError('The part size must be evenly divisible by 4096.')
-
-        if isinstance(file, str):
-            # Ensure that we'll be able to download the media
-            utils.ensure_parent_dir_exists(file)
-            f = open(file, 'wb')
-        else:
-            f = file
-
-        # The used client will change if FileMigrateError occurs
-        client = self
-        cdn_decrypter = None
-
-        __log__.info('Downloading file in chunks of %d bytes', part_size)
-        try:
-            offset = 0
-            while True:
-                try:
-                    if cdn_decrypter:
-                        result = await cdn_decrypter.get_file()
-                    else:
-                        result = await client(GetFileRequest(
-                            input_location, offset, part_size
-                        ))
-
-                        if isinstance(result, FileCdnRedirect):
-                            __log__.info('File lives in a CDN')
-                            cdn_decrypter, result = \
-                                await CdnDecrypter.prepare_decrypter(
-                                    client,
-                                    await self._get_cdn_client(result),
-                                    result
-                                )
-
-                except FileMigrateError as e:
-                    __log__.info('File lives in another DC')
-                    client = await self._get_exported_client(e.new_dc)
-                    continue
-
-                offset += part_size
-
-                # If we have received no data (0 bytes), the file is over
-                # So there is nothing left to download and write
-                if not result.bytes:
-                    # Return some extra information, unless it's a CDN file
-                    return getattr(result, 'type', '')
-
-                f.write(result.bytes)
-                __log__.debug('Saved %d more bytes', len(result.bytes))
-                if progress_callback:
-                    progress_callback(f.tell(), file_size)
-        finally:
-            if client != self:
-                client.disconnect()
-
-            if cdn_decrypter:
-                try:
-                    cdn_decrypter.client.disconnect()
-                except:
-                    pass
-            if isinstance(file, str):
-                f.close()
+        return peer
 
     # endregion
 
@@ -782,6 +582,7 @@ class TelegramBareClient:
 
     async def _recv_loop_impl(self):
         __log__.info('Starting to wait for items from the network')
+        self._idling.set()
         need_reconnect = False
         while self._user_connected:
             try:
@@ -792,37 +593,27 @@ class TelegramBareClient:
                         # Retry forever, this is instant messaging
                         await asyncio.sleep(0.1, loop=self._loop)
 
+                    # Telegram seems to kick us every 1024 items received
+                    # from the network not considering things like bad salt.
+                    # We must execute some *high level* request (that's not
+                    # a ping) if we want to receive updates again.
+                    # TODO Test if getDifference works too (better alternative)
+                    await self._sender.send(GetStateRequest())
+
                 __log__.debug('Receiving items from the network...')
                 await self._sender.receive(update_state=self.updates)
             except TimeoutError:
                 # No problem.
-                __log__.info('Receiving items from the network timed out')
-            except ConnectionError as error:
+                __log__.debug('Receiving items from the network timed out')
+            except ConnectionError:
                 need_reconnect = True
                 __log__.error('Connection was reset while receiving items')
                 await asyncio.sleep(1, loop=self._loop)
-            except Exception as error:
-                # Unknown exception, pass it to the main thread
-                __log__.exception('Unknown exception in the read thread! '
-                                  'Disconnecting and leaving it to main thread')
+            except:
+                self._idling.clear()
+                raise
 
-                try:
-                    import socks
-                    if isinstance(error, (
-                            socks.GeneralProxyError,
-                            socks.ProxyConnectionError
-                    )):
-                        # This is a known error, and it's not related to
-                        # Telegram but rather to the proxy. Disconnect and
-                        # hand it over to the main thread.
-                        self._background_error = error
-                        self.disconnect()
-                        break
-                except ImportError:
-                    "Not using PySocks, so it can't be a socket error"
-
-                break
-
-        self._recv_loop = None
+        self._idling.clear()
+        __log__.info('Connection closed by the user, not reading anymore')
 
     # endregion

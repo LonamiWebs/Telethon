@@ -53,6 +53,7 @@ class CryptoTests(unittest.TestCase):
 
     @staticmethod
     def test_calc_key():
+        # TODO Upgrade test for MtProto 2.0
         shared_key = b'\xbc\xd2m\xb7\xcav\xf4][\x88\x83\' \xf3\x11\x8as\xd04\x941\xae' \
                      b'*O\x03\x86\x9a/H#\x1a\x8c\xb5j\xe9$\xe0IvCm^\xe70\x1a5C\t\x16' \
                      b'\x03\xd2\x9d\xa9\x89\xd6\xce\x08P\x0fdr\xa0\xb3\xeb\xfecv\x1a' \
@@ -97,13 +98,6 @@ class CryptoTests(unittest.TestCase):
             expected_key, key)
         assert iv == expected_iv, 'Invalid IV (expected ("{}"), got ("{}"))'.format(
             expected_iv, iv)
-
-    @staticmethod
-    def test_calc_msg_key():
-        value = utils.calc_msg_key(b'Some random message')
-        expected = b'\xdfAa\xfc\x10\xab\x89\xd2\xfe\x19C\xf1\xdd~\xbf\x81'
-        assert value == expected, 'Value ("{}") does not equal expected ("{}")'.format(
-            value, expected)
 
     @staticmethod
     def test_generate_key_data_from_nonce():

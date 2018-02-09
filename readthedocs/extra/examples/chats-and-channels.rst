@@ -3,6 +3,11 @@ Working with Chats and Channels
 ===============================
 
 
+.. note::
+
+    These examples assume you have read :ref:`accessing-the-full-api`.
+
+
 Joining a chat or channel
 *************************
 
@@ -41,7 +46,7 @@ enough information to join! The part after the
 example, is the ``hash`` of the chat or channel. Now you can use
 `ImportChatInviteRequest`__ as follows:
 
-    .. -block:: python
+    .. code-block:: python
 
         from telethon.tl.functions.messages import ImportChatInviteRequest
         updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
@@ -61,7 +66,7 @@ which use is very straightforward:
         client(AddChatUserRequest(
             chat_id,
             user_to_add,
-            fwd_limit=10  # allow the user to see the 10 last messages
+            fwd_limit=10  # Allow the user to see the 10 last messages
         ))
 
 
@@ -70,7 +75,7 @@ Checking a link without joining
 
 If you don't need to join but rather check whether it's a group or a
 channel, you can use the `CheckChatInviteRequest`__, which takes in
-the `hash`__ of said channel or group.
+the hash of said channel or group.
 
 __ https://lonamiwebs.github.io/Telethon/constructors/chat.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel.html
@@ -80,7 +85,6 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
-__ https://github.com/LonamiWebs/Telethon/wiki/Joining-a-chat-or-channel#joining-a-private-chat-or-channel
 
 
 Retrieving all chat members (channels too)
@@ -107,8 +111,9 @@ a fixed limit:
         all_participants = []
 
         while True:
-            participants = client.invoke(GetParticipantsRequest(
-                channel, ChannelParticipantsSearch(''), offset, limit
+            participants = client(GetParticipantsRequest(
+                channel, ChannelParticipantsSearch(''), offset, limit,
+                hash=0
             ))
             if not participants.users:
                 break
@@ -164,14 +169,28 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
             pin_messages=True,
             invite_link=None,
             edit_messages=None
-        )
+        ) 
+        # Equivalent to:
+        #     rights = ChannelAdminRights(
+        #         change_info=True,
+        #         delete_messages=True,
+        #         pin_messages=True
+        #     )
 
-        client(EditAdminRequest(channel, who, rights))
+        # Once you have a ChannelAdminRights, invoke it
+        client(EditAdminRequest(channel, user, rights))
 
-
-Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set
-to ``True`` the ``post_messages`` and ``edit_messages`` fields. Those that
-are ``None`` can be omitted (left here so you know `which are available`__.
+        # User will now be able to change group info, delete other people's
+        # messages and pin messages.
+        
+|  Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all
+|  parameters to ``True`` to give a user full permissions, as not all
+|  permissions are related to both broadcast channels/megagroups.
+|
+|  E.g. trying to set ``post_messages=True`` in a megagroup will raise an
+|  error. It is recommended to always use keyword arguments, and to set only
+|  the permissions the user needs. If you don't need to change a permission,
+|  it can be omitted (full list `here`__).
 
 __ https://lonamiwebs.github.io/Telethon/methods/channels/edit_admin.html
 __ https://github.com/Kyle2142

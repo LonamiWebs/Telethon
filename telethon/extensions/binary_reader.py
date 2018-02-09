@@ -56,8 +56,11 @@ class BinaryReader:
         return int.from_bytes(
             self.read(bits // 8), byteorder='little', signed=signed)
 
-    def read(self, length):
+    def read(self, length=None):
         """Read the given amount of bytes."""
+        if length is None:
+            return self.reader.read()
+
         result = self.reader.read(length)
         if len(result) != length:
             raise BufferError(
@@ -130,6 +133,8 @@ class BinaryReader:
                 return True
             elif value == 0xbc799737:  # boolFalse
                 return False
+            elif value == 0x1cb5c415:  # Vector
+                return [self.tgread_object() for _ in range(self.read_int())]
 
             # If there was still no luck, give up
             self.seek(-4)  # Go back

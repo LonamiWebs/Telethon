@@ -17,10 +17,7 @@ class UpdateState:
 
     def __init__(self, loop=None):
         self.handlers = []
-        self._latest_updates = deque(maxlen=10)
         self._loop = loop if loop else asyncio.get_event_loop()
-
-        self._logger = logging.getLogger(__name__)
 
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
@@ -38,44 +35,20 @@ class UpdateState:
             self._state = update
             return  # Nothing else to be done
 
-        pts = getattr(update, 'pts', self._state.pts)
-        if hasattr(update, 'pts') and pts <= self._state.pts:
-            __log__.info('Ignoring %s, already have it', update)
-            return  # We already handled this update
+        if hasattr(update, 'pts'):
+            self._state.pts = update.pts
 
-        self._state.pts = pts
-
-        # TODO There must be a better way to handle updates rather than
-        # keeping a queue with the latest updates only, and handling
-        # the 'pts' correctly should be enough. However some updates
-        # like UpdateUserStatus (even inside UpdateShort) will be called
-        # repeatedly very often if invoking anything inside an update
-        # handler. TODO Figure out why.
-        """
-        client = TelegramClient('anon', api_id, api_hash, update_workers=1)
-        client.connect()
-        def handle(u):
-            client.get_me()
-        client.add_update_handler(handle)
-        input('Enter to exit.')
-        """
-        data = pickle.dumps(update.to_dict())
-        if data in self._latest_updates:
-            __log__.info('Ignoring %s, already have it', update)
-            return  # Duplicated too
-
-        self._latest_updates.append(data)
-
+        # After running the script for over an hour and receiving over
+        # 1000 updates, the only duplicates received were users going
+        # online or offline. We can trust the server until new reports.
+        if isinstance(update, tl.UpdateShort):
+            self.handle_update(update.update)
         # Expand "Updates" into "Update", and pass these to callbacks.
         # Since .users and .chats have already been processed, we
         # don't need to care about those either.
-        if isinstance(update, tl.UpdateShort):
-            self.handle_update(update.update)
-
         elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
-            for upd in update.updates:
-                self.handle_update(upd)
-
-        # TODO Handle "Updates too long"
+            for u in update.updates:
+                self.handle_update(u)
+        # TODO Handle "tl.UpdatesTooLong"
         else:
             self.handle_update(update)

@@ -1,3 +1,6 @@
+.. _telethon-errors-package:
+
+
 telethon\.errors package
 ========================
 

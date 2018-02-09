@@ -45,11 +45,13 @@ GENERATOR_DIR = 'telethon/tl'
 IMPORT_DEPTH = 2
 
 
-def gen_tl():
+def gen_tl(force=True):
     from telethon_generator.tl_generator import TLGenerator
     from telethon_generator.error_generator import generate_code
     generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
+        if not force:
+            return
         print('Detected previous TLObjects. Cleaning...')
         generator.clean_tlobjects()
 
@@ -99,6 +101,10 @@ def main():
         fetch_errors(ERRORS_JSON)
 
     else:
+        # Call gen_tl() if the scheme.tl file exists, e.g. install from GitHub
+        if os.path.isfile(SCHEME_TL):
+            gen_tl(force=False)
+
         # Get the long description from the README file
         with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()

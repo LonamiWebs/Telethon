@@ -5,8 +5,15 @@ This module holds a rough implementation of the C# TCP client.
 import asyncio
 import errno
 import socket
+import time
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
+
+MAX_TIMEOUT = 15  # in seconds
+CONN_RESET_ERRNOS = {
+    errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
+    errno.EINVAL, errno.ENOTCONN
+}
 
 MAX_TIMEOUT = 15  # in seconds
 CONN_RESET_ERRNOS = {
@@ -56,12 +63,7 @@ class TcpClient:
         :param port: the port to connect to.
         """
         if ':' in ip:  # IPv6
-            # The address needs to be surrounded by [] as discussed on PR#425
-            if not ip.startswith('['):
-                ip = '[' + ip
-            if not ip.endswith(']'):
-                ip = ip + ']'
-
+            ip = ip.replace('[', '').replace(']', '')
             mode, address = socket.AF_INET6, (ip, port, 0, 0)
         else:
             mode, address = socket.AF_INET, (ip, port)
@@ -81,7 +83,9 @@ class TcpClient:
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
-                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL):
+                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL,
+                               errno.ECONNREFUSED,  # Windows-specific follow
+                               getattr(errno, 'WSAEACCES', None)):
                     # Bad file descriptor, i.e. socket was closed, set it
                     # to none to recreate it on the next iteration
                     self._socket = None
@@ -139,6 +143,8 @@ class TcpClient:
         :param size: the size of the block to be read.
         :return: the read data with len(data) == size.
         """
+        if self._socket is None:
+            self._raise_connection_reset()
 
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
