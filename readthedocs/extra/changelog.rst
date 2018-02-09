@@ -14,6 +14,18 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Updates as Events (v0.17.1)
+===========================
+
+*Published at 2018/02/09*
+
+Of course there was more work to be done regarding updates, and it's here!
+The library comes with a new ``events`` module (which you will often import
+as ``from telethon import TelegramClient, events``). This are pretty much
+all the additions that come with this version change, but they are a nice
+addition. Refer to :ref:`working-with-updates` to get started with events.
+
+
 Trust the Server with Updates (v0.17)
 =====================================
 
