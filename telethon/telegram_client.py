@@ -416,7 +416,7 @@ class TelegramClient(TelegramBareClient):
         result = self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash.get(self._phone, ''),
-            phone_code=code,
+            phone_code=str(code),
             first_name=first_name,
             last_name=last_name
         ))
