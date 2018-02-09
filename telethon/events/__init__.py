@@ -102,6 +102,17 @@ class _EventCommon(abc.ABC):
         return self._chat
 
 
+class Raw(_EventBuilder):
+    """
+    Represents a raw event. The event is the update itself.
+    """
+    def resolve(self, client):
+        pass
+
+    def build(self, update):
+        return update
+
+
 # Classes defined here are actually Event builders
 # for their inner Event classes. Inner ._client is
 # set later by the creator TelegramClient.
