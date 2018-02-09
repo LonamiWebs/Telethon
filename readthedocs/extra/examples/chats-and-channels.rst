@@ -170,15 +170,27 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
             invite_link=None,
             edit_messages=None
         ) 
-        #equivalent to:
-        #rights = ChannelAdminRights(change_info=True,delete_messages=True,pin_messages=True)
+        # Equivalent to:
+        #     rights = ChannelAdminRights(
+        #         change_info=True,
+        #         delete_messages=True,
+        #         pin_messages=True
+        #     )
+
+        # Once you have a ChannelAdminRights, invoke it
         client(EditAdminRequest(channel, user, rights))
-        #user will now be able to change group info, delete other people's messages and pin messages
+
+        # User will now be able to change group info, delete other people's
+        # messages and pin messages.
         
-|  Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all parameters to ``True`` to give a user full permissions, as not all permissions are related to both broadcast/megagroups.
-|  E.g. trying to set ``post_messages=True`` in a megagroup will raise an error.
-|  It is recommended to always use keyword arguments, and to set only the permissions the user needs.
-|  If you don't need to change a permission, it can be omitted (full list `here`__).
+|  Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all
+|  parameters to ``True`` to give a user full permissions, as not all
+|  permissions are related to both broadcast channels/megagroups.
+|
+|  E.g. trying to set ``post_messages=True`` in a megagroup will raise an
+|  error. It is recommended to always use keyword arguments, and to set only
+|  the permissions the user needs. If you don't need to change a permission,
+|  it can be omitted (full list `here`__).
 
 __ https://lonamiwebs.github.io/Telethon/methods/channels/edit_admin.html
 __ https://github.com/Kyle2142
