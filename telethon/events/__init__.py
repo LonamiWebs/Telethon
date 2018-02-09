@@ -206,22 +206,6 @@ class NewMessage(_EventBuilder):
             message (:obj:`Message`):
                 This is the original ``Message`` object.
 
-            input_chat (:obj:`InputPeer`):
-                This is the input chat (private, group, megagroup or channel)
-                to which the message was sent. This doesn't have the title or
-                anything, but is useful if you don't need those to avoid
-                further requests.
-
-                Note that this might not be available if the library can't
-                find the input chat.
-
-            chat (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional):
-                This property will make an API call the first time to get the
-                most up to date version of the chat, so use with care as
-                there is no caching besides local caching yet.
-
-                ``input_chat`` needs to be available (often the case).
-
             is_private (:obj:`bool`):
                 True if the message was sent as a private message.
 
@@ -231,41 +215,8 @@ class NewMessage(_EventBuilder):
             is_channel (:obj:`bool`):
                 True if the message was sent on a megagroup or channel.
 
-            input_sender (:obj:`InputPeer`):
-                This is the input version of the user who sent the message.
-                Similarly to ``input_chat``, this doesn't have things like
-                username or similar, but still useful in some cases.
-
-                Note that this might not be available if the library can't
-                find the input chat.
-
-            sender (:obj:`User`):
-                This property will make an API call the first time to get the
-                most up to date version of the sender, so use with care as
-                there is no caching besides local caching yet.
-
-                ``input_sender`` needs to be available (often the case).
-
-            text (:obj:`str`):
-                The message text, markdown-formatted.
-
-            raw_text (:obj:`str`):
-                The raw message text, ignoring any formatting.
-
             is_reply (:obj:`str`):
                 Whether the message is a reply to some other or not.
-
-            reply_message (:obj:`Message`, optional):
-                This property will make an API call the first time to get the
-                full ``Message`` object that one was replying to, so use with
-                care as there is no caching besides local caching yet.
-
-            forward (:obj:`MessageFwdHeader`, optional):
-                The unmodified ``MessageFwdHeader``, if present.
-
-            out (:obj:`bool`):
-                Whether the message is outgoing (i.e. you sent it from
-                another session) or incoming (i.e. someone else sent it).
         """
         def __init__(self, message):
             super().__init__(chat_peer=message.to_id,
@@ -300,6 +251,14 @@ class NewMessage(_EventBuilder):
 
         @property
         def input_sender(self):
+            """
+            This (:obj:`InputPeer`) is the input version of the user who
+            sent the message. Similarly to ``input_chat``, this doesn't have
+            things like username or similar, but still useful in some cases.
+
+            Note that this might not be available if the library can't
+            find the input chat.
+            """
             if self._input_sender is None:
                 try:
                     self._input_sender = self._client.get_input_entity(
@@ -318,12 +277,22 @@ class NewMessage(_EventBuilder):
 
         @property
         def sender(self):
+            """
+            This (:obj:`User`) will make an API call the first time to get
+            the most up to date version of the sender, so use with care as
+            there is no caching besides local caching yet.
+
+            ``input_sender`` needs to be available (often the case).
+            """
             if self._sender is None and self.input_sender:
                 self._sender = self._client.get_entity(self._input_sender)
             return self._sender
 
         @property
         def text(self):
+            """
+            The message text, markdown-formatted.
+            """
             if self._text is None:
                 if not self.message.entities:
                     return self.message.message
@@ -333,10 +302,18 @@ class NewMessage(_EventBuilder):
 
         @property
         def raw_text(self):
+            """
+            The raw message text, ignoring any formatting.
+            """
             return self.message.message
 
         @property
         def reply_message(self):
+            """
+            This (:obj:`Message`, optional) will make an API call the first
+            time to get the full ``Message`` object that one was replying to,
+            so use with care as there is no caching besides local caching yet.
+            """
             if not self.message.reply_to_msg_id:
                 return None
 
@@ -356,14 +333,24 @@ class NewMessage(_EventBuilder):
 
         @property
         def forward(self):
+            """
+            The unmodified (:obj:`MessageFwdHeader`, optional).
+            """
             return self.message.fwd_from
 
         @property
         def media(self):
+            """
+            The unmodified (:obj:`MessageMedia`, optional).
+            """
             return self.message.media
 
         @property
         def photo(self):
+            """
+            If the message media is a photo,
+            this returns the (:obj:`Photo`) object.
+            """
             if isinstance(self.message.media, types.MessageMediaPhoto):
                 photo = self.message.media.photo
                 if isinstance(photo, types.Photo):
@@ -371,6 +358,10 @@ class NewMessage(_EventBuilder):
 
         @property
         def document(self):
+            """
+            If the message media is a document,
+            this returns the (:obj:`Document`) object.
+            """
             if isinstance(self.message.media, types.MessageMediaDocument):
                 doc = self.message.media.document
                 if isinstance(doc, types.Document):
@@ -378,6 +369,10 @@ class NewMessage(_EventBuilder):
 
         @property
         def out(self):
+            """
+            Whether the message is outgoing (i.e. you sent it from
+            another session) or incoming (i.e. someone else sent it).
+            """
             return self.message.out
 
 
@@ -763,6 +758,7 @@ class UserUpdate(_EventBuilder):
 
         @property
         def user(self):
+            """Alias around the chat (conversation)."""
             return self.chat
 
 
@@ -833,6 +829,14 @@ class MessageChanged(_EventBuilder):
 
         @property
         def input_sender(self):
+            """
+            This (:obj:`InputPeer`) is the input version of the user who
+            sent the message. Similarly to ``input_chat``, this doesn't have
+            things like username or similar, but still useful in some cases.
+
+            Note that this might not be available if the library can't
+            find the input chat.
+            """
             # TODO Code duplication
             if self._input_sender is None and self.message:
                 try:
@@ -852,6 +856,13 @@ class MessageChanged(_EventBuilder):
 
         @property
         def sender(self):
+            """
+            This (:obj:`User`) will make an API call the first time to get
+            the most up to date version of the sender, so use with care as
+            there is no caching besides local caching yet.
+
+            ``input_sender`` needs to be available (often the case).
+            """
             if self._sender is None and self.input_sender:
                 self._sender = self._client.get_entity(self._input_sender)
             return self._sender

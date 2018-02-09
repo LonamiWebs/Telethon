@@ -26,6 +26,14 @@ telethon\.telegram\_client module
     :undoc-members:
     :show-inheritance:
 
+telethon\.events package
+------------------------
+
+.. toctree::
+
+    telethon.events
+
+
 telethon\.update\_state module
 ------------------------------
 
