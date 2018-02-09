@@ -17,6 +17,90 @@ class _EventBuilder(abc.ABC):
         """Helper method to allow event builders to be resolved before usage"""
 
 
+class _EventCommon(abc.ABC):
+    """Intermediate class with common things to all events"""
+
+    def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
+        self._client = None
+        self._chat_peer = chat_peer
+        self._message_id = msg_id
+        self._input_chat = None
+        self._chat = None
+
+        self.is_private = isinstance(chat_peer, types.PeerUser)
+        self.is_group = (
+            isinstance(chat_peer, (types.PeerChat, types.PeerChannel))
+            and not broadcast
+        )
+        self.is_channel = isinstance(chat_peer, types.PeerChannel)
+
+    def _get_input_entity(self, msg_id, entity_id, chat=None):
+        """
+        Helper function to call GetMessages on the give msg_id and
+        return the input entity whose ID is the given entity ID.
+
+        If ``chat`` is present it must be an InputPeer.
+        """
+        try:
+            if isinstance(chat, types.InputPeerChannel):
+                result = self._client(
+                    functions.channels.GetMessagesRequest(chat, [msg_id])
+                )
+            else:
+                result = self._client(
+                    functions.messages.GetMessagesRequest([msg_id])
+                )
+        except RPCError:
+            return
+        entity = {
+            utils.get_peer_id(x): x for x in itertools.chain(
+                getattr(result, 'chats', []),
+                getattr(result, 'users', []))
+        }.get(entity_id)
+        if entity:
+            return utils.get_input_peer(entity)
+
+    @property
+    def input_chat(self):
+        """
+        The (:obj:`InputPeer`) (group, megagroup or channel) on which
+        the event occurred. This doesn't have the title or anything,
+        but is useful if you don't need those to avoid further
+        requests.
+
+        Note that this might be ``None`` if the library can't find it.
+        """
+
+        if self._input_chat is None and self._chat_peer is not None:
+            try:
+                self._input_chat = self._client.get_input_entity(
+                    self._chat_peer
+                )
+            except (ValueError, TypeError):
+                # The library hasn't seen this chat, get the message
+                if not isinstance(self._chat_peer, types.PeerChannel):
+                    # TODO For channels, getDifference? Maybe looking
+                    # in the dialogs (which is already done) is enough.
+                    if self._message_id is not None:
+                        self._input_chat = self._get_input_entity(
+                            self._message_id,
+                            utils.get_peer_id(self._chat_peer)
+                        )
+        return self._input_chat
+
+    @property
+    def chat(self):
+        """
+        The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
+        the event occurred. This property will make an API call the first time
+        to get the most up to date version of the chat, so use with care as
+        there is no caching besides local caching yet.
+        """
+        if self._chat is None and self.input_chat:
+            self._chat = self._client.get_entity(self._input_chat)
+        return self._chat
+
+
 # Classes defined here are actually Event builders
 # for their inner Event classes. Inner ._client is
 # set later by the creator TelegramClient.
@@ -42,8 +126,7 @@ class NewMessage(_EventBuilder):
             it matches it will NOT be handled) or a whitelist (default).
     """
     def __init__(self, incoming=None, outgoing=None,
-                 chats=None, blacklist_chats=False,
-                 require_input=True):
+                 chats=None, blacklist_chats=False):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
@@ -103,7 +186,7 @@ class NewMessage(_EventBuilder):
         # Tests passed so return the event
         return event
 
-    class Event:
+    class Event(_EventCommon):
         """
         Represents the event of a new message.
 
@@ -173,7 +256,9 @@ class NewMessage(_EventBuilder):
                 another session) or incoming (i.e. someone else sent it).
         """
         def __init__(self, message):
-            self._client = None
+            super().__init__(chat_peer=message.to_id,
+                             msg_id=message.id, broadcast=bool(message.post))
+
             self.message = message
             self._text = None
 
@@ -181,13 +266,6 @@ class NewMessage(_EventBuilder):
             self._chat = None
             self._input_sender = None
             self._sender = None
-
-            self.is_private = isinstance(message.to_id, types.PeerUser)
-            self.is_group = (
-                isinstance(message.to_id, (types.PeerChat, types.PeerChannel))
-                and not message.post
-            )
-            self.is_channel = isinstance(message.to_id, types.PeerChannel)
 
             self.is_reply = bool(message.reply_to_msg_id)
             self._reply_message = None
@@ -207,54 +285,6 @@ class NewMessage(_EventBuilder):
             return self._client.send_message(self.input_chat,
                                              reply_to=self.message.id,
                                              *args, **kwargs)
-
-        def _get_input_entity(self, msg_id, entity_id, chat=None):
-            """
-            Helper function to call GetMessages on the give msg_id and
-            return the input entity whose ID is the given entity ID.
-            """
-            try:
-                if isinstance(chat, types.InputPeerChannel):
-                    result = self._client(
-                        functions.channels.GetMessagesRequest(chat, [msg_id])
-                    )
-                else:
-                    result = self._client(
-                        functions.messages.GetMessagesRequest([msg_id])
-                    )
-            except RPCError:
-                return
-            entity = {
-                utils.get_peer_id(x): x for x in itertools.chain(
-                    getattr(result, 'chats', []),
-                    getattr(result, 'users', []))
-            }.get(entity_id)
-            if entity:
-                return utils.get_input_peer(entity)
-
-        @property
-        def input_chat(self):
-            if self._input_chat is None:
-                try:
-                    self._input_chat = self._client.get_input_entity(
-                        self.message.to_id
-                    )
-                except (ValueError, TypeError):
-                    # The library hasn't seen this chat, get the message
-                    if not isinstance(self.message.to_id, types.PeerChannel):
-                        # TODO For channels, getDifference? Maybe looking
-                        # in the dialogs (which is already done) is enough.
-                        self._input_chat = self._get_input_entity(
-                            self.message.id,
-                            utils.get_peer_id(self.message.to_id)
-                        )
-            return self._input_chat
-
-        @property
-        def chat(self):
-            if self._chat is None and self.input_chat:
-                self._chat = self._client.get_entity(self._input_chat)
-            return self._chat
 
         @property
         def input_sender(self):
