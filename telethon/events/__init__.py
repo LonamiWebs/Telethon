@@ -753,3 +753,94 @@ class UserUpdate(_EventBuilder):
         @property
         def user(self):
             return self.chat
+
+
+class MessageChanged(_EventBuilder):
+    """
+    Represents a message changed (edited or deleted).
+    """
+
+    def build(self, update):
+        if isinstance(update, (types.UpdateEditMessage,
+                               types.UpdateEditChannelMessage)):
+            event = MessageChanged.Event(edit_msg=update.message)
+        elif isinstance(update, (types.UpdateDeleteMessages,
+                                 types.UpdateDeleteChannelMessages)):
+            event = MessageChanged.Event(
+                deleted_ids=update.messages,
+                peer=types.PeerChannel(update.channel_id)
+            )
+        else:
+            return
+
+        return event
+
+    def resolve(self, client):
+        pass
+
+    class Event(_EventCommon):
+        """
+        Represents the event of an user status update (last seen, joined).
+
+        Members:
+            edited (:obj:`bool`):
+                ``True`` if the message was edited.
+
+            message (:obj:`Message`, optional):
+                The new edited message, if any.
+
+            deleted (:obj:`bool`):
+                ``True`` if the message IDs were deleted.
+
+            deleted_ids (:obj:`List[int]`):
+                A list containing the IDs of the messages that were deleted.
+
+            input_sender (:obj:`InputPeer`):
+                This is the input version of the user who edited the message.
+                Similarly to ``input_chat``, this doesn't have things like
+                username or similar, but still useful in some cases.
+
+                Note that this might not be available if the library can't
+                find the input chat.
+
+            sender (:obj:`User`):
+                This property will make an API call the first time to get the
+                most up to date version of the sender, so use with care as
+                there is no caching besides local caching yet.
+
+                ``input_sender`` needs to be available (often the case).
+        """
+        def __init__(self, edit_msg=None, deleted_ids=None, peer=None):
+            super().__init__(peer if not edit_msg else edit_msg.to_id)
+
+            self.edited = bool(edit_msg)
+            self.message = edit_msg
+            self.deleted = bool(deleted_ids)
+            self.deleted_ids = deleted_ids or []
+            self._input_sender = None
+            self._sender = None
+
+        @property
+        def input_sender(self):
+            # TODO Code duplication
+            if self._input_sender is None and self.message:
+                try:
+                    self._input_sender = self._client.get_input_entity(
+                        self.message.from_id
+                    )
+                except (ValueError, TypeError):
+                    if isinstance(self.message.to_id, types.PeerChannel):
+                        # We can rely on self.input_chat for this
+                        self._input_sender = self._get_input_entity(
+                            self.message.id,
+                            self.message.from_id,
+                            chat=self.input_chat
+                        )
+
+            return self._client.get_input_entity(self.message.from_id)
+
+        @property
+        def sender(self):
+            if self._sender is None and self.input_sender:
+                self._sender = self._client.get_entity(self._input_sender)
+            return self._sender
