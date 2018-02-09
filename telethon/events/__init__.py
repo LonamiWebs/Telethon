@@ -367,3 +367,238 @@ class NewMessage(_EventBuilder):
         @property
         def out(self):
             return self.message.out
+
+
+class ChatAction(_EventBuilder):
+    """
+    Represents an action in a chat (such as user joined, left, or new pin).
+
+    Args:
+        chats (:obj:`entity`, optional):
+            May be one or more entities (username/peer/etc.). By default,
+            only matching chats will be handled.
+
+        blacklist_chats (:obj:`bool`, optional):
+            Whether to treat the the list of chats as a blacklist (if
+            it matches it will NOT be handled) or a whitelist (default).
+
+    """
+    def __init__(self, chats=None, blacklist_chats=False):
+        # TODO This can probably be reused in all builders
+        self.chats = chats
+        self.blacklist_chats = blacklist_chats
+
+    def resolve(self, client):
+        if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
+            self.chats = set(utils.get_peer_id(x)
+                             for x in client.get_input_entity(self.chats))
+        elif self.chats is not None:
+            self.chats = {utils.get_peer_id(
+                          client.get_input_entity(self.chats))}
+
+    def build(self, update):
+        if isinstance(update, types.UpdateChannelPinnedMessage):
+            # Telegram sends UpdateChannelPinnedMessage and then
+            # UpdateNewChannelMessage with MessageActionPinMessage.
+            event = ChatAction.Event(types.PeerChannel(update.channel_id),
+                                     new_pin=update.id)
+
+        elif isinstance(update, types.UpdateChatParticipantAdd):
+            event = ChatAction.Event(types.PeerChat(update.chat_id),
+                                     added_by=update.inviter_id or True,
+                                     users=update.user_id)
+
+        elif isinstance(update, types.UpdateChatParticipantDelete):
+            event = ChatAction.Event(types.PeerChat(update.chat_id),
+                                     kicked_by=True,
+                                     users=update.user_id)
+
+        elif (isinstance(update, (
+                types.UpdateNewMessage, types.UpdateNewChannelMessage))
+              and isinstance(update.message, types.MessageService)):
+            msg = update.message
+            action = update.message.action
+            if isinstance(action, types.MessageActionChatJoinedByLink):
+                event = ChatAction.Event(msg.to_id,
+                                         added_by=True,
+                                         users=msg.from_id)
+            elif isinstance(action, types.MessageActionChatAddUser):
+                event = ChatAction.Event(msg.to_id,
+                                         added_by=msg.from_id or True,
+                                         users=action.users)
+            elif isinstance(action, types.MessageActionChatDeleteUser):
+                event = ChatAction.Event(msg.to_id,
+                                         kicked_by=msg.from_id or True,
+                                         users=action.user_id)
+            elif isinstance(action, types.MessageActionChatCreate):
+                event = ChatAction.Event(msg.to_id,
+                                         users=action.users,
+                                         created=True,
+                                         new_title=action.title)
+            elif isinstance(action, types.MessageActionChannelCreate):
+                event = ChatAction.Event(msg.to_id,
+                                         created=True,
+                                         new_title=action.title)
+            elif isinstance(action, types.MessageActionChatEditTitle):
+                event = ChatAction.Event(msg.to_id,
+                                         new_title=action.title)
+            elif isinstance(action, types.MessageActionChatEditPhoto):
+                event = ChatAction.Event(msg.to_id,
+                                         new_photo=action.photo)
+            elif isinstance(action, types.MessageActionChatDeletePhoto):
+                event = ChatAction.Event(msg.to_id,
+                                         new_photo=True)
+            else:
+                return
+        else:
+            return
+
+        if self.chats is None:
+            return event
+        else:
+            inside = utils.get_peer_id(event._chat_peer) in self.chats
+            if inside == self.blacklist_chats:
+                # If this chat matches but it's a blacklist ignore.
+                # If it doesn't match but it's a whitelist ignore.
+                return
+
+        return event
+
+    class Event(_EventCommon):
+        """
+        Represents the event of a new chat action.
+
+        Members:
+            new_pin (:obj:`bool`):
+                ``True`` if the pin has changed (new pin or removed).
+
+            new_photo (:obj:`bool`):
+                ``True`` if there's a new chat photo (or it was removed).
+
+            photo (:obj:`Photo`, optional):
+                The new photo (or ``None`` if it was removed).
+
+
+            user_added (:obj:`bool`):
+                ``True`` if the user was added by some other.
+
+            user_joined (:obj:`bool`):
+                ``True`` if the user joined on their own.
+
+            user_left (:obj:`bool`):
+                ``True`` if the user left on their own.
+
+            user_kicked (:obj:`bool`):
+                ``True`` if the user was kicked by some other.
+
+            created (:obj:`bool`, optional):
+                ``True`` if this chat was just created.
+
+            new_title (:obj:`bool`, optional):
+                The new title string for the chat, if applicable.
+        """
+        def __init__(self, chat_peer, new_pin=None, new_photo=None,
+                     added_by=None, kicked_by=None, created=None,
+                     users=None, new_title=None):
+            super().__init__(chat_peer=chat_peer, msg_id=new_pin)
+
+            self.new_pin = isinstance(new_pin, int)
+            self._pinned_message = new_pin
+
+            self.new_photo = new_photo is not None
+            self.photo = \
+                new_photo if isinstance(new_photo, types.Photo) else None
+
+            self._added_by = None
+            self._kicked_by = None
+            self.user_added, self.user_joined, self.user_left,\
+                self.user_kicked = (False, False, False, False)
+
+            if added_by is True:
+                self.user_joined = True
+            elif added_by:
+                self.user_added = True
+                self._added_by = added_by
+
+            if kicked_by is True:
+                self.user_left = True
+            elif kicked_by:
+                self.user_kicked = True
+                self._kicked_by = kicked_by
+
+            self.created = bool(created)
+            self._user_peers = users if isinstance(users, list) else [users]
+            self._users = None
+            self.new_title = new_title
+
+        @property
+        def pinned_message(self):
+            """
+            If ``new_pin`` is ``True``, this returns the (:obj:`Message`)
+            object that was pinned.
+            """
+            if self._pinned_message == 0:
+                return None
+
+            if isinstance(self._pinned_message, int) and self.input_chat:
+                r = self._client(functions.channels.GetMessagesRequest(
+                    self._input_chat, [self._pinned_message]
+                ))
+                try:
+                    self._pinned_message = next(
+                        x for x in r.messages
+                        if isinstance(x, types.Message)
+                        and x.id == self._pinned_message
+                    )
+                except StopIteration:
+                    pass
+
+            if isinstance(self._pinned_message, types.Message):
+                return self._pinned_message
+
+        @property
+        def added_by(self):
+            """
+            The user who added ``users``, if applicable (``None`` otherwise).
+            """
+            if self._added_by and not isinstance(self._added_by, types.User):
+                self._added_by = self._client.get_entity(self._added_by)
+            return self._added_by
+
+        @property
+        def kicked_by(self):
+            """
+            The user who kicked ``users``, if applicable (``None`` otherwise).
+            """
+            if self._kicked_by and not isinstance(self._kicked_by, types.User):
+                self._kicked_by = self._client.get_entity(self._kicked_by)
+            return self._kicked_by
+
+        @property
+        def user(self):
+            """
+            The single user that takes part in this action (e.g. joined).
+
+            Might be ``None`` if the information can't be retrieved or
+            there is no user taking part.
+            """
+            try:
+                return next(self.users)
+            except (StopIteration, TypeError):
+                return None
+
+        @property
+        def users(self):
+            """
+            A list of users that take part in this action (e.g. joined).
+
+            Might be empty if the information can't be retrieved or there
+            are no users taking part.
+            """
+            if self._users is None and self._user_peers:
+                try:
+                    self._users = self._client.get_entity(self._user_peers)
+                except (TypeError, ValueError):
+                    self._users = []
+
+            return self._users
