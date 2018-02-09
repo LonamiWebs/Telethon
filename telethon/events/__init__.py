@@ -314,7 +314,7 @@ class NewMessage(_EventBuilder):
                             chat=self.input_chat
                         )
 
-            return self._client.get_input_entity(self.message.from_id)
+            return self._input_sender
 
         @property
         def sender(self):
@@ -848,7 +848,7 @@ class MessageChanged(_EventBuilder):
                             chat=self.input_chat
                         )
 
-            return self._client.get_input_entity(self.message.from_id)
+            return self._input_sender
 
         @property
         def sender(self):
