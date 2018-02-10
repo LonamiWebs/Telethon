@@ -3,6 +3,7 @@ import io
 import itertools
 import logging
 import os
+import re
 import sys
 import time
 from collections import OrderedDict, UserList
@@ -68,7 +69,8 @@ from .tl.types import (
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
     ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
-    InputDocument, InputMediaDocument, Document
+    InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
+    InputMessageEntityMentionName
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -603,6 +605,20 @@ class TelegramClient(TelegramBareClient):
                 message, msg_entities = html.parse(message)
             else:
                 raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+
+            for i, e in enumerate(msg_entities):
+                if isinstance(e, MessageEntityTextUrl):
+                    m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
+                    if m:
+                        try:
+                            msg_entities[i] = InputMessageEntityMentionName(
+                                e.offset, e.length, self.get_input_entity(
+                                    int(m.group(1)) if m.group(1) else e.url
+                                )
+                            )
+                        except (ValueError, TypeError):
+                            # Make no replacement
+                            pass
         else:
             msg_entities = []
 
