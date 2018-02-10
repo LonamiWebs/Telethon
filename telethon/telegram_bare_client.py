@@ -248,7 +248,6 @@ class TelegramBareClient:
         if new_dc is None:
             # Assume we are disconnected due to some error, so connect again
             try:
-                await self._reconnect_lock.acquire()
                 if self.is_connected():
                     __log__.info('Reconnection aborted: already connected')
                     return True
@@ -258,8 +257,6 @@ class TelegramBareClient:
             except ConnectionResetError as e:
                 __log__.warning('Reconnection failed due to %s', e)
                 return False
-            finally:
-                self._reconnect_lock.release()
         else:
             # Since we're reconnecting possibly due to a UserMigrateError,
             # we need to first know the Data Centers we can connect to. Do
@@ -589,9 +586,10 @@ class TelegramBareClient:
                 if need_reconnect:
                     __log__.info('Attempting reconnection from read loop')
                     need_reconnect = False
-                    while self._user_connected and not await self._reconnect():
-                        # Retry forever, this is instant messaging
-                        await asyncio.sleep(0.1, loop=self._loop)
+                    with await self._reconnect_lock:
+                        while self._user_connected and not await self._reconnect():
+                            # Retry forever, this is instant messaging
+                            await asyncio.sleep(0.1, loop=self._loop)
 
                     # Telegram seems to kick us every 1024 items received
                     # from the network not considering things like bad salt.
