@@ -49,6 +49,7 @@ class MtProtoSender:
         self.session = session
         self.connection = connection
         self._loop = loop if loop else asyncio.get_event_loop()
+        self._recv_lock = asyncio.Lock()
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
@@ -123,7 +124,10 @@ class MtProtoSender:
             Update and Updates objects.
         """
         try:
-            body = await self.connection.recv()
+            with await self._recv_lock:
+                # Receiving items is not an "atomic" operation since we
+                # need to read the length and then upcoming parts separated.
+                body = await self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
