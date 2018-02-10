@@ -570,7 +570,7 @@ class TelegramClient(TelegramBareClient):
                 if update.message.id == msg_id:
                     return update.message
 
-    def send_message(self, entity, message, reply_to=None, parse_mode=None,
+    def send_message(self, entity, message, reply_to=None, parse_mode='md',
                      link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
@@ -587,8 +587,10 @@ class TelegramClient(TelegramBareClient):
                 it should be the ID of the message that it should reply to.
 
             parse_mode (:obj:`str`, optional):
-                Can be 'md' or 'markdown' for markdown-like parsing, in a similar
-                fashion how official clients work.
+                Can be 'md' or 'markdown' for markdown-like parsing (default),
+                or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
+                other false-y value is provided, the message will be sent with
+                no formatting.
 
             link_preview (:obj:`bool`, optional):
                 Should the link preview be shown?
