@@ -149,8 +149,8 @@ class NewMessage(_EventBuilder):
 
     def resolve(self, client):
         if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(x)
-                             for x in client.get_input_entity(self.chats))
+            self.chats = set(utils.get_peer_id(client.get_input_entity(x))
+                             for x in self.chats)
         elif self.chats is not None:
             self.chats = {utils.get_peer_id(
                           client.get_input_entity(self.chats))}
@@ -397,8 +397,8 @@ class ChatAction(_EventBuilder):
 
     def resolve(self, client):
         if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(x)
-                             for x in client.get_input_entity(self.chats))
+            self.chats = set(utils.get_peer_id(client.get_input_entity(x))
+                             for x in self.chats)
         elif self.chats is not None:
             self.chats = {utils.get_peer_id(
                           client.get_input_entity(self.chats))}
