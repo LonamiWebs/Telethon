@@ -70,7 +70,7 @@ from .tl.types import (
     ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
-    InputMessageEntityMentionName
+    InputMessageEntityMentionName, DocumentAttributeVideo
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -922,8 +922,8 @@ class TelegramClient(TelegramBareClient):
 
             force_document (:obj:`bool`, optional):
                 If left to ``False`` and the file is a path that ends with
-                ``.png``, ``.jpg`` and such, the file will be sent as a photo.
-                Otherwise always as a document.
+                the extension of an image file or a video file, it will be
+                sent as such. Otherwise always as a document.
 
             progress_callback (:obj:`callable`, optional):
                 A callback function accepting two parameters:
@@ -1015,6 +1015,9 @@ class TelegramClient(TelegramBareClient):
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
                 }
+                if not force_document and utils.is_video(file):
+                    attr_dict[DocumentAttributeVideo] = \
+                        DocumentAttributeVideo(0, 0, 0)
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
