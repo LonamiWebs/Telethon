@@ -86,6 +86,11 @@ class MtProtoSender:
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
 
+        __log__.debug('Sending requests with IDs: %s', ', '.join(
+            '{}: {}'.format(m.request.__class__.__name__, m.msg_id)
+            for m in messages
+        ))
+
         # Pack everything in the same container if we need to send AckRequests
         if self._need_confirmation:
             messages.append(
@@ -465,6 +470,7 @@ class MtProtoSender:
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
 
+        __log__.debug('Received response for request with ID %d', request_id)
         request = self._pop_request(request_id)
 
         if inner_code == 0x2144ca19:  # RPC Error
@@ -502,8 +508,18 @@ class MtProtoSender:
             return True
 
         # If it's really a result for RPC from previous connection
-        # session, it will be skipped by the handle_container()
-        __log__.warning('Lost request will be skipped')
+        # session, it will be skipped by the handle_container().
+        # For some reason this also seems to happen when downloading
+        # photos, where the server responds with FileJpeg().
+        try:
+            obj = reader.tgread_object()
+        except Exception as e:
+            obj = '(failed to read: %s)' % e
+
+        __log__.warning(
+            'Lost request (ID %d) with code %s will be skipped, contents: %s',
+            request_id, hex(inner_code), obj
+        )
         return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):
