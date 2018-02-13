@@ -149,6 +149,8 @@ def main():
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
                 'try_telethon.py'
             ]),
+            test_suite='run_tests.test_suite',
+            tests_require=['PyCrypto'],
             install_requires=['pyaes', 'rsa']
         )
 

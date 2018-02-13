@@ -1,0 +1,35 @@
+sudo: false
+language: python
+
+cache: pip
+
+# Tox cannot install pythons, so we set 3.5 as default, use 3.4 already
+# available in container, and then include 3.6 in matrix.
+python:
+  - 3.5
+
+env:
+  matrix:
+    - TOXENV=py34
+    - TOXENV=py35
+
+matrix:
+  include:
+    - python: 3.6
+      env: TOXENV=py36
+    - env: TOXENV=coverage
+    - env: TOXENV=lint
+  allow_failures:
+    - env: TOXENV=lint
+
+install:
+  - pip install tox
+
+script:
+  - tox
+
+after_success:
+  - if [[ $TOXENV =~ coverage34 ]]; then
+    pip install --quiet python-coveralls;
+    coveralls --ignore-errors;
+    fi

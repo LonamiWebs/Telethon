@@ -7,6 +7,9 @@ import telethon.network.authenticator as authenticator
 from telethon.extensions import TcpClient
 from telethon.network import Connection
 
+TEST_SERVER_IP = '149.154.167.40'
+TEST_SERVER_PORT = 443
+
 
 def run_server_echo_thread(port):
     def server_thread():
@@ -38,6 +41,7 @@ class NetworkTests(unittest.TestCase):
 
     @staticmethod
     def test_authenticator():
-        transport = Connection('149.154.167.91', 443)
+        transport = Connection()
+        transport.connect(TEST_SERVER_IP, TEST_SERVER_PORT)
         authenticator.do_authentication(transport)
         transport.close()

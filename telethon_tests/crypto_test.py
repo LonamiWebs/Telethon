@@ -1,10 +1,23 @@
+import hashlib
+import struct
 import unittest
-from hashlib import sha1
 
 import telethon.helpers as utils
 from telethon.crypto import AES, Factorization
 from telethon.crypto import rsa
 from Crypto.PublicKey import RSA as PyCryptoRSA
+
+TEST_RSA_KEY = '''
+-----BEGIN RSA PUBLIC KEY-----
+MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6
+lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS
+an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw
+Efzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+
+8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n
+Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB
+-----END RSA PUBLIC KEY-----
+'''.strip()
+TEST_RSA_KEY_FINGERPRINT = b'!k\xe8l\x02+\xb4\xc3'
 
 
 class CryptoTests(unittest.TestCase):
@@ -26,7 +39,7 @@ class CryptoTests(unittest.TestCase):
     def test_sha1():
         string = 'Example string'
 
-        hash_sum = sha1(string.encode('utf-8')).digest()
+        hash_sum = hashlib.sha1(string.encode('utf-8')).digest()
         expected = b'\nT\x92|\x8d\x06:)\x99\x04\x8e\xf8j?\xc4\x8e\xd3}m9'
 
         assert hash_sum == expected, 'Invalid sha1 hash_sum representation (should be {}, but is {})'\
@@ -113,18 +126,16 @@ class CryptoTests(unittest.TestCase):
         assert iv == expected_iv, 'IV ("{}") does not equal expected ("{}")'.format(
             iv, expected_iv)
 
-    @staticmethod
-    def test_fingerprint_from_key():
-        assert rsa._compute_fingerprint(PyCryptoRSA.importKey(
-            '-----BEGIN RSA PUBLIC KEY-----\n'
-            'MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6\n'
-            'lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS\n'
-            'an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw\n'
-            'Efzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+\n'
-            '8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n\n'
-            'Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB\n'
-            '-----END RSA PUBLIC KEY-----'
-        )) == b'!k\xe8l\x02+\xb4\xc3', 'Wrong fingerprint calculated'
+    def test_fingerprint_from_key_pycrypto(self):
+        key = PyCryptoRSA.importKey(TEST_RSA_KEY)
+        fp = rsa._compute_fingerprint(key)
+        self.assertEqual(fp, struct.unpack('<q', TEST_RSA_KEY_FINGERPRINT)[0])
+
+    def test_fingerprint_from_key_rsa(self):
+        import rsa as rsalib
+        key = rsalib.PublicKey.load_pkcs1(TEST_RSA_KEY)
+        fp = rsa._compute_fingerprint(key)
+        self.assertEqual(fp, struct.unpack('<q', TEST_RSA_KEY_FINGERPRINT)[0])
 
     @staticmethod
     def test_factorize():
