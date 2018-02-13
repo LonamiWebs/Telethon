@@ -136,6 +136,11 @@ class NewMessage(_EventBuilder):
         blacklist_chats (:obj:`bool`, optional):
             Whether to treat the the list of chats as a blacklist (if
             it matches it will NOT be handled) or a whitelist (default).
+
+    Notes:
+        The ``message.from_id`` might not only be an integer or ``None``,
+        but also ``InputPeerSelf()`` for short private messages (the API
+        would not return such thing, this is a custom modification).
     """
     def __init__(self, incoming=None, outgoing=None,
                  chats=None, blacklist_chats=False):
@@ -169,6 +174,7 @@ class NewMessage(_EventBuilder):
                 silent=update.silent,
                 id=update.id,
                 to_id=types.PeerUser(update.user_id),
+                from_id=types.InputPeerSelf() if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -257,21 +263,23 @@ class NewMessage(_EventBuilder):
             things like username or similar, but still useful in some cases.
 
             Note that this might not be available if the library can't
-            find the input chat.
+            find the input chat, or if the message a broadcast on a channel.
             """
             if self._input_sender is None:
+                if self.is_channel and not self.is_group:
+                    return None
+
                 try:
                     self._input_sender = self._client.get_input_entity(
                         self.message.from_id
                     )
                 except (ValueError, TypeError):
-                    if isinstance(self.message.to_id, types.PeerChannel):
-                        # We can rely on self.input_chat for this
-                        self._input_sender = self._get_input_entity(
-                            self.message.id,
-                            self.message.from_id,
-                            chat=self.input_chat
-                        )
+                    # We can rely on self.input_chat for this
+                    self._input_sender = self._get_input_entity(
+                        self.message.id,
+                        self.message.from_id,
+                        chat=self.input_chat
+                    )
 
             return self._input_sender
 
@@ -835,22 +843,24 @@ class MessageChanged(_EventBuilder):
             things like username or similar, but still useful in some cases.
 
             Note that this might not be available if the library can't
-            find the input chat.
+            find the input chat, or if the message a broadcast on a channel.
             """
             # TODO Code duplication
-            if self._input_sender is None and self.message:
+            if self._input_sender is None:
+                if self.is_channel and not self.is_group:
+                    return None
+
                 try:
                     self._input_sender = self._client.get_input_entity(
                         self.message.from_id
                     )
                 except (ValueError, TypeError):
-                    if isinstance(self.message.to_id, types.PeerChannel):
-                        # We can rely on self.input_chat for this
-                        self._input_sender = self._get_input_entity(
-                            self.message.id,
-                            self.message.from_id,
-                            chat=self.input_chat
-                        )
+                    # We can rely on self.input_chat for this
+                    self._input_sender = self._get_input_entity(
+                        self.message.id,
+                        self.message.from_id,
+                        chat=self.input_chat
+                    )
 
             return self._input_sender
 
