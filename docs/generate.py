@@ -207,6 +207,13 @@ def get_description(arg):
         desc.append('This argument can be omitted.')
         otherwise = True
 
+    if arg.type in {'InputPeer', 'InputUser', 'InputChannel'}:
+        desc.append(
+            'Anything entity-like will work if the library can find its '
+            '<code>Input</code> version (e.g., usernames, <code>Peer</code>, '
+            '<code>User</code> or <code>Channel</code> objects, etc.).'
+        )
+
     if arg.is_vector:
         if arg.is_generic:
             desc.append('A list of other Requests must be supplied.')
@@ -221,7 +228,11 @@ def get_description(arg):
         desc.insert(1, 'Otherwise,')
         desc[-1] = desc[-1][:1].lower() + desc[-1][1:]
 
-    return ' '.join(desc)
+    return ' '.join(desc).replace(
+        'list',
+        '<span class="tooltip" title="Any iterable that supports len() '
+        'will work too">list</span>'
+    )
 
 
 def copy_replace(src, dst, replacements):

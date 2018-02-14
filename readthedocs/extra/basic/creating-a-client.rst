@@ -95,6 +95,11 @@ is just a matter of taste, and how much control you need.
 
 Remember that you can get yourself at any time with ``client.get_me()``.
 
+.. warning::
+    Please note that if you fail to login around 5 times (or change the first
+    parameter of the ``TelegramClient``, which is the session name) you will
+    receive a ``FloodWaitError`` of around 22 hours, so be careful not to mess
+    this up! This shouldn't happen if you're doing things as explained, though.
 
 .. note::
     If you want to use a **proxy**, you have to `install PySocks`__
