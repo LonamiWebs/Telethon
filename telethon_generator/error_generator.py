@@ -68,7 +68,7 @@ def write_error(f, code, name, desc, capture_name):
         f.write(
             "self.{} = int(kwargs.get('capture', 0))\n        ".format(capture_name)
         )
-    f.write('super(Exception, self).__init__(self, {}'.format(repr(desc)))
+    f.write('super(Exception, self).__init__({}'.format(repr(desc)))
     if capture_name:
         f.write('.format(self.{})'.format(capture_name))
     f.write(')\n')
