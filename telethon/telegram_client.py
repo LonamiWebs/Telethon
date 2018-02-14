@@ -1618,7 +1618,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Event handling
 
-    def on(self, event):
+    async def on(self, event):
         """
 
         Turns the given entity into a valid Telegram user or chat.
@@ -1631,7 +1631,7 @@ class TelegramClient(TelegramBareClient):
         if isinstance(event, type):
             event = event()
 
-        event.resolve(self)
+        await event.resolve(self)
 
         def decorator(f):
             self._event_builders.append((event, f))
@@ -1642,12 +1642,12 @@ class TelegramClient(TelegramBareClient):
 
         return decorator
 
-    def _on_handler(self, update):
+    async def _on_handler(self, update):
         for builder, callback in self._event_builders:
             event = builder.build(update)
             if event:
                 event._client = self
-                callback(event)
+                await callback(event)
 
     # endregion
 
