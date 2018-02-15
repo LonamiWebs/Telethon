@@ -255,6 +255,32 @@ class NewMessage(_EventBuilder):
                                              reply_to=self.message.id,
                                              *args, **kwargs)
 
+        def edit(self, *args, **kwargs):
+            """
+            Edits the message iff it's outgoing. This is a shorthand for
+            ``client.edit_message(event.chat, event.message, ...)``.
+
+            Returns ``None`` if the message was incoming,
+            or the edited message otherwise.
+            """
+            if not self.message.out:
+                return None
+
+            return self._client.edit_message(self.input_chat,
+                                             self.message,
+                                             *args, **kwargs)
+
+        def delete(self, *args, **kwargs):
+            """
+            Deletes the message. You're responsible for checking whether you
+            have the permission to do so, or to except the error otherwise.
+            This is a shorthand for
+            ``client.delete_messages(event.chat, event.message, ...)``.
+            """
+            return self._client.delete_messages(self.input_chat,
+                                                [self.message],
+                                                *args, **kwargs)
+
         @property
         def input_sender(self):
             """
