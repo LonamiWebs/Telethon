@@ -103,8 +103,6 @@ class TelegramBareClient:
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
-        if self.api_id < 20:  # official apps must use obfuscated
-            connection_mode = ConnectionMode.TCP_OBFUSCATED
 
         # This is the main sender, which will be used from the thread
         # that calls .connect(). Every other thread will spawn a new
