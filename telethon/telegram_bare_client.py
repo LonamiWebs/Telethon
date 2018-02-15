@@ -158,6 +158,14 @@ class TelegramBareClient:
         self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
 
+        # Also have another delay for GetStateRequest.
+        #
+        # If the connection is kept alive for long without invoking any
+        # high level request the server simply stops sending updates.
+        # TODO maybe we can have ._last_request instead if any req works?
+        self._last_state = datetime.now()
+        self._state_delay = timedelta(hours=1)
+
         # Some errors are known but there's nothing we can do from the
         # background thread. If any of these happens, call .disconnect(),
         # and raise them next time .invoke() is tried to be called.
@@ -579,6 +587,7 @@ class TelegramBareClient:
            otherwise it should be called manually after enabling updates.
         """
         self.updates.process(self(GetStateRequest()))
+        self._last_state = datetime.now()
 
     def add_update_handler(self, handler):
         """Adds an update handler (a function which takes a TLObject,
@@ -649,6 +658,10 @@ class TelegramBareClient:
                         int.from_bytes(os.urandom(8), 'big', signed=True)
                     ))
                     self._last_ping = datetime.now()
+
+                if datetime.now() > self._last_state + self._state_delay:
+                    self._sender.send(GetStateRequest())
+                    self._last_state = datetime.now()
 
                 __log__.debug('Receiving items from the network...')
                 self._sender.receive(update_state=self.updates)
