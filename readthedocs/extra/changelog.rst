@@ -14,6 +14,41 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+New small convenience functions (v0.17.2)
+=========================================
+
+*Published at 2018/02/15*
+
+Primarily bug fixing and a few welcomed additions.
+
+Additions
+~~~~~~~~~
+
+- New convenience ``.edit_message()`` method on the ``TelegramClient``.
+- New ``.edit()`` and ``.delete()`` shorthands on the ``NewMessage`` event.
+- Default to markdown parsing when sending and editing messages.
+- Support for inline mentions when sending and editing messages. They work
+  like inline urls (e.g. ``[text](@username)``) and also support the Bot-API
+  style (see `here <https://core.telegram.org/bots/api#formatting-options>`__).
+
+Bug fixes
+~~~~~~~~~
+
+- Periodically send ``GetStateRequest`` automatically to keep the server
+  sending updates even if you're not invoking any request yourself.
+- HTML parsing was failing due to not handling surrogates properly.
+- ``.sign_up`` was not accepting ``int`` codes.
+- Whitelisting more than one chat on ``events`` wasn't working.
+- Video files are sent as a video by default unless ``force_document``.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- More ``logging`` calls to help spot some bugs in the future.
+- Some more logic to retrieve input entities on events.
+- Clarified a few parts of the documentation.
+
+
 Updates as Events (v0.17.1)
 ===========================
 
