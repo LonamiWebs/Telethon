@@ -1,15 +1,28 @@
 """
 Simple HTML -> Telegram entity parser.
 """
+import struct
+from collections import deque
 from html import escape, unescape
 from html.parser import HTMLParser
-from collections import deque
 
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl
 )
+
+
+# Helpers from markdown.py
+def _add_surrogate(text):
+    return ''.join(
+        ''.join(chr(y) for y in struct.unpack('<HH', x.encode('utf-16le')))
+        if (0x10000 <= ord(x) <= 0x10FFFF) else x for x in text
+    )
+
+
+def _del_surrogate(text):
+    return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
 class HTMLToTelegramParser(HTMLParser):
@@ -109,8 +122,8 @@ def parse(html):
     :return: a tuple consisting of (clean message, [message entities]).
     """
     parser = HTMLToTelegramParser()
-    parser.feed(html)
-    return parser.text, parser.entities
+    parser.feed(_add_surrogate(html))
+    return _del_surrogate(parser.text), parser.entities
 
 
 def unparse(text, entities):
@@ -124,6 +137,8 @@ def unparse(text, entities):
     """
     if not entities:
         return text
+
+    text = _add_surrogate(text)
     html = []
     last_offset = 0
     for entity in entities:
@@ -164,4 +179,4 @@ def unparse(text, entities):
             skip_entity = True
         last_offset = entity.offset + (0 if skip_entity else entity.length)
     html.append(text[last_offset:])
-    return ''.join(html)
+    return _del_surrogate(''.join(html))

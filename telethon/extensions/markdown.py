@@ -152,6 +152,9 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     :param entities: the MessageEntity's applied to the text.
     :return: a markdown-like text representing the combination of both inputs.
     """
+    if not entities:
+        return text
+
     if not delimiters:
         if delimiters is not None:
             return text
