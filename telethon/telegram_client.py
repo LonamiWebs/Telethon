@@ -4,6 +4,7 @@ import io
 import itertools
 import logging
 import os
+import re
 import sys
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
@@ -45,8 +46,8 @@ from .tl.functions.contacts import (
 from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
-    CheckChatInviteRequest, ReadMentionsRequest,
-    SendMultiMediaRequest, UploadMediaRequest
+    CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
+    UploadMediaRequest, EditMessageRequest
 )
 
 from .tl.functions import channels
@@ -68,7 +69,9 @@ from .tl.types import (
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
     ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
-    InputDocument, InputMediaDocument, Document
+    InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
+    InputMessageEntityMentionName, DocumentAttributeVideo,
+    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -414,7 +417,7 @@ class TelegramClient(TelegramBareClient):
         result = await self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash.get(self._phone, ''),
-            phone_code=code,
+            phone_code=str(code),
             first_name=first_name,
             last_name=last_name
         ))
@@ -561,13 +564,62 @@ class TelegramClient(TelegramBareClient):
                         msg_id = update.id
                         break
 
-        for update in result.updates:
+        if isinstance(result, UpdateShort):
+            updates = [result.update]
+        elif isinstance(result, Updates):
+            updates = result.updates
+        else:
+            return
+
+        for update in updates:
             if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
                 if update.message.id == msg_id:
                     return update.message
 
+            elif (isinstance(update, UpdateEditMessage) and
+                    not isinstance(request.peer, InputPeerChannel)):
+                if request.id == update.message.id:
+                    return update.message
+
+            elif (isinstance(update, UpdateEditChannelMessage) and
+                    utils.get_peer_id(request.peer) ==
+                        utils.get_peer_id(update.message.to_id)):
+                if request.id == update.message.id:
+                    return update.message
+
+    def _parse_message_text(self, message, parse_mode):
+        """
+        Returns a (parsed message, entities) tuple depending on parse_mode.
+        """
+        if not parse_mode:
+            return message, []
+
+        parse_mode = parse_mode.lower()
+        if parse_mode in {'md', 'markdown'}:
+            message, msg_entities = markdown.parse(message)
+        elif parse_mode.startswith('htm'):
+            message, msg_entities = html.parse(message)
+        else:
+            raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+
+        for i, e in enumerate(msg_entities):
+            if isinstance(e, MessageEntityTextUrl):
+                m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
+                if m:
+                    try:
+                        msg_entities[i] = InputMessageEntityMentionName(
+                            e.offset, e.length, self.get_input_entity(
+                                int(m.group(1)) if m.group(1) else e.url
+                            )
+                        )
+                    except (ValueError, TypeError):
+                        # Make no replacement
+                        pass
+
+        return message, msg_entities
+
     async def send_message(self, entity, message, reply_to=None,
-                           parse_mode=None, link_preview=True):
+                           parse_mode='md', link_preview=True):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -583,8 +635,10 @@ class TelegramClient(TelegramBareClient):
                 it should be the ID of the message that it should reply to.
 
             parse_mode (:obj:`str`, optional):
-                Can be 'md' or 'markdown' for markdown-like parsing, in a similar
-                fashion how official clients work.
+                Can be 'md' or 'markdown' for markdown-like parsing (default),
+                or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
+                other false-y value is provided, the message will be sent with
+                no formatting.
 
             link_preview (:obj:`bool`, optional):
                 Should the link preview be shown?
@@ -593,23 +647,14 @@ class TelegramClient(TelegramBareClient):
             the sent message
         """
         entity = await self.get_input_entity(entity)
-        if parse_mode:
-            parse_mode = parse_mode.lower()
-            if parse_mode in {'md', 'markdown'}:
-                message, msg_entities = markdown.parse(message)
-            elif parse_mode.startswith('htm'):
-                message, msg_entities = html.parse(message)
-            else:
-                raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
-        else:
-            msg_entities = []
+        message, msg_entities = self._parse_message_text(message, parse_mode)
 
         request = SendMessageRequest(
             peer=entity,
             message=message,
             entities=msg_entities,
             no_webpage=not link_preview,
-            reply_to_msg_id=self._get_reply_to(reply_to)
+            reply_to_msg_id=self._get_message_id(reply_to)
         )
         result = await self(request)
 
@@ -624,6 +669,51 @@ class TelegramClient(TelegramBareClient):
                 entities=result.entities
             )
 
+        return self._get_response_message(request, result)
+
+    async def edit_message(self, entity, message_id, message=None,
+                           parse_mode='md', link_preview=True):
+        """
+        Edits the given message ID (to change its contents or disable preview).
+
+        Args:
+            entity (:obj:`entity`):
+                From which chat to edit the message.
+
+            message_id (:obj:`str`):
+                The ID of the message (or ``Message`` itself) to be edited.
+
+            message (:obj:`str`, optional):
+                The new text of the message.
+
+            parse_mode (:obj:`str`, optional):
+                Can be 'md' or 'markdown' for markdown-like parsing (default),
+                or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
+                other false-y value is provided, the message will be sent with
+                no formatting.
+
+            link_preview (:obj:`bool`, optional):
+                Should the link preview be shown?
+
+        Raises:
+            ``MessageAuthorRequiredError`` if you're not the author of the
+            message but try editing it anyway.
+
+            ``MessageNotModifiedError`` if the contents of the message were
+            not modified at all.
+
+        Returns:
+            the edited message
+        """
+        message, msg_entities = self._parse_message_text(message, parse_mode)
+        request = EditMessageRequest(
+            peer=await self.get_input_entity(entity),
+            id=self._get_message_id(message_id),
+            message=message,
+            no_webpage=not link_preview,
+            entities=msg_entities
+        )
+        result = await self(request)
         return self._get_response_message(request, result)
 
     async def delete_messages(self, entity, message_ids, revoke=True):
@@ -849,22 +939,22 @@ class TelegramClient(TelegramBareClient):
         return False
 
     @staticmethod
-    def _get_reply_to(reply_to):
+    def _get_message_id(message):
         """Sanitizes the 'reply_to' parameter a user may send"""
-        if reply_to is None:
+        if message is None:
             return None
 
-        if isinstance(reply_to, int):
-            return reply_to
+        if isinstance(message, int):
+            return message
 
         try:
-            if reply_to.SUBCLASS_OF_ID == 0x790009e3:
+            if message.SUBCLASS_OF_ID == 0x790009e3:
                 # hex(crc32(b'Message')) = 0x790009e3
-                return reply_to.id
+                return message.id
         except AttributeError:
             pass
 
-        raise TypeError('Invalid reply_to type: {}'.format(type(reply_to)))
+        raise TypeError('Invalid message type: {}'.format(type(message)))
 
     # endregion
 
@@ -902,8 +992,8 @@ class TelegramClient(TelegramBareClient):
 
             force_document (:obj:`bool`, optional):
                 If left to ``False`` and the file is a path that ends with
-                ``.png``, ``.jpg`` and such, the file will be sent as a photo.
-                Otherwise always as a document.
+                the extension of an image file or a video file, it will be
+                sent as such. Otherwise always as a document.
 
             progress_callback (:obj:`callable`, optional):
                 A callback function accepting two parameters:
@@ -953,7 +1043,7 @@ class TelegramClient(TelegramBareClient):
             ]
 
         entity = await self.get_input_entity(entity)
-        reply_to = self._get_reply_to(reply_to)
+        reply_to = self._get_message_id(reply_to)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
@@ -995,6 +1085,9 @@ class TelegramClient(TelegramBareClient):
                     # TODO If the input file is an audio, find out:
                     # Performer and song title and add DocumentAttributeAudio
                 }
+                if not force_document and utils.is_video(file):
+                    attr_dict[DocumentAttributeVideo] = \
+                        DocumentAttributeVideo(0, 0, 0)
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
@@ -1063,7 +1156,7 @@ class TelegramClient(TelegramBareClient):
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change. Caption's ignored.
         entity = await self.get_input_entity(entity)
-        reply_to = self._get_reply_to(reply_to)
+        reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
         media = []

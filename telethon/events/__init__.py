@@ -136,6 +136,11 @@ class NewMessage(_EventBuilder):
         blacklist_chats (:obj:`bool`, optional):
             Whether to treat the the list of chats as a blacklist (if
             it matches it will NOT be handled) or a whitelist (default).
+
+    Notes:
+        The ``message.from_id`` might not only be an integer or ``None``,
+        but also ``InputPeerSelf()`` for short private messages (the API
+        would not return such thing, this is a custom modification).
     """
     def __init__(self, incoming=None, outgoing=None,
                  chats=None, blacklist_chats=False):
@@ -149,8 +154,8 @@ class NewMessage(_EventBuilder):
 
     async def resolve(self, client):
         if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(x)
-                             for x in await client.get_input_entity(self.chats))
+            self.chats = set(utils.get_peer_id(await client.get_input_entity(x))
+                             for x in self.chats)
         elif self.chats is not None:
             self.chats = {utils.get_peer_id(
                           await client.get_input_entity(self.chats))}
@@ -169,6 +174,7 @@ class NewMessage(_EventBuilder):
                 silent=update.silent,
                 id=update.id,
                 to_id=types.PeerUser(update.user_id),
+                from_id=types.InputPeerSelf() if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -249,6 +255,32 @@ class NewMessage(_EventBuilder):
                                                    reply_to=self.message.id,
                                                    *args, **kwargs)
 
+        async def edit(self, *args, **kwargs):
+            """
+            Edits the message iff it's outgoing. This is a shorthand for
+            ``client.edit_message(event.chat, event.message, ...)``.
+
+            Returns ``None`` if the message was incoming,
+            or the edited message otherwise.
+            """
+            if not self.message.out:
+                return None
+
+            return await self._client.edit_message(self.input_chat,
+                                                   self.message,
+                                                   *args, **kwargs)
+
+        async def delete(self, *args, **kwargs):
+            """
+            Deletes the message. You're responsible for checking whether you
+            have the permission to do so, or to except the error otherwise.
+            This is a shorthand for
+            ``client.delete_messages(event.chat, event.message, ...)``.
+            """
+            return await self._client.delete_messages(self.input_chat,
+                                                      [self.message],
+                                                      *args, **kwargs)
+
         @property
         async def input_sender(self):
             """
@@ -257,21 +289,23 @@ class NewMessage(_EventBuilder):
             things like username or similar, but still useful in some cases.
 
             Note that this might not be available if the library can't
-            find the input chat.
+            find the input chat, or if the message a broadcast on a channel.
             """
             if self._input_sender is None:
+                if self.is_channel and not self.is_group:
+                    return None
+
                 try:
                     self._input_sender = await self._client.get_input_entity(
                         self.message.from_id
                     )
                 except (ValueError, TypeError):
-                    if isinstance(self.message.to_id, types.PeerChannel):
-                        # We can rely on self.input_chat for this
-                        self._input_sender = await self._get_input_entity(
-                            self.message.id,
-                            self.message.from_id,
-                            chat=await self.input_chat
-                        )
+                    # We can rely on self.input_chat for this
+                    self._input_sender = await self._get_input_entity(
+                        self.message.id,
+                        self.message.from_id,
+                        chat=await self.input_chat
+                    )
 
             return self._input_sender
 
@@ -397,8 +431,8 @@ class ChatAction(_EventBuilder):
 
     async def resolve(self, client):
         if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(x)
-                             for x in await client.get_input_entity(self.chats))
+            self.chats = set(utils.get_peer_id(await client.get_input_entity(x))
+                             for x in self.chats)
         elif self.chats is not None:
             self.chats = {utils.get_peer_id(
                           await client.get_input_entity(self.chats))}
@@ -835,22 +869,24 @@ class MessageChanged(_EventBuilder):
             things like username or similar, but still useful in some cases.
 
             Note that this might not be available if the library can't
-            find the input chat.
+            find the input chat, or if the message a broadcast on a channel.
             """
             # TODO Code duplication
-            if self._input_sender is None and self.message:
+            if self._input_sender is None:
+                if self.is_channel and not self.is_group:
+                    return None
+
                 try:
                     self._input_sender = await self._client.get_input_entity(
                         self.message.from_id
                     )
                 except (ValueError, TypeError):
-                    if isinstance(self.message.to_id, types.PeerChannel):
-                        # We can rely on self.input_chat for this
-                        self._input_sender = await self._get_input_entity(
-                            self.message.id,
-                            self.message.from_id,
-                            chat=await self.input_chat
-                        )
+                    # We can rely on self.input_chat for this
+                    self._input_sender = await self._get_input_entity(
+                        self.message.id,
+                        self.message.from_id,
+                        chat=await self.input_chat
+                    )
 
             return self._input_sender
 

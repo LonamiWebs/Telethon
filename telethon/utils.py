@@ -3,10 +3,10 @@ Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
 import math
+import mimetypes
 import re
 from mimetypes import add_type, guess_extension
 
-from .tl.types.contacts import ResolvedPeer
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -24,6 +24,7 @@ from .tl.types import (
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
     TopPeer, InputNotifyPeer
 )
+from .tl.types.contacts import ResolvedPeer
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
@@ -322,8 +323,12 @@ def get_input_media(media, user_caption=None, is_photo=False):
 
 def is_image(file):
     """Returns True if the file extension looks like an image file"""
-    return (isinstance(file, str) and
-            bool(re.search(r'\.(png|jpe?g|gif)$', file, re.IGNORECASE)))
+    return (mimetypes.guess_type(file)[0] or '').startswith('image/')
+
+
+def is_video(file):
+    """Returns True if the file extension looks like a video file"""
+    return (mimetypes.guess_type(file)[0] or '').startswith('video/')
 
 
 def parse_phone(phone):

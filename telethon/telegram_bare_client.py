@@ -101,8 +101,6 @@ class TelegramBareClient:
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
-        if self.api_id < 20:  # official apps must use obfuscated
-            connection_mode = ConnectionMode.TCP_OBFUSCATED
 
         # This is the main sender, which will be used from the thread
         # that calls .connect(). Every other thread will spawn a new
@@ -152,10 +150,17 @@ class TelegramBareClient:
 
         self._recv_loop = None
         self._ping_loop = None
+        self._state_loop = None
         self._idling = asyncio.Event()
 
         # Default PingRequest delay
         self._ping_delay = timedelta(minutes=1)
+        # Also have another delay for GetStateRequest.
+        #
+        # If the connection is kept alive for long without invoking any
+        # high level request the server simply stops sending updates.
+        # TODO maybe we can have ._last_request instead if any req works?
+        self._state_delay = timedelta(hours=1)
 
     # endregion
 
@@ -570,12 +575,19 @@ class TelegramBareClient:
             self._recv_loop = asyncio.ensure_future(self._recv_loop_impl(), loop=self._loop)
         if self._ping_loop is None:
             self._ping_loop = asyncio.ensure_future(self._ping_loop_impl(), loop=self._loop)
+        if self._state_loop is None:
+            self._state_loop = asyncio.ensure_future(self._state_loop_impl(), loop=self._loop)
 
     async def _ping_loop_impl(self):
         while self._user_connected:
             await self(PingRequest(int.from_bytes(os.urandom(8), 'big', signed=True)))
             await asyncio.sleep(self._ping_delay.seconds, loop=self._loop)
         self._ping_loop = None
+
+    async def _state_loop_impl(self):
+        while self._user_connected:
+            await asyncio.sleep(self._state_delay.seconds, loop=self._loop)
+            await self._sender.send(GetStateRequest())
 
     async def _recv_loop_impl(self):
         __log__.info('Starting to wait for items from the network')
