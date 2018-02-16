@@ -711,7 +711,8 @@ class TelegramClient(TelegramBareClient):
             peer=self.get_input_entity(entity),
             id=self._get_message_id(message_id),
             message=message,
-            no_webpage=not link_preview
+            no_webpage=not link_preview,
+            entities=msg_entities
         )
         result = self(request)
         return self._get_response_message(request, result)
