@@ -23,6 +23,13 @@ try:
 except ImportError:
     socks = None
 
+try:
+    import hachoir
+    import hachoir.metadata
+    import hachoir.parser
+except ImportError:
+    hachoir = None
+
 from . import TelegramBareClient
 from . import helpers, utils
 from .errors import (
@@ -1021,6 +1028,10 @@ class TelegramClient(TelegramBareClient):
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
 
+        Notes:
+            If the ``hachoir3`` package (``hachoir`` module) is installed,
+            it will be used to determine metadata from audio and video files.
+
         Returns:
             The message (or messages) containing the sent file.
         """
@@ -1084,12 +1095,32 @@ class TelegramClient(TelegramBareClient):
                 attr_dict = {
                     DocumentAttributeFilename:
                         DocumentAttributeFilename(os.path.basename(file))
-                    # TODO If the input file is an audio, find out:
-                    # Performer and song title and add DocumentAttributeAudio
                 }
+                if utils.is_audio(file) and hachoir:
+                    m = hachoir.metadata.extractMetadata(
+                        hachoir.parser.createParser(file)
+                    )
+                    attr_dict[DocumentAttributeAudio] = DocumentAttributeAudio(
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('author') if m.has('author') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+
                 if not force_document and utils.is_video(file):
-                    attr_dict[DocumentAttributeVideo] = \
-                        DocumentAttributeVideo(0, 0, 0)
+                    if hachoir:
+                        m = hachoir.metadata.extractMetadata(
+                            hachoir.parser.createParser(file)
+                        )
+                        doc = DocumentAttributeVideo(
+                            w=m.get('width') if m.has('width') else 0,
+                            h=m.get('height') if m.has('height') else 0,
+                            duration=int(m.get('duration').seconds
+                                         if m.has('duration') else 0)
+                        )
+                    else:
+                        doc = DocumentAttributeVideo(0, 0, 0)
+                    attr_dict[DocumentAttributeVideo] = doc
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
@@ -1097,8 +1128,11 @@ class TelegramClient(TelegramBareClient):
                 }
 
             if 'is_voice_note' in kwargs:
-                attr_dict[DocumentAttributeAudio] = \
-                    DocumentAttributeAudio(0, voice=True)
+                if DocumentAttributeAudio in attr_dict:
+                    attr_dict[DocumentAttributeAudio].voice = True
+                else:
+                    attr_dict[DocumentAttributeAudio] = \
+                        DocumentAttributeAudio(0, voice=True)
 
             # Now override the attributes if any. As we have a dict of
             # {cls: instance}, we can override any class with the list

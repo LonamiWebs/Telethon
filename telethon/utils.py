@@ -326,6 +326,11 @@ def is_image(file):
     return (mimetypes.guess_type(file)[0] or '').startswith('image/')
 
 
+def is_audio(file):
+    """Returns True if the file extension looks like an audio file"""
+    return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
+
+
 def is_video(file):
     """Returns True if the file extension looks like a video file"""
     return (mimetypes.guess_type(file)[0] or '').startswith('video/')
