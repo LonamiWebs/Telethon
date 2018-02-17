@@ -267,7 +267,7 @@ class TelegramClient(TelegramBareClient):
         if not phone and not bot_token:
             raise ValueError('No phone number or bot token provided.')
 
-        if phone and bot_token:
+        if phone and bot_token and not callable(phone):
             raise ValueError('Both a phone and a bot token provided, '
                              'must only provide one of either')
 
