@@ -8,6 +8,24 @@ from ..extensions import markdown
 from ..tl import types, functions
 
 
+def _into_id_set(client, chats):
+    """Helper util to turn the input chat or chats into a set of IDs."""
+    if chats is None:
+        return None
+
+    if not hasattr(chats, '__iter__') or isinstance(chats, str):
+        chats = (chats,)
+
+    result = set()
+    for chat in chats:
+        chat = client.get_input_entity(chat)
+        if isinstance(chat, types.InputPeerSelf):
+            chat = getattr(_into_id_set, 'me', None) or client.get_me()
+            _into_id_set.me = chat
+        result.add(utils.get_peer_id(chat))
+    return result
+
+
 class _EventBuilder(abc.ABC):
     @abc.abstractmethod
     def build(self, update):
@@ -153,12 +171,7 @@ class NewMessage(_EventBuilder):
         self.blacklist_chats = blacklist_chats
 
     def resolve(self, client):
-        if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(client.get_input_entity(x))
-                             for x in self.chats)
-        elif self.chats is not None:
-            self.chats = {utils.get_peer_id(
-                          client.get_input_entity(self.chats))}
+        self.chats = _into_id_set(client, self.chats)
 
     def build(self, update):
         if isinstance(update,
@@ -430,12 +443,7 @@ class ChatAction(_EventBuilder):
         self.blacklist_chats = blacklist_chats
 
     def resolve(self, client):
-        if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(client.get_input_entity(x))
-                             for x in self.chats)
-        elif self.chats is not None:
-            self.chats = {utils.get_peer_id(
-                          client.get_input_entity(self.chats))}
+        self.chats = _into_id_set(client, self.chats)
 
     def build(self, update):
         if isinstance(update, types.UpdateChannelPinnedMessage):
