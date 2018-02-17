@@ -27,13 +27,42 @@ def _into_id_set(client, chats):
 
 
 class _EventBuilder(abc.ABC):
+    """
+    The common event builder, with builtin support to filter per chat.
+
+    Args:
+        chats (:obj:`entity`, optional):
+            May be one or more entities (username/peer/etc.). By default,
+            only matching chats will be handled.
+
+        blacklist_chats (:obj:`bool`, optional):
+            Whether to treat the the list of chats as a blacklist (if
+            it matches it will NOT be handled) or a whitelist (default).
+    """
+    def __init__(self, chats=None, blacklist_chats=False):
+        self.chats = chats
+        self.blacklist_chats = blacklist_chats
+
     @abc.abstractmethod
     def build(self, update):
         """Builds an event for the given update if possible, or returns None"""
 
-    @abc.abstractmethod
     def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
+        self.chats = _into_id_set(client, self.chats)
+
+    def _filter_event(self, event):
+        """
+        If the ID of ``event._chat_peer`` isn't in the chats set (or it is
+        but the set is a blacklist) returns ``None``, otherwise the event.
+        """
+        if self.chats is not None:
+            inside = utils.get_peer_id(event._chat_peer) in self.chats
+            if inside == self.blacklist_chats:
+                # If this chat matches but it's a blacklist ignore.
+                # If it doesn't match but it's a whitelist ignore.
+                return None
+        return event
 
 
 class _EventCommon(abc.ABC):
@@ -124,9 +153,6 @@ class Raw(_EventBuilder):
     """
     Represents a raw event. The event is the update itself.
     """
-    def resolve(self, client):
-        pass
-
     def build(self, update):
         return update
 
@@ -147,14 +173,6 @@ class NewMessage(_EventBuilder):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        chats (:obj:`entity`, optional):
-            May be one or more entities (username/peer/etc.). By default,
-            only matching chats will be handled.
-
-        blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
-            it matches it will NOT be handled) or a whitelist (default).
-
     Notes:
         The ``message.from_id`` might not only be an integer or ``None``,
         but also ``InputPeerSelf()`` for short private messages (the API
@@ -165,13 +183,9 @@ class NewMessage(_EventBuilder):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
+        super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
-        self.chats = chats
-        self.blacklist_chats = blacklist_chats
-
-    def resolve(self, client):
-        self.chats = _into_id_set(client, self.chats)
 
     def build(self, update):
         if isinstance(update,
@@ -207,15 +221,7 @@ class NewMessage(_EventBuilder):
         if self.outgoing and not event.message.out:
             return
 
-        if self.chats is not None:
-            inside = utils.get_peer_id(event.message.to_id) in self.chats
-            if inside == self.blacklist_chats:
-                # If this chat matches but it's a blacklist ignore.
-                # If it doesn't match but it's a whitelist ignore.
-                return
-
-        # Tests passed so return the event
-        return event
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -426,25 +432,7 @@ class NewMessage(_EventBuilder):
 class ChatAction(_EventBuilder):
     """
     Represents an action in a chat (such as user joined, left, or new pin).
-
-    Args:
-        chats (:obj:`entity`, optional):
-            May be one or more entities (username/peer/etc.). By default,
-            only matching chats will be handled.
-
-        blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
-            it matches it will NOT be handled) or a whitelist (default).
-
     """
-    def __init__(self, chats=None, blacklist_chats=False):
-        # TODO This can probably be reused in all builders
-        self.chats = chats
-        self.blacklist_chats = blacklist_chats
-
-    def resolve(self, client):
-        self.chats = _into_id_set(client, self.chats)
-
     def build(self, update):
         if isinstance(update, types.UpdateChannelPinnedMessage):
             # Telegram sends UpdateChannelPinnedMessage and then
@@ -502,16 +490,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
-        if self.chats is None:
-            return event
-        else:
-            inside = utils.get_peer_id(event._chat_peer) in self.chats
-            if inside == self.blacklist_chats:
-                # If this chat matches but it's a blacklist ignore.
-                # If it doesn't match but it's a whitelist ignore.
-                return
-
-        return event
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -657,7 +636,6 @@ class UserUpdate(_EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
     """
-
     def build(self, update):
         if isinstance(update, types.UpdateUserStatus):
             event = UserUpdate.Event(update.user_id,
@@ -665,10 +643,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
-        return event
-
-    def resolve(self, client):
-        pass
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -808,7 +783,6 @@ class MessageChanged(_EventBuilder):
     """
     Represents a message changed (edited or deleted).
     """
-
     def build(self, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
@@ -822,10 +796,7 @@ class MessageChanged(_EventBuilder):
         else:
             return
 
-        return event
-
-    def resolve(self, client):
-        pass
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
