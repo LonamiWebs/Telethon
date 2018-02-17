@@ -33,6 +33,13 @@ If you don't have root access, simply pass the ``--user`` flag to the pip
 command. If you want to install a specific branch, append ``@branch`` to
 the end of the first install command.
 
+By default the library will use a pure Python implementation for encryption,
+which can be really slow when uploading or downloading files. If you don't
+mind using a C extension, install `cryptg <https://github.com/Lonami/cryptg>`__
+via ``pip`` or as an extra:
+
+    ``pip3 install telethon[cryptg]``
+
 
 Manual Installation
 *******************

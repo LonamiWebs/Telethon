@@ -149,7 +149,10 @@ def main():
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
                 'try_telethon.py'
             ]),
-            install_requires=['pyaes', 'rsa']
+            install_requires=['pyaes', 'rsa'],
+            extras_require={
+                'cryptg': ['cryptg']
+            }
         )
 
 
