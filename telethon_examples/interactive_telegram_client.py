@@ -1,12 +1,11 @@
 import os
 from getpass import getpass
 
-from telethon import TelegramClient, ConnectionMode
-from telethon.errors import SessionPasswordNeededError
-from telethon.tl.types import (
-    UpdateShortChatMessage, UpdateShortMessage, PeerChat
-)
 from telethon.utils import get_display_name
+
+from telethon import ConnectionMode, TelegramClient
+from telethon.errors import SessionPasswordNeededError
+from telethon.tl.types import (PeerChat, UpdateShortChatMessage, UpdateShortMessage)
 
 
 def sprint(string, *args, **kwargs):
@@ -14,8 +13,8 @@ def sprint(string, *args, **kwargs):
     try:
         print(string, *args, **kwargs)
     except UnicodeEncodeError:
-        string = string.encode('utf-8', errors='ignore')\
-                       .decode('ascii', errors='ignore')
+        string = string.encode('utf-8', errors='ignore') \
+            .decode('ascii', errors='ignore')
         print(string, *args, **kwargs)
 
 
@@ -47,6 +46,7 @@ class InteractiveTelegramClient(TelegramClient):
        Telegram through Telethon, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
+
     def __init__(self, session_user_id, user_phone, api_id, api_hash,
                  proxy=None):
         """
@@ -190,6 +190,7 @@ class InteractiveTelegramClient(TelegramClient):
             print('  !d <msg-id>: Deletes a message by its id')
             print('  !dm <msg-id>: Downloads the given message Media (if any).')
             print('  !dp: Downloads the current dialog Profile picture.')
+            print('  !i: prints information about this chat..')
             print()
 
             # And start a while loop to chat
@@ -234,8 +235,8 @@ class InteractiveTelegramClient(TelegramClient):
 
                         # And print it to the user
                         sprint('[{}:{}] (ID={}) {}: {}'.format(
-                               msg.date.hour, msg.date.minute, msg.id, name,
-                               content))
+                            msg.date.hour, msg.date.minute, msg.id, name,
+                            content))
 
                 # Send photo
                 elif msg.startswith('!up '):
@@ -269,6 +270,23 @@ class InteractiveTelegramClient(TelegramClient):
                         )
                     else:
                         print('No profile picture found for this user!')
+
+                elif msg == '!i':
+                    blacklist_attrs = ['from_reader', 'on_response', 'pretty_format', 'resolve', 'rpc_error',
+                                       'serialize_bytes', 'serialize_datetime', 'stringify', 'to_dict',
+                                       'constructor_id', 'subclass_of_id', 'confirm_received', 'result']
+                    interesting_attributes = [
+                        x for x in dir(entity)
+                        if x.lower() not in blacklist_attrs and not (x.startswith('_') or x.startswith('__'))
+                    ]
+
+                    longest_attr = max(len(x) for x in interesting_attributes)
+
+                    for attr in interesting_attributes:
+                        print("{:<{width}} : {}".format(
+                            attr,
+                            getattr(entity, attr, ''),
+                            width=longest_attr))
 
                 # Send chat message (if any)
                 elif msg:
@@ -356,6 +374,6 @@ class InteractiveTelegramClient(TelegramClient):
             else:
                 who = self.get_entity(update.from_id)
                 sprint('<< {} @ {} sent "{}"'.format(
-                       get_display_name(which), get_display_name(who),
-                       update.message
+                    get_display_name(which), get_display_name(who),
+                    update.message
                 ))
