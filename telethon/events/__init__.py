@@ -209,6 +209,22 @@ class NewMessage(_EventBuilder):
                 reply_to_msg_id=update.reply_to_msg_id,
                 entities=update.entities
             ))
+        elif isinstance(update, types.UpdateShortChatMessage):
+            event = NewMessage.Event(types.Message(
+                out=update.out,
+                mentioned=update.mentioned,
+                media_unread=update.media_unread,
+                silent=update.silent,
+                id=update.id,
+                from_id=update.from_id,
+                to_id=types.PeerChat(update.chat_id),
+                message=update.message,
+                date=update.date,
+                fwd_from=update.fwd_from,
+                via_bot_id=update.via_bot_id,
+                reply_to_msg_id=update.reply_to_msg_id,
+                entities=update.entities
+            ))
         else:
             return
 
