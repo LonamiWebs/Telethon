@@ -238,7 +238,7 @@ class NewMessage(_EventBuilder):
             return
         if self.outgoing and not event.message.out:
             return
-        if self.regex and not re.match(self.regex, event.raw_text):
+        if self.pattern and not re.match(self.pattern, event.message.message):
             return
 
         return self._filter_event(event)
