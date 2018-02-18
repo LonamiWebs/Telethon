@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import time
+import warnings
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -32,7 +33,7 @@ except ImportError:
     hachoir = None
 
 from . import TelegramBareClient
-from . import helpers, utils
+from . import helpers, utils, events
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
@@ -1760,25 +1761,16 @@ class TelegramClient(TelegramBareClient):
 
     def on(self, event):
         """
-
-        Turns the given entity into a valid Telegram user or chat.
+        Decorator helper method around add_event_handler().
 
         Args:
             event (:obj:`_EventBuilder` | :obj:`type`):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
-        if isinstance(event, type):
-            event = event()
-
-        event.resolve(self)
-
         def decorator(f):
-            self._event_builders.append((event, f))
+            self.add_event_handler(f, event)
             return f
-
-        if self._on_handler not in self.updates.handlers:
-            self.add_update_handler(self._on_handler)
 
         return decorator
 
@@ -1788,6 +1780,49 @@ class TelegramClient(TelegramBareClient):
             if event:
                 event._client = self
                 callback(event)
+
+    def add_event_handler(self, callback, event):
+        """
+        Registers the given callback to be called on the specified event.
+
+        Args:
+            callback (:obj:`callable`):
+                The callable function accepting one parameter to be used.
+
+            event (:obj:`_EventBuilder` | :obj:`type`):
+                The event builder class or instance to be used,
+                for instance ``events.NewMessage``.
+        """
+        if self.updates.workers is None:
+            warnings.warn(
+                "You have not setup any workers, so you won't receive updates."
+                " Pass update_workers=1 when creating the TelegramClient,"
+                " or set client.self.updates.workers = 1"
+            )
+
+        self.updates.handler = self._on_handler
+        if isinstance(event, type):
+            event = event()
+
+        event.resolve(self)
+        self._event_builders.append((event, callback))
+
+    def add_update_handler(self, handler):
+        """Adds an update handler (a function which takes a TLObject,
+          an update, as its parameter) and listens for updates"""
+        warnings.warn(
+            'add_update_handler is deprecated, use the @client.on syntax '
+            'or add_event_handler(callback, events.Raw) instead (see '
+            'https://telethon.rtfd.io/en/latest/extra/basic/working-'
+            'with-updates.html)'
+        )
+        self.add_event_handler(handler, events.Raw)
+
+    def remove_update_handler(self, handler):
+        pass
+
+    def list_update_handlers(self):
+        return []
 
     # endregion
 

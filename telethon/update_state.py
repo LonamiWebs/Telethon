@@ -22,12 +22,12 @@ class UpdateState:
           workers is None: Updates will *not* be stored on self.
           workers = 0: Another thread is responsible for calling self.poll()
           workers > 0: 'workers' background threads will be spawned, any
-                       any of them will invoke all the self.handlers.
+                       any of them will invoke the self.handler.
         """
         self._workers = workers
         self._worker_threads = []
 
-        self.handlers = []
+        self.handler = None
         self._updates_lock = RLock()
         self._updates = Queue()
 
@@ -106,10 +106,8 @@ class UpdateState:
         while True:
             try:
                 update = self.poll(timeout=UpdateState.WORKER_POLL_TIMEOUT)
-                # TODO Maybe people can add different handlers per update type
-                if update:
-                    for handler in self.handlers:
-                        handler(update)
+                if update and self.handler:
+                    self.handler(update)
             except StopIteration:
                 break
             except:

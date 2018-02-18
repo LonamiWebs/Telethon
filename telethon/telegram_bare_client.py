@@ -1,7 +1,6 @@
 import logging
 import os
 import threading
-import warnings
 from datetime import timedelta, datetime
 from signal import signal, SIGINT, SIGTERM, SIGABRT
 from threading import Lock
@@ -588,24 +587,6 @@ class TelegramBareClient:
         """
         self.updates.process(self(GetStateRequest()))
         self._last_state = datetime.now()
-
-    def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
-        if self.updates.workers is None:
-            warnings.warn(
-                "You have not setup any workers, so you won't receive updates."
-                " Pass update_workers=4 when creating the TelegramClient,"
-                " or set client.self.updates.workers = 4"
-            )
-
-        self.updates.handlers.append(handler)
-
-    def remove_update_handler(self, handler):
-        self.updates.handlers.remove(handler)
-
-    def list_update_handlers(self):
-        return self.updates.handlers[:]
 
     # endregion
 
