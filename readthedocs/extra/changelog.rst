@@ -14,6 +14,37 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+New small convenience functions (v0.17.3)
+=========================================
+
+*Published at 2018/02/18*
+
+More bug fixes and a few others addition to make events easier to use.
+
+Additions
+~~~~~~~~~
+
+- Use ``hachoir`` to extract video and audio metadata before upload.
+- New ``.add_event_handler``, ``.add_update_handler`` now deprecated.
+
+Bug fixes
+~~~~~~~~~
+
+- ``bot_token`` wouldn't work on ``.start()``, and changes to ``password``
+  (now it will ask you for it if you don't provide it, as docstring hinted).
+- ``.edit_message()`` was ignoring the formatting (e.g. markdown).
+- Added missing case to the ``NewMessage`` event for normal groups.
+- Accessing the ``.text`` of the ``NewMessage`` event was failing due
+  to a bug with the markdown unparser.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- ``libssl`` is no longer an optional dependency. Use ``cryptg`` instead,
+  which you can find on https://github.com/Lonami/cryptg.
+
+
+
 New small convenience functions (v0.17.2)
 =========================================
 
