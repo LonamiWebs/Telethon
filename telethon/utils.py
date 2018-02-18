@@ -323,17 +323,19 @@ def get_input_media(media, user_caption=None, is_photo=False):
 
 def is_image(file):
     """Returns True if the file extension looks like an image file"""
-    return (mimetypes.guess_type(file)[0] or '').startswith('image/')
-
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('image/'))
 
 def is_audio(file):
     """Returns True if the file extension looks like an audio file"""
-    return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('audio/'))
 
 
 def is_video(file):
     """Returns True if the file extension looks like a video file"""
-    return (mimetypes.guess_type(file)[0] or '').startswith('video/')
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('video/'))
 
 
 def parse_phone(phone):
