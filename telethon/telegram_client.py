@@ -1,3 +1,4 @@
+import getpass
 import hashlib
 import io
 import itertools
@@ -216,8 +217,8 @@ class TelegramClient(TelegramBareClient):
 
     def start(self,
               phone=lambda: input('Please enter your phone: '),
-              password=None, bot_token=None,
-              force_sms=False, code_callback=None,
+              password=lambda: getpass.getpass('Please enter your password: '),
+              bot_token=None, force_sms=False, code_callback=None,
               first_name='New User', last_name=''):
         """
         Convenience method to interactively connect and sign in if required,
@@ -331,6 +332,9 @@ class TelegramClient(TelegramBareClient):
                     "Two-step verification is enabled for this account. "
                     "Please provide the 'password' argument to 'start()'."
                 )
+            # TODO If callable given make it retry on invalid
+            if callable(password):
+                password = password()
             me = self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
