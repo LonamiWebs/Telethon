@@ -814,86 +814,30 @@ class MessageChanged(_EventBuilder):
 
         return self._filter_event(event)
 
-    class Event(_EventCommon):
+    class Event(NewMessage.Event):
         """
         Represents the event of an user status update (last seen, joined).
+
+        Please note that the ``message`` member will be ``None`` if the
+        action was a deletion and not an edit.
 
         Members:
             edited (:obj:`bool`):
                 ``True`` if the message was edited.
-
-            message (:obj:`Message`, optional):
-                The new edited message, if any.
 
             deleted (:obj:`bool`):
                 ``True`` if the message IDs were deleted.
 
             deleted_ids (:obj:`List[int]`):
                 A list containing the IDs of the messages that were deleted.
-
-            input_sender (:obj:`InputPeer`):
-                This is the input version of the user who edited the message.
-                Similarly to ``input_chat``, this doesn't have things like
-                username or similar, but still useful in some cases.
-
-                Note that this might not be available if the library can't
-                find the input chat.
-
-            sender (:obj:`User`):
-                This property will make an API call the first time to get the
-                most up to date version of the sender, so use with care as
-                there is no caching besides local caching yet.
-
-                ``input_sender`` needs to be available (often the case).
         """
         def __init__(self, edit_msg=None, deleted_ids=None, peer=None):
-            super().__init__(peer if not edit_msg else edit_msg.to_id)
+            if edit_msg is None:
+                msg = types.Message((deleted_ids or [0])[0], peer, None, '')
+            else:
+                msg = edit_msg
+            super().__init__(msg)
 
             self.edited = bool(edit_msg)
-            self.message = edit_msg
             self.deleted = bool(deleted_ids)
             self.deleted_ids = deleted_ids or []
-            self._input_sender = None
-            self._sender = None
-
-        @property
-        def input_sender(self):
-            """
-            This (:obj:`InputPeer`) is the input version of the user who
-            sent the message. Similarly to ``input_chat``, this doesn't have
-            things like username or similar, but still useful in some cases.
-
-            Note that this might not be available if the library can't
-            find the input chat, or if the message a broadcast on a channel.
-            """
-            # TODO Code duplication
-            if self._input_sender is None:
-                if self.is_channel and not self.is_group:
-                    return None
-
-                try:
-                    self._input_sender = self._client.get_input_entity(
-                        self.message.from_id
-                    )
-                except (ValueError, TypeError):
-                    # We can rely on self.input_chat for this
-                    self._input_sender = self._get_input_entity(
-                        self.message.id,
-                        self.message.from_id,
-                        chat=self.input_chat
-                    )
-
-            return self._input_sender
-
-        @property
-        def sender(self):
-            """
-            This (:obj:`User`) will make an API call the first time to get
-            the most up to date version of the sender, so use with care as
-            there is no caching besides local caching yet.
-
-            ``input_sender`` needs to be available (often the case).
-            """
-            if self._sender is None and self.input_sender:
-                self._sender = self._client.get_entity(self._input_sender)
-            return self._sender
