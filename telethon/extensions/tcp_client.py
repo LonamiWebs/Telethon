@@ -4,6 +4,7 @@ This module holds a rough implementation of the C# TCP client.
 import errno
 import socket
 import time
+from socks import ProxyConnectionError
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 from threading import Lock
@@ -69,6 +70,8 @@ class TcpClient:
 
                 self._socket.connect(address)
                 break  # Successful connection, stop retrying to connect
+            except ProxyConnectionError:
+                raise
             except OSError as e:
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
