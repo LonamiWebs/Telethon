@@ -807,7 +807,7 @@ class MessageChanged(_EventBuilder):
                                  types.UpdateDeleteChannelMessages)):
             event = MessageChanged.Event(
                 deleted_ids=update.messages,
-                peer=types.PeerChannel(update.channel_id)
+                peer=types.PeerChannel(update.channel_id) if update.channel_id is not None else None
             )
         else:
             return
