@@ -53,7 +53,10 @@ destroy_auth_key_fail#ea109b13 = DestroyAuthKeyRes;
 
 ---functions---
 
+// Deprecated since somewhere around February of 2018
+// See https://core.telegram.org/mtproto/auth_key
 req_pq#60469778 nonce:int128 = ResPQ;
+req_pq_multi#be7e8ef1 nonce:int128 = ResPQ;
 
 req_DH_params#d712e4be nonce:int128 server_nonce:int128 p:bytes q:bytes public_key_fingerprint:long encrypted_data:bytes = Server_DH_Params;
 
