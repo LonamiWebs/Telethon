@@ -1,6 +1,7 @@
 import abc
 import datetime
 import itertools
+import re
 
 from .. import utils
 from ..errors import RPCError
@@ -172,6 +173,10 @@ class NewMessage(_EventBuilder):
         outgoing (:obj:`bool`, optional):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
+            
+        pattern (:obj:`str` | :obj:`Pattern`, optional): Regex pattern. If not ``None``,
+            ``re.match`` is used on :attr:`event.message.message` to determine if an event
+            should be handled.
 
     Notes:
         The ``message.from_id`` might not only be an integer or ``None``,
@@ -179,13 +184,14 @@ class NewMessage(_EventBuilder):
         would not return such thing, this is a custom modification).
     """
     def __init__(self, incoming=None, outgoing=None,
-                 chats=None, blacklist_chats=False):
+                 chats=None, blacklist_chats=False, pattern=None):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
+        self.pattern = pattern
 
     def build(self, update):
         if isinstance(update,
@@ -229,12 +235,14 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
-        if all(x is None for x in (self.incoming, self.outgoing, self.chats)):
+        if all(x is None for x in (self.incoming, self.outgoing, self.chats, self.pattern)):
             return event
 
         if self.incoming and event.message.out:
             return
         if self.outgoing and not event.message.out:
+            return
+        if self.pattern and not re.match(self.pattern, event.message.message):
             return
 
         return self._filter_event(event)
