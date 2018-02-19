@@ -1915,9 +1915,9 @@ class TelegramClient(TelegramBareClient):
                 if user.phone == phone:
                     return user
         else:
-            string, is_join_chat = utils.parse_username(string)
+            username, is_join_chat = utils.parse_username(string)
             if is_join_chat:
-                invite = self(CheckChatInviteRequest(string))
+                invite = self(CheckChatInviteRequest(username))
                 if isinstance(invite, ChatInvite):
                     raise ValueError(
                         'Cannot get entity from a channel '
@@ -1925,13 +1925,18 @@ class TelegramClient(TelegramBareClient):
                     )
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
-            else:
-                if string in ('me', 'self'):
+            elif username:
+                if username in ('me', 'self'):
                     return self.get_me()
-                result = self(ResolveUsernameRequest(string))
+                result = self(ResolveUsernameRequest(username))
                 for entity in itertools.chain(result.users, result.chats):
-                    if entity.username.lower() == string:
+                    if entity.username.lower() == username:
                         return entity
+            try:
+                # Nobody with this username, maybe it's an exact name/title
+                return self.get_entity(self.get_input_entity(string))
+            except (ValueError, TypeError):
+                pass
 
         raise TypeError(
             'Cannot turn "{}" into any entity (user or chat)'.format(string)
