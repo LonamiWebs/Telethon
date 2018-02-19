@@ -803,8 +803,12 @@ class MessageChanged(_EventBuilder):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
             event = MessageChanged.Event(edit_msg=update.message)
-        elif isinstance(update, (types.UpdateDeleteMessages,
-                                 types.UpdateDeleteChannelMessages)):
+        elif isinstance(update, types.UpdateDeleteMessages):
+            event = MessageChanged.Event(
+                deleted_ids=update.messages,
+                peer=None
+            )
+        elif isinstance(update, types.UpdateDeleteChannelMessages):
             event = MessageChanged.Event(
                 deleted_ids=update.messages,
                 peer=types.PeerChannel(update.channel_id)
