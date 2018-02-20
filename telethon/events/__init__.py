@@ -174,7 +174,7 @@ class NewMessage(_EventBuilder):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        pattern (:obj:`str`, :obj:`callable`, :obj:`re`, optional):
+        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
             If set, only messages matching this pattern will be handled.
             You can specify a regex-like string which will be matched
             against the message, a callable function that returns ``True``
@@ -244,7 +244,8 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
-        if all(x is None for x in (self.incoming, self.outgoing, self.chats, self.pattern)):
+        if all(x is None for x in (self.incoming, self.outgoing, self.chats,
+                                   self.pattern)):
             return event
 
         if self.incoming and event.message.out:
