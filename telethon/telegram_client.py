@@ -1780,7 +1780,11 @@ class TelegramClient(TelegramBareClient):
             event = builder.build(update)
             if event:
                 event._client = self
-                callback(event)
+                try:
+                    callback(event)
+                except StopPropagation:
+                    __log__.info("Event handler '{}' stopped chain of propagation for update {}.".format(
+                        callback.__name__, type(update).__name__))
 
     def add_event_handler(self, callback, event):
         """
