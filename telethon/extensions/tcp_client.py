@@ -8,6 +8,11 @@ from datetime import timedelta
 from io import BytesIO, BufferedWriter
 from threading import Lock
 
+try:
+    import socks
+except ImportError:
+    socks = None
+
 MAX_TIMEOUT = 15  # in seconds
 CONN_RESET_ERRNOS = {
     errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
@@ -70,6 +75,9 @@ class TcpClient:
                 self._socket.connect(address)
                 break  # Successful connection, stop retrying to connect
             except OSError as e:
+                # Stop retrying to connect if proxy connection error occurred
+                if socks and isinstance(e, socks.ProxyConnectionError):
+                    raise
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
                 if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL,
