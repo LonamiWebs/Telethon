@@ -1,6 +1,7 @@
 import abc
 import datetime
 import itertools
+import re
 
 from .. import utils
 from ..errors import RPCError
@@ -173,19 +174,33 @@ class NewMessage(_EventBuilder):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
+        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
+            If set, only messages matching this pattern will be handled.
+            You can specify a regex-like string which will be matched
+            against the message, a callable function that returns ``True``
+            if a message is acceptable, or a compiled regex pattern.
+
     Notes:
         The ``message.from_id`` might not only be an integer or ``None``,
         but also ``InputPeerSelf()`` for short private messages (the API
         would not return such thing, this is a custom modification).
     """
     def __init__(self, incoming=None, outgoing=None,
-                 chats=None, blacklist_chats=False):
+                 chats=None, blacklist_chats=False, pattern=None):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern).match
+        elif not pattern or callable(pattern):
+            self.pattern = pattern
+        elif hasattr(pattern, 'match') and callable(pattern.match):
+            self.pattern = pattern.match
+        else:
+            raise TypeError('Invalid pattern type given')
 
     def build(self, update):
         if isinstance(update,
@@ -229,12 +244,15 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
-        if all(x is None for x in (self.incoming, self.outgoing, self.chats)):
+        if all(x is None for x in (self.incoming, self.outgoing, self.chats,
+                                   self.pattern)):
             return event
 
         if self.incoming and event.message.out:
             return
         if self.outgoing and not event.message.out:
+            return
+        if self.pattern and not self.pattern(event.message.message or ''):
             return
 
         return self._filter_event(event)
