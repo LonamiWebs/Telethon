@@ -34,8 +34,10 @@ VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
 
 
 def get_display_name(entity):
-    """Gets the input peer for the given "entity" (user, chat or channel)
-       Returns None if it was not found"""
+    """
+    Gets the display name for the given entity, if it's an ``User``,
+    ``Chat`` or ``Channel``. Returns an empty string otherwise.
+    """
     if isinstance(entity, User):
         if entity.last_name and entity.first_name:
             return '{} {}'.format(entity.first_name, entity.last_name)
