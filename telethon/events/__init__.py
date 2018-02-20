@@ -173,10 +173,12 @@ class NewMessage(_EventBuilder):
         outgoing (:obj:`bool`, optional):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
-            
-        pattern (:obj:`str` | :obj:`Pattern`, optional): Regex pattern. If not ``None``,
-            ``re.match`` is used on :attr:`event.message.message` to determine if an event
-            should be handled.
+
+        pattern (:obj:`str`, :obj:`callable`, :obj:`re`, optional):
+            If set, only messages matching this pattern will be handled.
+            You can specify a regex-like string which will be matched
+            against the message, a callable function that returns ``True``
+            if a message is acceptable, or a compiled regex pattern.
 
     Notes:
         The ``message.from_id`` might not only be an integer or ``None``,
@@ -191,7 +193,14 @@ class NewMessage(_EventBuilder):
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
-        self.pattern = pattern
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern).match
+        elif not pattern or callable(pattern):
+            self.pattern = pattern
+        elif hasattr(pattern, 'match') and callable(pattern.match):
+            self.pattern = pattern.match
+        else:
+            raise TypeError('Invalid pattern type given')
 
     def build(self, update):
         if isinstance(update,
@@ -242,7 +251,7 @@ class NewMessage(_EventBuilder):
             return
         if self.outgoing and not event.message.out:
             return
-        if self.pattern and not re.match(self.pattern, event.message.message):
+        if self.pattern and not self.pattern(event.message.message or ''):
             return
 
         return self._filter_event(event)
