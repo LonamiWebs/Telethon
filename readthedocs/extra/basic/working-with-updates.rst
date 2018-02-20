@@ -149,7 +149,7 @@ Events module
 *************
 
 .. automodule:: telethon.events
-:members:
+    :members:
         :undoc-members:
         :show-inheritance:
 
