@@ -455,7 +455,9 @@ class TelegramBareClient:
                 with self._reconnect_lock:
                     self._reconnect()
 
-        raise RuntimeError('Number of retries reached 0.')
+        raise RuntimeError('Giving up on {} after {} failed attemps.'.format(
+            [type(x).__name__ for x in requests], retries
+        ))
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__

@@ -43,14 +43,15 @@ you're able to just do this:
         my_channel = client.get_entity(PeerChannel(some_id))
 
 
-All methods in the :ref:`telegram-client` call ``.get_input_entity()`` to
-further save you from the hassle of doing so manually, so doing things like
-``client.send_message('lonami', 'hi!')`` is possible.
+All methods in the :ref:`telegram-client` call ``.get_input_entity()`` prior
+to sending the requst to save you from the hassle of doing so manually.
+That way, convenience calls such as ``client.send_message('lonami', 'hi!')``
+become possible.
 
-Every entity the library "sees" (in any response to any call) will by
-default be cached in the ``.session`` file, to avoid performing
-unnecessary API calls. If the entity cannot be found, some calls
-like ``ResolveUsernameRequest`` or ``GetContactsRequest`` may be
+Every entity the library encounters (in any response to any call) will by
+default be cached in the ``.session`` file (an SQLite database), to avoid
+performing unnecessary API calls. If the entity cannot be found, additonal
+calls like ``ResolveUsernameRequest`` or ``GetContactsRequest`` may be
 made to obtain the required information.
 
 
@@ -61,16 +62,18 @@ Entities vs. Input Entities
 
     Don't worry if you don't understand this section, just remember some
     of the details listed here are important. When you're calling a method,
-    don't call ``.get_entity()`` before, just use the username or phone,
+    don't call ``.get_entity()`` beforehand, just use the username or phone,
     or the entity retrieved by other means like ``.get_dialogs()``.
 
 
-To save bandwidth, the API also makes use of their "input" versions.
+On top of the normal types, the API also make use of what they call their
+``Input*`` versions of objects.
 The input version of an entity (e.g. ``InputPeerUser``, ``InputChat``,
-etc.) only contains the minimum required information that's required
-for Telegram to be able to identify who you're referring to: their ID
-and hash. This ID/hash pair is unique per user, so if you use the pair
-given by another user **or bot** it will **not** work.
+etc.) only contains the minimum information that's required from Telegram
+to be able to identify who you're referring to:
+a Peer's **ID** and **hash**.
+This ID/hash pair is unique per user, so if you use the pair given by another
+user **or bot** it will **not** work.
 
 To save *even more* bandwidth, the API also makes use of the ``Peer``
 versions, which just have an ID. This serves to identify them, but
