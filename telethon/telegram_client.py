@@ -1934,8 +1934,8 @@ class TelegramClient(TelegramBareClient):
                         return entity
             try:
                 # Nobody with this username, maybe it's an exact name/title
-                return self.get_entity(self.get_input_entity(string))
-            except (ValueError, TypeError):
+                return self.get_entity(self.session.get_input_entity(string))
+            except ValueError:
                 pass
 
         raise TypeError(
