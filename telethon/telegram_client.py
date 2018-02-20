@@ -15,7 +15,9 @@ from mimetypes import guess_type
 
 from .crypto import CdnDecrypter
 from .tl.custom import InputSizedFile
-from .tl.functions.upload import (GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
+from .tl.functions.upload import (
+    SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
+)
 from .tl.types.upload import FileCdnRedirect
 
 try:
@@ -1778,13 +1780,7 @@ class TelegramClient(TelegramBareClient):
             event = builder.build(update)
             if event:
                 event._client = self
-                try:
-                    callback(event)
-                except StopPropagation:
-                    __log__.info("Event handler {0} stopped propagation of updates while processing {1}.".format(
-                        callback.__name__,
-                        update))
-                    break
+                callback(event)
 
     def add_event_handler(self, callback, event):
         """
