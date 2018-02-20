@@ -121,13 +121,37 @@ random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
 
 
+Stopping propagation of Updates
+*******************************
+
+There might be cases when an event handler is supposed to be used solitary and
+it makes no sense to process any other handlers in the chain. For this case,
+it is possible to raise a ``StopPropagation`` exception which will cause the
+propagation of the update through your handlers to stop:
+
+    .. code-block:: python
+
+        @client.on(events.NewMessage)
+        def _(event):
+            # ... some conditions
+            event.delete()
+
+            # Other handlers won't have an event to work with
+            raise client.StopPropagation
+
+        @client.on(events.NewMessage)
+        def _(event):
+            pass  # Will never be reached, because
+                  # it is the second handler in the chain.
+
+
 Events module
 *************
 
 .. automodule:: telethon.events
-    :members:
-    :undoc-members:
-    :show-inheritance:
+:members:
+        :undoc-members:
+        :show-inheritance:
 
 
 

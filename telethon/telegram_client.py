@@ -15,9 +15,7 @@ from mimetypes import guess_type
 
 from .crypto import CdnDecrypter
 from .tl.custom import InputSizedFile
-from .tl.functions.upload import (
-    SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
-)
+from .tl.functions.upload import (GetFileRequest, SaveBigFilePartRequest, SaveFilePartRequest)
 from .tl.types.upload import FileCdnRedirect
 
 try:
@@ -324,7 +322,7 @@ class TelegramClient(TelegramBareClient):
         else:
             raise RuntimeError(
                 '{} consecutive sign-in attempts failed. Aborting'
-                .format(max_attempts)
+                    .format(max_attempts)
             )
 
         if two_step_detected:
@@ -591,13 +589,13 @@ class TelegramClient(TelegramBareClient):
                     return update.message
 
             elif (isinstance(update, UpdateEditMessage) and
-                    not isinstance(request.peer, InputPeerChannel)):
+                  not isinstance(request.peer, InputPeerChannel)):
                 if request.id == update.message.id:
                     return update.message
 
             elif (isinstance(update, UpdateEditChannelMessage) and
-                    utils.get_peer_id(request.peer) ==
-                        utils.get_peer_id(update.message.to_id)):
+                  utils.get_peer_id(request.peer) ==
+                  utils.get_peer_id(update.message.to_id)):
                 if request.id == update.message.id:
                     return update.message
 
@@ -767,7 +765,7 @@ class TelegramClient(TelegramBareClient):
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
     def get_message_history(self, entity, limit=20, offset_date=None,
-                            offset_id=0, max_id=0, min_id=0, add_offset=0, 
+                            offset_id=0, max_id=0, min_id=0, add_offset=0,
                             batch_size=100, wait_time=None):
         """
         Gets the message history for the specified entity
@@ -886,7 +884,7 @@ class TelegramClient(TelegramBareClient):
             m.message = getattr(m, 'message', None)
             m.action = getattr(m, 'action', None)
             m.sender = (None if not m.from_id else
-                        entities[utils.get_peer_id(m.from_id)])
+            entities[utils.get_peer_id(m.from_id)])
 
             if getattr(m, 'fwd_from', None):
                 m.fwd_from.sender = (
@@ -1768,6 +1766,7 @@ class TelegramClient(TelegramBareClient):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
+
         def decorator(f):
             self.add_event_handler(f, event)
             return f
@@ -1779,7 +1778,13 @@ class TelegramClient(TelegramBareClient):
             event = builder.build(update)
             if event:
                 event._client = self
-                callback(event)
+                try:
+                    callback(event)
+                except StopPropagation:
+                    __log__.info("Event handler {0} stopped propagation of updates while processing {1}.".format(
+                        callback.__name__,
+                        update))
+                    break
 
     def add_event_handler(self, callback, event):
         """
@@ -2014,3 +2019,30 @@ class TelegramClient(TelegramBareClient):
         )
 
     # endregion
+
+
+# region Exceptions
+
+class StopPropagation(Exception):
+    """
+    If this Exception is found to be raised in any of the handlers for a
+    given update, it will stop the execution of all other registered
+    event handlers in the chain.
+    Think of it like a ``StopIteration`` exception in a for loop.
+
+    Example usage:
+    ```
+    @client.on(events.NewMessage)
+    def delete(event):
+        event.delete()
+        # Other handlers won't have an event to work with
+        raise StopPropagation
+
+    @client.on(events.NewMessage)
+    def _(event):
+        pass  # Will never be reached, because
+              # it is the second handler in the chain.
+    ```
+    """
+
+# endregion
