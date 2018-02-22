@@ -551,7 +551,7 @@ class TelegramClient(TelegramBareClient):
 
         Returns:
             A list of custom ``Draft`` objects that are easy to work with:
-            You can call :meth:`draft.set_message('text')` to change the message,
+            You can call ``draft.set_message('text')`` to change the message,
             or delete it through :meth:`draft.delete()`.
         """
         response = self(GetAllDraftsRequest())
