@@ -587,7 +587,7 @@ class TelegramClient(TelegramBareClient):
                 if request.id == update.message.id:
                     return update.message
 
-    def _parse_message_text(self, message, parse_mode):
+    async def _parse_message_text(self, message, parse_mode):
         """
         Returns a (parsed message, entities) tuple depending on parse_mode.
         """
@@ -608,7 +608,7 @@ class TelegramClient(TelegramBareClient):
                 if m:
                     try:
                         msg_entities[i] = InputMessageEntityMentionName(
-                            e.offset, e.length, self.get_input_entity(
+                            e.offset, e.length, await self.get_input_entity(
                                 int(m.group(1)) if m.group(1) else e.url
                             )
                         )
@@ -647,7 +647,7 @@ class TelegramClient(TelegramBareClient):
             the sent message
         """
         entity = await self.get_input_entity(entity)
-        message, msg_entities = self._parse_message_text(message, parse_mode)
+        message, msg_entities = await self._parse_message_text(message, parse_mode)
 
         request = SendMessageRequest(
             peer=entity,
@@ -705,7 +705,7 @@ class TelegramClient(TelegramBareClient):
         Returns:
             the edited message
         """
-        message, msg_entities = self._parse_message_text(message, parse_mode)
+        message, msg_entities = await self._parse_message_text(message, parse_mode)
         request = EditMessageRequest(
             peer=await self.get_input_entity(entity),
             id=self._get_message_id(message_id),
