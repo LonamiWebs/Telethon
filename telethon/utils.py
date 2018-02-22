@@ -27,7 +27,7 @@ from .tl.types import (
 from .tl.types.contacts import ResolvedPeer
 
 USERNAME_RE = re.compile(
-    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+    r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 
 VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
@@ -366,6 +366,8 @@ def parse_username(username):
         is_invite = bool(m.group(1))
         if is_invite:
             return username, True
+        else:
+            username = username.rstrip('/')
 
     if VALID_USERNAME_RE.match(username):
         return username.lower(), False
