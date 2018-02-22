@@ -67,11 +67,11 @@ Entities vs. Input Entities
 
 
 On top of the normal types, the API also make use of what they call their
-``Input*`` versions of objects.
-The input version of an entity (e.g. ``InputPeerUser``, ``InputChat``,
-etc.) only contains the minimum information that's required from Telegram
-to be able to identify who you're referring to:
-a Peer's **ID** and **hash**.
+``Input*`` versions of objects. The input version of an entity (e.g.
+``InputPeerUser``, ``InputChat``, etc.) only contains the minimum
+information that's required from Telegram to be able to identify
+who you're referring to: a ``Peer``'s **ID** and **hash**.
+
 This ID/hash pair is unique per user, so if you use the pair given by another
 user **or bot** it will **not** work.
 
