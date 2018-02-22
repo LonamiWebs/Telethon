@@ -179,6 +179,9 @@ class TelegramClient(TelegramBareClient):
         self._phone_code_hash = {}
         self._phone = None
 
+        # Sometimes we need to know who we are, cache the self peer
+        self._self_input_peer = None
+
     # endregion
 
     # region Telegram requests functions
@@ -407,6 +410,9 @@ class TelegramClient(TelegramBareClient):
                 'and a password only if an RPCError was raised before.'
             )
 
+        self._self_input_peer = utils.get_input_peer(
+            result.user, allow_self=False
+        )
         self._set_connected_and_authorized()
         return result.user
 
@@ -436,6 +442,9 @@ class TelegramClient(TelegramBareClient):
             last_name=last_name
         ))
 
+        self._self_input_peer = utils.get_input_peer(
+            result.user, allow_self=False
+        )
         self._set_connected_and_authorized()
         return result.user
 
@@ -455,16 +464,30 @@ class TelegramClient(TelegramBareClient):
         self.session.delete()
         return True
 
-    def get_me(self):
+    def get_me(self, input_peer=False):
         """
         Gets "me" (the self user) which is currently authenticated,
         or None if the request fails (hence, not authenticated).
 
+        Args:
+            input_peer (:obj:`bool`, optional):
+                Whether to return the ``InputPeerUser`` version or the normal
+                ``User``. This can be useful if you just need to know the ID
+                of yourself.
+
         Returns:
             :obj:`User`: Your own user.
         """
+        if input_peer and self._self_input_peer:
+            return self._self_input_peer
+
         try:
-            return self(GetUsersRequest([InputUserSelf()]))[0]
+            me = self(GetUsersRequest([InputUserSelf()]))[0]
+            if not self._self_input_peer:
+                self._self_input_peer = utils.get_input_peer(
+                    me, allow_self=False
+                )
+            return me
         except UnauthorizedError:
             return None
 
