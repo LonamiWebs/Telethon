@@ -121,6 +121,13 @@ a fixed limit:
             offset += len(participants.users)
 
 
+.. note::
+
+    It is **not** possible to get more than 10,000 members from a
+    group. It's a hard limit impossed by Telegram and there is
+    nothing you can do about it. Refer to `issue 573`__ for more.
+
+
 Note that ``GetParticipantsRequest`` returns `ChannelParticipants`__,
 which may have more information you need (like the role of the
 participants, total count of members, etc.)
@@ -130,6 +137,7 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
 __ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
+__ https://github.com/LonamiWebs/Telethon/issues/573
 
 
 Recent Actions
