@@ -80,7 +80,8 @@ from .tl.types import (
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
-    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates
+    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
+    MessageMediaWebPage
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -664,8 +665,8 @@ class TelegramClient(TelegramBareClient):
             entity (:obj:`entity`):
                 To who will it be sent.
 
-            message (:obj:`str`):
-                The message to be sent.
+            message (:obj:`str` | :obj:`Message`):
+                The message to be sent, or another message object to resend.
 
             reply_to (:obj:`int` | :obj:`Message`, optional):
                 Whether to reply to a message or not. If an integer is provided,
@@ -684,15 +685,35 @@ class TelegramClient(TelegramBareClient):
             the sent message
         """
         entity = self.get_input_entity(entity)
-        message, msg_entities = self._parse_message_text(message, parse_mode)
+        if isinstance(message, Message):
+            if (message.media
+                    and not isinstance(message.media, MessageMediaWebPage)):
+                return self.send_file(entity, message.media)
 
-        request = SendMessageRequest(
-            peer=entity,
-            message=message,
-            entities=msg_entities,
-            no_webpage=not link_preview,
-            reply_to_msg_id=self._get_message_id(reply_to)
-        )
+            if utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
+                reply_id = message.reply_to_msg_id
+            else:
+                reply_id = None
+            request = SendMessageRequest(
+                peer=entity,
+                message=message.message or '',
+                silent=message.silent,
+                reply_to_msg_id=reply_id,
+                reply_markup=message.reply_markup,
+                entities=message.entities,
+                no_webpage=not isinstance(message.media, MessageMediaWebPage)
+            )
+            message = message.message
+        else:
+            message, msg_ent = self._parse_message_text(message, parse_mode)
+            request = SendMessageRequest(
+                peer=entity,
+                message=message,
+                entities=msg_ent,
+                no_webpage=not link_preview,
+                reply_to_msg_id=self._get_message_id(reply_to)
+            )
+
         result = self(request)
         if isinstance(result, UpdateShortSentMessage):
             return Message(
