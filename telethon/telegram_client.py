@@ -1013,28 +1013,27 @@ class TelegramClient(TelegramBareClient):
             pass
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
-        
-    def get_participants(self, entity, search='', limit=None):
+
+    def get_participants(self, entity, limit=None, search=''):
         """
         Gets the list of participants from the specified entity
-        
+
         Args:
             entity (:obj:`entity`):
-                The entity from which to retrieve the participants list
-            
-            search (:obj: `str`):
-                Look for participants with this string in name/username etc.
-               
+                The entity from which to retrieve the participants list.
+
             limit (:obj: `int`):
-                Limits amount of participants fetched
-            
+                Limits amount of participants fetched.
+
+            search (:obj: `str`, optional):
+                Look for participants with this string in name/username.
+
         Returns:
-            A list of participants with an additional .count variable on the list.
+            A list of participants with an additional .total variable on the list
+            indicating the total amount of members in this group/channel.
         """
         entity = self.get_input_entity(entity)
-
         limit = float('inf') if limit is None else int(limit)
-        
         if isinstance(entity, InputPeerChannel):
             offset = 0
             all_participants = {}
@@ -1054,18 +1053,20 @@ class TelegramClient(TelegramBareClient):
                     break
             users = UserList(all_participants.values())
             if limit <= 200:
-                users.count = self(GetFullChannelRequest(entity)).full_chat.participants_count
+                users.total = \
+                    self(GetFullChannelRequest(entity)).full_chat.participants_count
             else:
-                users.count = participants.count # returns incorrect amount if limit <= 200
+                # Returns incorrect amount unless limit > 200
+                users.total = participants.count
         elif isinstance(entity, InputPeerChat):
             users = self(GetFullChatRequest(entity.chat_id)).users
             if len(users) > limit:
                 users = users[:limit]
             users = UserList(users)
-            users.count = len(users)
-        else: # must be a user?
+            users.total = len(users)
+        else:
             users = UserList([entity])
-            users.count = 1
+            users.total = 1
         return users
 
     # endregion
