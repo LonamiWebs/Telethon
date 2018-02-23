@@ -1051,13 +1051,11 @@ class TelegramClient(TelegramBareClient):
                 offset += len(participants.users)
                 if offset > limit:
                     break
+
             users = UserList(all_participants.values())
-            if limit <= 200:
-                users.total = \
-                    self(GetFullChannelRequest(entity)).full_chat.participants_count
-            else:
-                # Returns incorrect amount unless limit > 200
-                users.total = participants.count
+            users.total = self(GetFullChannelRequest(
+                entity)).full_chat.participants_count
+
         elif isinstance(entity, InputPeerChat):
             users = self(GetFullChatRequest(entity.chat_id)).users
             if len(users) > limit:
