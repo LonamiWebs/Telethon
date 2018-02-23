@@ -1018,7 +1018,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
-    def send_file(self, entity, file, caption='',
+    def send_file(self, entity, file, caption=None,
                   force_document=False, progress_callback=None,
                   reply_to=None,
                   attributes=None,
@@ -1130,11 +1130,11 @@ class TelegramClient(TelegramBareClient):
         if isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
-                media = InputMediaPhoto(file_handle, caption)
+                media = InputMediaPhoto(file_handle, caption or '')
             else:
-                media = InputMediaDocument(file_handle, caption)
+                media = InputMediaDocument(file_handle, caption or '')
         elif as_image:
-            media = InputMediaUploadedPhoto(file_handle, caption)
+            media = InputMediaUploadedPhoto(file_handle, caption or '')
         else:
             mime_type = None
             if isinstance(file, str):
@@ -1204,7 +1204,7 @@ class TelegramClient(TelegramBareClient):
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption,
+                caption=caption or '',
                 **input_kw
             )
 
@@ -1224,15 +1224,15 @@ class TelegramClient(TelegramBareClient):
 
         return msg
 
-    def send_voice_note(self, entity, file, caption='', progress_callback=None,
-                        reply_to=None):
+    def send_voice_note(self, entity, file, caption=None,
+                        progress_callback=None, reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
         return self.send_file(entity, file, caption,
                               progress_callback=progress_callback,
                               reply_to=reply_to,
                               is_voice_note=())  # empty tuple is enough
 
-    def _send_album(self, entity, files, caption='',
+    def _send_album(self, entity, files, caption=None,
                     progress_callback=None, reply_to=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
@@ -1241,6 +1241,7 @@ class TelegramClient(TelegramBareClient):
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change. Caption's ignored.
         entity = self.get_input_entity(entity)
+        caption = caption or ''
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
