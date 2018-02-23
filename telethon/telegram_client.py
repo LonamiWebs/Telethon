@@ -56,7 +56,7 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
-    UploadMediaRequest, EditMessageRequest
+    UploadMediaRequest, EditMessageRequest, GetFullChatRequest
 )
 
 from .tl.functions import channels
@@ -66,7 +66,7 @@ from .tl.functions.users import (
     GetUsersRequest
 )
 from .tl.functions.channels import (
-    GetChannelsRequest, GetFullChannelRequest
+    GetChannelsRequest, GetFullChannelRequest, GetParticipantsRequest
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
@@ -81,7 +81,7 @@ from .tl.types import (
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
-    MessageMediaWebPage
+    MessageMediaWebPage, ChannelParticipantsSearch
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -1013,6 +1013,60 @@ class TelegramClient(TelegramBareClient):
             pass
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
+        
+    def get_participants(self, entity, search='', limit=None):
+        """
+        Gets the list of participants from the specified entity
+        
+        Args:
+            entity (:obj:`entity`):
+                The entity from which to retrieve the participants list
+            
+            search (:obj: `str`):
+                Look for participants with this string in name/username etc.
+               
+            limit (:obj: `int`):
+                Limits amount of participants fetched
+            
+        Returns:
+            A list of participants with an additional .count variable on the list.
+        """
+        entity = self.get_input_entity(entity)
+
+        limit = float('inf') if limit is None else int(limit)
+        
+        if isinstance(entity, InputPeerChannel):
+            offset = 0
+            all_participants = {}
+            search = ChannelParticipantsSearch(search)
+            while True:
+                loop_limit = min(limit - offset, 200)
+                participants = self(GetParticipantsRequest(
+                    entity, search, offset, loop_limit, hash=0
+                ))
+                if not participants.users:
+                    break
+                for user in participants.users:
+                    if len(all_participants) < limit:
+                        all_participants[user.id] = user
+                offset += len(participants.users)
+                if offset > limit:
+                    break
+            users = UserList(all_participants.values())
+            if limit <= 200:
+                users.count = self(GetFullChannelRequest(entity)).full_chat.participants_count
+            else:
+                users.count = participants.count # returns incorrect amount if limit <= 200
+        elif isinstance(entity, InputPeerChat):
+            users = self(GetFullChatRequest(entity.chat_id)).users
+            if len(users) > limit:
+                users = users[:limit]
+            users = UserList(users)
+            users.count = len(users)
+        else: # must be a user?
+            users = UserList([entity])
+            users.count = 1
+        return users
 
     # endregion
 
