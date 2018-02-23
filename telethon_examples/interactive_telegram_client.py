@@ -266,9 +266,7 @@ class InteractiveTelegramClient(TelegramClient):
                     os.makedirs('usermedia', exist_ok=True)
                     output = self.download_profile_photo(entity, 'usermedia')
                     if output:
-                        print(
-                            'Profile picture downloaded to {}'.format(output)
-                        )
+                        print('Profile picture downloaded to', output)
                     else:
                         print('No profile picture found for this user!')
 
