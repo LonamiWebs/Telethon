@@ -273,22 +273,10 @@ class InteractiveTelegramClient(TelegramClient):
                         print('No profile picture found for this user!')
 
                 elif msg == '!i':
-                    blacklist_attrs = ['from_reader', 'on_response', 'pretty_format', 'resolve', 'rpc_error',
-                                       'serialize_bytes', 'serialize_datetime', 'stringify', 'to_dict',
-                                       'constructor_id', 'subclass_of_id', 'confirm_received', 'result']
-                    interesting_attributes = [
-                        x for x in dir(entity)
-                        if x.lower() not in blacklist_attrs and not (x.startswith('_') or x.startswith('__'))
-                    ]
-
-                    longest_attr = max(len(x) for x in interesting_attributes)
-
-                    for attr in interesting_attributes:
-                        print("{:<{width}} : {}".format(
-                            attr,
-                            getattr(entity, attr, ''),
-                            width=longest_attr)
-                        )
+                    attributes = list(entity.to_dict().items())
+                    pad = max(len(x) for x, _ in attributes)
+                    for name, val in attributes:
+                        print("{:<{width}} : {}".format(name, val, width=pad))
 
                 # Send chat message (if any)
                 elif msg:
