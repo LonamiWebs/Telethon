@@ -227,7 +227,7 @@ class Session:
         c = self._cursor()
         c.execute('select auth_key from sessions')
         tuple_ = c.fetchone()
-        if tuple_:
+        if tuple_ and tuple_[0]:
             self._auth_key = AuthKey(data=tuple_[0])
         else:
             self._auth_key = None
