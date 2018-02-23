@@ -1,12 +1,13 @@
 import os
 from getpass import getpass
 
-from telethon import TelegramClient, ConnectionMode
+from telethon.utils import get_display_name
+
+from telethon import ConnectionMode, TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import (
-    UpdateShortChatMessage, UpdateShortMessage, PeerChat
+    PeerChat, UpdateShortChatMessage, UpdateShortMessage
 )
-from telethon.utils import get_display_name
 
 
 def sprint(string, *args, **kwargs):
@@ -47,6 +48,7 @@ class InteractiveTelegramClient(TelegramClient):
        Telegram through Telethon, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
+
     def __init__(self, session_user_id, user_phone, api_id, api_hash,
                  proxy=None):
         """
@@ -182,14 +184,15 @@ class InteractiveTelegramClient(TelegramClient):
             # Show some information
             print_title('Chat with "{}"'.format(get_display_name(entity)))
             print('Available commands:')
-            print('  !q: Quits the current chat.')
-            print('  !Q: Quits the current chat and exits.')
-            print('  !h: prints the latest messages (message History).')
-            print('  !up <path>: Uploads and sends the Photo from path.')
-            print('  !uf <path>: Uploads and sends the File from path.')
-            print('  !d <msg-id>: Deletes a message by its id')
-            print('  !dm <msg-id>: Downloads the given message Media (if any).')
+            print('  !q:  Quits the current chat.')
+            print('  !Q:  Quits the current chat and exits.')
+            print('  !h:  prints the latest messages (message History).')
+            print('  !up  <path>: Uploads and sends the Photo from path.')
+            print('  !uf  <path>: Uploads and sends the File from path.')
+            print('  !d   <msg-id>: Deletes a message by its id')
+            print('  !dm  <msg-id>: Downloads the given message Media (if any).')
             print('  !dp: Downloads the current dialog Profile picture.')
+            print('  !i:  Prints information about this chat..')
             print()
 
             # And start a while loop to chat
@@ -234,8 +237,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                         # And print it to the user
                         sprint('[{}:{}] (ID={}) {}: {}'.format(
-                               msg.date.hour, msg.date.minute, msg.id, name,
-                               content))
+                            msg.date.hour, msg.date.minute, msg.id, name, content))
 
                 # Send photo
                 elif msg.startswith('!up '):
@@ -264,11 +266,15 @@ class InteractiveTelegramClient(TelegramClient):
                     os.makedirs('usermedia', exist_ok=True)
                     output = self.download_profile_photo(entity, 'usermedia')
                     if output:
-                        print(
-                            'Profile picture downloaded to {}'.format(output)
-                        )
+                        print('Profile picture downloaded to', output)
                     else:
                         print('No profile picture found for this user!')
+
+                elif msg == '!i':
+                    attributes = list(entity.to_dict().items())
+                    pad = max(len(x) for x, _ in attributes)
+                    for name, val in attributes:
+                        print("{:<{width}} : {}".format(name, val, width=pad))
 
                 # Send chat message (if any)
                 elif msg:
@@ -356,6 +362,5 @@ class InteractiveTelegramClient(TelegramClient):
             else:
                 who = self.get_entity(update.from_id)
                 sprint('<< {} @ {} sent "{}"'.format(
-                       get_display_name(which), get_display_name(who),
-                       update.message
+                    get_display_name(which), get_display_name(who), update.message
                 ))
