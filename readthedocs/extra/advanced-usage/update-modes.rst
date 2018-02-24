@@ -37,7 +37,7 @@ an `Update`__ arrives:
         def callback(update):
             print('I received', update)
 
-        client.add_update_handler(callback)
+        client.add_event_handler(callback)
         # do more work here, or simply sleep!
 
 That's it! This is the old way to listen for raw updates, with no further
@@ -56,7 +56,7 @@ let's reply to them with the same text reversed:
                 client.send_message(PeerUser(update.user_id), update.message[::-1])
 
 
-        client.add_update_handler(replier)
+        client.add_event_handler(replier)
         input('Press enter to stop this!')
         client.disconnect()
 
@@ -96,9 +96,9 @@ additional workers:
 
     ``client = TelegramClient('session', api_id, api_hash, update_workers=0)``
 
-You **must** set it to ``0`` (or other number), as it defaults to ``None``
-and there is a different. ``None`` workers means updates won't be processed
-*at all*, so you must set it to some value (``0`` or greater) if you want
+You **must** set it to ``0`` (or higher), as it defaults to ``None`` and that
+has a different meaning. ``None`` workers means updates won't be processed
+*at all*, so you must set it to some integer value if you want
 ``client.updates.poll()`` to work.
 
 
@@ -134,7 +134,7 @@ As a complete example:
                                 update_workers=1, spawn_read_thread=False)
 
         client.connect()
-        client.add_update_handler(callback)
+        client.add_event_handler(callback)
         client.idle()  # ends with Ctrl+C
 
 
