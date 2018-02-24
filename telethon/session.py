@@ -221,7 +221,7 @@ class Session:
         c = self._cursor()
         c.execute('select auth_key from sessions')
         tuple_ = c.fetchone()
-        if tuple_:
+        if tuple_ and tuple_[0]:
             self._auth_key = AuthKey(data=tuple_[0])
         else:
             self._auth_key = None
@@ -424,13 +424,19 @@ class Session:
                           (phone,))
             else:
                 username, _ = utils.parse_username(key)
-                c.execute('select id, hash from entities where username=?',
-                          (username,))
+                if username:
+                    c.execute('select id, hash from entities where username=?',
+                              (username,))
 
         if isinstance(key, int):
             c.execute('select id, hash from entities where id=?', (key,))
 
         result = c.fetchone()
+        if not result and isinstance(key, str):
+            # Try exact match by name if phone/username failed
+            c.execute('select id, hash from entities where name=?', (key,))
+            result = c.fetchone()
+
         c.close()
         if result:
             i, h = result  # unpack resulting tuple

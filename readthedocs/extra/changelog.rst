@@ -14,6 +14,76 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Further easing library usage (v0.17.4)
+======================================
+
+*Published at 2018/02/24*
+
+Some new things and patches that already deserved their own release.
+
+
+Additions
+~~~~~~~~~
+
+- New ``pattern`` argument to ``NewMessage`` to easily filter messages.
+- New ``.get_participants()`` convenience method to get members from chats.
+- ``.send_message()`` now accepts a ``Message`` as the ``message`` parameter.
+- You can now ``.get_entity()`` through exact name match instead username.
+- Raise ``ProxyConnectionError`` instead looping forever so you can
+  ``except`` it on your own code and behave accordingly.
+
+Bug fixes
+~~~~~~~~~
+
+- ``.parse_username`` would fail with ``www.`` or a trailing slash.
+- ``events.MessageChanged`` would fail with ``UpdateDeleteMessages``.
+- You can now send ``b'byte strings'`` directly as files again.
+- ``.send_file()`` was not respecting the original captions when passing
+  another message (or media) as the file.
+- Downloading media from a different data center would always log a warning
+  for the first time.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Use ``req_pq_multi`` instead ``req_pq`` when generating ``auth_key``.
+- You can use ``.get_me(input_peer=True)`` if all you need is your self ID.
+- New addition to the interactive client example to show peer information.
+- Avoid special casing ``InputPeerSelf`` on some ``NewMessage`` events, so
+  you can always safely rely on ``.sender`` to get the right ID.
+
+
+New small convenience functions (v0.17.3)
+=========================================
+
+*Published at 2018/02/18*
+
+More bug fixes and a few others addition to make events easier to use.
+
+Additions
+~~~~~~~~~
+
+- Use ``hachoir`` to extract video and audio metadata before upload.
+- New ``.add_event_handler``, ``.add_update_handler`` now deprecated.
+
+Bug fixes
+~~~~~~~~~
+
+- ``bot_token`` wouldn't work on ``.start()``, and changes to ``password``
+  (now it will ask you for it if you don't provide it, as docstring hinted).
+- ``.edit_message()`` was ignoring the formatting (e.g. markdown).
+- Added missing case to the ``NewMessage`` event for normal groups.
+- Accessing the ``.text`` of the ``NewMessage`` event was failing due
+  to a bug with the markdown unparser.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- ``libssl`` is no longer an optional dependency. Use ``cryptg`` instead,
+  which you can find on https://github.com/Lonami/cryptg.
+
+
+
 New small convenience functions (v0.17.2)
 =========================================
 

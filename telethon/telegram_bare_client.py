@@ -3,7 +3,6 @@ import logging
 import os
 from asyncio import Lock
 from datetime import timedelta
-
 from . import version, utils
 from .crypto import rsa
 from .errors import (
@@ -78,7 +77,7 @@ class TelegramBareClient:
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        
+
         # Determine what session object we have
         if isinstance(session, str) or session is None:
             session = Session(session)
@@ -553,17 +552,6 @@ class TelegramBareClient:
            otherwise it should be called manually after enabling updates.
         """
         self.updates.process(await self(GetStateRequest()))
-
-    def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
-        self.updates.handlers.append(handler)
-
-    def remove_update_handler(self, handler):
-        self.updates.handlers.remove(handler)
-
-    def list_update_handlers(self):
-        return self.updates.handlers[:]
 
     # endregion
 

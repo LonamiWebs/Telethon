@@ -1,4 +1,5 @@
 import asyncio
+import getpass
 import hashlib
 import io
 import itertools
@@ -6,6 +7,7 @@ import logging
 import os
 import re
 import sys
+import warnings
 from collections import OrderedDict, UserList
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -23,8 +25,15 @@ try:
 except ImportError:
     socks = None
 
+try:
+    import hachoir
+    import hachoir.metadata
+    import hachoir.parser
+except ImportError:
+    hachoir = None
+
 from . import TelegramBareClient
-from . import helpers, utils
+from . import helpers, utils, events
 from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
@@ -47,7 +56,7 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
-    UploadMediaRequest, EditMessageRequest
+    UploadMediaRequest, EditMessageRequest, GetFullChatRequest
 )
 
 from .tl.functions import channels
@@ -57,7 +66,7 @@ from .tl.functions.users import (
     GetUsersRequest
 )
 from .tl.functions.channels import (
-    GetChannelsRequest, GetFullChannelRequest
+    GetChannelsRequest, GetFullChannelRequest, GetParticipantsRequest
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
@@ -71,7 +80,8 @@ from .tl.types import (
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
-    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates
+    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
+    MessageMediaWebPage, ChannelParticipantsSearch
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -168,6 +178,9 @@ class TelegramClient(TelegramBareClient):
         self._phone_code_hash = {}
         self._phone = None
 
+        # Sometimes we need to know who we are, cache the self peer
+        self._self_input_peer = None
+
     # endregion
 
     # region Telegram requests functions
@@ -207,8 +220,9 @@ class TelegramClient(TelegramBareClient):
 
     async def start(self,
                     phone=lambda: input('Please enter your phone: '),
-                    password=None, bot_token=None,
-                    force_sms=False, code_callback=None,
+                    password=lambda: getpass.getpass(
+                        'Please enter your password: '),
+                    bot_token=None, force_sms=False, code_callback=None,
                     first_name='New User', last_name=''):
         """
         Convenience method to interactively connect and sign in if required,
@@ -265,7 +279,7 @@ class TelegramClient(TelegramBareClient):
         if not phone and not bot_token:
             raise ValueError('No phone number or bot token provided.')
 
-        if phone and bot_token:
+        if phone and bot_token and not callable(phone):
             raise ValueError('Both a phone and a bot token provided, '
                              'must only provide one of either')
 
@@ -322,6 +336,9 @@ class TelegramClient(TelegramBareClient):
                     "Two-step verification is enabled for this account. "
                     "Please provide the 'password' argument to 'start()'."
                 )
+            # TODO If callable given make it retry on invalid
+            if callable(password):
+                password = password()
             me = await self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
@@ -393,6 +410,9 @@ class TelegramClient(TelegramBareClient):
                 'and a password only if an RPCError was raised before.'
             )
 
+        self._self_input_peer = utils.get_input_peer(
+            result.user, allow_self=False
+        )
         self._set_connected_and_authorized()
         return result.user
 
@@ -422,6 +442,9 @@ class TelegramClient(TelegramBareClient):
             last_name=last_name
         ))
 
+        self._self_input_peer = utils.get_input_peer(
+            result.user, allow_self=False
+        )
         self._set_connected_and_authorized()
         return result.user
 
@@ -441,16 +464,31 @@ class TelegramClient(TelegramBareClient):
         self.session.delete()
         return True
 
-    async def get_me(self):
+    async def get_me(self, input_peer=False):
         """
         Gets "me" (the self user) which is currently authenticated,
         or None if the request fails (hence, not authenticated).
 
+        Args:
+            input_peer (:obj:`bool`, optional):
+                Whether to return the ``InputPeerUser`` version or the normal
+                ``User``. This can be useful if you just need to know the ID
+                of yourself.
+
         Returns:
             :obj:`User`: Your own user.
         """
+        if input_peer and self._self_input_peer:
+            return self._self_input_peer
         try:
-            return (await self(GetUsersRequest([InputUserSelf()])))[0]
+            me = (await self(GetUsersRequest([InputUserSelf()])))[0]
+            if not self._self_input_peer:
+                self._self_input_peer = utils.get_input_peer(
+                    me, allow_self=False
+                )
+                if input_peer:
+                    return self._self_input_peer
+            return me
         except UnauthorizedError:
             return None
 
@@ -627,8 +665,8 @@ class TelegramClient(TelegramBareClient):
             entity (:obj:`entity`):
                 To who will it be sent.
 
-            message (:obj:`str`):
-                The message to be sent.
+            message (:obj:`str` | :obj:`Message`):
+                The message to be sent, or another message object to resend.
 
             reply_to (:obj:`int` | :obj:`Message`, optional):
                 Whether to reply to a message or not. If an integer is provided,
@@ -646,16 +684,37 @@ class TelegramClient(TelegramBareClient):
         Returns:
             the sent message
         """
-        entity = await self.get_input_entity(entity)
-        message, msg_entities = await self._parse_message_text(message, parse_mode)
 
-        request = SendMessageRequest(
-            peer=entity,
-            message=message,
-            entities=msg_entities,
-            no_webpage=not link_preview,
-            reply_to_msg_id=self._get_message_id(reply_to)
-        )
+        entity = await self.get_input_entity(entity)
+        if isinstance(message, Message):
+            if (message.media
+                    and not isinstance(message.media, MessageMediaWebPage)):
+                return await self.send_file(entity, message.media)
+
+            if utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
+                reply_id = message.reply_to_msg_id
+            else:
+                reply_id = None
+            request = SendMessageRequest(
+                peer=entity,
+                message=message.message or '',
+                silent=message.silent,
+                reply_to_msg_id=reply_id,
+                reply_markup=message.reply_markup,
+                entities=message.entities,
+                no_webpage=not isinstance(message.media, MessageMediaWebPage)
+            )
+            message = message.message
+        else:
+            message, msg_ent = await self._parse_message_text(message, parse_mode)
+            request = SendMessageRequest(
+                peer=entity,
+                message=message,
+                entities=msg_ent,
+                no_webpage=not link_preview,
+                reply_to_msg_id=self._get_message_id(reply_to)
+            )
+
         result = await self(request)
 
         if isinstance(result, UpdateShortSentMessage):
@@ -956,11 +1015,64 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
+    def get_participants(self, entity, limit=None, search=''):
+        """
+        Gets the list of participants from the specified entity
+
+        Args:
+            entity (:obj:`entity`):
+                The entity from which to retrieve the participants list.
+
+            limit (:obj: `int`):
+                Limits amount of participants fetched.
+
+            search (:obj: `str`, optional):
+                Look for participants with this string in name/username.
+
+        Returns:
+            A list of participants with an additional .total variable on the list
+            indicating the total amount of members in this group/channel.
+        """
+        entity = self.get_input_entity(entity)
+        limit = float('inf') if limit is None else int(limit)
+        if isinstance(entity, InputPeerChannel):
+            offset = 0
+            all_participants = {}
+            search = ChannelParticipantsSearch(search)
+            while True:
+                loop_limit = min(limit - offset, 200)
+                participants = self(GetParticipantsRequest(
+                    entity, search, offset, loop_limit, hash=0
+                ))
+                if not participants.users:
+                    break
+                for user in participants.users:
+                    if len(all_participants) < limit:
+                        all_participants[user.id] = user
+                offset += len(participants.users)
+                if offset > limit:
+                    break
+
+            users = UserList(all_participants.values())
+            users.total = self(GetFullChannelRequest(
+                entity)).full_chat.participants_count
+
+        elif isinstance(entity, InputPeerChat):
+            users = self(GetFullChatRequest(entity.chat_id)).users
+            if len(users) > limit:
+                users = users[:limit]
+            users = UserList(users)
+            users.total = len(users)
+        else:
+            users = UserList([entity])
+            users.total = 1
+        return users
+
     # endregion
 
     # region Uploading files
 
-    async def send_file(self, entity, file, caption='',
+    async def send_file(self, entity, file, caption=None,
                         force_document=False, progress_callback=None,
                         reply_to=None,
                         attributes=None,
@@ -1019,6 +1131,10 @@ class TelegramClient(TelegramBareClient):
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
 
+        Notes:
+            If the ``hachoir3`` package (``hachoir`` module) is installed,
+            it will be used to determine metadata from audio and video files.
+
         Returns:
             The message (or messages) containing the sent file.
         """
@@ -1068,11 +1184,11 @@ class TelegramClient(TelegramBareClient):
         if isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
-                media = InputMediaPhoto(file_handle, caption)
+                media = InputMediaPhoto(file_handle, caption or '')
             else:
-                media = InputMediaDocument(file_handle, caption)
+                media = InputMediaDocument(file_handle, caption or '')
         elif as_image:
-            media = InputMediaUploadedPhoto(file_handle, caption)
+            media = InputMediaUploadedPhoto(file_handle, caption or '')
         else:
             mime_type = None
             if isinstance(file, str):
@@ -1082,12 +1198,32 @@ class TelegramClient(TelegramBareClient):
                 attr_dict = {
                     DocumentAttributeFilename:
                         DocumentAttributeFilename(os.path.basename(file))
-                    # TODO If the input file is an audio, find out:
-                    # Performer and song title and add DocumentAttributeAudio
                 }
+                if utils.is_audio(file) and hachoir:
+                    m = hachoir.metadata.extractMetadata(
+                        hachoir.parser.createParser(file)
+                    )
+                    attr_dict[DocumentAttributeAudio] = DocumentAttributeAudio(
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('author') if m.has('author') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+
                 if not force_document and utils.is_video(file):
-                    attr_dict[DocumentAttributeVideo] = \
-                        DocumentAttributeVideo(0, 0, 0)
+                    if hachoir:
+                        m = hachoir.metadata.extractMetadata(
+                            hachoir.parser.createParser(file)
+                        )
+                        doc = DocumentAttributeVideo(
+                            w=m.get('width') if m.has('width') else 0,
+                            h=m.get('height') if m.has('height') else 0,
+                            duration=int(m.get('duration').seconds
+                                         if m.has('duration') else 0)
+                        )
+                    else:
+                        doc = DocumentAttributeVideo(0, 0, 0)
+                    attr_dict[DocumentAttributeVideo] = doc
             else:
                 attr_dict = {
                     DocumentAttributeFilename:
@@ -1095,8 +1231,11 @@ class TelegramClient(TelegramBareClient):
                 }
 
             if 'is_voice_note' in kwargs:
-                attr_dict[DocumentAttributeAudio] = \
-                    DocumentAttributeAudio(0, voice=True)
+                if DocumentAttributeAudio in attr_dict:
+                    attr_dict[DocumentAttributeAudio].voice = True
+                else:
+                    attr_dict[DocumentAttributeAudio] = \
+                        DocumentAttributeAudio(0, voice=True)
 
             # Now override the attributes if any. As we have a dict of
             # {cls: instance}, we can override any class with the list
@@ -1119,7 +1258,7 @@ class TelegramClient(TelegramBareClient):
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption,
+                caption=caption or '',
                 **input_kw
             )
 
@@ -1139,7 +1278,7 @@ class TelegramClient(TelegramBareClient):
 
         return msg
 
-    async def send_voice_note(self, entity, file, caption='',
+    async def send_voice_note(self, entity, file, caption=None,
                               progress_callback=None, reply_to=None):
         """Wrapper method around .send_file() with is_voice_note=()"""
         return await self.send_file(entity, file, caption,
@@ -1147,7 +1286,7 @@ class TelegramClient(TelegramBareClient):
                                     reply_to=reply_to,
                                     is_voice_note=())  # empty tuple is enough
 
-    async def _send_album(self, entity, files, caption='',
+    async def _send_album(self, entity, files, caption=None,
                           progress_callback=None, reply_to=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
@@ -1156,6 +1295,7 @@ class TelegramClient(TelegramBareClient):
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change. Caption's ignored.
         entity = await self.get_input_entity(entity)
+        caption = caption or ''
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
@@ -1479,18 +1619,27 @@ class TelegramClient(TelegramBareClient):
 
         file_size = document.size
 
+        kind = 'document'
         possible_names = []
         for attr in document.attributes:
             if isinstance(attr, DocumentAttributeFilename):
                 possible_names.insert(0, attr.file_name)
 
             elif isinstance(attr, DocumentAttributeAudio):
-                possible_names.append('{} - {}'.format(
-                    attr.performer, attr.title
-                ))
+                kind = 'audio'
+                if attr.performer and attr.title:
+                    possible_names.append('{} - {}'.format(
+                        attr.performer, attr.title
+                    ))
+                elif attr.performer:
+                    possible_names.append(attr.performer)
+                elif attr.title:
+                    possible_names.append(attr.title)
+                elif attr.voice:
+                    kind = 'voice'
 
         file = self._get_proper_filename(
-            file, 'document', utils.get_extension(document),
+            file, kind, utils.get_extension(document),
             date=date, possible_names=possible_names
         )
 
@@ -1711,27 +1860,18 @@ class TelegramClient(TelegramBareClient):
 
     # region Event handling
 
-    async def on(self, event):
+    def on(self, event):
         """
-
-        Turns the given entity into a valid Telegram user or chat.
+        Decorator helper method around add_event_handler().
 
         Args:
             event (:obj:`_EventBuilder` | :obj:`type`):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
-        if isinstance(event, type):
-            event = event()
-
-        await event.resolve(self)
-
-        def decorator(f):
-            self._event_builders.append((event, f))
+        async def decorator(f):
+            await self.add_event_handler(f, event)
             return f
-
-        if self._on_handler not in self.updates.handlers:
-            self.add_update_handler(self._on_handler)
 
         return decorator
 
@@ -1741,6 +1881,48 @@ class TelegramClient(TelegramBareClient):
             if event:
                 event._client = self
                 await callback(event)
+
+    async def add_event_handler(self, callback, event=None):
+        """
+        Registers the given callback to be called on the specified event.
+
+        Args:
+            callback (:obj:`callable`):
+                The callable function accepting one parameter to be used.
+
+            event (:obj:`_EventBuilder` | :obj:`type`, optional):
+                The event builder class or instance to be used,
+                for instance ``events.NewMessage``.
+
+                If left unspecified, ``events.Raw`` (the ``Update`` objects
+                with no further processing) will be passed instead.
+        """
+
+        self.updates.handler = self._on_handler
+        if isinstance(event, type):
+            event = event()
+        elif not event:
+            event = events.Raw()
+
+        await event.resolve(self)
+        self._event_builders.append((event, callback))
+
+    def add_update_handler(self, handler):
+        """Adds an update handler (a function which takes a TLObject,
+          an update, as its parameter) and listens for updates"""
+        warnings.warn(
+            'add_update_handler is deprecated, use the @client.on syntax '
+            'or add_event_handler(callback, events.Raw) instead (see '
+            'https://telethon.rtfd.io/en/latest/extra/basic/working-'
+            'with-updates.html)'
+        )
+        self.add_event_handler(handler, events.Raw)
+
+    def remove_update_handler(self, handler):
+        pass
+
+    def list_update_handlers(self):
+        return []
 
     # endregion
 
@@ -1831,9 +2013,9 @@ class TelegramClient(TelegramBareClient):
                 if user.phone == phone:
                     return user
         else:
-            string, is_join_chat = utils.parse_username(string)
+            username, is_join_chat = utils.parse_username(string)
             if is_join_chat:
-                invite = await self(CheckChatInviteRequest(string))
+                invite = await self(CheckChatInviteRequest(username))
                 if isinstance(invite, ChatInvite):
                     raise ValueError(
                         'Cannot get entity from a channel '
@@ -1841,13 +2023,19 @@ class TelegramClient(TelegramBareClient):
                     )
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
-            else:
-                if string in ('me', 'self'):
+            elif username:
+                if username in ('me', 'self'):
                     return await self.get_me()
-                result = await self(ResolveUsernameRequest(string))
+                result = await self(ResolveUsernameRequest(username))
                 for entity in itertools.chain(result.users, result.chats):
-                    if entity.username.lower() == string:
+                    if entity.username.lower() == username:
                         return entity
+            try:
+                # Nobody with this username, maybe it's an exact name/title
+                return await self.get_entity(
+                    self.session.get_input_entity(string))
+            except ValueError:
+                pass
 
         raise TypeError(
             'Cannot turn "{}" into any entity (user or chat)'.format(string)

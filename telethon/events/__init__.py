@@ -1,6 +1,7 @@
 import abc
 import datetime
 import itertools
+import re
 
 from .. import utils
 from ..errors import RPCError
@@ -8,14 +9,62 @@ from ..extensions import markdown
 from ..tl import types, functions
 
 
+async def _into_id_set(client, chats):
+    """Helper util to turn the input chat or chats into a set of IDs."""
+    if chats is None:
+        return None
+
+    if not hasattr(chats, '__iter__') or isinstance(chats, str):
+        chats = (chats,)
+
+    result = set()
+    for chat in chats:
+        chat = await client.get_input_entity(chat)
+        if isinstance(chat, types.InputPeerSelf):
+            chat = await client.get_me(input_peer=True)
+        result.add(utils.get_peer_id(chat))
+    return result
+
+
 class _EventBuilder(abc.ABC):
+    """
+    The common event builder, with builtin support to filter per chat.
+
+    Args:
+        chats (:obj:`entity`, optional):
+            May be one or more entities (username/peer/etc.). By default,
+            only matching chats will be handled.
+
+        blacklist_chats (:obj:`bool`, optional):
+            Whether to treat the the list of chats as a blacklist (if
+            it matches it will NOT be handled) or a whitelist (default).
+    """
+    def __init__(self, chats=None, blacklist_chats=False):
+        self.chats = chats
+        self.blacklist_chats = blacklist_chats
+        self._self_id = None
+
     @abc.abstractmethod
     def build(self, update):
         """Builds an event for the given update if possible, or returns None"""
 
-    @abc.abstractmethod
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
+        self.chats = await _into_id_set(client, self.chats)
+        self._self_id = (await client.get_me(input_peer=True)).user_id
+
+    def _filter_event(self, event):
+        """
+        If the ID of ``event._chat_peer`` isn't in the chats set (or it is
+        but the set is a blacklist) returns ``None``, otherwise the event.
+        """
+        if self.chats is not None:
+            inside = utils.get_peer_id(event._chat_peer) in self.chats
+            if inside == self.blacklist_chats:
+                # If this chat matches but it's a blacklist ignore.
+                # If it doesn't match but it's a whitelist ignore.
+                return None
+        return event
 
 
 class _EventCommon(abc.ABC):
@@ -98,7 +147,7 @@ class _EventCommon(abc.ABC):
         there is no caching besides local caching yet.
         """
         if self._chat is None and await self.input_chat:
-            self._chat = await self._client.get_entity(self._input_chat)
+            self._chat = await self._client.get_entity(await self._input_chat)
         return self._chat
 
 
@@ -106,8 +155,6 @@ class Raw(_EventBuilder):
     """
     Represents a raw event. The event is the update itself.
     """
-    async def resolve(self, client):
-        pass
 
     def build(self, update):
         return update
@@ -129,36 +176,28 @@ class NewMessage(_EventBuilder):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        chats (:obj:`entity`, optional):
-            May be one or more entities (username/peer/etc.). By default,
-            only matching chats will be handled.
-
-        blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
-            it matches it will NOT be handled) or a whitelist (default).
-
-    Notes:
-        The ``message.from_id`` might not only be an integer or ``None``,
-        but also ``InputPeerSelf()`` for short private messages (the API
-        would not return such thing, this is a custom modification).
+        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
+            If set, only messages matching this pattern will be handled.
+            You can specify a regex-like string which will be matched
+            against the message, a callable function that returns ``True``
+            if a message is acceptable, or a compiled regex pattern.
     """
     def __init__(self, incoming=None, outgoing=None,
-                 chats=None, blacklist_chats=False):
+                 chats=None, blacklist_chats=False, pattern=None):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
+        super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
-        self.chats = chats
-        self.blacklist_chats = blacklist_chats
-
-    async def resolve(self, client):
-        if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(await client.get_input_entity(x))
-                             for x in self.chats)
-        elif self.chats is not None:
-            self.chats = {utils.get_peer_id(
-                          await client.get_input_entity(self.chats))}
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern).match
+        elif not pattern or callable(pattern):
+            self.pattern = pattern
+        elif hasattr(pattern, 'match') and callable(pattern.match):
+            self.pattern = pattern.match
+        else:
+            raise TypeError('Invalid pattern type given')
 
     def build(self, update):
         if isinstance(update,
@@ -174,7 +213,23 @@ class NewMessage(_EventBuilder):
                 silent=update.silent,
                 id=update.id,
                 to_id=types.PeerUser(update.user_id),
-                from_id=types.InputPeerSelf() if update.out else update.user_id,
+                from_id=self._self_id if update.out else update.user_id,
+                message=update.message,
+                date=update.date,
+                fwd_from=update.fwd_from,
+                via_bot_id=update.via_bot_id,
+                reply_to_msg_id=update.reply_to_msg_id,
+                entities=update.entities
+            ))
+        elif isinstance(update, types.UpdateShortChatMessage):
+            event = NewMessage.Event(types.Message(
+                out=update.out,
+                mentioned=update.mentioned,
+                media_unread=update.media_unread,
+                silent=update.silent,
+                id=update.id,
+                from_id=update.from_id,
+                to_id=types.PeerChat(update.chat_id),
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -186,23 +241,18 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
-        if all(x is None for x in (self.incoming, self.outgoing, self.chats)):
+        if all(x is None for x in (self.incoming, self.outgoing, self.chats,
+                                   self.pattern)):
             return event
 
         if self.incoming and event.message.out:
             return
         if self.outgoing and not event.message.out:
             return
+        if self.pattern and not self.pattern(event.message.message or ''):
+            return
 
-        if self.chats is not None:
-            inside = utils.get_peer_id(event.message.to_id) in self.chats
-            if inside == self.blacklist_chats:
-                # If this chat matches but it's a blacklist ignore.
-                # If it doesn't match but it's a whitelist ignore.
-                return
-
-        # Tests passed so return the event
-        return event
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -264,9 +314,13 @@ class NewMessage(_EventBuilder):
             or the edited message otherwise.
             """
             if not self.message.out:
-                return None
+                if not isinstance(self.message.to_id, types.PeerUser):
+                    return None
+                me = await self._client.get_me(input_peer=True)
+                if self.message.to_id.user_id != me.user_id:
+                    return None
 
-            return await self._client.edit_message(self.input_chat,
+            return await self._client.edit_message(await self.input_chat,
                                                    self.message,
                                                    *args, **kwargs)
 
@@ -277,7 +331,7 @@ class NewMessage(_EventBuilder):
             This is a shorthand for
             ``client.delete_messages(event.chat, event.message, ...)``.
             """
-            return await self._client.delete_messages(self.input_chat,
+            return await self._client.delete_messages(await self.input_chat,
                                                       [self.message],
                                                       *args, **kwargs)
 
@@ -413,30 +467,7 @@ class NewMessage(_EventBuilder):
 class ChatAction(_EventBuilder):
     """
     Represents an action in a chat (such as user joined, left, or new pin).
-
-    Args:
-        chats (:obj:`entity`, optional):
-            May be one or more entities (username/peer/etc.). By default,
-            only matching chats will be handled.
-
-        blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
-            it matches it will NOT be handled) or a whitelist (default).
-
     """
-    def __init__(self, chats=None, blacklist_chats=False):
-        # TODO This can probably be reused in all builders
-        self.chats = chats
-        self.blacklist_chats = blacklist_chats
-
-    async def resolve(self, client):
-        if hasattr(self.chats, '__iter__') and not isinstance(self.chats, str):
-            self.chats = set(utils.get_peer_id(await client.get_input_entity(x))
-                             for x in self.chats)
-        elif self.chats is not None:
-            self.chats = {utils.get_peer_id(
-                          await client.get_input_entity(self.chats))}
-
     def build(self, update):
         if isinstance(update, types.UpdateChannelPinnedMessage):
             # Telegram sends UpdateChannelPinnedMessage and then
@@ -494,16 +525,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
-        if self.chats is None:
-            return event
-        else:
-            inside = utils.get_peer_id(event._chat_peer) in self.chats
-            if inside == self.blacklist_chats:
-                # If this chat matches but it's a blacklist ignore.
-                # If it doesn't match but it's a whitelist ignore.
-                return
-
-        return event
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -649,7 +671,6 @@ class UserUpdate(_EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
     """
-
     def build(self, update):
         if isinstance(update, types.UpdateUserStatus):
             event = UserUpdate.Event(update.user_id,
@@ -657,10 +678,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
-        return event
-
-    async def resolve(self, client):
-        pass
+        return self._filter_event(event)
 
     class Event(_EventCommon):
         """
@@ -800,13 +818,16 @@ class MessageChanged(_EventBuilder):
     """
     Represents a message changed (edited or deleted).
     """
-
     def build(self, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
             event = MessageChanged.Event(edit_msg=update.message)
-        elif isinstance(update, (types.UpdateDeleteMessages,
-                                 types.UpdateDeleteChannelMessages)):
+        elif isinstance(update, types.UpdateDeleteMessages):
+            event = MessageChanged.Event(
+                deleted_ids=update.messages,
+                peer=None
+            )
+        elif isinstance(update, types.UpdateDeleteChannelMessages):
             event = MessageChanged.Event(
                 deleted_ids=update.messages,
                 peer=types.PeerChannel(update.channel_id)
@@ -814,91 +835,32 @@ class MessageChanged(_EventBuilder):
         else:
             return
 
-        return event
+        return self._filter_event(event)
 
-    async def resolve(self, client):
-        pass
-
-    class Event(_EventCommon):
+    class Event(NewMessage.Event):
         """
         Represents the event of an user status update (last seen, joined).
+
+        Please note that the ``message`` member will be ``None`` if the
+        action was a deletion and not an edit.
 
         Members:
             edited (:obj:`bool`):
                 ``True`` if the message was edited.
-
-            message (:obj:`Message`, optional):
-                The new edited message, if any.
 
             deleted (:obj:`bool`):
                 ``True`` if the message IDs were deleted.
 
             deleted_ids (:obj:`List[int]`):
                 A list containing the IDs of the messages that were deleted.
-
-            input_sender (:obj:`InputPeer`):
-                This is the input version of the user who edited the message.
-                Similarly to ``input_chat``, this doesn't have things like
-                username or similar, but still useful in some cases.
-
-                Note that this might not be available if the library can't
-                find the input chat.
-
-            sender (:obj:`User`):
-                This property will make an API call the first time to get the
-                most up to date version of the sender, so use with care as
-                there is no caching besides local caching yet.
-
-                ``input_sender`` needs to be available (often the case).
         """
         def __init__(self, edit_msg=None, deleted_ids=None, peer=None):
-            super().__init__(peer if not edit_msg else edit_msg.to_id)
+            if edit_msg is None:
+                msg = types.Message((deleted_ids or [0])[0], peer, None, '')
+            else:
+                msg = edit_msg
+            super().__init__(msg)
 
             self.edited = bool(edit_msg)
-            self.message = edit_msg
             self.deleted = bool(deleted_ids)
             self.deleted_ids = deleted_ids or []
-            self._input_sender = None
-            self._sender = None
-
-        @property
-        async def input_sender(self):
-            """
-            This (:obj:`InputPeer`) is the input version of the user who
-            sent the message. Similarly to ``input_chat``, this doesn't have
-            things like username or similar, but still useful in some cases.
-
-            Note that this might not be available if the library can't
-            find the input chat, or if the message a broadcast on a channel.
-            """
-            # TODO Code duplication
-            if self._input_sender is None:
-                if self.is_channel and not self.is_group:
-                    return None
-
-                try:
-                    self._input_sender = await self._client.get_input_entity(
-                        self.message.from_id
-                    )
-                except (ValueError, TypeError):
-                    # We can rely on self.input_chat for this
-                    self._input_sender = await self._get_input_entity(
-                        self.message.id,
-                        self.message.from_id,
-                        chat=await self.input_chat
-                    )
-
-            return self._input_sender
-
-        @property
-        async def sender(self):
-            """
-            This (:obj:`User`) will make an API call the first time to get
-            the most up to date version of the sender, so use with care as
-            there is no caching besides local caching yet.
-
-            ``input_sender`` needs to be available (often the case).
-            """
-            if self._sender is None and await self.input_sender:
-                self._sender = await self._client.get_entity(self._input_sender)
-            return self._sender

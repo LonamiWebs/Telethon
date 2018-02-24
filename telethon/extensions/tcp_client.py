@@ -15,6 +15,11 @@ CONN_RESET_ERRNOS = {
     errno.EINVAL, errno.ENOTCONN
 }
 
+try:
+    import socks
+except ImportError:
+    socks = None
+
 MAX_TIMEOUT = 15  # in seconds
 CONN_RESET_ERRNOS = {
     errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
@@ -81,6 +86,9 @@ class TcpClient:
                 await asyncio.sleep(timeout)
                 timeout = min(timeout * 2, MAX_TIMEOUT)
             except OSError as e:
+                # Stop retrying to connect if proxy connection error occurred
+                if socks and isinstance(e, socks.ProxyConnectionError):
+                    raise
                 # There are some errors that we know how to handle, and
                 # the loop will allow us to retry
                 if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL,

@@ -1,0 +1,3 @@
+cryptg
+pysocks
+hachoir3

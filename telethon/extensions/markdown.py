@@ -169,6 +169,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
         entities = tuple(sorted(entities, key=lambda e: e.offset, reverse=True))
 
     text = _add_surrogate(text)
+    delimiters = {v: k for k, v in delimiters.items()}
     for entity in entities:
         s = entity.offset
         e = entity.offset + entity.length

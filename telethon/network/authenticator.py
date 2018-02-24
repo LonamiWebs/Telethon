@@ -17,7 +17,7 @@ from ..errors import SecurityError
 from ..extensions import BinaryReader
 from ..network import MtProtoPlainSender
 from ..tl.functions import (
-    ReqPqRequest, ReqDHParamsRequest, SetClientDHParamsRequest
+    ReqPqMultiRequest, ReqDHParamsRequest, SetClientDHParamsRequest
 )
 
 
@@ -53,7 +53,7 @@ async def _do_authentication(connection):
     sender = MtProtoPlainSender(connection)
 
     # Step 1 sending: PQ Request, endianness doesn't matter since it's random
-    req_pq_request = ReqPqRequest(
+    req_pq_request = ReqPqMultiRequest(
         nonce=int.from_bytes(os.urandom(16), 'big', signed=True)
     )
     await sender.send(bytes(req_pq_request))

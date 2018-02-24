@@ -16,15 +16,15 @@ class UpdateState:
     WORKER_POLL_TIMEOUT = 5.0  # Avoid waiting forever on the workers
 
     def __init__(self, loop=None):
-        self.handlers = []
+        self.handler = None
         self._loop = loop if loop else asyncio.get_event_loop()
 
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
 
     def handle_update(self, update):
-        for handler in self.handlers:
-            asyncio.ensure_future(handler(update), loop=self._loop)
+        if self.handler:
+            asyncio.ensure_future(self.handler(update), loop=self._loop)
 
     def process(self, update):
         """Processes an update object. This method is normally called by

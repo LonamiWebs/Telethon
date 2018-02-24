@@ -110,7 +110,7 @@ def main():
             long_description = f.read()
 
         with open('telethon/version.py', encoding='utf-8') as f:
-            version = re.search(r"^__version__\s+=\s+'(.*)'$",
+            version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
             name='Telethon',
@@ -149,7 +149,10 @@ def main():
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
                 'try_telethon.py'
             ]),
-            install_requires=['pyaes', 'rsa']
+            install_requires=['pyaes', 'rsa'],
+            extras_require={
+                'cryptg': ['cryptg']
+            }
         )
 
 

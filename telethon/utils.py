@@ -27,8 +27,10 @@ from .tl.types import (
 from .tl.types.contacts import ResolvedPeer
 
 USERNAME_RE = re.compile(
-    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+    r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
+
+VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
 
 
 def get_display_name(entity):
@@ -323,12 +325,20 @@ def get_input_media(media, user_caption=None, is_photo=False):
 
 def is_image(file):
     """Returns True if the file extension looks like an image file"""
-    return (mimetypes.guess_type(file)[0] or '').startswith('image/')
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('image/'))
+
+
+def is_audio(file):
+    """Returns True if the file extension looks like an audio file"""
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('audio/'))
 
 
 def is_video(file):
     """Returns True if the file extension looks like a video file"""
-    return (mimetypes.guess_type(file)[0] or '').startswith('video/')
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('video/'))
 
 
 def parse_phone(phone):
@@ -346,15 +356,23 @@ def parse_username(username):
        a string, username or URL. Returns a tuple consisting of
        both the stripped, lowercase username and whether it is
        a joinchat/ hash (in which case is not lowercase'd).
+
+       Returns None if the username is not valid.
     """
     username = username.strip()
     m = USERNAME_RE.match(username)
     if m:
-        result = username[m.end():]
+        username = username[m.end():]
         is_invite = bool(m.group(1))
-        return result if is_invite else result.lower(), is_invite
-    else:
+        if is_invite:
+            return username, True
+        else:
+            username = username.rstrip('/')
+
+    if VALID_USERNAME_RE.match(username):
         return username.lower(), False
+    else:
+        return None, False
 
 
 def get_peer_id(peer):
