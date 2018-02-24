@@ -485,7 +485,7 @@ class TelegramClient(TelegramBareClient):
         try:
             me = self(GetUsersRequest([InputUserSelf()]))[0]
             if not self._self_input_peer:
-                self._self_input_peer = utils.get_input_peer(
+                self._self_input_peer = me = utils.get_input_peer(
                     me, allow_self=False
                 )
             return me
