@@ -1622,18 +1622,27 @@ class TelegramClient(TelegramBareClient):
 
         file_size = document.size
 
+        kind = 'document'
         possible_names = []
         for attr in document.attributes:
             if isinstance(attr, DocumentAttributeFilename):
                 possible_names.insert(0, attr.file_name)
 
             elif isinstance(attr, DocumentAttributeAudio):
-                possible_names.append('{} - {}'.format(
-                    attr.performer, attr.title
-                ))
+                kind = 'audio'
+                if attr.performer and attr.title:
+                    possible_names.append('{} - {}'.format(
+                        attr.performer, attr.title
+                    ))
+                elif attr.performer:
+                    possible_names.append(attr.performer)
+                elif attr.title:
+                    possible_names.append(attr.title)
+                elif attr.voice:
+                    kind = 'voice'
 
         file = self._get_proper_filename(
-            file, 'document', utils.get_extension(document),
+            file, kind, utils.get_extension(document),
             date=date, possible_names=possible_names
         )
 
