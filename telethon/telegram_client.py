@@ -1888,7 +1888,7 @@ class TelegramClient(TelegramBareClient):
                 event._client = self
                 callback(event)
 
-    def add_event_handler(self, callback, event):
+    def add_event_handler(self, callback, event=None):
         """
         Registers the given callback to be called on the specified event.
 
@@ -1896,9 +1896,12 @@ class TelegramClient(TelegramBareClient):
             callback (:obj:`callable`):
                 The callable function accepting one parameter to be used.
 
-            event (:obj:`_EventBuilder` | :obj:`type`):
+            event (:obj:`_EventBuilder` | :obj:`type`, optional):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
+
+                If left unspecified, ``events.Raw`` (the ``Update`` objects
+                with no further processing) will be passed instead.
         """
         if self.updates.workers is None:
             warnings.warn(
@@ -1910,6 +1913,8 @@ class TelegramClient(TelegramBareClient):
         self.updates.handler = self._on_handler
         if isinstance(event, type):
             event = event()
+        elif not event:
+            event = events.Raw()
 
         event.resolve(self)
         self._event_builders.append((event, callback))
