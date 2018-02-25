@@ -155,6 +155,9 @@ class Raw(_EventBuilder):
     """
     Represents a raw event. The event is the update itself.
     """
+    def resolve(self, client):
+        pass
+
     def build(self, update):
         return update
 
