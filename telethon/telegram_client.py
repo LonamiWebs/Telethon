@@ -486,9 +486,8 @@ class TelegramClient(TelegramBareClient):
                 self._self_input_peer = utils.get_input_peer(
                     me, allow_self=False
                 )
-                if input_peer:
-                    return self._self_input_peer
-            return me
+
+            return self._self_input_peer if input_peer else me
         except UnauthorizedError:
             return None
 
