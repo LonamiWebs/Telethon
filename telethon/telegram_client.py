@@ -1226,8 +1226,8 @@ class TelegramClient(TelegramBareClient):
                     attr_dict[DocumentAttributeVideo] = doc
             else:
                 attr_dict = {
-                    DocumentAttributeFilename:
-                        DocumentAttributeFilename('unnamed')
+                    DocumentAttributeFilename: DocumentAttributeFilename(
+                        getattr(file, 'name', None) or 'unnamed')
                 }
 
             if 'is_voice_note' in kwargs:
