@@ -5,6 +5,7 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 import math
 import mimetypes
 import re
+import types
 from mimetypes import add_type, guess_extension
 
 from .tl.types import (
@@ -339,6 +340,17 @@ def is_video(file):
     """Returns True if the file extension looks like a video file"""
     return (isinstance(file, str) and
             (mimetypes.guess_type(file)[0] or '').startswith('video/'))
+
+
+def is_list_like(obj):
+    """
+    Returns True if the given object looks like a list.
+
+    Checking if hasattr(obj, '__iter__') and ignoring str/bytes is not
+    enough. Things like open() are also iterable (and probably many
+    other things), so just support the commonly known list-like objects.
+    """
+    return isinstance(obj, (list, tuple, set, dict, types.GeneratorType))
 
 
 def parse_phone(phone):

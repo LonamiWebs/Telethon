@@ -355,14 +355,14 @@ class Session:
         if not self.save_entities:
             return
 
-        if not isinstance(tlo, TLObject) and hasattr(tlo, '__iter__'):
+        if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
             # This may be a list of users already for instance
             entities = tlo
         else:
             entities = []
-            if hasattr(tlo, 'chats') and hasattr(tlo.chats, '__iter__'):
+            if hasattr(tlo, 'chats') and utils.is_list_like(tlo.chats):
                 entities.extend(tlo.chats)
-            if hasattr(tlo, 'users') and hasattr(tlo.users, '__iter__'):
+            if hasattr(tlo, 'users') and utils.is_list_like(tlo.users):
                 entities.extend(tlo.users)
             if not entities:
                 return

@@ -14,7 +14,7 @@ def _into_id_set(client, chats):
     if chats is None:
         return None
 
-    if not hasattr(chats, '__iter__') or isinstance(chats, str):
+    if not utils.is_list_like(chats):
         chats = (chats,)
 
     result = set()

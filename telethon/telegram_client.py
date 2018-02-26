@@ -975,7 +975,7 @@ class TelegramClient(TelegramBareClient):
         """
         if max_id is None:
             if message:
-                if hasattr(message, '__iter__'):
+                if utils.is_list_like(message):
                     max_id = max(msg.id for msg in message)
                 else:
                     max_id = message.id
@@ -1140,7 +1140,7 @@ class TelegramClient(TelegramBareClient):
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
-        if hasattr(file, '__iter__') and not isinstance(file, (str, bytes)):
+        if utils.is_list_like(file):
             # Convert to tuple so we can iterate several times
             file = tuple(x for x in file)
             if all(utils.is_image(x) for x in file):
@@ -1960,7 +1960,7 @@ class TelegramClient(TelegramBareClient):
             ``User``, ``Chat`` or ``Channel`` corresponding to the input
             entity.
         """
-        if hasattr(entity, '__iter__') and not isinstance(entity, str):
+        if utils.is_list_like(entity):
             single = False
         else:
             single = True
