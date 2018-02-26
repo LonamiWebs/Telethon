@@ -1227,7 +1227,8 @@ class TelegramClient(TelegramBareClient):
             else:
                 attr_dict = {
                     DocumentAttributeFilename: DocumentAttributeFilename(
-                        getattr(file, 'name', None) or 'unnamed')
+                        os.path.basename(
+                            getattr(file, 'name', None) or 'unnamed'))
                 }
 
             if 'is_voice_note' in kwargs:
