@@ -873,3 +873,26 @@ class MessageChanged(_EventBuilder):
             self.edited = bool(edit_msg)
             self.deleted = bool(deleted_ids)
             self.deleted_ids = deleted_ids or []
+
+
+class StopPropagation(Exception):
+    """
+    If this Exception is found to be raised in any of the handlers for a
+    given update, it will stop the execution of all other registered
+    event handlers in the chain.
+    Think of it like a ``StopIteration`` exception in a for loop.
+
+    Example usage:
+    ```
+    @client.on(events.NewMessage)
+    def delete(event):
+        event.delete()
+        # Other handlers won't have an event to work with
+        raise StopPropagation
+
+    @client.on(events.NewMessage)
+    def _(event):
+        # Will never be reached, because it is the second handler in the chain.
+        pass
+    ```
+    """
