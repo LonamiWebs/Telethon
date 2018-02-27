@@ -1887,9 +1887,10 @@ class TelegramClient(TelegramBareClient):
                 event._client = self
                 try:
                     callback(event)
-                except StopPropagation:
-                    __log__.info("Event handler '{}' stopped chain of propagation for update {}.".format(
-                        callback.__name__, type(update).__name__))
+                except events.StopPropagation:
+                    __log__.debug("Event handler '{}' stopped chain of "
+                                  "propagation for update {}.".format(
+                                    callback.__name__, type(update).__name__))
                     break
 
     def add_event_handler(self, callback, event=None):
@@ -2130,30 +2131,3 @@ class TelegramClient(TelegramBareClient):
         )
 
     # endregion
-
-
-# region Exceptions
-
-class StopPropagation(Exception):
-    """
-    If this Exception is found to be raised in any of the handlers for a
-    given update, it will stop the execution of all other registered
-    event handlers in the chain.
-    Think of it like a ``StopIteration`` exception in a for loop.
-
-    Example usage:
-    ```
-    @client.on(events.NewMessage)
-    def delete(event):
-        event.delete()
-        # Other handlers won't have an event to work with
-        raise StopPropagation
-
-    @client.on(events.NewMessage)
-    def _(event):
-        pass  # Will never be reached, because
-              # it is the second handler in the chain.
-    ```
-    """
-
-# endregion
