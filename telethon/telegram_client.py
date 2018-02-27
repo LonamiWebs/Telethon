@@ -56,8 +56,8 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
-    UploadMediaRequest, EditMessageRequest
-)
+    UploadMediaRequest, EditMessageRequest,
+    GetInlineBotResultsRequest, SendInlineBotResultRequest)
 
 from .tl.functions import channels
 from .tl.functions import messages
@@ -80,8 +80,8 @@ from .tl.types import (
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
-    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates
-)
+    UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
+    BotInlineResult, InputGeoPointEmpty)
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
 
@@ -903,6 +903,112 @@ class TelegramClient(TelegramBareClient):
             m.to = entities[utils.get_peer_id(m.to_id)]
 
         return messages
+
+    def get_inline_results(self, bot, query, offset=None, geo_point=None):
+        """
+        Performs an inline query request to the specified ``bot`` with a
+        specified ``query`` text.
+
+        This is the same as writing @<bot> <query> in a normal Telegram client.
+
+        Hint: Once you have received the ``BotResult`` object from this method,
+              extract the correct answer from
+              ``get_inline_results( ... ).results``
+              and ``client.send_inline_result`` to actually send it.
+
+        Args:
+            bot (:obj:`entity`):
+                The bot to request inline results from.
+
+            query (:obj:`str`):
+                The query text to send.
+
+            offset (:obj:`str`):
+                Bots can only send 50 results per inline request. By setting an
+                ``offset``, bots will know to send the next batch.
+
+            geo_point (:obj:`InputGeoPoint`):
+                Unknown.  # TODO
+
+
+        Returns:
+            An instance of ``BotResults``
+        """
+        if offset is None:
+            offset = ''
+        elif not isinstance(offset, (str, bytes)):
+            offset = str(offset)
+        if not isinstance(query, (str, bytes)):
+            query = str(query)
+
+        request = self(GetInlineBotResultsRequest(
+            bot=self.get_input_entity(bot),
+            peer=InputPeerEmpty(),  # "Noone knows what this does" - @haskell
+            query=query,
+            offset=offset,
+            geo_point=geo_point or InputGeoPointEmpty()
+        ))
+        return request
+
+    def send_inline_result(self, peer, query_id, result, silent=None,
+                           background=None, clear_draft=None,
+                           reply_to_msg_id=None, random_id=None):
+        """
+        Sends an inline query result obtained by ``client.get_inline_result``.
+
+
+        Args:
+            peer (:obj:`entity`):
+                The bot to send the result to.
+
+            query_id (:obj:`str`):
+                The original query's id
+
+            result (:obj:`datetime`):
+                One of the choices in the results obtained by
+                ``client.get_inline_result( ... ).results``
+
+            silent (:obj:`bool`):
+                Whether to disable notifications for this message
+
+            background (:obj:`bool`):
+                Unknown.
+
+            clear_draft (:obj:`bool`):
+                Whether to delete the current draft of the ``peer`` chat
+
+            reply_to_msg_id (:obj:`int`):
+                The message in the ``peer`` chat to reply to.
+
+            random_id (:obj:`int`):
+                Unknown.  # TODO: perhaps the client should in fact send a
+                                  random string?
+
+
+        Returns:
+            The sent message.
+        """
+        if isinstance(result, BotInlineResult):
+            result_id = result.id
+        elif isinstance(result, (str, bytes)):
+            result_id = result
+        else:
+            raise ValueError("Parameter `result` must be the inline query "
+                             "result id or a BotInlineResult object.")
+        peer = self.get_input_entity(peer)
+        request = SendInlineBotResultRequest(
+            peer=peer,
+            query_id=query_id,
+            id=result_id,
+            silent=silent,
+            background=background,
+            clear_draft=clear_draft,
+            reply_to_msg_id=reply_to_msg_id,
+            random_id=random_id
+        )
+        result = self(request)
+
+        return self._get_response_message(request, result)
 
     def send_read_acknowledge(self, entity, message=None, max_id=None,
                               clear_mentions=False):
