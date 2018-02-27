@@ -1,6 +1,7 @@
 import abc
 import datetime
 import itertools
+import re
 
 from .. import utils
 from ..errors import RPCError
@@ -13,15 +14,14 @@ def _into_id_set(client, chats):
     if chats is None:
         return None
 
-    if not hasattr(chats, '__iter__') or isinstance(chats, str):
+    if not utils.is_list_like(chats):
         chats = (chats,)
 
     result = set()
     for chat in chats:
         chat = client.get_input_entity(chat)
         if isinstance(chat, types.InputPeerSelf):
-            chat = getattr(_into_id_set, 'me', None) or client.get_me()
-            _into_id_set.me = chat
+            chat = client.get_me(input_peer=True)
         result.add(utils.get_peer_id(chat))
     return result
 
@@ -42,6 +42,7 @@ class _EventBuilder(abc.ABC):
     def __init__(self, chats=None, blacklist_chats=False):
         self.chats = chats
         self.blacklist_chats = blacklist_chats
+        self._self_id = None
 
     @abc.abstractmethod
     def build(self, update):
@@ -50,6 +51,7 @@ class _EventBuilder(abc.ABC):
     def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
         self.chats = _into_id_set(client, self.chats)
+        self._self_id = client.get_me(input_peer=True).user_id
 
     def _filter_event(self, event):
         """
@@ -153,6 +155,9 @@ class Raw(_EventBuilder):
     """
     Represents a raw event. The event is the update itself.
     """
+    def resolve(self, client):
+        pass
+
     def build(self, update):
         return update
 
@@ -173,19 +178,28 @@ class NewMessage(_EventBuilder):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-    Notes:
-        The ``message.from_id`` might not only be an integer or ``None``,
-        but also ``InputPeerSelf()`` for short private messages (the API
-        would not return such thing, this is a custom modification).
+        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
+            If set, only messages matching this pattern will be handled.
+            You can specify a regex-like string which will be matched
+            against the message, a callable function that returns ``True``
+            if a message is acceptable, or a compiled regex pattern.
     """
     def __init__(self, incoming=None, outgoing=None,
-                 chats=None, blacklist_chats=False):
+                 chats=None, blacklist_chats=False, pattern=None):
         if incoming and outgoing:
             raise ValueError('Can only set either incoming or outgoing')
 
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern).match
+        elif not pattern or callable(pattern):
+            self.pattern = pattern
+        elif hasattr(pattern, 'match') and callable(pattern.match):
+            self.pattern = pattern.match
+        else:
+            raise TypeError('Invalid pattern type given')
 
     def build(self, update):
         if isinstance(update,
@@ -201,7 +215,7 @@ class NewMessage(_EventBuilder):
                 silent=update.silent,
                 id=update.id,
                 to_id=types.PeerUser(update.user_id),
-                from_id=types.InputPeerSelf() if update.out else update.user_id,
+                from_id=self._self_id if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -229,12 +243,15 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
-        if all(x is None for x in (self.incoming, self.outgoing, self.chats)):
+        if all(x is None for x in (self.incoming, self.outgoing, self.chats,
+                                   self.pattern)):
             return event
 
         if self.incoming and event.message.out:
             return
         if self.outgoing and not event.message.out:
+            return
+        if self.pattern and not self.pattern(event.message.message or ''):
             return
 
         return self._filter_event(event)
@@ -260,7 +277,14 @@ class NewMessage(_EventBuilder):
                 Whether the message is a reply to some other or not.
         """
         def __init__(self, message):
-            super().__init__(chat_peer=message.to_id,
+            if not message.out and isinstance(message.to_id, types.PeerUser):
+                # Incoming message (e.g. from a bot) has to_id=us, and
+                # from_id=bot (the actual "chat" from an user's perspective).
+                chat_peer = types.PeerUser(message.from_id)
+            else:
+                chat_peer = message.to_id
+
+            super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
             self.message = message
@@ -299,7 +323,11 @@ class NewMessage(_EventBuilder):
             or the edited message otherwise.
             """
             if not self.message.out:
-                return None
+                if not isinstance(self.message.to_id, types.PeerUser):
+                    return None
+                me = self._client.get_me(input_peer=True)
+                if self.message.to_id.user_id != me.user_id:
+                    return None
 
             return self._client.edit_message(self.input_chat,
                                              self.message,

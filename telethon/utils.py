@@ -5,6 +5,7 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 import math
 import mimetypes
 import re
+import types
 from mimetypes import add_type, guess_extension
 
 from .tl.types import (
@@ -27,7 +28,7 @@ from .tl.types import (
 from .tl.types.contacts import ResolvedPeer
 
 USERNAME_RE = re.compile(
-    r'@|(?:https?://)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+    r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 
 VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
@@ -341,6 +342,17 @@ def is_video(file):
             (mimetypes.guess_type(file)[0] or '').startswith('video/'))
 
 
+def is_list_like(obj):
+    """
+    Returns True if the given object looks like a list.
+
+    Checking if hasattr(obj, '__iter__') and ignoring str/bytes is not
+    enough. Things like open() are also iterable (and probably many
+    other things), so just support the commonly known list-like objects.
+    """
+    return isinstance(obj, (list, tuple, set, dict, types.GeneratorType))
+
+
 def parse_phone(phone):
     """Parses the given phone, or returns None if it's invalid"""
     if isinstance(phone, int):
@@ -366,6 +378,8 @@ def parse_username(username):
         is_invite = bool(m.group(1))
         if is_invite:
             return username, True
+        else:
+            username = username.rstrip('/')
 
     if VALID_USERNAME_RE.match(username):
         return username.lower(), False
