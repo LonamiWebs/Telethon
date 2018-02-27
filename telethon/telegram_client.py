@@ -1281,7 +1281,8 @@ class TelegramClient(TelegramBareClient):
 
     def send_voice_note(self, *args, **kwargs):
         """Wrapper method around .send_file() with is_voice_note=True"""
-        return self.send_file(*args, **kwargs, is_voice_note=True)
+        kwargs['is_voice_note'] = True
+        return self.send_file(*args, **kwargs)
 
     def _send_album(self, entity, files, caption=None,
                     progress_callback=None, reply_to=None):
