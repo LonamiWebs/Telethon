@@ -325,10 +325,10 @@ class Session:
         """Generates a new unique message ID based on the current
            time (in ms) since epoch"""
         # Refer to mtproto_plain_sender.py for the original method
-        now = time.time()
+        now = time.time() + self.time_offset
         nanoseconds = int((now - int(now)) * 1e+9)
         # "message identifiers are divisible by 4"
-        new_msg_id = ((int(now) + self.time_offset) << 32) | (nanoseconds << 2)
+        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
 
         with self._msg_id_lock:
             if self._last_msg_id >= new_msg_id:
@@ -343,6 +343,7 @@ class Session:
         now = int(time.time())
         correct = correct_msg_id >> 32
         self.time_offset = correct - now
+        self._last_msg_id = 0
 
     # Entity processing
 
