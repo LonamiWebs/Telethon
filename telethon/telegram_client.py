@@ -328,7 +328,7 @@ class TelegramClient(TelegramBareClient):
         else:
             raise RuntimeError(
                 '{} consecutive sign-in attempts failed. Aborting'
-                    .format(max_attempts)
+                .format(max_attempts)
             )
 
         if two_step_detected:
@@ -616,13 +616,13 @@ class TelegramClient(TelegramBareClient):
                     return update.message
 
             elif (isinstance(update, UpdateEditMessage) and
-                  not isinstance(request.peer, InputPeerChannel)):
+                    not isinstance(request.peer, InputPeerChannel)):
                 if request.id == update.message.id:
                     return update.message
 
             elif (isinstance(update, UpdateEditChannelMessage) and
-                  utils.get_peer_id(request.peer) ==
-                  utils.get_peer_id(update.message.to_id)):
+                    utils.get_peer_id(request.peer) ==
+                        utils.get_peer_id(update.message.to_id)):
                 if request.id == update.message.id:
                     return update.message
 
@@ -812,7 +812,7 @@ class TelegramClient(TelegramBareClient):
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
     def get_message_history(self, entity, limit=20, offset_date=None,
-                            offset_id=0, max_id=0, min_id=0, add_offset=0,
+                            offset_id=0, max_id=0, min_id=0, add_offset=0, 
                             batch_size=100, wait_time=None):
         """
         Gets the message history for the specified entity
@@ -931,7 +931,7 @@ class TelegramClient(TelegramBareClient):
             m.message = getattr(m, 'message', None)
             m.action = getattr(m, 'action', None)
             m.sender = (None if not m.from_id else
-            entities[utils.get_peer_id(m.from_id)])
+                        entities[utils.get_peer_id(m.from_id)])
 
             if getattr(m, 'fwd_from', None):
                 m.fwd_from.sender = (
@@ -1873,7 +1873,6 @@ class TelegramClient(TelegramBareClient):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
-
         def decorator(f):
             self.add_event_handler(f, event)
             return f
