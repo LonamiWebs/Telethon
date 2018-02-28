@@ -255,7 +255,7 @@ class NewMessage(_EventBuilder):
             return
 
         if self.pattern:
-            match = self.pattern(event.text or '')
+            match = self.pattern(event.message.message or '')
             if not match:
                 return
             event.pattern_match = match
