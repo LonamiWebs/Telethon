@@ -1033,9 +1033,9 @@ class TelegramClient(TelegramBareClient):
             aggressive (:obj:`bool`, optional):
                 Aggressively looks for all participants in the chat in
                 order to get more than 10,000 members (a hard limit
-                imposed by Telegram). Note that this might make over
-                20 times more requests and take over 5 minutes in some
-                cases, but often returns well over 10,000 members.
+                imposed by Telegram). Note that this might take a long
+                time (over 5 minutes), but is able to return over 90,000
+                participants on groups with 100,000 members.
 
                 This has no effect for groups or channels with less than
                 10,000 members.
@@ -1053,31 +1053,49 @@ class TelegramClient(TelegramBareClient):
 
             all_participants = {}
             if total > 10000 and aggressive:
-                searches = tuple(chr(x) for x in range(ord('a'), ord('z') + 1))
-            else:
-                searches = ('',)
-
-            for extra_search in searches:
-                req = GetParticipantsRequest(
+                requests = [GetParticipantsRequest(
                     channel=entity,
-                    filter=ChannelParticipantsSearch(search + extra_search),
+                    filter=ChannelParticipantsSearch(search + chr(x)),
                     offset=0,
-                    limit=0,
+                    limit=200,
                     hash=0
-                )
-                while True:
-                    req.limit = min(limit - req.offset, 200)
-                    participants = self(req)
-                    if not participants.users:
-                        break
-                    for user in participants.users:
-                        if len(all_participants) < limit:
-                            all_participants[user.id] = user
-                    req.offset += len(participants.users)
-                    if req.offset > limit:
-                        break
+                ) for x in range(ord('a'), ord('z') + 1)]
+            else:
+                requests = [GetParticipantsRequest(
+                    channel=entity,
+                    filter=ChannelParticipantsSearch(search),
+                    offset=0,
+                    limit=200,
+                    hash=0
+                )]
 
-            users = UserList(all_participants.values())
+            while requests:
+                # Only care about the limit for the first request
+                # (small amount of people, won't be aggressive).
+                #
+                # Most people won't care about getting exactly 12,345
+                # members so it doesn't really matter not to be 100%
+                # precise with being out of the offset/limit here.
+                requests[0].limit = min(limit - requests[0].offset, 200)
+                if requests[0].offset > limit:
+                    break
+
+                results = self(*requests)
+                for i in reversed(range(len(requests))):
+                    participants = results[i]
+                    if not participants.users:
+                        requests.pop(i)
+                    else:
+                        requests[i].offset += len(participants.users)
+                        for user in participants.users:
+                            if len(all_participants) < limit:
+                                all_participants[user.id] = user
+            if limit < float('inf'):
+                values = all_participants.values()
+            else:
+                values = itertools.islice(all_participants.values(), limit)
+
+            users = UserList(values)
             users.total = total
         elif isinstance(entity, InputPeerChat):
             users = self(GetFullChatRequest(entity.chat_id)).users
