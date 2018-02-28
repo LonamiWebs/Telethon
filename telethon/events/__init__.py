@@ -77,6 +77,8 @@ class _EventCommon(abc.ABC):
         self._input_chat = None
         self._chat = None
 
+        self.pattern_match = None
+
         self.is_private = isinstance(chat_peer, types.PeerUser)
         self.is_group = (
             isinstance(chat_peer, (types.PeerChat, types.PeerChannel))
@@ -251,8 +253,12 @@ class NewMessage(_EventBuilder):
             return
         if self.outgoing and not event.message.out:
             return
-        if self.pattern and not self.pattern(event.message.message or ''):
-            return
+
+        if self.pattern:
+            match = self.pattern(event.text or '')
+            if not match:
+                return
+            event.pattern_match = match
 
         return self._filter_event(event)
 
