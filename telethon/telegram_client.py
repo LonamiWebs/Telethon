@@ -174,6 +174,7 @@ class TelegramClient(TelegramBareClient):
         )
 
         self._event_builders = []
+        self._events_pending_resolve = []
 
         # Some fields to easy signing in. Let {phone: hash} be
         # a dictionary because the user may change their mind.
@@ -288,6 +289,7 @@ class TelegramClient(TelegramBareClient):
             self.connect()
 
         if self.is_user_authorized():
+            self._check_events_pending_resolve()
             return self
 
         if bot_token:
@@ -344,6 +346,7 @@ class TelegramClient(TelegramBareClient):
 
         # We won't reach here if any step failed (exit by exception)
         print('Signed in successfully as', utils.get_display_name(me))
+        self._check_events_pending_resolve()
         return self
 
     def sign_in(self, phone=None, code=None,
@@ -377,6 +380,9 @@ class TelegramClient(TelegramBareClient):
             The signed in user, or the information about
             :meth:`.send_code_request()`.
         """
+        if self.is_user_authorized():
+            self._check_events_pending_resolve()
+            return self.get_me()
 
         if phone and not code and not password:
             return self.send_code_request(phone)
@@ -435,6 +441,10 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The new created user.
         """
+        if self.is_user_authorized():
+            self._check_events_pending_resolve()
+            return self.get_me()
+
         result = self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash.get(self._phone, ''),
@@ -1920,6 +1930,12 @@ class TelegramClient(TelegramBareClient):
 
         return decorator
 
+    def _check_events_pending_resolve(self):
+        if self._events_pending_resolve:
+            for event in self._events_pending_resolve:
+                event.resolve(self)
+            self._events_pending_resolve.clear()
+
     def _on_handler(self, update):
         for builder, callback in self._event_builders:
             event = builder.build(update)
@@ -1963,7 +1979,12 @@ class TelegramClient(TelegramBareClient):
         elif not event:
             event = events.Raw()
 
-        event.resolve(self)
+        if self.is_user_authorized():
+            event.resolve(self)
+            self._check_events_pending_resolve()
+        else:
+            self._events_pending_resolve.append(event)
+
         self._event_builders.append((event, callback))
 
     def add_update_handler(self, handler):
@@ -1986,6 +2007,10 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Small utilities to make users' life easier
+
+    def _set_connected_and_authorized(self):
+        super()._set_connected_and_authorized()
+        self._check_events_pending_resolve()
 
     def get_entity(self, entity):
         """
