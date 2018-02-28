@@ -10,6 +10,16 @@ over what Telegram calls `updates`__, and are meant to ease simple and common
 usage when dealing with them, since there are many updates. Let's dive in!
 
 
+.. note::
+
+    The library logs by default no output, and any exception that occurs
+    inside your handlers will be "hidden" from you to prevent the thread
+    from terminating (so it can still deliver events). You should enable
+    logging (``import logging; logging.basicConfig(level=logging.ERROR)``)
+    when working with events, at least the error level, to see if this is
+    happening so you can debug the error.
+
+
 .. contents::
 
 
