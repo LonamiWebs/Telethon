@@ -2009,7 +2009,7 @@ class TelegramClient(TelegramBareClient):
                 return utils.get_input_peer(entity)
 
         raise TypeError(
-            'Could not find the input entity corresponding to "{}".'
+            'Could not find the input entity corresponding to "{}". '
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
