@@ -14,7 +14,7 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
-from .session import Session
+from .sessions import Session, SQLiteSession
 from .tl import TLObject
 from .tl.all_tlobjects import LAYER
 from .tl.functions import (
@@ -81,10 +81,10 @@ class TelegramBareClient:
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        
+
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session(session)
+            session = SQLiteSession(session)
         elif not isinstance(session, Session):
             raise TypeError(
                 'The given session must be a str or a Session instance.'
@@ -361,7 +361,7 @@ class TelegramBareClient:
             #
             # Construct this session with the connection parameters
             # (system version, device model...) from the current one.
-            session = Session(self.session)
+            session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[dc_id] = session
 
@@ -387,7 +387,7 @@ class TelegramBareClient:
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = Session(self.session)
+            session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
