@@ -62,23 +62,23 @@ class UpdateState:
         """
         self.stop_workers()
         self._workers = n
-        if n is None:
-            while self._updates:
-                self._updates.get()
-        else:
+        if n is not None:
             self.setup_workers()
 
     workers = property(fget=get_workers, fset=set_workers)
 
     def stop_workers(self):
-        """Raises "StopIterationException" on the worker threads to stop them,
-           and also clears all of them off the list
+        """
+        Raises "StopIterationException" on the worker threads to stop
+        them, and also clears all the workers/updates from the lists.
         """
         if self._workers:
             with self._updates_lock:
                 # Insert at the beginning so the very next poll causes an error
                 # on all the worker threads
                 # TODO Should this reset the pts and such?
+                while self._updates:
+                    self._updates.get()
                 for _ in range(self._workers):
                     self._updates.put(StopIteration())
 
