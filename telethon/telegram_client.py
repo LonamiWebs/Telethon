@@ -586,7 +586,7 @@ class TelegramClient(TelegramBareClient):
 
         Returns:
             A list of custom ``Draft`` objects that are easy to work with:
-            You can call :meth:`draft.set_message('text')` to change the message,
+            You can call ``draft.set_message('text')`` to change the message,
             or delete it through :meth:`draft.delete()`.
         """
         response = self(GetAllDraftsRequest())
@@ -2193,7 +2193,7 @@ class TelegramClient(TelegramBareClient):
                 return utils.get_input_peer(entity)
 
         raise TypeError(
-            'Could not find the input entity corresponding to "{}".'
+            'Could not find the input entity corresponding to "{}". '
             'Make sure you have encountered this peer before.'.format(peer)
         )
 

@@ -65,9 +65,10 @@ To generate the `method documentation`__, ``cd docs`` and then
 Optional dependencies
 *********************
 
-If ``libssl`` is available on your system, it will be used wherever encryption
-is needed, but otherwise it will fall back to pure Python implementation so it
-will also work without it.
+If the `cryptg`__ is installed, you might notice a speed-up in the download
+and upload speed, since these are the most cryptographic-heavy part of the
+library and said module is a C extension. Otherwise, the ``pyaes`` fallback
+will be used.
 
 
 __ https://github.com/ricmoo/pyaes
@@ -75,3 +76,4 @@ __ https://pypi.python.org/pypi/pyaes
 __ https://github.com/sybrenstuvel/python-rsa
 __ https://pypi.python.org/pypi/rsa/3.4.2
 __ https://lonamiwebs.github.io/Telethon
+__ https://github.com/Lonami/cryptg

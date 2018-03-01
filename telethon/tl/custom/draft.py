@@ -42,7 +42,7 @@ class Draft:
         """
         Changes the draft message on the Telegram servers. The changes are
         reflected in this object. Changing only individual attributes like for
-        example the `reply_to_msg_id` should be done by providing the current
+        example the ``reply_to_msg_id`` should be done by providing the current
         values of this object, like so:
 
             draft.set_message(
@@ -56,7 +56,7 @@ class Draft:
         :param bool no_webpage: Whether to attach a web page preview
         :param int reply_to_msg_id: Message id to reply to
         :param list entities: A list of formatting entities
-        :return bool: `True` on success
+        :return bool: ``True`` on success
         """
         result = self._client(SaveDraftRequest(
             peer=self._peer,
@@ -77,6 +77,6 @@ class Draft:
     def delete(self):
         """
         Deletes this draft
-        :return bool: `True` on success
+        :return bool: ``True`` on success
         """
         return self.set_message(text='')
