@@ -46,12 +46,12 @@ Doing stuff
 
 .. code:: python
 
-  print(me.stringify())
+  print(client.get_me().stringify())
 
   client.send_message('username', 'Hello! Talking to you from Telethon')
   client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-  client.download_profile_photo(me)
+  client.download_profile_photo('me')
   messages = client.get_message_history('username')
   client.download_media(messages[0])
 
