@@ -572,7 +572,7 @@ class TelegramClient(TelegramBareClient):
 
             offset_date = r.messages[-1].date
             offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
-            offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
+            offset_id = r.messages[-1].id
 
         dialogs = UserList(
             itertools.islice(dialogs.values(), min(limit, len(dialogs)))
@@ -2175,22 +2175,32 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 
-        # Not found, look in the latest dialogs.
-        # This is useful if for instance someone just sent a message but
-        # the updates didn't specify who, as this person or chat should
-        # be in the latest dialogs.
-        dialogs = self(GetDialogsRequest(
+        # Not found, look in the dialogs with the hope to find it.
+        target_id = utils.get_peer_id(peer)
+        req = GetDialogsRequest(
             offset_date=None,
             offset_id=0,
             offset_peer=InputPeerEmpty(),
-            limit=0,
-            exclude_pinned=True
-        ))
+            limit=100
+        )
+        while True:
+            result = self(req)
+            entities = {}
+            for x in itertools.chain(result.users, result.chats):
+                x_id = utils.get_peer_id(x)
+                if x_id == target_id:
+                    return utils.get_input_peer(x)
+                else:
+                    entities[x_id] = x
+            if len(result.dialogs) < req.limit:
+                break
 
-        target = utils.get_peer_id(peer)
-        for entity in itertools.chain(dialogs.users, dialogs.chats):
-            if utils.get_peer_id(entity) == target:
-                return utils.get_input_peer(entity)
+            req.offset_id = result.messages[-1].id
+            req.offset_date = result.messages[-1].date
+            req.offset_peer = entities[utils.get_peer_id(
+                result.dialogs[-1].peer
+            )]
+            time.sleep(1)
 
         raise TypeError(
             'Could not find the input entity corresponding to "{}". '
