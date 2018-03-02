@@ -71,9 +71,10 @@ class UpdateState:
         # Put dummy ``None`` objects so that they don't need to timeout.
         n = self._workers
         self._workers = None
-        with self._updates_lock:
-            for _ in range(n):
-                self._updates.put(None)
+        if n:
+            with self._updates_lock:
+                for _ in range(n):
+                    self._updates.put(None)
 
         for t in self._worker_threads:
             t.join()
