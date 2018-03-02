@@ -28,10 +28,10 @@ class _SentFileType(Enum):
 class MemorySession(Session):
     def __init__(self):
         super().__init__()
+
         self._dc_id = None
         self._server_address = None
         self._port = None
-        self._salt = None
         self._auth_key = None
 
         self._files = {}
@@ -57,14 +57,6 @@ class MemorySession(Session):
     @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
-
-    @property
-    def salt(self):
-        return self._salt
-
-    @salt.setter
-    def salt(self, value):
-        self._salt = value
 
     def close(self):
         pass

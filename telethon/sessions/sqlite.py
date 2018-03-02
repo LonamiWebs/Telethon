@@ -1,21 +1,13 @@
 import json
 import os
-import platform
 import sqlite3
-import struct
-import time
 from base64 import b64decode
 from os.path import isfile as file_exists
 from threading import Lock, RLock
 
-from .. import utils
-from .abstract import Session
 from .memory import MemorySession, _SentFileType
 from ..crypto import AuthKey
-from ..tl import TLObject
 from ..tl.types import (
-    PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel,
     InputPhoto, InputDocument
 )
 
@@ -46,8 +38,6 @@ class SQLiteSession(MemorySession):
             self.filename = session_id
             if not self.filename.endswith(EXTENSION):
                 self.filename += EXTENSION
-
-        self.id = struct.unpack('q', os.urandom(8))[0]
 
         # Cross-thread safety
         self._seq_no_lock = Lock()
@@ -193,7 +183,7 @@ class SQLiteSession(MemorySession):
             self._auth_key = None
         c.close()
 
-    @Session.auth_key.setter
+    @MemorySession.auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
         self._update_session_table()

@@ -1,13 +1,18 @@
 from abc import ABC, abstractmethod
 import time
 import platform
+import struct
+import os
 
 
 class Session(ABC):
     def __init__(self):
+        self.id = struct.unpack('q', os.urandom(8))[0]
+
         self._sequence = 0
         self._last_msg_id = 0
         self._time_offset = 0
+        self._salt = 0
 
         system = platform.uname()
         self._device_model = system.system or 'Unknown'
@@ -53,16 +58,6 @@ class Session(ABC):
     def auth_key(self, value):
         raise NotImplementedError
 
-    @property
-    @abstractmethod
-    def salt(self):
-        raise NotImplementedError
-
-    @salt.setter
-    @abstractmethod
-    def salt(self, value):
-        raise NotImplementedError
-
     @abstractmethod
     def close(self):
         raise NotImplementedError
@@ -95,6 +90,14 @@ class Session(ABC):
     @abstractmethod
     def get_file(self, md5_digest, file_size, cls):
         raise NotImplementedError
+
+    @property
+    def salt(self):
+        return self._salt
+
+    @salt.setter
+    def salt(self, value):
+        self._salt = value
 
     @property
     def device_model(self):
