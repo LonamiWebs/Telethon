@@ -120,8 +120,8 @@ class SQLiteSession(MemorySession):
             c.close()
             self.save()
 
-    def clone(self):
-        cloned = super().clone()
+    def clone(self, to_instance=None):
+        cloned = super().clone(to_instance)
         cloned.save_entities = self.save_entities
         return cloned
 
@@ -180,9 +180,7 @@ class SQLiteSession(MemorySession):
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
     def set_dc(self, dc_id, server_address, port):
-        self._dc_id = dc_id
-        self._server_address = server_address
-        self._port = port
+        super().set_dc(dc_id, server_address, port)
         self._update_session_table()
 
         # Fetch the auth_key corresponding to this data center
@@ -287,16 +285,19 @@ class SQLiteSession(MemorySession):
             'select id, hash from entities where phone=?', (phone,))
 
     def get_entity_rows_by_username(self, username):
-        self._fetchone_entity('select id, hash from entities where username=?',
-                              (username,))
+        return self._fetchone_entity(
+            'select id, hash from entities where username=?',
+            (username,))
 
     def get_entity_rows_by_name(self, name):
-        self._fetchone_entity('select id, hash from entities where name=?',
-                              (name,))
+        return self._fetchone_entity(
+            'select id, hash from entities where name=?',
+            (name,))
 
     def get_entity_rows_by_id(self, id):
-        self._fetchone_entity('select id, hash from entities where id=?',
-                              (id,))
+        return self._fetchone_entity(
+            'select id, hash from entities where id=?',
+            (id,))
 
     # File processing
 

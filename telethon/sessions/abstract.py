@@ -18,8 +18,8 @@ class Session(ABC):
         self._report_errors = True
         self._flood_sleep_threshold = 60
 
-    def clone(self):
-        cloned = self.__class__()
+    def clone(self, to_instance=None):
+        cloned = to_instance or self.__class__()
         cloned._device_model = self.device_model
         cloned._system_version = self.system_version
         cloned._app_version = self.app_version
@@ -27,6 +27,7 @@ class Session(ABC):
         cloned._system_lang_code = self.system_lang_code
         cloned._report_errors = self.report_errors
         cloned._flood_sleep_threshold = self.flood_sleep_threshold
+        return cloned
 
     @abstractmethod
     def set_dc(self, dc_id, server_address, port):

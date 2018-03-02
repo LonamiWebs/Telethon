@@ -111,8 +111,41 @@ class MemorySession(Session):
     def list_sessions(cls):
         raise NotImplementedError
 
-    @staticmethod
-    def _entities_to_rows(tlo):
+    def _entity_values_to_row(self, id, hash, username, phone, name):
+        return id, hash, username, phone, name
+
+    def _entity_to_row(self, e):
+        if not isinstance(e, TLObject):
+            return
+        try:
+            p = utils.get_input_peer(e, allow_self=False)
+            marked_id = utils.get_peer_id(p)
+        except ValueError:
+            return
+
+        if isinstance(p, (InputPeerUser, InputPeerChannel)):
+            if not p.access_hash:
+                # Some users and channels seem to be returned without
+                # an 'access_hash', meaning Telegram doesn't want you
+                # to access them. This is the reason behind ensuring
+                # that the 'access_hash' is non-zero. See issue #354.
+                # Note that this checks for zero or None, see #392.
+                return
+            else:
+                p_hash = p.access_hash
+        elif isinstance(p, InputPeerChat):
+            p_hash = 0
+        else:
+            return
+
+        username = getattr(e, 'username', None) or None
+        if username is not None:
+            username = username.lower()
+        phone = getattr(e, 'phone', None)
+        name = utils.get_display_name(e) or None
+        return self._entity_values_to_row(marked_id, p_hash, username, phone, name)
+
+    def _entities_to_rows(self, tlo):
         if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
             # This may be a list of users already for instance
             entities = tlo
@@ -127,35 +160,9 @@ class MemorySession(Session):
 
         rows = []  # Rows to add (id, hash, username, phone, name)
         for e in entities:
-            if not isinstance(e, TLObject):
-                continue
-            try:
-                p = utils.get_input_peer(e, allow_self=False)
-                marked_id = utils.get_peer_id(p)
-            except ValueError:
-                continue
-
-            if isinstance(p, (InputPeerUser, InputPeerChannel)):
-                if not p.access_hash:
-                    # Some users and channels seem to be returned without
-                    # an 'access_hash', meaning Telegram doesn't want you
-                    # to access them. This is the reason behind ensuring
-                    # that the 'access_hash' is non-zero. See issue #354.
-                    # Note that this checks for zero or None, see #392.
-                    continue
-                else:
-                    p_hash = p.access_hash
-            elif isinstance(p, InputPeerChat):
-                p_hash = 0
-            else:
-                continue
-
-            username = getattr(e, 'username', None) or None
-            if username is not None:
-                username = username.lower()
-            phone = getattr(e, 'phone', None)
-            name = utils.get_display_name(e) or None
-            rows.append((marked_id, p_hash, username, phone, name))
+            row = self._entity_to_row(e)
+            if row:
+                rows.append(row)
         return rows
 
     def process_entities(self, tlo):
