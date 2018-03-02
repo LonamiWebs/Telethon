@@ -53,14 +53,6 @@ class Session(ABC):
         raise NotImplementedError
 
     @property
-    def time_offset(self):
-        return self._time_offset
-
-    @time_offset.setter
-    def time_offset(self, value):
-        self._time_offset = value
-
-    @property
     @abstractmethod
     def salt(self):
         raise NotImplementedError
@@ -126,6 +118,14 @@ class Session(ABC):
     @property
     def report_errors(self):
         return self._report_errors
+
+    @property
+    def time_offset(self):
+        return self._time_offset
+
+    @time_offset.setter
+    def time_offset(self, value):
+        self._time_offset = value
 
     @property
     def flood_sleep_threshold(self):
