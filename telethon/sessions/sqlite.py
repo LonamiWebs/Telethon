@@ -32,7 +32,7 @@ class SQLiteSession(MemorySession):
        through an official Telegram client to revoke the authorization.
     """
 
-    def __init__(self, session_id):
+    def __init__(self, session_id=None):
         super().__init__()
         """session_user_id should either be a string or another Session.
            Note that if another session is given, only parameters like
@@ -40,50 +40,19 @@ class SQLiteSession(MemorySession):
         """
         # These values will NOT be saved
         self.filename = ':memory:'
+        self.save_entities = True
 
-        # For connection purposes
-        if isinstance(session_id, Session):
-            self._device_model = session_id.device_model
-            self._system_version = session_id.system_version
-            self._app_version = session_id.app_version
-            self._lang_code = session_id.lang_code
-            self._system_lang_code = session_id.system_lang_code
-            self._report_errors = session_id.report_errors
-            self._flood_sleep_threshold = session_id.flood_sleep_threshold
-            if isinstance(session_id, SQLiteSession):
-                self.save_entities = session_id.save_entities
-        else:  # str / None
-            if session_id:
-                self.filename = session_id
-                if not self.filename.endswith(EXTENSION):
-                    self.filename += EXTENSION
-
-            system = platform.uname()
-            self._device_model = system.system or 'Unknown'
-            self._system_version = system.release or '1.0'
-            self._app_version = '1.0'  # '0' will provoke error
-            self._lang_code = 'en'
-            self._system_lang_code = self.lang_code
-            self._report_errors = True
-            self.save_entities = True
-            self._flood_sleep_threshold = 60
+        if session_id:
+            self.filename = session_id
+            if not self.filename.endswith(EXTENSION):
+                self.filename += EXTENSION
 
         self.id = struct.unpack('q', os.urandom(8))[0]
-        self._sequence = 0
-        self.time_offset = 0
-        self._last_msg_id = 0  # Long
-        self.salt = 0  # Long
 
         # Cross-thread safety
         self._seq_no_lock = Lock()
         self._msg_id_lock = Lock()
         self._db_lock = RLock()
-
-        # These values will be saved
-        self._dc_id = 0
-        self._server_address = None
-        self._port = None
-        self._auth_key = None
 
         # Migrating from .json -> SQL
         entities = self._check_migrate_json()
@@ -152,7 +121,9 @@ class SQLiteSession(MemorySession):
             self.save()
 
     def clone(self):
-        return SQLiteSession(self)
+        cloned = super().clone()
+        cloned.save_entities = self.save_entities
+        return cloned
 
     def _check_migrate_json(self):
         if file_exists(self.filename):
