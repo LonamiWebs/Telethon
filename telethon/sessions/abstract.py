@@ -100,25 +100,49 @@ class Session(ABC):
     def device_model(self):
         return self._device_model
 
+    @device_model.setter
+    def device_model(self, value):
+        self._device_model = value
+
     @property
     def system_version(self):
         return self._system_version
+
+    @system_version.setter
+    def system_version(self, value):
+        self._system_version = value
 
     @property
     def app_version(self):
         return self._app_version
 
+    @app_version.setter
+    def app_version(self, value):
+        self._app_version = value
+
     @property
     def lang_code(self):
         return self._lang_code
+
+    @lang_code.setter
+    def lang_code(self, value):
+        self._lang_code = value
 
     @property
     def system_lang_code(self):
         return self._system_lang_code
 
+    @system_lang_code.setter
+    def system_lang_code(self, value):
+        self._system_lang_code = value
+
     @property
     def report_errors(self):
         return self._report_errors
+
+    @report_errors.setter
+    def report_errors(self, value):
+        self._report_errors = value
 
     @property
     def time_offset(self):
@@ -132,9 +156,17 @@ class Session(ABC):
     def flood_sleep_threshold(self):
         return self._flood_sleep_threshold
 
+    @flood_sleep_threshold.setter
+    def flood_sleep_threshold(self, value):
+        self._flood_sleep_threshold = value
+
     @property
     def sequence(self):
         return self._sequence
+
+    @sequence.setter
+    def sequence(self, value):
+        self._sequence = value
 
     def get_new_msg_id(self):
         """Generates a new unique message ID based on the current

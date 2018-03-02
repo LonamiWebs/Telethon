@@ -66,38 +66,6 @@ class MemorySession(Session):
     def salt(self, value):
         self._salt = value
 
-    @property
-    def device_model(self):
-        return self._device_model
-
-    @property
-    def system_version(self):
-        return self._system_version
-
-    @property
-    def app_version(self):
-        return self._app_version
-
-    @property
-    def lang_code(self):
-        return self._lang_code
-
-    @property
-    def system_lang_code(self):
-        return self._system_lang_code
-
-    @property
-    def report_errors(self):
-        return self._report_errors
-
-    @property
-    def sequence(self):
-        return self._sequence
-
-    @property
-    def flood_sleep_threshold(self):
-        return self._flood_sleep_threshold
-
     def close(self):
         pass
 
