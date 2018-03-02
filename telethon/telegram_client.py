@@ -1200,7 +1200,8 @@ class TelegramClient(TelegramBareClient):
             if all(utils.is_image(x) for x in file):
                 return self._send_album(
                     entity, file, caption=caption,
-                    progress_callback=progress_callback, reply_to=reply_to
+                    progress_callback=progress_callback, reply_to=reply_to,
+                    parse_mode=parse_mode
                 )
             # Not all are images, so send all the files one by one
             return [
@@ -1350,10 +1351,13 @@ class TelegramClient(TelegramBareClient):
         # we need to produce right now to send albums (uploadMedia), and
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change.
-        # TODO Support a different captions for each file
         entity = self.get_input_entity(entity)
-        caption = caption or ''
-        caption, msg_entities = self._parse_message_text(caption, parse_mode)
+        if not utils.is_list_like(caption):
+            caption = (caption,)
+        captions = [
+            self._parse_message_text(caption or '', parse_mode)
+            for caption in reversed(caption)  # Pop from the end (so reverse)
+        ]
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
@@ -1367,11 +1371,13 @@ class TelegramClient(TelegramBareClient):
                 )).photo)
                 self.session.cache_file(fh.md5, fh.size, input_photo)
                 fh = input_photo
-            media.append(InputSingleMedia(
-                InputMediaPhoto(fh),
-                message=caption,
-                entities=msg_entities
-            ))
+
+            if captions:
+                caption, msg_entities = captions.pop()
+            else:
+                caption, msg_entities = '', None
+            media.append(InputSingleMedia(InputMediaPhoto(fh), message=caption,
+                                          entities=msg_entities))
 
         # Now we can construct the multi-media request
         result = self(SendMultiMediaRequest(
