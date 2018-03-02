@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import time
-import platform
 import struct
 import os
 
@@ -13,23 +12,11 @@ class Session(ABC):
         self._last_msg_id = 0
         self._time_offset = 0
         self._salt = 0
-
-        system = platform.uname()
-        self._device_model = system.system or 'Unknown'
-        self._system_version = system.release or '1.0'
-        self._app_version = '1.0'
-        self._lang_code = 'en'
-        self._system_lang_code = self.lang_code
         self._report_errors = True
         self._flood_sleep_threshold = 60
 
     def clone(self, to_instance=None):
         cloned = to_instance or self.__class__()
-        cloned._device_model = self.device_model
-        cloned._system_version = self.system_version
-        cloned._app_version = self.app_version
-        cloned._lang_code = self.lang_code
-        cloned._system_lang_code = self.system_lang_code
         cloned._report_errors = self.report_errors
         cloned._flood_sleep_threshold = self.flood_sleep_threshold
         return cloned
@@ -98,46 +85,6 @@ class Session(ABC):
     @salt.setter
     def salt(self, value):
         self._salt = value
-
-    @property
-    def device_model(self):
-        return self._device_model
-
-    @device_model.setter
-    def device_model(self, value):
-        self._device_model = value
-
-    @property
-    def system_version(self):
-        return self._system_version
-
-    @system_version.setter
-    def system_version(self, value):
-        self._system_version = value
-
-    @property
-    def app_version(self):
-        return self._app_version
-
-    @app_version.setter
-    def app_version(self, value):
-        self._app_version = value
-
-    @property
-    def lang_code(self):
-        return self._lang_code
-
-    @lang_code.setter
-    def lang_code(self, value):
-        self._lang_code = value
-
-    @property
-    def system_lang_code(self):
-        return self._system_lang_code
-
-    @system_lang_code.setter
-    def system_lang_code(self, value):
-        self._system_lang_code = value
 
     @property
     def report_errors(self):
