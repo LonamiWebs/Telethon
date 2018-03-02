@@ -15,10 +15,10 @@ LATEST_VERSION = 1
 
 
 class AlchemySessionContainer:
-    def __init__(self, engine=None, session=None, table_prefix="",
+    def __init__(self, engine=None, session=None, table_prefix='',
                  table_base=None, manage_tables=True):
         if not sql:
-            raise ImportError("SQLAlchemy not imported")
+            raise ImportError('SQLAlchemy not imported')
         if isinstance(engine, str):
             engine = sql.create_engine(engine)
 
@@ -48,12 +48,12 @@ class AlchemySessionContainer:
     def create_table_classes(db, prefix, Base):
         class Version(Base):
             query = db.query_property()
-            __tablename__ = "{prefix}version".format(prefix=prefix)
+            __tablename__ = '{prefix}version'.format(prefix=prefix)
             version = Column(Integer, primary_key=True)
 
         class Session(Base):
             query = db.query_property()
-            __tablename__ = "{prefix}sessions".format(prefix=prefix)
+            __tablename__ = '{prefix}sessions'.format(prefix=prefix)
 
             session_id = Column(String, primary_key=True)
             dc_id = Column(Integer, primary_key=True)
@@ -63,7 +63,7 @@ class AlchemySessionContainer:
 
         class Entity(Base):
             query = db.query_property()
-            __tablename__ = "{prefix}entities".format(prefix=prefix)
+            __tablename__ = '{prefix}entities'.format(prefix=prefix)
 
             session_id = Column(String, primary_key=True)
             id = Column(Integer, primary_key=True)
@@ -74,7 +74,7 @@ class AlchemySessionContainer:
 
         class SentFile(Base):
             query = db.query_property()
-            __tablename__ = "{prefix}sent_files".format(prefix=prefix)
+            __tablename__ = '{prefix}sent_files'.format(prefix=prefix)
 
             session_id = Column(String, primary_key=True)
             md5_digest = Column(BLOB, primary_key=True)
