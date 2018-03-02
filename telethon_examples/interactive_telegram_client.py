@@ -222,10 +222,8 @@ class InteractiveTelegramClient(TelegramClient):
                         # Format the message content
                         if getattr(msg, 'media', None):
                             self.found_media[msg.id] = msg
-                            # The media may or may not have a caption
-                            caption = getattr(msg.media, 'caption', '')
                             content = '<{}> {}'.format(
-                                type(msg.media).__name__, caption)
+                                type(msg.media).__name__, msg.message)
 
                         elif hasattr(msg, 'message'):
                             content = msg.message

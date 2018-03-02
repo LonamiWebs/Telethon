@@ -1128,6 +1128,7 @@ class TelegramClient(TelegramBareClient):
                   attributes=None,
                   thumb=None,
                   allow_cache=True,
+                  parse_mode='md',
                   **kwargs):
         """
         Sends a file to the specified entity.
@@ -1177,6 +1178,9 @@ class TelegramClient(TelegramBareClient):
                 Must be ``False`` if you wish to use different attributes
                 or thumb than those that were used when the file was cached.
 
+            parse_mode (:obj:`str`, optional):
+                The parse mode for the caption message.
+
         Kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -1210,18 +1214,21 @@ class TelegramClient(TelegramBareClient):
 
         entity = self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
+        caption, msg_entities = self._parse_message_text(caption, parse_mode)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
             # getting the input media for whatever they passed and send it.
             try:
-                media = utils.get_input_media(file, user_caption=caption)
+                media = utils.get_input_media(file)
             except TypeError:
                 pass  # Can't turn whatever was given into media
             else:
                 request = SendMediaRequest(entity, media,
-                                           reply_to_msg_id=reply_to)
+                                           reply_to_msg_id=reply_to,
+                                           message=caption,
+                                           entities=msg_entities)
                 return self._get_response_message(request, self(request))
 
         as_image = utils.is_image(file) and not force_document
@@ -1234,11 +1241,11 @@ class TelegramClient(TelegramBareClient):
         if isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
-                media = InputMediaPhoto(file_handle, caption or '')
+                media = InputMediaPhoto(file_handle)
             else:
-                media = InputMediaDocument(file_handle, caption or '')
+                media = InputMediaDocument(file_handle)
         elif as_image:
-            media = InputMediaUploadedPhoto(file_handle, caption or '')
+            media = InputMediaUploadedPhoto(file_handle)
         else:
             mime_type = None
             if isinstance(file, str):
@@ -1309,13 +1316,13 @@ class TelegramClient(TelegramBareClient):
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption or '',
                 **input_kw
             )
 
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
-        request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to)
+        request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to,
+                                   message=caption, entities=msg_entities)
         msg = self._get_response_message(request, self(request))
         if msg and isinstance(file_handle, InputSizedFile):
             # There was a response message and we didn't use cached
@@ -1335,15 +1342,18 @@ class TelegramClient(TelegramBareClient):
         return self.send_file(*args, **kwargs)
 
     def _send_album(self, entity, files, caption=None,
-                    progress_callback=None, reply_to=None):
+                    progress_callback=None, reply_to=None,
+                    parse_mode='md'):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
         # we need to produce right now to send albums (uploadMedia), and
         # cache only makes a difference for documents where the user may
-        # want the attributes used on them to change. Caption's ignored.
+        # want the attributes used on them to change.
+        # TODO Support a different captions for each file
         entity = self.get_input_entity(entity)
         caption = caption or ''
+        caption, msg_entities = self._parse_message_text(caption, parse_mode)
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
@@ -1353,11 +1363,15 @@ class TelegramClient(TelegramBareClient):
             fh = self.upload_file(file, use_cache=InputPhoto)
             if not isinstance(fh, InputPhoto):
                 input_photo = utils.get_input_photo(self(UploadMediaRequest(
-                    entity, media=InputMediaUploadedPhoto(fh, caption)
+                    entity, media=InputMediaUploadedPhoto(fh)
                 )).photo)
                 self.session.cache_file(fh.md5, fh.size, input_photo)
                 fh = input_photo
-            media.append(InputSingleMedia(InputMediaPhoto(fh, caption)))
+            media.append(InputSingleMedia(
+                InputMediaPhoto(fh),
+                message=caption,
+                entities=msg_entities
+            ))
 
         # Now we can construct the multi-media request
         result = self(SendMultiMediaRequest(

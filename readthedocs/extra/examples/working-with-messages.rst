@@ -114,8 +114,7 @@ send yourself the very first sticker you have:
                 id=InputDocument(
                     id=stickers.documents[0].id,
                     access_hash=stickers.documents[0].access_hash
-                ),
-                caption=''
+                )
             )
         ))
 
