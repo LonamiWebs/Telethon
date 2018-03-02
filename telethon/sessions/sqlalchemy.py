@@ -1,6 +1,10 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, Integer, BLOB, orm
-import sqlalchemy as sql
+try:
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy import Column, String, Integer, BLOB, orm
+    import sqlalchemy as sql
+except ImportError:
+    sql = None
+    pass
 
 from ..crypto import AuthKey
 from ..tl.types import InputPhoto, InputDocument
@@ -13,6 +17,8 @@ LATEST_VERSION = 1
 class AlchemySessionContainer:
     def __init__(self, engine=None, session=None, table_prefix="",
                  table_base=None, manage_tables=True):
+        if not sql:
+            raise ImportError("SQLAlchemy not imported")
         if isinstance(engine, str):
             engine = sql.create_engine(engine)
 
