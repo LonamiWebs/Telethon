@@ -1,6 +1,4 @@
 from enum import Enum
-import time
-import platform
 
 from .. import utils
 from .abstract import Session
@@ -29,37 +27,15 @@ class _SentFileType(Enum):
 
 class MemorySession(Session):
     def __init__(self):
+        super().__init__()
         self._dc_id = None
         self._server_address = None
         self._port = None
         self._salt = None
         self._auth_key = None
-        self._sequence = 0
-        self._last_msg_id = 0
-        self._time_offset = 0
-        self._flood_sleep_threshold = 60
-
-        system = platform.uname()
-        self._device_model = system.system or 'Unknown'
-        self._system_version = system.release or '1.0'
-        self._app_version = '1.0'
-        self._lang_code = 'en'
-        self._system_lang_code = self.lang_code
-        self._report_errors = True
-        self._flood_sleep_threshold = 60
 
         self._files = {}
         self._entities = set()
-
-    def clone(self):
-        cloned = MemorySession()
-        cloned._device_model = self.device_model
-        cloned._system_version = self.system_version
-        cloned._app_version = self.app_version
-        cloned._lang_code = self.lang_code
-        cloned._system_lang_code = self.system_lang_code
-        cloned._report_errors = self.report_errors
-        cloned._flood_sleep_threshold = self.flood_sleep_threshold
 
     def set_dc(self, dc_id, server_address, port):
         self._dc_id = dc_id
@@ -81,14 +57,6 @@ class MemorySession(Session):
     @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
-
-    @property
-    def time_offset(self):
-        return self._time_offset
-
-    @time_offset.setter
-    def time_offset(self, value):
-        self._time_offset = value
 
     @property
     def salt(self):
@@ -142,34 +110,6 @@ class MemorySession(Session):
     @classmethod
     def list_sessions(cls):
         raise NotImplementedError
-
-    def get_new_msg_id(self):
-        """Generates a new unique message ID based on the current
-           time (in ms) since epoch"""
-        now = time.time() + self._time_offset
-        nanoseconds = int((now - int(now)) * 1e+9)
-        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
-
-        if self._last_msg_id >= new_msg_id:
-            new_msg_id = self._last_msg_id + 4
-
-        self._last_msg_id = new_msg_id
-
-        return new_msg_id
-
-    def update_time_offset(self, correct_msg_id):
-        now = int(time.time())
-        correct = correct_msg_id >> 32
-        self._time_offset = correct - now
-        self._last_msg_id = 0
-
-    def generate_sequence(self, content_related):
-        if content_related:
-            result = self._sequence * 2 + 1
-            self._sequence += 1
-            return result
-        else:
-            return self._sequence * 2
 
     @staticmethod
     def _entities_to_rows(tlo):
