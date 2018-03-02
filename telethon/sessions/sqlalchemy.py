@@ -49,7 +49,7 @@ class DBSentFile(Base):
 
 class AlchemySessionContainer:
     def __init__(self, database):
-        if not isinstance(database, sql.Engine):
+        if isinstance(database, str):
             database = sql.create_engine(database)
 
         self.db_engine = database
