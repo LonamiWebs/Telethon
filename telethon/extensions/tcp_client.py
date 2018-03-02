@@ -168,7 +168,10 @@ class TcpClient:
                     __log__.info('ConnectionError "%s" while reading data', e)
                     self._raise_connection_reset(e)
                 except OSError as e:
-                    __log__.info('OSError "%s" while reading data', e)
+                    if e.errno != errno.EBADF and self._closing_lock.locked():
+                        # Ignore bad file descriptor while closing
+                        __log__.info('OSError "%s" while reading data', e)
+
                     if e.errno in CONN_RESET_ERRNOS:
                         self._raise_connection_reset(e)
                     else:
