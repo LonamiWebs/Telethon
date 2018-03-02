@@ -117,9 +117,9 @@ class AlchemySession(MemorySession):
             container.Version, container.Session, container.Entity,
             container.SentFile)
         self.session_id = session_id
-        self.load_session()
+        self._load_session()
 
-    def load_session(self):
+    def _load_session(self):
         sessions = self._db_query(self.Session).all()
         session = sessions[0] if sessions else None
         if session:
@@ -134,6 +134,19 @@ class AlchemySession(MemorySession):
 
     def set_dc(self, dc_id, server_address, port):
         super().set_dc(dc_id, server_address, port)
+        self._update_session_table()
+
+        sessions = self._db_query(self.Session).all()
+        session = sessions[0] if sessions else None
+        if session and session.auth_key:
+            self._auth_key = AuthKey(data=session.auth_key)
+        else:
+            self._auth_key = None
+
+    @MemorySession.auth_key.setter
+    def auth_key(self, value):
+        self._auth_key = value
+        self._update_session_table()
 
     def _update_session_table(self):
         self.Session.query.filter(
