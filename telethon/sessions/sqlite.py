@@ -198,7 +198,7 @@ class SQLiteSession(MemorySession):
             # multiple DCs. Probably done differently.
             c.execute('delete from sessions')
             c.execute('insert or replace into sessions values (?,?,?,?)', (
-                self._dc_id or 0,
+                self._dc_id,
                 self._server_address,
                 self._port,
                 self._auth_key.key if self._auth_key else b''

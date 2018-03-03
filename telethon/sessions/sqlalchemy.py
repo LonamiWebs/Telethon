@@ -129,8 +129,7 @@ class AlchemySession(MemorySession):
             self._auth_key = AuthKey(data=session.auth_key)
 
     def clone(self, to_instance=None):
-        cloned = to_instance or self.__class__(self.container, self.session_id)
-        return super().clone(cloned)
+        return super().clone(MemorySession())
 
     def set_dc(self, dc_id, server_address, port):
         super().set_dc(dc_id, server_address, port)

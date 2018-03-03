@@ -29,7 +29,7 @@ class MemorySession(Session):
     def __init__(self):
         super().__init__()
 
-        self._dc_id = None
+        self._dc_id = 0
         self._server_address = None
         self._port = None
         self._auth_key = None
@@ -38,7 +38,7 @@ class MemorySession(Session):
         self._entities = set()
 
     def set_dc(self, dc_id, server_address, port):
-        self._dc_id = dc_id
+        self._dc_id = dc_id or 0
         self._server_address = server_address
         self._port = port
 
