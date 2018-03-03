@@ -67,6 +67,12 @@ class MemorySession(Session):
     def delete(self):
         pass
 
+    def _entity_values_to_row(self, id, hash, username, phone, name):
+        # While this is a simple implementation it might be overrode by,
+        # other classes so they don't need to implement the plural form
+        # of the method. Don't remove.
+        return id, hash, username, phone, name
+
     def _entity_to_row(self, e):
         if not isinstance(e, TLObject):
             return
@@ -96,7 +102,9 @@ class MemorySession(Session):
             username = username.lower()
         phone = getattr(e, 'phone', None)
         name = utils.get_display_name(e) or None
-        return marked_id, p_hash, username, phone, name
+        return self._entity_values_to_row(
+            marked_id, p_hash, username, phone, name
+        )
 
     def _entities_to_rows(self, tlo):
         if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
