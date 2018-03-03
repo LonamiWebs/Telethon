@@ -1014,7 +1014,7 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
-    def get_participants(self, entity, limit=None, search=''):
+    async def get_participants(self, entity, limit=None, search=''):
         """
         Gets the list of participants from the specified entity
 
@@ -1032,7 +1032,7 @@ class TelegramClient(TelegramBareClient):
             A list of participants with an additional .total variable on the list
             indicating the total amount of members in this group/channel.
         """
-        entity = self.get_input_entity(entity)
+        entity = await self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
             offset = 0
@@ -1040,7 +1040,7 @@ class TelegramClient(TelegramBareClient):
             search = ChannelParticipantsSearch(search)
             while True:
                 loop_limit = min(limit - offset, 200)
-                participants = self(GetParticipantsRequest(
+                participants = await self(GetParticipantsRequest(
                     entity, search, offset, loop_limit, hash=0
                 ))
                 if not participants.users:
@@ -1053,11 +1053,11 @@ class TelegramClient(TelegramBareClient):
                     break
 
             users = UserList(all_participants.values())
-            users.total = self(GetFullChannelRequest(
-                entity)).full_chat.participants_count
+            users.total = (await self(GetFullChannelRequest(
+                entity))).full_chat.participants_count
 
         elif isinstance(entity, InputPeerChat):
-            users = self(GetFullChatRequest(entity.chat_id)).users
+            users = await self(GetFullChatRequest(entity.chat_id)).users
             if len(users) > limit:
                 users = users[:limit]
             users = UserList(users)
