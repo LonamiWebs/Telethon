@@ -56,7 +56,8 @@ from .tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
-    UploadMediaRequest, EditMessageRequest, GetFullChatRequest
+    UploadMediaRequest, EditMessageRequest, GetFullChatRequest,
+    ForwardMessagesRequest
 )
 
 from .tl.functions import channels
@@ -755,6 +756,59 @@ class TelegramClient(TelegramBareClient):
             )
 
         return self._get_response_message(request, result)
+
+    def forward_messages(self, entity, messages, from_peer=None):
+        """
+        Forwards the given message(s) to the specified entity.
+
+        Args:
+            entity (:obj:`entity`):
+                To which entity the message(s) will be forwarded.
+
+            messages (:obj:`list` | :obj:`int` | :obj:`Message`):
+                The message(s) to forward, or their integer IDs.
+
+            from_peer (:obj:`entity`):
+                If the given messages are integer IDs and not instances
+                of the ``Message`` class, this *must* be specified in
+                order for the forward to work.
+
+        Returns:
+            The forwarded messages.
+        """
+        if not utils.is_list_like(messages):
+            messages = (messages,)
+
+        if not from_peer:
+            try:
+                # On private chats (to_id = PeerUser), if the message is
+                # not outgoing, we actually need to use "from_id" to get
+                # the conversation on which the message was sent.
+                from_peer = next(
+                    m.from_id if not m.out and isinstance(m.to_id, PeerUser)
+                    else m.to_id for m in messages if isinstance(m, Message)
+                )
+            except StopIteration:
+                raise ValueError(
+                    'from_chat must be given if integer IDs are used'
+                )
+
+        req = ForwardMessagesRequest(
+            from_peer=from_peer,
+            id=[m if isinstance(m, int) else m.id for m in messages],
+            to_peer=entity
+        )
+        result = self(req)
+        random_to_id = {}
+        id_to_message = {}
+        for update in result.updates:
+            if isinstance(update, UpdateMessageID):
+                random_to_id[update.random_id] = update.id
+            elif isinstance(update, UpdateNewMessage):
+                id_to_message[update.message.id] = update.message
+
+        return [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+
 
     def edit_message(self, entity, message_id, message=None, parse_mode='md',
                      link_preview=True):
