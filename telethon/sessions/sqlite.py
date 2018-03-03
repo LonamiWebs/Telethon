@@ -276,18 +276,15 @@ class SQLiteSession(MemorySession):
 
     def get_entity_rows_by_username(self, username):
         return self._fetchone_entity(
-            'select id, hash from entities where username=?',
-            (username,))
+            'select id, hash from entities where username=?', (username,))
 
     def get_entity_rows_by_name(self, name):
         return self._fetchone_entity(
-            'select id, hash from entities where name=?',
-            (name,))
+            'select id, hash from entities where name=?', (name,))
 
     def get_entity_rows_by_id(self, id):
         return self._fetchone_entity(
-            'select id, hash from entities where id=?',
-            (id,))
+            'select id, hash from entities where id=?', (id,))
 
     # File processing
 

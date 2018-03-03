@@ -67,13 +67,6 @@ class MemorySession(Session):
     def delete(self):
         pass
 
-    @classmethod
-    def list_sessions(cls):
-        raise NotImplementedError
-
-    def _entity_values_to_row(self, id, hash, username, phone, name):
-        return id, hash, username, phone, name
-
     def _entity_to_row(self, e):
         if not isinstance(e, TLObject):
             return
@@ -103,7 +96,7 @@ class MemorySession(Session):
             username = username.lower()
         phone = getattr(e, 'phone', None)
         name = utils.get_display_name(e) or None
-        return self._entity_values_to_row(marked_id, p_hash, username, phone, name)
+        return marked_id, p_hash, username, phone, name
 
     def _entities_to_rows(self, tlo):
         if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
@@ -129,24 +122,32 @@ class MemorySession(Session):
         self._entities += set(self._entities_to_rows(tlo))
 
     def get_entity_rows_by_phone(self, phone):
-        rows = [(id, hash) for id, hash, _, found_phone, _
-                in self._entities if found_phone == phone]
-        return rows[0] if rows else None
+        try:
+            return next((id, hash) for id, hash, _, found_phone, _
+                        in self._entities if found_phone == phone)
+        except StopIteration:
+            pass
 
     def get_entity_rows_by_username(self, username):
-        rows = [(id, hash) for id, hash, found_username, _, _
-                in self._entities if found_username == username]
-        return rows[0] if rows else None
+        try:
+            return next((id, hash) for id, hash, found_username, _, _
+                        in self._entities if found_username == username)
+        except StopIteration:
+            pass
 
     def get_entity_rows_by_name(self, name):
-        rows = [(id, hash) for id, hash, _, _, found_name
-                in self._entities if found_name == name]
-        return rows[0] if rows else None
+        try:
+            return next((id, hash) for id, hash, _, _, found_name
+                        in self._entities if found_name == name)
+        except StopIteration:
+            pass
 
     def get_entity_rows_by_id(self, id):
-        rows = [(id, hash) for found_id, hash, _, _, _
-                in self._entities if found_id == id]
-        return rows[0] if rows else None
+        try:
+            return next((id, hash) for found_id, hash, _, _, _
+                        in self._entities if found_id == id)
+        except StopIteration:
+            pass
 
     def get_input_entity(self, key):
         try:
@@ -199,6 +200,6 @@ class MemorySession(Session):
     def get_file(self, md5_digest, file_size, cls):
         key = (md5_digest, file_size, _SentFileType.from_type(cls))
         try:
-            return self._files[key]
+            return cls(self._files[key])
         except KeyError:
             return None

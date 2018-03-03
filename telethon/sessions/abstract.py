@@ -91,12 +91,11 @@ class Session(ABC):
         raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def list_sessions(cls):
         """
         Lists available sessions. Not used by the library itself.
         """
-        raise NotImplementedError
+        return []
 
     @abstractmethod
     def process_entities(self, tlo):
