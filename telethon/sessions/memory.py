@@ -125,7 +125,7 @@ class MemorySession(Session):
         return rows
 
     def process_entities(self, tlo):
-        self._entities += set(self._entities_to_rows(tlo))
+        self._entities |= set(self._entities_to_rows(tlo))
 
     def get_entity_rows_by_phone(self, phone):
         try:
