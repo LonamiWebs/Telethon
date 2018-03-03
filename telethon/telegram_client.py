@@ -667,8 +667,8 @@ class TelegramClient(TelegramBareClient):
 
         return message, msg_entities
 
-    def send_message(self, entity, message, reply_to=None, parse_mode='md',
-                     link_preview=True):
+    def send_message(self, entity, message='', reply_to=None, parse_mode='md',
+                     link_preview=True, file=None, force_document=False):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -692,9 +692,26 @@ class TelegramClient(TelegramBareClient):
             link_preview (:obj:`bool`, optional):
                 Should the link preview be shown?
 
+            file (:obj:`file`, optional):
+                Sends a message with a file attached (e.g. a photo,
+                video, audio or document). The ``message`` may be empty.
+
+            force_document (:obj:`bool`, optional):
+                Whether to send the given file as a document or not.
+
         Returns:
             the sent message
         """
+        if file is not None:
+            return self.send_file(
+                entity, file, caption=message, reply_to=reply_to,
+                parse_mode=parse_mode, force_document=force_document
+            )
+        elif not message:
+            raise ValueError(
+                'The message cannot be empty unless a file is provided'
+            )
+
         entity = self.get_input_entity(entity)
         if isinstance(message, Message):
             if (message.media

@@ -99,6 +99,10 @@ done! The event that will be passed always is of type ``XYZ.Event`` (for
 instance, ``NewMessage.Event``), except for the ``Raw`` event which just
 passes the ``Update`` object.
 
+Note that ``.reply()`` and ``.respond()`` are just wrappers around the
+``client.send_message()`` method which supports the ``file=`` parameter.
+This means you can reply with a photo if you do ``client.reply(file=photo)``.
+
 You can put the same event on many handlers, and even different events on
 the same handler. You can also have a handler work on only specific chats,
 for example:
