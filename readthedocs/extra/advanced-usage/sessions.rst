@@ -37,13 +37,13 @@ To use a custom session storage, simply pass the custom session instance to
 ``TelegramClient`` instead of the session name.
 
 Currently, there are three implementations of the abstract ``Session`` class:
-* MemorySession. Stores session data in Python variables.
-* SQLiteSession, the default. Stores sessions in their own SQLite databases.
-* AlchemySession. Stores all sessions in a single database via SQLAlchemy.
+* ``MemorySession``. Stores session data in Python variables.
+* ``SQLiteSession``, (default). Stores sessions in their own SQLite databases.
+* ``AlchemySession``. Stores all sessions in a single database via SQLAlchemy.
 
 Using AlchemySession
 ~~~~~~~~~~~~~~~~~~~~
-The AlchemySession implementation can store multiple Sessions in the same
+The ``AlchemySession`` implementation can store multiple Sessions in the same
 database, but to do this, each session instance needs to have access to the
 same models and database session.
 
@@ -82,7 +82,9 @@ to ``False``:
 
         ...
 
-        container = AlchemySessionContainer(session=session, table_base=my_base, manage_tables=False)
+        container = AlchemySessionContainer(
+            session=session, table_base=my_base, manage_tables=False
+        )
 
 You always need to provide either ``engine`` or ``session`` to the container.
 If you set ``manage_tables=False`` and provide a ``session``, ``engine`` is not
@@ -101,9 +103,9 @@ where ``some session id`` is an unique identifier for the session.
 Creating your own storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The easiest way to create your own implementation is to use MemorySession as
-the base and check out how ``SQLiteSession`` or ``AlchemySession`` work. You
-can find the relevant Python files under the ``sessions`` directory.
+The easiest way to create your own implementation is to use ``MemorySession``
+as the base and check out how ``SQLiteSession`` or ``AlchemySession`` work.
+You can find the relevant Python files under the ``sessions`` directory.
 
 
 SQLite Sessions and Heroku
