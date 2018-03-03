@@ -320,9 +320,17 @@ class NewMessage(_EventBuilder):
             Replies to the message (as a reply). This is a shorthand for
             ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
             """
-            return self._client.send_message(self.input_chat,
-                                             reply_to=self.message.id,
-                                             *args, **kwargs)
+            kwargs['reply_to'] = self.message.id
+            return self._client.send_message(self.input_chat, *args, **kwargs)
+
+        def forward_to(self, *args, **kwargs):
+            """
+            Forwards the message. This is a shorthand for
+            ``client.forward_messages(entity, event.message, event.chat)``.
+            """
+            kwargs['messages'] = [self.message.id]
+            kwargs['from_peer'] = self.input_chat
+            return self._client.forward_messages(*args, **kwargs)
 
         def edit(self, *args, **kwargs):
             """
