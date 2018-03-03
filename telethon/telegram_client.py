@@ -288,7 +288,7 @@ class TelegramClient(TelegramBareClient):
             await self.connect()
 
         if self.is_user_authorized():
-            self._check_events_pending_resolve()
+            await self._check_events_pending_resolve()
             return self
 
         if bot_token:
@@ -345,7 +345,7 @@ class TelegramClient(TelegramBareClient):
 
         # We won't reach here if any step failed (exit by exception)
         print('Signed in successfully as', utils.get_display_name(me))
-        self._check_events_pending_resolve()
+        await self._check_events_pending_resolve()
         return self
 
     async def sign_in(self, phone=None, code=None,
@@ -380,7 +380,7 @@ class TelegramClient(TelegramBareClient):
             :meth:`.send_code_request()`.
         """
         if self.is_user_authorized():
-            self._check_events_pending_resolve()
+            await self._check_events_pending_resolve()
             return self.get_me()
 
         if phone and not code and not password:
