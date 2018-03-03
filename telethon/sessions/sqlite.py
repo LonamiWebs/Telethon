@@ -1,20 +1,13 @@
 import json
 import os
-import platform
 import sqlite3
-import struct
-import time
 from base64 import b64decode
-from enum import Enum
 from os.path import isfile as file_exists
 from threading import Lock, RLock
 
-from . import utils
-from .crypto import AuthKey
-from .tl import TLObject
-from .tl.types import (
-    PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel,
+from .memory import MemorySession, _SentFileType
+from ..crypto import AuthKey
+from ..tl.types import (
     InputPhoto, InputDocument
 )
 
@@ -22,21 +15,7 @@ EXTENSION = '.session'
 CURRENT_VERSION = 3  # database version
 
 
-class _SentFileType(Enum):
-    DOCUMENT = 0
-    PHOTO = 1
-
-    @staticmethod
-    def from_type(cls):
-        if cls == InputDocument:
-            return _SentFileType.DOCUMENT
-        elif cls == InputPhoto:
-            return _SentFileType.PHOTO
-        else:
-            raise ValueError('The cls must be either InputDocument/InputPhoto')
-
-
-class Session:
+class SQLiteSession(MemorySession):
     """This session contains the required information to login into your
        Telegram account. NEVER give the saved JSON file to anyone, since
        they would gain instant access to all your messages and contacts.
@@ -44,58 +23,26 @@ class Session:
        If you think the session has been compromised, close all the sessions
        through an official Telegram client to revoke the authorization.
     """
-    def __init__(self, session_id):
+
+    def __init__(self, session_id=None):
+        super().__init__()
         """session_user_id should either be a string or another Session.
            Note that if another session is given, only parameters like
            those required to init a connection will be copied.
         """
         # These values will NOT be saved
         self.filename = ':memory:'
+        self.save_entities = True
 
-        # For connection purposes
-        if isinstance(session_id, Session):
-            self.device_model = session_id.device_model
-            self.system_version = session_id.system_version
-            self.app_version = session_id.app_version
-            self.lang_code = session_id.lang_code
-            self.system_lang_code = session_id.system_lang_code
-            self.lang_pack = session_id.lang_pack
-            self.report_errors = session_id.report_errors
-            self.save_entities = session_id.save_entities
-            self.flood_sleep_threshold = session_id.flood_sleep_threshold
-        else:  # str / None
-            if session_id:
-                self.filename = session_id
-                if not self.filename.endswith(EXTENSION):
-                    self.filename += EXTENSION
-
-            system = platform.uname()
-            self.device_model = system.system or 'Unknown'
-            self.system_version = system.release or '1.0'
-            self.app_version = '1.0'  # '0' will provoke error
-            self.lang_code = 'en'
-            self.system_lang_code = self.lang_code
-            self.lang_pack = ''
-            self.report_errors = True
-            self.save_entities = True
-            self.flood_sleep_threshold = 60
-
-        self.id = struct.unpack('q', os.urandom(8))[0]
-        self._sequence = 0
-        self.time_offset = 0
-        self._last_msg_id = 0  # Long
-        self.salt = 0  # Long
+        if session_id:
+            self.filename = session_id
+            if not self.filename.endswith(EXTENSION):
+                self.filename += EXTENSION
 
         # Cross-thread safety
         self._seq_no_lock = Lock()
         self._msg_id_lock = Lock()
         self._db_lock = RLock()
-
-        # These values will be saved
-        self._dc_id = 0
-        self._server_address = None
-        self._port = None
-        self._auth_key = None
 
         # Migrating from .json -> SQL
         entities = self._check_migrate_json()
@@ -163,6 +110,11 @@ class Session:
             c.close()
             self.save()
 
+    def clone(self, to_instance=None):
+        cloned = super().clone(to_instance)
+        cloned.save_entities = self.save_entities
+        return cloned
+
     def _check_migrate_json(self):
         if file_exists(self.filename):
             try:
@@ -218,9 +170,7 @@ class Session:
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
     def set_dc(self, dc_id, server_address, port):
-        self._dc_id = dc_id
-        self._server_address = server_address
-        self._port = port
+        super().set_dc(dc_id, server_address, port)
         self._update_session_table()
 
         # Fetch the auth_key corresponding to this data center
@@ -233,19 +183,7 @@ class Session:
             self._auth_key = None
         c.close()
 
-    @property
-    def server_address(self):
-        return self._server_address
-
-    @property
-    def port(self):
-        return self._port
-
-    @property
-    def auth_key(self):
-        return self._auth_key
-
-    @auth_key.setter
+    @MemorySession.auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
         self._update_session_table()
@@ -298,52 +236,13 @@ class Session:
         except OSError:
             return False
 
-    @staticmethod
-    def list_sessions():
+    @classmethod
+    def list_sessions(cls):
         """Lists all the sessions of the users who have ever connected
            using this client and never logged out
         """
         return [os.path.splitext(os.path.basename(f))[0]
                 for f in os.listdir('.') if f.endswith(EXTENSION)]
-
-    def generate_sequence(self, content_related):
-        """Thread safe method to generates the next sequence number,
-           based on whether it was confirmed yet or not.
-
-           Note that if confirmed=True, the sequence number
-           will be increased by one too
-        """
-        with self._seq_no_lock:
-            if content_related:
-                result = self._sequence * 2 + 1
-                self._sequence += 1
-                return result
-            else:
-                return self._sequence * 2
-
-    def get_new_msg_id(self):
-        """Generates a new unique message ID based on the current
-           time (in ms) since epoch"""
-        # Refer to mtproto_plain_sender.py for the original method
-        now = time.time() + self.time_offset
-        nanoseconds = int((now - int(now)) * 1e+9)
-        # "message identifiers are divisible by 4"
-        new_msg_id = (int(now) << 32) | (nanoseconds << 2)
-
-        with self._msg_id_lock:
-            if self._last_msg_id >= new_msg_id:
-                new_msg_id = self._last_msg_id + 4
-
-            self._last_msg_id = new_msg_id
-
-        return new_msg_id
-
-    def update_time_offset(self, correct_msg_id):
-        """Updates the time offset based on a known correct message ID"""
-        now = int(time.time())
-        correct = correct_msg_id >> 32
-        self.time_offset = correct - now
-        self._last_msg_id = 0
 
     # Entity processing
 
@@ -356,49 +255,7 @@ class Session:
         if not self.save_entities:
             return
 
-        if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
-            # This may be a list of users already for instance
-            entities = tlo
-        else:
-            entities = []
-            if hasattr(tlo, 'chats') and utils.is_list_like(tlo.chats):
-                entities.extend(tlo.chats)
-            if hasattr(tlo, 'users') and utils.is_list_like(tlo.users):
-                entities.extend(tlo.users)
-            if not entities:
-                return
-
-        rows = []  # Rows to add (id, hash, username, phone, name)
-        for e in entities:
-            if not isinstance(e, TLObject):
-                continue
-            try:
-                p = utils.get_input_peer(e, allow_self=False)
-                marked_id = utils.get_peer_id(p)
-            except ValueError:
-                continue
-
-            if isinstance(p, (InputPeerUser, InputPeerChannel)):
-                if not p.access_hash:
-                    # Some users and channels seem to be returned without
-                    # an 'access_hash', meaning Telegram doesn't want you
-                    # to access them. This is the reason behind ensuring
-                    # that the 'access_hash' is non-zero. See issue #354.
-                    # Note that this checks for zero or None, see #392.
-                    continue
-                else:
-                    p_hash = p.access_hash
-            elif isinstance(p, InputPeerChat):
-                p_hash = 0
-            else:
-                continue
-
-            username = getattr(e, 'username', None) or None
-            if username is not None:
-                username = username.lower()
-            phone = getattr(e, 'phone', None)
-            name = utils.get_display_name(e) or None
-            rows.append((marked_id, p_hash, username, phone, name))
+        rows = self._entities_to_rows(tlo)
         if not rows:
             return
 
@@ -408,62 +265,29 @@ class Session:
             )
             self.save()
 
-    def get_input_entity(self, key):
-        """Parses the given string, integer or TLObject key into a
-           marked entity ID, which is then used to fetch the hash
-           from the database.
-
-           If a callable key is given, every row will be fetched,
-           and passed as a tuple to a function, that should return
-           a true-like value when the desired row is found.
-
-           Raises ValueError if it cannot be found.
-        """
-        try:
-            if key.SUBCLASS_OF_ID in (0xc91c90b6, 0xe669bf46, 0x40f202fd):
-                # hex(crc32(b'InputPeer', b'InputUser' and b'InputChannel'))
-                # We already have an Input version, so nothing else required
-                return key
-            # Try to early return if this key can be casted as input peer
-            return utils.get_input_peer(key)
-        except (AttributeError, TypeError):
-            # Not a TLObject or can't be cast into InputPeer
-            if isinstance(key, TLObject):
-                key = utils.get_peer_id(key)
-
+    def _fetchone_entity(self, query, args):
         c = self._cursor()
-        if isinstance(key, str):
-            phone = utils.parse_phone(key)
-            if phone:
-                c.execute('select id, hash from entities where phone=?',
-                          (phone,))
-            else:
-                username, _ = utils.parse_username(key)
-                if username:
-                    c.execute('select id, hash from entities where username=?',
-                              (username,))
+        c.execute(query, args)
+        return c.fetchone()
 
-        if isinstance(key, int):
-            c.execute('select id, hash from entities where id=?', (key,))
+    def get_entity_rows_by_phone(self, phone):
+        return self._fetchone_entity(
+            'select id, hash from entities where phone=?', (phone,))
 
-        result = c.fetchone()
-        if not result and isinstance(key, str):
-            # Try exact match by name if phone/username failed
-            c.execute('select id, hash from entities where name=?', (key,))
-            result = c.fetchone()
+    def get_entity_rows_by_username(self, username):
+        return self._fetchone_entity(
+            'select id, hash from entities where username=?',
+            (username,))
 
-        c.close()
-        if result:
-            i, h = result  # unpack resulting tuple
-            i, k = utils.resolve_id(i)  # removes the mark and returns kind
-            if k == PeerUser:
-                return InputPeerUser(i, h)
-            elif k == PeerChat:
-                return InputPeerChat(i)
-            elif k == PeerChannel:
-                return InputPeerChannel(i, h)
-        else:
-            raise ValueError('Could not find input entity with key ', key)
+    def get_entity_rows_by_name(self, name):
+        return self._fetchone_entity(
+            'select id, hash from entities where name=?',
+            (name,))
+
+    def get_entity_rows_by_id(self, id):
+        return self._fetchone_entity(
+            'select id, hash from entities where id=?',
+            (id,))
 
     # File processing
 

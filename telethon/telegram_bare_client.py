@@ -1,11 +1,11 @@
 import logging
 import os
+import platform
 import threading
 from datetime import timedelta, datetime
 from signal import signal, SIGINT, SIGTERM, SIGABRT
 from threading import Lock
 from time import sleep
-
 from . import version, utils
 from .crypto import rsa
 from .errors import (
@@ -14,7 +14,7 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
-from .session import Session
+from .sessions import Session, SQLiteSession
 from .tl import TLObject
 from .tl.all_tlobjects import LAYER
 from .tl.functions import (
@@ -73,7 +73,12 @@ class TelegramBareClient:
                  update_workers=None,
                  spawn_read_thread=False,
                  timeout=timedelta(seconds=5),
-                 **kwargs):
+                 loop=None,
+                 device_model=None,
+                 system_version=None,
+                 app_version=None,
+                 lang_code='en',
+                 system_lang_code='en'):
         """Refer to TelegramClient.__init__ for docs on this method"""
         if not api_id or not api_hash:
             raise ValueError(
@@ -81,10 +86,10 @@ class TelegramBareClient:
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        
+
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = Session(session)
+            session = SQLiteSession(session)
         elif not isinstance(session, Session):
             raise TypeError(
                 'The given session must be a str or a Session instance.'
@@ -125,11 +130,12 @@ class TelegramBareClient:
         self.updates = UpdateState(workers=update_workers)
 
         # Used on connection - the user may modify these and reconnect
-        kwargs['app_version'] = kwargs.get('app_version', self.__version__)
-        for name, value in kwargs.items():
-            if not hasattr(self.session, name):
-                raise ValueError('Unknown named parameter', name)
-            setattr(self.session, name, value)
+        system = platform.uname()
+        self.device_model = device_model or system.system or 'Unknown'
+        self.system_version = system_version or system.release or '1.0'
+        self.app_version = app_version or self.__version__
+        self.lang_code = lang_code
+        self.system_lang_code = system_lang_code
 
         # Despite the state of the real connection, keep track of whether
         # the user has explicitly called .connect() or .disconnect() here.
@@ -233,11 +239,11 @@ class TelegramBareClient:
         """Wraps query around InvokeWithLayerRequest(InitConnectionRequest())"""
         return InvokeWithLayerRequest(LAYER, InitConnectionRequest(
             api_id=self.api_id,
-            device_model=self.session.device_model,
-            system_version=self.session.system_version,
-            app_version=self.session.app_version,
-            lang_code=self.session.lang_code,
-            system_lang_code=self.session.system_lang_code,
+            device_model=self.device_model,
+            system_version=self.system_version,
+            app_version=self.app_version,
+            lang_code=self.lang_code,
+            system_lang_code=self.system_lang_code,
             lang_pack='',  # "langPacks are for official apps only"
             query=query
         ))
@@ -361,7 +367,7 @@ class TelegramBareClient:
             #
             # Construct this session with the connection parameters
             # (system version, device model...) from the current one.
-            session = Session(self.session)
+            session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[dc_id] = session
 
@@ -387,7 +393,7 @@ class TelegramBareClient:
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = Session(self.session)
+            session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 

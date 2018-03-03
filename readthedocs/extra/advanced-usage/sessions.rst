@@ -25,29 +25,89 @@ file, so that you can quickly access them by username or phone number.
 
 If you're not going to work with updates, or don't need to cache the
 ``access_hash`` associated with the entities' ID, you can disable this
-by setting ``client.session.save_entities = False``, or pass it as a
-parameter to the ``TelegramClient``.
+by setting ``client.session.save_entities = False``.
 
-If you don't want to save the files as a database, you can also create
-your custom ``Session`` subclass and override the ``.save()`` and ``.load()``
-methods. For example, you could save it on a database:
+Custom Session Storage
+----------------------
+
+If you don't want to use the default SQLite session storage, you can also use
+one of the other implementations or implement your own storage.
+
+To use a custom session storage, simply pass the custom session instance to
+``TelegramClient`` instead of the session name.
+
+Currently, there are three implementations of the abstract ``Session`` class:
+* MemorySession. Stores session data in Python variables.
+* SQLiteSession, the default. Stores sessions in their own SQLite databases.
+* AlchemySession. Stores all sessions in a single database via SQLAlchemy.
+
+Using AlchemySession
+~~~~~~~~~~~~~~~~~~~~
+The AlchemySession implementation can store multiple Sessions in the same
+database, but to do this, each session instance needs to have access to the
+same models and database session.
+
+To get started, you need to create an ``AlchemySessionContainer`` which will
+contain that shared data. The simplest way to use ``AlchemySessionContainer``
+is to simply pass it the database URL:
 
     .. code-block:: python
 
-        class DatabaseSession(Session):
-            def save():
-                # serialize relevant data to the database
+        container = AlchemySessionContainer('mysql://user:pass@localhost/telethon')
 
-            def load():
-                # load relevant data to the database
+If you already have SQLAlchemy set up for your own project, you can also pass
+the engine separately:
+
+    .. code-block:: python
+
+        my_sqlalchemy_engine = sqlalchemy.create_engine('...')
+        container = AlchemySessionContainer(engine=my_sqlalchemy_engine)
+
+By default, the session container will manage table creation/schema updates/etc
+automatically. If you want to manage everything yourself, you can pass your
+SQLAlchemy Session and ``declarative_base`` instances and set ``manage_tables``
+to ``False``:
+
+    .. code-block:: python
+
+        from sqlalchemy.ext.declarative import declarative_base
+        from sqlalchemy import orm
+        import sqlalchemy
+
+        ...
+
+        session_factory = orm.sessionmaker(bind=my_sqlalchemy_engine)
+        session = session_factory()
+        my_base = declarative_base()
+
+        ...
+
+        container = AlchemySessionContainer(session=session, table_base=my_base, manage_tables=False)
+
+You always need to provide either ``engine`` or ``session`` to the container.
+If you set ``manage_tables=False`` and provide a ``session``, ``engine`` is not
+needed. In any other case, ``engine`` is always required.
+
+After you have your ``AlchemySessionContainer`` instance created, you can
+create new sessions by calling ``new_session``:
+
+    .. code-block:: python
+
+        session = container.new_session('some session id')
+        client = TelegramClient(session)
+
+where ``some session id`` is an unique identifier for the session.
+
+Creating your own storage
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to create your own implementation is to use MemorySession as
+the base and check out how ``SQLiteSession`` or ``AlchemySession`` work. You
+can find the relevant Python files under the ``sessions`` directory.
 
 
-You should read the ````session.py```` source file to know what "relevant
-data" you need to keep track of.
-
-
-Sessions and Heroku
--------------------
+SQLite Sessions and Heroku
+--------------------------
 
 You probably have a newer version of SQLite installed (>= 3.8.2). Heroku uses
 SQLite 3.7.9 which does not support ``WITHOUT ROWID``. So, if you generated
@@ -59,8 +119,8 @@ session file on your Heroku dyno itself. The most complicated is creating
 a custom buildpack to install SQLite >= 3.8.2.
 
 
-Generating a Session File on a Heroku Dyno
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Generating a SQLite Session File on a Heroku Dyno
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
     Due to Heroku's ephemeral filesystem all dynamically generated
