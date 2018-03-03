@@ -607,6 +607,7 @@ class ChatAction(_EventBuilder):
             self.created = bool(created)
             self._user_peers = users if isinstance(users, list) else [users]
             self._users = None
+            self._input_users = None
             self.new_title = new_title
 
         @property
@@ -666,6 +667,16 @@ class ChatAction(_EventBuilder):
                 return None
 
         @property
+        def input_user(self):
+            """
+            Input version of the self.user property.
+            """
+            try:
+                return next(self.input_users)
+            except (StopIteration, TypeError):
+                return None
+
+        @property
         def users(self):
             """
             A list of users that take part in this action (e.g. joined).
@@ -680,6 +691,22 @@ class ChatAction(_EventBuilder):
                     self._users = []
 
             return self._users
+
+        @property
+        def input_users(self):
+            """
+            Input version of the self.users property.
+            """
+            if self._input_users is None and self._user_peers:
+                self._input_users = []
+                for peer in self._user_peers:
+                    try:
+                        self._input_users.append(self._client.get_input_entity(
+                            peer
+                        ))
+                    except (TypeError, ValueError):
+                        pass
+            return self._input_users
 
 
 class UserUpdate(_EventBuilder):
