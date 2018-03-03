@@ -829,21 +829,32 @@ class UserUpdate(_EventBuilder):
             return self.chat
 
 
-class MessageChanged(_EventBuilder):
+class MessageEdited(NewMessage):
     """
-    Represents a message changed (edited or deleted).
+    Event fired when a message has been edited.
     """
     def build(self, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
-            event = MessageChanged.Event(edit_msg=update.message)
-        elif isinstance(update, types.UpdateDeleteMessages):
-            event = MessageChanged.Event(
+            event = MessageEdited.Event(update.message)
+        else:
+            return
+
+        return self._filter_event(event)
+
+
+class MessageDeleted(_EventBuilder):
+    """
+    Event fired when one or more messages are deleted.
+    """
+    def build(self, update):
+        if isinstance(update, types.UpdateDeleteMessages):
+            event = MessageDeleted.Event(
                 deleted_ids=update.messages,
                 peer=None
             )
         elif isinstance(update, types.UpdateDeleteChannelMessages):
-            event = MessageChanged.Event(
+            event = MessageDeleted.Event(
                 deleted_ids=update.messages,
                 peer=types.PeerChannel(update.channel_id)
             )
@@ -852,33 +863,13 @@ class MessageChanged(_EventBuilder):
 
         return self._filter_event(event)
 
-    class Event(NewMessage.Event):
-        """
-        Represents the event of an user status update (last seen, joined).
-
-        Please note that the ``message`` member will be ``None`` if the
-        action was a deletion and not an edit.
-
-        Members:
-            edited (:obj:`bool`):
-                ``True`` if the message was edited.
-
-            deleted (:obj:`bool`):
-                ``True`` if the message IDs were deleted.
-
-            deleted_ids (:obj:`List[int]`):
-                A list containing the IDs of the messages that were deleted.
-        """
-        def __init__(self, edit_msg=None, deleted_ids=None, peer=None):
-            if edit_msg is None:
-                msg = types.Message((deleted_ids or [0])[0], peer, None, '')
-            else:
-                msg = edit_msg
-            super().__init__(msg)
-
-            self.edited = bool(edit_msg)
-            self.deleted = bool(deleted_ids)
-            self.deleted_ids = deleted_ids or []
+    class Event(_EventCommon):
+        def __init__(self, deleted_ids, peer):
+            super().__init__(
+                types.Message((deleted_ids or [0])[0], peer, None, '')
+            )
+            self.deleted_id = None if not deleted_ids else deleted_ids[0]
+            self.deleted_ids = self.deleted_ids
 
 
 class StopPropagation(Exception):
