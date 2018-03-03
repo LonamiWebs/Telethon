@@ -405,13 +405,13 @@ class MtProtoSender:
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
-            self.session._sequence += 64
+            self.session.sequence += 64
             __log__.info('Attempting to set the right higher sequence')
             await self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
-            self.session._sequence -= 16
+            self.session.sequence -= 16
             __log__.info('Attempting to set the right lower sequence')
             await self._resend_request(bad_msg.bad_msg_id)
             return True

@@ -4,6 +4,7 @@ This module holds a rough implementation of the C# TCP client.
 # Python rough implementation of a C# TCP client
 import asyncio
 import errno
+import logging
 import socket
 import time
 from datetime import timedelta
@@ -25,6 +26,8 @@ CONN_RESET_ERRNOS = {
     errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
     errno.EINVAL, errno.ENOTCONN
 }
+
+__log__ = logging.getLogger(__name__)
 
 
 class TcpClient:
@@ -86,6 +89,7 @@ class TcpClient:
                 await asyncio.sleep(timeout)
                 timeout = min(timeout * 2, MAX_TIMEOUT)
             except OSError as e:
+                __log__.info('OSError "%s" raised while connecting', e)
                 # Stop retrying to connect if proxy connection error occurred
                 if socks and isinstance(e, socks.ProxyConnectionError):
                     raise
@@ -126,7 +130,7 @@ class TcpClient:
         :param data: the data to send.
         """
         if self._socket is None:
-            self._raise_connection_reset()
+            self._raise_connection_reset(None)
 
         try:
             await asyncio.wait_for(
@@ -135,12 +139,15 @@ class TcpClient:
                 loop=self._loop
             )
         except asyncio.TimeoutError as e:
+            __log__.debug('socket.timeout "%s" while writing data', e)
             raise TimeoutError() from e
-        except ConnectionError:
-            self._raise_connection_reset()
+        except ConnectionError as e:
+            __log__.info('ConnectionError "%s" while writing data', e)
+            self._raise_connection_reset(e)
         except OSError as e:
+            __log__.info('OSError "%s" while writing data', e)
             if e.errno in CONN_RESET_ERRNOS:
-                self._raise_connection_reset()
+                self._raise_connection_reset(e)
             else:
                 raise
 
@@ -152,7 +159,7 @@ class TcpClient:
         :return: the read data with len(data) == size.
         """
         if self._socket is None:
-            self._raise_connection_reset()
+            self._raise_connection_reset(None)
 
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
@@ -166,17 +173,25 @@ class TcpClient:
                         loop=self._loop
                     )
                 except asyncio.TimeoutError as e:
+                    # These are somewhat common if the server has nothing
+                    # to send to us, so use a lower logging priority.
+                    __log__.debug('socket.timeout "%s" while reading data', e)
                     raise TimeoutError() from e
-                except ConnectionError:
-                    self._raise_connection_reset()
+                except ConnectionError as e:
+                    __log__.info('ConnectionError "%s" while reading data', e)
+                    self._raise_connection_reset(e)
                 except OSError as e:
+                    if e.errno != errno.EBADF:
+                        # Ignore bad file descriptor while closing
+                        __log__.info('OSError "%s" while reading data', e)
+
                     if e.errno in CONN_RESET_ERRNOS:
-                        self._raise_connection_reset()
+                        self._raise_connection_reset(e)
                     else:
                         raise
 
                 if len(partial) == 0:
-                    self._raise_connection_reset()
+                    self._raise_connection_reset(None)
 
                 buffer.write(partial)
                 bytes_left -= len(partial)
@@ -185,10 +200,10 @@ class TcpClient:
             buffer.flush()
             return buffer.raw.getvalue()
 
-    def _raise_connection_reset(self):
+    def _raise_connection_reset(self, original):
         """Disconnects the client and raises ConnectionResetError."""
         self.close()  # Connection reset -> flag as socket closed
-        raise ConnectionResetError('The server has closed the connection.')
+        raise ConnectionResetError('The server has closed the connection.') from original
 
     # due to new https://github.com/python/cpython/pull/4386
     def sock_recv(self, n):

@@ -21,10 +21,7 @@ DEFAULT_DELIMITERS = {
     '```': MessageEntityPre
 }
 
-# Regex used to match r'\[(.+?)\]\((.+?)\)' (for URLs.
-DEFAULT_URL_RE = re.compile(r'\[(.+?)\]\((.+?)\)')
-
-# Reverse operation for DEFAULT_URL_RE. {0} for text, {1} for URL.
+DEFAULT_URL_RE = re.compile(r'\[([^\]]+)\]\((.+?)\)')
 DEFAULT_URL_FORMAT = '[{0}]({1})'
 
 

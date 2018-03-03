@@ -53,12 +53,12 @@ if you're new with ``asyncio``.
 
 .. code:: python
 
-  print(me.stringify())
+  print(client.get_me().stringify())
 
   await client.send_message('username', 'Hello! Talking to you from Telethon')
   await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-  await client.download_profile_photo(me)
+  await client.download_profile_photo('me')
   messages = await client.get_message_history('username')
   await client.download_media(messages[0])
 

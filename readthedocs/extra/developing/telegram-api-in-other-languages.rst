@@ -18,6 +18,14 @@ there by `@vysheng <https://github.com/vysheng>`__,
 `telegram-cli <https://github.com/vysheng/tg>`__. Latest development
 has been moved to `BitBucket <https://bitbucket.org/vysheng/tdcli>`__.
 
+C++
+***
+
+The newest (and official) library, written from scratch, is called
+`tdlib <https://github.com/tdlib/td>`__ and is what the Telegram X
+uses. You can find more information in the official documentation,
+published `here <https://core.telegram.org/tdlib/docs/>`__.
+
 JavaScript
 **********
 
@@ -52,13 +60,14 @@ Python
 A fairly new (as of the end of 2017) Telegram library written from the
 ground up in Python by
 `@delivrance <https://github.com/delivrance>`__ and his
-`Pyrogram <https://github.com/pyrogram/pyrogram>`__ library! No hard
-feelings Dan and good luck dealing with some of your users ;)
+`Pyrogram <https://github.com/pyrogram/pyrogram>`__ library.
+There isn't really a reason to pick it over Telethon and it'd be kinda
+sad to see you go, but it would be nice to know what you miss from each
+other library in either one so both can improve.
 
 Rust
 ****
 
 Yet another work-in-progress implementation, this time for Rust thanks
 to `@JuanPotato <https://github.com/JuanPotato>`__ under the fancy
-name of `Vail <https://github.com/JuanPotato/Vail>`__. This one is very
-early still, but progress is being made at a steady rate.
+name of `Vail <https://github.com/JuanPotato/Vail>`__.

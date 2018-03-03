@@ -5,6 +5,7 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 import math
 import mimetypes
 import re
+import types
 from mimetypes import add_type, guess_extension
 
 from .tl.types import (
@@ -34,8 +35,10 @@ VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
 
 
 def get_display_name(entity):
-    """Gets the input peer for the given "entity" (user, chat or channel)
-       Returns None if it was not found"""
+    """
+    Gets the display name for the given entity, if it's an ``User``,
+    ``Chat`` or ``Channel``. Returns an empty string otherwise.
+    """
     if isinstance(entity, User):
         if entity.last_name and entity.first_name:
             return '{} {}'.format(entity.first_name, entity.last_name)
@@ -238,7 +241,7 @@ def get_input_geo(geo):
     _raise_cast_fail(geo, 'InputGeoPoint')
 
 
-def get_input_media(media, user_caption=None, is_photo=False):
+def get_input_media(media, is_photo=False):
     """Similar to get_input_peer, but for media.
 
        If the media is a file location and is_photo is known to be True,
@@ -253,31 +256,23 @@ def get_input_media(media, user_caption=None, is_photo=False):
     if isinstance(media, MessageMediaPhoto):
         return InputMediaPhoto(
             id=get_input_photo(media.photo),
-            ttl_seconds=media.ttl_seconds,
-            caption=((media.caption if user_caption is None else user_caption)
-                     or '')
+            ttl_seconds=media.ttl_seconds
         )
 
     if isinstance(media, MessageMediaDocument):
         return InputMediaDocument(
             id=get_input_document(media.document),
-            ttl_seconds=media.ttl_seconds,
-            caption=((media.caption if user_caption is None else user_caption)
-                     or '')
+            ttl_seconds=media.ttl_seconds
         )
 
     if isinstance(media, FileLocation):
         if is_photo:
-            return InputMediaUploadedPhoto(
-                file=media,
-                caption=user_caption or ''
-            )
+            return InputMediaUploadedPhoto(file=media)
         else:
             return InputMediaUploadedDocument(
                 file=media,
                 mime_type='application/octet-stream',  # unknown, assume bytes
-                attributes=[DocumentAttributeFilename('unnamed')],
-                caption=user_caption or ''
+                attributes=[DocumentAttributeFilename('unnamed')]
             )
 
     if isinstance(media, MessageMediaGame):
@@ -288,7 +283,7 @@ def get_input_media(media, user_caption=None, is_photo=False):
             media = media.photo_small
         else:
             media = media.photo_big
-        return get_input_media(media, user_caption=user_caption, is_photo=True)
+        return get_input_media(media, is_photo=True)
 
     if isinstance(media, MessageMediaContact):
         return InputMediaContact(
@@ -316,9 +311,7 @@ def get_input_media(media, user_caption=None, is_photo=False):
         return InputMediaEmpty()
 
     if isinstance(media, Message):
-        return get_input_media(
-            media.media, user_caption=user_caption, is_photo=is_photo
-        )
+        return get_input_media(media.media, is_photo=is_photo)
 
     _raise_cast_fail(media, 'InputMedia')
 
@@ -339,6 +332,17 @@ def is_video(file):
     """Returns True if the file extension looks like a video file"""
     return (isinstance(file, str) and
             (mimetypes.guess_type(file)[0] or '').startswith('video/'))
+
+
+def is_list_like(obj):
+    """
+    Returns True if the given object looks like a list.
+
+    Checking if hasattr(obj, '__iter__') and ignoring str/bytes is not
+    enough. Things like open() are also iterable (and probably many
+    other things), so just support the commonly known list-like objects.
+    """
+    return isinstance(obj, (list, tuple, set, dict, types.GeneratorType))
 
 
 def parse_phone(phone):

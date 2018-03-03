@@ -172,6 +172,7 @@ class TelegramClient(TelegramBareClient):
         )
 
         self._event_builders = []
+        self._events_pending_resolve = []
 
         # Some fields to easy signing in. Let {phone: hash} be
         # a dictionary because the user may change their mind.
@@ -287,6 +288,7 @@ class TelegramClient(TelegramBareClient):
             await self.connect()
 
         if self.is_user_authorized():
+            self._check_events_pending_resolve()
             return self
 
         if bot_token:
@@ -343,6 +345,7 @@ class TelegramClient(TelegramBareClient):
 
         # We won't reach here if any step failed (exit by exception)
         print('Signed in successfully as', utils.get_display_name(me))
+        self._check_events_pending_resolve()
         return self
 
     async def sign_in(self, phone=None, code=None,
@@ -376,6 +379,9 @@ class TelegramClient(TelegramBareClient):
             The signed in user, or the information about
             :meth:`.send_code_request()`.
         """
+        if self.is_user_authorized():
+            self._check_events_pending_resolve()
+            return self.get_me()
 
         if phone and not code and not password:
             return await self.send_code_request(phone)
@@ -413,7 +419,7 @@ class TelegramClient(TelegramBareClient):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
-        self._set_connected_and_authorized()
+        await self._set_connected_and_authorized()
         return result.user
 
     async def sign_up(self, code, first_name, last_name=''):
@@ -434,6 +440,10 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The new created user.
         """
+        if self.is_user_authorized():
+            await self._check_events_pending_resolve()
+            return await self.get_me()
+
         result = await self(SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash.get(self._phone, ''),
@@ -445,7 +455,7 @@ class TelegramClient(TelegramBareClient):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
-        self._set_connected_and_authorized()
+        await self._set_connected_and_authorized()
         return result.user
 
     async def log_out(self):
@@ -560,7 +570,7 @@ class TelegramClient(TelegramBareClient):
 
             offset_date = r.messages[-1].date
             offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
-            offset_id = r.messages[-1].id & 4294967296  # Telegram/danog magic
+            offset_id = r.messages[-1].id
 
         dialogs = UserList(
             itertools.islice(dialogs.values(), min(limit, len(dialogs)))
@@ -574,7 +584,7 @@ class TelegramClient(TelegramBareClient):
 
         Returns:
             A list of custom ``Draft`` objects that are easy to work with:
-            You can call :meth:`draft.set_message('text')` to change the message,
+            You can call ``draft.set_message('text')`` to change the message,
             or delete it through :meth:`draft.delete()`.
         """
         response = await self(GetAllDraftsRequest())
@@ -974,7 +984,7 @@ class TelegramClient(TelegramBareClient):
         """
         if max_id is None:
             if message:
-                if hasattr(message, '__iter__'):
+                if utils.is_list_like(message):
                     max_id = max(msg.id for msg in message)
                 else:
                     max_id = message.id
@@ -1014,50 +1024,90 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
-    async def get_participants(self, entity, limit=None, search=''):
+    async def get_participants(self, entity, limit=None, search='',
+                               aggressive=False):
         """
-        Gets the list of participants from the specified entity
+        Gets the list of participants from the specified entity.
 
         Args:
             entity (:obj:`entity`):
                 The entity from which to retrieve the participants list.
 
-            limit (:obj: `int`):
+            limit (:obj:`int`):
                 Limits amount of participants fetched.
 
-            search (:obj: `str`, optional):
+            search (:obj:`str`, optional):
                 Look for participants with this string in name/username.
 
+            aggressive (:obj:`bool`, optional):
+                Aggressively looks for all participants in the chat in
+                order to get more than 10,000 members (a hard limit
+                imposed by Telegram). Note that this might take a long
+                time (over 5 minutes), but is able to return over 90,000
+                participants on groups with 100,000 members.
+
+                This has no effect for groups or channels with less than
+                10,000 members.
+
         Returns:
-            A list of participants with an additional .total variable on the list
-            indicating the total amount of members in this group/channel.
+            A list of participants with an additional .total variable on the
+            list indicating the total amount of members in this group/channel.
         """
         entity = await self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
-            offset = 0
+            total = (await self(GetFullChannelRequest(
+                entity
+            ))).full_chat.participants_count
+
             all_participants = {}
-            search = ChannelParticipantsSearch(search)
-            while True:
-                loop_limit = min(limit - offset, 200)
-                participants = await self(GetParticipantsRequest(
-                    entity, search, offset, loop_limit, hash=0
-                ))
-                if not participants.users:
-                    break
-                for user in participants.users:
-                    if len(all_participants) < limit:
-                        all_participants[user.id] = user
-                offset += len(participants.users)
-                if offset > limit:
+            if total > 10000 and aggressive:
+                requests = [GetParticipantsRequest(
+                    channel=entity,
+                    filter=ChannelParticipantsSearch(search + chr(x)),
+                    offset=0,
+                    limit=200,
+                    hash=0
+                ) for x in range(ord('a'), ord('z') + 1)]
+            else:
+                requests = [GetParticipantsRequest(
+                    channel=entity,
+                    filter=ChannelParticipantsSearch(search),
+                    offset=0,
+                    limit=200,
+                    hash=0
+                )]
+
+            while requests:
+                # Only care about the limit for the first request
+                # (small amount of people, won't be aggressive).
+                #
+                # Most people won't care about getting exactly 12,345
+                # members so it doesn't really matter not to be 100%
+                # precise with being out of the offset/limit here.
+                requests[0].limit = min(limit - requests[0].offset, 200)
+                if requests[0].offset > limit:
                     break
 
-            users = UserList(all_participants.values())
-            users.total = (await self(GetFullChannelRequest(
-                entity))).full_chat.participants_count
+                results = await self(*requests)
+                for i in reversed(range(len(requests))):
+                    participants = results[i]
+                    if not participants.users:
+                        requests.pop(i)
+                    else:
+                        requests[i].offset += len(participants.users)
+                        for user in participants.users:
+                            if len(all_participants) < limit:
+                                all_participants[user.id] = user
+            if limit < float('inf'):
+                values = all_participants.values()
+            else:
+                values = itertools.islice(all_participants.values(), limit)
 
+            users = UserList(values)
+            users.total = total
         elif isinstance(entity, InputPeerChat):
-            users = await self(GetFullChatRequest(entity.chat_id)).users
+            users = (await self(GetFullChatRequest(entity.chat_id))).users
             if len(users) > limit:
                 users = users[:limit]
             users = UserList(users)
@@ -1077,6 +1127,7 @@ class TelegramClient(TelegramBareClient):
                         attributes=None,
                         thumb=None,
                         allow_cache=True,
+                        parse_mode='md',
                         **kwargs):
         """
         Sends a file to the specified entity.
@@ -1126,6 +1177,9 @@ class TelegramClient(TelegramBareClient):
                 Must be ``False`` if you wish to use different attributes
                 or thumb than those that were used when the file was cached.
 
+            parse_mode (:obj:`str`, optional):
+                The parse mode for the caption message.
+
         Kwargs:
            If "is_voice_note" in kwargs, despite its value, and the file is
            sent as a document, it will be sent as a voice note.
@@ -1139,13 +1193,14 @@ class TelegramClient(TelegramBareClient):
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
-        if hasattr(file, '__iter__') and not isinstance(file, (str, bytes)):
+        if utils.is_list_like(file):
             # Convert to tuple so we can iterate several times
             file = tuple(x for x in file)
             if all(utils.is_image(x) for x in file):
                 return await self._send_album(
                     entity, file, caption=caption,
-                    progress_callback=progress_callback, reply_to=reply_to
+                    progress_callback=progress_callback, reply_to=reply_to,
+                    parse_mode=parse_mode
                 )
             # Not all are images, so send all the files one by one
             return [
@@ -1159,18 +1214,21 @@ class TelegramClient(TelegramBareClient):
 
         entity = await self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
+        caption, msg_entities = self._parse_message_text(caption, parse_mode)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
             # getting the input media for whatever they passed and send it.
             try:
-                media = utils.get_input_media(file, user_caption=caption)
+                media = utils.get_input_media(file)
             except TypeError:
                 pass  # Can't turn whatever was given into media
             else:
                 request = SendMediaRequest(entity, media,
-                                           reply_to_msg_id=reply_to)
+                                           reply_to_msg_id=reply_to,
+                                           message=caption,
+                                           entities=msg_entities)
                 return self._get_response_message(request, await self(request))
 
         as_image = utils.is_image(file) and not force_document
@@ -1183,11 +1241,11 @@ class TelegramClient(TelegramBareClient):
         if isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
-                media = InputMediaPhoto(file_handle, caption or '')
+                media = InputMediaPhoto(file_handle)
             else:
-                media = InputMediaDocument(file_handle, caption or '')
+                media = InputMediaDocument(file_handle)
         elif as_image:
-            media = InputMediaUploadedPhoto(file_handle, caption or '')
+            media = InputMediaUploadedPhoto(file_handle)
         else:
             mime_type = None
             if isinstance(file, str):
@@ -1225,8 +1283,9 @@ class TelegramClient(TelegramBareClient):
                     attr_dict[DocumentAttributeVideo] = doc
             else:
                 attr_dict = {
-                    DocumentAttributeFilename:
-                        DocumentAttributeFilename('unnamed')
+                    DocumentAttributeFilename: DocumentAttributeFilename(
+                        os.path.basename(
+                            getattr(file, 'name', None) or 'unnamed'))
                 }
 
             if 'is_voice_note' in kwargs:
@@ -1257,13 +1316,13 @@ class TelegramClient(TelegramBareClient):
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=list(attr_dict.values()),
-                caption=caption or '',
                 **input_kw
             )
 
         # Once the media type is properly specified and the file uploaded,
         # send the media message to the desired entity.
-        request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to)
+        request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to,
+                                   message=caption, entities=msg_entities)
         msg = self._get_response_message(request, await self(request))
         if msg and isinstance(file_handle, InputSizedFile):
             # There was a response message and we didn't use cached
@@ -1277,24 +1336,27 @@ class TelegramClient(TelegramBareClient):
 
         return msg
 
-    async def send_voice_note(self, entity, file, caption=None,
-                              progress_callback=None, reply_to=None):
-        """Wrapper method around .send_file() with is_voice_note=()"""
-        return await self.send_file(entity, file, caption,
-                                    progress_callback=progress_callback,
-                                    reply_to=reply_to,
-                                    is_voice_note=())  # empty tuple is enough
+    def send_voice_note(self, *args, **kwargs):
+        """Wrapper method around .send_file() with is_voice_note=True"""
+        kwargs['is_voice_note'] = True
+        return self.send_file(*args, **kwargs)
 
     async def _send_album(self, entity, files, caption=None,
-                          progress_callback=None, reply_to=None):
+                    progress_callback=None, reply_to=None,
+                    parse_mode='md'):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
         # we need to produce right now to send albums (uploadMedia), and
         # cache only makes a difference for documents where the user may
-        # want the attributes used on them to change. Caption's ignored.
+        # want the attributes used on them to change.
         entity = await self.get_input_entity(entity)
-        caption = caption or ''
+        if not utils.is_list_like(caption):
+            caption = (caption,)
+        captions = [
+            self._parse_message_text(caption or '', parse_mode)
+            for caption in reversed(caption)  # Pop from the end (so reverse)
+        ]
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
@@ -1304,11 +1366,17 @@ class TelegramClient(TelegramBareClient):
             fh = await self.upload_file(file, use_cache=InputPhoto)
             if not isinstance(fh, InputPhoto):
                 input_photo = utils.get_input_photo((await self(UploadMediaRequest(
-                    entity, media=InputMediaUploadedPhoto(fh, caption)
+                    entity, media=InputMediaUploadedPhoto(fh)
                 ))).photo)
                 self.session.cache_file(fh.md5, fh.size, input_photo)
                 fh = input_photo
-            media.append(InputSingleMedia(InputMediaPhoto(fh, caption)))
+
+            if captions:
+                caption, msg_entities = captions.pop()
+            else:
+                caption, msg_entities = '', None
+            media.append(InputSingleMedia(InputMediaPhoto(fh), message=caption,
+                                          entities=msg_entities))
 
         # Now we can construct the multi-media request
         result = await self(SendMultiMediaRequest(
@@ -1874,12 +1942,26 @@ class TelegramClient(TelegramBareClient):
 
         return decorator
 
+    async def _check_events_pending_resolve(self):
+        if self._events_pending_resolve:
+            for event in self._events_pending_resolve:
+                await event.resolve(self)
+            self._events_pending_resolve.clear()
+
     async def _on_handler(self, update):
         for builder, callback in self._event_builders:
             event = builder.build(update)
             if event:
                 event._client = self
-                await callback(event)
+                try:
+                    await callback(event)
+                except events.StopPropagation:
+                    __log__.debug(
+                        "Event handler '{}' stopped chain of "
+                        "propagation for event {}."
+                        .format(callback.__name__, type(event).__name__)
+                    )
+                    break
 
     async def add_event_handler(self, callback, event=None):
         """
@@ -1903,7 +1985,12 @@ class TelegramClient(TelegramBareClient):
         elif not event:
             event = events.Raw()
 
-        await event.resolve(self)
+        if self.is_user_authorized():
+            await event.resolve(self)
+            await self._check_events_pending_resolve()
+        else:
+            self._events_pending_resolve.append(event)
+
         self._event_builders.append((event, callback))
 
     def add_update_handler(self, handler):
@@ -1926,6 +2013,10 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Small utilities to make users' life easier
+
+    async def _set_connected_and_authorized(self):
+        await super()._set_connected_and_authorized()
+        await self._check_events_pending_resolve()
 
     async def get_entity(self, entity):
         """
@@ -1950,7 +2041,7 @@ class TelegramClient(TelegramBareClient):
             ``User``, ``Chat`` or ``Channel`` corresponding to the input
             entity.
         """
-        if hasattr(entity, '__iter__') and not isinstance(entity, str):
+        if utils.is_list_like(entity):
             single = False
         else:
             single = True
@@ -2085,25 +2176,35 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 
-        # Not found, look in the latest dialogs.
-        # This is useful if for instance someone just sent a message but
-        # the updates didn't specify who, as this person or chat should
-        # be in the latest dialogs.
-        dialogs = await self(GetDialogsRequest(
+        # Not found, look in the dialogs with the hope to find it.
+        target_id = utils.get_peer_id(peer)
+        req = GetDialogsRequest(
             offset_date=None,
             offset_id=0,
             offset_peer=InputPeerEmpty(),
-            limit=0,
-            exclude_pinned=True
-        ))
+            limit=100
+        )
+        while True:
+            result = await self(req)
+            entities = {}
+            for x in itertools.chain(result.users, result.chats):
+                x_id = utils.get_peer_id(x)
+                if x_id == target_id:
+                    return utils.get_input_peer(x)
+                else:
+                    entities[x_id] = x
+            if len(result.dialogs) < req.limit:
+                break
 
-        target = utils.get_peer_id(peer)
-        for entity in itertools.chain(dialogs.users, dialogs.chats):
-            if utils.get_peer_id(entity) == target:
-                return utils.get_input_peer(entity)
+            req.offset_id = result.messages[-1].id
+            req.offset_date = result.messages[-1].date
+            req.offset_peer = entities[utils.get_peer_id(
+                result.dialogs[-1].peer
+            )]
+            asyncio.sleep(1)
 
         raise TypeError(
-            'Could not find the input entity corresponding to "{}".'
+            'Could not find the input entity corresponding to "{}". '
             'Make sure you have encountered this peer before.'.format(peer)
         )
 

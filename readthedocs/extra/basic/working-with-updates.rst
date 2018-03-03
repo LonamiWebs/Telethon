@@ -10,6 +10,16 @@ over what Telegram calls `updates`__, and are meant to ease simple and common
 usage when dealing with them, since there are many updates. Let's dive in!
 
 
+.. note::
+
+    The library logs by default no output, and any exception that occurs
+    inside your handlers will be "hidden" from you to prevent the thread
+    from terminating (so it can still deliver events). You should enable
+    logging (``import logging; logging.basicConfig(level=logging.ERROR)``)
+    when working with events, at least the error level, to see if this is
+    happening so you can debug the error.
+
+
 .. contents::
 
 
@@ -119,6 +129,33 @@ want to handle incoming or outgoing messages (those you receive or those you
 send). In this example, people can say ``'roll'`` and you will reply with a
 random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
+
+
+Stopping propagation of Updates
+*******************************
+
+There might be cases when an event handler is supposed to be used solitary and
+it makes no sense to process any other handlers in the chain. For this case,
+it is possible to raise a ``StopPropagation`` exception which will cause the
+propagation of the update through your handlers to stop:
+
+    .. code-block:: python
+
+        from telethon.events import StopPropagation
+
+        @client.on(events.NewMessage)
+        def _(event):
+            # ... some conditions
+            event.delete()
+
+            # Other handlers won't have an event to work with
+            raise StopPropagation
+
+        @client.on(events.NewMessage)
+        def _(event):
+            # Will never be reached, because it is the second handler
+            # in the chain.
+            pass
 
 
 Events module

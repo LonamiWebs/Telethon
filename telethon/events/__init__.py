@@ -14,7 +14,7 @@ async def _into_id_set(client, chats):
     if chats is None:
         return None
 
-    if not hasattr(chats, '__iter__') or isinstance(chats, str):
+    if not utils.is_list_like(chats):
         chats = (chats,)
 
     result = set()
@@ -76,6 +76,8 @@ class _EventCommon(abc.ABC):
         self._message_id = msg_id
         self._input_chat = None
         self._chat = None
+
+        self.pattern_match = None
 
         self.is_private = isinstance(chat_peer, types.PeerUser)
         self.is_group = (
@@ -251,8 +253,12 @@ class NewMessage(_EventBuilder):
             return
         if self.outgoing and not event.message.out:
             return
-        if self.pattern and not self.pattern(event.message.message or ''):
-            return
+
+        if self.pattern:
+            match = self.pattern(event.message.message or '')
+            if not match:
+                return
+            event.pattern_match = match
 
         return self._filter_event(event)
 
@@ -277,7 +283,14 @@ class NewMessage(_EventBuilder):
                 Whether the message is a reply to some other or not.
         """
         def __init__(self, message):
-            super().__init__(chat_peer=message.to_id,
+            if not message.out and isinstance(message.to_id, types.PeerUser):
+                # Incoming message (e.g. from a bot) has to_id=us, and
+                # from_id=bot (the actual "chat" from an user's perspective).
+                chat_peer = types.PeerUser(message.from_id)
+            else:
+                chat_peer = message.to_id
+
+            super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
             self.message = message
@@ -866,3 +879,26 @@ class MessageChanged(_EventBuilder):
             self.edited = bool(edit_msg)
             self.deleted = bool(deleted_ids)
             self.deleted_ids = deleted_ids or []
+
+
+class StopPropagation(Exception):
+    """
+    If this Exception is found to be raised in any of the handlers for a
+    given update, it will stop the execution of all other registered
+    event handlers in the chain.
+    Think of it like a ``StopIteration`` exception in a for loop.
+
+    Example usage:
+    ```
+    @client.on(events.NewMessage)
+    def delete(event):
+        event.delete()
+        # Other handlers won't have an event to work with
+        raise StopPropagation
+
+    @client.on(events.NewMessage)
+    def _(event):
+        # Will never be reached, because it is the second handler in the chain.
+        pass
+    ```
+    """
