@@ -194,9 +194,9 @@ def get_inner_text(text, entity):
     """
     if isinstance(entity, TLObject):
         entity = (entity,)
-        multiple = True
-    else:
         multiple = False
+    else:
+        multiple = True
 
     text = _add_surrogate(text)
     result = []

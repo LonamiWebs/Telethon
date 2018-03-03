@@ -11,9 +11,9 @@ AUTO_GEN_NOTICE = \
 
 
 AUTO_CASTS = {
-    'InputPeer': 'utils.get_input_peer(client.get_input_entity({}))',
-    'InputChannel': 'utils.get_input_channel(client.get_input_entity({}))',
-    'InputUser': 'utils.get_input_user(client.get_input_entity({}))',
+    'InputPeer': 'utils.get_input_peer(await client.get_input_entity({}))',
+    'InputChannel': 'utils.get_input_channel(await client.get_input_entity({}))',
+    'InputUser': 'utils.get_input_user(await client.get_input_entity({}))',
     'InputMedia': 'utils.get_input_media({})',
     'InputPhoto': 'utils.get_input_photo({})'
 }
@@ -289,7 +289,7 @@ class TLGenerator:
 
         # Write the resolve(self, client, utils) method
         if any(arg.type in AUTO_CASTS for arg in args):
-            builder.writeln('def resolve(self, client, utils):')
+            builder.writeln('async def resolve(self, client, utils):')
             for arg in args:
                 ac = AUTO_CASTS.get(arg.type, None)
                 if ac:

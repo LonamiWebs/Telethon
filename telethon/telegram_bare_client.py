@@ -1,11 +1,9 @@
+import asyncio
 import logging
 import os
+from asyncio import Lock
+from datetime import timedelta
 import platform
-import threading
-from datetime import timedelta, datetime
-from signal import signal, SIGINT, SIGTERM, SIGABRT
-from threading import Lock
-from time import sleep
 from . import version, utils
 from .crypto import rsa
 from .errors import (
@@ -70,8 +68,6 @@ class TelegramBareClient:
                  connection_mode=ConnectionMode.TCP_FULL,
                  use_ipv6=False,
                  proxy=None,
-                 update_workers=None,
-                 spawn_read_thread=False,
                  timeout=timedelta(seconds=5),
                  loop=None,
                  device_model=None,
@@ -95,6 +91,8 @@ class TelegramBareClient:
                 'The given session must be a str or a Session instance.'
             )
 
+        self._loop = loop if loop else asyncio.get_event_loop()
+
         # ':' in session.server_address is True if it's an IPv6 address
         if (not session.server_address or
                 (':' in session.server_address) != use_ipv6):
@@ -112,13 +110,15 @@ class TelegramBareClient:
         # that calls .connect(). Every other thread will spawn a new
         # temporary connection. The connection on this one is always
         # kept open so Telegram can send us updates.
-        self._sender = MtProtoSender(self.session, Connection(
-            mode=connection_mode, proxy=proxy, timeout=timeout
-        ))
+        self._sender = MtProtoSender(
+            self.session,
+            Connection(mode=connection_mode, proxy=proxy, timeout=timeout, loop=self._loop),
+            self._loop
+        )
 
-        # Two threads may be calling reconnect() when the connection is lost,
-        # we only want one to actually perform the reconnection.
-        self._reconnect_lock = Lock()
+        # Two coroutines may be calling reconnect() when the connection
+        # is lost, we only want one to actually perform the reconnection.
+        self._reconnect_lock = Lock(loop=self._loop)
 
         # Cache "exported" sessions as 'dc_id: Session' not to recreate
         # them all the time since generating a new key is a relatively
@@ -127,7 +127,7 @@ class TelegramBareClient:
 
         # This member will process updates if enabled.
         # One may change self.updates.enabled at any later point.
-        self.updates = UpdateState(workers=update_workers)
+        self.updates = UpdateState(self._loop)
 
         # Used on connection - the user may modify these and reconnect
         system = platform.uname()
@@ -153,34 +153,25 @@ class TelegramBareClient:
         # See https://core.telegram.org/api/invoking#saving-client-info.
         self._first_request = True
 
-        # Constantly read for results and updates from within the main client,
-        # if the user has left enabled such option.
-        self._spawn_read_thread = spawn_read_thread
-        self._recv_thread = None
-        self._idling = threading.Event()
+        self._recv_loop = None
+        self._ping_loop = None
+        self._state_loop = None
+        self._idling = asyncio.Event()
 
         # Default PingRequest delay
-        self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
-
         # Also have another delay for GetStateRequest.
         #
         # If the connection is kept alive for long without invoking any
         # high level request the server simply stops sending updates.
         # TODO maybe we can have ._last_request instead if any req works?
-        self._last_state = datetime.now()
         self._state_delay = timedelta(hours=1)
-
-        # Some errors are known but there's nothing we can do from the
-        # background thread. If any of these happens, call .disconnect(),
-        # and raise them next time .invoke() is tried to be called.
-        self._background_error = None
 
     # endregion
 
     # region Connecting
 
-    def connect(self, _sync_updates=True):
+    async def connect(self, _sync_updates=True):
         """Connects to the Telegram servers, executing authentication if
            required. Note that authenticating to the Telegram servers is
            not the same as authenticating the desired user itself, which
@@ -197,10 +188,8 @@ class TelegramBareClient:
         __log__.info('Connecting to %s:%d...',
                      self.session.server_address, self.session.port)
 
-        self._background_error = None  # Clear previous errors
-
         try:
-            self._sender.connect()
+            await self._sender.connect()
             __log__.info('Connection success!')
 
             # Connection was successful! Try syncing the update state
@@ -210,12 +199,12 @@ class TelegramBareClient:
             self._user_connected = True
             if self._authorized is None and _sync_updates:
                 try:
-                    self.sync_updates()
-                    self._set_connected_and_authorized()
+                    await self.sync_updates()
+                    await self._set_connected_and_authorized()
                 except UnauthorizedError:
                     self._authorized = False
             elif self._authorized:
-                self._set_connected_and_authorized()
+                await self._set_connected_and_authorized()
 
             return True
 
@@ -224,7 +213,7 @@ class TelegramBareClient:
             __log__.warning('Connection failed, got unexpected type with ID '
                             '%s. Migrating?', hex(e.invalid_constructor_id))
             self.disconnect()
-            return self.connect(_sync_updates=_sync_updates)
+            return await self.connect(_sync_updates=_sync_updates)
 
         except (RPCError, ConnectionError) as e:
             # Probably errors from the previous session, ignore them
@@ -249,24 +238,15 @@ class TelegramBareClient:
         ))
 
     def disconnect(self):
-        """Disconnects from the Telegram server
-           and stops all the spawned threads"""
+        """Disconnects from the Telegram server"""
         __log__.info('Disconnecting...')
-        self._user_connected = False  # This will stop recv_thread's loop
-
-        __log__.debug('Stopping all workers...')
-        self.updates.stop_workers()
-
-        # This will trigger a "ConnectionResetError" on the recv_thread,
-        # which won't attempt reconnecting as ._user_connected is False.
-        __log__.debug('Disconnecting the socket...')
+        self._user_connected = False
         self._sender.disconnect()
-
         # TODO Shall we clear the _exported_sessions, or may be reused?
         self._first_request = True  # On reconnect it will be first again
         self.session.close()
 
-    def _reconnect(self, new_dc=None):
+    async def _reconnect(self, new_dc=None):
         """If 'new_dc' is not set, only a call to .connect() will be made
            since it's assumed that the connection has been lost and the
            library is reconnecting.
@@ -276,13 +256,14 @@ class TelegramBareClient:
            connects to the new data center.
         """
         if new_dc is None:
-            if self.is_connected():
-                __log__.info('Reconnection aborted: already connected')
-                return True
-
+            # Assume we are disconnected due to some error, so connect again
             try:
+                if self.is_connected():
+                    __log__.info('Reconnection aborted: already connected')
+                    return True
+
                 __log__.info('Attempting reconnection...')
-                return self.connect()
+                return await self.connect()
             except ConnectionResetError as e:
                 __log__.warning('Reconnection failed due to %s', e)
                 return False
@@ -290,7 +271,7 @@ class TelegramBareClient:
             # Since we're reconnecting possibly due to a UserMigrateError,
             # we need to first know the Data Centers we can connect to. Do
             # that before disconnecting.
-            dc = self._get_dc(new_dc)
+            dc = await self._get_dc(new_dc)
             __log__.info('Reconnecting to new data center %s', dc)
 
             self.session.set_dc(dc.id, dc.ip_address, dc.port)
@@ -299,7 +280,7 @@ class TelegramBareClient:
             self.session.auth_key = None
             self.session.save()
             self.disconnect()
-            return self.connect()
+            return await self.connect()
 
     def set_proxy(self, proxy):
         """Change the proxy used by the connections.
@@ -312,19 +293,15 @@ class TelegramBareClient:
 
     # region Working with different connections/Data Centers
 
-    def _on_read_thread(self):
-        return self._recv_thread is not None and \
-               threading.get_ident() == self._recv_thread.ident
-
-    def _get_dc(self, dc_id, cdn=False):
+    async def _get_dc(self, dc_id, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         if not TelegramBareClient._config:
-            TelegramBareClient._config = self(GetConfigRequest())
+            TelegramBareClient._config = await self(GetConfigRequest())
 
         try:
             if cdn:
                 # Ensure we have the latest keys for the CDNs
-                for pk in self(GetCdnConfigRequest()).public_keys:
+                for pk in await (self(GetCdnConfigRequest())).public_keys:
                     rsa.add_key(pk.public_key)
 
             return next(
@@ -336,10 +313,10 @@ class TelegramBareClient:
                 raise
 
             # New configuration, perhaps a new CDN was added?
-            TelegramBareClient._config = self(GetConfigRequest())
-            return self._get_dc(dc_id, cdn=cdn)
+            TelegramBareClient._config = await self(GetConfigRequest())
+            return await self._get_dc(dc_id, cdn=cdn)
 
-    def _get_exported_client(self, dc_id):
+    async def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.
 
            If it's the first time calling the method with a given dc_id,
@@ -356,11 +333,11 @@ class TelegramBareClient:
             # TODO Add a lock, don't allow two threads to create an auth key
             # (when calling .connect() if there wasn't a previous session).
             # for the same data center.
-            dc = self._get_dc(dc_id)
+            dc = await self._get_dc(dc_id)
 
             # Export the current authorization to the new DC.
             __log__.info('Exporting authorization for data center %s', dc)
-            export_auth = self(ExportAuthorizationRequest(dc_id))
+            export_auth = await self(ExportAuthorizationRequest(dc_id))
 
             # Create a temporary session for this IP address, which needs
             # to be different because each auth_key is unique per DC.
@@ -375,11 +352,12 @@ class TelegramBareClient:
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
-            timeout=self._sender.connection.get_timeout()
+            timeout=self._sender.connection.get_timeout(),
+            loop=self._loop
         )
-        client.connect(_sync_updates=False)
+        await client.connect(_sync_updates=False)
         if isinstance(export_auth, ExportedAuthorization):
-            client(ImportAuthorizationRequest(
+            await client(ImportAuthorizationRequest(
                 id=export_auth.id, bytes=export_auth.bytes
             ))
         elif export_auth is not None:
@@ -388,11 +366,11 @@ class TelegramBareClient:
         client._authorized = True  # We exported the auth, so we got auth
         return client
 
-    def _get_cdn_client(self, cdn_redirect):
+    async def _get_cdn_client(self, cdn_redirect):
         """Similar to ._get_exported_client, but for CDNs"""
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
-            dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
+            dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
@@ -401,7 +379,8 @@ class TelegramBareClient:
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
-            timeout=self._sender.connection.get_timeout()
+            timeout=self._sender.connection.get_timeout(),
+            loop=self._loop
         )
 
         # This will make use of the new RSA keys for this specific CDN.
@@ -409,7 +388,7 @@ class TelegramBareClient:
         # We won't be calling GetConfigRequest because it's only called
         # when needed by ._get_dc, and also it's static so it's likely
         # set already. Avoid invoking non-CDN methods by not syncing updates.
-        client.connect(_sync_updates=False)
+        await client.connect(_sync_updates=False)
         client._authorized = self._authorized
         return client
 
@@ -417,7 +396,7 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5):
+    async def __call__(self, *requests, retries=5):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
@@ -427,11 +406,8 @@ class TelegramBareClient:
                    x.content_related for x in requests):
             raise TypeError('You can only invoke requests, not types!')
 
-        if self._background_error:
-            raise self._background_error
-
         for request in requests:
-            request.resolve(self, utils)
+            await request.resolve(self, utils)
 
         # For logging purposes
         if len(requests) == 1:
@@ -440,26 +416,23 @@ class TelegramBareClient:
             which = '{} requests ({})'.format(
                 len(requests), [type(x).__name__ for x in requests])
 
-        # Determine the sender to be used (main or a new connection)
         __log__.debug('Invoking %s', which)
         call_receive = \
             not self._idling.is_set() or self._reconnect_lock.locked()
 
         for retry in range(retries):
-            result = self._invoke(call_receive, *requests)
+            result = await self._invoke(call_receive, retry, *requests)
             if result is not None:
                 return result
 
             __log__.warning('Invoking %s failed %d times, '
                             'reconnecting and retrying',
                             [str(x) for x in requests], retry + 1)
-            sleep(1)
-            # The ReadThread has priority when attempting reconnection,
-            # since this thread is constantly running while __call__ is
-            # only done sometimes. Here try connecting only once/retry.
+
+            await asyncio.sleep(retry + 1, loop=self._loop)
             if not self._reconnect_lock.locked():
-                with self._reconnect_lock:
-                    self._reconnect()
+                with await self._reconnect_lock:
+                    await self._reconnect()
 
         raise RuntimeError('Number of retries reached 0 for {}.'.format(
             [type(x).__name__ for x in requests]
@@ -468,18 +441,17 @@ class TelegramBareClient:
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, call_receive, *requests):
+    async def _invoke(self, call_receive, retry, *requests):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
-                x.confirm_received.clear()
                 x.rpc_error = None
 
             if not self.session.auth_key:
                 __log__.info('Need to generate new auth key before invoking')
                 self._first_request = True
                 self.session.auth_key, self.session.time_offset = \
-                    authenticator.do_authentication(self._sender.connection)
+                    await authenticator.do_authentication(self._sender.connection)
 
             if self._first_request:
                 __log__.info('Initializing a new connection while invoking')
@@ -489,24 +461,21 @@ class TelegramBareClient:
                     # We need a SINGLE request (like GetConfig) to init conn.
                     # Once that's done, the N original requests will be
                     # invoked.
-                    TelegramBareClient._config = self(
+                    TelegramBareClient._config = await self(
                         self._wrap_init_connection(GetConfigRequest())
                     )
 
-            self._sender.send(*requests)
+            await self._sender.send(*requests)
 
             if not call_receive:
-                # TODO This will be slightly troublesome if we allow
-                # switching between constant read or not on the fly.
-                # Must also watch out for calling .read() from two places,
-                # in which case a Lock would be required for .receive().
-                for x in requests:
-                    x.confirm_received.wait(
-                        self._sender.connection.get_timeout()
-                    )
+                await asyncio.wait(
+                    list(map(lambda x: x.confirm_received.wait(), requests)),
+                    timeout=self._sender.connection.get_timeout(),
+                    loop=self._loop
+                )
             else:
                 while not all(x.confirm_received.is_set() for x in requests):
-                    self._sender.receive(update_state=self.updates)
+                    await self._sender.receive(update_state=self.updates)
 
         except BrokenAuthKeyError:
             __log__.error('Authorization key seems broken and was invalid!')
@@ -552,12 +521,8 @@ class TelegramBareClient:
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:
 
-            # TODO What happens with the background thread here?
-            # For normal use cases, this won't happen, because this will only
-            # be on the very first connection (not authorized, not running),
-            # but may be an issue for people who actually travel?
-            self._reconnect(new_dc=e.new_dc)
-            return self._invoke(call_receive, *requests)
+            await self._reconnect(new_dc=e.new_dc)
+            return await self._invoke(call_receive, retry, *requests)
 
         except ServerError as e:
             # Telegram is having some issues, just retry
@@ -568,7 +533,8 @@ class TelegramBareClient:
             if e.seconds > self.session.flood_sleep_threshold | 0:
                 raise
 
-            sleep(e.seconds)
+            await asyncio.sleep(e.seconds, loop=self._loop)
+            return None
 
     # Some really basic functionality
 
@@ -588,130 +554,74 @@ class TelegramBareClient:
 
     # region Updates handling
 
-    def sync_updates(self):
+    async def sync_updates(self):
         """Synchronizes self.updates to their initial state. Will be
            called automatically on connection if self.updates.enabled = True,
            otherwise it should be called manually after enabling updates.
         """
-        self.updates.process(self(GetStateRequest()))
-        self._last_state = datetime.now()
+        self.updates.process(await self(GetStateRequest()))
 
     # endregion
 
-    # region Constant read
+    # Constant read
 
-    def _set_connected_and_authorized(self):
+    # This is async so that the overrided version in TelegramClient can be
+    # async without problems.
+    async def _set_connected_and_authorized(self):
         self._authorized = True
-        self.updates.setup_workers()
-        if self._spawn_read_thread and self._recv_thread is None:
-            self._recv_thread = threading.Thread(
-                name='ReadThread', daemon=True,
-                target=self._recv_thread_impl
-            )
-            self._recv_thread.start()
+        if self._recv_loop is None:
+            self._recv_loop = asyncio.ensure_future(self._recv_loop_impl(), loop=self._loop)
+        if self._ping_loop is None:
+            self._ping_loop = asyncio.ensure_future(self._ping_loop_impl(), loop=self._loop)
+        if self._state_loop is None:
+            self._state_loop = asyncio.ensure_future(self._state_loop_impl(), loop=self._loop)
 
-    def _signal_handler(self, signum, frame):
-        if self._user_connected:
-            self.disconnect()
-        else:
-            os._exit(1)
+    async def _ping_loop_impl(self):
+        while self._user_connected:
+            await self(PingRequest(int.from_bytes(os.urandom(8), 'big', signed=True)))
+            await asyncio.sleep(self._ping_delay.seconds, loop=self._loop)
+        self._ping_loop = None
 
-    def idle(self, stop_signals=(SIGINT, SIGTERM, SIGABRT)):
-        """
-        Idles the program by looping forever and listening for updates
-        until one of the signals are received, which breaks the loop.
+    async def _state_loop_impl(self):
+        while self._user_connected:
+            await asyncio.sleep(self._state_delay.seconds, loop=self._loop)
+            await self._sender.send(GetStateRequest())
 
-        :param stop_signals:
-            Iterable containing signals from the signal module that will
-            be subscribed to TelegramClient.disconnect() (effectively
-            stopping the idle loop), which will be called on receiving one
-            of those signals.
-        :return:
-        """
-        if self._spawn_read_thread and not self._on_read_thread():
-            raise RuntimeError('Can only idle if spawn_read_thread=False')
-
+    async def _recv_loop_impl(self):
+        __log__.info('Starting to wait for items from the network')
         self._idling.set()
-        for sig in stop_signals:
-            signal(sig, self._signal_handler)
-
-        if self._on_read_thread():
-            __log__.info('Starting to wait for items from the network')
-        else:
-            __log__.info('Idling to receive items from the network')
-
+        need_reconnect = False
         while self._user_connected:
             try:
-                if datetime.now() > self._last_ping + self._ping_delay:
-                    self._sender.send(PingRequest(
-                        int.from_bytes(os.urandom(8), 'big', signed=True)
-                    ))
-                    self._last_ping = datetime.now()
+                if need_reconnect:
+                    __log__.info('Attempting reconnection from read loop')
+                    need_reconnect = False
+                    with await self._reconnect_lock:
+                        while self._user_connected and not await self._reconnect():
+                            # Retry forever, this is instant messaging
+                            await asyncio.sleep(0.1, loop=self._loop)
 
-                if datetime.now() > self._last_state + self._state_delay:
-                    self._sender.send(GetStateRequest())
-                    self._last_state = datetime.now()
-
-                __log__.debug('Receiving items from the network...')
-                self._sender.receive(update_state=self.updates)
-            except TimeoutError:
-                # No problem
-                __log__.debug('Receiving items from the network timed out')
-            except ConnectionResetError:
-                if self._user_connected:
-                    __log__.error('Connection was reset while receiving '
-                                  'items. Reconnecting')
-                with self._reconnect_lock:
-                    while self._user_connected and not self._reconnect():
-                        sleep(0.1)  # Retry forever, this is instant messaging
-
-                if self.is_connected():
                     # Telegram seems to kick us every 1024 items received
                     # from the network not considering things like bad salt.
                     # We must execute some *high level* request (that's not
                     # a ping) if we want to receive updates again.
                     # TODO Test if getDifference works too (better alternative)
-                    self._sender.send(GetStateRequest())
+                    await self._sender.send(GetStateRequest())
+
+                __log__.debug('Receiving items from the network...')
+                await self._sender.receive(update_state=self.updates)
+            except TimeoutError:
+                # No problem.
+                __log__.debug('Receiving items from the network timed out')
+            except ConnectionError:
+                need_reconnect = True
+                __log__.error('Connection was reset while receiving items')
+                await asyncio.sleep(1, loop=self._loop)
             except:
                 self._idling.clear()
                 raise
 
         self._idling.clear()
         __log__.info('Connection closed by the user, not reading anymore')
-
-    # By using this approach, another thread will be
-    # created and started upon connection to constantly read
-    # from the other end. Otherwise, manual calls to .receive()
-    # must be performed. The MtProtoSender cannot be connected,
-    # or an error will be thrown.
-    #
-    # This way, sending and receiving will be completely independent.
-    def _recv_thread_impl(self):
-        # This thread is "idle" (only listening for updates), but also
-        # excepts everything unlike the manual idle because it should
-        # not crash.
-        while self._user_connected:
-            try:
-                self.idle(stop_signals=tuple())
-            except Exception as error:
-                __log__.exception('Unknown exception in the read thread! '
-                                  'Disconnecting and leaving it to main thread')
-                # Unknown exception, pass it to the main thread
-
-                try:
-                    import socks
-                    if isinstance(error, (
-                            socks.GeneralProxyError, socks.ProxyConnectionError
-                    )):
-                        # This is a known error, and it's not related to
-                        # Telegram but rather to the proxy. Disconnect and
-                        # hand it over to the main thread.
-                        self._background_error = error
-                        self.disconnect()
-                        break
-                except ImportError:
-                    "Not using PySocks, so it can't be a proxy error"
-
-        self._recv_thread = None
 
     # endregion

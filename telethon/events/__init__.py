@@ -9,7 +9,7 @@ from ..extensions import markdown
 from ..tl import types, functions
 
 
-def _into_id_set(client, chats):
+async def _into_id_set(client, chats):
     """Helper util to turn the input chat or chats into a set of IDs."""
     if chats is None:
         return None
@@ -19,9 +19,9 @@ def _into_id_set(client, chats):
 
     result = set()
     for chat in chats:
-        chat = client.get_input_entity(chat)
+        chat = await client.get_input_entity(chat)
         if isinstance(chat, types.InputPeerSelf):
-            chat = client.get_me(input_peer=True)
+            chat = await client.get_me(input_peer=True)
         result.add(utils.get_peer_id(chat))
     return result
 
@@ -48,10 +48,10 @@ class _EventBuilder(abc.ABC):
     def build(self, update):
         """Builds an event for the given update if possible, or returns None"""
 
-    def resolve(self, client):
+    async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
-        self.chats = _into_id_set(client, self.chats)
-        self._self_id = client.get_me(input_peer=True).user_id
+        self.chats = await _into_id_set(client, self.chats)
+        self._self_id = (await client.get_me(input_peer=True)).user_id
 
     def _filter_event(self, event):
         """
@@ -86,7 +86,7 @@ class _EventCommon(abc.ABC):
         )
         self.is_channel = isinstance(chat_peer, types.PeerChannel)
 
-    def _get_input_entity(self, msg_id, entity_id, chat=None):
+    async def _get_input_entity(self, msg_id, entity_id, chat=None):
         """
         Helper function to call GetMessages on the give msg_id and
         return the input entity whose ID is the given entity ID.
@@ -95,11 +95,11 @@ class _EventCommon(abc.ABC):
         """
         try:
             if isinstance(chat, types.InputPeerChannel):
-                result = self._client(
+                result = await self._client(
                     functions.channels.GetMessagesRequest(chat, [msg_id])
                 )
             else:
-                result = self._client(
+                result = await self._client(
                     functions.messages.GetMessagesRequest([msg_id])
                 )
         except RPCError:
@@ -113,7 +113,7 @@ class _EventCommon(abc.ABC):
             return utils.get_input_peer(entity)
 
     @property
-    def input_chat(self):
+    async def input_chat(self):
         """
         The (:obj:`InputPeer`) (group, megagroup or channel) on which
         the event occurred. This doesn't have the title or anything,
@@ -125,7 +125,7 @@ class _EventCommon(abc.ABC):
 
         if self._input_chat is None and self._chat_peer is not None:
             try:
-                self._input_chat = self._client.get_input_entity(
+                self._input_chat = await self._client.get_input_entity(
                     self._chat_peer
                 )
             except (ValueError, TypeError):
@@ -134,22 +134,22 @@ class _EventCommon(abc.ABC):
                     # TODO For channels, getDifference? Maybe looking
                     # in the dialogs (which is already done) is enough.
                     if self._message_id is not None:
-                        self._input_chat = self._get_input_entity(
+                        self._input_chat = await self._get_input_entity(
                             self._message_id,
                             utils.get_peer_id(self._chat_peer)
                         )
         return self._input_chat
 
     @property
-    def chat(self):
+    async def chat(self):
         """
         The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
         the event occurred. This property will make an API call the first time
         to get the most up to date version of the chat, so use with care as
         there is no caching besides local caching yet.
         """
-        if self._chat is None and self.input_chat:
-            self._chat = self._client.get_entity(self._input_chat)
+        if self._chat is None and await self.input_chat:
+            self._chat = await self._client.get_entity(await self._input_chat)
         return self._chat
 
 
@@ -157,7 +157,7 @@ class Raw(_EventBuilder):
     """
     Represents a raw event. The event is the update itself.
     """
-    def resolve(self, client):
+    async def resolve(self, client):
         pass
 
     def build(self, update):
@@ -304,23 +304,23 @@ class NewMessage(_EventBuilder):
             self.is_reply = bool(message.reply_to_msg_id)
             self._reply_message = None
 
-        def respond(self, *args, **kwargs):
+        async def respond(self, *args, **kwargs):
             """
             Responds to the message (not as a reply). This is a shorthand for
             ``client.send_message(event.chat, ...)``.
             """
-            return self._client.send_message(self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat, *args, **kwargs)
 
-        def reply(self, *args, **kwargs):
+        async def reply(self, *args, **kwargs):
             """
             Replies to the message (as a reply). This is a shorthand for
             ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
             """
-            return self._client.send_message(self.input_chat,
-                                             reply_to=self.message.id,
-                                             *args, **kwargs)
+            return await self._client.send_message(await self.input_chat,
+                                                   reply_to=self.message.id,
+                                                   *args, **kwargs)
 
-        def edit(self, *args, **kwargs):
+        async def edit(self, *args, **kwargs):
             """
             Edits the message iff it's outgoing. This is a shorthand for
             ``client.edit_message(event.chat, event.message, ...)``.
@@ -331,27 +331,27 @@ class NewMessage(_EventBuilder):
             if not self.message.out:
                 if not isinstance(self.message.to_id, types.PeerUser):
                     return None
-                me = self._client.get_me(input_peer=True)
+                me = await self._client.get_me(input_peer=True)
                 if self.message.to_id.user_id != me.user_id:
                     return None
 
-            return self._client.edit_message(self.input_chat,
-                                             self.message,
-                                             *args, **kwargs)
+            return await self._client.edit_message(await self.input_chat,
+                                                   self.message,
+                                                   *args, **kwargs)
 
-        def delete(self, *args, **kwargs):
+        async def delete(self, *args, **kwargs):
             """
             Deletes the message. You're responsible for checking whether you
             have the permission to do so, or to except the error otherwise.
             This is a shorthand for
             ``client.delete_messages(event.chat, event.message, ...)``.
             """
-            return self._client.delete_messages(self.input_chat,
-                                                [self.message],
-                                                *args, **kwargs)
+            return await self._client.delete_messages(await self.input_chat,
+                                                      [self.message],
+                                                      *args, **kwargs)
 
         @property
-        def input_sender(self):
+        async def input_sender(self):
             """
             This (:obj:`InputPeer`) is the input version of the user who
             sent the message. Similarly to ``input_chat``, this doesn't have
@@ -365,21 +365,21 @@ class NewMessage(_EventBuilder):
                     return None
 
                 try:
-                    self._input_sender = self._client.get_input_entity(
+                    self._input_sender = await self._client.get_input_entity(
                         self.message.from_id
                     )
                 except (ValueError, TypeError):
                     # We can rely on self.input_chat for this
-                    self._input_sender = self._get_input_entity(
+                    self._input_sender = await self._get_input_entity(
                         self.message.id,
                         self.message.from_id,
-                        chat=self.input_chat
+                        chat=await self.input_chat
                     )
 
             return self._input_sender
 
         @property
-        def sender(self):
+        async def sender(self):
             """
             This (:obj:`User`) will make an API call the first time to get
             the most up to date version of the sender, so use with care as
@@ -387,8 +387,8 @@ class NewMessage(_EventBuilder):
 
             ``input_sender`` needs to be available (often the case).
             """
-            if self._sender is None and self.input_sender:
-                self._sender = self._client.get_entity(self._input_sender)
+            if self._sender is None and await self.input_sender:
+                self._sender = await self._client.get_entity(self._input_sender)
             return self._sender
 
         @property
@@ -411,7 +411,7 @@ class NewMessage(_EventBuilder):
             return self.message.message
 
         @property
-        def reply_message(self):
+        async def reply_message(self):
             """
             This (:obj:`Message`, optional) will make an API call the first
             time to get the full ``Message`` object that one was replying to,
@@ -421,12 +421,12 @@ class NewMessage(_EventBuilder):
                 return None
 
             if self._reply_message is None:
-                if isinstance(self.input_chat, types.InputPeerChannel):
-                    r = self._client(functions.channels.GetMessagesRequest(
-                        self.input_chat, [self.message.reply_to_msg_id]
+                if isinstance(await self.input_chat, types.InputPeerChannel):
+                    r = await self._client(functions.channels.GetMessagesRequest(
+                        await self.input_chat, [self.message.reply_to_msg_id]
                     ))
                 else:
-                    r = self._client(functions.messages.GetMessagesRequest(
+                    r = await self._client(functions.messages.GetMessagesRequest(
                         [self.message.reply_to_msg_id]
                     ))
                 if not isinstance(r, types.messages.MessagesNotModified):
@@ -610,7 +610,7 @@ class ChatAction(_EventBuilder):
             self.new_title = new_title
 
         @property
-        def pinned_message(self):
+        async def pinned_message(self):
             """
             If ``new_pin`` is ``True``, this returns the (:obj:`Message`)
             object that was pinned.
@@ -618,8 +618,8 @@ class ChatAction(_EventBuilder):
             if self._pinned_message == 0:
                 return None
 
-            if isinstance(self._pinned_message, int) and self.input_chat:
-                r = self._client(functions.channels.GetMessagesRequest(
+            if isinstance(self._pinned_message, int) and await self.input_chat:
+                r = await self._client(functions.channels.GetMessagesRequest(
                     self._input_chat, [self._pinned_message]
                 ))
                 try:
@@ -635,25 +635,25 @@ class ChatAction(_EventBuilder):
                 return self._pinned_message
 
         @property
-        def added_by(self):
+        async def added_by(self):
             """
             The user who added ``users``, if applicable (``None`` otherwise).
             """
             if self._added_by and not isinstance(self._added_by, types.User):
-                self._added_by = self._client.get_entity(self._added_by)
+                self._added_by = await self._client.get_entity(self._added_by)
             return self._added_by
 
         @property
-        def kicked_by(self):
+        async def kicked_by(self):
             """
             The user who kicked ``users``, if applicable (``None`` otherwise).
             """
             if self._kicked_by and not isinstance(self._kicked_by, types.User):
-                self._kicked_by = self._client.get_entity(self._kicked_by)
+                self._kicked_by = await self._client.get_entity(self._kicked_by)
             return self._kicked_by
 
         @property
-        def user(self):
+        async def user(self):
             """
             The single user that takes part in this action (e.g. joined).
 
@@ -661,12 +661,12 @@ class ChatAction(_EventBuilder):
             there is no user taking part.
             """
             try:
-                return next(self.users)
+                return next(await self.users)
             except (StopIteration, TypeError):
                 return None
 
         @property
-        def users(self):
+        async def users(self):
             """
             A list of users that take part in this action (e.g. joined).
 
@@ -675,7 +675,7 @@ class ChatAction(_EventBuilder):
             """
             if self._users is None and self._user_peers:
                 try:
-                    self._users = self._client.get_entity(self._user_peers)
+                    self._users = await self._client.get_entity(self._user_peers)
                 except (TypeError, ValueError):
                     self._users = []
 

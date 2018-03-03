@@ -1,11 +1,10 @@
 import struct
 from datetime import datetime, date
-from threading import Event
 
 
 class TLObject:
     def __init__(self):
-        self.confirm_received = Event()
+        self.confirm_received = None
         self.rpc_error = None
         self.result = None
 
@@ -157,7 +156,7 @@ class TLObject:
         return TLObject.pretty_format(self, indent=0)
 
     # These should be overrode
-    def resolve(self, client, utils):
+    async def resolve(self, client, utils):
         pass
 
     def to_dict(self):

@@ -26,9 +26,9 @@ class Dialog:
 
         self.draft = Draft(client, dialog.peer, dialog.draft)
 
-    def send_message(self, *args, **kwargs):
+    async def send_message(self, *args, **kwargs):
         """
         Sends a message to this dialog. This is just a wrapper around
         client.send_message(dialog.input_entity, *args, **kwargs).
         """
-        return self._client.send_message(self.input_entity, *args, **kwargs)
+        return await self._client.send_message(self.input_entity, *args, **kwargs)

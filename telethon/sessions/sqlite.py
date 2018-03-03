@@ -3,7 +3,6 @@ import os
 import sqlite3
 from base64 import b64decode
 from os.path import isfile as file_exists
-from threading import Lock, RLock
 
 from .memory import MemorySession, _SentFileType
 from ..crypto import AuthKey
@@ -38,11 +37,6 @@ class SQLiteSession(MemorySession):
             self.filename = session_id
             if not self.filename.endswith(EXTENSION):
                 self.filename += EXTENSION
-
-        # Cross-thread safety
-        self._seq_no_lock = Lock()
-        self._msg_id_lock = Lock()
-        self._db_lock = RLock()
 
         # Migrating from .json -> SQL
         entities = self._check_migrate_json()
@@ -189,42 +183,37 @@ class SQLiteSession(MemorySession):
         self._update_session_table()
 
     def _update_session_table(self):
-        with self._db_lock:
-            c = self._cursor()
-            # While we can save multiple rows into the sessions table
-            # currently we only want to keep ONE as the tables don't
-            # tell us which auth_key's are usable and will work. Needs
-            # some more work before being able to save auth_key's for
-            # multiple DCs. Probably done differently.
-            c.execute('delete from sessions')
-            c.execute('insert or replace into sessions values (?,?,?,?)', (
-                self._dc_id,
-                self._server_address,
-                self._port,
-                self._auth_key.key if self._auth_key else b''
-            ))
-            c.close()
+        c = self._cursor()
+        # While we can save multiple rows into the sessions table
+        # currently we only want to keep ONE as the tables don't
+        # tell us which auth_key's are usable and will work. Needs
+        # some more work before being able to save auth_key's for
+        # multiple DCs. Probably done differently.
+        c.execute('delete from sessions')
+        c.execute('insert or replace into sessions values (?,?,?,?)', (
+            self._dc_id,
+            self._server_address,
+            self._port,
+            self._auth_key.key if self._auth_key else b''
+        ))
+        c.close()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
-        with self._db_lock:
-            self._conn.commit()
+        self._conn.commit()
 
     def _cursor(self):
         """Asserts that the connection is open and returns a cursor"""
-        with self._db_lock:
-            if self._conn is None:
-                self._conn = sqlite3.connect(self.filename,
-                                             check_same_thread=False)
-            return self._conn.cursor()
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.filename)
+        return self._conn.cursor()
 
     def close(self):
         """Closes the connection unless we're working in-memory"""
         if self.filename != ':memory:':
-            with self._db_lock:
-                if self._conn is not None:
-                    self._conn.close()
-                    self._conn = None
+            if self._conn is not None:
+                self._conn.close()
+                self._conn = None
 
     def delete(self):
         """Deletes the current session file"""
@@ -259,11 +248,10 @@ class SQLiteSession(MemorySession):
         if not rows:
             return
 
-        with self._db_lock:
-            self._cursor().executemany(
-                'insert or replace into entities values (?,?,?,?,?)', rows
-            )
-            self.save()
+        self._cursor().executemany(
+            'insert or replace into entities values (?,?,?,?,?)', rows
+        )
+        self.save()
 
     def _fetchone_entity(self, query, args):
         c = self._cursor()
@@ -302,11 +290,10 @@ class SQLiteSession(MemorySession):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
 
-        with self._db_lock:
-            self._cursor().execute(
-                'insert or replace into sent_files values (?,?,?,?,?)', (
-                    md5_digest, file_size,
-                    _SentFileType.from_type(type(instance)).value,
-                    instance.id, instance.access_hash
-            ))
-            self.save()
+        self._cursor().execute(
+            'insert or replace into sent_files values (?,?,?,?,?)', (
+                md5_digest, file_size,
+                _SentFileType.from_type(type(instance)).value,
+                instance.id, instance.access_hash
+        ))
+        self.save()

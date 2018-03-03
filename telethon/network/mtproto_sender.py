@@ -2,9 +2,10 @@
 This module contains the class used to communicate with Telegram's servers
 encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
+import asyncio
 import gzip
 import logging
-from threading import Lock
+from asyncio import Event
 
 from .. import helpers as utils
 from ..errors import (
@@ -33,7 +34,7 @@ class MtProtoSender:
                   in parallel, so thread-safety (hence locking) isn't needed.
     """
 
-    def __init__(self, session, connection):
+    def __init__(self, session, connection, loop=None):
         """
         Initializes a new MTProto sender.
 
@@ -42,22 +43,20 @@ class MtProtoSender:
             port of the server, salt, ID, and AuthKey,
         :param connection:
             the Connection to be used.
+        :param loop:
+            the asyncio loop to be used, or the default one.
         """
         self.session = session
         self.connection = connection
-
-        # Message IDs that need confirmation
-        self._need_confirmation = set()
+        self._loop = loop if loop else asyncio.get_event_loop()
+        self._recv_lock = asyncio.Lock()
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
 
-        # Multithreading
-        self._send_lock = Lock()
-
-    def connect(self):
+    async def connect(self):
         """Connects to the server."""
-        self.connection.connect(self.session.server_address, self.session.port)
+        await self.connection.connect(self.session.server_address, self.session.port)
 
     def is_connected(self):
         """
@@ -70,18 +69,25 @@ class MtProtoSender:
     def disconnect(self):
         """Disconnects from the server."""
         self.connection.close()
-        self._need_confirmation.clear()
         self._clear_all_pending()
 
     # region Send and receive
 
-    def send(self, *requests):
+    async def send(self, *requests):
         """
         Sends the specified TLObject(s) (which must be requests),
         and acknowledging any message which needed confirmation.
 
         :param requests: the requests to be sent.
         """
+
+        # Prepare the event of every request
+        for r in requests:
+            if r.confirm_received is None:
+                r.confirm_received = Event(loop=self._loop)
+            else:
+                r.confirm_received.clear()
+
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
@@ -90,13 +96,6 @@ class MtProtoSender:
             '{}: {}'.format(m.request.__class__.__name__, m.msg_id)
             for m in messages
         ))
-
-        # Pack everything in the same container if we need to send AckRequests
-        if self._need_confirmation:
-            messages.append(
-                TLMessage(self.session, MsgsAck(list(self._need_confirmation)))
-            )
-            self._need_confirmation.clear()
 
         if len(messages) == 1:
             message = messages[0]
@@ -108,13 +107,13 @@ class MtProtoSender:
             for m in messages:
                 m.container_msg_id = message.msg_id
 
-        self._send_message(message)
+        await self._send_message(message)
 
-    def _send_acknowledge(self, msg_id):
+    async def _send_acknowledge(self, msg_id):
         """Sends a message acknowledge for the given msg_id."""
-        self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
+        await self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
 
-    def receive(self, update_state):
+    async def receive(self, update_state):
         """
         Receives a single message from the connected endpoint.
 
@@ -130,7 +129,10 @@ class MtProtoSender:
             Update and Updates objects.
         """
         try:
-            body = self.connection.recv()
+            with await self._recv_lock:
+                # Receiving items is not an "atomic" operation since we
+                # need to read the length and then upcoming parts separated.
+                body = await self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
@@ -147,20 +149,20 @@ class MtProtoSender:
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
-            self._process_msg(remote_msg_id, remote_seq, reader, update_state)
+            await self._process_msg(remote_msg_id, remote_seq, reader, update_state)
+            await self._send_acknowledge(remote_msg_id)
 
     # endregion
 
     # region Low level processing
 
-    def _send_message(self, message):
+    async def _send_message(self, message):
         """
         Sends the given encrypted through the network.
 
         :param message: the TLMessage to be sent.
         """
-        with self._send_lock:
-            self.connection.send(utils.pack_message(self.session, message))
+        await self.connection.send(utils.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
@@ -178,7 +180,7 @@ class MtProtoSender:
         with BinaryReader(body) as reader:
             return utils.unpack_message(self.session, reader)
 
-    def _process_msg(self, msg_id, sequence, reader, state):
+    async def _process_msg(self, msg_id, sequence, reader, state):
         """
         Processes the message read from the network inside reader.
 
@@ -189,7 +191,6 @@ class MtProtoSender:
         :return: true if the message was handled correctly, false otherwise.
         """
         # TODO Check salt, session_id and sequence_number
-        self._need_confirmation.add(msg_id)
 
         code = reader.read_int(signed=False)
         reader.seek(-4)
@@ -197,15 +198,15 @@ class MtProtoSender:
         # These are a bit of special case, not yet generated by the code gen
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
             __log__.debug('Processing Remote Procedure Call result')
-            return self._handle_rpc_result(msg_id, sequence, reader)
+            return await self._handle_rpc_result(msg_id, sequence, reader)
 
         if code == MessageContainer.CONSTRUCTOR_ID:
             __log__.debug('Processing container result')
-            return self._handle_container(msg_id, sequence, reader, state)
+            return await self._handle_container(msg_id, sequence, reader, state)
 
         if code == GzipPacked.CONSTRUCTOR_ID:
             __log__.debug('Processing gzipped result')
-            return self._handle_gzip_packed(msg_id, sequence, reader, state)
+            return await self._handle_gzip_packed(msg_id, sequence, reader, state)
 
         if code not in tlobjects:
             __log__.warning(
@@ -218,22 +219,22 @@ class MtProtoSender:
         __log__.debug('Processing %s result', type(obj).__name__)
 
         if isinstance(obj, Pong):
-            return self._handle_pong(msg_id, sequence, obj)
+            return await self._handle_pong(msg_id, sequence, obj)
 
         if isinstance(obj, BadServerSalt):
-            return self._handle_bad_server_salt(msg_id, sequence, obj)
+            return await self._handle_bad_server_salt(msg_id, sequence, obj)
 
         if isinstance(obj, BadMsgNotification):
-            return self._handle_bad_msg_notification(msg_id, sequence, obj)
+            return await self._handle_bad_msg_notification(msg_id, sequence, obj)
 
         if isinstance(obj, MsgDetailedInfo):
-            return self._handle_msg_detailed_info(msg_id, sequence, obj)
+            return await self._handle_msg_detailed_info(msg_id, sequence, obj)
 
         if isinstance(obj, MsgNewDetailedInfo):
-            return self._handle_msg_new_detailed_info(msg_id, sequence, obj)
+            return await self._handle_msg_new_detailed_info(msg_id, sequence, obj)
 
         if isinstance(obj, NewSessionCreated):
-            return self._handle_new_session_created(msg_id, sequence, obj)
+            return await self._handle_new_session_created(msg_id, sequence, obj)
 
         if isinstance(obj, MsgsAck):  # may handle the request we wanted
             # Ignore every ack request *unless* when logging out, when it's
@@ -310,7 +311,7 @@ class MtProtoSender:
             r.request.confirm_received.set()
         self._pending_receive.clear()
 
-    def _resend_request(self, msg_id):
+    async def _resend_request(self, msg_id):
         """
         Re-sends the request that belongs to a certain msg_id. This may
         also be the msg_id of a container if they were sent in one.
@@ -319,12 +320,13 @@ class MtProtoSender:
         """
         request = self._pop_request(msg_id)
         if request:
-            return self.send(request)
+            await self.send(request)
+            return
         requests = self._pop_requests_of_container(msg_id)
         if requests:
-            return self.send(*requests)
+            await self.send(*requests)
 
-    def _handle_pong(self, msg_id, sequence, pong):
+    async def _handle_pong(self, msg_id, sequence, pong):
         """
         Handles a Pong response.
 
@@ -340,7 +342,7 @@ class MtProtoSender:
 
         return True
 
-    def _handle_container(self, msg_id, sequence, reader, state):
+    async def _handle_container(self, msg_id, sequence, reader, state):
         """
         Handles a MessageContainer response.
 
@@ -355,7 +357,7 @@ class MtProtoSender:
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
-                if not self._process_msg(inner_msg_id, sequence, reader, state):
+                if not await self._process_msg(inner_msg_id, sequence, reader, state):
                     reader.set_position(begin_position + inner_len)
             except:
                 # If any error is raised, something went wrong; skip the packet
@@ -364,7 +366,7 @@ class MtProtoSender:
 
         return True
 
-    def _handle_bad_server_salt(self, msg_id, sequence, bad_salt):
+    async def _handle_bad_server_salt(self, msg_id, sequence, bad_salt):
         """
         Handles a BadServerSalt response.
 
@@ -378,10 +380,11 @@ class MtProtoSender:
 
         # "the bad_server_salt response is received with the
         # correct salt, and the message is to be re-sent with it"
-        self._resend_request(bad_salt.bad_msg_id)
+        await self._resend_request(bad_salt.bad_msg_id)
+
         return True
 
-    def _handle_bad_msg_notification(self, msg_id, sequence, bad_msg):
+    async def _handle_bad_msg_notification(self, msg_id, sequence, bad_msg):
         """
         Handles a BadMessageError response.
 
@@ -397,25 +400,25 @@ class MtProtoSender:
             # Use the current msg_id to determine the right time offset.
             self.session.update_time_offset(correct_msg_id=msg_id)
             __log__.info('Attempting to use the correct time offset')
-            self._resend_request(bad_msg.bad_msg_id)
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
             self.session.sequence += 64
             __log__.info('Attempting to set the right higher sequence')
-            self._resend_request(bad_msg.bad_msg_id)
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
             self.session.sequence -= 16
             __log__.info('Attempting to set the right lower sequence')
-            self._resend_request(bad_msg.bad_msg_id)
+            await self._resend_request(bad_msg.bad_msg_id)
             return True
         else:
             raise error
 
-    def _handle_msg_detailed_info(self, msg_id, sequence, msg_new):
+    async def _handle_msg_detailed_info(self, msg_id, sequence, msg_new):
         """
         Handles a MsgDetailedInfo response.
 
@@ -426,10 +429,10 @@ class MtProtoSender:
         """
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/VvpCC6
-        self._send_acknowledge(msg_new.answer_msg_id)
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
-    def _handle_msg_new_detailed_info(self, msg_id, sequence, msg_new):
+    async def _handle_msg_new_detailed_info(self, msg_id, sequence, msg_new):
         """
         Handles a MsgNewDetailedInfo response.
 
@@ -440,10 +443,10 @@ class MtProtoSender:
         """
         # TODO For now, simply ack msg_new.answer_msg_id
         # Relevant tdesktop source code: https://goo.gl/G7DPsR
-        self._send_acknowledge(msg_new.answer_msg_id)
+        await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
-    def _handle_new_session_created(self, msg_id, sequence, new_session):
+    async def _handle_new_session_created(self, msg_id, sequence, new_session):
         """
         Handles a NewSessionCreated response.
 
@@ -456,7 +459,7 @@ class MtProtoSender:
         # TODO https://goo.gl/LMyN7A
         return True
 
-    def _handle_rpc_result(self, msg_id, sequence, reader):
+    async def _handle_rpc_result(self, msg_id, sequence, reader):
         """
         Handles a RPCResult response.
 
@@ -483,9 +486,6 @@ class MtProtoSender:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string()
                 )
-
-            # Acknowledge that we received the error
-            self._send_acknowledge(request_id)
 
             if request:
                 request.rpc_error = error
@@ -522,7 +522,7 @@ class MtProtoSender:
         )
         return False
 
-    def _handle_gzip_packed(self, msg_id, sequence, reader, state):
+    async def _handle_gzip_packed(self, msg_id, sequence, reader, state):
         """
         Handles a GzipPacked response.
 
@@ -532,11 +532,6 @@ class MtProtoSender:
         :return: the result of processing the packed message.
         """
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
-            # We are reentering process_msg, which seemingly the same msg_id
-            # to the self._need_confirmation set. Remove it from there first
-            # to avoid any future conflicts (i.e. if we "ignore" messages
-            # that we are already aware of, see 1a91c02 and old 63dfb1e)
-            self._need_confirmation -= {msg_id}
-            return self._process_msg(msg_id, sequence, compressed_reader, state)
+            return await self._process_msg(msg_id, sequence, compressed_reader, state)
 
     # endregion

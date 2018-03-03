@@ -30,7 +30,7 @@ class CdnDecrypter:
         self.cdn_file_hashes = cdn_file_hashes
 
     @staticmethod
-    def prepare_decrypter(client, cdn_client, cdn_redirect):
+    async def prepare_decrypter(client, cdn_client, cdn_redirect):
         """
         Prepares a new CDN decrypter.
 
@@ -52,14 +52,14 @@ class CdnDecrypter:
             cdn_aes, cdn_redirect.cdn_file_hashes
         )
 
-        cdn_file = cdn_client(GetCdnFileRequest(
+        cdn_file = await cdn_client(GetCdnFileRequest(
             file_token=cdn_redirect.file_token,
             offset=cdn_redirect.cdn_file_hashes[0].offset,
             limit=cdn_redirect.cdn_file_hashes[0].limit
         ))
         if isinstance(cdn_file, CdnFileReuploadNeeded):
             # We need to use the original client here
-            client(ReuploadCdnFileRequest(
+            await client(ReuploadCdnFileRequest(
                 file_token=cdn_redirect.file_token,
                 request_token=cdn_file.request_token
             ))
@@ -73,7 +73,7 @@ class CdnDecrypter:
 
         return decrypter, cdn_file
 
-    def get_file(self):
+    async def get_file(self):
         """
         Calls GetCdnFileRequest and decrypts its bytes.
         Also ensures that the file hasn't been tampered.
@@ -82,7 +82,7 @@ class CdnDecrypter:
         """
         if self.cdn_file_hashes:
             cdn_hash = self.cdn_file_hashes.pop(0)
-            cdn_file = self.client(GetCdnFileRequest(
+            cdn_file = await self.client(GetCdnFileRequest(
                 self.file_token, cdn_hash.offset, cdn_hash.limit
             ))
             cdn_file.bytes = self.cdn_aes.encrypt(cdn_file.bytes)
