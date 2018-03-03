@@ -116,8 +116,6 @@ class MemorySession(Session):
                 entities.extend(tlo.chats)
             if hasattr(tlo, 'users') and utils.is_list_like(tlo.users):
                 entities.extend(tlo.users)
-            if not entities:
-                return
 
         rows = []  # Rows to add (id, hash, username, phone, name)
         for e in entities:
