@@ -2178,17 +2178,16 @@ class TelegramClient(TelegramBareClient):
                 return InputPeerSelf()
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
-        is_peer = False
         if isinstance(peer, int):
-            peer = PeerUser(peer)
-            is_peer = True
-        else:
-            try:
-                is_peer = peer.SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
-                if not is_peer:
-                    return utils.get_input_peer(peer)
-            except (AttributeError, TypeError):
-                pass  # Attribute if not TLObject, Type if not "casteable"
+            peer, kind = utils.resolve_id(peer)
+            peer = kind(peer)
+
+        try:
+            is_peer = peer.SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
+            if not is_peer:
+                return utils.get_input_peer(peer)
+        except (AttributeError, TypeError):
+            is_peer = False
 
         if not is_peer:
             raise TypeError(
