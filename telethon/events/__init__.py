@@ -141,6 +141,10 @@ class _EventCommon(abc.ABC):
         return self._input_chat
 
     @property
+    def client(self):
+        return self._client
+
+    @property
     def chat(self):
         """
         The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
