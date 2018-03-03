@@ -1090,7 +1090,10 @@ class TelegramClient(TelegramBareClient):
                 if requests[0].offset > limit:
                     break
 
-                results = self(*requests)
+                if len(requests) == 1:
+                    results = (self(requests[0]),)
+                else:
+                    results = self(*requests)
                 for i in reversed(range(len(requests))):
                     participants = results[i]
                     if not participants.users:
@@ -1101,9 +1104,9 @@ class TelegramClient(TelegramBareClient):
                             if len(all_participants) < limit:
                                 all_participants[user.id] = user
             if limit < float('inf'):
-                values = all_participants.values()
-            else:
                 values = itertools.islice(all_participants.values(), limit)
+            else:
+                values = all_participants.values()
 
             users = UserList(values)
             users.total = total
