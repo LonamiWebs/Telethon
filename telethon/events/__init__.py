@@ -525,15 +525,19 @@ class ChatAction(_EventBuilder):
             elif isinstance(action, types.MessageActionChannelCreate):
                 event = ChatAction.Event(msg.to_id,
                                          created=True,
+                                         users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditTitle):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditPhoto):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_photo=action.photo)
             elif isinstance(action, types.MessageActionChatDeletePhoto):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_photo=True)
             else:
                 return
@@ -661,20 +665,16 @@ class ChatAction(_EventBuilder):
             Might be ``None`` if the information can't be retrieved or
             there is no user taking part.
             """
-            try:
-                return next(self.users)
-            except (StopIteration, TypeError):
-                return None
+            if self.users:
+                return self._users[0]
 
         @property
         def input_user(self):
             """
             Input version of the self.user property.
             """
-            try:
-                return next(self.input_users)
-            except (StopIteration, TypeError):
-                return None
+            if self.input_users:
+                return self._input_users[0]
 
         @property
         def users(self):
