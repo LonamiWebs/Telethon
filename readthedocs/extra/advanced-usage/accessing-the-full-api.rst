@@ -112,6 +112,15 @@ as you wish. Remember to use the right types! To sum up:
         ))
 
 
+This can further be simplified to:
+
+    .. code-block:: python
+
+        result = client(SendMessageRequest('username', 'Hello there!'))
+        # Or even
+        result = client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
+
+
 .. note::
 
     Note that some requests have a "hash" parameter. This is **not**

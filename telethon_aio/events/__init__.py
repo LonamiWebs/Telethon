@@ -140,6 +140,9 @@ class _EventCommon(abc.ABC):
                         )
         return self._input_chat
 
+    def client(self):
+        return self._client
+
     @property
     async def chat(self):
         """
@@ -316,9 +319,18 @@ class NewMessage(_EventBuilder):
             Replies to the message (as a reply). This is a shorthand for
             ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
             """
-            return await self._client.send_message(await self.input_chat,
-                                                   reply_to=self.message.id,
+            kwargs['reply_to'] = self.message.id
+            return await self._client.send_message(self.input_chat,
                                                    *args, **kwargs)
+
+        async def forward_to(self, *args, **kwargs):
+            """
+            Forwards the message. This is a shorthand for
+            ``client.forward_messages(entity, event.message, event.chat)``.
+            """
+            kwargs['messages'] = [self.message.id]
+            kwargs['from_peer'] = self.input_chat
+            return await self._client.forward_messages(*args, **kwargs)
 
         async def edit(self, *args, **kwargs):
             """
@@ -525,15 +537,19 @@ class ChatAction(_EventBuilder):
             elif isinstance(action, types.MessageActionChannelCreate):
                 event = ChatAction.Event(msg.to_id,
                                          created=True,
+                                         users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditTitle):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditPhoto):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_photo=action.photo)
             elif isinstance(action, types.MessageActionChatDeletePhoto):
                 event = ChatAction.Event(msg.to_id,
+                                         users=msg.from_id,
                                          new_photo=True)
             else:
                 return
@@ -607,6 +623,7 @@ class ChatAction(_EventBuilder):
             self.created = bool(created)
             self._user_peers = users if isinstance(users, list) else [users]
             self._users = None
+            self._input_users = None
             self.new_title = new_title
 
         @property
@@ -660,10 +677,16 @@ class ChatAction(_EventBuilder):
             Might be ``None`` if the information can't be retrieved or
             there is no user taking part.
             """
-            try:
-                return next(await self.users)
-            except (StopIteration, TypeError):
-                return None
+            if await self.users:
+                return self._users[0]
+
+        @property
+        async def input_user(self):
+            """
+            Input version of the self.user property.
+            """
+            if await self.input_users:
+                return self._input_users[0]
 
         @property
         async def users(self):
@@ -680,6 +703,22 @@ class ChatAction(_EventBuilder):
                     self._users = []
 
             return self._users
+
+        @property
+        async def input_users(self):
+            """
+            Input version of the self.users property.
+            """
+            if self._input_users is None and self._user_peers:
+                self._input_users = []
+                for peer in self._user_peers:
+                    try:
+                        self._input_users.append(
+                            await self._client.get_input_entity(peer)
+                        )
+                    except (TypeError, ValueError):
+                        pass
+            return self._input_users
 
 
 class UserUpdate(_EventBuilder):
@@ -829,21 +868,32 @@ class UserUpdate(_EventBuilder):
             return self.chat
 
 
-class MessageChanged(_EventBuilder):
+class MessageEdited(NewMessage):
     """
-    Represents a message changed (edited or deleted).
+    Event fired when a message has been edited.
     """
     def build(self, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
-            event = MessageChanged.Event(edit_msg=update.message)
-        elif isinstance(update, types.UpdateDeleteMessages):
-            event = MessageChanged.Event(
+            event = MessageEdited.Event(update.message)
+        else:
+            return
+
+        return self._filter_event(event)
+
+
+class MessageDeleted(_EventBuilder):
+    """
+    Event fired when one or more messages are deleted.
+    """
+    def build(self, update):
+        if isinstance(update, types.UpdateDeleteMessages):
+            event = MessageDeleted.Event(
                 deleted_ids=update.messages,
                 peer=None
             )
         elif isinstance(update, types.UpdateDeleteChannelMessages):
-            event = MessageChanged.Event(
+            event = MessageDeleted.Event(
                 deleted_ids=update.messages,
                 peer=types.PeerChannel(update.channel_id)
             )
@@ -852,33 +902,13 @@ class MessageChanged(_EventBuilder):
 
         return self._filter_event(event)
 
-    class Event(NewMessage.Event):
-        """
-        Represents the event of an user status update (last seen, joined).
-
-        Please note that the ``message`` member will be ``None`` if the
-        action was a deletion and not an edit.
-
-        Members:
-            edited (:obj:`bool`):
-                ``True`` if the message was edited.
-
-            deleted (:obj:`bool`):
-                ``True`` if the message IDs were deleted.
-
-            deleted_ids (:obj:`List[int]`):
-                A list containing the IDs of the messages that were deleted.
-        """
-        def __init__(self, edit_msg=None, deleted_ids=None, peer=None):
-            if edit_msg is None:
-                msg = types.Message((deleted_ids or [0])[0], peer, None, '')
-            else:
-                msg = edit_msg
-            super().__init__(msg)
-
-            self.edited = bool(edit_msg)
-            self.deleted = bool(deleted_ids)
-            self.deleted_ids = deleted_ids or []
+    class Event(_EventCommon):
+        def __init__(self, deleted_ids, peer):
+            super().__init__(
+                types.Message((deleted_ids or [0])[0], peer, None, '')
+            )
+            self.deleted_id = None if not deleted_ids else deleted_ids[0]
+            self.deleted_ids = self.deleted_ids
 
 
 class StopPropagation(Exception):

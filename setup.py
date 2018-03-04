@@ -148,7 +148,11 @@ def main():
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
-                'try_telethon.py'
+                'try_telethon.py',
+                'telethon_generator/parser/__init__.py',
+                'telethon_generator/parser/source_builder.py',
+                'telethon_generator/parser/tl_object.py',
+                'telethon_generator/parser/tl_parser.py',
             ]),
             install_requires=['pyaes', 'rsa'],
             extras_require={
