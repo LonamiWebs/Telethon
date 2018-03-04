@@ -14,6 +14,71 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Sessions overhaul (v0.18)
+=========================
+
+*Published at 2018/03/04*
+
++-----------------------+
+| Scheme layer used: 75 |
++-----------------------+
+
+The ``Session``'s have been revisited thanks to the work of **@tulir** and
+they now use an `ABC <https://docs.python.org/3/library/abc.html>`__ so you
+can easily implement your own!
+
+The default will still be a ``SQLiteSession``, but you might want to use
+the new ``AlchemySessionContainer`` if you need. Refer to the section of
+the documentation on :ref:`sessions` for more.
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- ``events.MessageChanged`` doesn't exist anymore. Use the new
+  ``events.MessageEdited`` and ``events.MessageDeleted`` instead.
+
+Additions
+~~~~~~~~~
+
+- The mentioned addition of new session types.
+- You can omit the event type on ``client.add_event_handler`` to use ``Raw``.
+- You can ``raise StopPropagation`` of events if you added several of them.
+- ``.get_participants()`` can now get up to 90,000 members from groups with
+  100,000 if when ``aggressive=True``, "bypassing" Telegram's limit.
+- You now can access ``NewMessage.Event.pattern_match``.
+- Multiple captions are now supported when sending albums.
+- ``client.send_message()`` has an optional ``file=`` parameter, so
+  you can do ``events.reply(file='/path/to/photo.jpg')`` and similar.
+- Added ``.input_`` versions to ``events.ChatAction``.
+- You can now access the public ``.client`` property on ``events``.
+- New ``client.forward_messages``, with its own wrapper on ``events``,
+  called ``event.forward_to(...)``.
+
+
+Bug fixes
+~~~~~~~~~
+
+- Silly bug regarding ``client.get_me(input_peer=True)``.
+- ``client.send_voice_note()`` was missing some parameters.
+- ``client.send_file()`` plays better with streams now.
+- Incoming messages from bots weren't working with whitelists.
+- Markdown's URL regex was not accepting newlines.
+- Better attempt at joining background update threads.
+- Use the right peer type when a marked integer ID is provided.
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Resolving ``events.Raw`` is now a no-op.
+- Logging calls in the ``TcpClient`` to spot errors.
+- ``events`` resolution is postponed until you are successfully connected,
+  so you can attach them before starting the client.
+- When an entity is not found, it is searched in *all* dialogs. This might
+  not always be desirable but it's more comfortable for legitimate uses.
+- Some non-persisting properties from the ``Session`` have been moved out.
+
+
 Further easing library usage (v0.17.4)
 ======================================
 
