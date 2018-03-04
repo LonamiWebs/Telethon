@@ -2,7 +2,8 @@ Telethon
 ========
 .. epigraph::
 
-  ⭐️ Thanks **everyone** who has starred the project, it means a lot!
+    This is the ``asyncio`` version of the library. If you don't know how
+    to work with it, `see here https://pypi.python.org/pypi/Telethon`__.
 
 **Telethon** is Telegram client implementation in **Python 3** which uses
 the latest available API of Telegram.
@@ -22,7 +23,12 @@ Installing
 
 .. code:: sh
 
-  pip3 install telethon
+  pip3 install telethon-aio
+
+.. warning::
+
+  Be careful **not** to install ``telethon-asyncio`` or other
+  variants, someone else name-squatted those and are unofficial!
 
 
 Creating a client
@@ -31,7 +37,7 @@ Creating a client
 .. code:: python
 
   import asyncio
-  from telethon import TelegramClient
+  from telethon_aio import TelegramClient
 
   # These example values won't work. You must get your own api_id and
   # api_hash from https://my.telegram.org, under API Development.
@@ -53,7 +59,7 @@ if you're new with ``asyncio``.
 
 .. code:: python
 
-  print(client.get_me().stringify())
+  print((await client.get_me()).stringify())
 
   await client.send_message('username', 'Hello! Talking to you from Telethon')
   await client.send_file('username', '/home/myself/Pictures/holidays.jpg')

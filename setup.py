@@ -37,11 +37,11 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
-ERROR_LIST = 'telethon/errors/rpc_error_list.py'
+ERROR_LIST = 'telethon_aio/errors/rpc_error_list.py'
 ERRORS_JSON = 'telethon_generator/errors.json'
 ERRORS_DESC = 'telethon_generator/error_descriptions'
 SCHEME_TL = 'telethon_generator/scheme.tl'
-GENERATOR_DIR = 'telethon/tl'
+GENERATOR_DIR = 'telethon_aio/tl'
 IMPORT_DEPTH = 2
 
 
@@ -88,12 +88,12 @@ def main():
         from subprocess import run
         from shutil import rmtree
 
-        for x in ('build', 'dist', 'Telethon.egg-info'):
+        for x in ('build', 'dist', 'Telethon_aio.egg-info'):
             rmtree(x, ignore_errors=True)
         run('python3 setup.py sdist', shell=True)
         run('python3 setup.py bdist_wheel', shell=True)
         run('twine upload dist/*', shell=True)
-        for x in ('build', 'dist', 'Telethon.egg-info'):
+        for x in ('build', 'dist', 'Telethon_aio.egg-info'):
             rmtree(x, ignore_errors=True)
 
     elif len(argv) >= 2 and argv[1] == 'fetch_errors':
@@ -109,16 +109,17 @@ def main():
         with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
-        with open('telethon/version.py', encoding='utf-8') as f:
+        with open('telethon_aio/version.py', encoding='utf-8') as f:
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
-            name='Telethon',
+            name='Telethon-aio',
             version=version,
-            description="Full-featured Telegram client library for Python 3",
+            description="Full-featured Telegram client library for Python 3, "
+                        "modified to work under Python's asyncio module.",
             long_description=long_description,
 
-            url='https://github.com/LonamiWebs/Telethon',
+            url='https://github.com/LonamiWebs/Telethon/tree/asyncio',
             download_url='https://github.com/LonamiWebs/Telethon/releases',
 
             author='Lonami Exo',
