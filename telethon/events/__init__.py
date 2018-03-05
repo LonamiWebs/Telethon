@@ -36,7 +36,7 @@ class _EventBuilder(abc.ABC):
             only matching chats will be handled.
 
         blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
+            Whether to treat the list of chats as a blacklist (if
             it matches it will NOT be handled) or a whitelist (default).
     """
     def __init__(self, chats=None, blacklist_chats=False):
