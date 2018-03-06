@@ -1,6 +1,6 @@
 try:
     from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy import Column, String, Integer, BLOB, orm
+    from sqlalchemy import Column, String, Integer, LargeBinary, orm
     import sqlalchemy as sql
 except ImportError:
     sql = None
@@ -59,7 +59,7 @@ class AlchemySessionContainer:
             dc_id = Column(Integer, primary_key=True)
             server_address = Column(String)
             port = Column(Integer)
-            auth_key = Column(BLOB)
+            auth_key = Column(LargeBinary)
 
         class Entity(Base):
             query = db.query_property()
@@ -77,7 +77,7 @@ class AlchemySessionContainer:
             __tablename__ = '{prefix}sent_files'.format(prefix=prefix)
 
             session_id = Column(String, primary_key=True)
-            md5_digest = Column(BLOB, primary_key=True)
+            md5_digest = Column(LargeBinary, primary_key=True)
             file_size = Column(Integer, primary_key=True)
             type = Column(Integer, primary_key=True)
             id = Column(Integer)
