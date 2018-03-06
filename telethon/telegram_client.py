@@ -809,7 +809,6 @@ class TelegramClient(TelegramBareClient):
 
         return [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
 
-
     def edit_message(self, entity, message_id, message=None, parse_mode='md',
                      link_preview=True):
         """
@@ -963,7 +962,8 @@ class TelegramClient(TelegramBareClient):
             # No messages, but we still need to know the total message count
             result = self(GetHistoryRequest(
                 peer=entity, limit=1,
-                offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0
+                offset_date=None, offset_id=0, max_id=0, min_id=0,
+                add_offset=0, hash=0
             ))
             return getattr(result, 'count', len(result.messages)), [], []
 
@@ -1131,6 +1131,10 @@ class TelegramClient(TelegramBareClient):
             total = self(GetFullChannelRequest(
                 entity
             )).full_chat.participants_count
+            if limit == 0:
+                users = UserList()
+                users.total = total
+                return users
 
             all_participants = {}
             if total > 10000 and aggressive:
@@ -1188,7 +1192,7 @@ class TelegramClient(TelegramBareClient):
             users = UserList(users)
             users.total = len(users)
         else:
-            users = UserList([entity])
+            users = UserList(None if limit == 0 else [entity])
             users.total = 1
         return users
 
