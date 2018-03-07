@@ -908,7 +908,7 @@ class MessageDeleted(_EventBuilder):
                 types.Message((deleted_ids or [0])[0], peer, None, '')
             )
             self.deleted_id = None if not deleted_ids else deleted_ids[0]
-            self.deleted_ids = self.deleted_ids
+            self.deleted_ids = deleted_ids
 
 
 class StopPropagation(Exception):
