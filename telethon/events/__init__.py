@@ -518,37 +518,37 @@ class ChatAction(_EventBuilder):
             msg = update.message
             action = update.message.action
             if isinstance(action, types.MessageActionChatJoinedByLink):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          added_by=True,
                                          users=msg.from_id)
             elif isinstance(action, types.MessageActionChatAddUser):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          added_by=msg.from_id or True,
                                          users=action.users)
             elif isinstance(action, types.MessageActionChatDeleteUser):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          kicked_by=msg.from_id or True,
                                          users=action.user_id)
             elif isinstance(action, types.MessageActionChatCreate):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=action.users,
                                          created=True,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChannelCreate):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          created=True,
                                          users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditTitle):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditPhoto):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=action.photo)
             elif isinstance(action, types.MessageActionChatDeletePhoto):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=True)
             else:
@@ -591,10 +591,17 @@ class ChatAction(_EventBuilder):
             new_title (:obj:`bool`, optional):
                 The new title string for the chat, if applicable.
         """
-        def __init__(self, chat_peer, new_pin=None, new_photo=None,
+        def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None):
-            super().__init__(chat_peer=chat_peer, msg_id=new_pin)
+                     users=None, new_title=None, action_message=None):
+            if isinstance(where, types.MessageService):
+                self.action_message = where
+                where = where.to_id
+            else:
+                self.action_message = None
+
+            super().__init__(chat_peer=where, msg_id=new_pin)
+            self.action_message = action_message
 
             self.new_pin = isinstance(new_pin, int)
             self._pinned_message = new_pin
@@ -625,6 +632,40 @@ class ChatAction(_EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
+
+        def respond(self, *args, **kwargs):
+            """
+            Responds to the chat action message (not as a reply).
+            Shorthand for ``client.send_message(event.chat, ...)``.
+            """
+            return self._client.send_message(self.input_chat, *args, **kwargs)
+
+        def reply(self, *args, **kwargs):
+            """
+            Replies to the chat action message (as a reply). Shorthand for
+            ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
+
+            Has the same effect as ``.respond()`` if there is no message.
+            """
+            if not self.action_message:
+                return self.respond(*args, **kwargs)
+
+            kwargs['reply_to'] = self.action_message.id
+            return self._client.send_message(self.input_chat, *args, **kwargs)
+
+        def delete(self, *args, **kwargs):
+            """
+            Deletes the chat action message. You're responsible for checking
+            whether you have the permission to do so, or to except the error
+            otherwise. This is a shorthand for
+            ``client.delete_messages(event.chat, event.message, ...)``.
+
+            Does nothing if no message action triggered this event.
+            """
+            if self.action_message:
+                return self._client.delete_messages(self.input_chat,
+                                                    [self.action_message],
+                                                    *args, **kwargs)
 
         @property
         def pinned_message(self):
