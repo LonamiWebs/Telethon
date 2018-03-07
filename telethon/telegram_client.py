@@ -82,8 +82,8 @@ from .tl.types import (
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
-    MessageMediaWebPage, ChannelParticipantsSearch
-)
+    MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
+    PhotoSizeEmpty)
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
 
@@ -1720,7 +1720,8 @@ class TelegramClient(TelegramBareClient):
             date = datetime.now()
             media = message
 
-        if isinstance(media, (MessageMediaPhoto, Photo)):
+        if isinstance(media, (MessageMediaPhoto, Photo,
+                              PhotoSize, PhotoCachedSize)):
             return self._download_photo(
                 media, file, date, progress_callback
             )
@@ -1738,24 +1739,39 @@ class TelegramClient(TelegramBareClient):
         # Determine the photo and its largest size
         if isinstance(photo, MessageMediaPhoto):
             photo = photo.photo
-        if not isinstance(photo, Photo):
+        if isinstance(photo, Photo):
+            for size in reversed(photo.sizes):
+                if not isinstance(size, PhotoSizeEmpty):
+                    photo = size
+                    break
+            else:
+                return
+        if not isinstance(photo, (PhotoSize, PhotoCachedSize)):
             return
 
-        largest_size = photo.sizes[-1]
-        file_size = largest_size.size
-        largest_size = largest_size.location
-
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
+        if isinstance(photo, PhotoCachedSize):
+            # No need to download anything, simply write the bytes
+            if isinstance(file, str):
+                helpers.ensure_parent_dir_exists(file)
+                f = open(file, 'wb')
+            else:
+                f = file
+            try:
+                f.write(photo.bytes)
+            finally:
+                if isinstance(file, str):
+                    f.close()
+            return file
 
-        # Download the media with the largest size input file location
         self.download_file(
             InputFileLocation(
-                volume_id=largest_size.volume_id,
-                local_id=largest_size.local_id,
-                secret=largest_size.secret
+                volume_id=photo.location.volume_id,
+                local_id=photo.location.local_id,
+                secret=photo.location.secret
             ),
             file,
-            file_size=file_size,
+            file_size=photo.size,
             progress_callback=progress_callback
         )
         return file
