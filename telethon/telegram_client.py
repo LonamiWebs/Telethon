@@ -1200,7 +1200,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
-    def send_file(self, entity, file, caption=None,
+    def send_file(self, entity, file, caption='',
                   force_document=False, progress_callback=None,
                   reply_to=None,
                   attributes=None,
@@ -1420,7 +1420,7 @@ class TelegramClient(TelegramBareClient):
         kwargs['is_voice_note'] = True
         return self.send_file(*args, **kwargs)
 
-    def _send_album(self, entity, files, caption=None,
+    def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
                     parse_mode='md'):
         """Specialized version of .send_file for albums"""
