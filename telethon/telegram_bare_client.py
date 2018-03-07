@@ -450,9 +450,10 @@ class TelegramBareClient:
             if result is not None:
                 return result
 
-            __log__.warning('Invoking %s failed %d times, '
-                            'reconnecting and retrying',
-                            [str(x) for x in requests], retry + 1)
+            log = __log__.info if retry == 0 else __log__.warning
+            log('Invoking %s failed %d times, connecting again and retrying',
+                [str(x) for x in requests], retry + 1)
+
             sleep(1)
             # The ReadThread has priority when attempting reconnection,
             # since this thread is constantly running while __call__ is
