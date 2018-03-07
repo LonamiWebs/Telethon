@@ -593,7 +593,7 @@ class ChatAction(_EventBuilder):
         """
         def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None, action_message=None):
+                     users=None, new_title=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.to_id
@@ -601,7 +601,6 @@ class ChatAction(_EventBuilder):
                 self.action_message = None
 
             super().__init__(chat_peer=where, msg_id=new_pin)
-            self.action_message = action_message
 
             self.new_pin = isinstance(new_pin, int)
             self._pinned_message = new_pin
