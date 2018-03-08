@@ -177,7 +177,7 @@ class MemorySession(Session):
                 key = utils.get_peer_id(key)
                 exact = True
             else:
-                exact = False
+                exact = not isinstance(key, int) or key < 0
 
         result = None
         if isinstance(key, str):

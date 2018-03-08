@@ -2285,9 +2285,10 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(original_peer)
             )
 
-        # Add the mark to the peers if the user passed a Peer (not an int)
+        # Add the mark to the peers if the user passed a Peer (not an int),
+        # or said ID is negative. If it's negative it's been marked already.
         # Look in the dialogs with the hope to find it.
-        mark = not isinstance(peer, int)
+        mark = not isinstance(peer, int) or peer < 0
         target_id = utils.get_peer_id(peer)
         req = GetDialogsRequest(
             offset_date=None,
