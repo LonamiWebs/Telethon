@@ -2272,6 +2272,7 @@ class TelegramClient(TelegramBareClient):
                 return InputPeerSelf()
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
+        original_peer = peer
         if not isinstance(peer, int):
             try:
                 if peer.SUBCLASS_OF_ID != 0x2d45687:  # crc32(b'Peer')
@@ -2281,7 +2282,7 @@ class TelegramClient(TelegramBareClient):
 
         if not peer:
             raise TypeError(
-                'Cannot turn "{}" into an input entity.'.format(peer)
+                'Cannot turn "{}" into an input entity.'.format(original_peer)
             )
 
         # Add the mark to the peers if the user passed a Peer (not an int)
