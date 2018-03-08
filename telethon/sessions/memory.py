@@ -1,9 +1,8 @@
 from enum import Enum
 
-from .. import utils
 from .abstract import Session
+from .. import utils
 from ..tl import TLObject
-
 from ..tl.types import (
     PeerUser, PeerChat, PeerChannel,
     InputPeerUser, InputPeerChat, InputPeerChannel,
@@ -148,10 +147,19 @@ class MemorySession(Session):
         except StopIteration:
             pass
 
-    def get_entity_rows_by_id(self, id):
+    def get_entity_rows_by_id(self, id, exact=True):
         try:
-            return next((id, hash) for found_id, hash, _, _, _
-                        in self._entities if found_id == id)
+            if exact:
+                return next((id, hash) for found_id, hash, _, _, _
+                            in self._entities if found_id == id)
+            else:
+                ids = (
+                    utils.get_peer_id(PeerUser(id)),
+                    utils.get_peer_id(PeerChat(id)),
+                    utils.get_peer_id(PeerChannel(id))
+                )
+                return next((id, hash) for found_id, hash, _, _, _
+                            in self._entities if found_id in ids)
         except StopIteration:
             pass
 
@@ -167,6 +175,9 @@ class MemorySession(Session):
             # Not a TLObject or can't be cast into InputPeer
             if isinstance(key, TLObject):
                 key = utils.get_peer_id(key)
+                exact = True
+            else:
+                exact = False
 
         result = None
         if isinstance(key, str):
@@ -178,8 +189,8 @@ class MemorySession(Session):
                 if username:
                     result = self.get_entity_rows_by_username(username)
 
-        if isinstance(key, int):
-            result = self.get_entity_rows_by_id(key)
+        elif isinstance(key, int):
+            result = self.get_entity_rows_by_id(key, exact)
 
         if not result and isinstance(key, str):
             result = self.get_entity_rows_by_name(key)

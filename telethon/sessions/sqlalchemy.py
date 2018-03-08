@@ -4,12 +4,13 @@ try:
     import sqlalchemy as sql
 except ImportError:
     sql = None
-    pass
-
-from ..crypto import AuthKey
-from ..tl.types import InputPhoto, InputDocument
 
 from .memory import MemorySession, _SentFileType
+from .. import utils
+from ..crypto import AuthKey
+from ..tl.types import (
+    InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
+)
 
 LATEST_VERSION = 1
 
@@ -201,8 +202,18 @@ class AlchemySession(MemorySession):
                              self.Entity.name == key).one_or_none()
         return row.id, row.hash if row else None
 
-    def get_entity_rows_by_id(self, key):
-        row = self._db_query(self.Entity, self.Entity.id == key).one_or_none()
+    def get_entity_rows_by_id(self, key, exact=True):
+        if exact:
+            query = self._db_query(self.Entity, self.Entity.id == key)
+        else:
+            ids = (
+                utils.get_peer_id(PeerUser(key)),
+                utils.get_peer_id(PeerChat(key)),
+                utils.get_peer_id(PeerChannel(key))
+            )
+            query = self._db_query(self.Entity, self.Entity.id in ids)
+
+        row = query.one_or_none()
         return row.id, row.hash if row else None
 
     def get_file(self, md5_digest, file_size, cls):

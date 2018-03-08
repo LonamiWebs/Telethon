@@ -2272,23 +2272,21 @@ class TelegramClient(TelegramBareClient):
                 return InputPeerSelf()
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
-        if isinstance(peer, int):
-            peer, kind = utils.resolve_id(peer)
-            peer = kind(peer)
+        if not isinstance(peer, int):
+            try:
+                if peer.SUBCLASS_OF_ID != 0x2d45687:  # crc32(b'Peer')
+                    return utils.get_input_peer(peer)
+            except (AttributeError, TypeError):
+                peer = None
 
-        try:
-            is_peer = peer.SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
-            if not is_peer:
-                return utils.get_input_peer(peer)
-        except (AttributeError, TypeError):
-            is_peer = False
-
-        if not is_peer:
+        if not peer:
             raise TypeError(
                 'Cannot turn "{}" into an input entity.'.format(peer)
             )
 
-        # Not found, look in the dialogs with the hope to find it.
+        # Add the mark to the peers if the user passed a Peer (not an int)
+        # Look in the dialogs with the hope to find it.
+        mark = not isinstance(peer, int)
         target_id = utils.get_peer_id(peer)
         req = GetDialogsRequest(
             offset_date=None,
@@ -2299,12 +2297,20 @@ class TelegramClient(TelegramBareClient):
         while True:
             result = self(req)
             entities = {}
-            for x in itertools.chain(result.users, result.chats):
-                x_id = utils.get_peer_id(x)
-                if x_id == target_id:
-                    return utils.get_input_peer(x)
-                else:
-                    entities[x_id] = x
+            if mark:
+                for x in itertools.chain(result.users, result.chats):
+                    x_id = utils.get_peer_id(x)
+                    if x_id == target_id:
+                        return utils.get_input_peer(x)
+                    else:
+                        entities[x_id] = x
+            else:
+                for x in itertools.chain(result.users, result.chats):
+                    if x.id == target_id:
+                        return utils.get_input_peer(x)
+                    else:
+                        entities[utils.get_peer_id(x)] = x
+
             if len(result.dialogs) < req.limit:
                 break
 

@@ -6,9 +6,10 @@ from os.path import isfile as file_exists
 from threading import Lock, RLock
 
 from .memory import MemorySession, _SentFileType
+from .. import utils
 from ..crypto import AuthKey
 from ..tl.types import (
-    InputPhoto, InputDocument
+    InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
 )
 
 EXTENSION = '.session'
@@ -282,9 +283,19 @@ class SQLiteSession(MemorySession):
         return self._fetchone_entity(
             'select id, hash from entities where name=?', (name,))
 
-    def get_entity_rows_by_id(self, id):
-        return self._fetchone_entity(
-            'select id, hash from entities where id=?', (id,))
+    def get_entity_rows_by_id(self, id, exact=True):
+        if exact:
+            return self._fetchone_entity(
+                'select id, hash from entities where id=?', (id,))
+        else:
+            ids = (
+                utils.get_peer_id(PeerUser(id)),
+                utils.get_peer_id(PeerChat(id)),
+                utils.get_peer_id(PeerChannel(id))
+            )
+            return self._fetchone_entity(
+                'select id, hash from entities where id in (?,?,?)', ids
+            )
 
     # File processing
 
