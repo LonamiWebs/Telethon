@@ -482,6 +482,52 @@ class NewMessage(_EventBuilder):
                 if isinstance(doc, types.Document):
                     return doc
 
+        def _document_by_attribute(self, kind, condition=None):
+            """
+            Helper method to return the document only if it has an attribute
+            that's an instance of the given kind, and passes the condition.
+            """
+            doc = self.document
+            if doc:
+                for attr in doc.attributes:
+                    if isinstance(attr, kind):
+                        if not condition or condition(doc):
+                            return doc
+
+        @property
+        def audio(self):
+            """
+            If the message media is a document with an Audio attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAudio,
+                                               lambda attr: not attr.voice)
+
+        @property
+        def voice(self):
+            """
+            If the message media is a document with a Voice attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAudio,
+                                               lambda attr: attr.voice)
+
+        @property
+        def video(self):
+            """
+            If the message media is a document with a Video attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeVideo)
+
+        @property
+        def sticker(self):
+            """
+            If the message media is a document with a Sticker attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeSticker)
+
         @property
         def out(self):
             """
