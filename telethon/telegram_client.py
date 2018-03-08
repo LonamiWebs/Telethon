@@ -90,6 +90,12 @@ from .extensions import markdown, html
 __log__ = logging.getLogger(__name__)
 
 
+class _Box:
+    """Helper class to pass parameters by reference"""
+    def __init__(self, x=None):
+        self.x = x
+
+
 class TelegramClient(TelegramBareClient):
     """
     Initializes the Telegram client with the specified API ID and Hash.
@@ -508,10 +514,11 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
-    def get_dialogs(self, limit=10, offset_date=None, offset_id=0,
-                    offset_peer=InputPeerEmpty()):
+    def iter_dialogs(self, limit=None, offset_date=None, offset_id=0,
+                     offset_peer=InputPeerEmpty(), _total_box=None):
         """
-        Gets N "dialogs" (open "chats" or conversations with other people).
+        Returns an iterator over the dialogs, yielding 'limit' at most.
+        Dialogs are the open "chats" or conversations with other people.
 
         Args:
             limit (:obj:`int` | :obj:`None`):
@@ -530,11 +537,16 @@ class TelegramClient(TelegramBareClient):
             offset_peer (:obj:`InputPeer`, optional):
                 The peer to be used as an offset.
 
-        Returns:
-            A list dialogs, with an additional .total attribute on the list.
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
+
+        Yields:
+            Instances of ``telethon.tl.custom.Dialog``.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
+            if not _total_box:
+                return
             # Special case, get a single dialog and determine count
             dialogs = self(GetDialogsRequest(
                 offset_date=offset_date,
@@ -542,14 +554,12 @@ class TelegramClient(TelegramBareClient):
                 offset_peer=offset_peer,
                 limit=1
             ))
-            result = UserList()
-            result.total = getattr(dialogs, 'count', len(dialogs.dialogs))
-            return result
+            _total_box.x = getattr(dialogs, 'count', len(dialogs.dialogs))
+            return
 
-        total_count = 0
-        dialogs = OrderedDict()  # Use peer id as identifier to avoid dupes
-        while len(dialogs) < limit:
-            real_limit = min(limit - len(dialogs), 100)
+        seen = set()
+        while len(seen) < limit:
+            real_limit = min(limit - len(seen), 100)
             r = self(GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
@@ -557,14 +567,17 @@ class TelegramClient(TelegramBareClient):
                 limit=real_limit
             ))
 
-            total_count = getattr(r, 'count', len(r.dialogs))
+            if _total_box:
+                _total_box.x = getattr(r, 'count', len(r.dialogs))
             messages = {m.id: m for m in r.messages}
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
 
             for d in r.dialogs:
-                dialogs[utils.get_peer_id(d.peer)] = \
-                    Dialog(self, d, entities, messages)
+                peer_id = utils.get_peer_id(d.peer)
+                if peer_id not in seen:
+                    seen.add(peer_id)
+                    yield Dialog(self, d, entities, messages)
 
             if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
@@ -575,26 +588,33 @@ class TelegramClient(TelegramBareClient):
             offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
             offset_id = r.messages[-1].id
 
-        dialogs = UserList(
-            itertools.islice(dialogs.values(), min(limit, len(dialogs)))
-        )
-        dialogs.total = total_count
+    def get_dialogs(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_dialogs`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        dialogs = UserList(self.iter_dialogs(*args, **kwargs))
+        dialogs.total = total_box.x
         return dialogs
 
-    def get_drafts(self):  # TODO: Ability to provide a `filter`
+    def iter_drafts(self):  # TODO: Ability to provide a `filter`
         """
-        Gets all open draft messages.
+        Iterator over all open draft messages.
 
-        Returns:
-            A list of custom ``Draft`` objects that are easy to work with:
-            You can call ``draft.set_message('text')`` to change the message,
-            or delete it through :meth:`draft.delete()`.
+        The yielded items are custom ``Draft`` objects that are easier to use.
+        You can call ``draft.set_message('text')`` to change the message,
+        or delete it through :meth:`draft.delete()`.
         """
-        response = self(GetAllDraftsRequest())
-        self.session.process_entities(response)
-        self.session.generate_sequence(response.seq)
-        drafts = [Draft._from_update(self, u) for u in response.updates]
-        return drafts
+        for update in self(GetAllDraftsRequest()).updates:
+            yield Draft._from_update(self, update)
+
+    def get_drafts(self):
+        """
+        Same as :meth:`iter_drafts`, but returns a list instead.
+        """
+        return list(self.iter_drafts())
 
     @staticmethod
     def _get_response_message(request, result):
@@ -891,11 +911,11 @@ class TelegramClient(TelegramBareClient):
         else:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    def get_message_history(self, entity, limit=20, offset_date=None,
-                            offset_id=0, max_id=0, min_id=0, add_offset=0, 
-                            batch_size=100, wait_time=None):
+    def iter_messages(self, entity, limit=20, offset_date=None,
+                      offset_id=0, max_id=0, min_id=0, add_offset=0,
+                      batch_size=100, wait_time=None, _total_box=None):
         """
-        Gets the message history for the specified entity
+        Iterator over the message history for the specified entity.
 
         Args:
             entity (:obj:`entity`):
@@ -939,10 +959,12 @@ class TelegramClient(TelegramBareClient):
                 If left to ``None``, it will default to 1 second only if
                 the limit is higher than 3000.
 
-        Returns:
-            A list of messages with extra attributes:
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
 
-                * ``.total`` = (on the list) total amount of messages sent.
+        Yields:
+            Instances of ``telethon.tl.types.Message`` with extra attributes:
+
                 * ``.sender`` = entity of the sender.
                 * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
                 * ``.fwd_from.channel`` = if fwd_from, original channel.
@@ -959,25 +981,26 @@ class TelegramClient(TelegramBareClient):
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
+            if not _total_box:
+                return
             # No messages, but we still need to know the total message count
             result = self(GetHistoryRequest(
                 peer=entity, limit=1,
                 offset_date=None, offset_id=0, max_id=0, min_id=0,
                 add_offset=0, hash=0
             ))
-            return getattr(result, 'count', len(result.messages)), [], []
+            _total_box.x = getattr(result, 'count', len(result.messages))
+            return
 
         if wait_time is None:
             wait_time = 1 if limit > 3000 else 0
 
+        have = 0
         batch_size = min(max(batch_size, 1), 100)
-        total_messages = 0
-        messages = UserList()
-        entities = {}
-        while len(messages) < limit:
+        while have < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - len(messages), batch_size)
-            result = self(GetHistoryRequest(
+            real_limit = min(limit - have, batch_size)
+            r = self(GetHistoryRequest(
                 peer=entity,
                 limit=real_limit,
                 offset_date=offset_date,
@@ -987,48 +1010,63 @@ class TelegramClient(TelegramBareClient):
                 add_offset=add_offset,
                 hash=0
             ))
-            messages.extend(
-                m for m in result.messages if not isinstance(m, MessageEmpty)
-            )
-            total_messages = getattr(result, 'count', len(result.messages))
+            if _total_box:
+                _total_box.x = getattr(r, 'count', len(r.messages))
 
-            for u in result.users:
-                entities[utils.get_peer_id(u)] = u
-            for c in result.chats:
-                entities[utils.get_peer_id(c)] = c
+            entities = {utils.get_peer_id(x): x
+                        for x in itertools.chain(r.users, r.chats)}
 
-            if len(result.messages) < real_limit:
+            for message in r.messages:
+                if isinstance(message, MessageEmpty):
+                    continue
+
+                # Add a few extra attributes to the Message to be friendlier.
+                # To make messages more friendly, always add message
+                # to service messages, and action to normal messages.
+                message.message = getattr(message, 'message', None)
+                message.action = getattr(message, 'action', None)
+                message.to = entities[utils.get_peer_id(message.to_id)]
+                message.sender = (
+                    None if not message.from_id else
+                    entities[utils.get_peer_id(message.from_id)]
+                )
+                if getattr(message, 'fwd_from', None):
+                    message.fwd_from.sender = (
+                        None if not message.fwd_from.from_id else
+                        entities[utils.get_peer_id(message.fwd_from.from_id)]
+                    )
+                    message.fwd_from.channel = (
+                        None if not message.fwd_from.channel_id else
+                        entities[utils.get_peer_id(
+                            PeerChannel(message.fwd_from.channel_id)
+                        )]
+                    )
+                yield message
+                have += 1
+
+            if len(r.messages) < real_limit:
                 break
 
-            offset_id = result.messages[-1].id
-            offset_date = result.messages[-1].date
+            offset_id = r.messages[-1].id
+            offset_date = r.messages[-1].date
             time.sleep(wait_time)
 
-        # Add a few extra attributes to the Message to make it friendlier.
-        messages.total = total_messages
-        for m in messages:
-            # To make messages more friendly, always add message
-            # to service messages, and action to normal messages.
-            m.message = getattr(m, 'message', None)
-            m.action = getattr(m, 'action', None)
-            m.sender = (None if not m.from_id else
-                        entities[utils.get_peer_id(m.from_id)])
+    def get_messages(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_messages`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        msgs = UserList(self.iter_messages(*args, **kwargs))
+        msgs.total = total_box.x
+        return msgs
 
-            if getattr(m, 'fwd_from', None):
-                m.fwd_from.sender = (
-                    None if not m.fwd_from.from_id else
-                    entities[utils.get_peer_id(m.fwd_from.from_id)]
-                )
-                m.fwd_from.channel = (
-                    None if not m.fwd_from.channel_id else
-                    entities[utils.get_peer_id(
-                        PeerChannel(m.fwd_from.channel_id)
-                    )]
-                )
-
-            m.to = entities[utils.get_peer_id(m.to_id)]
-
-        return messages
+    def get_message_history(self, *args, **kwargs):
+        warnings.warn(
+            'get_message_history is deprecated, use get_messages instead'
+        )
+        return self.get_messages(*args, **kwargs)
 
     def send_read_acknowledge(self, entity, message=None, max_id=None,
                               clear_mentions=False):
@@ -1096,8 +1134,8 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
-    def get_participants(self, entity, limit=None, search='',
-                         aggressive=False):
+    def iter_participants(self, entity, limit=None, search='',
+                          aggressive=False, _total_box=None):
         """
         Gets the list of participants from the specified entity.
 
@@ -1121,6 +1159,9 @@ class TelegramClient(TelegramBareClient):
                 This has no effect for groups or channels with less than
                 10,000 members.
 
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
+
         Returns:
             A list of participants with an additional .total variable on the
             list indicating the total amount of members in this group/channel.
@@ -1131,12 +1172,13 @@ class TelegramClient(TelegramBareClient):
             total = self(GetFullChannelRequest(
                 entity
             )).full_chat.participants_count
-            if limit == 0:
-                users = UserList()
-                users.total = total
-                return users
+            if _total_box:
+                _total_box.x = total
 
-            all_participants = {}
+            if limit == 0:
+                return
+
+            seen = set()
             if total > 10000 and aggressive:
                 requests = [GetParticipantsRequest(
                     channel=entity,
@@ -1176,25 +1218,40 @@ class TelegramClient(TelegramBareClient):
                     else:
                         requests[i].offset += len(participants.users)
                         for user in participants.users:
-                            if len(all_participants) < limit:
-                                all_participants[user.id] = user
-            if limit < float('inf'):
-                values = itertools.islice(all_participants.values(), limit)
-            else:
-                values = all_participants.values()
+                            if user.id not in seen:
+                                seen.add(user.id)
+                                yield user
+                                if len(seen) >= limit:
+                                    return
 
-            users = UserList(values)
-            users.total = total
         elif isinstance(entity, InputPeerChat):
             users = self(GetFullChatRequest(entity.chat_id)).users
-            if len(users) > limit:
-                users = users[:limit]
-            users = UserList(users)
-            users.total = len(users)
+            if _total_box:
+                _total_box.x = len(users)
+
+            have = 0
+            for user in users:
+                have += 1
+                if have > limit:
+                    break
+                else:
+                    yield user
         else:
-            users = UserList(None if limit == 0 else [entity])
-            users.total = 1
-        return users
+            if _total_box:
+                _total_box.x = 1
+            if limit != 0:
+                yield self.get_entity(entity)
+
+    def get_participants(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_participants`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        dialogs = UserList(self.iter_participants(*args, **kwargs))
+        dialogs.total = total_box.x
+        return dialogs
 
     # endregion
 
