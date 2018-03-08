@@ -689,7 +689,8 @@ class TelegramClient(TelegramBareClient):
         return message, msg_entities
 
     def send_message(self, entity, message='', reply_to=None, parse_mode='md',
-                     link_preview=True, file=None, force_document=False):
+                     link_preview=True, file=None, force_document=False,
+                     clear_draft=False):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -719,6 +720,10 @@ class TelegramClient(TelegramBareClient):
 
             force_document (:obj:`bool`, optional):
                 Whether to send the given file as a document or not.
+
+            clear_draft (:obj:`bool`, optional):
+                Whether the existing draft should be cleared or not.
+                Has no effect when sending a file.
 
         Returns:
             the sent message
@@ -750,7 +755,8 @@ class TelegramClient(TelegramBareClient):
                 reply_to_msg_id=reply_id,
                 reply_markup=message.reply_markup,
                 entities=message.entities,
-                no_webpage=not isinstance(message.media, MessageMediaWebPage)
+                no_webpage=not isinstance(message.media, MessageMediaWebPage),
+                clear_draft=clear_draft
             )
             message = message.message
         else:
@@ -760,7 +766,8 @@ class TelegramClient(TelegramBareClient):
                 message=message,
                 entities=msg_ent,
                 no_webpage=not link_preview,
-                reply_to_msg_id=self._get_message_id(reply_to)
+                reply_to_msg_id=self._get_message_id(reply_to),
+                clear_draft=clear_draft
             )
 
         result = self(request)

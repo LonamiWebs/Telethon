@@ -74,6 +74,12 @@ class Draft:
 
         return result
 
+    def send(self, clear=True):
+        self._client.send_message(self._peer, self.text,
+                                  reply_to=self.reply_to_msg_id,
+                                  link_preview=not self.no_webpage,
+                                  clear_draft=clear)
+
     def delete(self):
         """
         Deletes this draft
