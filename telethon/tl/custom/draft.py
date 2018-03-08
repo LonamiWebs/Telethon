@@ -18,7 +18,7 @@ class Draft:
         self._text = markdown.unparse(draft.message, draft.entities)
         self._raw_text = draft.message
         self.date = draft.date
-        self.no_webpage = draft.no_webpage
+        self.link_preview = not draft.no_webpage
         self.reply_to_msg_id = draft.reply_to_msg_id
 
     @classmethod
@@ -47,48 +47,54 @@ class Draft:
     def raw_text(self):
         return self._raw_text
 
-    def set_message(self, text, no_webpage=None, reply_to_msg_id=None,
-                    parse_mode='md'):
+    def set_message(self, text=None, reply_to=0, parse_mode='md',
+                    link_preview=None):
         """
         Changes the draft message on the Telegram servers. The changes are
-        reflected in this object. Changing only individual attributes like for
-        example the ``reply_to_msg_id`` should be done by providing the current
-        values of this object, like so:
-
-            draft.set_message(
-                draft.text,
-                no_webpage=draft.no_webpage,
-                reply_to_msg_id=NEW_VALUE,
-                entities=draft.entities
-            )
+        reflected in this object.
 
         :param str text: New text of the draft.
-        :param bool no_webpage: Whether to attach a web page preview.
-        :param int reply_to_msg_id: Message id to reply to.
+                         Preserved if left as None.
+
+        :param int reply_to: Message ID to reply to.
+                             Preserved if left as 0, erased if set to None.
+
+        :param bool link_preview: Whether to attach a web page preview.
+                                  Preserved if left as None.
+
         :param str parse_mode: The parse mode to be used for the text.
         :return bool: ``True`` on success.
         """
+        if text is None:
+            text = self._text
+
+        if reply_to == 0:
+            reply_to = self.reply_to_msg_id
+
+        if link_preview is None:
+            link_preview = self.link_preview
+
         raw_text, entities = self._client._parse_message_text(text, parse_mode)
         result = self._client(SaveDraftRequest(
             peer=self._peer,
             message=raw_text,
-            no_webpage=no_webpage,
-            reply_to_msg_id=reply_to_msg_id,
+            no_webpage=not link_preview,
+            reply_to_msg_id=reply_to,
             entities=entities
         ))
 
         if result:
             self._text = text
             self._raw_text = raw_text
-            self.no_webpage = no_webpage
-            self.reply_to_msg_id = reply_to_msg_id
+            self.link_preview = link_preview
+            self.reply_to_msg_id = reply_to
 
         return result
 
     def send(self, clear=True, parse_mode='md'):
         self._client.send_message(self._peer, self.text,
                                   reply_to=self.reply_to_msg_id,
-                                  link_preview=not self.no_webpage,
+                                  link_preview=self.link_preview,
                                   parse_mode=parse_mode,
                                   clear_draft=clear)
 
