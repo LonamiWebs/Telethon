@@ -340,6 +340,8 @@ class NewMessage(_EventBuilder):
             Returns ``None`` if the message was incoming,
             or the edited message otherwise.
             """
+            if self.message.fwd_from:
+                return None
             if not self.message.out:
                 if not isinstance(self.message.to_id, types.PeerUser):
                     return None
