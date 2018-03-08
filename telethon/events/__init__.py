@@ -523,6 +523,23 @@ class NewMessage(_EventBuilder):
             return self._document_by_attribute(types.DocumentAttributeVideo)
 
         @property
+        def video_note(self):
+            """
+            If the message media is a document with a Video attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeVideo,
+                                               lambda attr: attr.round_message)
+
+        @property
+        def gif(self):
+            """
+            If the message media is a document with an Animated attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAnimated)
+
+        @property
         def sticker(self):
             """
             If the message media is a document with a Sticker attribute,
