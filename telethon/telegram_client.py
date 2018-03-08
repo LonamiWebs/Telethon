@@ -2347,38 +2347,14 @@ class TelegramClient(TelegramBareClient):
         # Look in the dialogs with the hope to find it.
         mark = not isinstance(peer, int) or peer < 0
         target_id = utils.get_peer_id(peer)
-        req = GetDialogsRequest(
-            offset_date=None,
-            offset_id=0,
-            offset_peer=InputPeerEmpty(),
-            limit=100
-        )
-        while True:
-            result = self(req)
-            entities = {}
-            if mark:
-                for x in itertools.chain(result.users, result.chats):
-                    x_id = utils.get_peer_id(x)
-                    if x_id == target_id:
-                        return utils.get_input_peer(x)
-                    else:
-                        entities[x_id] = x
-            else:
-                for x in itertools.chain(result.users, result.chats):
-                    if x.id == target_id:
-                        return utils.get_input_peer(x)
-                    else:
-                        entities[utils.get_peer_id(x)] = x
-
-            if len(result.dialogs) < req.limit:
-                break
-
-            req.offset_id = result.messages[-1].id
-            req.offset_date = result.messages[-1].date
-            req.offset_peer = entities[utils.get_peer_id(
-                result.dialogs[-1].peer
-            )]
-            time.sleep(1)
+        if mark:
+            for dialog in self.iter_dialogs():
+                if utils.get_peer_id(dialog.entity) == target_id:
+                    return utils.get_input_peer(dialog.entity)
+        else:
+            for dialog in self.iter_dialogs():
+                if dialog.entity.id == target_id:
+                    return utils.get_input_peer(dialog.entity)
 
         raise TypeError(
             'Could not find the input entity corresponding to "{}". '
