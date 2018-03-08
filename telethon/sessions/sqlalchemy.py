@@ -159,8 +159,9 @@ class AlchemySession(MemorySession):
         self.db.merge(new)
 
     def _db_query(self, dbclass, *args):
-        return dbclass.query.filter(dbclass.session_id == self.session_id,
-                                    *args)
+        return dbclass.query.filter(
+            dbclass.session_id == self.session_id, *args
+        )
 
     def save(self):
         self.container.save()
@@ -190,17 +191,17 @@ class AlchemySession(MemorySession):
     def get_entity_rows_by_phone(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.phone == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_entity_rows_by_username(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.username == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_entity_rows_by_name(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.name == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_entity_rows_by_id(self, key, exact=True):
         if exact:
@@ -214,7 +215,7 @@ class AlchemySession(MemorySession):
             query = self._db_query(self.Entity, self.Entity.id in ids)
 
         row = query.one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_file(self, md5_digest, file_size, cls):
         row = self._db_query(self.SentFile,
@@ -222,7 +223,7 @@ class AlchemySession(MemorySession):
                              self.SentFile.file_size == file_size,
                              self.SentFile.type == _SentFileType.from_type(
                                  cls).value).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
