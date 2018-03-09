@@ -13,7 +13,7 @@ Extra supported commands are:
 
 # To use a consistent encoding
 from codecs import open
-from sys import argv
+from sys import argv, version_info
 import os
 import re
 
@@ -153,7 +153,8 @@ def main():
                 'telethon_generator/parser/tl_object.py',
                 'telethon_generator/parser/tl_parser.py',
             ]),
-            install_requires=['pyaes', 'rsa'],
+            install_requires=['pyaes', 'rsa',
+                              'typing' if version_info < (3, 6) else ""],
             extras_require={
                 'cryptg': ['cryptg'],
                 'sqlalchemy': ['sqlalchemy']

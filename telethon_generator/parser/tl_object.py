@@ -254,7 +254,7 @@ class TLArg:
 
         self.generic_definition = generic_definition
 
-    def type_hint(self):
+    def doc_type_hint(self):
         result = {
             'int': 'int',
             'long': 'int',
@@ -269,6 +269,27 @@ class TLArg:
             result = 'list[{}]'.format(result)
         if self.is_flag and self.type != 'date':
             result += ' | None'
+
+        return result
+
+    def python_type_hint(self):
+        type = self.type
+        if '.' in type:
+            type = type.split('.')[1]
+        result = {
+            'int': 'int',
+            'long': 'int',
+            'int128': 'int',
+            'int256': 'int',
+            'string': 'str',
+            'date': 'Optional[datetime]',  # None date = 0 timestamp
+            'bytes': 'bytes',
+            'true': 'bool',
+        }.get(type, "Type{}".format(type))
+        if self.is_vector:
+            result = 'List[{}]'.format(result)
+        if self.is_flag and type != 'date':
+            result = 'Optional[{}]'.format(result)
 
         return result
 

@@ -138,6 +138,7 @@ class TLGenerator:
                 builder.writeln(
                     'from {}.tl.tlobject import TLObject'.format('.' * depth)
                 )
+                builder.writeln('from typing import Optional, List, Union, TYPE_CHECKING')
 
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
@@ -154,12 +155,80 @@ class TLGenerator:
                 # Import struct for the .__bytes__(self) serialization
                 builder.writeln('import struct')
 
+                tlobjects.sort(key=lambda x: x.name)
+
+                type_names = set()
+                type_defs = []
+
+                # Find all the types in this file and generate type definitions
+                # based on the types. The type definitions are written to the
+                # file at the end.
+                for t in tlobjects:
+                    if not t.is_function:
+                        type_name = t.result
+                        if '.' in type_name:
+                            type_name = type_name[type_name.rindex('.'):]
+                        if type_name in type_names:
+                            continue
+                        type_names.add(type_name)
+                        constructors = type_constructors[type_name]
+                        if not constructors:
+                            pass
+                        elif len(constructors) == 1:
+                            type_defs.append('Type{} = {}'.format(
+                                type_name, constructors[0].class_name()))
+                        else:
+                            type_defs.append('Type{} = Union[{}]'.format(
+                                type_name, ','.join(c.class_name()
+                                                    for c in constructors)))
+
+                imports = {}
+                primitives = ('int', 'long', 'int128', 'int256', 'string',
+                              'date', 'bytes', 'true')
+                # Find all the types in other files that are used in this file
+                # and generate the information required to import those types.
+                for t in tlobjects:
+                    for arg in t.args:
+                        name = arg.type
+                        if not name or name in primitives:
+                            continue
+
+                        import_space = '{}.tl.types'.format('.' * depth)
+                        if '.' in name:
+                            namespace = name.split('.')[0]
+                            name = name.split('.')[1]
+                            import_space += '.{}'.format(namespace)
+
+                        if name not in type_names:
+                            type_names.add(name)
+                            if name == 'date':
+                                imports['datetime'] = ['datetime']
+                                continue
+                            elif not import_space in imports:
+                                imports[import_space] = set()
+                            imports[import_space].add('Type{}'.format(name))
+
+                # Add imports required for type checking.
+                builder.writeln('if TYPE_CHECKING:')
+                for namespace, names in imports.items():
+                    builder.writeln('from {} import {}'.format(
+                        namespace, ', '.join(names)))
+                else:
+                    builder.writeln('pass')
+                builder.end_block()
+
                 # Generate the class for every TLObject
-                for t in sorted(tlobjects, key=lambda x: x.name):
+                for t in tlobjects:
                     TLGenerator._write_source_code(
                         t, builder, depth, type_constructors
                     )
                     builder.current_indent = 0
+
+                # Write the type definitions generated earlier.
+                builder.writeln('')
+                for line in type_defs:
+                    builder.writeln(line)
+
 
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
@@ -218,7 +287,7 @@ class TLGenerator:
             for arg in args:
                 if not arg.flag_indicator:
                     builder.writeln(':param {} {}:'.format(
-                        arg.type_hint(), arg.name
+                        arg.doc_type_hint(), arg.name
                     ))
                     builder.current_indent -= 1  # It will auto-indent (':')
 
@@ -258,7 +327,8 @@ class TLGenerator:
 
         for arg in args:
             if not arg.can_be_inferred:
-                builder.writeln('self.{0} = {0}'.format(arg.name))
+                builder.writeln('self.{0} = {0}  # type: {1}'.format(
+                    arg.name, arg.python_type_hint()))
                 continue
 
             # Currently the only argument that can be
