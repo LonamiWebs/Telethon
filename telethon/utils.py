@@ -381,6 +381,17 @@ def parse_username(username):
         return None, False
 
 
+def _fix_peer_id(peer_id):
+    """
+    Fixes the peer ID for chats and channels, in case the users
+    mix marking the ID with the ``Peer()`` constructors.
+    """
+    peer_id = abs(peer_id)
+    if str(peer_id).startswith('100'):
+        peer_id = str(peer_id)[3:]
+    return int(peer_id)
+
+
 def get_peer_id(peer):
     """
     Finds the ID of the given peer, and converts it to the "bot api" format
@@ -408,6 +419,10 @@ def get_peer_id(peer):
     if isinstance(peer, (PeerUser, InputPeerUser)):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
+        # Check in case the user mixed things up to avoid blowing up
+        if not (0 < peer.chat_id <= 0x7fffffff):
+            peer.chat_id = _fix_peer_id(peer.chat_id)
+
         return -peer.chat_id
     elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
         if isinstance(peer, ChannelFull):
@@ -416,6 +431,15 @@ def get_peer_id(peer):
             i = peer.id
         else:
             i = peer.channel_id
+
+        # Check in case the user mixed things up to avoid blowing up
+        if not (0 < i <= 0x7fffffff):
+            i = _fix_peer_id(i)
+            if isinstance(peer, ChannelFull):
+                peer.id = i
+            else:
+                peer.channel_id = i
+
         # Concat -100 through math tricks, .to_supergroup() on Madeline
         # IDs will be strictly positive -> log works
         return -(i + pow(10, math.floor(math.log10(i) + 3)))
