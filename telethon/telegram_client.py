@@ -559,14 +559,15 @@ class TelegramClient(TelegramBareClient):
             return
 
         seen = set()
+        req = GetDialogsRequest(
+            offset_date=offset_date,
+            offset_id=offset_id,
+            offset_peer=offset_peer,
+            limit=0
+        )
         while len(seen) < limit:
-            real_limit = min(limit - len(seen), 100)
-            r = self(GetDialogsRequest(
-                offset_date=offset_date,
-                offset_id=offset_id,
-                offset_peer=offset_peer,
-                limit=real_limit
-            ))
+            req.limit = min(limit - len(seen), 100)
+            r = self(req)
 
             if _total_box:
                 _total_box.x = getattr(r, 'count', len(r.dialogs))
@@ -574,20 +575,25 @@ class TelegramClient(TelegramBareClient):
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
 
+            # Happens when there are pinned dialogs
+            if len(r.dialogs) > limit:
+                r.dialogs = r.dialogs[:limit]
+
             for d in r.dialogs:
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
                     yield Dialog(self, d, entities, messages)
 
-            if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
+            if len(r.dialogs) < req.limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
                 # we didn't get a DialogsSlice which means we got all.
                 break
 
-            offset_date = r.messages[-1].date
-            offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
-            offset_id = r.messages[-1].id
+            req.offset_date = r.messages[-1].date
+            req.offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
+            req.offset_id = r.messages[-1].id
+            req.exclude_pinned = True
 
     def get_dialogs(self, *args, **kwargs):
         """
