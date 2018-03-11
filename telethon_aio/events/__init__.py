@@ -340,6 +340,8 @@ class NewMessage(_EventBuilder):
             Returns ``None`` if the message was incoming,
             or the edited message otherwise.
             """
+            if self.message.fwd_from:
+                return None
             if not self.message.out:
                 if not isinstance(self.message.to_id, types.PeerUser):
                     return None
@@ -482,6 +484,69 @@ class NewMessage(_EventBuilder):
                 if isinstance(doc, types.Document):
                     return doc
 
+        def _document_by_attribute(self, kind, condition=None):
+            """
+            Helper method to return the document only if it has an attribute
+            that's an instance of the given kind, and passes the condition.
+            """
+            doc = self.document
+            if doc:
+                for attr in doc.attributes:
+                    if isinstance(attr, kind):
+                        if not condition or condition(doc):
+                            return doc
+
+        @property
+        def audio(self):
+            """
+            If the message media is a document with an Audio attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAudio,
+                                               lambda attr: not attr.voice)
+
+        @property
+        def voice(self):
+            """
+            If the message media is a document with a Voice attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAudio,
+                                               lambda attr: attr.voice)
+
+        @property
+        def video(self):
+            """
+            If the message media is a document with a Video attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeVideo)
+
+        @property
+        def video_note(self):
+            """
+            If the message media is a document with a Video attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeVideo,
+                                               lambda attr: attr.round_message)
+
+        @property
+        def gif(self):
+            """
+            If the message media is a document with an Animated attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeAnimated)
+
+        @property
+        def sticker(self):
+            """
+            If the message media is a document with a Sticker attribute,
+            this returns the (:obj:`Document`) object.
+            """
+            return self._document_by_attribute(types.DocumentAttributeSticker)
+
         @property
         def out(self):
             """
@@ -518,37 +583,37 @@ class ChatAction(_EventBuilder):
             msg = update.message
             action = update.message.action
             if isinstance(action, types.MessageActionChatJoinedByLink):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          added_by=True,
                                          users=msg.from_id)
             elif isinstance(action, types.MessageActionChatAddUser):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          added_by=msg.from_id or True,
                                          users=action.users)
             elif isinstance(action, types.MessageActionChatDeleteUser):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          kicked_by=msg.from_id or True,
                                          users=action.user_id)
             elif isinstance(action, types.MessageActionChatCreate):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=action.users,
                                          created=True,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChannelCreate):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          created=True,
                                          users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditTitle):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditPhoto):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=action.photo)
             elif isinstance(action, types.MessageActionChatDeletePhoto):
-                event = ChatAction.Event(msg.to_id,
+                event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=True)
             else:
@@ -591,10 +656,16 @@ class ChatAction(_EventBuilder):
             new_title (:obj:`bool`, optional):
                 The new title string for the chat, if applicable.
         """
-        def __init__(self, chat_peer, new_pin=None, new_photo=None,
+        def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
                      users=None, new_title=None):
-            super().__init__(chat_peer=chat_peer, msg_id=new_pin)
+            if isinstance(where, types.MessageService):
+                self.action_message = where
+                where = where.to_id
+            else:
+                self.action_message = None
+
+            super().__init__(chat_peer=where, msg_id=new_pin)
 
             self.new_pin = isinstance(new_pin, int)
             self._pinned_message = new_pin
@@ -625,6 +696,42 @@ class ChatAction(_EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
+
+        async def respond(self, *args, **kwargs):
+            """
+            Responds to the chat action message (not as a reply).
+            Shorthand for ``client.send_message(event.chat, ...)``.
+            """
+            return await self._client.send_message(self.input_chat,
+                                                   *args, **kwargs)
+
+        async def reply(self, *args, **kwargs):
+            """
+            Replies to the chat action message (as a reply). Shorthand for
+            ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
+
+            Has the same effect as ``.respond()`` if there is no message.
+            """
+            if not self.action_message:
+                return self.respond(*args, **kwargs)
+
+            kwargs['reply_to'] = self.action_message.id
+            return await self._client.send_message(self.input_chat,
+                                                   *args, **kwargs)
+
+        async def delete(self, *args, **kwargs):
+            """
+            Deletes the chat action message. You're responsible for checking
+            whether you have the permission to do so, or to except the error
+            otherwise. This is a shorthand for
+            ``client.delete_messages(event.chat, event.message, ...)``.
+
+            Does nothing if no message action triggered this event.
+            """
+            if self.action_message:
+                return await self._client.delete_messages(self.input_chat,
+                                                          [self.action_message],
+                                                          *args, **kwargs)
 
         @property
         async def pinned_message(self):
@@ -905,10 +1012,10 @@ class MessageDeleted(_EventBuilder):
     class Event(_EventCommon):
         def __init__(self, deleted_ids, peer):
             super().__init__(
-                types.Message((deleted_ids or [0])[0], peer, None, '')
+                chat_peer=peer, msg_id=(deleted_ids or [0])[0]
             )
             self.deleted_id = None if not deleted_ids else deleted_ids[0]
-            self.deleted_ids = self.deleted_ids
+            self.deleted_ids = deleted_ids
 
 
 class StopPropagation(Exception):

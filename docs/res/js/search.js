@@ -147,6 +147,7 @@ function updateSearch() {
         } else {
             exactMatch.style.display = "";
             buildList(null, exactList, [destination, destinationu]);
+            return destinationu[0];
         }
     } else {
         contentDiv.style.display = "";
@@ -169,4 +170,8 @@ if (query) {
     searchBox.value = query;
 }
 
-updateSearch();
+var exactUrl = updateSearch();
+var redirect = getQuery('redirect');
+if (exactUrl && redirect != 'no') {
+    window.location = exactUrl;
+}

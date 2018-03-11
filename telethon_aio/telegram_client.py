@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import warnings
-from collections import OrderedDict, UserList
+from collections import UserList
 from datetime import datetime, timedelta
 from io import BytesIO
 from mimetypes import guess_type
@@ -82,12 +82,19 @@ from .tl.types import (
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
-    MessageMediaWebPage, ChannelParticipantsSearch
+    MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
+    PhotoSizeEmpty, MessageService
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
+
+
+class _Box:
+    """Helper class to pass parameters by reference"""
+    def __init__(self, x=None):
+        self.x = x
 
 
 class TelegramClient(TelegramBareClient):
@@ -506,10 +513,11 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
-    async def get_dialogs(self, limit=10, offset_date=None, offset_id=0,
-                          offset_peer=InputPeerEmpty()):
+    async def iter_dialogs(self, limit=None, offset_date=None, offset_id=0,
+                           offset_peer=InputPeerEmpty(), _total_box=None):
         """
-        Gets N "dialogs" (open "chats" or conversations with other people).
+        Returns an iterator over the dialogs, yielding 'limit' at most.
+        Dialogs are the open "chats" or conversations with other people.
 
         Args:
             limit (:obj:`int` | :obj:`None`):
@@ -528,11 +536,16 @@ class TelegramClient(TelegramBareClient):
             offset_peer (:obj:`InputPeer`, optional):
                 The peer to be used as an offset.
 
-        Returns:
-            A list dialogs, with an additional .total attribute on the list.
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
+
+        Yields:
+            Instances of ``telethon.tl.custom.Dialog``.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
+            if not _total_box:
+                return
             # Special case, get a single dialog and determine count
             dialogs = await self(GetDialogsRequest(
                 offset_date=offset_date,
@@ -540,59 +553,76 @@ class TelegramClient(TelegramBareClient):
                 offset_peer=offset_peer,
                 limit=1
             ))
-            result = UserList()
-            result.total = getattr(dialogs, 'count', len(dialogs.dialogs))
-            return result
+            _total_box.x = getattr(dialogs, 'count', len(dialogs.dialogs))
+            return
 
-        total_count = 0
-        dialogs = OrderedDict()  # Use peer id as identifier to avoid dupes
-        while len(dialogs) < limit:
-            real_limit = min(limit - len(dialogs), 100)
-            r = await self(GetDialogsRequest(
-                offset_date=offset_date,
-                offset_id=offset_id,
-                offset_peer=offset_peer,
-                limit=real_limit
-            ))
+        seen = set()
+        req = GetDialogsRequest(
+            offset_date=offset_date,
+            offset_id=offset_id,
+            offset_peer=offset_peer,
+            limit=0
+        )
+        while len(seen) < limit:
+            req.limit = min(limit - len(seen), 100)
+            r = await self(req)
 
-            total_count = getattr(r, 'count', len(r.dialogs))
+            if _total_box:
+                _total_box.x = getattr(r, 'count', len(r.dialogs))
             messages = {m.id: m for m in r.messages}
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
 
-            for d in r.dialogs:
-                dialogs[utils.get_peer_id(d.peer)] = \
-                    Dialog(self, d, entities, messages)
+            # Happens when there are pinned dialogs
+            if len(r.dialogs) > limit:
+                r.dialogs = r.dialogs[:limit]
 
-            if len(r.dialogs) < real_limit or not isinstance(r, DialogsSlice):
+            for d in r.dialogs:
+                peer_id = utils.get_peer_id(d.peer)
+                if peer_id not in seen:
+                    seen.add(peer_id)
+                    yield Dialog(self, d, entities, messages)
+
+            if len(r.dialogs) < req.limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
                 # we didn't get a DialogsSlice which means we got all.
                 break
 
-            offset_date = r.messages[-1].date
-            offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
-            offset_id = r.messages[-1].id
+            req.offset_date = r.messages[-1].date
+            req.offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
+            req.offset_id = r.messages[-1].id
+            req.exclude_pinned = True
 
-        dialogs = UserList(
-            itertools.islice(dialogs.values(), min(limit, len(dialogs)))
-        )
-        dialogs.total = total_count
+    async def get_dialogs(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_dialogs`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        dialogs = UserList()
+        async for dialog in self.iter_dialogs(*args, **kwargs):
+            dialogs.append(dialog)
+
+        dialogs.total = total_box.x
         return dialogs
 
-    async def get_drafts(self):  # TODO: Ability to provide a `filter`
+    async def iter_drafts(self):  # TODO: Ability to provide a `filter`
         """
-        Gets all open draft messages.
+        Iterator over all open draft messages.
 
-        Returns:
-            A list of custom ``Draft`` objects that are easy to work with:
-            You can call ``draft.set_message('text')`` to change the message,
-            or delete it through :meth:`draft.delete()`.
+        The yielded items are custom ``Draft`` objects that are easier to use.
+        You can call ``draft.set_message('text')`` to change the message,
+        or delete it through :meth:`draft.delete()`.
         """
-        response = await self(GetAllDraftsRequest())
-        self.session.process_entities(response)
-        self.session.generate_sequence(response.seq)
-        drafts = [Draft._from_update(self, u) for u in response.updates]
-        return drafts
+        for update in (await self(GetAllDraftsRequest())).updates:
+            yield Draft._from_update(self, update)
+
+    async def get_drafts(self):
+        """
+        Same as :meth:`iter_drafts`, but returns a list instead.
+        """
+        return list(await self.iter_drafts())
 
     @staticmethod
     def _get_response_message(request, result):
@@ -668,7 +698,7 @@ class TelegramClient(TelegramBareClient):
 
     async def send_message(self, entity, message='', reply_to=None,
                            parse_mode='md', link_preview=True, file=None,
-                           force_document=False):
+                           force_document=False, clear_draft=False):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -698,6 +728,10 @@ class TelegramClient(TelegramBareClient):
 
             force_document (:obj:`bool`, optional):
                 Whether to send the given file as a document or not.
+
+            clear_draft (:obj:`bool`, optional):
+                Whether the existing draft should be cleared or not.
+                Has no effect when sending a file.
 
         Returns:
             the sent message
@@ -729,7 +763,8 @@ class TelegramClient(TelegramBareClient):
                 reply_to_msg_id=reply_id,
                 reply_markup=message.reply_markup,
                 entities=message.entities,
-                no_webpage=not isinstance(message.media, MessageMediaWebPage)
+                no_webpage=not isinstance(message.media, MessageMediaWebPage),
+                clear_draft=clear_draft
             )
             message = message.message
         else:
@@ -739,7 +774,8 @@ class TelegramClient(TelegramBareClient):
                 message=message,
                 entities=msg_ent,
                 no_webpage=not link_preview,
-                reply_to_msg_id=self._get_message_id(reply_to)
+                reply_to_msg_id=self._get_message_id(reply_to),
+                clear_draft=clear_draft
             )
 
         result = await self(request)
@@ -876,10 +912,13 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The affected messages.
         """
+        if not utils.is_list_like(message_ids):
+            message_ids = (message_ids,)
 
-        if not isinstance(message_ids, list):
-            message_ids = [message_ids]
-        message_ids = [m.id if isinstance(m, Message) else int(m) for m in message_ids]
+        message_ids = [
+            m.id if isinstance(m, (Message, MessageService, MessageEmpty))
+            else int(m) for m in message_ids
+        ]
 
         if entity is None:
             return await self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
@@ -891,11 +930,11 @@ class TelegramClient(TelegramBareClient):
         else:
             return await self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    async def get_message_history(self, entity, limit=20, offset_date=None,
-                                  offset_id=0, max_id=0, min_id=0, add_offset=0,
-                                  batch_size=100, wait_time=None):
+    async def iter_messages(self, entity, limit=20, offset_date=None,
+                            offset_id=0, max_id=0, min_id=0, add_offset=0,
+                            batch_size=100, wait_time=None, _total_box=None):
         """
-        Gets the message history for the specified entity
+        Iterator over the message history for the specified entity.
 
         Args:
             entity (:obj:`entity`):
@@ -939,10 +978,12 @@ class TelegramClient(TelegramBareClient):
                 If left to ``None``, it will default to 1 second only if
                 the limit is higher than 3000.
 
-        Returns:
-            A list of messages with extra attributes:
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
 
-                * ``.total`` = (on the list) total amount of messages sent.
+        Yields:
+            Instances of ``telethon.tl.types.Message`` with extra attributes:
+
                 * ``.sender`` = entity of the sender.
                 * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
                 * ``.fwd_from.channel`` = if fwd_from, original channel.
@@ -958,24 +999,26 @@ class TelegramClient(TelegramBareClient):
         entity = await self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
+            if not _total_box:
+                return
             # No messages, but we still need to know the total message count
             result = await self(GetHistoryRequest(
                 peer=entity, limit=1,
-                offset_date=None, offset_id=0, max_id=0, min_id=0, add_offset=0
+                offset_date=None, offset_id=0, max_id=0, min_id=0,
+                add_offset=0, hash=0
             ))
-            return getattr(result, 'count', len(result.messages)), [], []
+            _total_box.x = getattr(result, 'count', len(result.messages))
+            return
 
         if wait_time is None:
             wait_time = 1 if limit > 3000 else 0
 
+        have = 0
         batch_size = min(max(batch_size, 1), 100)
-        total_messages = 0
-        messages = UserList()
-        entities = {}
-        while len(messages) < limit:
+        while have < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - len(messages), batch_size)
-            result = await self(GetHistoryRequest(
+            real_limit = min(limit - have, batch_size)
+            r = await self(GetHistoryRequest(
                 peer=entity,
                 limit=real_limit,
                 offset_date=offset_date,
@@ -985,48 +1028,66 @@ class TelegramClient(TelegramBareClient):
                 add_offset=add_offset,
                 hash=0
             ))
-            messages.extend(
-                m for m in result.messages if not isinstance(m, MessageEmpty)
-            )
-            total_messages = getattr(result, 'count', len(result.messages))
+            if _total_box:
+                _total_box.x = getattr(r, 'count', len(r.messages))
 
-            for u in result.users:
-                entities[utils.get_peer_id(u)] = u
-            for c in result.chats:
-                entities[utils.get_peer_id(c)] = c
+            entities = {utils.get_peer_id(x): x
+                        for x in itertools.chain(r.users, r.chats)}
 
-            if len(result.messages) < real_limit:
+            for message in r.messages:
+                if isinstance(message, MessageEmpty):
+                    continue
+
+                # Add a few extra attributes to the Message to be friendlier.
+                # To make messages more friendly, always add message
+                # to service messages, and action to normal messages.
+                message.message = getattr(message, 'message', None)
+                message.action = getattr(message, 'action', None)
+                message.to = entities[utils.get_peer_id(message.to_id)]
+                message.sender = (
+                    None if not message.from_id else
+                    entities[utils.get_peer_id(message.from_id)]
+                )
+                if getattr(message, 'fwd_from', None):
+                    message.fwd_from.sender = (
+                        None if not message.fwd_from.from_id else
+                        entities[utils.get_peer_id(message.fwd_from.from_id)]
+                    )
+                    message.fwd_from.channel = (
+                        None if not message.fwd_from.channel_id else
+                        entities[utils.get_peer_id(
+                            PeerChannel(message.fwd_from.channel_id)
+                        )]
+                    )
+                yield message
+                have += 1
+
+            if len(r.messages) < real_limit:
                 break
 
-            offset_id = result.messages[-1].id
-            offset_date = result.messages[-1].date
+            offset_id = r.messages[-1].id
+            offset_date = r.messages[-1].date
             await asyncio.sleep(wait_time)
 
-        # Add a few extra attributes to the Message to make it friendlier.
-        messages.total = total_messages
-        for m in messages:
-            # To make messages more friendly, always add message
-            # to service messages, and action to normal messages.
-            m.message = getattr(m, 'message', None)
-            m.action = getattr(m, 'action', None)
-            m.sender = (None if not m.from_id else
-                        entities[utils.get_peer_id(m.from_id)])
+    async def get_messages(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_messages`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        msgs = UserList()
+        async for msg in self.iter_messages(*args, **kwargs):
+            msgs.append(msg)
 
-            if getattr(m, 'fwd_from', None):
-                m.fwd_from.sender = (
-                    None if not m.fwd_from.from_id else
-                    entities[utils.get_peer_id(m.fwd_from.from_id)]
-                )
-                m.fwd_from.channel = (
-                    None if not m.fwd_from.channel_id else
-                    entities[utils.get_peer_id(
-                        PeerChannel(m.fwd_from.channel_id)
-                    )]
-                )
+        msgs.total = total_box.x
+        return msgs
 
-            m.to = entities[utils.get_peer_id(m.to_id)]
-
-        return messages
+    async def get_message_history(self, *args, **kwargs):
+        warnings.warn(
+            'get_message_history is deprecated, use get_messages instead'
+        )
+        return await self.get_messages(*args, **kwargs)
 
     async def send_read_acknowledge(self, entity, message=None, max_id=None,
                                     clear_mentions=False):
@@ -1094,8 +1155,8 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
-    async def get_participants(self, entity, limit=None, search='',
-                               aggressive=False):
+    async def iter_participants(self, entity, limit=None, search='',
+                                aggressive=False, _total_box=None):
         """
         Gets the list of participants from the specified entity.
 
@@ -1119,6 +1180,9 @@ class TelegramClient(TelegramBareClient):
                 This has no effect for groups or channels with less than
                 10,000 members.
 
+            _total_box (:obj:`_Box`, optional):
+                A _Box instance to pass the total parameter by reference.
+
         Returns:
             A list of participants with an additional .total variable on the
             list indicating the total amount of members in this group/channel.
@@ -1129,8 +1193,13 @@ class TelegramClient(TelegramBareClient):
             total = (await self(GetFullChannelRequest(
                 entity
             ))).full_chat.participants_count
+            if _total_box:
+                _total_box.x = total
 
-            all_participants = {}
+            if limit == 0:
+                return
+
+            seen = set()
             if total > 10000 and aggressive:
                 requests = [GetParticipantsRequest(
                     channel=entity,
@@ -1170,31 +1239,48 @@ class TelegramClient(TelegramBareClient):
                     else:
                         requests[i].offset += len(participants.users)
                         for user in participants.users:
-                            if len(all_participants) < limit:
-                                all_participants[user.id] = user
-            if limit < float('inf'):
-                values = itertools.islice(all_participants.values(), limit)
-            else:
-                values = all_participants.values()
+                            if user.id not in seen:
+                                seen.add(user.id)
+                                yield user
+                                if len(seen) >= limit:
+                                    return
 
-            users = UserList(values)
-            users.total = total
         elif isinstance(entity, InputPeerChat):
             users = (await self(GetFullChatRequest(entity.chat_id))).users
-            if len(users) > limit:
-                users = users[:limit]
-            users = UserList(users)
-            users.total = len(users)
+            if _total_box:
+                _total_box.x = len(users)
+
+            have = 0
+            for user in users:
+                have += 1
+                if have > limit:
+                    break
+                else:
+                    yield user
         else:
-            users = UserList([entity])
-            users.total = 1
-        return users
+            if _total_box:
+                _total_box.x = 1
+            if limit != 0:
+                yield await self.get_entity(entity)
+
+    async def get_participants(self, *args, **kwargs):
+        """
+        Same as :meth:`iter_participants`, but returns a list instead
+        with an additional .total attribute on the list.
+        """
+        total_box = _Box(0)
+        kwargs['_total_box'] = total_box
+        participants = UserList()
+        async for participant in self.iter_participants(*args, **kwargs):
+            participants.append(participant)
+        participants.total = total_box.x
+        return participants
 
     # endregion
 
     # region Uploading files
 
-    async def send_file(self, entity, file, caption=None,
+    async def send_file(self, entity, file, caption='',
                         force_document=False, progress_callback=None,
                         reply_to=None,
                         attributes=None,
@@ -1414,9 +1500,9 @@ class TelegramClient(TelegramBareClient):
         kwargs['is_voice_note'] = True
         return self.send_file(*args, **kwargs)
 
-    async def _send_album(self, entity, files, caption=None,
-                    progress_callback=None, reply_to=None,
-                    parse_mode='md'):
+    async def _send_album(self, entity, files, caption='',
+                          progress_callback=None, reply_to=None,
+                          parse_mode='md'):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -1710,7 +1796,8 @@ class TelegramClient(TelegramBareClient):
             date = datetime.now()
             media = message
 
-        if isinstance(media, (MessageMediaPhoto, Photo)):
+        if isinstance(media, (MessageMediaPhoto, Photo,
+                              PhotoSize, PhotoCachedSize)):
             return await self._download_photo(
                 media, file, date, progress_callback
             )
@@ -1728,24 +1815,39 @@ class TelegramClient(TelegramBareClient):
         # Determine the photo and its largest size
         if isinstance(photo, MessageMediaPhoto):
             photo = photo.photo
-        if not isinstance(photo, Photo):
+        if isinstance(photo, Photo):
+            for size in reversed(photo.sizes):
+                if not isinstance(size, PhotoSizeEmpty):
+                    photo = size
+                    break
+            else:
+                return
+        if not isinstance(photo, (PhotoSize, PhotoCachedSize)):
             return
 
-        largest_size = photo.sizes[-1]
-        file_size = largest_size.size
-        largest_size = largest_size.location
-
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
+        if isinstance(photo, PhotoCachedSize):
+            # No need to download anything, simply write the bytes
+            if isinstance(file, str):
+                helpers.ensure_parent_dir_exists(file)
+                f = open(file, 'wb')
+            else:
+                f = file
+            try:
+                f.write(photo.bytes)
+            finally:
+                if isinstance(file, str):
+                    f.close()
+            return file
 
-        # Download the media with the largest size input file location
         await self.download_file(
             InputFileLocation(
-                volume_id=largest_size.volume_id,
-                local_id=largest_size.local_id,
-                secret=largest_size.secret
+                volume_id=photo.location.volume_id,
+                local_id=photo.location.local_id,
+                secret=photo.location.secret
             ),
             file,
-            file_size=file_size,
+            file_size=photo.size,
             progress_callback=progress_callback
         )
         return file
@@ -2232,48 +2334,32 @@ class TelegramClient(TelegramBareClient):
                 return InputPeerSelf()
             return utils.get_input_peer(await self._get_entity_from_string(peer))
 
-        if isinstance(peer, int):
-            peer, kind = utils.resolve_id(peer)
-            peer = kind(peer)
+        original_peer = peer
+        if not isinstance(peer, int):
+            try:
+                if peer.SUBCLASS_OF_ID != 0x2d45687:  # crc32(b'Peer')
+                    return utils.get_input_peer(peer)
+            except (AttributeError, TypeError):
+                peer = None
 
-        try:
-            is_peer = peer.SUBCLASS_OF_ID == 0x2d45687  # crc32(b'Peer')
-            if not is_peer:
-                return utils.get_input_peer(peer)
-        except (AttributeError, TypeError):
-            is_peer = False
-
-        if not is_peer:
+        if not peer:
             raise TypeError(
-                'Cannot turn "{}" into an input entity.'.format(peer)
+                'Cannot turn "{}" into an input entity.'.format(original_peer)
             )
 
-        # Not found, look in the dialogs with the hope to find it.
+        # Add the mark to the peers if the user passed a Peer (not an int),
+        # or said ID is negative. If it's negative it's been marked already.
+        # Look in the dialogs with the hope to find it.
+        mark = not isinstance(peer, int) or peer < 0
         target_id = utils.get_peer_id(peer)
-        req = GetDialogsRequest(
-            offset_date=None,
-            offset_id=0,
-            offset_peer=InputPeerEmpty(),
-            limit=100
-        )
-        while True:
-            result = await self(req)
-            entities = {}
-            for x in itertools.chain(result.users, result.chats):
-                x_id = utils.get_peer_id(x)
-                if x_id == target_id:
-                    return utils.get_input_peer(x)
-                else:
-                    entities[x_id] = x
-            if len(result.dialogs) < req.limit:
-                break
-
-            req.offset_id = result.messages[-1].id
-            req.offset_date = result.messages[-1].date
-            req.offset_peer = entities[utils.get_peer_id(
-                result.dialogs[-1].peer
-            )]
-            asyncio.sleep(1)
+        if mark:
+            async for dialog in self.iter_dialogs():
+                if utils.get_peer_id(dialog.entity) == target_id:
+                    return utils.get_input_peer(dialog.entity)
+        else:
+            async for dialog in self.iter_dialogs():
+                if dialog.entity.id == target_id:
+                    return utils.get_input_peer(dialog.entity)
 
         raise TypeError(
             'Could not find the input entity corresponding to "{}". '

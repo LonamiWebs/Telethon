@@ -68,6 +68,7 @@ class MtProtoSender:
 
     def disconnect(self):
         """Disconnects from the server."""
+        __log__.info('Disconnecting MtProtoSender...')
         self.connection.close()
         self._clear_all_pending()
 
@@ -245,6 +246,7 @@ class MtProtoSender:
                 if r:
                     r.result = True  # Telegram won't send this value
                     r.confirm_received.set()
+                    __log__.debug('Confirmed %s through ack', type(r).__name__)
 
             return True
 
@@ -253,6 +255,7 @@ class MtProtoSender:
             if r:
                 r.result = obj
                 r.confirm_received.set()
+                __log__.debug('Confirmed %s through salt', type(r).__name__)
 
         # If the object isn't any of the above, then it should be an Update.
         self.session.process_entities(obj)
@@ -309,6 +312,7 @@ class MtProtoSender:
         """
         for r in self._pending_receive.values():
             r.request.confirm_received.set()
+            __log__.info('Abruptly confirming %s', type(r).__name__)
         self._pending_receive.clear()
 
     async def _resend_request(self, msg_id):
@@ -339,6 +343,7 @@ class MtProtoSender:
         if request:
             request.result = pong
             request.confirm_received.set()
+            __log__.debug('Confirmed %s through pong', type(request).__name__)
 
         return True
 
@@ -490,6 +495,9 @@ class MtProtoSender:
             if request:
                 request.rpc_error = error
                 request.confirm_received.set()
+
+            __log__.debug('Confirmed %s through error %s',
+                          type(request).__name__, error)
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
             return True  # All contents were read okay
@@ -505,6 +513,10 @@ class MtProtoSender:
 
             self.session.process_entities(request.result)
             request.confirm_received.set()
+            __log__.debug(
+                'Confirmed %s through normal result %s',
+                type(request).__name__, type(request.result).__name__
+            )
             return True
 
         # If it's really a result for RPC from previous connection

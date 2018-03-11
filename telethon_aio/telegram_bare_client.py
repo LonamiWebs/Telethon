@@ -425,11 +425,11 @@ class TelegramBareClient:
             if result is not None:
                 return result
 
-            __log__.warning('Invoking %s failed %d times, '
-                            'reconnecting and retrying',
-                            [str(x) for x in requests], retry + 1)
+            log = __log__.info if retry == 0 else __log__.warning
+            log('Invoking %s failed %d times, connecting again and retrying',
+                [str(x) for x in requests], retry + 1)
 
-            await asyncio.sleep(retry + 1, loop=self._loop)
+            await asyncio.sleep(1)
             if not self._reconnect_lock.locked():
                 with await self._reconnect_lock:
                     await self._reconnect()

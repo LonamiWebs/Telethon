@@ -1,15 +1,16 @@
 try:
     from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy import Column, String, Integer, BLOB, orm
+    from sqlalchemy import Column, String, Integer, LargeBinary, orm
     import sqlalchemy as sql
 except ImportError:
     sql = None
-    pass
-
-from ..crypto import AuthKey
-from ..tl.types import InputPhoto, InputDocument
 
 from .memory import MemorySession, _SentFileType
+from .. import utils
+from ..crypto import AuthKey
+from ..tl.types import (
+    InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
+)
 
 LATEST_VERSION = 1
 
@@ -59,7 +60,7 @@ class AlchemySessionContainer:
             dc_id = Column(Integer, primary_key=True)
             server_address = Column(String)
             port = Column(Integer)
-            auth_key = Column(BLOB)
+            auth_key = Column(LargeBinary)
 
         class Entity(Base):
             query = db.query_property()
@@ -77,7 +78,7 @@ class AlchemySessionContainer:
             __tablename__ = '{prefix}sent_files'.format(prefix=prefix)
 
             session_id = Column(String, primary_key=True)
-            md5_digest = Column(BLOB, primary_key=True)
+            md5_digest = Column(LargeBinary, primary_key=True)
             file_size = Column(Integer, primary_key=True)
             type = Column(Integer, primary_key=True)
             id = Column(Integer)
@@ -158,8 +159,9 @@ class AlchemySession(MemorySession):
         self.db.merge(new)
 
     def _db_query(self, dbclass, *args):
-        return dbclass.query.filter(dbclass.session_id == self.session_id,
-                                    *args)
+        return dbclass.query.filter(
+            dbclass.session_id == self.session_id, *args
+        )
 
     def save(self):
         self.container.save()
@@ -189,21 +191,31 @@ class AlchemySession(MemorySession):
     def get_entity_rows_by_phone(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.phone == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_entity_rows_by_username(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.username == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def get_entity_rows_by_name(self, key):
         row = self._db_query(self.Entity,
                              self.Entity.name == key).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
-    def get_entity_rows_by_id(self, key):
-        row = self._db_query(self.Entity, self.Entity.id == key).one_or_none()
-        return row.id, row.hash if row else None
+    def get_entity_rows_by_id(self, key, exact=True):
+        if exact:
+            query = self._db_query(self.Entity, self.Entity.id == key)
+        else:
+            ids = (
+                utils.get_peer_id(PeerUser(key)),
+                utils.get_peer_id(PeerChat(key)),
+                utils.get_peer_id(PeerChannel(key))
+            )
+            query = self._db_query(self.Entity, self.Entity.id in ids)
+
+        row = query.one_or_none()
+        return (row.id, row.hash) if row else None
 
     def get_file(self, md5_digest, file_size, cls):
         row = self._db_query(self.SentFile,
@@ -211,7 +223,7 @@ class AlchemySession(MemorySession):
                              self.SentFile.file_size == file_size,
                              self.SentFile.type == _SentFileType.from_type(
                                  cls).value).one_or_none()
-        return row.id, row.hash if row else None
+        return (row.id, row.hash) if row else None
 
     def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
