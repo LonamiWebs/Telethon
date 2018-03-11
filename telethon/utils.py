@@ -55,9 +55,6 @@ def get_display_name(entity):
 
     return ''
 
-# For some reason, .webp (stickers' format) is not registered
-add_type('image/webp', '.webp')
-
 
 def get_extension(media):
     """Gets the corresponding extension for any Telegram media"""
@@ -319,8 +316,10 @@ def get_input_media(media, is_photo=False):
 
 def is_image(file):
     """Returns True if the file extension looks like an image file"""
-    return (isinstance(file, str) and
-            (mimetypes.guess_type(file)[0] or '').startswith('image/'))
+    if not isinstance(file, str):
+        return False
+    mime = mimetypes.guess_type(file)[0] or ''
+    return mime.startswith('image/') and not mime.endswith('/webp')
 
 
 def is_audio(file):
