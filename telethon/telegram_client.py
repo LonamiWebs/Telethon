@@ -8,7 +8,7 @@ import re
 import sys
 import time
 import warnings
-from collections import OrderedDict, UserList
+from collections import UserList
 from datetime import datetime, timedelta
 from io import BytesIO
 from mimetypes import guess_type
@@ -83,7 +83,8 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty)
+    PhotoSizeEmpty, MessageService
+)
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
 
@@ -903,10 +904,13 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The affected messages.
         """
+        if not utils.is_list_like(message_ids):
+            message_ids = (message_ids,)
 
-        if not isinstance(message_ids, list):
-            message_ids = [message_ids]
-        message_ids = [m.id if isinstance(m, Message) else int(m) for m in message_ids]
+        message_ids = [
+            m.id if isinstance(m, (Message, MessageService, MessageEmpty))
+            else int(m) for m in message_ids
+        ]
 
         if entity is None:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
