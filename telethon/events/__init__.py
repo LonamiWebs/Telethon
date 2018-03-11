@@ -1010,7 +1010,7 @@ class MessageDeleted(_EventBuilder):
     class Event(_EventCommon):
         def __init__(self, deleted_ids, peer):
             super().__init__(
-                types.Message((deleted_ids or [0])[0], peer, None, '')
+                chat_peer=peer, msg_id=(deleted_ids or [0])[0]
             )
             self.deleted_id = None if not deleted_ids else deleted_ids[0]
             self.deleted_ids = deleted_ids
