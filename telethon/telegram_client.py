@@ -1233,7 +1233,7 @@ class TelegramClient(TelegramBareClient):
                     if not participants.users:
                         requests.pop(i)
                     else:
-                        requests[i].offset += len(participants.users)
+                        requests[i].offset += len(participants.participants)
                         for user in participants.users:
                             if user.id not in seen:
                                 seen.add(user.id)
