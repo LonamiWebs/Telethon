@@ -1154,7 +1154,7 @@ class TelegramClient(TelegramBareClient):
     def iter_participants(self, entity, limit=None, search='',
                           aggressive=False, _total_box=None):
         """
-        Gets the list of participants from the specified entity.
+        Iterator over the participants belonging to the specified chat.
 
         Args:
             entity (:obj:`entity`):
@@ -1179,9 +1179,11 @@ class TelegramClient(TelegramBareClient):
             _total_box (:obj:`_Box`, optional):
                 A _Box instance to pass the total parameter by reference.
 
-        Returns:
-            A list of participants with an additional .total variable on the
-            list indicating the total amount of members in this group/channel.
+        Yields:
+            The ``User`` objects returned by ``GetParticipantsRequest``
+            with an additional ``.participant`` attribute which is the
+            matched ``ChannelParticipant`` type for channels/megagroups
+            or ``ChatParticipants`` for normal chats.
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -1234,30 +1236,38 @@ class TelegramClient(TelegramBareClient):
                         requests.pop(i)
                     else:
                         requests[i].offset += len(participants.participants)
-                        for user in participants.users:
-                            if user.id not in seen:
-                                seen.add(user.id)
+                        users = {user.id: user for user in participants.users}
+                        for participant in participants.participants:
+                            if participant.user_id not in seen:
+                                seen.add(participant.user_id)
+                                user = users[participant.user_id]
+                                user.participant = participant
                                 yield user
                                 if len(seen) >= limit:
                                     return
 
         elif isinstance(entity, InputPeerChat):
-            users = self(GetFullChatRequest(entity.chat_id)).users
+            full = self(GetFullChatRequest(entity.chat_id))
             if _total_box:
-                _total_box.x = len(users)
+                _total_box.x = len(full.full_chat.participants.participants)
 
             have = 0
-            for user in users:
+            users = {user.id: user for user in full.users}
+            for participant in full.full_chat.participants.participants:
                 have += 1
                 if have > limit:
                     break
                 else:
+                    user = users[participant.user_id]
+                    user.participant = participant
                     yield user
         else:
             if _total_box:
                 _total_box.x = 1
             if limit != 0:
-                yield self.get_entity(entity)
+                user = self.get_entity(entity)
+                user.participant = None
+                yield user
 
     def get_participants(self, *args, **kwargs):
         """
@@ -1266,9 +1276,9 @@ class TelegramClient(TelegramBareClient):
         """
         total_box = _Box(0)
         kwargs['_total_box'] = total_box
-        dialogs = UserList(self.iter_participants(*args, **kwargs))
-        dialogs.total = total_box.x
-        return dialogs
+        participants = UserList(self.iter_participants(*args, **kwargs))
+        participants.total = total_box.x
+        return participants
 
     # endregion
 
