@@ -1152,7 +1152,7 @@ class TelegramClient(TelegramBareClient):
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
     def iter_participants(self, entity, limit=None, search='',
-                          aggressive=False, _total_box=None):
+                          filter=None, aggressive=False, _total_box=None):
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -1166,6 +1166,12 @@ class TelegramClient(TelegramBareClient):
             search (:obj:`str`, optional):
                 Look for participants with this string in name/username.
 
+            filter (:obj:`ChannelParticipantsFilter`, optional):
+                The filter to be used, if you want e.g. only admins. See
+                https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html.
+                Note that you might not have permissions for some filter.
+                This has no effect for normal chats or users.
+
             aggressive (:obj:`bool`, optional):
                 Aggressively looks for all participants in the chat in
                 order to get more than 10,000 members (a hard limit
@@ -1174,7 +1180,7 @@ class TelegramClient(TelegramBareClient):
                 participants on groups with 100,000 members.
 
                 This has no effect for groups or channels with less than
-                10,000 members.
+                10,000 members, or if a ``filter`` is given.
 
             _total_box (:obj:`_Box`, optional):
                 A _Box instance to pass the total parameter by reference.
@@ -1185,7 +1191,21 @@ class TelegramClient(TelegramBareClient):
             matched ``ChannelParticipant`` type for channels/megagroups
             or ``ChatParticipants`` for normal chats.
         """
+        if isinstance(filter, type):
+            filter = filter()
+
         entity = self.get_input_entity(entity)
+        if search and (filter or not isinstance(entity, InputPeerChannel)):
+            # We need to 'search' ourselves unless we have a PeerChannel
+            search = search.lower()
+
+            def filter_entity(ent):
+                return search in utils.get_display_name(ent).lower() or\
+                       search in (getattr(ent, 'username', '') or None).lower()
+        else:
+            def filter_entity(ent):
+                return True
+
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
             total = self(GetFullChannelRequest(
@@ -1198,7 +1218,7 @@ class TelegramClient(TelegramBareClient):
                 return
 
             seen = set()
-            if total > 10000 and aggressive:
+            if total > 10000 and aggressive and not filter:
                 requests = [GetParticipantsRequest(
                     channel=entity,
                     filter=ChannelParticipantsSearch(search + chr(x)),
@@ -1209,7 +1229,7 @@ class TelegramClient(TelegramBareClient):
             else:
                 requests = [GetParticipantsRequest(
                     channel=entity,
-                    filter=ChannelParticipantsSearch(search),
+                    filter=filter or ChannelParticipantsSearch(search),
                     offset=0,
                     limit=200,
                     hash=0
@@ -1238,15 +1258,19 @@ class TelegramClient(TelegramBareClient):
                         requests[i].offset += len(participants.participants)
                         users = {user.id: user for user in participants.users}
                         for participant in participants.participants:
-                            if participant.user_id not in seen:
-                                seen.add(participant.user_id)
-                                user = users[participant.user_id]
-                                user.participant = participant
-                                yield user
-                                if len(seen) >= limit:
-                                    return
+                            user = users[participant.user_id]
+                            if not filter_entity(user) or user.id in seen:
+                                continue
+
+                            seen.add(participant.user_id)
+                            user = users[participant.user_id]
+                            user.participant = participant
+                            yield user
+                            if len(seen) >= limit:
+                                return
 
         elif isinstance(entity, InputPeerChat):
+            # TODO We *could* apply the `filter` here ourselves
             full = self(GetFullChatRequest(entity.chat_id))
             if _total_box:
                 _total_box.x = len(full.full_chat.participants.participants)
@@ -1254,6 +1278,9 @@ class TelegramClient(TelegramBareClient):
             have = 0
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
+                user = users[participant.user_id]
+                if not filter_entity(user):
+                    continue
                 have += 1
                 if have > limit:
                     break
@@ -1266,8 +1293,9 @@ class TelegramClient(TelegramBareClient):
                 _total_box.x = 1
             if limit != 0:
                 user = self.get_entity(entity)
-                user.participant = None
-                yield user
+                if filter_entity(user):
+                    user.participant = None
+                    yield user
 
     def get_participants(self, *args, **kwargs):
         """
