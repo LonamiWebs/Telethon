@@ -79,7 +79,7 @@ def main():
         # Try importing the telethon module to assert it has no errors
         try:
             import telethon
-        except:
+        except Exception:
             print('Packaging for PyPi aborted, importing the module failed.')
             return
 
@@ -113,16 +113,18 @@ def main():
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
-            name='Telethon',
+            name='Telethon-ezdev128',
             version=version,
-            description="Full-featured Telegram client library for Python 3",
+            description="Full-featured Telegram client library for Python 3 (ezdev128's fork-and-merge)",
             long_description=long_description,
 
-            url='https://github.com/LonamiWebs/Telethon',
-            download_url='https://github.com/LonamiWebs/Telethon/releases',
+            url='https://github.com/ezdev128/Telethon',
+            download_url='https://github.com/ezdev128/Telethon/releases',
 
-            author='Lonami Exo',
-            author_email='totufals@hotmail.com',
+            author='Konstantin M.',
+            author_email='ezdev128@yandex.com',
+            maintainer='Konstantin M.',
+            maintainer_email='ezdev128@yandex.com',
 
             license='MIT',
 
@@ -157,7 +159,8 @@ def main():
                               'typing' if version_info < (3, 5) else ""],
             extras_require={
                 'cryptg': ['cryptg'],
-                'sqlalchemy': ['sqlalchemy']
+                'sqlalchemy': ['sqlalchemy'],
+                'redis': ['redis'],
             }
         )
 

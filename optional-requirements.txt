@@ -2,3 +2,4 @@ cryptg
 pysocks
 hachoir3
 sqlalchemy
+redis
