@@ -2312,7 +2312,8 @@ class TelegramClient(TelegramBareClient):
                     return self.get_me()
                 result = self(ResolveUsernameRequest(username))
                 for entity in itertools.chain(result.users, result.chats):
-                    if entity.username.lower() == username:
+                    if getattr(entity, 'username', None) or ''\
+                            .lower() == username:
                         return entity
             try:
                 # Nobody with this username, maybe it's an exact name/title
