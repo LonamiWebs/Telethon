@@ -23,18 +23,18 @@ __log__ = logging.getLogger(__name__)
 
 class RedisSession(MemorySession):
 
-    log = None
     session_name = None
     redis_connection = None
     hive_prefix = None
     sess_prefix = None
     pack_func = None
     unpack_func = None
+    use_indents = True
 
     def __init__(self, session_name=None, redis_connection=None, hive_prefix=None,
                  pack_func=PACK_FUNC, unpack_func=UNPACK_FUNC):
         if not isinstance(session_name, (str, bytes)):
-            raise TypeError("Session name must be a string or bytes")
+            raise TypeError("Session name must be a string or bytes.")
 
         if not redis_connection or not isinstance(redis_connection, redis.StrictRedis):
             raise TypeError('The given redis_connection must be a Redis instance.')
@@ -52,17 +52,18 @@ class RedisSession(MemorySession):
 
         self.save_entities = True
 
-        self.feed_sessions()
+        self.feed_session()
 
     def _pack(self, o, **kwargs):
         if self.pack_func == "json":
-            kwargs["indent"] = 2
+            if self.use_indents:
+                kwargs["indent"] = 2
         return json.dumps(o, **kwargs) if self.pack_func == "json" else pickle.dumps(o, **kwargs)
 
     def _unpack(self, o, **kwargs):
         return json.loads(o, **kwargs) if self.unpack_func == "json" else pickle.loads(o, **kwargs)
 
-    def feed_sessions(self):
+    def feed_session(self):
         try:
             s = self._get_sessions()
             if len(s) == 0:
@@ -289,4 +290,3 @@ class RedisSession(MemorySession):
             self.redis_connection.set(key, self._pack(s))
         except Exception as ex:
             __log__.exception(ex.args)
-
