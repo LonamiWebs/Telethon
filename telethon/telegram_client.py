@@ -192,6 +192,9 @@ class TelegramClient(TelegramBareClient):
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
 
+        # Store get_me() after successful sign in
+        self.me = None
+
     # endregion
 
     # region Telegram requests functions
@@ -298,10 +301,12 @@ class TelegramClient(TelegramBareClient):
 
         if self.is_user_authorized():
             self._check_events_pending_resolve()
+            self.me = self.get_me()
             return self
 
         if bot_token:
             self.sign_in(bot_token=bot_token)
+            self.me = self.get_me()
             return self
 
         # Turn the callable into a valid phone number
@@ -355,6 +360,7 @@ class TelegramClient(TelegramBareClient):
         # We won't reach here if any step failed (exit by exception)
         print('Signed in successfully as', utils.get_display_name(me))
         self._check_events_pending_resolve()
+        self.me = self.get_me()
         return self
 
     def sign_in(self, phone=None, code=None,
@@ -1152,9 +1158,9 @@ class TelegramClient(TelegramBareClient):
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
     def iter_participants(self, entity, limit=None, search='',
-                          filter=None, aggressive=False, _total_box=None):
+                          aggressive=False, _total_box=None):
         """
-        Iterator over the participants belonging to the specified chat.
+        Gets the list of participants from the specified entity.
 
         Args:
             entity (:obj:`entity`):
@@ -1166,12 +1172,6 @@ class TelegramClient(TelegramBareClient):
             search (:obj:`str`, optional):
                 Look for participants with this string in name/username.
 
-            filter (:obj:`ChannelParticipantsFilter`, optional):
-                The filter to be used, if you want e.g. only admins. See
-                https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html.
-                Note that you might not have permissions for some filter.
-                This has no effect for normal chats or users.
-
             aggressive (:obj:`bool`, optional):
                 Aggressively looks for all participants in the chat in
                 order to get more than 10,000 members (a hard limit
@@ -1180,32 +1180,16 @@ class TelegramClient(TelegramBareClient):
                 participants on groups with 100,000 members.
 
                 This has no effect for groups or channels with less than
-                10,000 members, or if a ``filter`` is given.
+                10,000 members.
 
             _total_box (:obj:`_Box`, optional):
                 A _Box instance to pass the total parameter by reference.
 
-        Yields:
-            The ``User`` objects returned by ``GetParticipantsRequest``
-            with an additional ``.participant`` attribute which is the
-            matched ``ChannelParticipant`` type for channels/megagroups
-            or ``ChatParticipants`` for normal chats.
+        Returns:
+            A list of participants with an additional .total variable on the
+            list indicating the total amount of members in this group/channel.
         """
-        if isinstance(filter, type):
-            filter = filter()
-
         entity = self.get_input_entity(entity)
-        if search and (filter or not isinstance(entity, InputPeerChannel)):
-            # We need to 'search' ourselves unless we have a PeerChannel
-            search = search.lower()
-
-            def filter_entity(ent):
-                return search in utils.get_display_name(ent).lower() or\
-                       search in (getattr(ent, 'username', '') or None).lower()
-        else:
-            def filter_entity(ent):
-                return True
-
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
             total = self(GetFullChannelRequest(
@@ -1218,7 +1202,7 @@ class TelegramClient(TelegramBareClient):
                 return
 
             seen = set()
-            if total > 10000 and aggressive and not filter:
+            if total > 10000 and aggressive:
                 requests = [GetParticipantsRequest(
                     channel=entity,
                     filter=ChannelParticipantsSearch(search + chr(x)),
@@ -1229,7 +1213,7 @@ class TelegramClient(TelegramBareClient):
             else:
                 requests = [GetParticipantsRequest(
                     channel=entity,
-                    filter=filter or ChannelParticipantsSearch(search),
+                    filter=ChannelParticipantsSearch(search),
                     offset=0,
                     limit=200,
                     hash=0
@@ -1255,47 +1239,31 @@ class TelegramClient(TelegramBareClient):
                     if not participants.users:
                         requests.pop(i)
                     else:
-                        requests[i].offset += len(participants.participants)
-                        users = {user.id: user for user in participants.users}
-                        for participant in participants.participants:
-                            user = users[participant.user_id]
-                            if not filter_entity(user) or user.id in seen:
-                                continue
-
-                            seen.add(participant.user_id)
-                            user = users[participant.user_id]
-                            user.participant = participant
-                            yield user
-                            if len(seen) >= limit:
-                                return
+                        requests[i].offset += len(participants.users)
+                        for user in participants.users:
+                            if user.id not in seen:
+                                seen.add(user.id)
+                                yield user
+                                if len(seen) >= limit:
+                                    return
 
         elif isinstance(entity, InputPeerChat):
-            # TODO We *could* apply the `filter` here ourselves
-            full = self(GetFullChatRequest(entity.chat_id))
+            users = self(GetFullChatRequest(entity.chat_id)).users
             if _total_box:
-                _total_box.x = len(full.full_chat.participants.participants)
+                _total_box.x = len(users)
 
             have = 0
-            users = {user.id: user for user in full.users}
-            for participant in full.full_chat.participants.participants:
-                user = users[participant.user_id]
-                if not filter_entity(user):
-                    continue
+            for user in users:
                 have += 1
                 if have > limit:
                     break
                 else:
-                    user = users[participant.user_id]
-                    user.participant = participant
                     yield user
         else:
             if _total_box:
                 _total_box.x = 1
             if limit != 0:
-                user = self.get_entity(entity)
-                if filter_entity(user):
-                    user.participant = None
-                    yield user
+                yield self.get_entity(entity)
 
     def get_participants(self, *args, **kwargs):
         """
@@ -1304,9 +1272,9 @@ class TelegramClient(TelegramBareClient):
         """
         total_box = _Box(0)
         kwargs['_total_box'] = total_box
-        participants = UserList(self.iter_participants(*args, **kwargs))
-        participants.total = total_box.x
-        return participants
+        dialogs = UserList(self.iter_participants(*args, **kwargs))
+        dialogs.total = total_box.x
+        return dialogs
 
     # endregion
 
@@ -2340,8 +2308,7 @@ class TelegramClient(TelegramBareClient):
                     return self.get_me()
                 result = self(ResolveUsernameRequest(username))
                 for entity in itertools.chain(result.users, result.chats):
-                    if getattr(entity, 'username', None) or ''\
-                            .lower() == username:
+                    if entity.username.lower() == username:
                         return entity
             try:
                 # Nobody with this username, maybe it's an exact name/title
