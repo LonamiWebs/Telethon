@@ -192,6 +192,9 @@ class TelegramClient(TelegramBareClient):
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
 
+        # Don't call .get_dialogs() every time a .get_entity() fails
+        self._called_get_dialogs = False
+
     # endregion
 
     # region Telegram requests functions
@@ -2401,16 +2404,18 @@ class TelegramClient(TelegramBareClient):
         # Add the mark to the peers if the user passed a Peer (not an int),
         # or said ID is negative. If it's negative it's been marked already.
         # Look in the dialogs with the hope to find it.
-        mark = not isinstance(peer, int) or peer < 0
-        target_id = utils.get_peer_id(peer)
-        if mark:
-            for dialog in self.iter_dialogs():
-                if utils.get_peer_id(dialog.entity) == target_id:
-                    return utils.get_input_peer(dialog.entity)
-        else:
-            for dialog in self.iter_dialogs():
-                if dialog.entity.id == target_id:
-                    return utils.get_input_peer(dialog.entity)
+        if not self._called_get_dialogs:
+            self._called_get_dialogs = True
+            mark = not isinstance(peer, int) or peer < 0
+            target_id = utils.get_peer_id(peer)
+            if mark:
+                for dialog in self.get_dialogs(100):
+                    if utils.get_peer_id(dialog.entity) == target_id:
+                        return utils.get_input_peer(dialog.entity)
+            else:
+                for dialog in self.get_dialogs(100):
+                    if dialog.entity.id == target_id:
+                        return utils.get_input_peer(dialog.entity)
 
         raise TypeError(
             'Could not find the input entity corresponding to "{}". '
