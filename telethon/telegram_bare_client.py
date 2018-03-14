@@ -673,7 +673,7 @@ class TelegramBareClient:
                     # a ping) if we want to receive updates again.
                     # TODO Test if getDifference works too (better alternative)
                     self._sender.send(GetStateRequest())
-            except:
+            except Exception:
                 self._idling.clear()
                 raise
 
