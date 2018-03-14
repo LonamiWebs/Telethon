@@ -86,6 +86,7 @@ class _EventCommon(abc.ABC):
             and not broadcast
         )
         self.is_channel = isinstance(chat_peer, types.PeerChannel)
+        self.is_supergroup = self.is_group and self.is_channel
 
     def _get_entity(self, msg_id, entity_id, chat=None):
         """
@@ -294,6 +295,9 @@ class NewMessage(_EventBuilder):
 
             is_group (:obj:`bool`):
                 True if the message was sent on a group or megagroup.
+
+            is_supergroup (:obj:`bool`):
+                True if the message was sent on a supergroup.
 
             is_channel (:obj:`bool`):
                 True if the message was sent on a megagroup or channel.

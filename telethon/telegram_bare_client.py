@@ -73,7 +73,6 @@ class TelegramBareClient:
                  update_workers=None,
                  spawn_read_thread=False,
                  timeout=timedelta(seconds=5),
-                 loop=None,
                  device_model=None,
                  system_version=None,
                  app_version=None,
@@ -611,7 +610,7 @@ class TelegramBareClient:
             )
             self._recv_thread.start()
 
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, *, _):
         if self._user_connected:
             self.disconnect()
         else:
@@ -673,7 +672,7 @@ class TelegramBareClient:
                     # a ping) if we want to receive updates again.
                     # TODO Test if getDifference works too (better alternative)
                     self._sender.send(GetStateRequest())
-            except:
+            except Exception:
                 self._idling.clear()
                 raise
 
