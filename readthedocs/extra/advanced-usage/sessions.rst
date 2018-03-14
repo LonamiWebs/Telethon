@@ -43,7 +43,8 @@ Telethon contains two implementations of the abstract ``Session`` class:
 
 There are other community-maintained implementations available:
 
-* `telethon-session-sqlalchemy <https://github.com/tulir/telethon-session-sqlalchemy/>`_: stores all sessions in a single database via SQLAlchemy.
+* `SQLAlchemy <https://github.com/tulir/telethon-session-sqlalchemy>`_: stores all sessions in a single database via SQLAlchemy.
+* `Redis <https://github.com/ezdev128/telethon-session-redis>`_: stores all sessions in a single Redis data store.
 
 Creating your own storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
