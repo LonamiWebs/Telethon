@@ -87,12 +87,15 @@ class _EventCommon(abc.ABC):
         )
         self.is_channel = isinstance(chat_peer, types.PeerChannel)
 
-    def _get_input_entity(self, msg_id, entity_id, chat=None):
+    def _get_entity(self, msg_id, entity_id, chat=None):
         """
         Helper function to call GetMessages on the give msg_id and
         return the input entity whose ID is the given entity ID.
 
         If ``chat`` is present it must be an InputPeer.
+
+        Returns a tuple of (entity, input_peer) if it was found, or
+        a tuple of (None, None) if it couldn't be.
         """
         try:
             if isinstance(chat, types.InputPeerChannel):
@@ -104,15 +107,17 @@ class _EventCommon(abc.ABC):
                     functions.messages.GetMessagesRequest([msg_id])
                 )
         except RPCError:
-            return
-        # TODO This could return a tuple to also have the full entity
+            return None, None
+
         entity = {
             utils.get_peer_id(x): x for x in itertools.chain(
                 getattr(result, 'chats', []),
                 getattr(result, 'users', []))
         }.get(entity_id)
         if entity:
-            return utils.get_input_peer(entity)
+            return entity, utils.get_input_peer(entity)
+        else:
+            return None, None
 
     @property
     def input_chat(self):
@@ -136,7 +141,7 @@ class _EventCommon(abc.ABC):
                     # TODO For channels, getDifference? Maybe looking
                     # in the dialogs (which is already done) is enough.
                     if self._message_id is not None:
-                        self._input_chat = self._get_input_entity(
+                        self._chat, self._input_chat = self._get_entity(
                             self._message_id,
                             utils.get_peer_id(self._chat_peer)
                         )
@@ -392,7 +397,7 @@ class NewMessage(_EventBuilder):
                     )
                 except (ValueError, TypeError):
                     # We can rely on self.input_chat for this
-                    self._input_sender = self._get_input_entity(
+                    self._sender, self._input_sender = self._get_entity(
                         self.message.id,
                         self.message.from_id,
                         chat=self.input_chat
