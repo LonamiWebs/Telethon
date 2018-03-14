@@ -262,8 +262,11 @@ class NewMessage(_EventBuilder):
         else:
             return
 
-        # Short-circuit if we let pass all events
         event._entities = update.entities
+        return self._message_filter_event(event)
+
+    def _message_filter_event(self, event):
+        # Short-circuit if we let pass all events
         if all(x is None for x in (self.incoming, self.outgoing, self.chats,
                                    self.pattern)):
             return event
@@ -1031,7 +1034,7 @@ class MessageEdited(NewMessage):
             return
 
         event._entities = update.entities
-        return self._filter_event(event)
+        return self._message_filter_event(event)
 
 
 class MessageDeleted(_EventBuilder):
