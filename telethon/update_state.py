@@ -1,10 +1,10 @@
+import itertools
 import logging
-import pickle
-from collections import deque
-from queue import Queue, Empty
 from datetime import datetime
+from queue import Queue, Empty
 from threading import RLock, Thread
 
+from . import utils
 from .tl import types as tl
 
 __log__ = logging.getLogger(__name__)
@@ -127,14 +127,23 @@ class UpdateState:
             # After running the script for over an hour and receiving over
             # 1000 updates, the only duplicates received were users going
             # online or offline. We can trust the server until new reports.
+            #
+            # TODO Note somewhere that all updates are modified to include
+            # .entities, which is a dictionary you can access but may be empty.
+            # This should only be used as read-only.
             if isinstance(update, tl.UpdateShort):
+                update.update.entities = {}
                 self._updates.put(update.update)
             # Expand "Updates" into "Update", and pass these to callbacks.
             # Since .users and .chats have already been processed, we
             # don't need to care about those either.
             elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
+                entities = {utils.get_peer_id(x): x for x in
+                            itertools.chain(update.users, update.chats)}
                 for u in update.updates:
+                    u.entities = entities
                     self._updates.put(u)
             # TODO Handle "tl.UpdatesTooLong"
             else:
+                update.entities = {}
                 self._updates.put(update)

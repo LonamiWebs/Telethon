@@ -71,6 +71,7 @@ class _EventCommon(abc.ABC):
     """Intermediate class with common things to all events"""
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
+        self._entities = {}
         self._client = None
         self._chat_peer = chat_peer
         self._message_id = msg_id
@@ -104,6 +105,7 @@ class _EventCommon(abc.ABC):
                 )
         except RPCError:
             return
+        # TODO This could return a tuple to also have the full entity
         entity = {
             utils.get_peer_id(x): x for x in itertools.chain(
                 getattr(result, 'chats', []),
@@ -148,12 +150,19 @@ class _EventCommon(abc.ABC):
     def chat(self):
         """
         The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
-        the event occurred. This property will make an API call the first time
-        to get the most up to date version of the chat, so use with care as
-        there is no caching besides local caching yet.
+        the event occurred. This property may make an API call the first time
+        to get the most up to date version of the chat (mostly when the event
+        doesn't belong to a channel), so keep that in mind.
         """
-        if self._chat is None and self.input_chat:
+        if not self.input_chat:
+            return None
+
+        if self._chat is None:
+            self._chat = self._entities.get(utils.get_peer_id(self._input_chat))
+
+        if self._chat is None:
             self._chat = self._client.get_entity(self._input_chat)
+
         return self._chat
 
 
@@ -249,6 +258,7 @@ class NewMessage(_EventBuilder):
             return
 
         # Short-circuit if we let pass all events
+        event._entities = update.entities
         if all(x is None for x in (self.incoming, self.outgoing, self.chats,
                                    self.pattern)):
             return event
@@ -300,8 +310,6 @@ class NewMessage(_EventBuilder):
             self.message = message
             self._text = None
 
-            self._input_chat = None
-            self._chat = None
             self._input_sender = None
             self._sender = None
 
@@ -395,14 +403,22 @@ class NewMessage(_EventBuilder):
         @property
         def sender(self):
             """
-            This (:obj:`User`) will make an API call the first time to get
-            the most up to date version of the sender, so use with care as
-            there is no caching besides local caching yet.
+            This (:obj:`User`) may make an API call the first time to get
+            the most up to date version of the sender (mostly when the event
+            doesn't belong to a channel), so keep that in mind.
 
             ``input_sender`` needs to be available (often the case).
             """
-            if self._sender is None and self.input_sender:
+            if not self.input_sender:
+                return None
+
+            if self._sender is None:
+                self._sender = \
+                    self._entities.get(utils.get_peer_id(self._input_sender))
+
+            if self._sender is None:
                 self._sender = self._client.get_entity(self._input_sender)
+
             return self._sender
 
         @property
@@ -621,6 +637,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -762,7 +779,12 @@ class ChatAction(_EventBuilder):
             The user who added ``users``, if applicable (``None`` otherwise).
             """
             if self._added_by and not isinstance(self._added_by, types.User):
-                self._added_by = self._client.get_entity(self._added_by)
+                self._added_by =\
+                    self._entities.get(utils.get_peer_id(self._added_by))
+
+                if not self._added_by:
+                    self._added_by = self._client.get_entity(self._added_by)
+
             return self._added_by
 
         @property
@@ -771,7 +793,12 @@ class ChatAction(_EventBuilder):
             The user who kicked ``users``, if applicable (``None`` otherwise).
             """
             if self._kicked_by and not isinstance(self._kicked_by, types.User):
-                self._kicked_by = self._client.get_entity(self._kicked_by)
+                self._kicked_by =\
+                    self._entities.get(utils.get_peer_id(self._kicked_by))
+
+                if not self._kicked_by:
+                    self._kicked_by = self._client.get_entity(self._kicked_by)
+
             return self._kicked_by
 
         @property
@@ -801,11 +828,24 @@ class ChatAction(_EventBuilder):
             Might be empty if the information can't be retrieved or there
             are no users taking part.
             """
-            if self._users is None and self._user_peers:
+            if not self._user_peers:
+                return []
+
+            if self._users is None:
+                have, missing = [], []
+                for peer in self._user_peers:
+                    user = self._entities.get(utils.get_peer_id(peer))
+                    if user:
+                        have.append(user)
+                    else:
+                        missing.append(peer)
+
                 try:
-                    self._users = self._client.get_entity(self._user_peers)
+                    missing = self._client.get_entity(missing)
                 except (TypeError, ValueError):
-                    self._users = []
+                    missing = []
+
+                self._user_peers = have + missing
 
             return self._users
 
@@ -837,6 +877,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -984,6 +1025,7 @@ class MessageEdited(NewMessage):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
 
@@ -1005,6 +1047,7 @@ class MessageDeleted(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
