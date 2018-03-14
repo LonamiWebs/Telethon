@@ -147,8 +147,8 @@ class TelegramClient(TelegramBareClient):
             if you want to run the library without any additional thread.
 
     Kwargs:
-        Extra parameters will be forwarded to the ``Session`` file.
-        Most relevant parameters are:
+        Some extra parameters are required when stabilishing the first
+        connection. These are are (along with their default values):
 
             .. code-block:: python
 
@@ -157,7 +157,6 @@ class TelegramClient(TelegramBareClient):
                  app_version      = TelegramClient.__version__
                  lang_code        = 'en'
                  system_lang_code = lang_code
-                 report_errors    = True
     """
 
     # region Initialization

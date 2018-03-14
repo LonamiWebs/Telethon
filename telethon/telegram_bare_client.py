@@ -73,7 +73,6 @@ class TelegramBareClient:
                  update_workers=None,
                  spawn_read_thread=False,
                  timeout=timedelta(seconds=5),
-                 loop=None,
                  device_model=None,
                  system_version=None,
                  app_version=None,
