@@ -80,6 +80,7 @@ class UpdateState:
             t.join()
 
         self._worker_threads.clear()
+        self._workers = n
 
     def setup_workers(self):
         if self._worker_threads or not self._workers:
