@@ -1,3 +1,5 @@
+.. _api-status:
+
 ==========
 API Status
 ==========

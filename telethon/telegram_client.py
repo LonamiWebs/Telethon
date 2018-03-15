@@ -146,8 +146,12 @@ class TelegramClient(TelegramBareClient):
             instantly, as soon as they arrive. Can still be disabled
             if you want to run the library without any additional thread.
 
+        report_errors (:obj:`bool`, optional):
+            Whether to report RPC errors or not. Defaults to ``True``,
+            see :ref:`api-status` for more information.
+
     Kwargs:
-        Some extra parameters are required when stabilishing the first
+        Some extra parameters are required when establishing the first
         connection. These are are (along with their default values):
 
             .. code-block:: python
@@ -168,6 +172,7 @@ class TelegramClient(TelegramBareClient):
                  update_workers=None,
                  timeout=timedelta(seconds=5),
                  spawn_read_thread=True,
+                 report_errors=True,
                  **kwargs):
         super().__init__(
             session, api_id, api_hash,
@@ -177,6 +182,7 @@ class TelegramClient(TelegramBareClient):
             update_workers=update_workers,
             spawn_read_thread=spawn_read_thread,
             timeout=timeout,
+            report_errors=report_errors,
             **kwargs
         )
 
