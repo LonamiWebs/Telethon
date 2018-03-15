@@ -1342,6 +1342,10 @@ class TelegramClient(TelegramBareClient):
                 photo or similar) so that it can be resent without the need
                 to download and re-upload it again.
 
+                If a list or similar is provided, the files in it will be
+                sent as an album in the order in which they appear, sliced
+                in chunks of 10 if more than 10 are given.
+
             caption (:obj:`str`, optional):
                 Optional caption for the sent media message.
 
@@ -1387,23 +1391,33 @@ class TelegramClient(TelegramBareClient):
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
-            # Convert to tuple so we can iterate several times
-            file = tuple(x for x in file)
-            if all(utils.is_image(x) for x in file):
-                return self._send_album(
-                    entity, file, caption=caption,
+            # TODO Fix progress_callback
+            images = []
+            documents = []
+            for x in file:
+                if utils.is_image(x):
+                    images.append(x)
+                else:
+                    documents.append(x)
+
+            result = []
+            while images:
+                result += self._send_album(
+                    entity, images[:10], caption=caption,
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode
                 )
-            # Not all are images, so send all the files one by one
-            return [
+                images = images[10:]
+
+            result.extend(
                 self.send_file(
                     entity, x, allow_cache=False,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, **kwargs
-                ) for x in file
-            ]
+                ) for x in documents
+            )
+            return result
 
         entity = self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
@@ -1543,6 +1557,10 @@ class TelegramClient(TelegramBareClient):
         # we need to produce right now to send albums (uploadMedia), and
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change.
+        #
+        # In theory documents can be sent inside the albums but they appear
+        # as different messages (not inside the album), and the logic to set
+        # the attributes/avoid cache is already written in .send_file().
         entity = self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
