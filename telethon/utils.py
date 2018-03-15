@@ -322,7 +322,7 @@ def is_image(file):
     if not isinstance(file, str):
         return False
     _, ext = os.path.splitext(file)
-    return re.match(r'\.(png|jpe?g|gif)', ext, re.IGNORECASE)
+    return re.match(r'\.(png|jpe?g)', ext, re.IGNORECASE)
 
 
 def is_audio(file):
