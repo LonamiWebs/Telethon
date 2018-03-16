@@ -2067,7 +2067,7 @@ class TelegramClient(TelegramBareClient):
             input_location (:obj:`InputFileLocation`):
                 The file location from which the file will be downloaded.
 
-            file (:obj:`str` | :obj:`file`, optional):
+            file (:obj:`str` | :obj:`file`):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
