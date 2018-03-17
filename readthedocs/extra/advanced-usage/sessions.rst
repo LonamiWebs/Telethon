@@ -36,77 +36,26 @@ one of the other implementations or implement your own storage.
 To use a custom session storage, simply pass the custom session instance to
 ``TelegramClient`` instead of the session name.
 
-Currently, there are three implementations of the abstract ``Session`` class:
-* ``MemorySession``. Stores session data in Python variables.
-* ``SQLiteSession``, (default). Stores sessions in their own SQLite databases.
-* ``AlchemySession``. Stores all sessions in a single database via SQLAlchemy.
+Telethon contains two implementations of the abstract ``Session`` class:
 
-Using AlchemySession
-~~~~~~~~~~~~~~~~~~~~
-The ``AlchemySession`` implementation can store multiple Sessions in the same
-database, but to do this, each session instance needs to have access to the
-same models and database session.
+* ``MemorySession``: stores session data in Python variables.
+* ``SQLiteSession``, (default): stores sessions in their own SQLite databases.
 
-To get started, you need to create an ``AlchemySessionContainer`` which will
-contain that shared data. The simplest way to use ``AlchemySessionContainer``
-is to simply pass it the database URL:
+There are other community-maintained implementations available:
 
-    .. code-block:: python
-
-        container = AlchemySessionContainer('mysql://user:pass@localhost/telethon')
-
-If you already have SQLAlchemy set up for your own project, you can also pass
-the engine separately:
-
-    .. code-block:: python
-
-        my_sqlalchemy_engine = sqlalchemy.create_engine('...')
-        container = AlchemySessionContainer(engine=my_sqlalchemy_engine)
-
-By default, the session container will manage table creation/schema updates/etc
-automatically. If you want to manage everything yourself, you can pass your
-SQLAlchemy Session and ``declarative_base`` instances and set ``manage_tables``
-to ``False``:
-
-    .. code-block:: python
-
-        from sqlalchemy.ext.declarative import declarative_base
-        from sqlalchemy import orm
-        import sqlalchemy
-
-        ...
-
-        session_factory = orm.sessionmaker(bind=my_sqlalchemy_engine)
-        session = session_factory()
-        my_base = declarative_base()
-
-        ...
-
-        container = AlchemySessionContainer(
-            session=session, table_base=my_base, manage_tables=False
-        )
-
-You always need to provide either ``engine`` or ``session`` to the container.
-If you set ``manage_tables=False`` and provide a ``session``, ``engine`` is not
-needed. In any other case, ``engine`` is always required.
-
-After you have your ``AlchemySessionContainer`` instance created, you can
-create new sessions by calling ``new_session``:
-
-    .. code-block:: python
-
-        session = container.new_session('some session id')
-        client = TelegramClient(session)
-
-where ``some session id`` is an unique identifier for the session.
+* `SQLAlchemy <https://github.com/tulir/telethon-session-sqlalchemy>`_: stores all sessions in a single database via SQLAlchemy.
+* `Redis <https://github.com/ezdev128/telethon-session-redis>`_: stores all sessions in a single Redis data store.
 
 Creating your own storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The easiest way to create your own implementation is to use ``MemorySession``
-as the base and check out how ``SQLiteSession`` or ``AlchemySession`` work.
-You can find the relevant Python files under the ``sessions`` directory.
+The easiest way to create your own storage implementation is to use ``MemorySession``
+as the base and check out how ``SQLiteSession`` or one of the community-maintained
+implementations work. You can find the relevant Python files under the ``sessions``
+directory in Telethon.
 
+After you have made your own implementation, you can add it to the community-maintained
+session implementation list above with a pull request.
 
 SQLite Sessions and Heroku
 --------------------------
