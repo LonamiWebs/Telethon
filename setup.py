@@ -156,8 +156,7 @@ def main():
             install_requires=['pyaes', 'rsa',
                               'typing' if version_info < (3, 5) else ""],
             extras_require={
-                'cryptg': ['cryptg'],
-                'sqlalchemy': ['sqlalchemy']
+                'cryptg': ['cryptg']
             }
         )
 
