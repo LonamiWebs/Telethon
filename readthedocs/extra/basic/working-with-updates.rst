@@ -140,6 +140,20 @@ random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
 
 
+Events without decorators
+*************************
+
+If for any reason you can't use the ``@client.on`` syntax, don't worry.
+You can call ``client.add_event_handler(callback, event)`` to achieve
+the same effect.
+
+Similar to that method, you also have :meth:`client.remove_event_handler`
+and :meth:`client.list_event_handlers` which do as they names indicate.
+
+The ``event`` type is optional in all methods and defaults to ``events.Raw``
+for adding, and ``None`` when removing (so all callbacks would be removed).
+
+
 Stopping propagation of Updates
 *******************************
 

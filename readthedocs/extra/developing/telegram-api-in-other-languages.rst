@@ -38,9 +38,9 @@ Kotlin
 ******
 
 `Kotlogram <https://github.com/badoualy/kotlogram>`__ is a Telegram
-implementation written in Kotlin (the now
+implementation written in Kotlin (one of the
 `official <https://blog.jetbrains.com/kotlin/2017/05/kotlin-on-android-now-official/>`__
-language for
+languages for
 `Android <https://developer.android.com/kotlin/index.html>`__) by
 `@badoualy <https://github.com/badoualy>`__, currently as a beta–
 yet working.
