@@ -14,6 +14,69 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Iterator methods (v0.18.1)
+==========================
+
+*Published at 2018/03/17*
+
+All the ``.get_`` methods in the ``TelegramClient`` now have a ``.iter_``
+counterpart, so you can do operations while retrieving items from them.
+For instance, you can ``client.iter_dialogs()`` and ``break`` once you
+find what you're looking for instead fetching them all at once.
+
+Another big thing, you can get entities by just their positive ID. This
+may cause some collisions (although it's very unlikely), and you can (should)
+still be explicit about the type you want. However, it's a lot more convenient
+and less confusing.
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- The library only offers the default ``SQLiteSession`` again.
+  See :ref:`sessions` for more on how to use a different storage from now on.
+
+Additions
+~~~~~~~~~
+
+- Events now override ``__str__`` and implement ``.stringify()``, just like
+  every other ``TLObject`` does.
+- ``events.ChatAction`` now has :meth:`respond`, :meth:`reply` and
+  :meth:`delete` for the message that triggered it.
+- :meth:`client.iter_participants` (and its :meth:`client.get_participants`
+  counterpart) now expose the ``filter`` argument, and the returned users
+  also expose the ``.participant`` they are.
+- You can now use :meth:`client.remove_event_handler` and
+  :meth:`client.list_event_handlers` similar how you could with normal updates.
+- New properties on ``events.NewMessage``, like ``.video_note`` and ``.gif``
+  to access only specific types of documents.
+- The ``Draft`` class now exposes ``.text`` and ``.raw_text``, as well as a
+  new :meth:`Draft.send` to send it.
+
+Bug fixes
+~~~~~~~~~
+
+- ``MessageEdited`` was ignoring ``NewMessage`` constructor arguments.
+- Fixes for ``Event.delete_messages`` which wouldn't handle ``MessageService``.
+- Bot API style IDs not working on :meth:`client.get_input_entity`.
+- :meth:`client.download_media` didn't support ``PhotoSize``.
+
+Enhancements
+~~~~~~~~~~~~
+
+- Less RPC are made when accessing the ``.sender`` and ``.chat`` of some
+  events (mostly those that occur in a channel).
+- You can send albums larger than 10 items (they will be sliced for you),
+  as well as mixing normal files with photos.
+- ``TLObject`` now have Python type hints.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Several documentation corrections.
+- :meth:`client.get_dialogs` is only called once again when an entity is
+  not found to avoid flood waits.
+
+
 Sessions overhaul (v0.18)
 =========================
 
