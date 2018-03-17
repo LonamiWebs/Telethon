@@ -2239,22 +2239,46 @@ class TelegramClient(TelegramBareClient):
 
         self._event_builders.append((event, callback))
 
+    def remove_event_handler(self, callback, event=None):
+        """
+        Inverse operation of :meth:`add_event_handler`.
+
+        If no event is given, all events for this callback are removed.
+        Returns how many callbacks were removed.
+        """
+        found = 0
+        if event and not isinstance(event, type):
+            event = type(event)
+
+        for i, ec in enumerate(self._event_builders):
+            ev, cb = ec
+            if cb == callback and (not event or isinstance(ev, event)):
+                del self._event_builders[i]
+                found += 1
+
+        return found
+
+    def list_event_handlers(self):
+        """
+        Lists all added event handlers, returning a list of pairs
+        consisting of (callback, event).
+        """
+        return [(callback, event) for event, callback in self._event_builders]
+
     def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
         warnings.warn(
             'add_update_handler is deprecated, use the @client.on syntax '
             'or add_event_handler(callback, events.Raw) instead (see '
             'https://telethon.rtfd.io/en/latest/extra/basic/working-'
             'with-updates.html)'
         )
-        self.add_event_handler(handler, events.Raw)
+        return self.add_event_handler(handler, events.Raw)
 
     def remove_update_handler(self, handler):
-        pass
+        return self.remove_event_handler(handler)
 
     def list_update_handlers(self):
-        return []
+        return [callback for callback, _ in self.list_event_handlers()]
 
     # endregion
 
