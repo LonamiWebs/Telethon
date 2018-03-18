@@ -169,7 +169,7 @@ class TcpClient:
     def _sock_recv(self, fut, registered_fd, n):
         if registered_fd is not None:
             self._loop.remove_reader(registered_fd)
-        if fut.cancelled():
+        if fut.cancelled() or self._socket is None:
             return
 
         try:
@@ -193,7 +193,7 @@ class TcpClient:
     def _sock_sendall(self, fut, registered_fd, data):
         if registered_fd:
             self._loop.remove_writer(registered_fd)
-        if fut.cancelled():
+        if fut.cancelled() or self._socket is None:
             return
 
         try:
