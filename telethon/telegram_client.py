@@ -170,7 +170,7 @@ class TelegramClient(TelegramBareClient):
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
-                 timeout=timedelta(seconds=5),
+                 timeout=timedelta(seconds=10),
                  spawn_read_thread=True,
                  report_errors=True,
                  **kwargs):

@@ -153,7 +153,6 @@ class TcpClient:
         if self._socket is None:
             self._raise_connection_reset(None)
 
-        # TODO Remove the timeout from this method, always use previous one
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
             while bytes_left != 0:
@@ -162,7 +161,16 @@ class TcpClient:
                 except socket.timeout as e:
                     # These are somewhat common if the server has nothing
                     # to send to us, so use a lower logging priority.
-                    __log__.debug('socket.timeout "%s" while reading data', e)
+                    if bytes_left < size:
+                        __log__.warning(
+                            'socket.timeout "%s" when %d/%d had been received',
+                            e, size - bytes_left, size
+                        )
+                    else:
+                        __log__.debug(
+                            'socket.timeout "%s" while reading data', e
+                        )
+
                     raise TimeoutError() from e
                 except ConnectionError as e:
                     __log__.info('ConnectionError "%s" while reading data', e)
