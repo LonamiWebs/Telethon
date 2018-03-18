@@ -1,3 +1,5 @@
+.. _api-status:
+
 ==========
 API Status
 ==========
@@ -10,11 +12,9 @@ anyone can query, made by `Daniil <https://github.com/danog>`__. All the
 information sent is a ``GET`` request with the error code, error message
 and method used.
 
-If you still would like to opt out, simply set
-``client.session.report_errors = False`` to disable this feature, or
-pass ``report_errors=False`` as a named parameter when creating a
-``TelegramClient`` instance. However Daniil would really thank you if
-you helped him (and everyone) by keeping it on!
+If you still would like to opt out, you can disable this feature by setting
+``client.session.report_errors = False``. However Daniil would really thank
+you if you helped him (and everyone) by keeping it on!
 
 Querying the API status
 ***********************

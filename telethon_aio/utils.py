@@ -4,10 +4,11 @@ to convert between an entity like an User, Chat, etc. into its Input version)
 """
 import math
 import mimetypes
+import os
 import re
 import types
 from collections import UserList
-from mimetypes import add_type, guess_extension
+from mimetypes import guess_extension
 
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
@@ -315,11 +316,13 @@ def get_input_media(media, is_photo=False):
 
 
 def is_image(file):
-    """Returns True if the file extension looks like an image file"""
+    """
+    Returns True if the file extension looks like an image file to Telegram.
+    """
     if not isinstance(file, str):
         return False
-    mime = mimetypes.guess_type(file)[0] or ''
-    return mime.startswith('image/') and not mime.endswith('/webp')
+    _, ext = os.path.splitext(file)
+    return re.match(r'\.(png|jpe?g)', ext, re.IGNORECASE)
 
 
 def is_audio(file):

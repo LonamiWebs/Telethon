@@ -146,9 +146,13 @@ class TelegramClient(TelegramBareClient):
             instantly, as soon as they arrive. Can still be disabled
             if you want to run the library without any additional thread.
 
+        report_errors (:obj:`bool`, optional):
+            Whether to report RPC errors or not. Defaults to ``True``,
+            see :ref:`api-status` for more information.
+
     Kwargs:
-        Extra parameters will be forwarded to the ``Session`` file.
-        Most relevant parameters are:
+        Some extra parameters are required when establishing the first
+        connection. These are are (along with their default values):
 
             .. code-block:: python
 
@@ -157,7 +161,6 @@ class TelegramClient(TelegramBareClient):
                  app_version      = TelegramClient.__version__
                  lang_code        = 'en'
                  system_lang_code = lang_code
-                 report_errors    = True
     """
 
     # region Initialization
@@ -168,6 +171,7 @@ class TelegramClient(TelegramBareClient):
                  proxy=None,
                  timeout=timedelta(seconds=5),
                  loop=None,
+                 report_errors=True,
                  **kwargs):
         super().__init__(
             session, api_id, api_hash,
@@ -176,6 +180,7 @@ class TelegramClient(TelegramBareClient):
             proxy=proxy,
             timeout=timeout,
             loop=loop,
+            report_errors=report_errors,
             **kwargs
         )
 
@@ -189,6 +194,9 @@ class TelegramClient(TelegramBareClient):
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
+
+        # Don't call .get_dialogs() every time a .get_entity() fails
+        self._called_get_dialogs = False
 
     # endregion
 
@@ -1156,9 +1164,10 @@ class TelegramClient(TelegramBareClient):
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
     async def iter_participants(self, entity, limit=None, search='',
-                                aggressive=False, _total_box=None):
+                                filter=None, aggressive=False,
+                                _total_box=None):
         """
-        Gets the list of participants from the specified entity.
+        Iterator over the participants belonging to the specified chat.
 
         Args:
             entity (:obj:`entity`):
@@ -1170,6 +1179,12 @@ class TelegramClient(TelegramBareClient):
             search (:obj:`str`, optional):
                 Look for participants with this string in name/username.
 
+            filter (:obj:`ChannelParticipantsFilter`, optional):
+                The filter to be used, if you want e.g. only admins. See
+                https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html.
+                Note that you might not have permissions for some filter.
+                This has no effect for normal chats or users.
+
             aggressive (:obj:`bool`, optional):
                 Aggressively looks for all participants in the chat in
                 order to get more than 10,000 members (a hard limit
@@ -1178,16 +1193,32 @@ class TelegramClient(TelegramBareClient):
                 participants on groups with 100,000 members.
 
                 This has no effect for groups or channels with less than
-                10,000 members.
+                10,000 members, or if a ``filter`` is given.
 
             _total_box (:obj:`_Box`, optional):
                 A _Box instance to pass the total parameter by reference.
 
-        Returns:
-            A list of participants with an additional .total variable on the
-            list indicating the total amount of members in this group/channel.
+        Yields:
+            The ``User`` objects returned by ``GetParticipantsRequest``
+            with an additional ``.participant`` attribute which is the
+            matched ``ChannelParticipant`` type for channels/megagroups
+            or ``ChatParticipants`` for normal chats.
         """
+        if isinstance(filter, type):
+            filter = filter()
+
         entity = await self.get_input_entity(entity)
+        if search and (filter or not isinstance(entity, InputPeerChannel)):
+            # We need to 'search' ourselves unless we have a PeerChannel
+            search = search.lower()
+
+            def filter_entity(ent):
+                return search in utils.get_display_name(ent).lower() or\
+                       search in (getattr(ent, 'username', '') or None).lower()
+        else:
+            def filter_entity(ent):
+                return True
+
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
             total = (await self(GetFullChannelRequest(
@@ -1200,7 +1231,7 @@ class TelegramClient(TelegramBareClient):
                 return
 
             seen = set()
-            if total > 10000 and aggressive:
+            if total > 10000 and aggressive and not filter:
                 requests = [GetParticipantsRequest(
                     channel=entity,
                     filter=ChannelParticipantsSearch(search + chr(x)),
@@ -1211,7 +1242,7 @@ class TelegramClient(TelegramBareClient):
             else:
                 requests = [GetParticipantsRequest(
                     channel=entity,
-                    filter=ChannelParticipantsSearch(search),
+                    filter=filter or ChannelParticipantsSearch(search),
                     offset=0,
                     limit=200,
                     hash=0
@@ -1237,31 +1268,47 @@ class TelegramClient(TelegramBareClient):
                     if not participants.users:
                         requests.pop(i)
                     else:
-                        requests[i].offset += len(participants.users)
-                        for user in participants.users:
-                            if user.id not in seen:
-                                seen.add(user.id)
-                                yield user
-                                if len(seen) >= limit:
-                                    return
+                        requests[i].offset += len(participants.participants)
+                        users = {user.id: user for user in participants.users}
+                        for participant in participants.participants:
+                            user = users[participant.user_id]
+                            if not filter_entity(user) or user.id in seen:
+                                continue
+
+                            seen.add(participant.user_id)
+                            user = users[participant.user_id]
+                            user.participant = participant
+                            yield user
+                            if len(seen) >= limit:
+                                return
 
         elif isinstance(entity, InputPeerChat):
-            users = (await self(GetFullChatRequest(entity.chat_id))).users
+            # TODO We *could* apply the `filter` here ourselves
+            full = await self(GetFullChatRequest(entity.chat_id))
             if _total_box:
-                _total_box.x = len(users)
+                _total_box.x = len(full.full_chat.participants.participants)
 
             have = 0
-            for user in users:
+            users = {user.id: user for user in full.users}
+            for participant in full.full_chat.participants.participants:
+                user = users[participant.user_id]
+                if not filter_entity(user):
+                    continue
                 have += 1
                 if have > limit:
                     break
                 else:
+                    user = users[participant.user_id]
+                    user.participant = participant
                     yield user
         else:
             if _total_box:
                 _total_box.x = 1
             if limit != 0:
-                yield await self.get_entity(entity)
+                user = await self.get_entity(entity)
+                if filter_entity(user):
+                    user.participant = None
+                    yield user
 
     async def get_participants(self, *args, **kwargs):
         """
@@ -1308,6 +1355,10 @@ class TelegramClient(TelegramBareClient):
                 photo or similar) so that it can be resent without the need
                 to download and re-upload it again.
 
+                If a list or similar is provided, the files in it will be
+                sent as an album in the order in which they appear, sliced
+                in chunks of 10 if more than 10 are given.
+
             caption (:obj:`str`, optional):
                 Optional caption for the sent media message.
 
@@ -1353,23 +1404,33 @@ class TelegramClient(TelegramBareClient):
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
-            # Convert to tuple so we can iterate several times
-            file = tuple(x for x in file)
-            if all(utils.is_image(x) for x in file):
-                return await self._send_album(
-                    entity, file, caption=caption,
+            # TODO Fix progress_callback
+            images = []
+            documents = []
+            for x in file:
+                if utils.is_image(x):
+                    images.append(x)
+                else:
+                    documents.append(x)
+
+            result = []
+            while images:
+                result += await self._send_album(
+                    entity, images[:10], caption=caption,
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode
                 )
-            # Not all are images, so send all the files one by one
-            return [
+                images = images[10:]
+
+            result.extend(
                 await self.send_file(
                     entity, x, allow_cache=False,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, **kwargs
-                ) for x in file
-            ]
+                ) for x in documents
+            )
+            return result
 
         entity = await self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
@@ -1509,6 +1570,10 @@ class TelegramClient(TelegramBareClient):
         # we need to produce right now to send albums (uploadMedia), and
         # cache only makes a difference for documents where the user may
         # want the attributes used on them to change.
+        #
+        # In theory documents can be sent inside the albums but they appear
+        # as different messages (not inside the album), and the logic to set
+        # the attributes/avoid cache is already written in .send_file().
         entity = await self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
@@ -2001,7 +2066,7 @@ class TelegramClient(TelegramBareClient):
             input_location (:obj:`InputFileLocation`):
                 The file location from which the file will be downloaded.
 
-            file (:obj:`str` | :obj:`file`, optional):
+            file (:obj:`str` | :obj:`file`):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
@@ -2168,22 +2233,46 @@ class TelegramClient(TelegramBareClient):
 
         self._event_builders.append((event, callback))
 
-    def add_update_handler(self, handler):
-        """Adds an update handler (a function which takes a TLObject,
-          an update, as its parameter) and listens for updates"""
+    def remove_event_handler(self, callback, event=None):
+        """
+        Inverse operation of :meth:`add_event_handler`.
+
+        If no event is given, all events for this callback are removed.
+        Returns how many callbacks were removed.
+        """
+        found = 0
+        if event and not isinstance(event, type):
+            event = type(event)
+
+        for i, ec in enumerate(self._event_builders):
+            ev, cb = ec
+            if cb == callback and (not event or isinstance(ev, event)):
+                del self._event_builders[i]
+                found += 1
+
+        return found
+
+    def list_event_handlers(self):
+        """
+        Lists all added event handlers, returning a list of pairs
+        consisting of (callback, event).
+        """
+        return [(callback, event) for event, callback in self._event_builders]
+
+    async def add_update_handler(self, handler):
         warnings.warn(
             'add_update_handler is deprecated, use the @client.on syntax '
             'or add_event_handler(callback, events.Raw) instead (see '
             'https://telethon.rtfd.io/en/latest/extra/basic/working-'
             'with-updates.html)'
         )
-        self.add_event_handler(handler, events.Raw)
+        return await self.add_event_handler(handler, events.Raw)
 
     def remove_update_handler(self, handler):
-        pass
+        return self.remove_event_handler(handler)
 
     def list_update_handlers(self):
-        return []
+        return [callback for callback, _ in self.list_event_handlers()]
 
     # endregion
 
@@ -2293,7 +2382,8 @@ class TelegramClient(TelegramBareClient):
                     return await self.get_me()
                 result = await self(ResolveUsernameRequest(username))
                 for entity in itertools.chain(result.users, result.chats):
-                    if entity.username.lower() == username:
+                    if getattr(entity, 'username', None) or ''\
+                            .lower() == username:
                         return entity
             try:
                 # Nobody with this username, maybe it's an exact name/title
@@ -2350,16 +2440,18 @@ class TelegramClient(TelegramBareClient):
         # Add the mark to the peers if the user passed a Peer (not an int),
         # or said ID is negative. If it's negative it's been marked already.
         # Look in the dialogs with the hope to find it.
-        mark = not isinstance(peer, int) or peer < 0
-        target_id = utils.get_peer_id(peer)
-        if mark:
-            async for dialog in self.iter_dialogs():
-                if utils.get_peer_id(dialog.entity) == target_id:
-                    return utils.get_input_peer(dialog.entity)
-        else:
-            async for dialog in self.iter_dialogs():
-                if dialog.entity.id == target_id:
-                    return utils.get_input_peer(dialog.entity)
+        if not self._called_get_dialogs:
+            self._called_get_dialogs = True
+            mark = not isinstance(peer, int) or peer < 0
+            target_id = utils.get_peer_id(peer)
+            if mark:
+                async for dialog in self.get_dialogs(100):
+                    if utils.get_peer_id(dialog.entity) == target_id:
+                        return utils.get_input_peer(dialog.entity)
+            else:
+                async for dialog in self.get_dialogs(100):
+                    if dialog.entity.id == target_id:
+                        return utils.get_input_peer(dialog.entity)
 
         raise TypeError(
             'Could not find the input entity corresponding to "{}". '

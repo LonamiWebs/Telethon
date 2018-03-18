@@ -2,11 +2,12 @@ import abc
 import datetime
 import itertools
 import re
+import warnings
 
 from .. import utils
 from ..errors import RPCError
 from ..extensions import markdown
-from ..tl import types, functions
+from ..tl import TLObject, types, functions
 
 
 async def _into_id_set(client, chats):
@@ -71,6 +72,7 @@ class _EventCommon(abc.ABC):
     """Intermediate class with common things to all events"""
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
+        self._entities = {}
         self._client = None
         self._chat_peer = chat_peer
         self._message_id = msg_id
@@ -86,12 +88,15 @@ class _EventCommon(abc.ABC):
         )
         self.is_channel = isinstance(chat_peer, types.PeerChannel)
 
-    async def _get_input_entity(self, msg_id, entity_id, chat=None):
+    async def _get_entity(self, msg_id, entity_id, chat=None):
         """
         Helper function to call GetMessages on the give msg_id and
         return the input entity whose ID is the given entity ID.
 
         If ``chat`` is present it must be an InputPeer.
+
+        Returns a tuple of (entity, input_peer) if it was found, or
+        a tuple of (None, None) if it couldn't be.
         """
         try:
             if isinstance(chat, types.InputPeerChannel):
@@ -103,14 +108,17 @@ class _EventCommon(abc.ABC):
                     functions.messages.GetMessagesRequest([msg_id])
                 )
         except RPCError:
-            return
+            return None, None
+
         entity = {
             utils.get_peer_id(x): x for x in itertools.chain(
                 getattr(result, 'chats', []),
                 getattr(result, 'users', []))
         }.get(entity_id)
         if entity:
-            return utils.get_input_peer(entity)
+            return entity, utils.get_input_peer(entity)
+        else:
+            return None, None
 
     @property
     async def input_chat(self):
@@ -134,7 +142,7 @@ class _EventCommon(abc.ABC):
                     # TODO For channels, getDifference? Maybe looking
                     # in the dialogs (which is already done) is enough.
                     if self._message_id is not None:
-                        self._input_chat = await self._get_input_entity(
+                        self._chat, self._input_chat = await self._get_entity(
                             self._message_id,
                             utils.get_peer_id(self._chat_peer)
                         )
@@ -147,13 +155,31 @@ class _EventCommon(abc.ABC):
     async def chat(self):
         """
         The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
-        the event occurred. This property will make an API call the first time
-        to get the most up to date version of the chat, so use with care as
-        there is no caching besides local caching yet.
+        the event occurred. This property may make an API call the first time
+        to get the most up to date version of the chat (mostly when the event
+        doesn't belong to a channel), so keep that in mind.
         """
-        if self._chat is None and await self.input_chat:
-            self._chat = await self._client.get_entity(await self._input_chat)
+        if not await self.input_chat:
+            return None
+
+        if self._chat is None:
+            self._chat = self._entities.get(utils.get_peer_id(self._input_chat))
+
+        if self._chat is None:
+            self._chat = await self._client.get_entity(self._input_chat)
+
         return self._chat
+
+    def __str__(self):
+        return TLObject.pretty_format(self.to_dict())
+
+    def stringify(self):
+        return TLObject.pretty_format(self.to_dict(), indent=0)
+
+    def to_dict(self):
+        d = {k: v for k, v in self.__dict__.items() if k[0] != '_'}
+        d['_'] = self.__class__.__name__
+        return d
 
 
 class Raw(_EventBuilder):
@@ -167,9 +193,19 @@ class Raw(_EventBuilder):
         return update
 
 
+def _name_inner_event(cls):
+    """Decorator to rename cls.Event 'Event' as 'cls.Event'"""
+    if hasattr(cls, 'Event'):
+        cls.Event.__name__ = '{}.Event'.format(cls.__name__)
+    else:
+        warnings.warn('Class {} does not have a inner Event'.format(cls))
+    return cls
+
+
 # Classes defined here are actually Event builders
 # for their inner Event classes. Inner ._client is
 # set later by the creator TelegramClient.
+@_name_inner_event
 class NewMessage(_EventBuilder):
     """
     Represents a new message event builder.
@@ -247,6 +283,10 @@ class NewMessage(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
+        return self._message_filter_event(event)
+
+    def _message_filter_event(self, event):
         # Short-circuit if we let pass all events
         if all(x is None for x in (self.incoming, self.outgoing, self.chats,
                                    self.pattern)):
@@ -299,8 +339,6 @@ class NewMessage(_EventBuilder):
             self.message = message
             self._text = None
 
-            self._input_chat = None
-            self._chat = None
             self._input_sender = None
             self._sender = None
 
@@ -384,7 +422,7 @@ class NewMessage(_EventBuilder):
                     )
                 except (ValueError, TypeError):
                     # We can rely on self.input_chat for this
-                    self._input_sender = await self._get_input_entity(
+                    self._sender, self._input_sender = await self._get_entity(
                         self.message.id,
                         self.message.from_id,
                         chat=await self.input_chat
@@ -395,14 +433,22 @@ class NewMessage(_EventBuilder):
         @property
         async def sender(self):
             """
-            This (:obj:`User`) will make an API call the first time to get
-            the most up to date version of the sender, so use with care as
-            there is no caching besides local caching yet.
+            This (:obj:`User`) may make an API call the first time to get
+            the most up to date version of the sender (mostly when the event
+            doesn't belong to a channel), so keep that in mind.
 
             ``input_sender`` needs to be available (often the case).
             """
-            if self._sender is None and await self.input_sender:
+            if not await self.input_sender:
+                return None
+
+            if self._sender is None:
+                self._sender = \
+                    self._entities.get(utils.get_peer_id(self._input_sender))
+
+            if self._sender is None:
                 self._sender = await self._client.get_entity(self._input_sender)
+
             return self._sender
 
         @property
@@ -556,6 +602,7 @@ class NewMessage(_EventBuilder):
             return self.message.out
 
 
+@_name_inner_event
 class ChatAction(_EventBuilder):
     """
     Represents an action in a chat (such as user joined, left, or new pin).
@@ -621,6 +668,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -764,7 +812,13 @@ class ChatAction(_EventBuilder):
             The user who added ``users``, if applicable (``None`` otherwise).
             """
             if self._added_by and not isinstance(self._added_by, types.User):
-                self._added_by = await self._client.get_entity(self._added_by)
+                self._added_by =\
+                    self._entities.get(utils.get_peer_id(self._added_by))
+
+                if not self._added_by:
+                    self._added_by =\
+                        await self._client.get_entity(self._added_by)
+
             return self._added_by
 
         @property
@@ -773,7 +827,13 @@ class ChatAction(_EventBuilder):
             The user who kicked ``users``, if applicable (``None`` otherwise).
             """
             if self._kicked_by and not isinstance(self._kicked_by, types.User):
-                self._kicked_by = await self._client.get_entity(self._kicked_by)
+                self._kicked_by =\
+                    self._entities.get(utils.get_peer_id(self._kicked_by))
+
+                if not self._kicked_by:
+                    self._kicked_by =\
+                        await self._client.get_entity(self._kicked_by)
+
             return self._kicked_by
 
         @property
@@ -803,11 +863,24 @@ class ChatAction(_EventBuilder):
             Might be empty if the information can't be retrieved or there
             are no users taking part.
             """
-            if self._users is None and self._user_peers:
+            if not self._user_peers:
+                return []
+
+            if self._users is None:
+                have, missing = [], []
+                for peer in self._user_peers:
+                    user = self._entities.get(utils.get_peer_id(peer))
+                    if user:
+                        have.append(user)
+                    else:
+                        missing.append(peer)
+
                 try:
-                    self._users = await self._client.get_entity(self._user_peers)
+                    missing = await self._client.get_entity(missing)
                 except (TypeError, ValueError):
-                    self._users = []
+                    missing = []
+
+                self._user_peers = have + missing
 
             return self._users
 
@@ -828,6 +901,7 @@ class ChatAction(_EventBuilder):
             return self._input_users
 
 
+@_name_inner_event
 class UserUpdate(_EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
@@ -839,6 +913,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -975,6 +1050,7 @@ class UserUpdate(_EventBuilder):
             return self.chat
 
 
+@_name_inner_event
 class MessageEdited(NewMessage):
     """
     Event fired when a message has been edited.
@@ -986,9 +1062,11 @@ class MessageEdited(NewMessage):
         else:
             return
 
-        return self._filter_event(event)
+        event._entities = update.entities
+        return self._message_filter_event(event)
 
 
+@_name_inner_event
 class MessageDeleted(_EventBuilder):
     """
     Event fired when one or more messages are deleted.
@@ -1007,6 +1085,7 @@ class MessageDeleted(_EventBuilder):
         else:
             return
 
+        event._entities = update.entities
         return self._filter_event(event)
 
     class Event(_EventCommon):

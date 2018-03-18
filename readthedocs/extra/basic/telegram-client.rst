@@ -8,6 +8,11 @@ TelegramClient
 Introduction
 ************
 
+.. note::
+
+    Check the :ref:`telethon-package` if you're looking for the methods
+    reference instead of this tutorial.
+
 The ``TelegramClient`` is the central class of the library, the one
 you will be using most of the time. For this reason, it's important
 to know what it offers.
@@ -86,13 +91,7 @@ Please refer to :ref:`accessing-the-full-api` if these aren't enough,
 and don't be afraid to read the source code of the InteractiveTelegramClient_
 or even the TelegramClient_ itself to learn how it works.
 
+To see the methods available in the client, see :ref:`telethon-package`.
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py
 .. _TelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon/telegram_client.py
-
-
-
-.. automodule:: telethon.telegram_client
-    :members:
-    :undoc-members:
-    :show-inheritance:

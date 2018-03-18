@@ -1,11 +1,14 @@
+.. _telethon-package:
+
+
 telethon package
 ================
 
 
-telethon\.helpers module
-------------------------
+telethon\.telegram\_client module
+---------------------------------
 
-.. automodule:: telethon.helpers
+.. automodule:: telethon.telegram_client
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,10 +21,18 @@ telethon\.telegram\_bare\_client module
     :undoc-members:
     :show-inheritance:
 
-telethon\.telegram\_client module
----------------------------------
+telethon\.utils module
+----------------------
 
-.. automodule:: telethon.telegram_client
+.. automodule:: telethon.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+telethon\.helpers module
+------------------------
+
+.. automodule:: telethon.helpers
     :members:
     :undoc-members:
     :show-inheritance:
@@ -42,18 +53,10 @@ telethon\.update\_state module
     :undoc-members:
     :show-inheritance:
 
-telethon\.utils module
-----------------------
+telethon\.sessions module
+-------------------------
 
-.. automodule:: telethon.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-telethon\.session module
-------------------------
-
-.. automodule:: telethon.session
+.. automodule:: telethon.sessions
     :members:
     :undoc-members:
     :show-inheritance:

@@ -7,7 +7,9 @@ Working with Updates
 
 The library comes with the :mod:`events` module. *Events* are an abstraction
 over what Telegram calls `updates`__, and are meant to ease simple and common
-usage when dealing with them, since there are many updates. Let's dive in!
+usage when dealing with them, since there are many updates. If you're looking
+for the method reference, check :ref:`telethon-events-package`, otherwise,
+let's dive in!
 
 
 .. note::
@@ -114,12 +116,15 @@ for example:
         import random
 
 
-        @client.on(events.NewMessage(chats='TelethonOffTopic', incoming=True))
+        # Either a single item or a list of them will work for the chats.
+        # You can also use the IDs, Peers, or even User/Chat/Channel objects.
+        @client.on(events.NewMessage(chats=('TelethonChat', 'TelethonOffTopic')))
         def normal_handler(event):
             if 'roll' in event.raw_text:
                 event.reply(str(random.randint(1, 6)))
 
 
+        # Similarly, you can use incoming=True for messages that you receive
         @client.on(events.NewMessage(chats='TelethonOffTopic', outgoing=True))
         def admin_handler(event):
             if event.raw_text.startswith('eval'):
@@ -133,6 +138,20 @@ want to handle incoming or outgoing messages (those you receive or those you
 send). In this example, people can say ``'roll'`` and you will reply with a
 random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
+
+
+Events without decorators
+*************************
+
+If for any reason you can't use the ``@client.on`` syntax, don't worry.
+You can call ``client.add_event_handler(callback, event)`` to achieve
+the same effect.
+
+Similar to that method, you also have :meth:`client.remove_event_handler`
+and :meth:`client.list_event_handlers` which do as they names indicate.
+
+The ``event`` type is optional in all methods and defaults to ``events.Raw``
+for adding, and ``None`` when removing (so all callbacks would be removed).
 
 
 Stopping propagation of Updates
@@ -162,14 +181,8 @@ propagation of the update through your handlers to stop:
             pass
 
 
-Events module
-*************
-
-.. automodule:: telethon.events
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+Remember to check :ref:`telethon-events-package` if you're looking for
+the methods reference.
 
 
 __ https://lonamiwebs.github.io/Telethon/types/update.html

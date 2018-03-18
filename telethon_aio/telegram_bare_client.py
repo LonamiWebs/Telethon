@@ -70,6 +70,7 @@ class TelegramBareClient:
                  proxy=None,
                  timeout=timedelta(seconds=5),
                  loop=None,
+                 report_errors=True,
                  device_model=None,
                  system_version=None,
                  app_version=None,
@@ -102,6 +103,7 @@ class TelegramBareClient:
                 DEFAULT_PORT
             )
 
+        session.report_errors = report_errors
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash

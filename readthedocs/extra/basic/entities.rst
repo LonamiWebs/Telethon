@@ -10,6 +10,14 @@ The library widely uses the concept of "entities". An entity will refer
 to any ``User``, ``Chat`` or ``Channel`` object that the API may return
 in response to certain methods, such as ``GetUsersRequest``.
 
+.. note::
+
+    When something "entity-like" is required, it means that you need to
+    provide something that can be turned into an entity. These things include,
+    but are not limited to, usernames, exact titles, IDs, ``Peer`` objects,
+    or even entire ``User``, ``Chat`` and ``Channel`` objects and even phone
+    numbers from people you have in your contacts.
+
 Getting entities
 ****************
 

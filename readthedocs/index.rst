@@ -15,7 +15,8 @@ or use the menu on the left. Remember to read the :ref:`changelog`
 when you upgrade!
 
 .. important::
-   If you're new here, you want to read :ref:`getting-started`.
+   If you're new here, you want to read :ref:`getting-started`. If you're
+   looking for the method reference, you should check :ref:`telethon-package`.
 
 
 What is this?
