@@ -876,7 +876,7 @@ class ChatAction(_EventBuilder):
                 except (TypeError, ValueError):
                     missing = []
 
-                self._user_peers = have + missing
+                self._users = have + missing
 
             return self._users
 
