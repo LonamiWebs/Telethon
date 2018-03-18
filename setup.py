@@ -37,11 +37,11 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
-ERROR_LIST = 'telethon_aio/errors/rpc_error_list.py'
+ERROR_LIST = 'telethon/errors/rpc_error_list.py'
 ERRORS_JSON = 'telethon_generator/errors.json'
 ERRORS_DESC = 'telethon_generator/error_descriptions'
 SCHEME_TL = 'telethon_generator/scheme.tl'
-GENERATOR_DIR = 'telethon_aio/tl'
+GENERATOR_DIR = 'telethon/tl'
 IMPORT_DEPTH = 2
 
 
@@ -109,7 +109,7 @@ def main():
         with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
-        with open('telethon_aio/version.py', encoding='utf-8') as f:
+        with open('telethon/version.py', encoding='utf-8') as f:
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(

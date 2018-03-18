@@ -37,7 +37,7 @@ Creating a client
 .. code:: python
 
   import asyncio
-  from telethon_aio import TelegramClient
+  from telethon import TelegramClient
 
   # These example values won't work. You must get your own api_id and
   # api_hash from https://my.telegram.org, under API Development.

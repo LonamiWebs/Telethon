@@ -170,7 +170,7 @@ def generate_code(output, json_file, errors_desc):
 
 if __name__ == '__main__':
     if input('generate (y/n)?: ').lower() == 'y':
-        generate_code('../telethon_aio/errors/rpc_error_list.py',
+        generate_code('../telethon/errors/rpc_error_list.py',
                       'errors.json', 'error_descriptions')
     elif input('fetch (y/n)?: ').lower() == 'y':
         fetch_errors('errors.json')
