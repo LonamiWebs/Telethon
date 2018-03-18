@@ -846,7 +846,7 @@ class TelegramClient(TelegramBareClient):
         for update in result.updates:
             if isinstance(update, UpdateMessageID):
                 random_to_id[update.random_id] = update.id
-            elif isinstance(update, UpdateNewMessage):
+            elif isinstance(update, (UpdateNewMessage, UpdateNewChannelMessage)):
                 id_to_message[update.message.id] = update.message
 
         return [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
