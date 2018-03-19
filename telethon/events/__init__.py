@@ -350,7 +350,8 @@ class NewMessage(_EventBuilder):
             Responds to the message (not as a reply). This is a shorthand for
             ``client.send_message(event.chat, ...)``.
             """
-            return await self._client.send_message(await self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat,
+                                                   *args, **kwargs)
 
         async def reply(self, *args, **kwargs):
             """
@@ -358,7 +359,7 @@ class NewMessage(_EventBuilder):
             ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
             """
             kwargs['reply_to'] = self.message.id
-            return await self._client.send_message(self.input_chat,
+            return await self._client.send_message(await self.input_chat,
                                                    *args, **kwargs)
 
         async def forward_to(self, *args, **kwargs):
