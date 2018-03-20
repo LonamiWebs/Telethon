@@ -608,11 +608,12 @@ class ChatAction(_EventBuilder):
     Represents an action in a chat (such as user joined, left, or new pin).
     """
     def build(self, update):
-        if isinstance(update, types.UpdateChannelPinnedMessage):
-            # Telegram sends UpdateChannelPinnedMessage and then
-            # UpdateNewChannelMessage with MessageActionPinMessage.
+        if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
+            # Telegram does not always send
+            # UpdateChannelPinnedMessage for new pins
+            # but always for unpin, with update.id = 0
             event = ChatAction.Event(types.PeerChannel(update.channel_id),
-                                     new_pin=update.id)
+                                     unpin=True)
 
         elif isinstance(update, types.UpdateChatParticipantAdd):
             event = ChatAction.Event(types.PeerChat(update.chat_id),
@@ -663,6 +664,11 @@ class ChatAction(_EventBuilder):
                 event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=True)
+            elif isinstance(action, types.MessageActionPinMessage):
+                # Telegram always sends this service message for new pins
+                event = ChatAction.Event(msg,
+                                         users=msg.from_id,
+                                         new_pin=msg.reply_to_msg_id)
             else:
                 return
         else:
@@ -677,7 +683,7 @@ class ChatAction(_EventBuilder):
 
         Members:
             new_pin (:obj:`bool`):
-                ``True`` if the pin has changed (new pin or removed).
+                ``True`` if there is a new pin.
 
             new_photo (:obj:`bool`):
                 ``True`` if there's a new chat photo (or it was removed).
@@ -703,10 +709,13 @@ class ChatAction(_EventBuilder):
 
             new_title (:obj:`bool`, optional):
                 The new title string for the chat, if applicable.
+
+            unpin (:obj:`bool`):
+                ``True`` if the existing pin gets unpinned.
         """
         def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None):
+                     users=None, new_title=None, unpin=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.to_id
@@ -725,7 +734,7 @@ class ChatAction(_EventBuilder):
             self._added_by = None
             self._kicked_by = None
             self.user_added, self.user_joined, self.user_left,\
-                self.user_kicked = (False, False, False, False)
+                self.user_kicked, self.unpin = (False, False, False, False, False)
 
             if added_by is True:
                 self.user_joined = True
@@ -744,6 +753,7 @@ class ChatAction(_EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
+            self.unpin = unpin
 
         def respond(self, *args, **kwargs):
             """
