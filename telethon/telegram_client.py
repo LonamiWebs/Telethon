@@ -1399,12 +1399,15 @@ class TelegramClient(TelegramBareClient):
         if utils.is_list_like(file):
             # TODO Fix progress_callback
             images = []
-            documents = []
-            for x in file:
-                if utils.is_image(x):
-                    images.append(x)
-                else:
-                    documents.append(x)
+            if force_document:
+                documents = file
+            else:
+                documents = []
+                for x in file:
+                    if utils.is_image(x):
+                        images.append(x)
+                    else:
+                        documents.append(x)
 
             result = []
             while images:
@@ -1417,7 +1420,7 @@ class TelegramClient(TelegramBareClient):
 
             result.extend(
                 self.send_file(
-                    entity, x, allow_cache=False,
+                    entity, x, allow_cache=allow_cache,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, **kwargs
