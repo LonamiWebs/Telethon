@@ -70,6 +70,7 @@ class _EventBuilder(abc.ABC):
 
 class _EventCommon(abc.ABC):
     """Intermediate class with common things to all events"""
+    _event_name = 'Event'
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
         self._entities = {}
@@ -179,7 +180,7 @@ class _EventCommon(abc.ABC):
 
     def to_dict(self):
         d = {k: v for k, v in self.__dict__.items() if k[0] != '_'}
-        d['_'] = self.__class__.__name__
+        d['_'] = self._event_name
         return d
 
 
@@ -197,7 +198,7 @@ class Raw(_EventBuilder):
 def _name_inner_event(cls):
     """Decorator to rename cls.Event 'Event' as 'cls.Event'"""
     if hasattr(cls, 'Event'):
-        cls.Event.__name__ = '{}.Event'.format(cls.__name__)
+        cls.Event._event_name = '{}.Event'.format(cls.__name__)
     else:
         warnings.warn('Class {} does not have a inner Event'.format(cls))
     return cls
@@ -1060,6 +1061,9 @@ class MessageEdited(NewMessage):
 
         event._entities = update.entities
         return self._message_filter_event(event)
+
+    class Event(NewMessage.Event):
+        pass  # Required if we want a different name for it
 
 
 @_name_inner_event
