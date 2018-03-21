@@ -235,11 +235,11 @@ class NewMessage(_EventBuilder):
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
-        if isinstance(pattern, str):
-            self.pattern = [re.compile(pattern).match]
-        elif isinstance(pattern, (list, tuple)):
+        if pattern is None or utils.is_list_like(pattern):
             self.pattern = pattern
-        elif not pattern or callable(pattern):
+        elif isinstance(pattern, str):
+            self.pattern = [re.compile(pattern).match]
+        elif callable(pattern):
             self.pattern = [pattern]
         elif hasattr(pattern, 'match') and callable(pattern.match):
             self.pattern = [pattern.match]
