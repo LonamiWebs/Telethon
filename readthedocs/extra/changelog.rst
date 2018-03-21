@@ -993,7 +993,7 @@ Bug fixes and enhancements (v0.13.3)
 .. bugs-fixed-2:
 
 Bug fixes
----------
+~~~~~~~~~
 
 -  **Reconnection** used to fail because it tried invoking things from
    the ``ReadThread``.
@@ -1009,7 +1009,7 @@ Bug fixes
 .. enhancements-3:
 
 Enhancements
-------------
+~~~~~~~~~~~~
 
 -  **Request will be retried** up to 5 times by default rather than
    failing on the first attempt.
@@ -1099,7 +1099,7 @@ outside the buffer.
 .. additions-2:
 
 Additions
----------
+~~~~~~~~~
 
 -  The mentioned different connection modes, and a new thread.
 -  You can modify the ``Session`` attributes through the
@@ -1112,7 +1112,7 @@ Additions
 .. enhancements-4:
 
 Enhancements
-------------
+~~~~~~~~~~~~
 
 -  The low-level socket doesn't use a handcrafted timeout anymore, which
    should benefit by avoiding the arbitrary ``sleep(0.1)`` that there
@@ -1121,7 +1121,7 @@ Enhancements
    ``code`` was provided.
 
 Deprecation
------------
+~~~~~~~~~~~
 
 -  ``.sign_up`` does *not* take a ``phone`` argument anymore. Change
    this or you will be using ``phone`` as ``code``, and it will fail!
@@ -1201,7 +1201,7 @@ friendly, along with some other stability enhancements, although it
 brings quite a few changes.
 
 Breaking changes
-----------------
+~~~~~~~~~~~~~~~~
 
 -  The ``TelegramClient`` methods ``.send_photo_file()``,
    ``.send_document_file()`` and ``.send_media_file()`` are now a
@@ -1216,7 +1216,7 @@ Breaking changes
    ``.download_contact()`` still exist, but are private.
 
 Additions
----------
+~~~~~~~~~
 
 -  Updated to **layer 70**!
 -  Both downloading and uploading now support **stream-like objects**.
@@ -1232,7 +1232,7 @@ Additions
 .. bug-fixes-5:
 
 Bug fixes
----------
+~~~~~~~~~
 
 -  Crashing when migrating to a new layer and receiving old updates
    should not happen now.
@@ -1372,7 +1372,7 @@ Support for parallel connections (v0.11)
 **read the whole change log**!
 
 Breaking changes
-----------------
+~~~~~~~~~~~~~~~~
 
 -  Every Telegram error has now its **own class**, so it's easier to
    fine-tune your ``except``\ 's.
@@ -1384,7 +1384,7 @@ Breaking changes
    anymore.
 
 Additions
----------
+~~~~~~~~~
 
 -  A new, more **lightweight class** has been added. The
    ``TelegramBareClient`` is now the base of the normal
@@ -1404,7 +1404,7 @@ Additions
 .. bug-fixes-6:
 
 Bug fixes
----------
+~~~~~~~~~
 
 -  Received errors are acknowledged to the server, so they don't happen
    over and over.
@@ -1418,7 +1418,7 @@ Bug fixes
    not happen anymore.
 
 Internal changes
-----------------
+~~~~~~~~~~~~~~~~
 
 -  Some fixes to the ``JsonSession``.
 -  Fixed possibly crashes if trying to ``.invoke()`` a ``Request`` while
