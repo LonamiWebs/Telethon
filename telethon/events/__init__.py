@@ -235,12 +235,14 @@ class NewMessage(_EventBuilder):
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming
         self.outgoing = outgoing
-        if isinstance(pattern, str):
-            self.pattern = re.compile(pattern).match
-        elif not pattern or callable(pattern):
+        if pattern is None or utils.is_list_like(pattern):
             self.pattern = pattern
+        elif isinstance(pattern, str):
+            self.pattern = [re.compile(pattern).match]
+        elif callable(pattern):
+            self.pattern = [pattern]
         elif hasattr(pattern, 'match') and callable(pattern.match):
-            self.pattern = pattern.match
+            self.pattern = [pattern.match]
         else:
             raise TypeError('Invalid pattern type given')
 
@@ -300,8 +302,11 @@ class NewMessage(_EventBuilder):
             return
 
         if self.pattern:
-            match = self.pattern(event.message.message or '')
-            if not match:
+            for pattern in self.pattern:
+                match = pattern(event.message.message or '')
+                if match is not None:
+                    break
+            else:
                 return
             event.pattern_match = match
 
