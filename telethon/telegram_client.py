@@ -91,12 +91,6 @@ from .extensions import markdown, html
 __log__ = logging.getLogger(__name__)
 
 
-class _Box:
-    """Helper class to pass parameters by reference"""
-    def __init__(self, x=None):
-        self.x = x
-
-
 class TelegramClient(TelegramBareClient):
     """
     Initializes the Telegram client with the specified API ID and Hash.
@@ -525,7 +519,7 @@ class TelegramClient(TelegramBareClient):
     # region Dialogs ("chats") requests
 
     def iter_dialogs(self, limit=None, offset_date=None, offset_id=0,
-                     offset_peer=InputPeerEmpty(), _total_box=None):
+                     offset_peer=InputPeerEmpty(), _total=None):
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
         Dialogs are the open "chats" or conversations with other people.
@@ -547,15 +541,15 @@ class TelegramClient(TelegramBareClient):
             offset_peer (:obj:`InputPeer`, optional):
                 The peer to be used as an offset.
 
-            _total_box (:obj:`_Box`, optional):
-                A _Box instance to pass the total parameter by reference.
+            _total (:obj:`list`, optional):
+                A single-item list to pass the total parameter by reference.
 
         Yields:
             Instances of :obj:`telethon.tl.custom.dialog.Dialog`.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
-            if not _total_box:
+            if not _total:
                 return
             # Special case, get a single dialog and determine count
             dialogs = self(GetDialogsRequest(
@@ -564,7 +558,7 @@ class TelegramClient(TelegramBareClient):
                 offset_peer=offset_peer,
                 limit=1
             ))
-            _total_box.x = getattr(dialogs, 'count', len(dialogs.dialogs))
+            _total[0] = getattr(dialogs, 'count', len(dialogs.dialogs))
             return
 
         seen = set()
@@ -578,8 +572,8 @@ class TelegramClient(TelegramBareClient):
             req.limit = min(limit - len(seen), 100)
             r = self(req)
 
-            if _total_box:
-                _total_box.x = getattr(r, 'count', len(r.dialogs))
+            if _total:
+                _total[0] = getattr(r, 'count', len(r.dialogs))
             messages = {m.id: m for m in r.messages}
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
@@ -609,10 +603,10 @@ class TelegramClient(TelegramBareClient):
         Same as :meth:`iter_dialogs`, but returns a list instead
         with an additional ``.total`` attribute on the list.
         """
-        total_box = _Box(0)
-        kwargs['_total_box'] = total_box
+        total = [0]
+        kwargs['_total'] = total
         dialogs = UserList(self.iter_dialogs(*args, **kwargs))
-        dialogs.total = total_box.x
+        dialogs.total = total[0]
         return dialogs
 
     def iter_drafts(self):  # TODO: Ability to provide a `filter`
@@ -940,7 +934,7 @@ class TelegramClient(TelegramBareClient):
 
     def iter_messages(self, entity, limit=20, offset_date=None,
                       offset_id=0, max_id=0, min_id=0, add_offset=0,
-                      batch_size=100, wait_time=None, _total_box=None):
+                      batch_size=100, wait_time=None, _total=None):
         """
         Iterator over the message history for the specified entity.
 
@@ -986,8 +980,8 @@ class TelegramClient(TelegramBareClient):
                 If left to ``None``, it will default to 1 second only if
                 the limit is higher than 3000.
 
-            _total_box (:obj:`_Box`, optional):
-                A _Box instance to pass the total parameter by reference.
+            _total (:obj:`list`, optional):
+                A single-item list to pass the total parameter by reference.
 
         Yields:
             Instances of ``telethon.tl.types.Message`` with extra attributes:
@@ -1007,7 +1001,7 @@ class TelegramClient(TelegramBareClient):
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
-            if not _total_box:
+            if not _total:
                 return
             # No messages, but we still need to know the total message count
             result = self(GetHistoryRequest(
@@ -1015,7 +1009,7 @@ class TelegramClient(TelegramBareClient):
                 offset_date=None, offset_id=0, max_id=0, min_id=0,
                 add_offset=0, hash=0
             ))
-            _total_box.x = getattr(result, 'count', len(result.messages))
+            _total[0] = getattr(result, 'count', len(result.messages))
             return
 
         if wait_time is None:
@@ -1036,8 +1030,8 @@ class TelegramClient(TelegramBareClient):
                 add_offset=add_offset,
                 hash=0
             ))
-            if _total_box:
-                _total_box.x = getattr(r, 'count', len(r.messages))
+            if _total:
+                _total[0] = getattr(r, 'count', len(r.messages))
 
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
@@ -1082,10 +1076,10 @@ class TelegramClient(TelegramBareClient):
         Same as :meth:`iter_messages`, but returns a list instead
         with an additional ``.total`` attribute on the list.
         """
-        total_box = _Box(0)
-        kwargs['_total_box'] = total_box
+        total = [0]
+        kwargs['_total'] = total
         msgs = UserList(self.iter_messages(*args, **kwargs))
-        msgs.total = total_box.x
+        msgs.total = total[0]
         return msgs
 
     def get_message_history(self, *args, **kwargs):
@@ -1161,7 +1155,7 @@ class TelegramClient(TelegramBareClient):
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
     def iter_participants(self, entity, limit=None, search='',
-                          filter=None, aggressive=False, _total_box=None):
+                          filter=None, aggressive=False, _total=None):
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -1191,8 +1185,8 @@ class TelegramClient(TelegramBareClient):
                 This has no effect for groups or channels with less than
                 10,000 members, or if a ``filter`` is given.
 
-            _total_box (:obj:`_Box`, optional):
-                A _Box instance to pass the total parameter by reference.
+            _total (:obj:`list`, optional):
+                A single-item list to pass the total parameter by reference.
 
         Yields:
             The ``User`` objects returned by ``GetParticipantsRequest``
@@ -1220,8 +1214,8 @@ class TelegramClient(TelegramBareClient):
             total = self(GetFullChannelRequest(
                 entity
             )).full_chat.participants_count
-            if _total_box:
-                _total_box.x = total
+            if _total:
+                _total[0] = total
 
             if limit == 0:
                 return
@@ -1281,8 +1275,8 @@ class TelegramClient(TelegramBareClient):
         elif isinstance(entity, InputPeerChat):
             # TODO We *could* apply the `filter` here ourselves
             full = self(GetFullChatRequest(entity.chat_id))
-            if _total_box:
-                _total_box.x = len(full.full_chat.participants.participants)
+            if _total:
+                _total[0] = len(full.full_chat.participants.participants)
 
             have = 0
             users = {user.id: user for user in full.users}
@@ -1298,8 +1292,8 @@ class TelegramClient(TelegramBareClient):
                     user.participant = participant
                     yield user
         else:
-            if _total_box:
-                _total_box.x = 1
+            if _total:
+                _total[0] = 1
             if limit != 0:
                 user = self.get_entity(entity)
                 if filter_entity(user):
@@ -1311,10 +1305,10 @@ class TelegramClient(TelegramBareClient):
         Same as :meth:`iter_participants`, but returns a list instead
         with an additional ``.total`` attribute on the list.
         """
-        total_box = _Box(0)
-        kwargs['_total_box'] = total_box
+        total = [0]
+        kwargs['_total'] = total
         participants = UserList(self.iter_participants(*args, **kwargs))
-        participants.total = total_box.x
+        participants.total = total[0]
         return participants
 
     # endregion
