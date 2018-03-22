@@ -373,7 +373,10 @@ class TelegramClient(TelegramBareClient):
                 these requests.
 
             code (:obj:`str` | :obj:`int`):
-                The code that Telegram sent.
+                The code that Telegram sent. Note that if you have sent this
+                code through the application itself it will immediately
+                expire. If you want to send the code, obfuscate it somehow.
+                If you're not doing any of this you can ignore this note.
 
             password (:obj:`str`):
                 2FA password, should be used if a previous call raised

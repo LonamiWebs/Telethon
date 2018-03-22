@@ -60,6 +60,14 @@ If you're not authorized, you need to ``.sign_in()``:
         # If .sign_in raises SessionPasswordNeeded error, call .sign_in(password=...)
         # You can import both exceptions from telethon.errors.
 
+.. note::
+
+    If you send the code that Telegram sent you over the app through the
+    app itself, it will expire immediately. You can still send the code
+    through the app by "obfuscating" it (maybe add a magic constant, like
+    ``12345``, and then subtract it to get the real code back) or any other
+    technique.
+
 ``myself`` is your Telegram user. You can view all the information about
 yourself by doing ``print(myself.stringify())``. You're now ready to use
 the client as you wish! Remember that any object returned by the API has
