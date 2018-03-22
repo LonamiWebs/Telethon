@@ -1,3 +1,5 @@
+import datetime
+
 from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
 from ...extensions import markdown
@@ -7,7 +9,17 @@ class Draft:
     """
     Custom class that encapsulates a draft on the Telegram servers, providing
     an abstraction to change the message conveniently. The library will return
-    instances of this class when calling ``client.get_drafts()``.
+    instances of this class when calling :meth:`get_drafts()`.
+
+    Args:
+        date (:obj:`datetime`):
+            The date of the draft.
+
+        link_preview (:obj:`bool`):
+            Whether the link preview is enabled or not.
+
+        reply_to_msg_id (:obj:`int`):
+            The message ID that the draft will reply to.
     """
     def __init__(self, client, peer, draft):
         self._client = client
@@ -33,19 +45,40 @@ class Draft:
 
     @property
     def entity(self):
+        """
+        The entity that belongs to this dialog (user, chat or channel).
+        """
         return self._client.get_entity(self._peer)
 
     @property
     def input_entity(self):
+        """
+        Input version of the entity.
+        """
         return self._client.get_input_entity(self._peer)
 
     @property
     def text(self):
+        """
+        The markdown text contained in the draft. It will be
+        empty if there is no text (and hence no draft is set).
+        """
         return self._text
 
     @property
     def raw_text(self):
+        """
+        The raw (text without formatting) contained in the draft.
+        It will be empty if there is no text (thus draft not set).
+        """
         return self._raw_text
+
+    @property
+    def is_empty(self):
+        """
+        Convenience bool to determine if the draft is empty or not.
+        """
+        return not self._text
 
     def set_message(self, text=None, reply_to=0, parse_mode='md',
                     link_preview=None):
@@ -88,10 +121,15 @@ class Draft:
             self._raw_text = raw_text
             self.link_preview = link_preview
             self.reply_to_msg_id = reply_to
+            self.date = datetime.datetime.now()
 
         return result
 
     def send(self, clear=True, parse_mode='md'):
+        """
+        Sends the contents of this draft to the dialog. This is just a
+        wrapper around send_message(dialog.input_entity, *args, **kwargs).
+        """
         self._client.send_message(self._peer, self.text,
                                   reply_to=self.reply_to_msg_id,
                                   link_preview=self.link_preview,
@@ -100,7 +138,6 @@ class Draft:
 
     def delete(self):
         """
-        Deletes this draft
-        :return bool: ``True`` on success
+        Deletes this draft, and returns ``True`` on success.
         """
         return self.set_message(text='')

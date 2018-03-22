@@ -102,7 +102,8 @@ class TelegramClient(TelegramBareClient):
     Initializes the Telegram client with the specified API ID and Hash.
 
     Args:
-        session (:obj:`str` | :obj:`Session` | :obj:`None`):
+        session (:obj:`str` | :obj:`telethon.sessions.abstract.Session`, \
+                 :obj:`None`):
             The file name of the session file to be used if a string is
             given (it may be a full path), or the Session instance to be
             used otherwise. If it's ``None``, the session will not be saved,
@@ -394,7 +395,7 @@ class TelegramClient(TelegramBareClient):
 
         Returns:
             The signed in user, or the information about
-            :meth:`.send_code_request()`.
+            :meth:`send_code_request`.
         """
         if self.is_user_authorized():
             self._check_events_pending_resolve()
@@ -550,7 +551,7 @@ class TelegramClient(TelegramBareClient):
                 A _Box instance to pass the total parameter by reference.
 
         Yields:
-            Instances of ``telethon.tl.custom.Dialog``.
+            Instances of :obj:`telethon.tl.custom.dialog.Dialog`.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
@@ -606,7 +607,7 @@ class TelegramClient(TelegramBareClient):
     def get_dialogs(self, *args, **kwargs):
         """
         Same as :meth:`iter_dialogs`, but returns a list instead
-        with an additional .total attribute on the list.
+        with an additional ``.total`` attribute on the list.
         """
         total_box = _Box(0)
         kwargs['_total_box'] = total_box
@@ -618,9 +619,10 @@ class TelegramClient(TelegramBareClient):
         """
         Iterator over all open draft messages.
 
-        The yielded items are custom ``Draft`` objects that are easier to use.
-        You can call ``draft.set_message('text')`` to change the message,
-        or delete it through :meth:`draft.delete()`.
+        Instances of :obj:`telethon.tl.custom.draft.Draft` are yielded.
+        You can call :obj:`telethon.tl.custom.draft.Draft.set_message`
+        to change the message or :obj:`telethon.tl.custom.draft.Draft.delete`
+        among other things.
         """
         for update in self(GetAllDraftsRequest()).updates:
             yield Draft._from_update(self, update)
@@ -674,7 +676,7 @@ class TelegramClient(TelegramBareClient):
 
     def _parse_message_text(self, message, parse_mode):
         """
-        Returns a (parsed message, entities) tuple depending on parse_mode.
+        Returns a (parsed message, entities) tuple depending on ``parse_mode``.
         """
         if not parse_mode:
             return message, []
@@ -741,7 +743,7 @@ class TelegramClient(TelegramBareClient):
                 Has no effect when sending a file.
 
         Returns:
-            the sent message
+            the sent message.
         """
         if file is not None:
             return self.send_file(
@@ -1001,7 +1003,6 @@ class TelegramClient(TelegramBareClient):
             second is the default for this limit (or above). You may need
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
-
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -1079,7 +1080,7 @@ class TelegramClient(TelegramBareClient):
     def get_messages(self, *args, **kwargs):
         """
         Same as :meth:`iter_messages`, but returns a list instead
-        with an additional .total attribute on the list.
+        with an additional ``.total`` attribute on the list.
         """
         total_box = _Box(0)
         kwargs['_total_box'] = total_box
@@ -1308,7 +1309,7 @@ class TelegramClient(TelegramBareClient):
     def get_participants(self, *args, **kwargs):
         """
         Same as :meth:`iter_participants`, but returns a list instead
-        with an additional .total attribute on the list.
+        with an additional ``.total`` attribute on the list.
         """
         total_box = _Box(0)
         kwargs['_total_box'] = total_box
@@ -1918,7 +1919,7 @@ class TelegramClient(TelegramBareClient):
         return file
 
     def _download_document(self, document, file, date, progress_callback):
-        """Specialized version of .download_media() for documents"""
+        """Specialized version of .download_media() for documents."""
         if isinstance(document, MessageMediaDocument):
             document = document.document
         if not isinstance(document, Document):
@@ -1965,7 +1966,7 @@ class TelegramClient(TelegramBareClient):
     @staticmethod
     def _download_contact(mm_contact, file):
         """Specialized version of .download_media() for contacts.
-           Will make use of the vCard 4.0 format
+           Will make use of the vCard 4.0 format.
         """
         first_name = mm_contact.first_name
         last_name = mm_contact.last_name
