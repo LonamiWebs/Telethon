@@ -315,7 +315,7 @@ library alone (when invoking a request), it means that you can now use
 ``Peer`` types or even usernames where a ``InputPeer`` is required. The
 object now has access to the ``client``, so that it can fetch the right
 type if needed, or access the session database. Furthermore, you can
-reuse requests that need "autocast" (e.g. you put ``User`` but ``InputPeer``
+reuse requests that need "autocast" (e.g. you put :tl:`User` but ``InputPeer``
 was needed), since ``.resolve()`` is called when invoking. Before, it was
 only done on object construction.
 

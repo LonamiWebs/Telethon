@@ -11,8 +11,9 @@ __log__ = logging.getLogger(__name__)
 
 
 class UpdateState:
-    """Used to hold the current state of processed updates.
-       To retrieve an update, .poll() should be called.
+    """
+    Used to hold the current state of processed updates.
+    To retrieve an update, :meth:`poll` should be called.
     """
     WORKER_POLL_TIMEOUT = 5.0  # Avoid waiting forever on the workers
 

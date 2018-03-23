@@ -91,13 +91,13 @@ class _EventCommon(abc.ABC):
 
     def _get_entity(self, msg_id, entity_id, chat=None):
         """
-        Helper function to call GetMessages on the give msg_id and
+        Helper function to call :tl:`GetMessages` on the give msg_id and
         return the input entity whose ID is the given entity ID.
 
-        If ``chat`` is present it must be an InputPeer.
+        If ``chat`` is present it must be an :tl:`InputPeer`.
 
-        Returns a tuple of (entity, input_peer) if it was found, or
-        a tuple of (None, None) if it couldn't be.
+        Returns a tuple of ``(entity, input_peer)`` if it was found, or
+        a tuple of ``(None, None)`` if it couldn't be.
         """
         try:
             if isinstance(chat, types.InputPeerChannel):
@@ -124,7 +124,7 @@ class _EventCommon(abc.ABC):
     @property
     def input_chat(self):
         """
-        The (:obj:`InputPeer`) (group, megagroup or channel) on which
+        The (:tl:`InputPeer`) (group, megagroup or channel) on which
         the event occurred. This doesn't have the title or anything,
         but is useful if you don't need those to avoid further
         requests.
@@ -156,7 +156,7 @@ class _EventCommon(abc.ABC):
     @property
     def chat(self):
         """
-        The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
+        The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
         the event occurred. This property may make an API call the first time
         to get the most up to date version of the chat (mostly when the event
         doesn't belong to a channel), so keep that in mind.
@@ -312,8 +312,8 @@ class NewMessage(_EventBuilder):
         Represents the event of a new message.
 
         Members:
-            message (:obj:`Message`):
-                This is the original ``Message`` object.
+            message (:tl:`Message`):
+                This is the original :tl:`Message` object.
 
             is_private (:obj:`bool`):
                 True if the message was sent as a private message.
@@ -406,7 +406,7 @@ class NewMessage(_EventBuilder):
         @property
         def input_sender(self):
             """
-            This (:obj:`InputPeer`) is the input version of the user who
+            This (:tl:`InputPeer`) is the input version of the user who
             sent the message. Similarly to ``input_chat``, this doesn't have
             things like username or similar, but still useful in some cases.
 
@@ -434,7 +434,7 @@ class NewMessage(_EventBuilder):
         @property
         def sender(self):
             """
-            This (:obj:`User`) may make an API call the first time to get
+            This (:tl:`User`) may make an API call the first time to get
             the most up to date version of the sender (mostly when the event
             doesn't belong to a channel), so keep that in mind.
 
@@ -474,8 +474,8 @@ class NewMessage(_EventBuilder):
         @property
         def reply_message(self):
             """
-            This (:obj:`Message`, optional) will make an API call the first
-            time to get the full ``Message`` object that one was replying to,
+            This optional :tl:`Message` will make an API call the first
+            time to get the full :tl:`Message` object that one was replying to,
             so use with care as there is no caching besides local caching yet.
             """
             if not self.message.reply_to_msg_id:
@@ -498,14 +498,14 @@ class NewMessage(_EventBuilder):
         @property
         def forward(self):
             """
-            The unmodified (:obj:`MessageFwdHeader`, optional).
+            The unmodified :tl:`MessageFwdHeader`, if present..
             """
             return self.message.fwd_from
 
         @property
         def media(self):
             """
-            The unmodified (:obj:`MessageMedia`, optional).
+            The unmodified :tl:`MessageMedia`, if present.
             """
             return self.message.media
 
@@ -513,7 +513,7 @@ class NewMessage(_EventBuilder):
         def photo(self):
             """
             If the message media is a photo,
-            this returns the (:obj:`Photo`) object.
+            this returns the :tl:`Photo` object.
             """
             if isinstance(self.message.media, types.MessageMediaPhoto):
                 photo = self.message.media.photo
@@ -524,7 +524,7 @@ class NewMessage(_EventBuilder):
         def document(self):
             """
             If the message media is a document,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             if isinstance(self.message.media, types.MessageMediaDocument):
                 doc = self.message.media.document
@@ -547,7 +547,7 @@ class NewMessage(_EventBuilder):
         def audio(self):
             """
             If the message media is a document with an Audio attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAudio,
                                                lambda attr: not attr.voice)
@@ -556,7 +556,7 @@ class NewMessage(_EventBuilder):
         def voice(self):
             """
             If the message media is a document with a Voice attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAudio,
                                                lambda attr: attr.voice)
@@ -565,7 +565,7 @@ class NewMessage(_EventBuilder):
         def video(self):
             """
             If the message media is a document with a Video attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeVideo)
 
@@ -573,7 +573,7 @@ class NewMessage(_EventBuilder):
         def video_note(self):
             """
             If the message media is a document with a Video attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeVideo,
                                                lambda attr: attr.round_message)
@@ -582,7 +582,7 @@ class NewMessage(_EventBuilder):
         def gif(self):
             """
             If the message media is a document with an Animated attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAnimated)
 
@@ -590,7 +590,7 @@ class NewMessage(_EventBuilder):
         def sticker(self):
             """
             If the message media is a document with a Sticker attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeSticker)
 
@@ -689,7 +689,7 @@ class ChatAction(_EventBuilder):
             new_photo (:obj:`bool`):
                 ``True`` if there's a new chat photo (or it was removed).
 
-            photo (:obj:`Photo`, optional):
+            photo (:tl:`Photo`, optional):
                 The new photo (or ``None`` if it was removed).
 
 
@@ -793,7 +793,7 @@ class ChatAction(_EventBuilder):
         @property
         def pinned_message(self):
             """
-            If ``new_pin`` is ``True``, this returns the (:obj:`Message`)
+            If ``new_pin`` is ``True``, this returns the (:tl:`Message`)
             object that was pinned.
             """
             if self._pinned_message == 0:
@@ -857,7 +857,7 @@ class ChatAction(_EventBuilder):
         @property
         def input_user(self):
             """
-            Input version of the self.user property.
+            Input version of the ``self.user`` property.
             """
             if self.input_users:
                 return self._input_users[0]
@@ -894,7 +894,7 @@ class ChatAction(_EventBuilder):
         @property
         def input_users(self):
             """
-            Input version of the self.users property.
+            Input version of the ``self.users`` property.
             """
             if self._input_users is None and self._user_peers:
                 self._input_users = []
@@ -947,7 +947,7 @@ class UserUpdate(_EventBuilder):
             recently (:obj:`bool`):
                 ``True`` if the user was seen within a day.
 
-            action (:obj:`SendMessageAction`, optional):
+            action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
             cancel (:obj:`bool`):

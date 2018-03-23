@@ -10,13 +10,13 @@ class Dialog:
     return instances of this class when calling :meth:`.get_dialogs()`.
 
     Args:
-        dialog (:obj:`Dialog`):
+        dialog (:tl:`Dialog`):
             The original ``Dialog`` instance.
 
         pinned (:obj:`bool`):
             Whether this dialog is pinned to the top or not.
 
-        message (:obj:`Message`):
+        message (:tl:`Message`):
             The last message sent on this dialog. Note that this member
             will not be updated when new messages arrive, it's only set
             on creation of the instance.
@@ -27,7 +27,7 @@ class Dialog:
         entity (:obj:`entity`):
             The entity that belongs to this dialog (user, chat or channel).
 
-        input_entity (:obj:`InputPeer`):
+        input_entity (:tl:`InputPeer`):
             Input version of the entity.
 
         id (:obj:`int`):

@@ -128,7 +128,7 @@ class Draft:
     def send(self, clear=True, parse_mode='md'):
         """
         Sends the contents of this draft to the dialog. This is just a
-        wrapper around send_message(dialog.input_entity, *args, **kwargs).
+        wrapper around ``send_message(dialog.input_entity, *args, **kwargs)``.
         """
         self._client.send_message(self._peer, self.text,
                                   reply_to=self.reply_to_msg_id,
