@@ -28,7 +28,7 @@ Message*s*, plural) *always*, since it is more powerful, as follows:
         from_entity = bar()
         to_entity = baz()
 
-        client(ForwardMessagesRequest(
+        await client(ForwardMessagesRequest(
             from_peer=from_entity,  # who sent these messages?
             id=[msg.id for msg in messages],  # which are the messages?
             to_peer=to_entity  # who are we forwarding them to?
@@ -51,7 +51,7 @@ into issues_. A valid example would be:
         from telethon.tl.types import InputMessagesFilterEmpty
 
         filter = InputMessagesFilterEmpty()
-        result = client(SearchRequest(
+        result = await client(SearchRequest(
             peer=peer,      # On which chat/conversation
             q='query',      # What to search for
             filter=filter,  # Filter to use (maybe filter for media)
@@ -95,20 +95,20 @@ send yourself the very first sticker you have:
     .. code-block:: python
 
         # Get all the sticker sets this user has
-        sticker_sets = client(GetAllStickersRequest(0))
+        sticker_sets = await client(GetAllStickersRequest(0))
 
         # Choose a sticker set
         sticker_set = sticker_sets.sets[0]
 
         # Get the stickers for this sticker set
-        stickers = client(GetStickerSetRequest(
+        stickers = await client(GetStickerSetRequest(
             stickerset=InputStickerSetID(
                 id=sticker_set.id, access_hash=sticker_set.access_hash
             )
         ))
 
         # Stickers are nothing more than files, so send that
-        client(SendMediaRequest(
+        await client(SendMediaRequest(
             peer=client.get_me(),
             media=InputMediaDocument(
                 id=InputDocument(

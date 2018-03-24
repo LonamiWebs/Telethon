@@ -45,7 +45,7 @@ how the library refers to either of these:
         # The method will infer that you've passed an username
         # It also accepts phone numbers, and will get the user
         # from your contact list.
-        lonami = client.get_entity('lonami')
+        lonami = await client.get_entity('lonami')
 
 The so called "entities" are another important whole concept on its own,
 but for now you don't need to worry about it. Simply know that they are
@@ -56,21 +56,21 @@ Many other common methods for quick scripts are also available:
     .. code-block:: python
 
         # Note that you can use 'me' or 'self' to message yourself
-        client.send_message('username', 'Hello World from Telethon!')
+        await client.send_message('username', 'Hello World from Telethon!')
 
-        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+        await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
         # The utils package has some goodies, like .get_display_name()
         from telethon import utils
-        for message in client.get_message_history('username', limit=10):
+        async for message in client.get_message_history('username', limit=10):
             print(utils.get_display_name(message.sender), message.message)
 
         # Dialogs are the conversations you have open
-        for dialog in client.get_dialogs(limit=10):
+        async for dialog in client.get_dialogs(limit=10):
             print(utils.get_display_name(dialog.entity), dialog.draft.message)
 
         # Default path is the working directory
-        client.download_profile_photo('username')
+        await client.download_profile_photo('username')
 
         # Call .disconnect() when you're done
         client.disconnect()

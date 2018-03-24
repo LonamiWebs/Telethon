@@ -32,17 +32,17 @@ you're able to just do this:
         # Dialogs are the "conversations you have open".
         # This method returns a list of Dialog, which
         # has the .entity attribute and other information.
-        dialogs = client.get_dialogs(limit=200)
+        dialogs = await client.get_dialogs(limit=200)
 
         # All of these work and do the same.
-        lonami = client.get_entity('lonami')
-        lonami = client.get_entity('t.me/lonami')
-        lonami = client.get_entity('https://telegram.dog/lonami')
+        lonami = await client.get_entity('lonami')
+        lonami = await client.get_entity('t.me/lonami')
+        lonami = await client.get_entity('https://telegram.dog/lonami')
 
         # Other kind of entities.
-        channel = client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
-        contact = client.get_entity('+34xxxxxxxxx')
-        friend  = client.get_entity(friend_id)
+        channel = await client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
+        contact = await client.get_entity('+34xxxxxxxxx')
+        friend  = await client.get_entity(friend_id)
 
         # Using Peer/InputPeer (note that the API may return these)
         # users, chats and channels may all have the same ID, so it's
@@ -51,9 +51,9 @@ you're able to just do this:
         # NOTICE how the IDs *must* be wrapped inside a Peer() so the
         # library knows their type.
         from telethon.tl.types import PeerUser, PeerChat, PeerChannel
-        my_user    = client.get_entity(PeerUser(some_id))
-        my_chat    = client.get_entity(PeerChat(some_id))
-        my_channel = client.get_entity(PeerChannel(some_id))
+        my_user    = await client.get_entity(PeerUser(some_id))
+        my_chat    = await client.get_entity(PeerChat(some_id))
+        my_channel = await client.get_entity(PeerChannel(some_id))
 
 
 .. warning::
@@ -122,7 +122,7 @@ library, the raw requests you make to the API are also able to call
 
     .. code-block:: python
 
-        client(SendMessageRequest('username', 'hello'))
+        await client(SendMessageRequest('username', 'hello'))
 
 The library will call the ``.resolve()`` method of the request, which will
 resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if

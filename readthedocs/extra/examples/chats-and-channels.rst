@@ -26,11 +26,11 @@ to, you can make use of the `JoinChannelRequest`__ to join such channel:
     .. code-block:: python
 
         from telethon.tl.functions.channels import JoinChannelRequest
-        client(JoinChannelRequest(channel))
+        await client(JoinChannelRequest(channel))
 
         # In the same way, you can also leave such channel
         from telethon.tl.functions.channels import LeaveChannelRequest
-        client(LeaveChannelRequest(input_channel))
+        await client(LeaveChannelRequest(input_channel))
 
 
 For more on channels, check the `channels namespace`__.
@@ -49,7 +49,7 @@ example, is the ``hash`` of the chat or channel. Now you can use
     .. code-block:: python
 
         from telethon.tl.functions.messages import ImportChatInviteRequest
-        updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
+        updates = await client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
 Adding someone else to such chat or channel
@@ -64,7 +64,7 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
         # For normal chats
         from telethon.tl.functions.messages import AddChatUserRequest
 
-        client(AddChatUserRequest(
+        await client(AddChatUserRequest(
             chat_id,
             user_to_add,
             fwd_limit=10  # Allow the user to see the 10 last messages
@@ -73,7 +73,7 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
         # For channels
         from telethon.tl.functions.channels import InviteToChannelRequest
 
-        client(InviteToChannelRequest(
+        await client(InviteToChannelRequest(
             channel,
             [users_to_add]
         ))
@@ -122,7 +122,7 @@ a fixed limit:
         all_participants = []
 
         while True:
-            participants = client(GetParticipantsRequest(
+            participants = await client(GetParticipantsRequest(
                 channel, ChannelParticipantsSearch(''), offset, limit,
                 hash=0
             ))
@@ -197,7 +197,7 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
         #     )
 
         # Once you have a ChannelAdminRights, invoke it
-        client(EditAdminRequest(channel, user, rights))
+        await client(EditAdminRequest(channel, user, rights))
 
         # User will now be able to change group info, delete other people's
         # messages and pin messages.
@@ -230,7 +230,7 @@ use `GetMessagesViewsRequest`__, setting ``increment=True``:
         # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
         # Obtain `msg_ids' through `.get_message_history()` or anyhow. Must be a list.
 
-        client(GetMessagesViewsRequest(
+        await client(GetMessagesViewsRequest(
             peer=channel,
             id=msg_ids,
             increment=True

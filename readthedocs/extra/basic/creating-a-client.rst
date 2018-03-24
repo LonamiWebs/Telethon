@@ -42,7 +42,7 @@ your disk. This is by default a database file using Python's ``sqlite3``.
 Before using the client, you must be connected to Telegram.
 Doing so is very easy:
 
-    ``client.connect()  # Must return True, otherwise, try again``
+    ``await client.connect()  # Must return True, otherwise, try again``
 
 You may or may not be authorized yet. You must be authorized
 before you're able to send any request:
@@ -54,8 +54,8 @@ If you're not authorized, you need to ``.sign_in()``:
     .. code-block:: python
 
         phone_number = '+34600000000'
-        client.send_code_request(phone_number)
-        myself = client.sign_in(phone_number, input('Enter code: '))
+        await client.send_code_request(phone_number)
+        myself = await client.sign_in(phone_number, input('Enter code: '))
         # If .sign_in raises PhoneNumberUnoccupiedError, use .sign_up instead
         # If .sign_in raises SessionPasswordNeeded error, call .sign_in(password=...)
         # You can import both exceptions from telethon.errors.
@@ -78,10 +78,10 @@ As a full example:
     .. code-block:: python
 
         client = TelegramClient('anon', api_id, api_hash)
-        assert client.connect()
+        assert await client.connect()
         if not client.is_user_authorized():
-            client.send_code_request(phone_number)
-            me = client.sign_in(phone_number, input('Enter code: '))
+            await client.send_code_request(phone_number)
+            me = await client.sign_in(phone_number, input('Enter code: '))
 
 
 All of this, however, can be done through a call to ``.start()``:
@@ -89,7 +89,7 @@ All of this, however, can be done through a call to ``.start()``:
     .. code-block:: python
 
         client = TelegramClient('anon', api_id, api_hash)
-        client.start()
+        await client.start()
 
 
 The code shown is just what ``.start()`` will be doing behind the scenes
@@ -102,6 +102,19 @@ You can use either, as both will work. Determining which
 is just a matter of taste, and how much control you need.
 
 Remember that you can get yourself at any time with ``client.get_me()``.
+
+Assuming you've written all of this in a ``async def main():``, you can
+run it with:
+
+    .. code-block:: python
+
+        import asyncio
+
+        async def main():
+            ...
+
+        asyncio.get_event_loop().run_until_complete(main())
+
 
 .. warning::
     Please note that if you fail to login around 5 times (or change the first
@@ -141,9 +154,9 @@ account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
 
         client.sign_in(phone)
         try:
-            client.sign_in(code=input('Enter code: '))
+            await client.sign_in(code=input('Enter code: '))
         except SessionPasswordNeededError:
-            client.sign_in(password=getpass.getpass())
+            await client.sign_in(password=getpass.getpass())
 
 
 The mentioned ``.start()`` method will handle this for you as well, but
@@ -168,7 +181,7 @@ take as example the following code snippet:
         pw_salted = salt + pw + salt
         pw_hash = sha256(pw_salted).digest()
 
-        result = client(account.UpdatePasswordSettingsRequest(
+        result = await client(account.UpdatePasswordSettingsRequest(
             current_password_hash=salt,
             new_settings=PasswordInputSettings(
                 new_salt=salt,

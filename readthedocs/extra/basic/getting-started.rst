@@ -27,7 +27,7 @@ Creating a client
        api_hash = '0123456789abcdef0123456789abcdef'
 
        client = TelegramClient('session_name', api_id, api_hash)
-       client.start()
+       await client.start()
 
    **More details**: :ref:`creating-a-client`
 
@@ -38,30 +38,30 @@ Basic Usage
    .. code-block:: python
 
        # Getting information about yourself
-       print(client.get_me().stringify())
+       print((await client.get_me()).stringify())
 
        # Sending a message (you can use 'me' or 'self' to message yourself)
-       client.send_message('username', 'Hello World from Telethon!')
+       await client.send_message('username', 'Hello World from Telethon!')
 
        # Sending a file
-       client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+       await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
        # Retrieving messages from a chat
        from telethon import utils
-       for message in client.get_message_history('username', limit=10):
+       async for message in client.get_message_history('username', limit=10):
            print(utils.get_display_name(message.sender), message.message)
 
        # Listing all the dialogs (conversations you have open)
-       for dialog in client.get_dialogs(limit=10):
+       async for dialog in client.get_dialogs(limit=10):
            print(utils.get_display_name(dialog.entity), dialog.draft.message)
 
        # Downloading profile photos (default path is the working directory)
-       client.download_profile_photo('username')
+       await client.download_profile_photo('username')
 
        # Once you have a message with .media (if message.media)
        # you can download it using client.download_media():
-       messages = client.get_message_history('username')
-       client.download_media(messages[0])
+       messages = await client.get_message_history('username')
+       await client.download_media(messages[0])
 
    **More details**: :ref:`telegram-client`
 
@@ -71,17 +71,18 @@ Handling Updates
 
    .. code-block:: python
 
+       import asyncio
        from telethon import events
 
        # We need to have some worker running
        client.updates.workers = 1
 
        @client.on(events.NewMessage(incoming=True, pattern='(?i)hi'))
-       def handler(event):
-           event.reply('Hello!')
+       async def handler(event):
+           await event.reply('Hello!')
 
        # If you want to handle updates you can't let the script end.
-       input('Press enter to exit.')
+       asyncio.get_event_loop().run_forever()
 
    **More details**: :ref:`working-with-updates`
 

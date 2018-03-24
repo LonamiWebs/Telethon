@@ -32,4 +32,4 @@ times, in this case, ``22222`` so we can hardcode that:
 
         client = TelegramClient(None, api_id, api_hash)
         client.session.set_dc(2, '149.154.167.40', 80)
-        client.start(phone='9996621234', code_callback=lambda: '22222')
+        await client.start(phone='9996621234', code_callback=lambda: '22222')

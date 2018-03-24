@@ -19,7 +19,7 @@ not *interact* with a voting message), by making use of the
 
         from telethon.tl.functions.messages import GetInlineBotResultsRequest
 
-        bot_results = client(GetInlineBotResultsRequest(
+        bot_results = await client(GetInlineBotResultsRequest(
             bot, user_or_chat, 'query', ''
         ))
 
@@ -30,7 +30,7 @@ And you can select any of their results by using
 
         from telethon.tl.functions.messages import SendInlineBotResultRequest
 
-        client(SendInlineBotResultRequest(
+        await client(SendInlineBotResultRequest(
             get_input_peer(user_or_chat),
             obtained_query_id,
             obtained_str_id
@@ -47,7 +47,7 @@ To interact with a message that has a special reply markup, such as
 
         from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
 
-        client(GetBotCallbackAnswerRequest(
+        await client(GetBotCallbackAnswerRequest(
             user_or_chat,
             msg.id,
             data=msg.reply_markup.rows[wanted_row].buttons[wanted_button].data

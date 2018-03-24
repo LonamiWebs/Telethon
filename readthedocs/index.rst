@@ -19,6 +19,18 @@ when you upgrade!
    looking for the method reference, you should check :ref:`telethon-package`.
 
 
+.. note::
+
+    We assume that you have some experience working with ``asyncio``,
+    if you don't you should probably use the threaded version of the
+    library, or either learn how to use ``asyncio``. All the code
+    here assumes you're writing the code inside an ``async def`` so
+    we can use ``await`` across the examples.
+
+    Then you can ``import asyncio`` and run
+    ``asyncio.get_event_loop().run_until_complete(my_method())``
+
+
 What is this?
 *************
 
