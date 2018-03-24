@@ -78,7 +78,7 @@ class MemorySession(Session):
         try:
             p = utils.get_input_peer(e, allow_self=False)
             marked_id = utils.get_peer_id(p)
-        except ValueError:
+        except TypeError:
             return
 
         if isinstance(p, (InputPeerUser, InputPeerChannel)):
