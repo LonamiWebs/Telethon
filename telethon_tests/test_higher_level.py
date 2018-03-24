@@ -10,16 +10,17 @@ from telethon import TelegramClient
 api_id = None
 api_hash = None
 
-if not api_id or not api_hash:
-    raise ValueError('Please fill in both your api_id and api_hash.')
-
 
 class HigherLevelTests(unittest.TestCase):
-    @staticmethod
-    def test_cdn_download():
+    def setUp(self):
+        if not api_id or not api_hash:
+            raise ValueError('Please fill in both your api_id and api_hash.')
+
+    @unittest.skip("you can't seriously trash random mobile numbers like that :)")
+    def test_cdn_download(self):
         client = TelegramClient(None, api_id, api_hash)
         client.session.set_dc(0, '149.154.167.40', 80)
-        assert client.connect()
+        self.assertTrue(client.connect())
 
         try:
             phone = '+999662' + str(randint(0, 9999)).zfill(4)
@@ -37,11 +38,11 @@ class HigherLevelTests(unittest.TestCase):
 
             out = BytesIO()
             client.download_media(msg, out)
-            assert sha256(data).digest() == sha256(out.getvalue()).digest()
+            self.assertEqual(sha256(data).digest(), sha256(out.getvalue()).digest())
 
             out = BytesIO()
             client.download_media(msg, out)  # Won't redirect
-            assert sha256(data).digest() == sha256(out.getvalue()).digest()
+            self.assertEqual(sha256(data).digest(), sha256(out.getvalue()).digest())
 
             client.log_out()
         finally:
