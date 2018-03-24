@@ -20,10 +20,24 @@ async def _into_id_set(client, chats):
 
     result = set()
     for chat in chats:
-        chat = await client.get_input_entity(chat)
-        if isinstance(chat, types.InputPeerSelf):
-            chat = await client.get_me(input_peer=True)
-        result.add(utils.get_peer_id(chat))
+        if isinstance(chat, int):
+            if chat < 0:
+                result.add(chat)  # Explicitly marked IDs are negative
+            else:
+                result.update({  # Support all valid types of peers
+                    utils.get_peer_id(types.PeerUser(chat)),
+                    utils.get_peer_id(types.PeerChat(chat)),
+                    utils.get_peer_id(types.PeerChannel(chat)),
+                })
+        elif isinstance(chat, TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
+            # 0x2d45687 == crc32(b'Peer')
+            result.add(utils.get_peer_id(chat))
+        else:
+            chat = await client.get_input_entity(chat)
+            if isinstance(chat, types.InputPeerSelf):
+                chat = client.get_me(input_peer=True)
+            result.add(utils.get_peer_id(chat))
+
     return result
 
 
