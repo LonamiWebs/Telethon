@@ -59,7 +59,7 @@ class Dialog:
 
         self.entity = entities[utils.get_peer_id(dialog.peer)]
         self.input_entity = utils.get_input_peer(self.entity)
-        self.id = utils.get_peer_id(self.input_entity)
+        self.id = utils.get_peer_id(self.entity)  # ^ May be InputPeerSelf()
         self.name = utils.get_display_name(self.entity)
 
         self.unread_count = dialog.unread_count
