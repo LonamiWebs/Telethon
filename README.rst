@@ -41,8 +41,8 @@ Creating a client
   client.start()
 
 
-Doing stuff
------------
+Working with Telethon
+---------------------
 
 .. code:: python
 
@@ -54,6 +54,18 @@ Doing stuff
   client.download_profile_photo('me')
   messages = client.get_message_history('username')
   client.download_media(messages[0])
+  
+  
+Responding to events
+--------------------
+
+.. code:: python
+
+  from telethon import events
+
+  @client.on(events.NewMessage(incoming=True))
+  def echo(event):
+    event.reply(event.text)
 
 
 Next steps
