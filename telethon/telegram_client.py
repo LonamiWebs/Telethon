@@ -2176,8 +2176,8 @@ class TelegramClient(TelegramBareClient):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
-        async def decorator(f):
-            await self.add_event_handler(f, event)
+        def decorator(f):
+            self._loop.run_until_complete(self.add_event_handler(f, event))
             return f
 
         return decorator
