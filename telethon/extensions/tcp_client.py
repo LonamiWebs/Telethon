@@ -175,7 +175,16 @@ class TcpClient:
                 except asyncio.TimeoutError as e:
                     # These are somewhat common if the server has nothing
                     # to send to us, so use a lower logging priority.
-                    __log__.debug('socket.timeout "%s" while reading data', e)
+                    if bytes_left < size:
+                        __log__.warning(
+                            'socket.timeout "%s" when %d/%d had been received',
+                            e, size - bytes_left, size
+                        )
+                    else:
+                        __log__.debug(
+                            'socket.timeout "%s" while reading data', e
+                        )
+
                     raise TimeoutError() from e
                 except ConnectionError as e:
                     __log__.info('ConnectionError "%s" while reading data', e)

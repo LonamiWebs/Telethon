@@ -77,6 +77,37 @@ if (typeof prependPath !== 'undefined') {
     }
 }
 
+// Assumes haystack has no whitespace and both are lowercase.
+function find(haystack, needle) {
+    if (needle.length == 0) {
+        return true;
+    }
+    var hi = 0;
+    var ni = 0;
+    while (true) {
+        while (needle[ni] < 'a' || needle[ni] > 'z') {
+            ++ni;
+            if (ni == needle.length) {
+                return true;
+            }
+        }
+        while (haystack[hi] != needle[ni]) {
+            ++hi;
+            if (hi == haystack.length) {
+                return false;
+            }
+        }
+        ++hi;
+        ++ni;
+        if (ni == needle.length) {
+            return true;
+        }
+        if (hi == haystack.length) {
+            return false;
+        }
+    }
+}
+
 // Given two input arrays "original" and "original urls" and a query,
 // return a pair of arrays with matching "query" elements from "original".
 //
@@ -86,7 +117,7 @@ function getSearchArray(original, originalu, query) {
     var destinationu = [];
 
     for (var i = 0; i < original.length; ++i) {
-        if (original[i].toLowerCase().indexOf(query) != -1) {
+        if (find(original[i].toLowerCase(), query)) {
             destination.push(original[i]);
             destinationu.push(originalu[i]);
         }

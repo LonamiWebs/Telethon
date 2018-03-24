@@ -17,14 +17,15 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-import os
 import re
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
 
 
 root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
+
+tl_ref_url = 'https://lonamiwebs.github.io/Telethon'
 
 
 # -- General configuration ------------------------------------------------
@@ -36,7 +37,10 @@ root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = [
+    'sphinx.ext.autodoc',
+    'custom_roles'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

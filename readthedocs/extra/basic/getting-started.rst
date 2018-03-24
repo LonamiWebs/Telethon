@@ -66,6 +66,26 @@ Basic Usage
    **More details**: :ref:`telegram-client`
 
 
+Handling Updates
+****************
+
+   .. code-block:: python
+
+       from telethon import events
+
+       # We need to have some worker running
+       client.updates.workers = 1
+
+       @client.on(events.NewMessage(incoming=True, pattern='(?i)hi'))
+       def handler(event):
+           event.reply('Hello!')
+
+       # If you want to handle updates you can't let the script end.
+       input('Press enter to exit.')
+
+   **More details**: :ref:`working-with-updates`
+
+
 ----------
 
 You can continue by clicking on the "More details" link below each

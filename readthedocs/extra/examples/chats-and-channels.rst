@@ -56,11 +56,12 @@ Adding someone else to such chat or channel
 *******************************************
 
 If you don't want to add yourself, maybe because you're already in,
-you can always add someone else with the `AddChatUserRequest`__,
-which use is very straightforward:
+you can always add someone else with the `AddChatUserRequest`__, which
+use is very straightforward, or `InviteToChannelRequest`__ for channels:
 
     .. code-block:: python
 
+        # For normal chats
         from telethon.tl.functions.messages import AddChatUserRequest
 
         client(AddChatUserRequest(
@@ -68,6 +69,15 @@ which use is very straightforward:
             user_to_add,
             fwd_limit=10  # Allow the user to see the 10 last messages
         ))
+
+        # For channels
+        from telethon.tl.functions.channels import InviteToChannelRequest
+
+        client(InviteToChannelRequest(
+            channel,
+            [users_to_add]
+        ))
+
 
 
 Checking a link without joining
@@ -84,6 +94,7 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/join_channel.html
 __ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
+__ https://lonamiwebs.github.io/Telethon/methods/channels/invite_to_channel.html
 __ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
 
 
@@ -224,6 +235,12 @@ use `GetMessagesViewsRequest`__, setting ``increment=True``:
             id=msg_ids,
             increment=True
         ))
+
+
+Note that you can only do this **once or twice a day** per account,
+running this in a loop will obviously not increase the views forever
+unless you wait a day between each iteration. If you run it any sooner
+than that, the views simply won't be increased.
 
 __ https://github.com/LonamiWebs/Telethon/issues/233
 __ https://github.com/LonamiWebs/Telethon/issues/305

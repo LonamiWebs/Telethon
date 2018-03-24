@@ -37,8 +37,10 @@ class _EventBuilder(abc.ABC):
             only matching chats will be handled.
 
         blacklist_chats (:obj:`bool`, optional):
-            Whether to treat the the list of chats as a blacklist (if
-            it matches it will NOT be handled) or a whitelist (default).
+            Whether to treat the chats as a blacklist instead of
+            as a whitelist (default). This means that every chat
+            will be handled *except* those specified in ``chats``
+            which will be ignored if ``blacklist_chats=True``.
     """
     def __init__(self, chats=None, blacklist_chats=False):
         self.chats = chats
@@ -70,6 +72,7 @@ class _EventBuilder(abc.ABC):
 
 class _EventCommon(abc.ABC):
     """Intermediate class with common things to all events"""
+    _event_name = 'Event'
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
         self._entities = {}
@@ -90,13 +93,13 @@ class _EventCommon(abc.ABC):
 
     async def _get_entity(self, msg_id, entity_id, chat=None):
         """
-        Helper function to call GetMessages on the give msg_id and
+        Helper function to call :tl:`GetMessages` on the give msg_id and
         return the input entity whose ID is the given entity ID.
 
-        If ``chat`` is present it must be an InputPeer.
+        If ``chat`` is present it must be an :tl:`InputPeer`.
 
-        Returns a tuple of (entity, input_peer) if it was found, or
-        a tuple of (None, None) if it couldn't be.
+        Returns a tuple of ``(entity, input_peer)`` if it was found, or
+        a tuple of ``(None, None)`` if it couldn't be.
         """
         try:
             if isinstance(chat, types.InputPeerChannel):
@@ -123,7 +126,7 @@ class _EventCommon(abc.ABC):
     @property
     async def input_chat(self):
         """
-        The (:obj:`InputPeer`) (group, megagroup or channel) on which
+        The (:tl:`InputPeer`) (group, megagroup or channel) on which
         the event occurred. This doesn't have the title or anything,
         but is useful if you don't need those to avoid further
         requests.
@@ -154,7 +157,7 @@ class _EventCommon(abc.ABC):
     @property
     async def chat(self):
         """
-        The (:obj:`User` | :obj:`Chat` | :obj:`Channel`, optional) on which
+        The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
         the event occurred. This property may make an API call the first time
         to get the most up to date version of the chat (mostly when the event
         doesn't belong to a channel), so keep that in mind.
@@ -178,7 +181,7 @@ class _EventCommon(abc.ABC):
 
     def to_dict(self):
         d = {k: v for k, v in self.__dict__.items() if k[0] != '_'}
-        d['_'] = self.__class__.__name__
+        d['_'] = self._event_name
         return d
 
 
@@ -196,7 +199,7 @@ class Raw(_EventBuilder):
 def _name_inner_event(cls):
     """Decorator to rename cls.Event 'Event' as 'cls.Event'"""
     if hasattr(cls, 'Event'):
-        cls.Event.__name__ = '{}.Event'.format(cls.__name__)
+        cls.Event._event_name = '{}.Event'.format(cls.__name__)
     else:
         warnings.warn('Class {} does not have a inner Event'.format(cls))
     return cls
@@ -310,8 +313,8 @@ class NewMessage(_EventBuilder):
         Represents the event of a new message.
 
         Members:
-            message (:obj:`Message`):
-                This is the original ``Message`` object.
+            message (:tl:`Message`):
+                This is the original :tl:`Message` object.
 
             is_private (:obj:`bool`):
                 True if the message was sent as a private message.
@@ -406,7 +409,7 @@ class NewMessage(_EventBuilder):
         @property
         async def input_sender(self):
             """
-            This (:obj:`InputPeer`) is the input version of the user who
+            This (:tl:`InputPeer`) is the input version of the user who
             sent the message. Similarly to ``input_chat``, this doesn't have
             things like username or similar, but still useful in some cases.
 
@@ -434,7 +437,7 @@ class NewMessage(_EventBuilder):
         @property
         async def sender(self):
             """
-            This (:obj:`User`) may make an API call the first time to get
+            This (:tl:`User`) may make an API call the first time to get
             the most up to date version of the sender (mostly when the event
             doesn't belong to a channel), so keep that in mind.
 
@@ -474,8 +477,8 @@ class NewMessage(_EventBuilder):
         @property
         async def reply_message(self):
             """
-            This (:obj:`Message`, optional) will make an API call the first
-            time to get the full ``Message`` object that one was replying to,
+            This optional :tl:`Message` will make an API call the first
+            time to get the full :tl:`Message` object that one was replying to,
             so use with care as there is no caching besides local caching yet.
             """
             if not self.message.reply_to_msg_id:
@@ -498,14 +501,14 @@ class NewMessage(_EventBuilder):
         @property
         def forward(self):
             """
-            The unmodified (:obj:`MessageFwdHeader`, optional).
+            The unmodified :tl:`MessageFwdHeader`, if present..
             """
             return self.message.fwd_from
 
         @property
         def media(self):
             """
-            The unmodified (:obj:`MessageMedia`, optional).
+            The unmodified :tl:`MessageMedia`, if present.
             """
             return self.message.media
 
@@ -513,7 +516,7 @@ class NewMessage(_EventBuilder):
         def photo(self):
             """
             If the message media is a photo,
-            this returns the (:obj:`Photo`) object.
+            this returns the :tl:`Photo` object.
             """
             if isinstance(self.message.media, types.MessageMediaPhoto):
                 photo = self.message.media.photo
@@ -524,7 +527,7 @@ class NewMessage(_EventBuilder):
         def document(self):
             """
             If the message media is a document,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             if isinstance(self.message.media, types.MessageMediaDocument):
                 doc = self.message.media.document
@@ -547,7 +550,7 @@ class NewMessage(_EventBuilder):
         def audio(self):
             """
             If the message media is a document with an Audio attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAudio,
                                                lambda attr: not attr.voice)
@@ -556,7 +559,7 @@ class NewMessage(_EventBuilder):
         def voice(self):
             """
             If the message media is a document with a Voice attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAudio,
                                                lambda attr: attr.voice)
@@ -565,7 +568,7 @@ class NewMessage(_EventBuilder):
         def video(self):
             """
             If the message media is a document with a Video attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeVideo)
 
@@ -573,7 +576,7 @@ class NewMessage(_EventBuilder):
         def video_note(self):
             """
             If the message media is a document with a Video attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeVideo,
                                                lambda attr: attr.round_message)
@@ -582,7 +585,7 @@ class NewMessage(_EventBuilder):
         def gif(self):
             """
             If the message media is a document with an Animated attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeAnimated)
 
@@ -590,7 +593,7 @@ class NewMessage(_EventBuilder):
         def sticker(self):
             """
             If the message media is a document with a Sticker attribute,
-            this returns the (:obj:`Document`) object.
+            this returns the :tl:`Document` object.
             """
             return self._document_by_attribute(types.DocumentAttributeSticker)
 
@@ -609,11 +612,12 @@ class ChatAction(_EventBuilder):
     Represents an action in a chat (such as user joined, left, or new pin).
     """
     def build(self, update):
-        if isinstance(update, types.UpdateChannelPinnedMessage):
-            # Telegram sends UpdateChannelPinnedMessage and then
-            # UpdateNewChannelMessage with MessageActionPinMessage.
+        if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
+            # Telegram does not always send
+            # UpdateChannelPinnedMessage for new pins
+            # but always for unpin, with update.id = 0
             event = ChatAction.Event(types.PeerChannel(update.channel_id),
-                                     new_pin=update.id)
+                                     unpin=True)
 
         elif isinstance(update, types.UpdateChatParticipantAdd):
             event = ChatAction.Event(types.PeerChat(update.chat_id),
@@ -664,6 +668,11 @@ class ChatAction(_EventBuilder):
                 event = ChatAction.Event(msg,
                                          users=msg.from_id,
                                          new_photo=True)
+            elif isinstance(action, types.MessageActionPinMessage):
+                # Telegram always sends this service message for new pins
+                event = ChatAction.Event(msg,
+                                         users=msg.from_id,
+                                         new_pin=msg.reply_to_msg_id)
             else:
                 return
         else:
@@ -678,12 +687,12 @@ class ChatAction(_EventBuilder):
 
         Members:
             new_pin (:obj:`bool`):
-                ``True`` if the pin has changed (new pin or removed).
+                ``True`` if there is a new pin.
 
             new_photo (:obj:`bool`):
                 ``True`` if there's a new chat photo (or it was removed).
 
-            photo (:obj:`Photo`, optional):
+            photo (:tl:`Photo`, optional):
                 The new photo (or ``None`` if it was removed).
 
 
@@ -704,10 +713,13 @@ class ChatAction(_EventBuilder):
 
             new_title (:obj:`bool`, optional):
                 The new title string for the chat, if applicable.
+
+            unpin (:obj:`bool`):
+                ``True`` if the existing pin gets unpinned.
         """
         def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None):
+                     users=None, new_title=None, unpin=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.to_id
@@ -726,7 +738,7 @@ class ChatAction(_EventBuilder):
             self._added_by = None
             self._kicked_by = None
             self.user_added, self.user_joined, self.user_left,\
-                self.user_kicked = (False, False, False, False)
+                self.user_kicked, self.unpin = (False, False, False, False, False)
 
             if added_by is True:
                 self.user_joined = True
@@ -745,6 +757,7 @@ class ChatAction(_EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
+            self.unpin = unpin
 
         async def respond(self, *args, **kwargs):
             """
@@ -785,7 +798,7 @@ class ChatAction(_EventBuilder):
         @property
         async def pinned_message(self):
             """
-            If ``new_pin`` is ``True``, this returns the (:obj:`Message`)
+            If ``new_pin`` is ``True``, this returns the (:tl:`Message`)
             object that was pinned.
             """
             if self._pinned_message == 0:
@@ -851,7 +864,7 @@ class ChatAction(_EventBuilder):
         @property
         async def input_user(self):
             """
-            Input version of the self.user property.
+            Input version of the ``self.user`` property.
             """
             if await self.input_users:
                 return self._input_users[0]
@@ -888,7 +901,7 @@ class ChatAction(_EventBuilder):
         @property
         async def input_users(self):
             """
-            Input version of the self.users property.
+            Input version of the ``self.users`` property.
             """
             if self._input_users is None and self._user_peers:
                 self._input_users = []
@@ -941,7 +954,7 @@ class UserUpdate(_EventBuilder):
             recently (:obj:`bool`):
                 ``True`` if the user was seen within a day.
 
-            action (:obj:`SendMessageAction`, optional):
+            action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
             cancel (:obj:`bool`):
@@ -1066,6 +1079,9 @@ class MessageEdited(NewMessage):
         event._entities = update.entities
         return self._message_filter_event(event)
 
+    class Event(NewMessage.Event):
+        pass  # Required if we want a different name for it
+
 
 @_name_inner_event
 class MessageDeleted(_EventBuilder):
@@ -1100,22 +1116,22 @@ class MessageDeleted(_EventBuilder):
 
 class StopPropagation(Exception):
     """
-    If this Exception is found to be raised in any of the handlers for a
-    given update, it will stop the execution of all other registered
-    event handlers in the chain.
-    Think of it like a ``StopIteration`` exception in a for loop.
+    If this exception is raised in any of the handlers for a given event,
+    it will stop the execution of all other registered event handlers.
+    It can be seen as the ``StopIteration`` in a for loop but for events.
 
     Example usage:
-    ```
-    @client.on(events.NewMessage)
-    def delete(event):
-        event.delete()
-        # Other handlers won't have an event to work with
-        raise StopPropagation
-
-    @client.on(events.NewMessage)
-    def _(event):
-        # Will never be reached, because it is the second handler in the chain.
-        pass
-    ```
+        >>> @client.on(events.NewMessage)
+        ... def delete(event):
+        ...     event.delete()
+        ...     # No other event handler will have a chance to handle this event
+        ...     raise StopPropagation
+        ...
+        >>> @client.on(events.NewMessage)
+        ... def _(event):
+        ...     # Will never be reached, because it is the second handler
+        ...     pass
     """
+    # For some reason Sphinx wants the silly >>> or
+    # it will show warnings and look bad when generated.
+    pass

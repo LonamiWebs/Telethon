@@ -1,3 +1,5 @@
+.. _entities:
+
 =========================
 Users, Chats and Channels
 =========================
@@ -7,16 +9,16 @@ Introduction
 ************
 
 The library widely uses the concept of "entities". An entity will refer
-to any ``User``, ``Chat`` or ``Channel`` object that the API may return
-in response to certain methods, such as ``GetUsersRequest``.
+to any :tl:`User`, :tl:`Chat` or :tl:`Channel` object that the API may return
+in response to certain methods, such as :tl:`GetUsersRequest`.
 
 .. note::
 
     When something "entity-like" is required, it means that you need to
     provide something that can be turned into an entity. These things include,
-    but are not limited to, usernames, exact titles, IDs, ``Peer`` objects,
-    or even entire ``User``, ``Chat`` and ``Channel`` objects and even phone
-    numbers from people you have in your contacts.
+    but are not limited to, usernames, exact titles, IDs, :tl:`Peer` objects,
+    or even entire :tl:`User`, :tl:`Chat` and :tl:`Channel` objects and even
+    phone numbers from people you have in your contacts.
 
 Getting entities
 ****************
@@ -71,7 +73,7 @@ become possible.
 Every entity the library encounters (in any response to any call) will by
 default be cached in the ``.session`` file (an SQLite database), to avoid
 performing unnecessary API calls. If the entity cannot be found, additonal
-calls like ``ResolveUsernameRequest`` or ``GetContactsRequest`` may be
+calls like :tl:`ResolveUsernameRequest` or :tl:`GetContactsRequest` may be
 made to obtain the required information.
 
 
@@ -88,14 +90,14 @@ Entities vs. Input Entities
 
 On top of the normal types, the API also make use of what they call their
 ``Input*`` versions of objects. The input version of an entity (e.g.
-``InputPeerUser``, ``InputChat``, etc.) only contains the minimum
+:tl:`InputPeerUser`, :tl:`InputChat`, etc.) only contains the minimum
 information that's required from Telegram to be able to identify
-who you're referring to: a ``Peer``'s **ID** and **hash**.
+who you're referring to: a :tl:`Peer`'s **ID** and **hash**.
 
 This ID/hash pair is unique per user, so if you use the pair given by another
 user **or bot** it will **not** work.
 
-To save *even more* bandwidth, the API also makes use of the ``Peer``
+To save *even more* bandwidth, the API also makes use of the :tl:`Peer`
 versions, which just have an ID. This serves to identify them, but
 peers alone are not enough to use them. You need to know their hash
 before you can "use them".
@@ -104,8 +106,8 @@ As we just mentioned, API calls don't need to know the whole information
 about the entities, only their ID and hash. For this reason, another method,
 ``.get_input_entity()`` is available. This will always use the cache while
 possible, making zero API calls most of the time. When a request is made,
-if you provided the full entity, e.g. an ``User``, the library will convert
-it to the required ``InputPeer`` automatically for you.
+if you provided the full entity, e.g. an :tl:`User`, the library will convert
+it to the required :tl:`InputPeer` automatically for you.
 
 **You should always favour** ``.get_input_entity()`` **over** ``.get_entity()``
 for this reason! Calling the latter will always make an API call to get
@@ -123,5 +125,5 @@ library, the raw requests you make to the API are also able to call
         client(SendMessageRequest('username', 'hello'))
 
 The library will call the ``.resolve()`` method of the request, which will
-resolve ``'username'`` with the appropriated ``InputPeer``. Don't worry if
+resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if
 you don't get this yet, but remember some of the details here are important.

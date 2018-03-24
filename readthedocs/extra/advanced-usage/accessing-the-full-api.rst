@@ -25,7 +25,7 @@ You should also refer to the documentation to see what the objects
 from a common type, and that's the reason for this distinction.
 
 Say ``client.send_message()`` didn't exist, we could use the `search`__
-to look for "message". There we would find `SendMessageRequest`__,
+to look for "message". There we would find :tl:`SendMessageRequest`,
 which we can work with.
 
 Every request is a Python class, and has the parameters needed for you
@@ -45,11 +45,11 @@ If you're going to use a lot of these, you may do:
         # We now have access to 'functions.messages.SendMessageRequest'
 
 We see that this request must take at least two parameters, a ``peer``
-of type `InputPeer`__, and a ``message`` which is just a Python
+of type :tl:`InputPeer`, and a ``message`` which is just a Python
 ``str``\ ing.
 
-How can we retrieve this ``InputPeer``? We have two options. We manually
-`construct one`__, for instance:
+How can we retrieve this :tl:`InputPeer`? We have two options. We manually
+construct one, for instance:
 
     .. code-block:: python
 
@@ -64,7 +64,7 @@ Or we call ``.get_input_entity()``:
         peer = client.get_input_entity('someone')
 
 When you're going to invoke an API method, most require you to pass an
-``InputUser``, ``InputChat``, or so on, this is why using
+:tl:`InputUser`, :tl:`InputChat`, or so on, this is why using
 ``.get_input_entity()`` is more straightforward (and often
 immediate, if you've seen the user before, know their ID, etc.).
 If you also need to have information about the whole user, use
@@ -138,6 +138,3 @@ This can further be simplified to:
 __ https://lonamiwebs.github.io/Telethon
 __ https://lonamiwebs.github.io/Telethon/methods/index.html
 __ https://lonamiwebs.github.io/Telethon/?q=message
-__ https://lonamiwebs.github.io/Telethon/methods/messages/send_message.html
-__ https://lonamiwebs.github.io/Telethon/types/input_peer.html
-__ https://lonamiwebs.github.io/Telethon/constructors/input_peer_user.html

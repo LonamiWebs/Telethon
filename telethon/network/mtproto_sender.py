@@ -25,13 +25,15 @@ __log__ = logging.getLogger(__name__)
 
 
 class MtProtoSender:
-    """MTProto Mobile Protocol sender
-       (https://core.telegram.org/mtproto/description).
+    """
+    MTProto Mobile Protocol sender
+    (https://core.telegram.org/mtproto/description).
 
-       Note that this class is not thread-safe, and calling send/receive
-       from two or more threads at the same time is undefined behaviour.
-       Rationale: a new connection should be spawned to send/receive requests
-                  in parallel, so thread-safety (hence locking) isn't needed.
+    Note that this class is not thread-safe, and calling send/receive
+    from two or more threads at the same time is undefined behaviour.
+    Rationale:
+        a new connection should be spawned to send/receive requests
+        in parallel, so thread-safety (hence locking) isn't needed.
     """
 
     def __init__(self, session, connection, loop=None):
