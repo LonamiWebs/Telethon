@@ -38,7 +38,7 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError, EmailUnconfirmedError
+    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -2471,7 +2471,7 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-    def edit_2FA(self, current_password=None, new_password=None, hint='', email=None):
+    def edit_2fa(self, current_password=None, new_password=None, hint='', email=None):
         """
         Changes the 2FA settings of the logged in user, according to the
         passed parameters. Take note of the parameter explanations
@@ -2500,15 +2500,15 @@ class TelegramClient(TelegramBareClient):
             ``True`` if successful, ``False`` otherwise
         """
         if new_password is None and current_password is None:
-            __log__.warn('Both new_password and current_password were not '\
-                          'specified, nothing to do')
+            raise PasswordEmptyError('Both new_password and current_password '\
+                                     'were not specified')
             return False
         
         pass_result = self(GetPasswordRequest())
         if isinstance(pass_result, NoPassword) and current_password:
             __log__.warn('You supplied current_password even though this '\
                           'account does not have one set')
-            return False  # can do "current_password = None" and continue too
+            current_password = None
         salt_random = os.urandom(8)
         salt = pass_result.new_salt + salt_random
 
