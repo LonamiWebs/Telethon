@@ -11,18 +11,27 @@ Working with messages
 Forwarding messages
 *******************
 
-Note that ForwardMessageRequest_ (note it's Message, singular) will *not*
-work if channels are involved. This is because channel (and megagroups) IDs
-are not unique, so you also need to know who the sender is (a parameter this
-request doesn't have).
-
-Either way, you are encouraged to use ForwardMessagesRequest_ (note it's
-Message*s*, plural) *always*, since it is more powerful, as follows:
+This request is available as a friendly method through
+:obj:`client.forward_messages <telethon.telegram_client.TelegramClient.forward_messages>``,
+and can be used like shown below:
 
     .. code-block:: python
 
+        # If you only have the message IDs
+        client.forward_messages(
+            entity,  # to which entity you are forwarding the messages
+            message_ids,  # the IDs of the messages (or message) to forward
+            from_entity  # who sent the messages?
+        )
+
+        # If you have ``Message`` objects
+        client.forward_messages(
+            entity,  # to which entity you are forwarding the messages
+            messages  # the messages (or message) to forward
+        )
+
+        # You can also do it manually if you prefer
         from telethon.tl.functions.messages import ForwardMessagesRequest
-        #                                             note the s ^
 
         messages = foo()  # retrieve a few messages (or even one, in a list)
         from_entity = bar()
@@ -119,7 +128,6 @@ send yourself the very first sticker you have:
         ))
 
 
-.. _ForwardMessageRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_message.html
 .. _ForwardMessagesRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_messages.html
 .. _SearchRequest: https://lonamiwebs.github.io/Telethon/methods/messages/search.html
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215
