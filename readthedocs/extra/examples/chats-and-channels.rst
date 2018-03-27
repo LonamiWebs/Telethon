@@ -147,8 +147,8 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
 __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
 __ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
 __ https://github.com/LonamiWebs/Telethon/issues/573
+__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
 
 
 Recent Actions
