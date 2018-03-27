@@ -1,7 +1,9 @@
 import datetime
 
+from .. import TLObject
 from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
+from ...errors import RPCError
 from ...extensions import markdown
 
 
@@ -141,3 +143,24 @@ class Draft:
         Deletes this draft, and returns ``True`` on success.
         """
         return self.set_message(text='')
+
+    def to_dict(self):
+        try:
+            entity = self.entity
+        except RPCError as e:
+            entity = e
+
+        return {
+            '_': 'Draft',
+            'text': self.text,
+            'entity': entity,
+            'date': self.date,
+            'link_preview': self.link_preview,
+            'reply_to_msg_id': self.reply_to_msg_id
+        }
+
+    def __str__(self):
+        return TLObject.pretty_format(self.to_dict())
+
+    def stringify(self):
+        return TLObject.pretty_format(self.to_dict(), indent=0)

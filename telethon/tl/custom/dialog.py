@@ -1,4 +1,5 @@
 from . import Draft
+from .. import TLObject
 from ... import utils
 
 
@@ -73,3 +74,19 @@ class Dialog:
         ``client.send_message(dialog.input_entity, *args, **kwargs)``.
         """
         return self._client.send_message(self.input_entity, *args, **kwargs)
+
+    def to_dict(self):
+        return {
+            '_': 'Dialog',
+            'name': self.name,
+            'date': self.date,
+            'draft': self.draft,
+            'message': self.message,
+            'entity': self.entity,
+        }
+
+    def __str__(self):
+        return TLObject.pretty_format(self.to_dict())
+
+    def stringify(self):
+        return TLObject.pretty_format(self.to_dict(), indent=0)
