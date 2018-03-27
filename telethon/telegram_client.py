@@ -83,7 +83,7 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService
+    PhotoSizeEmpty, MessageService, ChatParticipants
 )
 from .tl.types.messages import DialogsSlice
 from .extensions import markdown, html
@@ -1278,6 +1278,11 @@ class TelegramClient(TelegramBareClient):
         elif isinstance(entity, InputPeerChat):
             # TODO We *could* apply the `filter` here ourselves
             full = self(GetFullChatRequest(entity.chat_id))
+            if not isinstance(full.full_chat.participants, ChatParticipants):
+                # ChatParticipantsForbidden won't have ``.participants``
+                _total[0] = 0
+                return
+
             if _total:
                 _total[0] = len(full.full_chat.participants.participants)
 
