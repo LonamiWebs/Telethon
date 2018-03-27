@@ -2425,6 +2425,9 @@ class TelegramClient(TelegramBareClient):
         Returns:
             :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`.
         """
+        if peer in ('me', 'self'):
+            return InputPeerSelf()
+
         try:
             # First try to get the entity from cache, otherwise figure it out
             return self.session.get_input_entity(peer)
@@ -2432,8 +2435,6 @@ class TelegramClient(TelegramBareClient):
             pass
 
         if isinstance(peer, str):
-            if peer in ('me', 'self'):
-                return InputPeerSelf()
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
         original_peer = peer
