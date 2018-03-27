@@ -180,7 +180,7 @@ See the examples below:
         # Also take note that unless you remove 2FA or explicitly give email parameter again, it will keep the last used setting
         
         # Set hint after already setting password:
-        client.edit_2fa(current_password='memes and dreams, new_password='memes and dreams', hint='It keeps you alive')
+        client.edit_2fa(current_password='memes and dreams', new_password='memes and dreams', hint='It keeps you alive')
         
 
 __ https://github.com/Anorov/PySocks#installation
