@@ -150,35 +150,9 @@ The mentioned ``.start()`` method will handle this for you as well, but
 you must set the ``password=`` parameter beforehand (it won't be asked).
 
 If you don't have 2FA enabled, but you would like to do so through the library,
-take as example the following code snippet:
-
-    .. code-block:: python
-
-        import os
-        from hashlib import sha256
-        from telethon.tl.functions import account
-        from telethon.tl.types.account import PasswordInputSettings
-
-        new_salt = client(account.GetPasswordRequest()).new_salt
-        salt = new_salt + os.urandom(8)  # new random salt
-
-        pw = 'secret'.encode('utf-8')  # type your new password here
-        hint = 'hint'
-
-        pw_salted = salt + pw + salt
-        pw_hash = sha256(pw_salted).digest()
-
-        result = client(account.UpdatePasswordSettingsRequest(
-            current_password_hash=salt,
-            new_settings=PasswordInputSettings(
-                new_salt=salt,
-                new_password_hash=pw_hash,
-                hint=hint
-            )
-        ))
-
-Thanks to `Issue 259 <https://github.com/LonamiWebs/Telethon/issues/259>`_
-for the tip!
+use :obj:`client.edit_2fa <telethon.telegram_client.TelegramClient.edit_2fa>`
+for it. Be sure to know what you're doing when using this function and you
+won't run into any problems.
 
 
 __ https://github.com/Anorov/PySocks#installation
