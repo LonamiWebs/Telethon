@@ -150,10 +150,44 @@ The mentioned ``.start()`` method will handle this for you as well, but
 you must set the ``password=`` parameter beforehand (it won't be asked).
 
 If you don't have 2FA enabled, but you would like to do so through the library,
-use :obj:`client.edit_2fa <telethon.telegram_client.TelegramClient.edit_2fa>`
-for it. Be sure to know what you're doing when using this function and you
-won't run into any problems.
+use ``client.edit_2fa()``.
+Be sure to know what you're doing when using this function and
+you won't run into any problems.
+Take note that if you want to set only the email/hint and leave 
+the current password unchanged, you need to "redo" the 2fa.
 
+See the examples below:
+
+    .. code-block:: python
+
+        from telethon.errors import EmailUnconfirmedError
+        
+        # Sets 2FA password for first time:
+        client.edit_2fa(new_password='supersecurepassword')
+        
+        # Changes password:
+        client.edit_2fa(current_password='supersecurepassword', 
+                        new_password='changedmymind')
+        
+        # Clears current password (i.e. removes 2FA):
+        client.edit_2fa(current_password='changedmymind', new_password=None)
+        
+        # Sets new password with recovery email:
+        try:
+            client.edit_2fa(new_password='memes and dreams', 
+                            email='JohnSmith@example.com')
+            # Raises error (you need to check your email to complete 2FA setup.)
+        except EmailUnconfirmedError:
+            # You can put email checking code here if desired.
+            pass
+            
+        # Also take note that unless you remove 2FA or explicitly
+        # give email parameter again it will keep the last used setting
+        
+        # Set hint after already setting password:
+        client.edit_2fa(current_password='memes and dreams',
+                        new_password='memes and dreams',
+                        hint='It keeps you alive')
 
 __ https://github.com/Anorov/PySocks#installation
 __ https://github.com/Anorov/PySocks#usage-1
