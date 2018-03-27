@@ -2471,12 +2471,13 @@ class TelegramClient(TelegramBareClient):
             'Make sure you have encountered this peer before.'.format(peer)
         )
 
-    def edit_2fa(self, current_password=None, new_password=None, hint='', email=None):
+    def edit_2fa(self, current_password=None, new_password=None, hint='',
+                 email=None):
         """
         Changes the 2FA settings of the logged in user, according to the
         passed parameters. Take note of the parameter explanations.
 
-        This method has no effect if both current and new password are omitted.
+        Has no effect if both current and new password are omitted.
 
         current_password (:obj:`str`, optional):
             The current password, to authorize changing to ``new_password``.
@@ -2485,8 +2486,9 @@ class TelegramClient(TelegramBareClient):
             Passing this by itself will remove 2FA (if correct).
 
         new_password (:obj:`str`, optional):
-            The password to set as 2FA. If 2FA was already enabled, ``current_password``
-            **must** be set. Leaving this blank or ``None`` will remove the password.
+            The password to set as 2FA.
+            If 2FA was already enabled, ``current_password`` **must** be set.
+            Leaving this blank or ``None`` will remove the password.
 
         hint (:obj:`str`, optional):
             Hint to be displayed by Telegram when it asks for 2FA.
@@ -2494,15 +2496,12 @@ class TelegramClient(TelegramBareClient):
             Has no effect if ``new_password`` is not set.
 
         email (:obj:`str`, optional):
-            Recovery and verification email.
-            Raises ``EmailUnconfirmedError`` if value differs from current one
-            Has no effect if ``new_password`` is not set.
+            Recovery and verification email. Raises ``EmailUnconfirmedError``
+            if value differs from current one, and has no effect if
+            ``new_password`` is not set.
 
         Returns:
             ``True`` if successful, ``False`` otherwise.
-        
-        Raises:
-            :obj:`PasswordEmptyError` if 
         """
         if new_password is None and current_password is None:
             return False
