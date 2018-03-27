@@ -150,8 +150,12 @@ The mentioned ``.start()`` method will handle this for you as well, but
 you must set the ``password=`` parameter beforehand (it won't be asked).
 
 If you don't have 2FA enabled, but you would like to do so through the library,
-use ``client.edit_2fa()``. 
-Take note that if you want to set only the email/hint and leave the current password unchanged, you need to "redo" the 2fa.
+use ``client.edit_2fa()``.
+Be sure to know what you're doing when using this function and
+you won't run into any problems.
+Take note that if you want to set only the email/hint and leave 
+the current password unchanged, you need to "redo" the 2fa.
+
 See the examples below:
 
     .. code-block:: python
