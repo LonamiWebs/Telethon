@@ -166,22 +166,28 @@ See the examples below:
         client.edit_2fa(new_password='supersecurepassword')
         
         # Changes password:
-        client.edit_2fa(current_password='supersecurepassword', new_password='changedmymind')
+        client.edit_2fa(current_password='supersecurepassword', 
+                        new_password='changedmymind')
         
         # Clears current password (i.e. removes 2FA):
         client.edit_2fa(current_password='changedmymind', new_password=None)
         
         # Sets new password with recovery email:
         try:
-            client.edit_2fa(new_password='memes and dreams', email='JohnSmith@example.com')
-        except EmailUnconfirmedError: # Tells you that you need to check your email to complete 2FA setup.
-            pass  # No action needed, or you can put email checking code here if desired.
+            client.edit_2fa(new_password='memes and dreams', 
+                            email='JohnSmith@example.com')
+            # Raises error (you need to check your email to complete 2FA setup.)
+        except EmailUnconfirmedError:
+            # You can put email checking code here if desired.
+            pass
             
-        # Also take note that unless you remove 2FA or explicitly give email parameter again, it will keep the last used setting
+        # Also take note that unless you remove 2FA or explicitly
+        # give email parameter again it will keep the last used setting
         
         # Set hint after already setting password:
-        client.edit_2fa(current_password='memes and dreams', new_password='memes and dreams', hint='It keeps you alive')
-        
+        client.edit_2fa(current_password='memes and dreams',
+                        new_password='memes and dreams',
+                        hint='It keeps you alive')
 
 __ https://github.com/Anorov/PySocks#installation
 __ https://github.com/Anorov/PySocks#usage-1
