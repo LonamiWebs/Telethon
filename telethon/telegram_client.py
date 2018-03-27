@@ -38,12 +38,12 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError
+    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
 from .tl.functions.account import (
-    GetPasswordRequest
+    GetPasswordRequest, UpdatePasswordSettingsRequest
 )
 from .tl.functions.auth import (
     CheckPasswordRequest, LogOutRequest, SendCodeRequest, SignInRequest,
@@ -86,6 +86,7 @@ from .tl.types import (
     PhotoSizeEmpty, MessageService, ChatParticipants
 )
 from .tl.types.messages import DialogsSlice
+from .tl.types.account import PasswordInputSettings, NoPassword
 from .extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
@@ -2475,5 +2476,76 @@ class TelegramClient(TelegramBareClient):
             'Could not find the input entity corresponding to "{}". '
             'Make sure you have encountered this peer before.'.format(peer)
         )
+
+    def edit_2fa(self, current_password=None, new_password=None, hint='',
+                 email=None):
+        """
+        Changes the 2FA settings of the logged in user, according to the
+        passed parameters. Take note of the parameter explanations.
+
+        Has no effect if both current and new password are omitted.
+
+        current_password (:obj:`str`, optional):
+            The current password, to authorize changing to ``new_password``.
+            Must be set if changing existing 2FA settings.
+            Must **not** be set if 2FA is currently disabled.
+            Passing this by itself will remove 2FA (if correct).
+
+        new_password (:obj:`str`, optional):
+            The password to set as 2FA.
+            If 2FA was already enabled, ``current_password`` **must** be set.
+            Leaving this blank or ``None`` will remove the password.
+
+        hint (:obj:`str`, optional):
+            Hint to be displayed by Telegram when it asks for 2FA.
+            Leaving unspecified is highly discouraged.
+            Has no effect if ``new_password`` is not set.
+
+        email (:obj:`str`, optional):
+            Recovery and verification email. Raises ``EmailUnconfirmedError``
+            if value differs from current one, and has no effect if
+            ``new_password`` is not set.
+
+        Returns:
+            ``True`` if successful, ``False`` otherwise.
+        """
+        if new_password is None and current_password is None:
+            return False
+
+        pass_result = self(GetPasswordRequest())
+        if isinstance(pass_result, NoPassword) and current_password:
+            current_password = None
+
+        salt_random = os.urandom(8)
+        salt = pass_result.new_salt + salt_random
+        if not current_password:
+            current_password_hash = salt
+        else:
+            current_password = pass_result.current_salt +\
+                current_password.encode() + pass_result.current_salt
+            current_password_hash = hashlib.sha256(current_password).digest()
+
+        if new_password:  # Setting new password
+            new_password = salt + new_password.encode('utf-8') + salt
+            new_password_hash = hashlib.sha256(new_password).digest()
+            new_settings = PasswordInputSettings(
+                new_salt=salt,
+                new_password_hash=new_password_hash,
+                hint=hint
+            )
+            if email:  # If enabling 2FA or changing email
+                new_settings.email = email  # TG counts empty string as None
+            return self(UpdatePasswordSettingsRequest(
+                current_password_hash, new_settings=new_settings
+            ))
+        else:  # Removing existing password
+            return self(UpdatePasswordSettingsRequest(
+                current_password_hash,
+                new_settings=PasswordInputSettings(
+                    new_salt=bytes(),
+                    new_password_hash=bytes(),
+                    hint=hint
+                )
+            ))
 
     # endregion
