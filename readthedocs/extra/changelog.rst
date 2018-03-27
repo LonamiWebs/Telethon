@@ -14,6 +14,36 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Several bug fixes (v0.18.2)
+===========================
+
+*Published at 2018/03/27*
+
+Just a few bug fixes before they become too many.
+
+Additions
+~~~~~~~~~
+
+- Getting an entity by its positive ID should be enough, regardless of their
+  type (whether it's an ``User``, a ``Chat`` or a ``Channel``). Although
+  wrapping them inside a ``Peer`` is still recommended, it's not necessary.
+- New ``client.edit_2fa`` function to change your Two Factor Authentication
+  settings.
+- ``.stringify()`` and string representation for custom ``Dialog/Draft``.
+
+Bug fixes
+~~~~~~~~~
+
+- Some bug regarding ``.get_input_peer``.
+- ``events.ChatAction`` wasn't picking up all the pins.
+- ``force_document=True`` was being ignored for albums.
+- Now you're able to send ``Photo`` and ``Document`` as files.
+- Wrong access to a member on chat forbidden error for ``.get_participants``.
+  An empty list is returned instead.
+- ``me/self`` check for ``.get[_input]_entity`` has been moved up so if
+  someone has "me" or "self" as their name they won't be retrieved.
+
+
 Iterator methods (v0.18.1)
 ==========================
 
