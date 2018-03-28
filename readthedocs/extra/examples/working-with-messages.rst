@@ -12,7 +12,7 @@ Forwarding messages
 *******************
 
 This request is available as a friendly method through
-:obj:`client.forward_messages <telethon.telegram_client.TelegramClient.forward_messages>``,
+`client.forward_messages <telethon.telegram_client.TelegramClient.forward_messages>`,
 and can be used like shown below:
 
     .. code-block:: python

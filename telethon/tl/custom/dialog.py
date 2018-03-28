@@ -14,7 +14,7 @@ class Dialog:
         dialog (:tl:`Dialog`):
             The original ``Dialog`` instance.
 
-        pinned (:obj:`bool`):
+        pinned (`bool`):
             Whether this dialog is pinned to the top or not.
 
         message (:tl:`Message`):
@@ -22,31 +22,31 @@ class Dialog:
             will not be updated when new messages arrive, it's only set
             on creation of the instance.
 
-        date (:obj:`datetime`):
+        date (`datetime`):
             The date of the last message sent on this dialog.
 
-        entity (:obj:`entity`):
+        entity (`entity`):
             The entity that belongs to this dialog (user, chat or channel).
 
         input_entity (:tl:`InputPeer`):
             Input version of the entity.
 
-        id (:obj:`int`):
+        id (`int`):
             The marked ID of the entity, which is guaranteed to be unique.
 
-        name (:obj:`str`):
+        name (`str`):
             Display name for this dialog. For chats and channels this is
             their title, and for users it's "First-Name Last-Name".
 
-        unread_count (:obj:`int`):
+        unread_count (`int`):
             How many messages are currently unread in this dialog. Note that
             this value won't update when new messages arrive.
 
-        unread_mentions_count (:obj:`int`):
+        unread_mentions_count (`int`):
             How many mentions are currently unread in this dialog. Note that
             this value won't update when new messages arrive.
 
-        draft (:obj:`telethon.tl.custom.draft.Draft`):
+        draft (`telethon.tl.custom.draft.Draft`):
             The draft object in this dialog. It will not be ``None``,
             so you can call ``draft.set_message(...)``.
     """

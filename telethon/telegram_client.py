@@ -97,52 +97,51 @@ class TelegramClient(TelegramBareClient):
     Initializes the Telegram client with the specified API ID and Hash.
 
     Args:
-        session (:obj:`str` | :obj:`telethon.sessions.abstract.Session`, \
-                 :obj:`None`):
+        session (`str` | `telethon.sessions.abstract.Session`, `None`):
             The file name of the session file to be used if a string is
             given (it may be a full path), or the Session instance to be
             used otherwise. If it's ``None``, the session will not be saved,
             and you should call :meth:`.log_out()` when you're done.
 
-        api_id (:obj:`int` | :obj:`str`):
+        api_id (`int` | `str`):
             The API ID you obtained from https://my.telegram.org.
 
-        api_hash (:obj:`str`):
+        api_hash (`str`):
             The API ID you obtained from https://my.telegram.org.
 
-        connection_mode (:obj:`ConnectionMode`, optional):
+        connection_mode (`ConnectionMode`, optional):
             The connection mode to be used when creating a new connection
             to the servers. Defaults to the ``TCP_FULL`` mode.
             This will only affect how messages are sent over the network
             and how much processing is required before sending them.
 
-        use_ipv6 (:obj:`bool`, optional):
+        use_ipv6 (`bool`, optional):
             Whether to connect to the servers through IPv6 or not.
             By default this is ``False`` as IPv6 support is not
             too widespread yet.
 
-        proxy (:obj:`tuple` | :obj:`dict`, optional):
+        proxy (`tuple` | `dict`, optional):
             A tuple consisting of ``(socks.SOCKS5, 'host', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
-        update_workers (:obj:`int`, optional):
+        update_workers (`int`, optional):
             If specified, represents how many extra threads should
             be spawned to handle incoming updates, and updates will
             be kept in memory until they are processed. Note that
             you must set this to at least ``0`` if you want to be
             able to process updates through :meth:`updates.poll()`.
 
-        timeout (:obj:`int` | :obj:`float` | :obj:`timedelta`, optional):
+        timeout (`int` | `float` | `timedelta`, optional):
             The timeout to be used when receiving responses from
             the network. Defaults to 5 seconds.
 
-        spawn_read_thread (:obj:`bool`, optional):
+        spawn_read_thread (`bool`, optional):
             Whether to use an extra background thread or not. Defaults
             to ``True`` so receiving items from the network happens
             instantly, as soon as they arrive. Can still be disabled
             if you want to run the library without any additional thread.
 
-        report_errors (:obj:`bool`, optional):
+        report_errors (`bool`, optional):
             Whether to report RPC errors or not. Defaults to ``True``,
             see :ref:`api-status` for more information.
 
@@ -207,10 +206,10 @@ class TelegramClient(TelegramBareClient):
         Sends a code request to the specified phone number.
 
         Args:
-            phone (:obj:`str` | :obj:`int`):
+            phone (`str` | `int`):
                 The phone to which the code will be sent.
 
-            force_sms (:obj:`bool`, optional):
+            force_sms (`bool`, optional):
                 Whether to force sending as SMS.
 
         Returns:
@@ -249,36 +248,36 @@ class TelegramClient(TelegramBareClient):
             (You are now logged in)
 
         Args:
-            phone (:obj:`str` | :obj:`int` | :obj:`callable`):
+            phone (`str` | `int` | `callable`):
                 The phone (or callable without arguments to get it)
                 to which the code will be sent.
 
-            password (:obj:`callable`, optional):
+            password (`callable`, optional):
                 The password for 2 Factor Authentication (2FA).
                 This is only required if it is enabled in your account.
 
-            bot_token (:obj:`str`):
+            bot_token (`str`):
                 Bot Token obtained by `@BotFather <https://t.me/BotFather>`_
                 to log in as a bot. Cannot be specified with ``phone`` (only
                 one of either allowed).
 
-            force_sms (:obj:`bool`, optional):
+            force_sms (`bool`, optional):
                 Whether to force sending the code request as SMS.
                 This only makes sense when signing in with a `phone`.
 
-            code_callback (:obj:`callable`, optional):
+            code_callback (`callable`, optional):
                 A callable that will be used to retrieve the Telegram
                 login code. Defaults to `input()`.
 
-            first_name (:obj:`str`, optional):
+            first_name (`str`, optional):
                 The first name to be used if signing up. This has no
                 effect if the account already exists and you sign in.
 
-            last_name (:obj:`str`, optional):
+            last_name (`str`, optional):
                 Similar to the first name, but for the last. Optional.
 
         Returns:
-            This :obj:`TelegramClient`, so initialization
+            This `TelegramClient`, so initialization
             can be chained with ``.start()``.
         """
 
@@ -369,26 +368,26 @@ class TelegramClient(TelegramBareClient):
         or code that Telegram sent.
 
         Args:
-            phone (:obj:`str` | :obj:`int`):
+            phone (`str` | `int`):
                 The phone to send the code to if no code was provided,
                 or to override the phone that was previously used with
                 these requests.
 
-            code (:obj:`str` | :obj:`int`):
+            code (`str` | `int`):
                 The code that Telegram sent. Note that if you have sent this
                 code through the application itself it will immediately
                 expire. If you want to send the code, obfuscate it somehow.
                 If you're not doing any of this you can ignore this note.
 
-            password (:obj:`str`):
+            password (`str`):
                 2FA password, should be used if a previous call raised
                 SessionPasswordNeededError.
 
-            bot_token (:obj:`str`):
+            bot_token (`str`):
                 Used to sign in as a bot. Not all requests will be available.
                 This should be the hash the @BotFather gave you.
 
-            phone_code_hash (:obj:`str`):
+            phone_code_hash (`str`):
                 The hash returned by .send_code_request. This can be set to None
                 to use the last hash known.
 
@@ -445,13 +444,13 @@ class TelegramClient(TelegramBareClient):
         You must call .send_code_request(phone) first.
 
         Args:
-            code (:obj:`str` | :obj:`int`):
+            code (`str` | `int`):
                 The code sent by Telegram
 
-            first_name (:obj:`str`):
+            first_name (`str`):
                 The first name to be used by the new account.
 
-            last_name (:obj:`str`, optional)
+            last_name (`str`, optional)
                 Optional last name.
 
         Returns:
@@ -497,7 +496,7 @@ class TelegramClient(TelegramBareClient):
         or None if the request fails (hence, not authenticated).
 
         Args:
-            input_peer (:obj:`bool`, optional):
+            input_peer (`bool`, optional):
                 Whether to return the :tl:`InputPeerUser` version or the normal
                 :tl:`User`. This can be useful if you just need to know the ID
                 of yourself.
@@ -530,27 +529,27 @@ class TelegramClient(TelegramBareClient):
         Dialogs are the open "chats" or conversations with other people.
 
         Args:
-            limit (:obj:`int` | :obj:`None`):
+            limit (`int` | `None`):
                 How many dialogs to be retrieved as maximum. Can be set to
                 ``None`` to retrieve all dialogs. Note that this may take
                 whole minutes if you have hundreds of dialogs, as Telegram
                 will tell the library to slow down through a
                 ``FloodWaitError``.
 
-            offset_date (:obj:`datetime`, optional):
+            offset_date (`datetime`, optional):
                 The offset date to be used.
 
-            offset_id (:obj:`int`, optional):
+            offset_id (`int`, optional):
                 The message ID to be used as an offset.
 
             offset_peer (:tl:`InputPeer`, optional):
                 The peer to be used as an offset.
 
-            _total (:obj:`list`, optional):
+            _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
-            Instances of :obj:`telethon.tl.custom.dialog.Dialog`.
+            Instances of `telethon.tl.custom.dialog.Dialog`.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
@@ -618,9 +617,9 @@ class TelegramClient(TelegramBareClient):
         """
         Iterator over all open draft messages.
 
-        Instances of :obj:`telethon.tl.custom.draft.Draft` are yielded.
-        You can call :obj:`telethon.tl.custom.draft.Draft.set_message`
-        to change the message or :obj:`telethon.tl.custom.draft.Draft.delete`
+        Instances of `telethon.tl.custom.draft.Draft` are yielded.
+        You can call `telethon.tl.custom.draft.Draft.set_message`
+        to change the message or `telethon.tl.custom.draft.Draft.delete`
         among other things.
         """
         for update in self(GetAllDraftsRequest()).updates:
@@ -711,33 +710,33 @@ class TelegramClient(TelegramBareClient):
         Sends the given message to the specified entity (user/chat/channel).
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 To who will it be sent.
 
-            message (:obj:`str` | :tl:`Message`):
+            message (`str` | :tl:`Message`):
                 The message to be sent, or another message object to resend.
 
-            reply_to (:obj:`int` | :tl:`Message`, optional):
+            reply_to (`int` | :tl:`Message`, optional):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
 
-            parse_mode (:obj:`str`, optional):
+            parse_mode (`str`, optional):
                 Can be 'md' or 'markdown' for markdown-like parsing (default),
                 or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
                 other false-y value is provided, the message will be sent with
                 no formatting.
 
-            link_preview (:obj:`bool`, optional):
+            link_preview (`bool`, optional):
                 Should the link preview be shown?
 
-            file (:obj:`file`, optional):
+            file (`file`, optional):
                 Sends a message with a file attached (e.g. a photo,
                 video, audio or document). The ``message`` may be empty.
 
-            force_document (:obj:`bool`, optional):
+            force_document (`bool`, optional):
                 Whether to send the given file as a document or not.
 
-            clear_draft (:obj:`bool`, optional):
+            clear_draft (`bool`, optional):
                 Whether the existing draft should be cleared or not.
                 Has no effect when sending a file.
 
@@ -805,13 +804,13 @@ class TelegramClient(TelegramBareClient):
         Forwards the given message(s) to the specified entity.
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 To which entity the message(s) will be forwarded.
 
-            messages (:obj:`list` | :obj:`int` | :tl:`Message`):
+            messages (`list` | `int` | :tl:`Message`):
                 The message(s) to forward, or their integer IDs.
 
-            from_peer (:obj:`entity`):
+            from_peer (`entity`):
                 If the given messages are integer IDs and not instances
                 of the ``Message`` class, this *must* be specified in
                 order for the forward to work.
@@ -858,22 +857,22 @@ class TelegramClient(TelegramBareClient):
         Edits the given message ID (to change its contents or disable preview).
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 From which chat to edit the message.
 
-            message_id (:obj:`str`):
+            message_id (`str`):
                 The ID of the message (or ``Message`` itself) to be edited.
 
-            message (:obj:`str`, optional):
+            message (`str`, optional):
                 The new text of the message.
 
-            parse_mode (:obj:`str`, optional):
+            parse_mode (`str`, optional):
                 Can be 'md' or 'markdown' for markdown-like parsing (default),
                 or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
                 other false-y value is provided, the message will be sent with
                 no formatting.
 
-            link_preview (:obj:`bool`, optional):
+            link_preview (`bool`, optional):
                 Should the link preview be shown?
 
         Raises:
@@ -902,15 +901,15 @@ class TelegramClient(TelegramBareClient):
         Deletes a message from a chat, optionally "for everyone".
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 From who the message will be deleted. This can actually
                 be ``None`` for normal chats, but **must** be present
                 for channels and megagroups.
 
-            message_ids (:obj:`list` | :obj:`int` | :tl:`Message`):
+            message_ids (`list` | `int` | :tl:`Message`):
                 The IDs (or ID) or messages to be deleted.
 
-            revoke (:obj:`bool`, optional):
+            revoke (`bool`, optional):
                 Whether the message should be deleted for everyone or not.
                 By default it has the opposite behaviour of official clients,
                 and it will delete the message for everyone.
@@ -944,48 +943,48 @@ class TelegramClient(TelegramBareClient):
         Iterator over the message history for the specified entity.
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 The entity from whom to retrieve the message history.
 
-            limit (:obj:`int` | :obj:`None`, optional):
+            limit (`int` | `None`, optional):
                 Number of messages to be retrieved. Due to limitations with
                 the API retrieving more than 3000 messages will take longer
                 than half a minute (or even more based on previous calls).
                 The limit may also be ``None``, which would eventually return
                 the whole history.
 
-            offset_date (:obj:`datetime`):
+            offset_date (`datetime`):
                 Offset date (messages *previous* to this date will be
                 retrieved). Exclusive.
 
-            offset_id (:obj:`int`):
+            offset_id (`int`):
                 Offset message ID (only messages *previous* to the given
                 ID will be retrieved). Exclusive.
 
-            max_id (:obj:`int`):
+            max_id (`int`):
                 All the messages with a higher (newer) ID or equal to this will
                 be excluded
 
-            min_id (:obj:`int`):
+            min_id (`int`):
                 All the messages with a lower (older) ID or equal to this will
                 be excluded.
 
-            add_offset (:obj:`int`):
+            add_offset (`int`):
                 Additional message offset (all of the specified offsets +
                 this offset = older messages).
 
-            batch_size (:obj:`int`):
+            batch_size (`int`):
                 Messages will be returned in chunks of this size (100 is
                 the maximum). While it makes no sense to modify this value,
                 you are still free to do so.
 
-            wait_time (:obj:`int`):
+            wait_time (`int`):
                 Wait time between different :tl:`GetHistoryRequest`. Use this
                 parameter to avoid hitting the ``FloodWaitError`` as needed.
                 If left to ``None``, it will default to 1 second only if
                 the limit is higher than 3000.
 
-            _total (:obj:`list`, optional):
+            _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
@@ -1100,17 +1099,17 @@ class TelegramClient(TelegramBareClient):
         read their messages, also known as the "double check").
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 The chat where these messages are located.
 
-            message (:obj:`list` | :tl:`Message`):
+            message (`list` | :tl:`Message`):
                 Either a list of messages or a single message.
 
-            max_id (:obj:`int`):
+            max_id (`int`):
                 Overrides messages, until which message should the
                 acknowledge should be sent.
 
-            clear_mentions (:obj:`bool`):
+            clear_mentions (`bool`):
                 Whether the mention badge should be cleared (so that
                 there are no more mentions) or not for the given entity.
 
@@ -1165,13 +1164,13 @@ class TelegramClient(TelegramBareClient):
         Iterator over the participants belonging to the specified chat.
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 The entity from which to retrieve the participants list.
 
-            limit (:obj:`int`):
+            limit (`int`):
                 Limits amount of participants fetched.
 
-            search (:obj:`str`, optional):
+            search (`str`, optional):
                 Look for participants with this string in name/username.
 
             filter (:tl:`ChannelParticipantsFilter`, optional):
@@ -1179,7 +1178,7 @@ class TelegramClient(TelegramBareClient):
                 Note that you might not have permissions for some filter.
                 This has no effect for normal chats or users.
 
-            aggressive (:obj:`bool`, optional):
+            aggressive (`bool`, optional):
                 Aggressively looks for all participants in the chat in
                 order to get more than 10,000 members (a hard limit
                 imposed by Telegram). Note that this might take a long
@@ -1189,7 +1188,7 @@ class TelegramClient(TelegramBareClient):
                 This has no effect for groups or channels with less than
                 10,000 members, or if a ``filter`` is given.
 
-            _total (:obj:`list`, optional):
+            _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
@@ -1336,10 +1335,10 @@ class TelegramClient(TelegramBareClient):
         Sends a file to the specified entity.
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 Who will receive the file.
 
-            file (:obj:`str` | :obj:`bytes` | :obj:`file` | :obj:`media`):
+            file (`str` | `bytes` | `file` | `media`):
                 The path of the file, byte array, or stream that will be sent.
                 Note that if a byte array or a stream is given, a filename
                 or its type won't be inferred, and it will be sent as an
@@ -1356,35 +1355,35 @@ class TelegramClient(TelegramBareClient):
                 sent as an album in the order in which they appear, sliced
                 in chunks of 10 if more than 10 are given.
 
-            caption (:obj:`str`, optional):
+            caption (`str`, optional):
                 Optional caption for the sent media message.
 
-            force_document (:obj:`bool`, optional):
+            force_document (`bool`, optional):
                 If left to ``False`` and the file is a path that ends with
                 the extension of an image file or a video file, it will be
                 sent as such. Otherwise always as a document.
 
-            progress_callback (:obj:`callable`, optional):
+            progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
-            reply_to (:obj:`int` | :tl:`Message`):
+            reply_to (`int` | :tl:`Message`):
                 Same as reply_to from .send_message().
 
-            attributes (:obj:`list`, optional):
+            attributes (`list`, optional):
                 Optional attributes that override the inferred ones, like
                 :tl:`DocumentAttributeFilename` and so on.
 
-            thumb (:obj:`str` | :obj:`bytes` | :obj:`file`, optional):
+            thumb (`str` | `bytes` | `file`, optional):
                 Optional thumbnail (for videos).
 
-            allow_cache (:obj:`bool`, optional):
+            allow_cache (`bool`, optional):
                 Whether to allow using the cached version stored in the
                 database or not. Defaults to ``True`` to avoid re-uploads.
                 Must be ``False`` if you wish to use different attributes
                 or thumb than those that were used when the file was cached.
 
-            parse_mode (:obj:`str`, optional):
+            parse_mode (`str`, optional):
                 The parse mode for the caption message.
 
         Kwargs:
@@ -1628,7 +1627,7 @@ class TelegramClient(TelegramBareClient):
         will **not** upload the file to your own chat or any chat at all.
 
         Args:
-            file (:obj:`str` | :obj:`bytes` | :obj:`file`):
+            file (`str` | `bytes` | `file`):
                 The path of the file, byte array, or stream that will be sent.
                 Note that if a byte array or a stream is given, a filename
                 or its type won't be inferred, and it will be sent as an
@@ -1637,23 +1636,23 @@ class TelegramClient(TelegramBareClient):
                 Subsequent calls with the very same file will result in
                 immediate uploads, unless ``.clear_file_cache()`` is called.
 
-            part_size_kb (:obj:`int`, optional):
+            part_size_kb (`int`, optional):
                 Chunk size when uploading files. The larger, the less
                 requests will be made (up to 512KB maximum).
 
-            file_name (:obj:`str`, optional):
+            file_name (`str`, optional):
                 The file name which will be used on the resulting InputFile.
                 If not specified, the name will be taken from the ``file``
                 and if this is not a ``str``, it will be ``"unnamed"``.
 
-            use_cache (:obj:`type`, optional):
+            use_cache (`type`, optional):
                 The type of cache to use (currently either ``InputDocument``
                 or ``InputPhoto``). If present and the file is small enough
                 to need the MD5, it will be checked against the database,
                 and if a match is found, the upload won't be made. Instead,
                 an instance of type ``use_cache`` will be returned.
 
-            progress_callback (:obj:`callable`, optional):
+            progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
@@ -1756,14 +1755,14 @@ class TelegramClient(TelegramBareClient):
         Downloads the profile photo of the given entity (user/chat/channel).
 
         Args:
-            entity (:obj:`entity`):
+            entity (`entity`):
                 From who the photo will be downloaded.
 
-            file (:obj:`str` | :obj:`file`, optional):
+            file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
-            download_big (:obj:`bool`, optional):
+            download_big (`bool`, optional):
                 Whether to use the big version of the available photos.
 
         Returns:
@@ -1845,11 +1844,11 @@ class TelegramClient(TelegramBareClient):
         message (:tl:`Message` | :tl:`Media`):
             The media or message containing the media that will be downloaded.
 
-        file (:obj:`str` | :obj:`file`, optional):
+        file (`str` | `file`, optional):
             The output file path, directory, or stream-like object.
             If the path exists and is a file, it will be overwritten.
 
-        progress_callback (:obj:`callable`, optional):
+        progress_callback (`callable`, optional):
             A callback function accepting two parameters:
             ``(received bytes, total)``.
 
@@ -2074,19 +2073,19 @@ class TelegramClient(TelegramBareClient):
             input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
 
-            file (:obj:`str` | :obj:`file`):
+            file (`str` | `file`):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
-            part_size_kb (:obj:`int`, optional):
+            part_size_kb (`int`, optional):
                 Chunk size when downloading files. The larger, the less
                 requests will be made (up to 512KB maximum).
 
-            file_size (:obj:`int`, optional):
+            file_size (`int`, optional):
                 The file size that is about to be downloaded, if known.
                 Only used if ``progress_callback`` is specified.
 
-            progress_callback (:obj:`callable`, optional):
+            progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
                 ``(downloaded bytes, total)``. Note that the
                 ``total`` is the provided ``file_size``.
@@ -2179,7 +2178,7 @@ class TelegramClient(TelegramBareClient):
         Decorator helper method around add_event_handler().
 
         Args:
-            event (:obj:`_EventBuilder` | :obj:`type`):
+            event (`_EventBuilder` | `type`):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
@@ -2215,10 +2214,10 @@ class TelegramClient(TelegramBareClient):
         Registers the given callback to be called on the specified event.
 
         Args:
-            callback (:obj:`callable`):
+            callback (`callable`):
                 The callable function accepting one parameter to be used.
 
-            event (:obj:`_EventBuilder` | :obj:`type`, optional):
+            event (`_EventBuilder` | `type`, optional):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
 
@@ -2299,7 +2298,7 @@ class TelegramClient(TelegramBareClient):
         """
         Turns the given entity into a valid Telegram user or chat.
 
-        entity (:obj:`str` | :obj:`int` | :tl:`Peer` | :tl:`InputPeer`):
+        entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
             The entity (or iterable of entities) to be transformed.
             If it's a string which can be converted to an integer or starts
             with '+' it will be resolved as if it were a phone number.
@@ -2416,7 +2415,7 @@ class TelegramClient(TelegramBareClient):
         use this kind of InputUser, InputChat and so on, so this is the
         most suitable call to make for those cases.
 
-        entity (:obj:`str` | :obj:`int` | :tl:`Peer` | :tl:`InputPeer`):
+        entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
             The integer ID of an user or otherwise either of a
             :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`, for
             which to get its ``Input*`` version.
@@ -2485,23 +2484,23 @@ class TelegramClient(TelegramBareClient):
 
         Has no effect if both current and new password are omitted.
 
-        current_password (:obj:`str`, optional):
+        current_password (`str`, optional):
             The current password, to authorize changing to ``new_password``.
             Must be set if changing existing 2FA settings.
             Must **not** be set if 2FA is currently disabled.
             Passing this by itself will remove 2FA (if correct).
 
-        new_password (:obj:`str`, optional):
+        new_password (`str`, optional):
             The password to set as 2FA.
             If 2FA was already enabled, ``current_password`` **must** be set.
             Leaving this blank or ``None`` will remove the password.
 
-        hint (:obj:`str`, optional):
+        hint (`str`, optional):
             Hint to be displayed by Telegram when it asks for 2FA.
             Leaving unspecified is highly discouraged.
             Has no effect if ``new_password`` is not set.
 
-        email (:obj:`str`, optional):
+        email (`str`, optional):
             Recovery and verification email. Raises ``EmailUnconfirmedError``
             if value differs from current one, and has no effect if
             ``new_password`` is not set.

@@ -46,11 +46,11 @@ class _EventBuilder(abc.ABC):
     The common event builder, with builtin support to filter per chat.
 
     Args:
-        chats (:obj:`entity`, optional):
+        chats (`entity`, optional):
             May be one or more entities (username/peer/etc.). By default,
             only matching chats will be handled.
 
-        blacklist_chats (:obj:`bool`, optional):
+        blacklist_chats (`bool`, optional):
             Whether to treat the chats as a blacklist instead of
             as a whitelist (default). This means that every chat
             will be handled *except* those specified in ``chats``
@@ -229,15 +229,15 @@ class NewMessage(_EventBuilder):
     Represents a new message event builder.
 
     Args:
-        incoming (:obj:`bool`, optional):
+        incoming (`bool`, optional):
             If set to ``True``, only **incoming** messages will be handled.
             Mutually exclusive with ``outgoing`` (can only set one of either).
 
-        outgoing (:obj:`bool`, optional):
+        outgoing (`bool`, optional):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
+        pattern (`str`, `callable`, `Pattern`, optional):
             If set, only messages matching this pattern will be handled.
             You can specify a regex-like string which will be matched
             against the message, a callable function that returns ``True``
@@ -331,16 +331,16 @@ class NewMessage(_EventBuilder):
             message (:tl:`Message`):
                 This is the original :tl:`Message` object.
 
-            is_private (:obj:`bool`):
+            is_private (`bool`):
                 True if the message was sent as a private message.
 
-            is_group (:obj:`bool`):
+            is_group (`bool`):
                 True if the message was sent on a group or megagroup.
 
-            is_channel (:obj:`bool`):
+            is_channel (`bool`):
                 True if the message was sent on a megagroup or channel.
 
-            is_reply (:obj:`str`):
+            is_reply (`str`):
                 Whether the message is a reply to some other or not.
         """
         def __init__(self, message):
@@ -699,35 +699,35 @@ class ChatAction(_EventBuilder):
         Represents the event of a new chat action.
 
         Members:
-            new_pin (:obj:`bool`):
+            new_pin (`bool`):
                 ``True`` if there is a new pin.
 
-            new_photo (:obj:`bool`):
+            new_photo (`bool`):
                 ``True`` if there's a new chat photo (or it was removed).
 
             photo (:tl:`Photo`, optional):
                 The new photo (or ``None`` if it was removed).
 
 
-            user_added (:obj:`bool`):
+            user_added (`bool`):
                 ``True`` if the user was added by some other.
 
-            user_joined (:obj:`bool`):
+            user_joined (`bool`):
                 ``True`` if the user joined on their own.
 
-            user_left (:obj:`bool`):
+            user_left (`bool`):
                 ``True`` if the user left on their own.
 
-            user_kicked (:obj:`bool`):
+            user_kicked (`bool`):
                 ``True`` if the user was kicked by some other.
 
-            created (:obj:`bool`, optional):
+            created (`bool`, optional):
                 ``True`` if this chat was just created.
 
-            new_title (:obj:`bool`, optional):
+            new_title (`bool`, optional):
                 The new title string for the chat, if applicable.
 
-            unpin (:obj:`bool`):
+            unpin (`bool`):
                 ``True`` if the existing pin gets unpinned.
         """
         def __init__(self, where, new_pin=None, new_photo=None,
@@ -944,62 +944,62 @@ class UserUpdate(_EventBuilder):
         Represents the event of an user status update (last seen, joined).
 
         Members:
-            online (:obj:`bool`, optional):
+            online (`bool`, optional):
                 ``True`` if the user is currently online, ``False`` otherwise.
                 Might be ``None`` if this information is not present.
 
-            last_seen (:obj:`datetime`, optional):
+            last_seen (`datetime`, optional):
                 Exact date when the user was last seen if known.
 
-            until (:obj:`datetime`, optional):
+            until (`datetime`, optional):
                 Until when will the user remain online.
 
-            within_months (:obj:`bool`):
+            within_months (`bool`):
                 ``True`` if the user was seen within 30 days.
 
-            within_weeks (:obj:`bool`):
+            within_weeks (`bool`):
                 ``True`` if the user was seen within 7 days.
 
-            recently (:obj:`bool`):
+            recently (`bool`):
                 ``True`` if the user was seen within a day.
 
             action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
-            cancel (:obj:`bool`):
+            cancel (`bool`):
                 ``True`` if the action was cancelling other actions.
 
-            typing (:obj:`bool`):
+            typing (`bool`):
                 ``True`` if the action is typing a message.
 
-            recording (:obj:`bool`):
+            recording (`bool`):
                 ``True`` if the action is recording something.
 
-            uploading (:obj:`bool`):
+            uploading (`bool`):
                 ``True`` if the action is uploading something.
 
-            playing (:obj:`bool`):
+            playing (`bool`):
                 ``True`` if the action is playing a game.
 
-            audio (:obj:`bool`):
+            audio (`bool`):
                 ``True`` if what's being recorded/uploaded is an audio.
 
-            round (:obj:`bool`):
+            round (`bool`):
                 ``True`` if what's being recorded/uploaded is a round video.
 
-            video (:obj:`bool`):
+            video (`bool`):
                 ``True`` if what's being recorded/uploaded is an video.
 
-            document (:obj:`bool`):
+            document (`bool`):
                 ``True`` if what's being uploaded is document.
 
-            geo (:obj:`bool`):
+            geo (`bool`):
                 ``True`` if what's being uploaded is a geo.
 
-            photo (:obj:`bool`):
+            photo (`bool`):
                 ``True`` if what's being uploaded is a photo.
 
-            contact (:obj:`bool`):
+            contact (`bool`):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
         def __init__(self, user_id, status=None, typing=None):
@@ -1129,7 +1129,7 @@ class MessageRead(_EventBuilder):
     Event fired when one or more messages have been read.
 
     Args:
-        inbox (:obj:`bool`, optional):
+        inbox (`bool`, optional):
             If this argument is ``True``, then when you read someone else's
             messages the event will be fired. By default (``False``) only
             when messages you sent are read by someone else will fire it.
@@ -1170,14 +1170,14 @@ class MessageRead(_EventBuilder):
         Represents the event of one or more messages being read.
 
         Members:
-            max_id (:obj:`int`):
+            max_id (`int`):
                 Up to which message ID has been read. Every message
                 with an ID equal or lower to it have been read.
 
-            outbox (:obj:`bool`):
+            outbox (`bool`):
                 ``True`` if someone else has read your messages.
 
-            contents (:obj:`bool`):
+            contents (`bool`):
                 ``True`` if what was read were the contents of a message.
                 This will be the case when e.g. you play a voice note.
                 It may only be set on ``inbox`` events.

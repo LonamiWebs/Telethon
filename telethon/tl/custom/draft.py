@@ -14,13 +14,13 @@ class Draft:
     instances of this class when calling :meth:`get_drafts()`.
 
     Args:
-        date (:obj:`datetime`):
+        date (`datetime`):
             The date of the draft.
 
-        link_preview (:obj:`bool`):
+        link_preview (`bool`):
             Whether the link preview is enabled or not.
 
-        reply_to_msg_id (:obj:`int`):
+        reply_to_msg_id (`int`):
             The message ID that the draft will reply to.
     """
     def __init__(self, client, peer, draft):

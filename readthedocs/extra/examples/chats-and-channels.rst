@@ -101,7 +101,7 @@ Retrieving all chat members (channels too)
 ******************************************
 
 You can use
-:obj:`client.get_participants <telethon.telegram_client.TelegramClient.get_participants>``
+`client.get_participants <telethon.telegram_client.TelegramClient.get_participants>`
 to retrieve the participants (click it to see the relevant parameters).
 Most of the time you will just need ``client.get_participants(entity)``.
 
