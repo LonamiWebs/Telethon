@@ -301,7 +301,7 @@ class NewMessage(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._message_filter_event(event)
 
     def _message_filter_event(self, event):
@@ -691,7 +691,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -936,7 +936,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -1085,7 +1085,7 @@ class MessageEdited(NewMessage):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._message_filter_event(event)
 
     class Event(NewMessage.Event):
@@ -1111,7 +1111,7 @@ class MessageDeleted(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -1162,7 +1162,7 @@ class MessageRead(_EventBuilder):
         if self.inbox == event.outbox:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
