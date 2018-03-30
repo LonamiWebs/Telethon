@@ -11,7 +11,7 @@ from .crypto import rsa
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError, FloodWaitError,
     FloodTestPhoneWaitError, TypeNotFoundError, UnauthorizedError,
-    PhoneMigrateError, NetworkMigrateError, UserMigrateError
+    PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .sessions import Session, SQLiteSession
@@ -225,6 +225,15 @@ class TelegramBareClient:
             __log__.warning('Connection failed, got unexpected type with ID '
                             '%s. Migrating?', hex(e.invalid_constructor_id))
             self.disconnect()
+            return self.connect(_sync_updates=_sync_updates)
+
+        except AuthKeyError as e:
+            # As of late March 2018 there were two AUTH_KEY_DUPLICATED
+            # reports. Retrying with a clean auth_key should fix this.
+            __log__.warning('Auth key error %s. Clearing it and retrying.', e)
+            self.disconnect()
+            self.session.auth_key = None
+            self.session.save()
             return self.connect(_sync_updates=_sync_updates)
 
         except (RPCError, ConnectionError) as e:

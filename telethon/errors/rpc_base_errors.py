@@ -56,6 +56,19 @@ class NotFoundError(RPCError):
         self.message = message
 
 
+class AuthKeyError(RPCError):
+    """
+    Errors related to invalid authorization key, like
+    AUTH_KEY_DUPLICATED which can cause the connection to fail.
+    """
+    code = 406
+    message = 'AUTH_KEY'
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
 class FloodError(RPCError):
     """
     The maximum allowed number of attempts to invoke the given method

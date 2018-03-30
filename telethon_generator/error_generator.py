@@ -11,6 +11,7 @@ known_base_classes = {
     401: 'UnauthorizedError',
     403: 'ForbiddenError',
     404: 'NotFoundError',
+    406: 'AuthKeyError',
     420: 'FloodError',
     500: 'ServerError',
 }
