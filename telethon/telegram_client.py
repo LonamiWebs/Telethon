@@ -2446,11 +2446,11 @@ class TelegramClient(TelegramBareClient):
             mark = not isinstance(peer, int) or peer < 0
             target_id = utils.get_peer_id(peer)
             if mark:
-                async for dialog in self.get_dialogs(100):
+                async for dialog in self.iter_dialogs(100):
                     if utils.get_peer_id(dialog.entity) == target_id:
                         return utils.get_input_peer(dialog.entity)
             else:
-                async for dialog in self.get_dialogs(100):
+                async for dialog in self.iter_dialogs(100):
                     if dialog.entity.id == target_id:
                         return utils.get_input_peer(dialog.entity)
 
