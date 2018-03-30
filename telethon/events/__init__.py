@@ -118,11 +118,15 @@ class _EventCommon(abc.ABC):
         try:
             if isinstance(chat, types.InputPeerChannel):
                 result = self._client(
-                    functions.channels.GetMessagesRequest(chat, [msg_id])
+                    functions.channels.GetMessagesRequest(chat, [
+                        types.InputMessageID(msg_id)
+                    ])
                 )
             else:
                 result = self._client(
-                    functions.messages.GetMessagesRequest([msg_id])
+                    functions.messages.GetMessagesRequest([
+                        types.InputMessageID(msg_id)
+                    ])
                 )
         except RPCError:
             return None, None
@@ -500,11 +504,13 @@ class NewMessage(_EventBuilder):
             if self._reply_message is None:
                 if isinstance(self.input_chat, types.InputPeerChannel):
                     r = self._client(functions.channels.GetMessagesRequest(
-                        self.input_chat, [self.message.reply_to_msg_id]
+                        self.input_chat, [
+                            types.InputMessageID(self.message.reply_to_msg_id)
+                        ]
                     ))
                 else:
                     r = self._client(functions.messages.GetMessagesRequest(
-                        [self.message.reply_to_msg_id]
+                        [types.InputMessageID(self.message.reply_to_msg_id)]
                     ))
                 if not isinstance(r, types.messages.MessagesNotModified):
                     self._reply_message = r.messages[0]
@@ -817,7 +823,9 @@ class ChatAction(_EventBuilder):
 
             if isinstance(self._pinned_message, int) and self.input_chat:
                 r = self._client(functions.channels.GetMessagesRequest(
-                    self._input_chat, [self._pinned_message]
+                    self._input_chat, [
+                        types.InputMessageID(self._pinned_message)
+                    ]
                 ))
                 try:
                     self._pinned_message = next(
@@ -1221,14 +1229,16 @@ class MessageRead(_EventBuilder):
                 if not chat:
                     self._messages = []
                 elif isinstance(chat, types.InputPeerChannel):
+                    ids = [types.InputMessageID(x) for x in self._message_ids]
                     self._messages =\
                         self._client(functions.channels.GetMessagesRequest(
-                            chat, self._message_ids
+                            chat, ids
                         )).messages
                 else:
+                    ids = [types.InputMessageID(x) for x in self._message_ids]
                     self._messages =\
                         self._client(functions.messages.GetMessagesRequest(
-                            self._message_ids
+                            ids
                         )).messages
 
             return self._messages
