@@ -109,16 +109,16 @@ def generate_code(output, json_file, errors_desc):
         (e, get_class_name(e)) for e in errors if e not in known_base_classes
     ]
 
-    # Prefer the descriptions that are related with Telethon way of coding to
+    # Prefer the descriptions that are related with Garry way of coding to
     # those that PWRTelegram's API provides.
-    telethon_descriptions = {}
+    garry_descriptions = {}
     with open(errors_desc, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#'):
                 equal = line.index('=')
                 message, description = line[:equal], line[equal + 1:]
-                telethon_descriptions[message.rstrip()] = description.lstrip()
+                garry_descriptions[message.rstrip()] = description.lstrip()
 
     # Names for the captures, or 'x' if unknown
     capture_names = {
@@ -145,7 +145,7 @@ def generate_code(output, json_file, errors_desc):
         patterns = []  # Save this dictionary later in the generated code
         for error_code, error_set in errors.items():
             for error in sorted(error_set):
-                description = telethon_descriptions.get(
+                description = garry_descriptions.get(
                     error, '\n'.join(data['human_result'].get(
                         error, ['No description known.']
                     ))
@@ -171,7 +171,7 @@ def generate_code(output, json_file, errors_desc):
 
 if __name__ == '__main__':
     if input('generate (y/n)?: ').lower() == 'y':
-        generate_code('../telethon/errors/rpc_error_list.py',
+        generate_code('../garry/errors/rpc_error_list.py',
                       'errors.json', 'error_descriptions')
     elif input('fetch (y/n)?: ').lower() == 'y':
         fetch_errors('errors.json')

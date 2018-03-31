@@ -23,4 +23,4 @@ For more discussion, please see `issue 297`__.
 
 
 __ https://t.me/SpamBot
-__ https://github.com/LonamiWebs/Telethon/issues/297
+__ https://github.com/LonamiWebs/Garry/issues/297

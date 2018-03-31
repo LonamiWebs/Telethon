@@ -8,10 +8,10 @@ try:
 except (ImportError, SystemError):
     from docs_writer import DocsWriter
 
-# Small trick so importing telethon_generator works
+# Small trick so importing garry_generator works
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from telethon_generator.parser import TLParser, TLObject
+from garry_generator.parser import TLParser, TLObject
 
 
 # TLObject -> Python class name
@@ -54,7 +54,7 @@ def get_import_code(tlobject):
     kind = 'functions' if tlobject.is_function else 'types'
     ns = '.' + tlobject.namespace if tlobject.namespace else ''
 
-    return 'from telethon.tl.{}{} import {}'\
+    return 'from garry.tl.{}{} import {}'\
         .format(kind, ns, get_class_name(tlobject))
 
 
@@ -601,7 +601,7 @@ if __name__ == '__main__':
     os.makedirs('generated', exist_ok=True)
     os.chdir('generated')
     try:
-        generate_documentation('../../telethon_generator/scheme.tl')
+        generate_documentation('../../garry_generator/scheme.tl')
         copy_resources()
     finally:
         os.chdir(os.pardir)

@@ -49,7 +49,7 @@ you're able to just do this:
 
         # You can be more explicit about the type for said ID by wrapping
         # it inside a Peer instance. This is recommended but not necessary.
-        from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+        from garry.tl.types import PeerUser, PeerChat, PeerChannel
 
         my_user    = client.get_entity(PeerUser(some_id))
         my_chat    = client.get_entity(PeerChat(some_id))

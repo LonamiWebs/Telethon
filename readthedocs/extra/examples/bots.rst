@@ -17,7 +17,7 @@ not *interact* with a voting message), by making use of the
 
     .. code-block:: python
 
-        from telethon.tl.functions.messages import GetInlineBotResultsRequest
+        from garry.tl.functions.messages import GetInlineBotResultsRequest
 
         bot_results = client(GetInlineBotResultsRequest(
             bot, user_or_chat, 'query', ''
@@ -28,7 +28,7 @@ And you can select any of their results by using
 
     .. code-block:: python
 
-        from telethon.tl.functions.messages import SendInlineBotResultRequest
+        from garry.tl.functions.messages import SendInlineBotResultRequest
 
         client(SendInlineBotResultRequest(
             get_input_peer(user_or_chat),
@@ -45,7 +45,7 @@ To interact with a message that has a special reply markup, such as
 
     .. code-block:: python
 
-        from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
+        from garry.tl.functions.messages import GetBotCallbackAnswerRequest
 
         client(GetBotCallbackAnswerRequest(
             user_or_chat,
@@ -58,7 +58,7 @@ show it visually (button rows, and buttons within each row, each with
 its own data).
 
 __ https://t.me/vote
-__ https://lonamiwebs.github.io/Telethon/methods/messages/get_inline_bot_results.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/send_inline_bot_result.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/get_bot_callback_answer.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/get_inline_bot_results.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/send_inline_bot_result.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/get_bot_callback_answer.html
 __ https://t.me/vote

@@ -24,11 +24,11 @@ to, you can make use of the `JoinChannelRequest`__ to join such channel:
 
     .. code-block:: python
 
-        from telethon.tl.functions.channels import JoinChannelRequest
+        from garry.tl.functions.channels import JoinChannelRequest
         client(JoinChannelRequest(channel))
 
         # In the same way, you can also leave such channel
-        from telethon.tl.functions.channels import LeaveChannelRequest
+        from garry.tl.functions.channels import LeaveChannelRequest
         client(LeaveChannelRequest(input_channel))
 
 
@@ -47,7 +47,7 @@ example, is the ``hash`` of the chat or channel. Now you can use
 
     .. code-block:: python
 
-        from telethon.tl.functions.messages import ImportChatInviteRequest
+        from garry.tl.functions.messages import ImportChatInviteRequest
         updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
@@ -61,7 +61,7 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
     .. code-block:: python
 
         # For normal chats
-        from telethon.tl.functions.messages import AddChatUserRequest
+        from garry.tl.functions.messages import AddChatUserRequest
 
         client(AddChatUserRequest(
             chat_id,
@@ -70,7 +70,7 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
         ))
 
         # For channels
-        from telethon.tl.functions.channels import InviteToChannelRequest
+        from garry.tl.functions.channels import InviteToChannelRequest
 
         client(InviteToChannelRequest(
             channel,
@@ -86,22 +86,22 @@ If you don't need to join but rather check whether it's a group or a
 channel, you can use the `CheckChatInviteRequest`__, which takes in
 the hash of said channel or group.
 
-__ https://lonamiwebs.github.io/Telethon/constructors/chat.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channel.html
-__ https://lonamiwebs.github.io/Telethon/types/chat.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/join_channel.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/invite_to_channel.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
+__ https://lonamiwebs.github.io/Garry/constructors/chat.html
+__ https://lonamiwebs.github.io/Garry/constructors/channel.html
+__ https://lonamiwebs.github.io/Garry/types/chat.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/join_channel.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/index.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/import_chat_invite.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/add_chat_user.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/invite_to_channel.html
+__ https://lonamiwebs.github.io/Garry/methods/messages/check_chat_invite.html
 
 
 Retrieving all chat members (channels too)
 ******************************************
 
 You can use
-`client.get_participants <telethon.telegram_client.TelegramClient.get_participants>`
+`client.get_participants <garry.telegram_client.TelegramClient.get_participants>`
 to retrieve the participants (click it to see the relevant parameters).
 Most of the time you will just need ``client.get_participants(entity)``.
 
@@ -119,8 +119,8 @@ a fixed limit:
 
     .. code-block:: python
 
-        from telethon.tl.functions.channels import GetParticipantsRequest
-        from telethon.tl.types import ChannelParticipantsSearch
+        from garry.tl.functions.channels import GetParticipantsRequest
+        from garry.tl.types import ChannelParticipantsSearch
         from time import sleep
 
         offset = 0
@@ -150,12 +150,12 @@ Note that ``GetParticipantsRequest`` returns `ChannelParticipants`__,
 which may have more information you need (like the role of the
 participants, total count of members, etc.)
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
-__ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
-__ https://github.com/LonamiWebs/Telethon/issues/573
-__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/get_participants.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/get_participants.html
+__ https://lonamiwebs.github.io/Garry/types/channel_participants_filter.html
+__ https://lonamiwebs.github.io/Garry/constructors/channel_participants_search.html
+__ https://github.com/LonamiWebs/Garry/issues/573
+__ https://lonamiwebs.github.io/Garry/constructors/channels/channel_participants.html
 
 
 Recent Actions
@@ -166,8 +166,8 @@ the "admin log". Simply use `GetAdminLogRequest`__ for that, and
 you'll get AdminLogResults.events in return which in turn has the final
 `.action`__.
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_admin_log.html
-__ https://lonamiwebs.github.io/Telethon/types/channel_admin_log_event_action.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/get_admin_log.html
+__ https://lonamiwebs.github.io/Garry/types/channel_admin_log_event_action.html
 
 
 Admin Permissions
@@ -177,8 +177,8 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
 
     .. code-block:: python
 
-        from telethon.tl.functions.channels import EditAdminRequest
-        from telethon.tl.types import ChannelAdminRights
+        from garry.tl.functions.channels import EditAdminRequest
+        from garry.tl.types import ChannelAdminRights
 
         # You need both the channel and who to grant permissions
         # They can either be channel/user or input channel/input user.
@@ -218,10 +218,10 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
 |  the permissions the user needs. If you don't need to change a permission,
 |  it can be omitted (full list `here`__).
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/edit_admin.html
+__ https://lonamiwebs.github.io/Garry/methods/channels/edit_admin.html
 __ https://github.com/Kyle2142
-__ https://github.com/LonamiWebs/Telethon/issues/490
-__ https://lonamiwebs.github.io/Telethon/constructors/channel_admin_rights.html
+__ https://github.com/LonamiWebs/Garry/issues/490
+__ https://lonamiwebs.github.io/Garry/constructors/channel_admin_rights.html
 
 
 Increasing View Count in a Channel
@@ -249,8 +249,8 @@ running this in a loop will obviously not increase the views forever
 unless you wait a day between each iteration. If you run it any sooner
 than that, the views simply won't be increased.
 
-__ https://github.com/LonamiWebs/Telethon/issues/233
-__ https://github.com/LonamiWebs/Telethon/issues/305
-__ https://github.com/LonamiWebs/Telethon/issues/409
-__ https://github.com/LonamiWebs/Telethon/issues/447
-__ https://lonamiwebs.github.io/Telethon/methods/messages/get_messages_views.html
+__ https://github.com/LonamiWebs/Garry/issues/233
+__ https://github.com/LonamiWebs/Garry/issues/305
+__ https://github.com/LonamiWebs/Garry/issues/409
+__ https://github.com/LonamiWebs/Garry/issues/447
+__ https://lonamiwebs.github.io/Garry/methods/messages/get_messages_views.html

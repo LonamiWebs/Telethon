@@ -6,7 +6,7 @@ Project Structure
 Main interface
 **************
 
-The library itself is under the ``telethon/`` directory. The
+The library itself is under the ``garry/`` directory. The
 ``__init__.py`` file there exposes the main ``TelegramClient``, a class
 that servers as a nice interface with the most commonly used methods on
 Telegram such as sending messages, retrieving the message history,
@@ -36,8 +36,8 @@ intermediate…).
 Auto-generated code
 *******************
 
-The files under ``telethon_generator/`` are used to generate the code
-that gets placed under ``telethon/tl/``. The ``TLGenerator`` takes in a
+The files under ``garry_generator/`` are used to generate the code
+that gets placed under ``garry/tl/``. The ``TLGenerator`` takes in a
 ``.tl`` file, and spits out the generated classes which represent, as
 Python classes, the request and types defined in the ``.tl`` file. It
 also constructs an index so that they can be imported easily.

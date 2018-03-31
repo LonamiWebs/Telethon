@@ -28,6 +28,6 @@ this project for helping you out.
 
 This is only a introduction. The ``TL`` language is not *that* easy. But
 it's not that hard either. You're free to sniff the
-``telethon_generator/`` files and learn how to parse other more complex
+``garry_generator/`` files and learn how to parse other more complex
 lines, such as ``flags`` (to indicate things that may or may not be
 written at all) and ``vector``\ 's.

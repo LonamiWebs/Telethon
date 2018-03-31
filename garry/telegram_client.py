@@ -97,7 +97,7 @@ class TelegramClient(TelegramBareClient):
     Initializes the Telegram client with the specified API ID and Hash.
 
     Args:
-        session (`str` | `telethon.sessions.abstract.Session`, `None`):
+        session (`str` | `garry.sessions.abstract.Session`, `None`):
             The file name of the session file to be used if a string is
             given (it may be a full path), or the Session instance to be
             used otherwise. If it's ``None``, the session will not be saved,
@@ -549,7 +549,7 @@ class TelegramClient(TelegramBareClient):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
-            Instances of `telethon.tl.custom.dialog.Dialog`.
+            Instances of `garry.tl.custom.dialog.Dialog`.
         """
         limit = float('inf') if limit is None else int(limit)
         if limit == 0:
@@ -617,9 +617,9 @@ class TelegramClient(TelegramBareClient):
         """
         Iterator over all open draft messages.
 
-        Instances of `telethon.tl.custom.draft.Draft` are yielded.
-        You can call `telethon.tl.custom.draft.Draft.set_message`
-        to change the message or `telethon.tl.custom.draft.Draft.delete`
+        Instances of `garry.tl.custom.draft.Draft` are yielded.
+        You can call `garry.tl.custom.draft.Draft.set_message`
+        to change the message or `garry.tl.custom.draft.Draft.delete`
         among other things.
         """
         for update in self(GetAllDraftsRequest()).updates:
@@ -2275,7 +2275,7 @@ class TelegramClient(TelegramBareClient):
         warnings.warn(
             'add_update_handler is deprecated, use the @client.on syntax '
             'or add_event_handler(callback, events.Raw) instead (see '
-            'https://telethon.rtfd.io/en/latest/extra/basic/working-'
+            'https://garry.rtfd.io/en/latest/extra/basic/working-'
             'with-updates.html)'
         )
         return self.add_event_handler(handler, events.Raw)

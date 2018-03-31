@@ -3,7 +3,7 @@ Telegram API in Other Languages
 ===============================
 
 
-Telethon was made for **Python**, and as far as I know, there is no
+Garry was made for **Python**, and as far as I know, there is no
 *exact* port to other languages. However, there *are* other
 implementations made by awesome people (one needs to be awesome to
 understand the official Telegram documentation) on several languages
@@ -61,7 +61,7 @@ A fairly new (as of the end of 2017) Telegram library written from the
 ground up in Python by
 `@delivrance <https://github.com/delivrance>`__ and his
 `Pyrogram <https://github.com/pyrogram/pyrogram>`__ library.
-There isn't really a reason to pick it over Telethon and it'd be kinda
+There isn't really a reason to pick it over Garry and it'd be kinda
 sad to see you go, but it would be nice to know what you miss from each
 other library in either one so both can improve.
 

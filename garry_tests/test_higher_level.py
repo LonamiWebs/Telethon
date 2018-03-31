@@ -3,7 +3,7 @@ import os
 from io import BytesIO
 from random import randint
 from hashlib import sha256
-from telethon import TelegramClient
+from garry import TelegramClient
 
 # Fill in your api_id and api_hash when running the tests
 # and REMOVE THEM once you've finished testing them.

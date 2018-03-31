@@ -8,7 +8,7 @@ Working with Updates
 The library comes with the :mod:`events` module. *Events* are an abstraction
 over what Telegram calls `updates`__, and are meant to ease simple and common
 usage when dealing with them, since there are many updates. If you're looking
-for the method reference, check :ref:`telethon-events-package`, otherwise,
+for the method reference, check :ref:`garry-events-package`, otherwise,
 let's dive in!
 
 
@@ -30,7 +30,7 @@ Getting Started
 
     .. code-block:: python
 
-        from telethon import TelegramClient, events
+        from garry import TelegramClient, events
 
         client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
         client.start()
@@ -47,7 +47,7 @@ Not much, but there might be some things unclear. What does this code do?
 
     .. code-block:: python
 
-        from telethon import TelegramClient, events
+        from garry import TelegramClient, events
 
         client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
         client.start()
@@ -118,14 +118,14 @@ for example:
 
         # Either a single item or a list of them will work for the chats.
         # You can also use the IDs, Peers, or even User/Chat/Channel objects.
-        @client.on(events.NewMessage(chats=('TelethonChat', 'TelethonOffTopic')))
+        @client.on(events.NewMessage(chats=('GarryChat', 'GarryOffTopic')))
         def normal_handler(event):
             if 'roll' in event.raw_text:
                 event.reply(str(random.randint(1, 6)))
 
 
         # Similarly, you can use incoming=True for messages that you receive
-        @client.on(events.NewMessage(chats='TelethonOffTopic', outgoing=True))
+        @client.on(events.NewMessage(chats='GarryOffTopic', outgoing=True))
         def admin_handler(event):
             if event.raw_text.startswith('eval'):
                 expression = event.raw_text.replace('eval', '').strip()
@@ -164,7 +164,7 @@ propagation of the update through your handlers to stop:
 
     .. code-block:: python
 
-        from telethon.events import StopPropagation
+        from garry.events import StopPropagation
 
         @client.on(events.NewMessage)
         def _(event):
@@ -181,8 +181,8 @@ propagation of the update through your handlers to stop:
             pass
 
 
-Remember to check :ref:`telethon-events-package` if you're looking for
+Remember to check :ref:`garry-events-package` if you're looking for
 the methods reference.
 
 
-__ https://lonamiwebs.github.io/Telethon/types/update.html
+__ https://lonamiwebs.github.io/Garry/types/update.html

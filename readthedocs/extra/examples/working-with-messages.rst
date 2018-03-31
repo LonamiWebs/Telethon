@@ -12,7 +12,7 @@ Forwarding messages
 *******************
 
 This request is available as a friendly method through
-`client.forward_messages <telethon.telegram_client.TelegramClient.forward_messages>`,
+`client.forward_messages <garry.telegram_client.TelegramClient.forward_messages>`,
 and can be used like shown below:
 
     .. code-block:: python
@@ -31,7 +31,7 @@ and can be used like shown below:
         )
 
         # You can also do it manually if you prefer
-        from telethon.tl.functions.messages import ForwardMessagesRequest
+        from garry.tl.functions.messages import ForwardMessagesRequest
 
         messages = foo()  # retrieve a few messages (or even one, in a list)
         from_entity = bar()
@@ -56,8 +56,8 @@ into issues_. A valid example would be:
 
     .. code-block:: python
 
-        from telethon.tl.functions.messages import SearchRequest
-        from telethon.tl.types import InputMessagesFilterEmpty
+        from garry.tl.functions.messages import SearchRequest
+        from garry.tl.types import InputMessagesFilterEmpty
 
         filter = InputMessagesFilterEmpty()
         result = client(SearchRequest(
@@ -128,7 +128,7 @@ send yourself the very first sticker you have:
         ))
 
 
-.. _ForwardMessagesRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_messages.html
-.. _SearchRequest: https://lonamiwebs.github.io/Telethon/methods/messages/search.html
-.. _issues: https://github.com/LonamiWebs/Telethon/issues/215
-.. _InputUserEmpty: https://lonamiwebs.github.io/Telethon/constructors/input_user_empty.html
+.. _ForwardMessagesRequest: https://lonamiwebs.github.io/Garry/methods/messages/forward_messages.html
+.. _SearchRequest: https://lonamiwebs.github.io/Garry/methods/messages/search.html
+.. _issues: https://github.com/LonamiWebs/Garry/issues/215
+.. _InputUserEmpty: https://lonamiwebs.github.io/Garry/constructors/input_user_empty.html

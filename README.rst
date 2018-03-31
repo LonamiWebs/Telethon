@@ -1,10 +1,10 @@
-Telethon
+Garry
 ========
 .. epigraph::
 
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
-**Telethon** is Telegram client implementation in **Python 3** which uses
+**Garry** is Telegram client implementation in **Python 3** which uses
 the latest available API of Telegram.
 
 
@@ -22,7 +22,7 @@ Installing
 
 .. code:: sh
 
-  pip3 install telethon
+  pip3 install garry
 
 
 Creating a client
@@ -30,7 +30,7 @@ Creating a client
 
 .. code:: python
 
-  from telethon import TelegramClient
+  from garry import TelegramClient
 
   # These example values won't work. You must get your own api_id and
   # api_hash from https://my.telegram.org, under API Development.
@@ -48,7 +48,7 @@ Doing stuff
 
   print(client.get_me().stringify())
 
-  client.send_message('username', 'Hello! Talking to you from Telethon')
+  client.send_message('username', 'Hello! Talking to you from Garry')
   client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
   client.download_profile_photo('me')
@@ -59,7 +59,7 @@ Doing stuff
 Next steps
 ----------
 
-Do you like how Telethon looks? Check out
-`Read The Docs <http://telethon.rtfd.io/>`_
+Do you like how Garry looks? Check out
+`Read The Docs <http://garry.rtfd.io/>`_
 for a more in-depth explanation, with examples,
 troubleshooting issues, and more useful information.

@@ -2,10 +2,10 @@
 _build/
 
 # Generated code
-telethon/tl/functions/
-telethon/tl/types/
-telethon/tl/all_tlobjects.py
-telethon/errors/rpc_error_list.py
+garry/tl/functions/
+garry/tl/types/
+garry/tl/all_tlobjects.py
+garry/errors/rpc_error_list.py
 
 # User session
 *.session

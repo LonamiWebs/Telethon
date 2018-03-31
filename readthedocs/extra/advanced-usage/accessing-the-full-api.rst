@@ -14,10 +14,10 @@ through a sorted list of everything you can do.
 
 .. note::
 
-    The reason to keep both https://lonamiwebs.github.io/Telethon and this
+    The reason to keep both https://lonamiwebs.github.io/Garry and this
     documentation alive is that the former allows instant search results
     as you type, and a "Copy import" button. If you like namespaces, you
-    can also do ``from telethon.tl import types, functions``. Both work.
+    can also do ``from garry.tl import types, functions``. Both work.
 
 
 You should also refer to the documentation to see what the objects
@@ -35,13 +35,13 @@ clipboard", or your script won't be aware of this class! Now we have:
 
     .. code-block:: python
     
-        from telethon.tl.functions.messages import SendMessageRequest
+        from garry.tl.functions.messages import SendMessageRequest
 
 If you're going to use a lot of these, you may do:
 
     .. code-block:: python
     
-        from telethon.tl import types, functions
+        from garry.tl import types, functions
         # We now have access to 'functions.messages.SendMessageRequest'
 
 We see that this request must take at least two parameters, a ``peer``
@@ -53,7 +53,7 @@ construct one, for instance:
 
     .. code-block:: python
 
-        from telethon.tl.types import InputPeerUser
+        from garry.tl.types import InputPeerUser
 
         peer = InputPeerUser(user_id, user_hash)
 
@@ -81,7 +81,7 @@ every time its used, simply call ``.get_input_peer``:
 
     .. code-block:: python
 
-        from telethon import utils
+        from garry import utils
         peer = utils.get_input_user(entity)
 
 
@@ -135,6 +135,6 @@ This can further be simplified to:
     though, for instance, in "messages.search" it will actually return 0 items.
 
 
-__ https://lonamiwebs.github.io/Telethon
-__ https://lonamiwebs.github.io/Telethon/methods/index.html
-__ https://lonamiwebs.github.io/Telethon/?q=message
+__ https://lonamiwebs.github.io/Garry
+__ https://lonamiwebs.github.io/Garry/methods/index.html
+__ https://lonamiwebs.github.io/Garry/?q=message

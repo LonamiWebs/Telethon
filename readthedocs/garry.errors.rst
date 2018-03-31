@@ -1,22 +1,22 @@
-.. _telethon-errors-package:
+.. _garry-errors-package:
 
 
-telethon\.errors package
+garry\.errors package
 ========================
 
 
-telethon\.errors\.common module
+garry\.errors\.common module
 -------------------------------
 
-.. automodule:: telethon.errors.common
+.. automodule:: garry.errors.common
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.errors\.rpc\_base\_errors module
+garry\.errors\.rpc\_base\_errors module
 ------------------------------------------
 
-.. automodule:: telethon.errors.rpc_base_errors
+.. automodule:: garry.errors.rpc_base_errors
     :members:
     :undoc-members:
     :show-inheritance:

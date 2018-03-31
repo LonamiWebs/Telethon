@@ -6,7 +6,7 @@ from os import environ
 # environ is used to get API information from environment variables
 # You could also use a config file, pass them as arguments,
 # or even hardcode them (not recommended)
-from telethon import TelegramClient
+from garry import TelegramClient
 
 
 def main():

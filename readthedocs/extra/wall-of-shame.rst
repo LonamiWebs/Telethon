@@ -4,15 +4,15 @@ Wall of Shame
 
 
 This project has an
-`issues <https://github.com/LonamiWebs/Telethon/issues>`__ section for
+`issues <https://github.com/LonamiWebs/Garry/issues>`__ section for
 you to file **issues** whenever you encounter any when working with the
 library. Said section is **not** for issues on *your* program but rather
-issues with Telethon itself.
+issues with Garry itself.
 
 If you have not made the effort to 1. read through the docs and 2.
-`look for the method you need <https://lonamiwebs.github.io/Telethon/>`__,
+`look for the method you need <https://lonamiwebs.github.io/Garry/>`__,
 you will end up on the `Wall of
-Shame <https://github.com/LonamiWebs/Telethon/issues?q=is%3Aissue+label%3ARTFM+is%3Aclosed>`__,
+Shame <https://github.com/LonamiWebs/Garry/issues?q=is%3Aissue+label%3ARTFM+is%3Aclosed>`__,
 i.e. all issues labeled
 `"RTFM" <http://www.urbandictionary.com/define.php?term=RTFM>`__:
 
@@ -34,7 +34,7 @@ If you have indeed read the docs, and have tried looking for the method,
 and yet you didn't find what you need, **that's fine**. Telegram's API
 can have some obscure names at times, and for this reason, there is a
 `"question"
-label <https://github.com/LonamiWebs/Telethon/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20label%3Aquestion%20>`__
+label <https://github.com/LonamiWebs/Garry/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aclosed%20label%3Aquestion%20>`__
 with questions that are okay to ask. Just state what you've tried so
 that we know you've made an effort, or you'll go to the Wall of Shame.
 
@@ -46,7 +46,7 @@ Current winner
 --------------
 
 The current winner is `issue
-213 <https://github.com/LonamiWebs/Telethon/issues/213>`__:
+213 <https://github.com/LonamiWebs/Garry/issues/213>`__:
 
 **Issue:**
 

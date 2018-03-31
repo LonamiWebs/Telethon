@@ -36,15 +36,15 @@ one of the other implementations or implement your own storage.
 To use a custom session storage, simply pass the custom session instance to
 ``TelegramClient`` instead of the session name.
 
-Telethon contains two implementations of the abstract ``Session`` class:
+Garry contains two implementations of the abstract ``Session`` class:
 
 * ``MemorySession``: stores session data in Python variables.
 * ``SQLiteSession``, (default): stores sessions in their own SQLite databases.
 
 There are other community-maintained implementations available:
 
-* `SQLAlchemy <https://github.com/tulir/telethon-session-sqlalchemy>`_: stores all sessions in a single database via SQLAlchemy.
-* `Redis <https://github.com/ezdev128/telethon-session-redis>`_: stores all sessions in a single Redis data store.
+* `SQLAlchemy <https://github.com/tulir/garry-session-sqlalchemy>`_: stores all sessions in a single database via SQLAlchemy.
+* `Redis <https://github.com/ezdev128/garry-session-redis>`_: stores all sessions in a single Redis data store.
 
 Creating your own storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,7 +52,7 @@ Creating your own storage
 The easiest way to create your own storage implementation is to use ``MemorySession``
 as the base and check out how ``SQLiteSession`` or one of the community-maintained
 implementations work. You can find the relevant Python files under the ``sessions``
-directory in Telethon.
+directory in Garry.
 
 After you have made your own implementation, you can add it to the community-maintained
 session implementation list above with a pull request.
