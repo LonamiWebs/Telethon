@@ -6,7 +6,7 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 
 Extra supported commands are:
-* gen_tl, to generate the classes required for Telethon to run
+* gen_tl, to generate the classes required for Garry to run
 * clean_tl, to clean these generated classes
 * pypi, to generate sdist, bdist_wheel, and push to PyPi
 """
@@ -37,17 +37,17 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
-ERROR_LIST = 'telethon/errors/rpc_error_list.py'
-ERRORS_JSON = 'telethon_generator/errors.json'
-ERRORS_DESC = 'telethon_generator/error_descriptions'
-SCHEME_TL = 'telethon_generator/scheme.tl'
-GENERATOR_DIR = 'telethon/tl'
+ERROR_LIST = 'garry/errors/rpc_error_list.py'
+ERRORS_JSON = 'garry_generator/errors.json'
+ERRORS_DESC = 'garry_generator/error_descriptions'
+SCHEME_TL = 'garry_generator/scheme.tl'
+GENERATOR_DIR = 'garry/tl'
 IMPORT_DEPTH = 2
 
 
 def gen_tl(force=True):
-    from telethon_generator.tl_generator import TLGenerator
-    from telethon_generator.error_generator import generate_code
+    from garry_generator.tl_generator import TLGenerator
+    from garry_generator.error_generator import generate_code
     generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
         if not force:
@@ -67,7 +67,7 @@ def main():
         gen_tl()
 
     elif len(argv) >= 2 and argv[1] == 'clean_tl':
-        from telethon_generator.tl_generator import TLGenerator
+        from garry_generator.tl_generator import TLGenerator
         print('Cleaning...')
         TLGenerator(GENERATOR_DIR).clean_tlobjects()
         print('Done.')
@@ -76,28 +76,28 @@ def main():
         # (Re)generate the code to make sure we don't push without it
         gen_tl()
 
-        # Try importing the telethon module to assert it has no errors
+        # Try importing the garry module to assert it has no errors
         try:
-            import telethon
+            import garry
         except:
             print('Packaging for PyPi aborted, importing the module failed.')
             return
 
-        # Need python3.5 or higher, but Telethon is supposed to support 3.x
+        # Need python3.5 or higher, but Garry is supposed to support 3.x
         # Place it here since noone should be running ./setup.py pypi anyway
         from subprocess import run
         from shutil import rmtree
 
-        for x in ('build', 'dist', 'Telethon.egg-info'):
+        for x in ('build', 'dist', 'Garry.egg-info'):
             rmtree(x, ignore_errors=True)
         run('python3 setup.py sdist', shell=True)
         run('python3 setup.py bdist_wheel', shell=True)
         run('twine upload dist/*', shell=True)
-        for x in ('build', 'dist', 'Telethon.egg-info'):
+        for x in ('build', 'dist', 'Garry.egg-info'):
             rmtree(x, ignore_errors=True)
 
     elif len(argv) >= 2 and argv[1] == 'fetch_errors':
-        from telethon_generator.error_generator import fetch_errors
+        from garry_generator.error_generator import fetch_errors
         fetch_errors(ERRORS_JSON)
 
     else:
@@ -109,17 +109,17 @@ def main():
         with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
-        with open('telethon/version.py', encoding='utf-8') as f:
+        with open('garry/version.py', encoding='utf-8') as f:
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
-            name='Telethon',
+            name='Garry',
             version=version,
             description="Full-featured Telegram client library for Python 3",
             long_description=long_description,
 
-            url='https://github.com/LonamiWebs/Telethon',
-            download_url='https://github.com/LonamiWebs/Telethon/releases',
+            url='https://github.com/LonamiWebs/Garry',
+            download_url='https://github.com/LonamiWebs/Garry/releases',
 
             author='Lonami Exo',
             author_email='totufals@hotmail.com',
@@ -146,12 +146,12 @@ def main():
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
-                'telethon_generator', 'telethon_tests', 'run_tests.py',
-                'try_telethon.py',
-                'telethon_generator/parser/__init__.py',
-                'telethon_generator/parser/source_builder.py',
-                'telethon_generator/parser/tl_object.py',
-                'telethon_generator/parser/tl_parser.py',
+                'garry_generator', 'garry_tests', 'run_tests.py',
+                'try_garry.py',
+                'garry_generator/parser/__init__.py',
+                'garry_generator/parser/source_builder.py',
+                'garry_generator/parser/tl_object.py',
+                'garry_generator/parser/tl_parser.py',
             ]),
             install_requires=['pyaes', 'rsa',
                               'typing' if version_info < (3, 5, 2) else ""],

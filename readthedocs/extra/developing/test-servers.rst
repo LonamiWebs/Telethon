@@ -3,7 +3,7 @@ Test Servers
 ============
 
 
-To run Telethon on a test server, use the following code:
+To run Garry on a test server, use the following code:
 
     .. code-block:: python
 

@@ -1,51 +1,51 @@
-telethon\.crypto package
+garry\.crypto package
 ========================
 
 
-telethon\.crypto\.aes module
+garry\.crypto\.aes module
 ----------------------------
 
-.. automodule:: telethon.crypto.aes
+.. automodule:: garry.crypto.aes
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.aes\_ctr module
+garry\.crypto\.aes\_ctr module
 ---------------------------------
 
-.. automodule:: telethon.crypto.aes_ctr
+.. automodule:: garry.crypto.aes_ctr
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.auth\_key module
+garry\.crypto\.auth\_key module
 ----------------------------------
 
-.. automodule:: telethon.crypto.auth_key
+.. automodule:: garry.crypto.auth_key
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.cdn\_decrypter module
+garry\.crypto\.cdn\_decrypter module
 ---------------------------------------
 
-.. automodule:: telethon.crypto.cdn_decrypter
+.. automodule:: garry.crypto.cdn_decrypter
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.factorization module
+garry\.crypto\.factorization module
 --------------------------------------
 
-.. automodule:: telethon.crypto.factorization
+.. automodule:: garry.crypto.factorization
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.rsa module
+garry\.crypto\.rsa module
 ----------------------------
 
-.. automodule:: telethon.crypto.rsa
+.. automodule:: garry.crypto.rsa
     :members:
     :undoc-members:
     :show-inheritance:

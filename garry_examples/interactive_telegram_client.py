@@ -1,11 +1,11 @@
 import os
 from getpass import getpass
 
-from telethon.utils import get_display_name
+from garry.utils import get_display_name
 
-from telethon import ConnectionMode, TelegramClient
-from telethon.errors import SessionPasswordNeededError
-from telethon.tl.types import (
+from garry import ConnectionMode, TelegramClient
+from garry.errors import SessionPasswordNeededError
+from garry.tl.types import (
     PeerChat, UpdateShortChatMessage, UpdateShortMessage
 )
 
@@ -42,10 +42,10 @@ def bytes_to_string(byte_count):
 
 class InteractiveTelegramClient(TelegramClient):
     """Full featured Telegram client, meant to be used on an interactive
-       session to see what Telethon is capable off -
+       session to see what Garry is capable off -
 
        This client allows the user to perform some basic interaction with
-       Telegram through Telethon, such as listing dialogs (open chats),
+       Telegram through Garry, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
 

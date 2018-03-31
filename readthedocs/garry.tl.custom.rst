@@ -1,21 +1,21 @@
-telethon\.tl\.custom package
+garry\.tl\.custom package
 ============================
 
 
-telethon\.tl\.custom\.draft module
+garry\.tl\.custom\.draft module
 ----------------------------------
 
-.. automodule:: telethon.tl.custom.draft
+.. automodule:: garry.tl.custom.draft
     :members:
     :undoc-members:
     :show-inheritance:
 
 
 
-telethon\.tl\.custom\.dialog module
+garry\.tl\.custom\.dialog module
 -----------------------------------
 
-.. automodule:: telethon.tl.custom.dialog
+.. automodule:: garry.tl.custom.dialog
     :members:
     :undoc-members:
     :show-inheritance:

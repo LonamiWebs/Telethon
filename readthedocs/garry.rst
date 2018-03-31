@@ -1,107 +1,107 @@
-.. _telethon-package:
+.. _garry-package:
 
 
-telethon package
+garry package
 ================
 
 
-telethon\.telegram\_client module
+garry\.telegram\_client module
 ---------------------------------
 
-.. automodule:: telethon.telegram_client
+.. automodule:: garry.telegram_client
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.telegram\_bare\_client module
+garry\.telegram\_bare\_client module
 ---------------------------------------
 
-.. automodule:: telethon.telegram_bare_client
+.. automodule:: garry.telegram_bare_client
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.utils module
+garry\.utils module
 ----------------------
 
-.. automodule:: telethon.utils
+.. automodule:: garry.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.helpers module
+garry\.helpers module
 ------------------------
 
-.. automodule:: telethon.helpers
+.. automodule:: garry.helpers
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.events package
+garry\.events package
 ------------------------
 
 .. toctree::
 
-    telethon.events
+    garry.events
 
 
-telethon\.update\_state module
+garry\.update\_state module
 ------------------------------
 
-.. automodule:: telethon.update_state
+.. automodule:: garry.update_state
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.sessions module
+garry\.sessions module
 -------------------------
 
-.. automodule:: telethon.sessions
+.. automodule:: garry.sessions
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.cryto package
+garry\.cryto package
 ------------------------
 
 .. toctree::
 
-    telethon.crypto
+    garry.crypto
 
-telethon\.errors package
+garry\.errors package
 ------------------------
 
 .. toctree::
 
-    telethon.errors
+    garry.errors
 
-telethon\.extensions package
+garry\.extensions package
 ----------------------------
 
 .. toctree::
 
-    telethon.extensions
+    garry.extensions
 
-telethon\.network package
+garry\.network package
 -------------------------
 
 .. toctree::
 
-    telethon.network
+    garry.network
 
-telethon\.tl package
+garry\.tl package
 --------------------
 
 .. toctree::
 
-    telethon.tl
+    garry.tl
 
 
 
 Module contents
 ---------------
 
-.. automodule:: telethon
+.. automodule:: garry
     :members:
     :undoc-members:
     :show-inheritance:

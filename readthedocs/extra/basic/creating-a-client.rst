@@ -26,7 +26,7 @@ one is very simple:
 
     .. code-block:: python
 
-        from telethon import TelegramClient
+        from garry import TelegramClient
 
         # Use your own values here
         api_id = 12345
@@ -58,7 +58,7 @@ If you're not authorized, you need to ``.sign_in()``:
         myself = client.sign_in(phone_number, input('Enter code: '))
         # If .sign_in raises PhoneNumberUnoccupiedError, use .sign_up instead
         # If .sign_in raises SessionPasswordNeeded error, call .sign_in(password=...)
-        # You can import both exceptions from telethon.errors.
+        # You can import both exceptions from garry.errors.
 
 .. note::
 
@@ -130,14 +130,14 @@ Two Factor Authorization (2FA)
 ******************************
 
 If you have Two Factor Authorization (from now on, 2FA) enabled on your
-account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
+account, calling :meth:`garry.TelegramClient.sign_in` will raise a
 ``SessionPasswordNeededError``. When this happens, just
-:meth:`telethon.TelegramClient.sign_in` again with a ``password=``:
+:meth:`garry.TelegramClient.sign_in` again with a ``password=``:
 
     .. code-block:: python
 
         import getpass
-        from telethon.errors import SessionPasswordNeededError
+        from garry.errors import SessionPasswordNeededError
 
         client.sign_in(phone)
         try:
@@ -160,7 +160,7 @@ See the examples below:
 
     .. code-block:: python
 
-        from telethon.errors import EmailUnconfirmedError
+        from garry.errors import EmailUnconfirmedError
         
         # Sets 2FA password for first time:
         client.edit_2fa(new_password='supersecurepassword')

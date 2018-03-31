@@ -9,7 +9,7 @@ Getting Started
 Simple Installation
 *******************
 
-   ``pip3 install telethon``
+   ``pip3 install garry``
 
    **More details**: :ref:`installation`
 
@@ -19,7 +19,7 @@ Creating a client
 
    .. code-block:: python
 
-       from telethon import TelegramClient
+       from garry import TelegramClient
 
        # These example values won't work. You must get your own api_id and
        # api_hash from https://my.telegram.org, under API Development.
@@ -41,13 +41,13 @@ Basic Usage
        print(client.get_me().stringify())
 
        # Sending a message (you can use 'me' or 'self' to message yourself)
-       client.send_message('username', 'Hello World from Telethon!')
+       client.send_message('username', 'Hello World from Garry!')
 
        # Sending a file
        client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
        # Retrieving messages from a chat
-       from telethon import utils
+       from garry import utils
        for message in client.get_message_history('username', limit=10):
            print(utils.get_display_name(message.sender), message.message)
 
@@ -71,7 +71,7 @@ Handling Updates
 
    .. code-block:: python
 
-       from telethon import events
+       from garry import events
 
        # We need to have some worker running
        client.updates.workers = 1

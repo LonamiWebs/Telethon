@@ -3,9 +3,9 @@ import socket
 import threading
 import unittest
 
-import telethon.network.authenticator as authenticator
-from telethon.extensions import TcpClient
-from telethon.network import Connection
+import garry.network.authenticator as authenticator
+from garry.extensions import TcpClient
+from garry.network import Connection
 
 
 def run_server_echo_thread(port):

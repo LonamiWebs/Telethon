@@ -3,9 +3,9 @@ import os
 import struct
 from hashlib import sha1, sha256
 
-from telethon.crypto import AES
-from telethon.errors import SecurityError
-from telethon.extensions import BinaryReader
+from garry.crypto import AES
+from garry.errors import SecurityError
+from garry.extensions import BinaryReader
 
 
 # region Multiple utilities

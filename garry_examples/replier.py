@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from os import environ
 
-from telethon import TelegramClient, events, utils
+from garry import TelegramClient, events, utils
 
 """Uncomment this for debugging
 import logging

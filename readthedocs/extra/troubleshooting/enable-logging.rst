@@ -2,7 +2,7 @@
 Enabling Logging
 ================
 
-Telethon makes use of the `logging`__ module, and you can enable it as follows:
+Garry makes use of the `logging`__ module, and you can enable it as follows:
 
 .. code:: python
 
@@ -32,7 +32,7 @@ log level for the library:
         import logging
         logging.basicConfig(level=logging.DEBUG)
         # For instance, show only warnings and above
-        logging.getLogger('telethon').setLevel(level=logging.WARNING)
+        logging.getLogger('garry').setLevel(level=logging.WARNING)
 
 
 __ https://docs.python.org/3/library/logging.html

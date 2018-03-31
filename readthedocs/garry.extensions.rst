@@ -1,27 +1,27 @@
-telethon\.extensions package
+garry\.extensions package
 ============================
 
 
-telethon\.extensions\.binary\_reader module
+garry\.extensions\.binary\_reader module
 -------------------------------------------
 
-.. automodule:: telethon.extensions.binary_reader
+.. automodule:: garry.extensions.binary_reader
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.extensions\.markdown module
+garry\.extensions\.markdown module
 -------------------------------------
 
-.. automodule:: telethon.extensions.markdown
+.. automodule:: garry.extensions.markdown
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.extensions\.tcp\_client module
+garry\.extensions\.tcp\_client module
 ----------------------------------------
 
-.. automodule:: telethon.extensions.tcp_client
+.. automodule:: garry.extensions.tcp_client
     :members:
     :undoc-members:
     :show-inheritance:

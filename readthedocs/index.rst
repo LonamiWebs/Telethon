@@ -1,22 +1,22 @@
-.. Telethon documentation master file, created by
+.. Garry documentation master file, created by
    sphinx-quickstart on Fri Nov 17 15:36:11 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 ====================================
-Welcome to Telethon's documentation!
+Welcome to Garry's documentation!
 ====================================
 
 
 Pure Python 3 Telegram client library.
-Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
+Official Site `here <https://lonamiwebs.github.io/Garry>`_.
 Please follow the links on the index below to navigate from here,
 or use the menu on the left. Remember to read the :ref:`changelog`
 when you upgrade!
 
 .. important::
    If you're new here, you want to read :ref:`getting-started`. If you're
-   looking for the method reference, you should check :ref:`telethon-package`.
+   looking for the method reference, you should check :ref:`garry-package`.
 
 
 What is this?
@@ -102,7 +102,7 @@ heavy job for you, so you can focus on developing an application.
 
 
 .. toctree::
-   :caption: Telethon modules
+   :caption: Garry modules
 
    modules
 

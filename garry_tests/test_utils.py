@@ -1,7 +1,7 @@
 import os
 import unittest
-from telethon.tl import TLObject
-from telethon.extensions import BinaryReader
+from garry.tl import TLObject
+from garry.extensions import BinaryReader
 
 
 class UtilsTests(unittest.TestCase):

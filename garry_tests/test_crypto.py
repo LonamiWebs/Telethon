@@ -1,8 +1,8 @@
 import unittest
 from hashlib import sha1
 
-import telethon.helpers as utils
-from telethon.crypto import AES, Factorization
+import garry.helpers as utils
+from garry.crypto import AES, Factorization
 # from crypto.PublicKey import RSA as PyCryptoRSA
 
 

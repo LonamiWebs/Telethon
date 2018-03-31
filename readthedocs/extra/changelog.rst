@@ -284,7 +284,7 @@ Updates as Events (v0.17.1)
 
 Of course there was more work to be done regarding updates, and it's here!
 The library comes with a new ``events`` module (which you will often import
-as ``from telethon import TelegramClient, events``). This are pretty much
+as ``from garry import TelegramClient, events``). This are pretty much
 all the additions that come with this version change, but they are a nice
 addition. Refer to :ref:`working-with-updates` to get started with events.
 
@@ -319,7 +319,7 @@ Enhancements
 - ``client.send_file()`` now accepts ``Message``'s and
   ``MessageMedia``'s as the ``file`` parameter.
 - Some documentation updates and fixed to clarify certain things.
-- New exact match feature on https://lonamiwebs.github.io/Telethon.
+- New exact match feature on https://lonamiwebs.github.io/Garry.
 - Return as early as possible from ``.get_input_entity()`` and similar,
   to avoid penalizing you for doing this right.
 
@@ -512,7 +512,7 @@ It's here, it has come! The library now **supports IPv6**! Just pass
 ``use_ipv6=True`` when creating a ``TelegramClient``. Note that I could
 *not* test this feature because my machine doesn't have IPv6 setup. If
 you know IPv6 works in your machine but the library doesn't, please
-refer to `#425 <https://github.com/LonamiWebs/Telethon/issues/425>`_.
+refer to `#425 <https://github.com/LonamiWebs/Garry/issues/425>`_.
 
 Additions
 ~~~~~~~~~
@@ -615,11 +615,11 @@ things again! A lot of updates were being dropped (all those gzipped),
 and this has been fixed too.
 
 More bug fixes include a `correct
-parsing <https://github.com/LonamiWebs/Telethon/commit/ee01724cdb7027c1e38625d31446ba1ea7bade92>`__
+parsing <https://github.com/LonamiWebs/Garry/commit/ee01724cdb7027c1e38625d31446ba1ea7bade92>`__
 of certain TLObjects thanks to @stek29, and
-`some <https://github.com/LonamiWebs/Telethon/commit/ed77ba6f8ff115ac624f02f691c9991e5b37be60>`__
+`some <https://github.com/LonamiWebs/Garry/commit/ed77ba6f8ff115ac624f02f691c9991e5b37be60>`__
 `wrong
-calls <https://github.com/LonamiWebs/Telethon/commit/16cf94c9add5e94d70c4eee2ac142d8e76af48b9>`__
+calls <https://github.com/LonamiWebs/Garry/commit/16cf94c9add5e94d70c4eee2ac142d8e76af48b9>`__
 that would cause the library to crash thanks to @andr-04, and the
 ``ReadThread`` not re-starting if you were already authorized.
 
@@ -684,7 +684,7 @@ Custom Entity Database (v0.15.1)
 
 *Published at 2017/10/05*
 
-The main feature of this release is that Telethon now has a custom
+The main feature of this release is that Garry now has a custom
 database for all the entities you encounter, instead depending on
 ``@lru_cache`` on the ``.get_entity()`` method.
 
@@ -803,7 +803,7 @@ Internal changes
 
 **[1]:** Broken due to a condition which should had been the opposite
 (sigh), fixed 4 commits ahead on
-https://github.com/LonamiWebs/Telethon/commit/62ea77cbeac7c42bfac85aa8766a1b5b35e3a76c.
+https://github.com/LonamiWebs/Garry/commit/62ea77cbeac7c42bfac85aa8766a1b5b35e3a76c.
 
 --------------
 
@@ -1061,7 +1061,7 @@ This update brings a new way to work with updates, and it's begging for
 your **feedback**, or better names or ways to do what you can do now.
 
 Please refer to the `wiki/Usage
-Modes <https://github.com/LonamiWebs/Telethon/wiki/Usage-Modes>`__ for
+Modes <https://github.com/LonamiWebs/Garry/wiki/Usage-Modes>`__ for
 an in-depth description on how to work with updates now. Notice that you
 cannot invoke requests from within handlers anymore, only the
 ``v.0.13.1`` patch allowed you to do so.
@@ -1114,7 +1114,7 @@ Connection modes (v0.13)
 
 The purpose of this release is to denote a big change, now you can
 connect to Telegram through different `**connection
-modes** <https://github.com/LonamiWebs/Telethon/blob/v0.13/telethon/network/connection.py>`__.
+modes** <https://github.com/LonamiWebs/Garry/blob/v0.13/garry/network/connection.py>`__.
 Also, a **second thread** will *always* be started when you connect a
 ``TelegramClient``, despite whether you'll be handling updates or
 ignoring them, whose sole purpose is to constantly read from the
@@ -1176,7 +1176,7 @@ Besides this. ``TLObject.stringify()`` was showing bytes as lists (now
 fixed) and RPC errors are reported by default:
 
     In an attempt to help everyone who works with the Telegram API,
-    Telethon will by default report all Remote Procedure Call errors to
+    Garry will by default report all Remote Procedure Call errors to
     `PWRTelegram <https://pwrtelegram.xyz/>`__, a public database anyone can
     query, made by `Daniil <https://github.com/danog>`__. All the information
     sent is a GET request with the error code, error message and method used.
@@ -1213,7 +1213,7 @@ public keys now uses a different module instead the old strange
 hand-crafted version.
 
 Hope the new, super simple ``README.rst`` encourages people to use
-Telethon and make it better with either suggestions, or pull request.
+Garry and make it better with either suggestions, or pull request.
 Pull requests are *super* appreciated, but showing some support by
 leaving a star also feels nice ⭐️.
 
@@ -1226,7 +1226,7 @@ Newbie friendly update (v0.12)
 | Scheme layer used: 70 |
 +-----------------------+
 
-This update is overall an attempt to make Telethon a bit more user
+This update is overall an attempt to make Garry a bit more user
 friendly, along with some other stability enhancements, although it
 brings quite a few changes.
 
@@ -1303,26 +1303,26 @@ get_input_* everywhere (v0.11.4)
 *Published at 2017/07/10*
 
 For some reason, Telegram doesn't have enough with the
-`InputPeer <https://lonamiwebs.github.io/Telethon/types/input_peer.html>`__.
+`InputPeer <https://lonamiwebs.github.io/Garry/types/input_peer.html>`__.
 There also exist
-`InputChannel <https://lonamiwebs.github.io/Telethon/types/input_channel.html>`__
+`InputChannel <https://lonamiwebs.github.io/Garry/types/input_channel.html>`__
 and
-`InputUser <https://lonamiwebs.github.io/Telethon/types/input_user.html>`__!
+`InputUser <https://lonamiwebs.github.io/Garry/types/input_user.html>`__!
 You don't have to worry about those anymore, it's handled internally
 now.
 
 Besides this, every Telegram object now features a new default
 ``.__str__`` look, and also a `.stringify()
-method <https://github.com/LonamiWebs/Telethon/commit/8fd0d7eadd944ff42e18aaf06228adc7aba794b5>`__
+method <https://github.com/LonamiWebs/Garry/commit/8fd0d7eadd944ff42e18aaf06228adc7aba794b5>`__
 to pretty format them, if you ever need to inspect them.
 
 The library now uses `the DEBUG
-level <https://github.com/LonamiWebs/Telethon/commit/1f7ac7118750ed84e2165dce9c6aca2e6ea0c6a4>`__
+level <https://github.com/LonamiWebs/Garry/commit/1f7ac7118750ed84e2165dce9c6aca2e6ea0c6a4>`__
 everywhere, so no more warnings or information messages if you had
 logging enabled.
 
 The ``no_webpage`` parameter from ``.send_message`` `has been
-renamed <https://github.com/LonamiWebs/Telethon/commit/0119a006585acd1a1a9a8901a21bb2f193142cfe>`__
+renamed <https://github.com/LonamiWebs/Garry/commit/0119a006585acd1a1a9a8901a21bb2f193142cfe>`__
 to ``link_preview`` for clarity, so now it does the opposite (but has a
 clearer intention).
 
@@ -1366,7 +1366,7 @@ anymore.
 Bugs fixes
 ~~~~~~~~~~
 
--  Fixed some errors when installing Telethon via ``pip`` (for those
+-  Fixed some errors when installing Garry via ``pip`` (for those
    using either source distributions or a Python version ≤ 3.5).
 -  ``ConnectionResetError`` didn't flag sockets as closed, but now it
    does.
@@ -1406,7 +1406,7 @@ Breaking changes
 
 -  Every Telegram error has now its **own class**, so it's easier to
    fine-tune your ``except``\ 's.
--  Markdown parsing is **not part** of Telethon itself anymore, although
+-  Markdown parsing is **not part** of Garry itself anymore, although
    there are plans to support it again through a some external module.
 -  The ``.list_sessions()`` has been moved to the ``Session`` class
    instead.
@@ -1472,7 +1472,7 @@ resistant to upgrades.
 .. warning::
 
     You **must** upgrade to this version before any higher one if you've
-    used Telethon ≤ v0.10. If you happen to upgrade to an higher version,
+    used Garry ≤ v0.10. If you happen to upgrade to an higher version,
     that's okay, but you will have to manually delete the ``*.session`` file,
     and logout from that session from an official client.
 
@@ -1481,7 +1481,7 @@ Additions
 
 - New ``.get_me()`` function to get the **current** user.
 - ``.is_user_authorized()`` is now more reliable.
-- New nice button to copy the ``from telethon.tl.xxx.yyy import Yyy``
+- New nice button to copy the ``from garry.tl.xxx.yyy import Yyy``
   on the online documentation.
 - **More error codes** added to the ``errors`` file.
 
@@ -1499,7 +1499,7 @@ Full support for different DCs and ++stable (v0.10)
 
 Working with **different data centers** finally *works*! On a different
 order of things, **reconnection** is now performed automatically every
-time Telegram decides to kick us off their servers, so now Telethon can
+time Telegram decides to kick us off their servers, so now Garry can
 really run **forever and ever**! In theory.
 
 Enhancements
@@ -1516,7 +1516,7 @@ Enhancements
    and other internal improvements (which affect the **updates
    thread**), such as using ``logger`` instead a bare ``print()`` too.
 
-This brings Telethon a whole step closer to ``v1.0``, though more things
+This brings Garry a whole step closer to ``v1.0``, though more things
 should preferably be changed.
 
 Stability improvements (v0.9.1)
@@ -1524,7 +1524,7 @@ Stability improvements (v0.9.1)
 
 *Published at 2017/05/23*
 
-Telethon used to crash a lot when logging in for the very first time.
+Garry used to crash a lot when logging in for the very first time.
 The reason for this was that the reconnection (or dead connections) were
 not handled properly. Now they are, so you should be able to login
 directly, without needing to delete the ``*.session`` file anymore.
@@ -1538,7 +1538,7 @@ Enhancements
   proper permissions.
 - In-code documentation now shows the returning type.
 - **Relative import** is now used everywhere, so you can rename
-  ``telethon`` to anything else.
+  ``garry`` to anything else.
 - **Dead connections** are now **detected** instead entering an infinite loop.
 - **Sockets** can now be **closed** (and re-opened) properly.
 - Telegram decided to update the layer 66 without increasing the number.
@@ -1557,9 +1557,9 @@ Additions
 ~~~~~~~~~
 
 - The **documentation**, available online
-  `here <https://lonamiwebs.github.io/Telethon/>`__, has a new search bar.
+  `here <https://lonamiwebs.github.io/Garry/>`__, has a new search bar.
 - Better **cross-thread safety** by using ``threading.Event``.
-- More improvements for running Telethon during a **long period of time**.
+- More improvements for running Garry during a **long period of time**.
 
 Bug fixes
 ~~~~~~~~~
@@ -1588,7 +1588,7 @@ Additions
 -  **Bot login**, thanks to @JuanPotato for hinting me about how to do
    it.
 -  **Proxy support**, thanks to @exzhawk for implementing it.
--  **Logging support**, used by passing ``--telethon-log=DEBUG`` (or
+-  **Logging support**, used by passing ``--garry-log=DEBUG`` (or
    ``INFO``) as a command line argument.
 
 Bug fixes
@@ -1605,7 +1605,7 @@ Long-run bug fix (v0.7.1)
 
 *Published at 2017/02/19*
 
-If you're one of those who runs Telethon for a long time (more than 30
+If you're one of those who runs Garry for a long time (more than 30
 minutes), this update by @strayge will be great for you. It sends
 periodic pings to the Telegram servers so you don't get disconnected and
 you can still send and receive updates!
@@ -1620,7 +1620,7 @@ Two factor authentication (v0.7)
 +-----------------------+
 
 If you're one of those who love security the most, these are good news.
-You can now use two factor authentication with Telethon too! As internal
+You can now use two factor authentication with Garry too! As internal
 changes, the coding style has been improved, and you can easily use
 custom session objects, and various little bugs have been fixed.
 
@@ -1634,8 +1634,8 @@ Updated pip version (v0.6)
 +-----------------------+
 
 This release has no new major features. However, it contains some small
-changes that make using Telethon a little bit easier. Now those who have
-installed Telethon via ``pip`` can also take advantage of changes, such
+changes that make using Garry a little bit easier. Now those who have
+installed Garry via ``pip`` can also take advantage of changes, such
 as less bugs, creating empty instances of ``TLObjects``, specifying a
 timeout and more!
 
@@ -1644,8 +1644,8 @@ Ready, pip, go! (v0.5)
 
 *Published at 2016/09/18*
 
-Telethon is now available as a **`Python
-package <https://pypi.python.org/pypi?name=Telethon>`__**! Those are
+Garry is now available as a **`Python
+package <https://pypi.python.org/pypi?name=Garry>`__**! Those are
 really exciting news (except, sadly, the project structure had to change
 *a lot* to be able to do that; but hopefully it won't need to change
 much more, any more!)
@@ -1653,7 +1653,7 @@ much more, any more!)
 Not only that, but more improvements have also been made: you're now
 able to both **sign up** and **logout**, watch a pretty
 "Uploading/Downloading… x%" progress, and other minor changes which make
-using Telethon **easier**.
+using Garry **easier**.
 
 Made InteractiveTelegramClient cool (v0.4)
 ==========================================

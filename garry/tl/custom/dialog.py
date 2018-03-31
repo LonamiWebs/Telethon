@@ -46,7 +46,7 @@ class Dialog:
             How many mentions are currently unread in this dialog. Note that
             this value won't update when new messages arrive.
 
-        draft (`telethon.tl.custom.draft.Draft`):
+        draft (`garry.tl.custom.draft.Draft`):
             The draft object in this dialog. It will not be ``None``,
             so you can call ``draft.set_message(...)``.
     """

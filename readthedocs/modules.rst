@@ -1,7 +1,7 @@
-telethon
+garry
 ========
 
 .. toctree::
    :maxdepth: 3
 
-   telethon
+   garry

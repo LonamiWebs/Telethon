@@ -1,6 +1,6 @@
 """
 This module holds all the base and automatically generated errors that the
-Telegram API has. See telethon_generator/errors.json for more.
+Telegram API has. See garry_generator/errors.json for more.
 """
 import urllib.request
 import re

@@ -49,7 +49,7 @@ let's reply to them with the same text reversed:
 
     .. code-block:: python
 
-        from telethon.tl.types import UpdateShortMessage, PeerUser
+        from garry.tl.types import UpdateShortMessage, PeerUser
 
         def replier(update):
             if isinstance(update, UpdateShortMessage) and not update.out:
@@ -140,5 +140,5 @@ As a complete example:
 
 This is the preferred way to use if you're simply going to listen for updates.
 
-__ https://lonamiwebs.github.io/Telethon/types/update.html
+__ https://lonamiwebs.github.io/Garry/types/update.html
 __ https://github.com/python-telegram-bot/python-telegram-bot/blob/4b3315db6feebafb94edcaa803df52bb49999ced/telegram/ext/updater.py#L460

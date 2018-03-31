@@ -1,35 +1,35 @@
-telethon\.network package
+garry\.network package
 =========================
 
 
-telethon\.network\.authenticator module
+garry\.network\.authenticator module
 ---------------------------------------
 
-.. automodule:: telethon.network.authenticator
+.. automodule:: garry.network.authenticator
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.network\.connection module
+garry\.network\.connection module
 ------------------------------------
 
-.. automodule:: telethon.network.connection
+.. automodule:: garry.network.connection
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.network\.mtproto\_plain\_sender module
+garry\.network\.mtproto\_plain\_sender module
 ------------------------------------------------
 
-.. automodule:: telethon.network.mtproto_plain_sender
+.. automodule:: garry.network.mtproto_plain_sender
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.network\.mtproto\_sender module
+garry\.network\.mtproto\_sender module
 -----------------------------------------
 
-.. automodule:: telethon.network.mtproto_sender
+.. automodule:: garry.network.mtproto_sender
     :members:
     :undoc-members:
     :show-inheritance:

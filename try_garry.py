@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import traceback
 
-from telethon_examples.interactive_telegram_client \
+from garry_examples.interactive_telegram_client \
     import InteractiveTelegramClient
 
 

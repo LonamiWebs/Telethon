@@ -8,25 +8,25 @@ Installation
 Automatic Installation
 **********************
 
-To install Telethon, simply do:
+To install Garry, simply do:
 
-    ``pip3 install telethon``
+    ``pip3 install garry``
 
 Needless to say, you must have Python 3 and PyPi installed in your system.
 See https://python.org and https://pypi.python.org/pypi/pip for more.
 
 If you already have the library installed, upgrade with:
 
-    ``pip3 install --upgrade telethon``
+    ``pip3 install --upgrade garry``
 
 You can also install the library directly from GitHub or a fork:
 
    .. code-block:: sh
 
-        # pip3 install git+https://github.com/LonamiWebs/Telethon.git
+        # pip3 install git+https://github.com/LonamiWebs/Garry.git
         or
-        $ git clone https://github.com/LonamiWebs/Telethon.git
-        $ cd Telethon/
+        $ git clone https://github.com/LonamiWebs/Garry.git
+        $ cd Garry/
         # pip install -Ue .
 
 If you don't have root access, simply pass the ``--user`` flag to the pip
@@ -38,7 +38,7 @@ which can be really slow when uploading or downloading files. If you don't
 mind using a C extension, install `cryptg <https://github.com/Lonami/cryptg>`__
 via ``pip`` or as an extra:
 
-    ``pip3 install telethon[cryptg]``
+    ``pip3 install garry[cryptg]``
 
 
 Manual Installation
@@ -49,10 +49,10 @@ Manual Installation
 
     ``sudo -H pip3 install pyaes rsa``
 
-2. Clone Telethon's GitHub repository:
-   ``git clone https://github.com/LonamiWebs/Telethon.git``
+2. Clone Garry's GitHub repository:
+   ``git clone https://github.com/LonamiWebs/Garry.git``
 
-3. Enter the cloned repository: ``cd Telethon``
+3. Enter the cloned repository: ``cd Garry``
 
 4. Run the code generator: ``python3 setup.py gen_tl``
 
@@ -75,5 +75,5 @@ __ https://github.com/ricmoo/pyaes
 __ https://pypi.python.org/pypi/pyaes
 __ https://github.com/sybrenstuvel/python-rsa
 __ https://pypi.python.org/pypi/rsa/3.4.2
-__ https://lonamiwebs.github.io/Telethon
+__ https://lonamiwebs.github.io/Garry
 __ https://github.com/Lonami/cryptg
