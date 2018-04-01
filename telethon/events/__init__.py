@@ -46,11 +46,11 @@ class _EventBuilder(abc.ABC):
     The common event builder, with builtin support to filter per chat.
 
     Args:
-        chats (:obj:`entity`, optional):
+        chats (`entity`, optional):
             May be one or more entities (username/peer/etc.). By default,
             only matching chats will be handled.
 
-        blacklist_chats (:obj:`bool`, optional):
+        blacklist_chats (`bool`, optional):
             Whether to treat the chats as a blacklist instead of
             as a whitelist (default). This means that every chat
             will be handled *except* those specified in ``chats``
@@ -118,11 +118,15 @@ class _EventCommon(abc.ABC):
         try:
             if isinstance(chat, types.InputPeerChannel):
                 result = await self._client(
-                    functions.channels.GetMessagesRequest(chat, [msg_id])
+                    functions.channels.GetMessagesRequest(chat, [
+                        types.InputMessageID(msg_id)
+                    ])
                 )
             else:
                 result = await self._client(
-                    functions.messages.GetMessagesRequest([msg_id])
+                    functions.messages.GetMessagesRequest([
+                        types.InputMessageID(msg_id)
+                    ])
                 )
         except RPCError:
             return None, None
@@ -228,15 +232,15 @@ class NewMessage(_EventBuilder):
     Represents a new message event builder.
 
     Args:
-        incoming (:obj:`bool`, optional):
+        incoming (`bool`, optional):
             If set to ``True``, only **incoming** messages will be handled.
             Mutually exclusive with ``outgoing`` (can only set one of either).
 
-        outgoing (:obj:`bool`, optional):
+        outgoing (`bool`, optional):
             If set to ``True``, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
-        pattern (:obj:`str`, :obj:`callable`, :obj:`Pattern`, optional):
+        pattern (`str`, `callable`, `Pattern`, optional):
             If set, only messages matching this pattern will be handled.
             You can specify a regex-like string which will be matched
             against the message, a callable function that returns ``True``
@@ -300,7 +304,7 @@ class NewMessage(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._message_filter_event(event)
 
     def _message_filter_event(self, event):
@@ -330,16 +334,16 @@ class NewMessage(_EventBuilder):
             message (:tl:`Message`):
                 This is the original :tl:`Message` object.
 
-            is_private (:obj:`bool`):
+            is_private (`bool`):
                 True if the message was sent as a private message.
 
-            is_group (:obj:`bool`):
+            is_group (`bool`):
                 True if the message was sent on a group or megagroup.
 
-            is_channel (:obj:`bool`):
+            is_channel (`bool`):
                 True if the message was sent on a megagroup or channel.
 
-            is_reply (:obj:`str`):
+            is_reply (`str`):
                 Whether the message is a reply to some other or not.
         """
         def __init__(self, message):
@@ -501,11 +505,13 @@ class NewMessage(_EventBuilder):
             if self._reply_message is None:
                 if isinstance(await self.input_chat, types.InputPeerChannel):
                     r = await self._client(functions.channels.GetMessagesRequest(
-                        await self.input_chat, [self.message.reply_to_msg_id]
+                        await self.input_chat, [
+                            types.InputMessageID(self.message.reply_to_msg_id)
+                        ]
                     ))
                 else:
                     r = await self._client(functions.messages.GetMessagesRequest(
-                        [self.message.reply_to_msg_id]
+                        [types.InputMessageID(self.message.reply_to_msg_id)]
                     ))
                 if not isinstance(r, types.messages.MessagesNotModified):
                     self._reply_message = r.messages[0]
@@ -692,7 +698,7 @@ class ChatAction(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -700,35 +706,35 @@ class ChatAction(_EventBuilder):
         Represents the event of a new chat action.
 
         Members:
-            new_pin (:obj:`bool`):
+            new_pin (`bool`):
                 ``True`` if there is a new pin.
 
-            new_photo (:obj:`bool`):
+            new_photo (`bool`):
                 ``True`` if there's a new chat photo (or it was removed).
 
             photo (:tl:`Photo`, optional):
                 The new photo (or ``None`` if it was removed).
 
 
-            user_added (:obj:`bool`):
+            user_added (`bool`):
                 ``True`` if the user was added by some other.
 
-            user_joined (:obj:`bool`):
+            user_joined (`bool`):
                 ``True`` if the user joined on their own.
 
-            user_left (:obj:`bool`):
+            user_left (`bool`):
                 ``True`` if the user left on their own.
 
-            user_kicked (:obj:`bool`):
+            user_kicked (`bool`):
                 ``True`` if the user was kicked by some other.
 
-            created (:obj:`bool`, optional):
+            created (`bool`, optional):
                 ``True`` if this chat was just created.
 
-            new_title (:obj:`bool`, optional):
+            new_title (`bool`, optional):
                 The new title string for the chat, if applicable.
 
-            unpin (:obj:`bool`):
+            unpin (`bool`):
                 ``True`` if the existing pin gets unpinned.
         """
         def __init__(self, where, new_pin=None, new_photo=None,
@@ -820,7 +826,9 @@ class ChatAction(_EventBuilder):
 
             if isinstance(self._pinned_message, int) and await self.input_chat:
                 r = await self._client(functions.channels.GetMessagesRequest(
-                    self._input_chat, [self._pinned_message]
+                    self._input_chat, [
+                        types.InputMessageID(self._pinned_message)
+                    ]
                 ))
                 try:
                     self._pinned_message = next(
@@ -941,7 +949,7 @@ class UserUpdate(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -949,62 +957,62 @@ class UserUpdate(_EventBuilder):
         Represents the event of an user status update (last seen, joined).
 
         Members:
-            online (:obj:`bool`, optional):
+            online (`bool`, optional):
                 ``True`` if the user is currently online, ``False`` otherwise.
                 Might be ``None`` if this information is not present.
 
-            last_seen (:obj:`datetime`, optional):
+            last_seen (`datetime`, optional):
                 Exact date when the user was last seen if known.
 
-            until (:obj:`datetime`, optional):
+            until (`datetime`, optional):
                 Until when will the user remain online.
 
-            within_months (:obj:`bool`):
+            within_months (`bool`):
                 ``True`` if the user was seen within 30 days.
 
-            within_weeks (:obj:`bool`):
+            within_weeks (`bool`):
                 ``True`` if the user was seen within 7 days.
 
-            recently (:obj:`bool`):
+            recently (`bool`):
                 ``True`` if the user was seen within a day.
 
             action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
-            cancel (:obj:`bool`):
+            cancel (`bool`):
                 ``True`` if the action was cancelling other actions.
 
-            typing (:obj:`bool`):
+            typing (`bool`):
                 ``True`` if the action is typing a message.
 
-            recording (:obj:`bool`):
+            recording (`bool`):
                 ``True`` if the action is recording something.
 
-            uploading (:obj:`bool`):
+            uploading (`bool`):
                 ``True`` if the action is uploading something.
 
-            playing (:obj:`bool`):
+            playing (`bool`):
                 ``True`` if the action is playing a game.
 
-            audio (:obj:`bool`):
+            audio (`bool`):
                 ``True`` if what's being recorded/uploaded is an audio.
 
-            round (:obj:`bool`):
+            round (`bool`):
                 ``True`` if what's being recorded/uploaded is a round video.
 
-            video (:obj:`bool`):
+            video (`bool`):
                 ``True`` if what's being recorded/uploaded is an video.
 
-            document (:obj:`bool`):
+            document (`bool`):
                 ``True`` if what's being uploaded is document.
 
-            geo (:obj:`bool`):
+            geo (`bool`):
                 ``True`` if what's being uploaded is a geo.
 
-            photo (:obj:`bool`):
+            photo (`bool`):
                 ``True`` if what's being uploaded is a photo.
 
-            contact (:obj:`bool`):
+            contact (`bool`):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
         def __init__(self, user_id, status=None, typing=None):
@@ -1090,7 +1098,7 @@ class MessageEdited(NewMessage):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._message_filter_event(event)
 
     class Event(NewMessage.Event):
@@ -1116,7 +1124,7 @@ class MessageDeleted(_EventBuilder):
         else:
             return
 
-        event._entities = update.entities
+        event._entities = update._entities
         return self._filter_event(event)
 
     class Event(_EventCommon):
@@ -1126,6 +1134,140 @@ class MessageDeleted(_EventBuilder):
             )
             self.deleted_id = None if not deleted_ids else deleted_ids[0]
             self.deleted_ids = deleted_ids
+
+
+@_name_inner_event
+class MessageRead(_EventBuilder):
+    """
+    Event fired when one or more messages have been read.
+
+    Args:
+        inbox (`bool`, optional):
+            If this argument is ``True``, then when you read someone else's
+            messages the event will be fired. By default (``False``) only
+            when messages you sent are read by someone else will fire it.
+    """
+    def __init__(self, inbox=False, chats=None, blacklist_chats=None):
+        super().__init__(chats, blacklist_chats)
+        self.inbox = inbox
+
+    def build(self, update):
+        if isinstance(update, types.UpdateReadHistoryInbox):
+            event = MessageRead.Event(update.peer, update.max_id, False)
+        elif isinstance(update, types.UpdateReadHistoryOutbox):
+            event = MessageRead.Event(update.peer, update.max_id, True)
+        elif isinstance(update, types.UpdateReadChannelInbox):
+            event = MessageRead.Event(types.PeerChannel(update.channel_id),
+                                      update.max_id, False)
+        elif isinstance(update, types.UpdateReadChannelOutbox):
+            event = MessageRead.Event(types.PeerChannel(update.channel_id),
+                                      update.max_id, True)
+        elif isinstance(update, types.UpdateReadMessagesContents):
+            event = MessageRead.Event(message_ids=update.messages,
+                                      contents=True)
+        elif isinstance(update, types.UpdateChannelReadMessagesContents):
+            event = MessageRead.Event(types.PeerChannel(update.channel_id),
+                                      message_ids=update.messages,
+                                      contents=True)
+        else:
+            return
+
+        if self.inbox == event.outbox:
+            return
+
+        event._entities = update._entities
+        return self._filter_event(event)
+
+    class Event(_EventCommon):
+        """
+        Represents the event of one or more messages being read.
+
+        Members:
+            max_id (`int`):
+                Up to which message ID has been read. Every message
+                with an ID equal or lower to it have been read.
+
+            outbox (`bool`):
+                ``True`` if someone else has read your messages.
+
+            contents (`bool`):
+                ``True`` if what was read were the contents of a message.
+                This will be the case when e.g. you play a voice note.
+                It may only be set on ``inbox`` events.
+        """
+        def __init__(self, peer=None, max_id=None, out=False, contents=False,
+                     message_ids=None):
+            self.outbox = out
+            self.contents = contents
+            self._message_ids = message_ids or []
+            self._messages = None
+            self.max_id = max_id or max(message_ids or [], default=None)
+            super().__init__(peer, self.max_id)
+
+        @property
+        def inbox(self):
+            """
+            ``True`` if you have read someone else's messages.
+            """
+            return not self.outbox
+
+        @property
+        def message_ids(self):
+            """
+            The IDs of the messages **which contents'** were read.
+
+            Use :meth:`is_read` if you need to check whether a message
+            was read instead checking if it's in here.
+            """
+            return self._message_ids
+
+        @property
+        async def messages(self):
+            """
+            The list of :tl:`Message` **which contents'** were read.
+
+            Use :meth:`is_read` if you need to check whether a message
+            was read instead checking if it's in here.
+            """
+            if self._messages is None:
+                chat = self.input_chat
+                if not chat:
+                    self._messages = []
+                elif isinstance(chat, types.InputPeerChannel):
+                    ids = [types.InputMessageID(x) for x in self._message_ids]
+                    self._messages =\
+                        await self._client(functions.channels.GetMessagesRequest(
+                            chat, ids
+                        )).messages
+                else:
+                    ids = [types.InputMessageID(x) for x in self._message_ids]
+                    self._messages =\
+                        await self._client(functions.messages.GetMessagesRequest(
+                            ids
+                        )).messages
+
+            return self._messages
+
+        def is_read(self, message):
+            """
+            Returns ``True`` if the given message (or its ID) has been read.
+
+            If a list-like argument is provided, this method will return a
+            list of booleans indicating which messages have been read.
+            """
+            if utils.is_list_like(message):
+                return [(m if isinstance(m, int) else m.id) <= self.max_id
+                        for m in message]
+            else:
+                return (message if isinstance(message, int)
+                        else message.id) <= self.max_id
+
+        def __contains__(self, message):
+            """``True`` if the message(s) are read message."""
+            if utils.is_list_like(message):
+                return all(self.is_read(message))
+            else:
+                return self.is_read(message)
 
 
 class StopPropagation(Exception):

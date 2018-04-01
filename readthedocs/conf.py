@@ -42,6 +42,9 @@ extensions = [
     'custom_roles'
 ]
 
+# Change the default role so we can avoid prefixing everything with :obj:
+default_role = "py:obj"
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -157,7 +160,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Telethon.tex', 'Telethon Documentation',
-     'Jeff', 'manual'),
+     author, 'manual'),
 ]
 
 

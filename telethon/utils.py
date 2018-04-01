@@ -261,10 +261,20 @@ def get_input_media(media, is_photo=False):
             ttl_seconds=media.ttl_seconds
         )
 
+    if isinstance(media, (Photo, photos.Photo, PhotoEmpty)):
+        return InputMediaPhoto(
+            id=get_input_photo(media)
+        )
+
     if isinstance(media, MessageMediaDocument):
         return InputMediaDocument(
             id=get_input_document(media.document),
             ttl_seconds=media.ttl_seconds
+        )
+
+    if isinstance(media, (Document, DocumentEmpty)):
+        return InputMediaDocument(
+            id=get_input_document(media)
         )
 
     if isinstance(media, FileLocation):

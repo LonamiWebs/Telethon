@@ -479,11 +479,13 @@ class MtProtoSender:
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
+        reader.seek(-4)
 
         __log__.debug('Received response for request with ID %d', request_id)
         request = self._pop_request(request_id)
 
         if inner_code == 0x2144ca19:  # RPC Error
+            reader.seek(4)
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string(),
@@ -505,12 +507,10 @@ class MtProtoSender:
             return True  # All contents were read okay
 
         elif request:
-            if inner_code == 0x3072cfa1:  # GZip packed
-                unpacked_data = gzip.decompress(reader.tgread_bytes())
-                with BinaryReader(unpacked_data) as compressed_reader:
+            if inner_code == GzipPacked.CONSTRUCTOR_ID:
+                with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
                     request.on_response(compressed_reader)
             else:
-                reader.seek(-4)
                 request.on_response(reader)
 
             self.session.process_entities(request.result)
@@ -525,10 +525,17 @@ class MtProtoSender:
         # session, it will be skipped by the handle_container().
         # For some reason this also seems to happen when downloading
         # photos, where the server responds with FileJpeg().
-        try:
-            obj = reader.tgread_object()
-        except Exception as e:
-            obj = '(failed to read: %s)' % e
+        def _try_read(r):
+            try:
+                return r.tgread_object()
+            except Exception as e:
+                return '(failed to read: {})'.format(e)
+
+        if inner_code == GzipPacked.CONSTRUCTOR_ID:
+            with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
+                obj = _try_read(compressed_reader)
+        else:
+            obj = _try_read(reader)
 
         __log__.warning(
             'Lost request (ID %d) with code %s will be skipped, contents: %s',

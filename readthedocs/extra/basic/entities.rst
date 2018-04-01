@@ -32,7 +32,7 @@ you're able to just do this:
         # Dialogs are the "conversations you have open".
         # This method returns a list of Dialog, which
         # has the .entity attribute and other information.
-        dialogs = await client.get_dialogs(limit=200)
+        dialogs = await client.get_dialogs()
 
         # All of these work and do the same.
         lonami = await client.get_entity('lonami')
@@ -44,25 +44,15 @@ you're able to just do this:
         contact = await client.get_entity('+34xxxxxxxxx')
         friend  = await client.get_entity(friend_id)
 
-        # Using Peer/InputPeer (note that the API may return these)
-        # users, chats and channels may all have the same ID, so it's
-        # necessary to wrap (at least) chat and channels inside Peer.
-        #
-        # NOTICE how the IDs *must* be wrapped inside a Peer() so the
-        # library knows their type.
+        # Getting entities through their ID (User, Chat or Channel)
+        entity = await client.get_entity(some_id)
+
+        # You can be more explicit about the type for said ID by wrapping
+        # it inside a Peer instance. This is recommended but not necessary.
         from telethon.tl.types import PeerUser, PeerChat, PeerChannel
         my_user    = await client.get_entity(PeerUser(some_id))
         my_chat    = await client.get_entity(PeerChat(some_id))
         my_channel = await client.get_entity(PeerChannel(some_id))
-
-
-.. warning::
-
-    As it has been mentioned already, getting the entity of a channel
-    through e.g. ``client.get_entity(channel id)`` will **not** work.
-    You would use ``client.get_entity(types.PeerChannel(channel id))``.
-    Remember that supergroups are channels and normal groups are chats.
-    This is a common mistake!
 
 
 All methods in the :ref:`telegram-client` call ``.get_input_entity()`` prior

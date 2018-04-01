@@ -11,10 +11,9 @@ Working with Chats and Channels
 Joining a chat or channel
 *************************
 
-Note that `Chat`__\ s are normal groups, and `Channel`__\ s are a
-special form of `Chat`__\ s,
-which can also be super-groups if their ``megagroup`` member is
-``True``.
+Note that :tl:`Chat` are normal groups, and :tl:`Channel` are a
+special form of ``Chat``, which can also be super-groups if
+their ``megagroup`` member is ``True``.
 
 
 Joining a public channel
@@ -101,6 +100,13 @@ __ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
 Retrieving all chat members (channels too)
 ******************************************
 
+You can use
+`client.get_participants <telethon.telegram_client.TelegramClient.get_participants>`
+to retrieve the participants (click it to see the relevant parameters).
+Most of the time you will just need ``client.get_participants(entity)``.
+
+This is what said method is doing behind the scenes as an example.
+
 In order to get all the members from a mega-group or channel, you need
 to use `GetParticipantsRequest`__. As we can see it needs an
 `InputChannel`__, (passing the mega-group or channel you're going to
@@ -134,9 +140,10 @@ a fixed limit:
 
 .. note::
 
-    It is **not** possible to get more than 10,000 members from a
-    group. It's a hard limit impossed by Telegram and there is
-    nothing you can do about it. Refer to `issue 573`__ for more.
+    If you need more than 10,000 members from a group you should use the
+    mentioned ``client.get_participants(..., aggressive=True)``. It will
+    do some tricks behind the scenes to get as many entities as possible.
+    Refer to `issue 573`__ for more on this.
 
 
 Note that ``GetParticipantsRequest`` returns `ChannelParticipants`__,
@@ -147,8 +154,8 @@ __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
 __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
 __ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
 __ https://github.com/LonamiWebs/Telethon/issues/573
+__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
 
 
 Recent Actions
