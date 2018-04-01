@@ -2446,17 +2446,17 @@ class TelegramClient(TelegramBareClient):
 
         # Add the mark to the peers if the user passed a Peer (not an int),
         # or said ID is negative. If it's negative it's been marked already.
-        # Look in the dialogs with the hope to find it.
+        # Look in the dialogs to find it.
         if not self._called_get_dialogs:
             self._called_get_dialogs = True
             mark = not isinstance(peer, int) or peer < 0
             target_id = utils.get_peer_id(peer)
             if mark:
-                async for dialog in self.iter_dialogs(100):
+                async for dialog in self.iter_dialogs(limit=None):
                     if utils.get_peer_id(dialog.entity) == target_id:
                         return utils.get_input_peer(dialog.entity)
             else:
-                async for dialog in self.iter_dialogs(100):
+                async for dialog in self.iter_dialogs(limit=None):
                     if dialog.entity.id == target_id:
                         return utils.get_input_peer(dialog.entity)
 
