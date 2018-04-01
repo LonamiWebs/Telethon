@@ -24,9 +24,11 @@ class TLGenerator:
         self.output_dir = output_dir
 
     def _get_file(self, *paths):
+        """Wrapper around ``os.path.join()`` with output as first path."""
         return os.path.join(self.output_dir, *paths)
 
     def _rm_if_exists(self, filename):
+        """Recursively deletes the given filename if it exists."""
         file = self._get_file(filename)
         if os.path.exists(file):
             if os.path.isdir(file):
@@ -35,19 +37,21 @@ class TLGenerator:
                 os.remove(file)
 
     def tlobjects_exist(self):
-        """Determines whether the TLObjects were previously
-           generated (hence exist) or not
+        """
+        Determines whether the TLObjects were previously
+        generated (hence exist) or not.
         """
         return os.path.isfile(self._get_file('all_tlobjects.py'))
 
     def clean_tlobjects(self):
-        """Cleans the automatically generated TLObjects from disk"""
+        """Cleans the automatically generated TLObjects from disk."""
         for name in ('functions', 'types', 'all_tlobjects.py'):
             self._rm_if_exists(name)
 
     def generate_tlobjects(self, scheme_file, import_depth):
-        """Generates all the TLObjects from scheme.tl to
-           tl/functions and tl/types
+        """
+        Generates all the TLObjects from the ``scheme_file`` to
+        ``tl/functions`` and ``tl/types``.
         """
 
         # First ensure that the required parent directories exist
@@ -85,42 +89,33 @@ class TLGenerator:
         # Step 4: Once all the objects have been generated,
         #         we can now group them in a single file
         filename = os.path.join(self._get_file('all_tlobjects.py'))
-        with open(filename, 'w', encoding='utf-8') as file:
-            with SourceBuilder(file) as builder:
-                builder.writeln(AUTO_GEN_NOTICE)
-                builder.writeln()
+        with open(filename, 'w', encoding='utf-8') as file,\
+                SourceBuilder(file) as builder:
+            builder.writeln(AUTO_GEN_NOTICE)
+            builder.writeln()
 
-                builder.writeln('from . import types, functions')
-                builder.writeln()
+            builder.writeln('from . import types, functions')
+            builder.writeln()
 
-                # Create a constant variable to indicate which layer this is
-                builder.writeln('LAYER = {}'.format(
-                    TLParser.find_layer(scheme_file))
-                )
-                builder.writeln()
+            # Create a constant variable to indicate which layer this is
+            builder.writeln('LAYER = {}', TLParser.find_layer(scheme_file))
+            builder.writeln()
 
-                # Then create the dictionary containing constructor_id: class
-                builder.writeln('tlobjects = {')
-                builder.current_indent += 1
+            # Then create the dictionary containing constructor_id: class
+            builder.writeln('tlobjects = {')
+            builder.current_indent += 1
 
-                # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
-                for tlobject in tlobjects:
-                    constructor = hex(tlobject.id)
-                    if len(constructor) != 10:
-                        # Make it a nice length 10 so it fits well
-                        constructor = '0x' + constructor[2:].zfill(8)
+            # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
+            for tlobject in tlobjects:
+                builder.write('{:#010x}: ', tlobject.id)
+                builder.write('functions' if tlobject.is_function else 'types')
+                if tlobject.namespace:
+                    builder.write('.' + tlobject.namespace)
 
-                    builder.write('{}: '.format(constructor))
-                    builder.write(
-                        'functions' if tlobject.is_function else 'types')
+                builder.writeln('.{},', tlobject.class_name())
 
-                    if tlobject.namespace:
-                        builder.write('.' + tlobject.namespace)
-
-                    builder.writeln('.{},'.format(tlobject.class_name()))
-
-                builder.current_indent -= 1
-                builder.writeln('}')
+            builder.current_indent -= 1
+            builder.writeln('}')
 
     @staticmethod
     def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
@@ -136,16 +131,17 @@ class TLGenerator:
                 # so they all can be serialized and sent, however, only the
                 # functions are "content_related".
                 builder.writeln(
-                    'from {}.tl.tlobject import TLObject'.format('.' * depth)
+                    'from {}.tl.tlobject import TLObject', '.' * depth
                 )
-                builder.writeln('from typing import Optional, List, Union, TYPE_CHECKING')
+                builder.writeln('from typing import Optional, List, '
+                                'Union, TYPE_CHECKING')
 
                 # Add the relative imports to the namespaces,
                 # unless we already are in a namespace.
                 if not ns:
-                    builder.writeln('from . import {}'.format(', '.join(
+                    builder.writeln('from . import {}', ', '.join(
                         x for x in namespace_tlobjects.keys() if x
-                    )))
+                    ))
 
                 # Import 'os' for those needing access to 'os.urandom()'
                 # Currently only 'random_id' needs 'os' to be imported,
@@ -204,18 +200,18 @@ class TLGenerator:
                             if name == 'date':
                                 imports['datetime'] = ['datetime']
                                 continue
-                            elif not import_space in imports:
+                            elif import_space not in imports:
                                 imports[import_space] = set()
                             imports[import_space].add('Type{}'.format(name))
 
-                # Add imports required for type checking.
-                builder.writeln('if TYPE_CHECKING:')
-                for namespace, names in imports.items():
-                    builder.writeln('from {} import {}'.format(
-                        namespace, ', '.join(names)))
-                else:
-                    builder.writeln('pass')
-                builder.end_block()
+                # Add imports required for type checking
+                if imports:
+                    builder.writeln('if TYPE_CHECKING:')
+                    for namespace, names in imports.items():
+                        builder.writeln('from {} import {}',
+                                        namespace, ', '.join(names))
+
+                    builder.end_block()
 
                 # Generate the class for every TLObject
                 for t in tlobjects:
@@ -229,25 +225,24 @@ class TLGenerator:
                 for line in type_defs:
                     builder.writeln(line)
 
-
     @staticmethod
     def _write_source_code(tlobject, builder, depth, type_constructors):
-        """Writes the source code corresponding to the given TLObject
-           by making use of the 'builder' SourceBuilder.
+        """
+        Writes the source code corresponding to the given TLObject
+        by making use of the ``builder`` `SourceBuilder`.
 
-           Additional information such as file path depth and
-           the Type: [Constructors] must be given for proper
-           importing and documentation strings.
+        Additional information such as file path depth and
+        the ``Type: [Constructors]`` must be given for proper
+        importing and documentation strings.
         """
         builder.writeln()
         builder.writeln()
-        builder.writeln('class {}(TLObject):'.format(tlobject.class_name()))
+        builder.writeln('class {}(TLObject):', tlobject.class_name())
 
         # Class-level variable to store its Telegram's constructor ID
-        builder.writeln('CONSTRUCTOR_ID = {}'.format(hex(tlobject.id)))
-        builder.writeln('SUBCLASS_OF_ID = {}'.format(
-            hex(crc32(tlobject.result.encode('ascii'))))
-        )
+        builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
+        builder.writeln('SUBCLASS_OF_ID = {:#x}',
+                        crc32(tlobject.result.encode('ascii')))
         builder.writeln()
 
         # Flag arguments must go last
@@ -265,9 +260,7 @@ class TLGenerator:
 
         # Write the __init__ function
         if args:
-            builder.writeln(
-                'def __init__(self, {}):'.format(', '.join(args))
-            )
+            builder.writeln('def __init__(self, {}):', ', '.join(args))
         else:
             builder.writeln('def __init__(self):')
 
@@ -286,30 +279,27 @@ class TLGenerator:
             builder.writeln('"""')
             for arg in args:
                 if not arg.flag_indicator:
-                    builder.writeln(':param {} {}:'.format(
-                        arg.doc_type_hint(), arg.name
-                    ))
+                    builder.writeln(':param {} {}:',
+                                    arg.doc_type_hint(), arg.name)
                     builder.current_indent -= 1  # It will auto-indent (':')
 
             # We also want to know what type this request returns
             # or to which type this constructor belongs to
             builder.writeln()
             if tlobject.is_function:
-                builder.write(':returns {}: '.format(tlobject.result))
+                builder.write(':returns {}: ', tlobject.result)
             else:
-                builder.write('Constructor for {}: '.format(tlobject.result))
+                builder.write('Constructor for {}: ', tlobject.result)
 
             constructors = type_constructors[tlobject.result]
             if not constructors:
                 builder.writeln('This type has no constructors.')
             elif len(constructors) == 1:
-                builder.writeln('Instance of {}.'.format(
-                    constructors[0].class_name()
-                ))
+                builder.writeln('Instance of {}.',
+                                constructors[0].class_name())
             else:
-                builder.writeln('Instance of either {}.'.format(
-                    ', '.join(c.class_name() for c in constructors)
-                ))
+                builder.writeln('Instance of either {}.', ', '.join(
+                    c.class_name() for c in constructors))
 
             builder.writeln('"""')
 
@@ -327,8 +317,8 @@ class TLGenerator:
 
         for arg in args:
             if not arg.can_be_inferred:
-                builder.writeln('self.{0} = {0}  # type: {1}'.format(
-                    arg.name, arg.python_type_hint()))
+                builder.writeln('self.{0} = {0}  # type: {1}',
+                                arg.name, arg.python_type_hint())
                 continue
 
             # Currently the only argument that can be
@@ -350,7 +340,7 @@ class TLGenerator:
 
                 builder.writeln(
                     "self.random_id = random_id if random_id "
-                    "is not None else {}".format(code)
+                    "is not None else {}", code
                 )
             else:
                 raise ValueError('Cannot infer a value for ', arg)
@@ -374,27 +364,27 @@ class TLGenerator:
         base_types = ('string', 'bytes', 'int', 'long', 'int128',
                       'int256', 'double', 'Bool', 'true', 'date')
 
-        builder.write("'_': '{}'".format(tlobject.class_name()))
+        builder.write("'_': '{}'", tlobject.class_name())
         for arg in args:
             builder.writeln(',')
-            builder.write("'{}': ".format(arg.name))
+            builder.write("'{}': ", arg.name)
             if arg.type in base_types:
                 if arg.is_vector:
-                    builder.write('[] if self.{0} is None else self.{0}[:]'
-                                  .format(arg.name))
+                    builder.write('[] if self.{0} is None else self.{0}[:]',
+                                  arg.name)
                 else:
-                    builder.write('self.{}'.format(arg.name))
+                    builder.write('self.{}', arg.name)
             else:
                 if arg.is_vector:
                     builder.write(
                         '[] if self.{0} is None else [None '
-                        'if x is None else x.to_dict() for x in self.{0}]'
-                        .format(arg.name)
+                        'if x is None else x.to_dict() for x in self.{0}]',
+                        arg.name
                     )
                 else:
                     builder.write(
-                        'None if self.{0} is None else self.{0}.to_dict()'
-                        .format(arg.name)
+                        'None if self.{0} is None else self.{0}.to_dict()',
+                        arg.name
                     )
 
         builder.writeln()
@@ -421,17 +411,16 @@ class TLGenerator:
                         .format(a.name) for a in ra)
                 builder.writeln(
                     "assert ({}) or ({}), '{} parameters must all "
-                    "be False-y (like None) or all me True-y'".format(
-                        ' and '.join(cnd1), ' and '.join(cnd2),
-                        ', '.join(a.name for a in ra)
-                    )
+                    "be False-y (like None) or all me True-y'",
+                    ' and '.join(cnd1), ' and '.join(cnd2),
+                    ', '.join(a.name for a in ra)
                 )
 
         builder.writeln("return b''.join((")
         builder.current_indent += 1
 
         # First constructor code, we already know its bytes
-        builder.writeln('{},'.format(repr(struct.pack('<I', tlobject.id))))
+        builder.writeln('{},', repr(struct.pack('<I', tlobject.id)))
 
         for arg in tlobject.args:
             if TLGenerator.write_to_bytes(builder, arg, tlobject.args):
@@ -449,12 +438,14 @@ class TLGenerator:
                 builder, arg, tlobject.args, name='_' + arg.name
             )
 
-        builder.writeln('return {}({})'.format(
-            tlobject.class_name(), ', '.join(
+        builder.writeln(
+            'return {}({})',
+            tlobject.class_name(),
+            ', '.join(
                 '{0}=_{0}'.format(a.name) for a in tlobject.sorted_args()
                 if not a.flag_indicator and not a.generic_definition
             )
-        ))
+        )
 
         # Only requests can have a different response that's not their
         # serialized body, that is, we'll be setting their .result.
@@ -482,13 +473,13 @@ class TLGenerator:
 
     @staticmethod
     def _write_self_assign(builder, arg, get_input_code):
-        """Writes self.arg = input.format(self.arg), considering vectors"""
+        """Writes self.arg = input.format(self.arg), considering vectors."""
         if arg.is_vector:
-            builder.write('self.{0} = [{1} for _x in self.{0}]'
-                          .format(arg.name, get_input_code.format('_x')))
+            builder.write('self.{0} = [{1} for _x in self.{0}]',
+                          arg.name, get_input_code.format('_x'))
         else:
-            builder.write('self.{} = {}'.format(
-                arg.name, get_input_code.format('self.' + arg.name)))
+            builder.write('self.{} = {}',
+                          arg.name, get_input_code.format('self.' + arg.name))
 
         builder.writeln(
             ' if self.{} else None'.format(arg.name) if arg.is_flag else ''
@@ -536,17 +527,17 @@ class TLGenerator:
                 # so we need an extra join here. Note that empty vector flags
                 # should NOT be sent either!
                 builder.write("b'' if {0} is None or {0} is False "
-                              "else b''.join((".format(name))
+                              "else b''.join((", name)
             else:
                 builder.write("b'' if {0} is None or {0} is False "
-                              "else (".format(name))
+                              "else (", name)
 
         if arg.is_vector:
             if arg.use_vector_id:
                 # vector code, unsigned 0x1cb5c415 as little endian
                 builder.write(r"b'\x15\xc4\xb5\x1c',")
 
-            builder.write("struct.pack('<i', len({})),".format(name))
+            builder.write("struct.pack('<i', len({})),", name)
 
             # Cannot unpack the values for the outer tuple through *[(
             # since that's a Python >3.5 feature, so add another join.
@@ -560,7 +551,7 @@ class TLGenerator:
             arg.is_vector = True
             arg.is_flag = old_flag
 
-            builder.write(' for x in {})'.format(name))
+            builder.write(' for x in {})', name)
 
         elif arg.flag_indicator:
             # Calculate the flags with those items which are not None
@@ -579,41 +570,39 @@ class TLGenerator:
 
         elif 'int' == arg.type:
             # struct.pack is around 4 times faster than int.to_bytes
-            builder.write("struct.pack('<i', {})".format(name))
+            builder.write("struct.pack('<i', {})", name)
 
         elif 'long' == arg.type:
-            builder.write("struct.pack('<q', {})".format(name))
+            builder.write("struct.pack('<q', {})", name)
 
         elif 'int128' == arg.type:
-            builder.write("{}.to_bytes(16, 'little', signed=True)".format(name))
+            builder.write("{}.to_bytes(16, 'little', signed=True)", name)
 
         elif 'int256' == arg.type:
-            builder.write("{}.to_bytes(32, 'little', signed=True)".format(name))
+            builder.write("{}.to_bytes(32, 'little', signed=True)", name)
 
         elif 'double' == arg.type:
-            builder.write("struct.pack('<d', {})".format(name))
+            builder.write("struct.pack('<d', {})", name)
 
         elif 'string' == arg.type:
-            builder.write('TLObject.serialize_bytes({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})', name)
 
         elif 'Bool' == arg.type:
             # 0x997275b5 if boolean else 0xbc799737
-            builder.write(
-                r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'".format(name)
-            )
+            builder.write(r"b'\xb5ur\x99' if {} else b'7\x97y\xbc'", name)
 
         elif 'true' == arg.type:
             pass  # These are actually NOT written! Only used for flags
 
         elif 'bytes' == arg.type:
-            builder.write('TLObject.serialize_bytes({})'.format(name))
+            builder.write('TLObject.serialize_bytes({})', name)
 
         elif 'date' == arg.type:  # Custom format
-            builder.write('TLObject.serialize_datetime({})'.format(name))
+            builder.write('TLObject.serialize_datetime({})', name)
 
         else:
             # Else it may be a custom type
-            builder.write('bytes({})'.format(name))
+            builder.write('bytes({})', name)
 
         if arg.is_flag:
             builder.write(')')
@@ -646,15 +635,12 @@ class TLGenerator:
             # Treat 'true' flags as a special case, since they're true if
             # they're set, and nothing else needs to actually be read.
             if 'true' == arg.type:
-                builder.writeln(
-                    '{} = bool(flags & {})'.format(name, 1 << arg.flag_index)
-                )
+                builder.writeln('{} = bool(flags & {})',
+                                name, 1 << arg.flag_index)
                 return
 
             was_flag = True
-            builder.writeln('if flags & {}:'.format(
-                1 << arg.flag_index
-            ))
+            builder.writeln('if flags & {}:', 1 << arg.flag_index)
             # Temporary disable .is_flag not to enter this if
             # again when calling the method recursively
             arg.is_flag = False
@@ -664,12 +650,12 @@ class TLGenerator:
                 # We have to read the vector's constructor ID
                 builder.writeln("reader.read_int()")
 
-            builder.writeln('{} = []'.format(name))
+            builder.writeln('{} = []', name)
             builder.writeln('for _ in range(reader.read_int()):')
             # Temporary disable .is_vector, not to enter this if again
             arg.is_vector = False
             TLGenerator.write_read_code(builder, arg, args, name='_x')
-            builder.writeln('{}.append(_x)'.format(name))
+            builder.writeln('{}.append(_x)', name)
             arg.is_vector = True
 
         elif arg.flag_indicator:
@@ -678,44 +664,40 @@ class TLGenerator:
             builder.writeln()
 
         elif 'int' == arg.type:
-            builder.writeln('{} = reader.read_int()'.format(name))
+            builder.writeln('{} = reader.read_int()', name)
 
         elif 'long' == arg.type:
-            builder.writeln('{} = reader.read_long()'.format(name))
+            builder.writeln('{} = reader.read_long()', name)
 
         elif 'int128' == arg.type:
-            builder.writeln(
-                '{} = reader.read_large_int(bits=128)'.format(name)
-            )
+            builder.writeln('{} = reader.read_large_int(bits=128)', name)
 
         elif 'int256' == arg.type:
-            builder.writeln(
-                '{} = reader.read_large_int(bits=256)'.format(name)
-            )
+            builder.writeln('{} = reader.read_large_int(bits=256)', name)
 
         elif 'double' == arg.type:
-            builder.writeln('{} = reader.read_double()'.format(name))
+            builder.writeln('{} = reader.read_double()', name)
 
         elif 'string' == arg.type:
-            builder.writeln('{} = reader.tgread_string()'.format(name))
+            builder.writeln('{} = reader.tgread_string()', name)
 
         elif 'Bool' == arg.type:
-            builder.writeln('{} = reader.tgread_bool()'.format(name))
+            builder.writeln('{} = reader.tgread_bool()', name)
 
         elif 'true' == arg.type:
             # Arbitrary not-None value, don't actually read "true" flags
-            builder.writeln('{} = True'.format(name))
+            builder.writeln('{} = True', name)
 
         elif 'bytes' == arg.type:
-            builder.writeln('{} = reader.tgread_bytes()'.format(name))
+            builder.writeln('{} = reader.tgread_bytes()', name)
 
         elif 'date' == arg.type:  # Custom format
-            builder.writeln('{} = reader.tgread_date()'.format(name))
+            builder.writeln('{} = reader.tgread_date()', name)
 
         else:
             # Else it may be a custom type
             if not arg.skip_constructor_id:
-                builder.writeln('{} = reader.tgread_object()'.format(name))
+                builder.writeln('{} = reader.tgread_object()', name)
             else:
                 # Import the correct type inline to avoid cyclic imports.
                 # There may be better solutions so that we can just access
@@ -732,10 +714,9 @@ class TLGenerator:
                 # file with the same namespace, but since it does no harm
                 # and we don't have information about such thing in the
                 # method we just ignore that case.
-                builder.writeln('from {} import {}'.format(ns, class_name))
-                builder.writeln('{} = {}.from_reader(reader)'.format(
-                    name, class_name
-                ))
+                builder.writeln('from {} import {}', ns, class_name)
+                builder.writeln('{} = {}.from_reader(reader)',
+                                name, class_name)
 
         # End vector and flag blocks if required (if we opened them before)
         if arg.is_vector:
@@ -744,7 +725,7 @@ class TLGenerator:
         if was_flag:
             builder.current_indent -= 1
             builder.writeln('else:')
-            builder.writeln('{} = None'.format(name))
+            builder.writeln('{} = None', name)
             builder.current_indent -= 1
             # Restore .is_flag
             arg.is_flag = True
