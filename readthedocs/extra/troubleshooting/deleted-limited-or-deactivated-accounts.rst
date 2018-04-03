@@ -1,6 +1,6 @@
-=========================================
+========================================
 Deleted, Limited or Deactivated Accounts
-=========================================
+========================================
 
 If you're from Iran or Russian, we have bad news for you.
 Telegram is much more likely to ban these numbers,

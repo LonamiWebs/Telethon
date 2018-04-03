@@ -42,14 +42,6 @@ telethon\.crypto\.factorization module
     :undoc-members:
     :show-inheritance:
 
-telethon\.crypto\.libssl module
--------------------------------
-
-.. automodule:: telethon.crypto.libssl
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 telethon\.crypto\.rsa module
 ----------------------------
 

@@ -1,12 +1,13 @@
 import os
 from getpass import getpass
 
-from telethon import TelegramClient, ConnectionMode
+from telethon.utils import get_display_name
+
+from telethon import ConnectionMode, TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import (
-    UpdateShortChatMessage, UpdateShortMessage, PeerChat
+    PeerChat, UpdateShortChatMessage, UpdateShortMessage
 )
-from telethon.utils import get_display_name
 
 
 def sprint(string, *args, **kwargs):
@@ -47,6 +48,7 @@ class InteractiveTelegramClient(TelegramClient):
        Telegram through Telethon, such as listing dialogs (open chats),
        talking to people, downloading media, and receiving updates.
     """
+
     def __init__(self, session_user_id, user_phone, api_id, api_hash,
                  proxy=None):
         """
@@ -84,9 +86,9 @@ class InteractiveTelegramClient(TelegramClient):
             update_workers=1
         )
 
-        # Store all the found media in memory here,
-        # so it can be downloaded if the user wants
-        self.found_media = set()
+        # Store {message.id: message} map here so that we can download
+        # media known the message ID, for every message having media.
+        self.found_media = {}
 
         # Calling .connect() may return False, so you need to assert it's
         # True before continuing. Otherwise you may want to retry as done here.
@@ -138,15 +140,15 @@ class InteractiveTelegramClient(TelegramClient):
 
             # Entities represent the user, chat or channel
             # corresponding to the dialog on the same index.
-            dialogs, entities = self.get_dialogs(limit=dialog_count)
+            dialogs = self.get_dialogs(limit=dialog_count)
 
             i = None
             while i is None:
                 print_title('Dialogs window')
 
                 # Display them so the user can choose
-                for i, entity in enumerate(entities, start=1):
-                    sprint('{}. {}'.format(i, get_display_name(entity)))
+                for i, dialog in enumerate(dialogs, start=1):
+                    sprint('{}. {}'.format(i, get_display_name(dialog.entity)))
 
                 # Let the user decide who they want to talk to
                 print()
@@ -177,19 +179,20 @@ class InteractiveTelegramClient(TelegramClient):
                     i = None
 
             # Retrieve the selected user (or chat, or channel)
-            entity = entities[i]
+            entity = dialogs[i].entity
 
             # Show some information
             print_title('Chat with "{}"'.format(get_display_name(entity)))
             print('Available commands:')
-            print('  !q: Quits the current chat.')
-            print('  !Q: Quits the current chat and exits.')
-            print('  !h: prints the latest messages (message History).')
-            print('  !up <path>: Uploads and sends the Photo from path.')
-            print('  !uf <path>: Uploads and sends the File from path.')
-            print('  !d <msg-id>: Deletes a message by its id')
-            print('  !dm <msg-id>: Downloads the given message Media (if any).')
+            print('  !q:  Quits the current chat.')
+            print('  !Q:  Quits the current chat and exits.')
+            print('  !h:  prints the latest messages (message History).')
+            print('  !up  <path>: Uploads and sends the Photo from path.')
+            print('  !uf  <path>: Uploads and sends the File from path.')
+            print('  !d   <msg-id>: Deletes a message by its id')
+            print('  !dm  <msg-id>: Downloads the given message Media (if any).')
             print('  !dp: Downloads the current dialog Profile picture.')
+            print('  !i:  Prints information about this chat..')
             print()
 
             # And start a while loop to chat
@@ -204,31 +207,23 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    total_count, messages, senders = \
-                        self.get_message_history(entity, limit=10)
+                    messages = self.get_message_history(entity, limit=10)
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
                     # "[hh:mm] Sender: Message"
-                    for msg, sender in zip(
-                            reversed(messages), reversed(senders)):
-                        # Get the name of the sender if any
-                        if sender:
-                            name = getattr(sender, 'first_name', None)
-                            if not name:
-                                name = getattr(sender, 'title')
-                                if not name:
-                                    name = '???'
-                        else:
-                            name = '???'
+                    for msg in reversed(messages):
+                        # Note that the .sender attribute is only there for
+                        # convenience, the API returns it differently. But
+                        # this shouldn't concern us. See the documentation
+                        # for .get_message_history() for more information.
+                        name = get_display_name(msg.sender)
 
                         # Format the message content
                         if getattr(msg, 'media', None):
-                            self.found_media.add(msg)
-                            # The media may or may not have a caption
-                            caption = getattr(msg.media, 'caption', '')
+                            self.found_media[msg.id] = msg
                             content = '<{}> {}'.format(
-                                type(msg.media).__name__, caption)
+                                type(msg.media).__name__, msg.message)
 
                         elif hasattr(msg, 'message'):
                             content = msg.message
@@ -240,8 +235,7 @@ class InteractiveTelegramClient(TelegramClient):
 
                         # And print it to the user
                         sprint('[{}:{}] (ID={}) {}: {}'.format(
-                               msg.date.hour, msg.date.minute, msg.id, name,
-                               content))
+                            msg.date.hour, msg.date.minute, msg.id, name, content))
 
                 # Send photo
                 elif msg.startswith('!up '):
@@ -257,8 +251,7 @@ class InteractiveTelegramClient(TelegramClient):
                 elif msg.startswith('!d '):
                     # Slice the message to get message ID
                     deleted_msg = self.delete_messages(entity, msg[len('!d '):])
-                    print('Deleted. {}'.format(deleted_msg))
-
+                    print('Deleted {}'.format(deleted_msg))
 
                 # Download media
                 elif msg.startswith('!dm '):
@@ -271,16 +264,19 @@ class InteractiveTelegramClient(TelegramClient):
                     os.makedirs('usermedia', exist_ok=True)
                     output = self.download_profile_photo(entity, 'usermedia')
                     if output:
-                        print(
-                            'Profile picture downloaded to {}'.format(output)
-                        )
+                        print('Profile picture downloaded to', output)
                     else:
-                        print('No profile picture found for this user.')
+                        print('No profile picture found for this user!')
+
+                elif msg == '!i':
+                    attributes = list(entity.to_dict().items())
+                    pad = max(len(x) for x, _ in attributes)
+                    for name, val in attributes:
+                        print("{:<{width}} : {}".format(name, val, width=pad))
 
                 # Send chat message (if any)
                 elif msg:
-                    self.send_message(
-                        entity, msg, link_preview=False)
+                    self.send_message(entity, msg, link_preview=False)
 
     def send_photo(self, path, entity):
         """Sends the file located at path to the desired entity as a photo"""
@@ -304,23 +300,20 @@ class InteractiveTelegramClient(TelegramClient):
            downloads it.
         """
         try:
-            # The user may have entered a non-integer string!
-            msg_media_id = int(media_id)
+            msg = self.found_media[int(media_id)]
+        except (ValueError, KeyError):
+            # ValueError when parsing, KeyError when accessing dictionary
+            print('Invalid media ID given or message not found!')
+            return
 
-            # Search the message ID
-            for msg in self.found_media:
-                if msg.id == msg_media_id:
-                    print('Downloading media to usermedia/...')
-                    os.makedirs('usermedia', exist_ok=True)
-                    output = self.download_media(
-                        msg.media,
-                        file='usermedia/',
-                        progress_callback=self.download_progress_callback
-                    )
-                    print('Media downloaded to {}!'.format(output))
-
-        except ValueError:
-            print('Invalid media ID given!')
+        print('Downloading media to usermedia/...')
+        os.makedirs('usermedia', exist_ok=True)
+        output = self.download_media(
+            msg.media,
+            file='usermedia/',
+            progress_callback=self.download_progress_callback
+        )
+        print('Media downloaded to {}!'.format(output))
 
     @staticmethod
     def download_progress_callback(downloaded_bytes, total_bytes):
@@ -367,6 +360,5 @@ class InteractiveTelegramClient(TelegramClient):
             else:
                 who = self.get_entity(update.from_id)
                 sprint('<< {} @ {} sent "{}"'.format(
-                       get_display_name(which), get_display_name(who),
-                       update.message
+                    get_display_name(which), get_display_name(who), update.message
                 ))

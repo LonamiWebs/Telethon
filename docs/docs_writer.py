@@ -28,6 +28,7 @@ class DocsWriter:
         self.table_columns = 0
         self.table_columns_left = None
         self.write_copy_script = False
+        self._script = ''
 
     # High level writing
     def write_head(self, title, relative_css_path):
@@ -90,7 +91,7 @@ class DocsWriter:
     def end_menu(self):
         """Ends an opened menu"""
         if not self.menu_began:
-            raise ValueError('No menu had been started in the first place.')
+            raise RuntimeError('No menu had been started in the first place.')
         self.write('</ul>')
 
     def write_title(self, title, level=1):
@@ -254,6 +255,12 @@ class DocsWriter:
         self.write('<button onclick="cp(\'{}\');">{}</button>'
                    .format(text_to_copy, text))
 
+    def add_script(self, src='', relative_src=None):
+        if relative_src:
+            self._script += '<script src="{}"></script>'.format(relative_src)
+        elif src:
+            self._script += '<script>{}</script>'.format(src)
+
     def end_body(self):
         """Ends the whole document. This should be called the last"""
         if self.write_copy_script:
@@ -268,7 +275,9 @@ class DocsWriter:
                 'catch(e){}}'
                 '</script>')
 
-        self.write('</div></body></html>')
+        self.write('</div>')
+        self.write(self._script)
+        self.write('</body></html>')
 
     # "Low" level writing
     def write(self, s):

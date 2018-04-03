@@ -40,7 +40,7 @@ class ForbiddenError(RPCError):
     message = 'FORBIDDEN'
 
     def __init__(self, message):
-        super().__init__(self, message)
+        super().__init__(message)
         self.message = message
 
 
@@ -52,7 +52,20 @@ class NotFoundError(RPCError):
     message = 'NOT_FOUND'
 
     def __init__(self, message):
-        super().__init__(self, message)
+        super().__init__(message)
+        self.message = message
+
+
+class AuthKeyError(RPCError):
+    """
+    Errors related to invalid authorization key, like
+    AUTH_KEY_DUPLICATED which can cause the connection to fail.
+    """
+    code = 406
+    message = 'AUTH_KEY'
+
+    def __init__(self, message):
+        super().__init__(message)
         self.message = message
 
 
@@ -77,7 +90,7 @@ class ServerError(RPCError):
     message = 'INTERNAL'
 
     def __init__(self, message):
-        super().__init__(self, message)
+        super().__init__(message)
         self.message = message
 
 
@@ -121,7 +134,7 @@ class BadMessageError(Exception):
     }
 
     def __init__(self, code):
-        super().__init__(self, self.ErrorMessages.get(
+        super().__init__(self.ErrorMessages.get(
             code,
             'Unknown error code (this should not happen): {}.'.format(code)))
 

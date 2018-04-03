@@ -1,18 +1,19 @@
+import itertools
 import logging
-import pickle
-from collections import deque
-from queue import Queue, Empty
 from datetime import datetime
+from queue import Queue, Empty
 from threading import RLock, Thread
 
+from . import utils
 from .tl import types as tl
 
 __log__ = logging.getLogger(__name__)
 
 
 class UpdateState:
-    """Used to hold the current state of processed updates.
-       To retrieve an update, .poll() should be called.
+    """
+    Used to hold the current state of processed updates.
+    To retrieve an update, :meth:`poll` should be called.
     """
     WORKER_POLL_TIMEOUT = 5.0  # Avoid waiting forever on the workers
 
@@ -22,15 +23,14 @@ class UpdateState:
           workers is None: Updates will *not* be stored on self.
           workers = 0: Another thread is responsible for calling self.poll()
           workers > 0: 'workers' background threads will be spawned, any
-                       any of them will invoke all the self.handlers.
+                       any of them will invoke the self.handler.
         """
         self._workers = workers
         self._worker_threads = []
 
-        self.handlers = []
+        self.handler = None
         self._updates_lock = RLock()
         self._updates = Queue()
-        self._latest_updates = deque(maxlen=10)
 
         # https://core.telegram.org/api/updates
         self._state = tl.updates.State(0, 0, datetime.now(), 0, 0)
@@ -40,19 +40,15 @@ class UpdateState:
         return not self._updates.empty()
 
     def poll(self, timeout=None):
-        """Polls an update or blocks until an update object is available.
-           If 'timeout is not None', it should be a floating point value,
-           and the method will 'return None' if waiting times out.
+        """
+        Polls an update or blocks until an update object is available.
+        If 'timeout is not None', it should be a floating point value,
+        and the method will 'return None' if waiting times out.
         """
         try:
-            update = self._updates.get(timeout=timeout)
+            return self._updates.get(timeout=timeout)
         except Empty:
-            return
-
-        if isinstance(update, Exception):
-            raise update  # Some error was set through (surely StopIteration)
-
-        return update
+            return None
 
     def get_workers(self):
         return self._workers
@@ -61,32 +57,31 @@ class UpdateState:
         """Changes the number of workers running.
            If 'n is None', clears all pending updates from memory.
         """
-        self.stop_workers()
-        self._workers = n
         if n is None:
-            while self._updates:
-                self._updates.get()
+            self.stop_workers()
         else:
+            self._workers = n
             self.setup_workers()
 
     workers = property(fget=get_workers, fset=set_workers)
 
     def stop_workers(self):
-        """Raises "StopIterationException" on the worker threads to stop them,
-           and also clears all of them off the list
         """
-        if self._workers:
+        Waits for all the worker threads to stop.
+        """
+        # Put dummy ``None`` objects so that they don't need to timeout.
+        n = self._workers
+        self._workers = None
+        if n:
             with self._updates_lock:
-                # Insert at the beginning so the very next poll causes an error
-                # on all the worker threads
-                # TODO Should this reset the pts and such?
-                for _ in range(self._workers):
-                    self._updates.put(StopIteration())
+                for _ in range(n):
+                    self._updates.put(None)
 
         for t in self._worker_threads:
             t.join()
 
         self._worker_threads.clear()
+        self._workers = n
 
     def setup_workers(self):
         if self._worker_threads or not self._workers:
@@ -104,13 +99,11 @@ class UpdateState:
             thread.start()
 
     def _worker_loop(self, wid):
-        while True:
+        while self._workers is not None:
             try:
                 update = self.poll(timeout=UpdateState.WORKER_POLL_TIMEOUT)
-                # TODO Maybe people can add different handlers per update type
-                if update:
-                    for handler in self.handlers:
-                        handler(update)
+                if update and self.handler:
+                    self.handler(update)
             except StopIteration:
                 break
             except:
@@ -130,42 +123,26 @@ class UpdateState:
                 self._state = update
                 return  # Nothing else to be done
 
-            pts = getattr(update, 'pts', self._state.pts)
-            if hasattr(update, 'pts') and pts <= self._state.pts:
-                __log__.info('Ignoring %s, already have it', update)
-                return  # We already handled this update
+            if hasattr(update, 'pts'):
+                self._state.pts = update.pts
 
-            self._state.pts = pts
-
-            # TODO There must be a better way to handle updates rather than
-            # keeping a queue with the latest updates only, and handling
-            # the 'pts' correctly should be enough. However some updates
-            # like UpdateUserStatus (even inside UpdateShort) will be called
-            # repeatedly very often if invoking anything inside an update
-            # handler. TODO Figure out why.
-            """
-            client = TelegramClient('anon', api_id, api_hash, update_workers=1)
-            client.connect()
-            def handle(u):
-                client.get_me()
-            client.add_update_handler(handle)
-            input('Enter to exit.')
-            """
-            data = pickle.dumps(update.to_dict())
-            if data in self._latest_updates:
-                __log__.info('Ignoring %s, already have it', update)
-                return  # Duplicated too
-
-            self._latest_updates.append(data)
-
+            # After running the script for over an hour and receiving over
+            # 1000 updates, the only duplicates received were users going
+            # online or offline. We can trust the server until new reports.
+            # This should only be used as read-only.
             if isinstance(update, tl.UpdateShort):
+                update.update._entities = {}
                 self._updates.put(update.update)
             # Expand "Updates" into "Update", and pass these to callbacks.
             # Since .users and .chats have already been processed, we
             # don't need to care about those either.
             elif isinstance(update, (tl.Updates, tl.UpdatesCombined)):
+                entities = {utils.get_peer_id(x): x for x in
+                            itertools.chain(update.users, update.chats)}
                 for u in update.updates:
+                    u._entities = entities
                     self._updates.put(u)
             # TODO Handle "tl.UpdatesTooLong"
             else:
+                update._entities = {}
                 self._updates.put(update)

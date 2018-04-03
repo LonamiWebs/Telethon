@@ -1,11 +1,14 @@
+.. _telethon-package:
+
+
 telethon package
 ================
 
 
-telethon\.helpers module
-------------------------
+telethon\.telegram\_client module
+---------------------------------
 
-.. automodule:: telethon.helpers
+.. automodule:: telethon.telegram_client
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,13 +21,29 @@ telethon\.telegram\_bare\_client module
     :undoc-members:
     :show-inheritance:
 
-telethon\.telegram\_client module
----------------------------------
+telethon\.utils module
+----------------------
 
-.. automodule:: telethon.telegram_client
+.. automodule:: telethon.utils
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.helpers module
+------------------------
+
+.. automodule:: telethon.helpers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+telethon\.events package
+------------------------
+
+.. toctree::
+
+    telethon.events
+
 
 telethon\.update\_state module
 ------------------------------
@@ -34,14 +53,13 @@ telethon\.update\_state module
     :undoc-members:
     :show-inheritance:
 
-telethon\.utils module
-----------------------
+telethon\.sessions module
+-------------------------
 
-.. automodule:: telethon.utils
+.. automodule:: telethon.sessions
     :members:
     :undoc-members:
     :show-inheritance:
-
 
 telethon\.cryto package
 ------------------------
@@ -58,21 +76,21 @@ telethon\.errors package
     telethon.errors
 
 telethon\.extensions package
-------------------------
+----------------------------
 
 .. toctree::
 
     telethon.extensions
 
 telethon\.network package
-------------------------
+-------------------------
 
 .. toctree::
 
     telethon.network
 
 telethon\.tl package
-------------------------
+--------------------
 
 .. toctree::
 

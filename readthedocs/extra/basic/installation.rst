@@ -1,44 +1,56 @@
 .. _installation:
 
-=================
+============
 Installation
-=================
+============
 
 
 Automatic Installation
-^^^^^^^^^^^^^^^^^^^^^^^
+**********************
+
 To install Telethon, simply do:
 
-    ``pip install telethon``
+    ``pip3 install telethon``
 
-If you get something like ``"SyntaxError: invalid syntax"`` or any other error while installing,
-it's probably because ``pip`` defaults to Python 2, which is not supported. Use ``pip3`` instead.
+Needless to say, you must have Python 3 and PyPi installed in your system.
+See https://python.org and https://pypi.python.org/pypi/pip for more.
 
 If you already have the library installed, upgrade with:
 
-    ``pip install --upgrade telethon``
+    ``pip3 install --upgrade telethon``
 
 You can also install the library directly from GitHub or a fork:
 
-   .. code-block:: python
+   .. code-block:: sh
 
-        # pip install git+https://github.com/LonamiWebs/Telethon.git
+        # pip3 install git+https://github.com/LonamiWebs/Telethon.git
         or
         $ git clone https://github.com/LonamiWebs/Telethon.git
         $ cd Telethon/
         # pip install -Ue .
 
-If you don't have root access, simply pass the ``--user`` flag to the pip command.
+If you don't have root access, simply pass the ``--user`` flag to the pip
+command. If you want to install a specific branch, append ``@branch`` to
+the end of the first install command.
+
+By default the library will use a pure Python implementation for encryption,
+which can be really slow when uploading or downloading files. If you don't
+mind using a C extension, install `cryptg <https://github.com/Lonami/cryptg>`__
+via ``pip`` or as an extra:
+
+    ``pip3 install telethon[cryptg]``
 
 
 Manual Installation
-^^^^^^^^^^^^^^^^^^^^
+*******************
 
-1. Install the required ``pyaes`` (`GitHub`__ | `PyPi`__) and ``rsa`` (`GitHub`__ | `PyPi`__) modules:
+1. Install the required ``pyaes`` (`GitHub`__ | `PyPi`__) and
+   ``rsa`` (`GitHub`__ | `PyPi`__) modules:
 
-    ``sudo -H pip install pyaes rsa``
+    ``sudo -H pip3 install pyaes rsa``
 
-2. Clone Telethon's GitHub repository: ``git clone https://github.com/LonamiWebs/Telethon.git``
+2. Clone Telethon's GitHub repository:
+   ``git clone https://github.com/LonamiWebs/Telethon.git``
 
 3. Enter the cloned repository: ``cd Telethon``
 
@@ -46,26 +58,22 @@ Manual Installation
 
 5. Done!
 
-To generate the documentation, ``cd docs`` and then ``python3 generate.py``.
+To generate the `method documentation`__, ``cd docs`` and then
+``python3 generate.py`` (if some pages render bad do it twice).
 
 
 Optional dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^
+*********************
 
-If you're using the library under ARM (or even if you aren't),
-you may want to install ``sympy`` through ``pip`` for a substantial speed-up
-when generating the keys required to connect to Telegram
-(you can of course do this on desktop too). See `issue #199`__ for more.
-
-If ``libssl`` is available on your system, it will also be used wherever encryption is needed.
-
-If neither of these are available, a pure Python callback will be used instead,
-so you can still run the library wherever Python is available!
-
+If the `cryptg`__ is installed, you might notice a speed-up in the download
+and upload speed, since these are the most cryptographic-heavy part of the
+library and said module is a C extension. Otherwise, the ``pyaes`` fallback
+will be used.
 
 
 __ https://github.com/ricmoo/pyaes
 __ https://pypi.python.org/pypi/pyaes
-__ https://github.com/sybrenstuvel/python-rsa/
+__ https://github.com/sybrenstuvel/python-rsa
 __ https://pypi.python.org/pypi/rsa/3.4.2
-__ https://github.com/LonamiWebs/Telethon/issues/199
+__ https://lonamiwebs.github.io/Telethon
+__ https://github.com/Lonami/cryptg

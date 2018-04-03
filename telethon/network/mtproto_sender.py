@@ -4,10 +4,9 @@ encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
 import gzip
 import logging
-import struct
+from threading import Lock
 
 from .. import helpers as utils
-from ..crypto import AES
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -15,23 +14,25 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
-    MsgsAck, Pong, BadServerSalt, BadMsgNotification,
+    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
 )
-from ..tl.functions.auth import LogOutRequest
 
 __log__ = logging.getLogger(__name__)
 
 
 class MtProtoSender:
-    """MTProto Mobile Protocol sender
-       (https://core.telegram.org/mtproto/description).
+    """
+    MTProto Mobile Protocol sender
+    (https://core.telegram.org/mtproto/description).
 
-       Note that this class is not thread-safe, and calling send/receive
-       from two or more threads at the same time is undefined behaviour.
-       Rationale: a new connection should be spawned to send/receive requests
-                  in parallel, so thread-safety (hence locking) isn't needed.
+    Note that this class is not thread-safe, and calling send/receive
+    from two or more threads at the same time is undefined behaviour.
+    Rationale:
+        a new connection should be spawned to send/receive requests
+        in parallel, so thread-safety (hence locking) isn't needed.
     """
 
     def __init__(self, session, connection):
@@ -53,6 +54,9 @@ class MtProtoSender:
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
 
+        # Multithreading
+        self._send_lock = Lock()
+
     def connect(self):
         """Connects to the server."""
         self.connection.connect(self.session.server_address, self.session.port)
@@ -67,13 +71,10 @@ class MtProtoSender:
 
     def disconnect(self):
         """Disconnects from the server."""
+        __log__.info('Disconnecting MtProtoSender...')
         self.connection.close()
         self._need_confirmation.clear()
         self._clear_all_pending()
-
-    def clone(self):
-        """Creates a copy of this MtProtoSender as a new connection."""
-        return MtProtoSender(self.session, self.connection.clone())
 
     # region Send and receive
 
@@ -87,6 +88,11 @@ class MtProtoSender:
         # Finally send our packed request(s)
         messages = [TLMessage(self.session, r) for r in requests]
         self._pending_receive.update({m.msg_id: m for m in messages})
+
+        __log__.debug('Sending requests with IDs: %s', ', '.join(
+            '{}: {}'.format(m.request.__class__.__name__, m.msg_id)
+            for m in messages
+        ))
 
         # Pack everything in the same container if we need to send AckRequests
         if self._need_confirmation:
@@ -156,17 +162,8 @@ class MtProtoSender:
 
         :param message: the TLMessage to be sent.
         """
-        plain_text = \
-            struct.pack('<qq', self.session.salt, self.session.id) \
-            + bytes(message)
-
-        msg_key = utils.calc_msg_key(plain_text)
-        key_id = struct.pack('<Q', self.session.auth_key.key_id)
-        key, iv = utils.calc_key(self.session.auth_key.key, msg_key, True)
-        cipher_text = AES.encrypt_ige(plain_text, key, iv)
-
-        result = key_id + msg_key + cipher_text
-        self.connection.send(result)
+        with self._send_lock:
+            self.connection.send(utils.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
@@ -175,34 +172,14 @@ class MtProtoSender:
         :param body: the body to be decoded.
         :return: a tuple of (decoded message, remote message id, remote seq).
         """
-        message = None
-        remote_msg_id = None
-        remote_sequence = None
+        if len(body) < 8:
+            if body == b'l\xfe\xff\xff':
+                raise BrokenAuthKeyError()
+            else:
+                raise BufferError("Can't decode packet ({})".format(body))
 
         with BinaryReader(body) as reader:
-            if len(body) < 8:
-                if body == b'l\xfe\xff\xff':
-                    raise BrokenAuthKeyError()
-                else:
-                    raise BufferError("Can't decode packet ({})".format(body))
-
-            # TODO Check for both auth key ID and msg_key correctness
-            reader.read_long()  # remote_auth_key_id
-            msg_key = reader.read(16)
-
-            key, iv = utils.calc_key(self.session.auth_key.key, msg_key, False)
-            plain_text = AES.decrypt_ige(
-                reader.read(len(body) - reader.tell_position()), key, iv)
-
-            with BinaryReader(plain_text) as plain_text_reader:
-                plain_text_reader.read_long()  # remote_salt
-                plain_text_reader.read_long()  # remote_session_id
-                remote_msg_id = plain_text_reader.read_long()
-                remote_sequence = plain_text_reader.read_int()
-                msg_len = plain_text_reader.read_int()
-                message = plain_text_reader.read(msg_len)
-
-        return message, remote_msg_id, remote_sequence
+            return utils.unpack_message(self.session, reader)
 
     def _process_msg(self, msg_id, sequence, reader, state):
         """
@@ -270,8 +247,16 @@ class MtProtoSender:
                 if r:
                     r.result = True  # Telegram won't send this value
                     r.confirm_received.set()
+                    __log__.debug('Confirmed %s through ack', type(r).__name__)
 
             return True
+
+        if isinstance(obj, FutureSalts):
+            r = self._pop_request(obj.req_msg_id)
+            if r:
+                r.result = obj
+                r.confirm_received.set()
+                __log__.debug('Confirmed %s through salt', type(r).__name__)
 
         # If the object isn't any of the above, then it should be an Update.
         self.session.process_entities(obj)
@@ -328,6 +313,7 @@ class MtProtoSender:
         """
         for r in self._pending_receive.values():
             r.request.confirm_received.set()
+            __log__.info('Abruptly confirming %s', type(r).__name__)
         self._pending_receive.clear()
 
     def _resend_request(self, msg_id):
@@ -357,6 +343,7 @@ class MtProtoSender:
         if request:
             request.result = pong
             request.confirm_received.set()
+            __log__.debug('Confirmed %s through pong', type(request).__name__)
 
         return True
 
@@ -422,13 +409,13 @@ class MtProtoSender:
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
-            self.session._sequence += 64
+            self.session.sequence += 64
             __log__.info('Attempting to set the right higher sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
-            self.session._sequence -= 16
+            self.session.sequence -= 16
             __log__.info('Attempting to set the right lower sequence')
             self._resend_request(bad_msg.bad_msg_id)
             return True
@@ -489,10 +476,13 @@ class MtProtoSender:
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
+        reader.seek(-4)
 
+        __log__.debug('Received response for request with ID %d', request_id)
         request = self._pop_request(request_id)
 
         if inner_code == 0x2144ca19:  # RPC Error
+            reader.seek(4)
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string(),
@@ -509,26 +499,48 @@ class MtProtoSender:
             if request:
                 request.rpc_error = error
                 request.confirm_received.set()
+
+            __log__.debug('Confirmed %s through error %s',
+                          type(request).__name__, error)
             # else TODO Where should this error be reported?
             # Read may be async. Can an error not-belong to a request?
             return True  # All contents were read okay
 
         elif request:
-            if inner_code == 0x3072cfa1:  # GZip packed
-                unpacked_data = gzip.decompress(reader.tgread_bytes())
-                with BinaryReader(unpacked_data) as compressed_reader:
+            if inner_code == GzipPacked.CONSTRUCTOR_ID:
+                with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
                     request.on_response(compressed_reader)
             else:
-                reader.seek(-4)
                 request.on_response(reader)
 
             self.session.process_entities(request.result)
             request.confirm_received.set()
+            __log__.debug(
+                'Confirmed %s through normal result %s',
+                type(request).__name__, type(request.result).__name__
+            )
             return True
 
         # If it's really a result for RPC from previous connection
-        # session, it will be skipped by the handle_container()
-        __log__.warning('Lost request will be skipped')
+        # session, it will be skipped by the handle_container().
+        # For some reason this also seems to happen when downloading
+        # photos, where the server responds with FileJpeg().
+        def _try_read(r):
+            try:
+                return r.tgread_object()
+            except Exception as e:
+                return '(failed to read: {})'.format(e)
+
+        if inner_code == GzipPacked.CONSTRUCTOR_ID:
+            with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
+                obj = _try_read(compressed_reader)
+        else:
+            obj = _try_read(reader)
+
+        __log__.warning(
+            'Lost request (ID %d) with code %s will be skipped, contents: %s',
+            request_id, hex(inner_code), obj
+        )
         return False
 
     def _handle_gzip_packed(self, msg_id, sequence, reader, state):

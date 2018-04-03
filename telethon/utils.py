@@ -3,9 +3,13 @@ Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
 import math
-from mimetypes import add_type, guess_extension
+import mimetypes
+import os
+import re
+import types
+from collections import UserList
+from mimetypes import guess_extension
 
-from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -20,13 +24,23 @@ from .tl.types import (
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
-    InputMediaUploadedPhoto, DocumentAttributeFilename, photos
+    InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
+    TopPeer, InputNotifyPeer
 )
+from .tl.types.contacts import ResolvedPeer
+
+USERNAME_RE = re.compile(
+    r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
+)
+
+VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
 
 
 def get_display_name(entity):
-    """Gets the input peer for the given "entity" (user, chat or channel)
-       Returns None if it was not found"""
+    """
+    Gets the display name for the given entity, if it's an :tl:`User`,
+    :tl:`Chat` or :tl:`Channel`. Returns an empty string otherwise.
+    """
     if isinstance(entity, User):
         if entity.last_name and entity.first_name:
             return '{} {}'.format(entity.first_name, entity.last_name)
@@ -42,12 +56,9 @@ def get_display_name(entity):
 
     return ''
 
-# For some reason, .webp (stickers' format) is not registered
-add_type('image/webp', '.webp')
-
 
 def get_extension(media):
-    """Gets the corresponding extension for any Telegram media"""
+    """Gets the corresponding extension for any Telegram media."""
 
     # Photos are always compressed as .jpg by Telegram
     if isinstance(media, (UserProfilePhoto, ChatPhoto, MessageMediaPhoto)):
@@ -55,30 +66,32 @@ def get_extension(media):
 
     # Documents will come with a mime type
     if isinstance(media, MessageMediaDocument):
-        if isinstance(media.document, Document):
-            if media.document.mime_type == 'application/octet-stream':
-                # Octet stream are just bytes, which have no default extension
-                return ''
-            else:
-                extension = guess_extension(media.document.mime_type)
-                return extension if extension else ''
+        media = media.document
+    if isinstance(media, Document):
+        if media.mime_type == 'application/octet-stream':
+            # Octet stream are just bytes, which have no default extension
+            return ''
+        else:
+            return guess_extension(media.mime_type) or ''
 
     return ''
 
 
 def _raise_cast_fail(entity, target):
-    raise ValueError('Cannot cast {} to any kind of {}.'
-                     .format(type(entity).__name__, target))
+    raise TypeError('Cannot cast {} to any kind of {}.'.format(
+        type(entity).__name__, target))
 
 
 def get_input_peer(entity, allow_self=True):
-    """Gets the input peer for the given "entity" (user, chat or channel).
-       A ValueError is raised if the given entity isn't a supported type."""
-    if not isinstance(entity, TLObject):
+    """
+    Gets the input peer for the given "entity" (user, chat or channel).
+    A ``TypeError`` is raised if the given entity isn't a supported type.
+    """
+    try:
+        if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputPeer')
-
-    if type(entity).SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-        return entity
 
     if isinstance(entity, User):
         if entity.is_self and allow_self:
@@ -93,14 +106,17 @@ def get_input_peer(entity, allow_self=True):
         return InputPeerChannel(entity.id, entity.access_hash or 0)
 
     # Less common cases
-    if isinstance(entity, UserEmpty):
-        return InputPeerEmpty()
-
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
 
+    if isinstance(entity, InputChannel):
+        return InputPeerChannel(entity.channel_id, entity.access_hash)
+
     if isinstance(entity, InputUserSelf):
         return InputPeerSelf()
+
+    if isinstance(entity, UserEmpty):
+        return InputPeerEmpty()
 
     if isinstance(entity, UserFull):
         return get_input_peer(entity.user)
@@ -115,12 +131,12 @@ def get_input_peer(entity, allow_self=True):
 
 
 def get_input_channel(entity):
-    """Similar to get_input_peer, but for InputChannel's alone"""
-    if not isinstance(entity, TLObject):
+    """Similar to :meth:`get_input_peer`, but for :tl:`InputChannel`'s alone."""
+    try:
+        if entity.SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputChannel')
-
-    if type(entity).SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
-        return entity
 
     if isinstance(entity, (Channel, ChannelForbidden)):
         return InputChannel(entity.id, entity.access_hash or 0)
@@ -132,12 +148,12 @@ def get_input_channel(entity):
 
 
 def get_input_user(entity):
-    """Similar to get_input_peer, but for InputUser's alone"""
-    if not isinstance(entity, TLObject):
+    """Similar to :meth:`get_input_peer`, but for :tl:`InputUser`'s alone."""
+    try:
+        if entity.SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser'):
+            return entity
+    except AttributeError:
         _raise_cast_fail(entity, 'InputUser')
-
-    if type(entity).SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser')
-        return entity
 
     if isinstance(entity, User):
         if entity.is_self:
@@ -161,12 +177,12 @@ def get_input_user(entity):
 
 
 def get_input_document(document):
-    """Similar to get_input_peer, but for documents"""
-    if not isinstance(document, TLObject):
+    """Similar to :meth:`get_input_peer`, but for documents"""
+    try:
+        if document.SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument'):
+            return document
+    except AttributeError:
         _raise_cast_fail(document, 'InputDocument')
-
-    if type(document).SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
-        return document
 
     if isinstance(document, Document):
         return InputDocument(id=document.id, access_hash=document.access_hash)
@@ -184,12 +200,12 @@ def get_input_document(document):
 
 
 def get_input_photo(photo):
-    """Similar to get_input_peer, but for documents"""
-    if not isinstance(photo, TLObject):
+    """Similar to :meth:`get_input_peer`, but for photos"""
+    try:
+        if photo.SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto'):
+            return photo
+    except AttributeError:
         _raise_cast_fail(photo, 'InputPhoto')
-
-    if type(photo).SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
-        return photo
 
     if isinstance(photo, photos.Photo):
         photo = photo.photo
@@ -204,12 +220,12 @@ def get_input_photo(photo):
 
 
 def get_input_geo(geo):
-    """Similar to get_input_peer, but for geo points"""
-    if not isinstance(geo, TLObject):
+    """Similar to :meth:`get_input_peer`, but for geo points"""
+    try:
+        if geo.SUBCLASS_OF_ID == 0x430d225:  # crc32(b'InputGeoPoint'):
+            return geo
+    except AttributeError:
         _raise_cast_fail(geo, 'InputGeoPoint')
-
-    if type(geo).SUBCLASS_OF_ID == 0x430d225:  # crc32(b'InputGeoPoint')
-        return geo
 
     if isinstance(geo, GeoPoint):
         return InputGeoPoint(lat=geo.lat, long=geo.long)
@@ -226,44 +242,49 @@ def get_input_geo(geo):
     _raise_cast_fail(geo, 'InputGeoPoint')
 
 
-def get_input_media(media, user_caption=None, is_photo=False):
-    """Similar to get_input_peer, but for media.
-
-       If the media is a file location and is_photo is known to be True,
-       it will be treated as an InputMediaUploadedPhoto.
+def get_input_media(media, is_photo=False):
     """
-    if not isinstance(media, TLObject):
-        _raise_cast_fail(media, 'InputMedia')
+    Similar to :meth:`get_input_peer`, but for media.
 
-    if type(media).SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
-        return media
+    If the media is a file location and ``is_photo`` is known to be ``True``,
+    it will be treated as an :tl:`InputMediaUploadedPhoto`.
+    """
+    try:
+        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia'):
+            return media
+    except AttributeError:
+        _raise_cast_fail(media, 'InputMedia')
 
     if isinstance(media, MessageMediaPhoto):
         return InputMediaPhoto(
             id=get_input_photo(media.photo),
-            caption=media.caption if user_caption is None else user_caption,
             ttl_seconds=media.ttl_seconds
+        )
+
+    if isinstance(media, (Photo, photos.Photo, PhotoEmpty)):
+        return InputMediaPhoto(
+            id=get_input_photo(media)
         )
 
     if isinstance(media, MessageMediaDocument):
         return InputMediaDocument(
             id=get_input_document(media.document),
-            caption=media.caption if user_caption is None else user_caption,
             ttl_seconds=media.ttl_seconds
+        )
+
+    if isinstance(media, (Document, DocumentEmpty)):
+        return InputMediaDocument(
+            id=get_input_document(media)
         )
 
     if isinstance(media, FileLocation):
         if is_photo:
-            return InputMediaUploadedPhoto(
-                file=media,
-                caption=user_caption or ''
-            )
+            return InputMediaUploadedPhoto(file=media)
         else:
             return InputMediaUploadedDocument(
                 file=media,
                 mime_type='application/octet-stream',  # unknown, assume bytes
-                attributes=[DocumentAttributeFilename('unnamed')],
-                caption=user_caption or ''
+                attributes=[DocumentAttributeFilename('unnamed')]
             )
 
     if isinstance(media, MessageMediaGame):
@@ -271,9 +292,10 @@ def get_input_media(media, user_caption=None, is_photo=False):
 
     if isinstance(media, (ChatPhoto, UserProfilePhoto)):
         if isinstance(media.photo_big, FileLocationUnavailable):
-            return get_input_media(media.photo_small, is_photo=True)
+            media = media.photo_small
         else:
-            return get_input_media(media.photo_big, is_photo=True)
+            media = media.photo_big
+        return get_input_media(media, is_photo=True)
 
     if isinstance(media, MessageMediaContact):
         return InputMediaContact(
@@ -291,7 +313,8 @@ def get_input_media(media, user_caption=None, is_photo=False):
             title=media.title,
             address=media.address,
             provider=media.provider,
-            venue_id=media.venue_id
+            venue_id=media.venue_id,
+            venue_type=''
         )
 
     if isinstance(media, (
@@ -300,31 +323,122 @@ def get_input_media(media, user_caption=None, is_photo=False):
         return InputMediaEmpty()
 
     if isinstance(media, Message):
-        return get_input_media(media.media)
+        return get_input_media(media.media, is_photo=is_photo)
 
     _raise_cast_fail(media, 'InputMedia')
 
 
-def get_peer_id(peer, add_mark=False):
-    """Finds the ID of the given peer, and optionally converts it to
-       the "bot api" format if 'add_mark' is set to True.
+def is_image(file):
+    """
+    Returns ``True`` if the file extension looks like an image file to Telegram.
+    """
+    if not isinstance(file, str):
+        return False
+    _, ext = os.path.splitext(file)
+    return re.match(r'\.(png|jpe?g)', ext, re.IGNORECASE)
+
+
+def is_audio(file):
+    """Returns ``True`` if the file extension looks like an audio file."""
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('audio/'))
+
+
+def is_video(file):
+    """Returns ``True`` if the file extension looks like a video file."""
+    return (isinstance(file, str) and
+            (mimetypes.guess_type(file)[0] or '').startswith('video/'))
+
+
+def is_list_like(obj):
+    """
+    Returns ``True`` if the given object looks like a list.
+
+    Checking ``if hasattr(obj, '__iter__')`` and ignoring ``str/bytes`` is not
+    enough. Things like ``open()`` are also iterable (and probably many
+    other things), so just support the commonly known list-like objects.
+    """
+    return isinstance(obj, (list, tuple, set, dict,
+                            UserList, types.GeneratorType))
+
+
+def parse_phone(phone):
+    """Parses the given phone, or returns ``None`` if it's invalid."""
+    if isinstance(phone, int):
+        return str(phone)
+    else:
+        phone = re.sub(r'[+()\s-]', '', str(phone))
+        if phone.isdigit():
+            return phone
+
+
+def parse_username(username):
+    """Parses the given username or channel access hash, given
+       a string, username or URL. Returns a tuple consisting of
+       both the stripped, lowercase username and whether it is
+       a joinchat/ hash (in which case is not lowercase'd).
+
+       Returns ``None`` if the ``username`` is not valid.
+    """
+    username = username.strip()
+    m = USERNAME_RE.match(username)
+    if m:
+        username = username[m.end():]
+        is_invite = bool(m.group(1))
+        if is_invite:
+            return username, True
+        else:
+            username = username.rstrip('/')
+
+    if VALID_USERNAME_RE.match(username):
+        return username.lower(), False
+    else:
+        return None, False
+
+
+def _fix_peer_id(peer_id):
+    """
+    Fixes the peer ID for chats and channels, in case the users
+    mix marking the ID with the :tl:`Peer` constructors.
+    """
+    peer_id = abs(peer_id)
+    if str(peer_id).startswith('100'):
+        peer_id = str(peer_id)[3:]
+    return int(peer_id)
+
+
+def get_peer_id(peer):
+    """
+    Finds the ID of the given peer, and converts it to the "bot api" format
+    so it the peer can be identified back. User ID is left unmodified,
+    chat ID is negated, and channel ID is prefixed with -100.
+
+    The original ID and the peer type class can be returned with
+    a call to :meth:`resolve_id(marked_id)`.
     """
     # First we assert it's a Peer TLObject, or early return for integers
-    if not isinstance(peer, TLObject):
-        if isinstance(peer, int):
-            return peer
-        else:
-            _raise_cast_fail(peer, 'int')
+    if isinstance(peer, int):
+        return peer
 
-    elif type(peer).SUBCLASS_OF_ID not in {0x2d45687, 0xc91c90b6}:
-        # Not a Peer or an InputPeer, so first get its Input version
-        peer = get_input_peer(peer, allow_self=False)
+    try:
+        if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
+            if isinstance(peer, (ResolvedPeer, InputNotifyPeer, TopPeer)):
+                peer = peer.peer
+            else:
+                # Not a Peer or an InputPeer, so first get its Input version
+                peer = get_input_peer(peer, allow_self=False)
+    except AttributeError:
+        _raise_cast_fail(peer, 'int')
 
     # Set the right ID/kind, or raise if the TLObject is not recognised
     if isinstance(peer, (PeerUser, InputPeerUser)):
         return peer.user_id
     elif isinstance(peer, (PeerChat, InputPeerChat)):
-        return -peer.chat_id if add_mark else peer.chat_id
+        # Check in case the user mixed things up to avoid blowing up
+        if not (0 < peer.chat_id <= 0x7fffffff):
+            peer.chat_id = _fix_peer_id(peer.chat_id)
+
+        return -peer.chat_id
     elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
         if isinstance(peer, ChannelFull):
             # Special case: .get_input_peer can't return InputChannel from
@@ -332,18 +446,24 @@ def get_peer_id(peer, add_mark=False):
             i = peer.id
         else:
             i = peer.channel_id
-        if add_mark:
-            # Concat -100 through math tricks, .to_supergroup() on Madeline
-            # IDs will be strictly positive -> log works
-            return -(i + pow(10, math.floor(math.log10(i) + 3)))
-        else:
-            return i
+
+        # Check in case the user mixed things up to avoid blowing up
+        if not (0 < i <= 0x7fffffff):
+            i = _fix_peer_id(i)
+            if isinstance(peer, ChannelFull):
+                peer.id = i
+            else:
+                peer.channel_id = i
+
+        # Concat -100 through math tricks, .to_supergroup() on Madeline
+        # IDs will be strictly positive -> log works
+        return -(i + pow(10, math.floor(math.log10(i) + 3)))
 
     _raise_cast_fail(peer, 'int')
 
 
 def resolve_id(marked_id):
-    """Given a marked ID, returns the original ID and its Peer type"""
+    """Given a marked ID, returns the original ID and its :tl:`Peer` type."""
     if marked_id >= 0:
         return marked_id, PeerUser
 
@@ -353,31 +473,11 @@ def resolve_id(marked_id):
     return -marked_id, PeerChat
 
 
-def find_user_or_chat(peer, users, chats):
-    """Finds the corresponding user or chat given a peer.
-       Returns None if it was not found"""
-    if isinstance(peer, PeerUser):
-        peer, where = peer.user_id, users
-    else:
-        where = chats
-        if isinstance(peer, PeerChat):
-            peer = peer.chat_id
-        elif isinstance(peer, PeerChannel):
-            peer = peer.channel_id
-
-    if isinstance(peer, int):
-        if isinstance(where, dict):
-            return where.get(peer)
-        else:
-            try:
-                return next(x for x in where if x.id == peer)
-            except StopIteration:
-                pass
-
-
 def get_appropriated_part_size(file_size):
-    """Gets the appropriated part size when uploading or downloading files,
-       given an initial file size"""
+    """
+    Gets the appropriated part size when uploading or downloading files,
+    given an initial file size.
+    """
     if file_size <= 104857600:  # 100MB
         return 128
     if file_size <= 786432000:  # 750MB

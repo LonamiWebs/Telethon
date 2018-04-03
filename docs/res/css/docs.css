@@ -108,6 +108,10 @@ span.sh4 {
     color: #06c;
 }
 
+span.tooltip {
+    border-bottom: 1px dashed #444;
+}
+
 #searchBox {
     width: 100%;
     border: none;

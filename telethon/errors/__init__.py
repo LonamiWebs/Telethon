@@ -7,9 +7,8 @@ import re
 from threading import Thread
 
 from .common import (
-    ReadCancelledError, InvalidParameterError, TypeNotFoundError,
-    InvalidChecksumError, BrokenAuthKeyError, SecurityError,
-    CdnFileTamperedError
+    ReadCancelledError, TypeNotFoundError, InvalidChecksumError,
+    BrokenAuthKeyError, SecurityError, CdnFileTamperedError
 )
 
 # This imports the base errors too, as they're imported there
@@ -78,6 +77,9 @@ def rpc_message_to_error(code, message, report_method=None):
 
     if code == 404:
         return NotFoundError(message)
+
+    if code == 406:
+        return AuthKeyError(message)
 
     if code == 500:
         return ServerError(message)

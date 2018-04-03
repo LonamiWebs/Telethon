@@ -13,7 +13,7 @@ Extra supported commands are:
 
 # To use a consistent encoding
 from codecs import open
-from sys import argv
+from sys import argv, version_info
 import os
 import re
 
@@ -45,11 +45,13 @@ GENERATOR_DIR = 'telethon/tl'
 IMPORT_DEPTH = 2
 
 
-def gen_tl():
+def gen_tl(force=True):
     from telethon_generator.tl_generator import TLGenerator
     from telethon_generator.error_generator import generate_code
     generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
+        if not force:
+            return
         print('Detected previous TLObjects. Cleaning...')
         generator.clean_tlobjects()
 
@@ -99,12 +101,16 @@ def main():
         fetch_errors(ERRORS_JSON)
 
     else:
+        # Call gen_tl() if the scheme.tl file exists, e.g. install from GitHub
+        if os.path.isfile(SCHEME_TL):
+            gen_tl(force=False)
+
         # Get the long description from the README file
         with open('README.rst', encoding='utf-8') as f:
             long_description = f.read()
 
         with open('telethon/version.py', encoding='utf-8') as f:
-            version = re.search(r"^__version__\s+=\s+'(.*)'$",
+            version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
             name='Telethon',
@@ -141,9 +147,17 @@ def main():
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
                 'telethon_generator', 'telethon_tests', 'run_tests.py',
-                'try_telethon.py'
+                'try_telethon.py',
+                'telethon_generator/parser/__init__.py',
+                'telethon_generator/parser/source_builder.py',
+                'telethon_generator/parser/tl_object.py',
+                'telethon_generator/parser/tl_parser.py',
             ]),
-            install_requires=['pyaes', 'rsa']
+            install_requires=['pyaes', 'rsa',
+                              'typing' if version_info < (3, 5, 2) else ""],
+            extras_require={
+                'cryptg': ['cryptg']
+            }
         )
 
 

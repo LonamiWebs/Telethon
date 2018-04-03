@@ -2,6 +2,7 @@
 This module holds both the Connection class and the ConnectionMode enum,
 which specifies the protocol to be used by the Connection.
 """
+import logging
 import os
 import struct
 from datetime import timedelta
@@ -13,6 +14,8 @@ import errno
 from ..crypto import AESModeCTR
 from ..extensions import TcpClient
 from ..errors import InvalidChecksumError
+
+__log__ = logging.getLogger(__name__)
 
 
 class ConnectionMode(Enum):
@@ -180,6 +183,21 @@ class Connection:
         """
         packet_len_seq = self.read(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
+
+        # Sometimes Telegram seems to send a packet length of 0 (12)
+        # and after that, just a single byte. Not sure what this is.
+        # TODO Figure out what this is, and if there's a better fix.
+        if packet_len <= 12:
+            __log__.error('Read invalid packet length %d, '
+                          'reading data left:', packet_len)
+            while True:
+                try:
+                    __log__.error(repr(self.read(1)))
+                except TimeoutError:
+                    break
+            # Connection reset and hope it's fixed after
+            self.conn.close()
+            raise ConnectionResetError()
 
         body = self.read(packet_len - 12)
         checksum = struct.unpack('<I', self.read(4))[0]
