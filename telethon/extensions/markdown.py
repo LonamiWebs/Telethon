@@ -81,7 +81,7 @@ def parse(message, delimiters=None, url_re=None):
                 ))
 
                 result.append(MessageEntityTextUrl(
-                    offset=i, length=len(url_match.group(1)),
+                    offset=url_match.start(), length=len(url_match.group(1)),
                     url=_del_surrogate(url_match.group(2))
                 ))
                 i += len(url_match.group(1))
