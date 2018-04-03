@@ -679,13 +679,18 @@ class TelegramClient(TelegramBareClient):
         if not parse_mode:
             return message, []
 
-        parse_mode = parse_mode.lower()
-        if parse_mode in {'md', 'markdown'}:
-            message, msg_entities = markdown.parse(message)
-        elif parse_mode.startswith('htm'):
-            message, msg_entities = html.parse(message)
+        if isinstance(parse_mode, str):
+            parse_mode = parse_mode.lower()
+            if parse_mode in {'md', 'markdown'}:
+                message, msg_entities = markdown.parse(message)
+            elif parse_mode.startswith('htm'):
+                message, msg_entities = html.parse(message)
+            else:
+                raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+        elif callable(parse_mode):
+            message, msg_entities = parse_mode(message)
         else:
-            raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+            raise TypeError('Invalid parsing mode type: {}'.format(parse_mode))
 
         for i, e in enumerate(msg_entities):
             if isinstance(e, MessageEntityTextUrl):
