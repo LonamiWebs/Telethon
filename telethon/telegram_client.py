@@ -38,7 +38,8 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError
+    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError,
+    UsernameNotOccupiedError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -189,9 +190,6 @@ class TelegramClient(TelegramBareClient):
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
-
-        # Don't call .get_dialogs() every time a .get_entity() fails
-        self._called_get_dialogs = False
 
     # endregion
 
@@ -679,13 +677,18 @@ class TelegramClient(TelegramBareClient):
         if not parse_mode:
             return message, []
 
-        parse_mode = parse_mode.lower()
-        if parse_mode in {'md', 'markdown'}:
-            message, msg_entities = markdown.parse(message)
-        elif parse_mode.startswith('htm'):
-            message, msg_entities = html.parse(message)
+        if isinstance(parse_mode, str):
+            parse_mode = parse_mode.lower()
+            if parse_mode in {'md', 'markdown'}:
+                message, msg_entities = markdown.parse(message)
+            elif parse_mode.startswith('htm'):
+                message, msg_entities = html.parse(message)
+            else:
+                raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+        elif callable(parse_mode):
+            message, msg_entities = parse_mode(message)
         else:
-            raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
+            raise TypeError('Invalid parsing mode type: {}'.format(parse_mode))
 
         for i, e in enumerate(msg_entities):
             if isinstance(e, MessageEntityTextUrl):
@@ -2377,15 +2380,21 @@ class TelegramClient(TelegramBareClient):
                 invite = await self(CheckChatInviteRequest(username))
                 if isinstance(invite, ChatInvite):
                     raise ValueError(
-                        'Cannot get entity from a channel '
-                        '(or group) that you are not part of'
+                        'Cannot get entity from a channel (or group) '
+                        'that you are not part of. Join the group and retry'
                     )
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
             elif username:
                 if username in ('me', 'self'):
                     return await self.get_me()
-                result = await self(ResolveUsernameRequest(username))
+
+                try:
+                    result = await self(ResolveUsernameRequest(username))
+                except UsernameNotOccupiedError as e:
+                    raise ValueError('No user has "{}" as username'
+                                     .format(username)) from e
+
                 for entity in itertools.chain(result.users, result.chats):
                     if getattr(entity, 'username', None) or ''\
                             .lower() == username:
@@ -2397,8 +2406,8 @@ class TelegramClient(TelegramBareClient):
             except ValueError:
                 pass
 
-        raise TypeError(
-            'Cannot turn "{}" into any entity (user or chat)'.format(string)
+        raise ValueError(
+            'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
     async def get_input_entity(self, peer):
@@ -2444,25 +2453,12 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(original_peer)
             )
 
-        # Add the mark to the peers if the user passed a Peer (not an int),
-        # or said ID is negative. If it's negative it's been marked already.
-        # Look in the dialogs with the hope to find it.
-        if not self._called_get_dialogs:
-            self._called_get_dialogs = True
-            mark = not isinstance(peer, int) or peer < 0
-            target_id = utils.get_peer_id(peer)
-            if mark:
-                async for dialog in self.iter_dialogs(100):
-                    if utils.get_peer_id(dialog.entity) == target_id:
-                        return utils.get_input_peer(dialog.entity)
-            else:
-                async for dialog in self.iter_dialogs(100):
-                    if dialog.entity.id == target_id:
-                        return utils.get_input_peer(dialog.entity)
-
-        raise TypeError(
+        raise ValueError(
             'Could not find the input entity corresponding to "{}". '
-            'Make sure you have encountered this peer before.'.format(peer)
+            'Make sure you have encountered this user/chat/channel before. '
+            'If the peer is in your dialogs call client.get_dialogs().'
+            'If the peer belongs to a chat call client.get_participants().'
+            .format(peer)
         )
 
     async def edit_2fa(self, current_password=None, new_password=None, hint='',
