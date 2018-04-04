@@ -38,7 +38,8 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError
+    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError,
+    UsernameNotOccupiedError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -191,9 +192,6 @@ class TelegramClient(TelegramBareClient):
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
-
-        # Don't call .get_dialogs() every time a .get_entity() fails
-        self._called_get_dialogs = False
 
     # endregion
 
@@ -2391,15 +2389,21 @@ class TelegramClient(TelegramBareClient):
                 invite = self(CheckChatInviteRequest(username))
                 if isinstance(invite, ChatInvite):
                     raise ValueError(
-                        'Cannot get entity from a channel '
-                        '(or group) that you are not part of'
+                        'Cannot get entity from a channel (or group) '
+                        'that you are not part of. Join the group and retry'
                     )
                 elif isinstance(invite, ChatInviteAlready):
                     return invite.chat
             elif username:
                 if username in ('me', 'self'):
                     return self.get_me()
-                result = self(ResolveUsernameRequest(username))
+
+                try:
+                    result = self(ResolveUsernameRequest(username))
+                except UsernameNotOccupiedError as e:
+                    raise ValueError('No user has "{}" as username'
+                                     .format(username)) from e
+
                 for entity in itertools.chain(result.users, result.chats):
                     if getattr(entity, 'username', None) or ''\
                             .lower() == username:
@@ -2410,8 +2414,8 @@ class TelegramClient(TelegramBareClient):
             except ValueError:
                 pass
 
-        raise TypeError(
-            'Cannot turn "{}" into any entity (user or chat)'.format(string)
+        raise ValueError(
+            'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
     def get_input_entity(self, peer):
@@ -2460,25 +2464,12 @@ class TelegramClient(TelegramBareClient):
                 'Cannot turn "{}" into an input entity.'.format(original_peer)
             )
 
-        # Add the mark to the peers if the user passed a Peer (not an int),
-        # or said ID is negative. If it's negative it's been marked already.
-        # Look in the dialogs with the hope to find it.
-        if not self._called_get_dialogs:
-            self._called_get_dialogs = True
-            mark = not isinstance(peer, int) or peer < 0
-            target_id = utils.get_peer_id(peer)
-            if mark:
-                for dialog in self.get_dialogs(100):
-                    if utils.get_peer_id(dialog.entity) == target_id:
-                        return utils.get_input_peer(dialog.entity)
-            else:
-                for dialog in self.get_dialogs(100):
-                    if dialog.entity.id == target_id:
-                        return utils.get_input_peer(dialog.entity)
-
-        raise TypeError(
+        raise ValueError(
             'Could not find the input entity corresponding to "{}". '
-            'Make sure you have encountered this peer before.'.format(peer)
+            'Make sure you have encountered this user/chat/channel before. '
+            'If the peer is in your dialogs call client.get_dialogs().'
+            'If the peer belongs to a chat call client.get_participants().'
+            .format(peer)
         )
 
     def edit_2fa(self, current_password=None, new_password=None, hint='',
