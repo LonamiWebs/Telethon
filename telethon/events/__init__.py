@@ -387,7 +387,7 @@ class NewMessage(_EventBuilder):
             Forwards the message. This is a shorthand for
             ``client.forward_messages(entity, event.message, event.chat)``.
             """
-            kwargs['messages'] = [self.message.id]
+            kwargs['messages'] = self.message.id
             kwargs['from_peer'] = self.input_chat
             return self._client.forward_messages(*args, **kwargs)
 

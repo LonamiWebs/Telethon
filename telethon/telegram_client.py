@@ -819,9 +819,11 @@ class TelegramClient(TelegramBareClient):
                 order for the forward to work.
 
         Returns:
-            The list of forwarded :tl:`Message`.
+            The list of forwarded :tl:`Message`, or a single one if a list
+            wasn't provided as input.
         """
-        if not utils.is_list_like(messages):
+        single = not utils.is_list_like(messages)
+        if single:
             messages = (messages,)
 
         if not from_peer:
@@ -852,7 +854,8 @@ class TelegramClient(TelegramBareClient):
             elif isinstance(update, (UpdateNewMessage, UpdateNewChannelMessage)):
                 id_to_message[update.message.id] = update.message
 
-        return [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+        result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+        return result[0] if single else result
 
     def edit_message(self, entity, message_id, message=None, parse_mode='md',
                      link_preview=True):
@@ -1398,7 +1401,8 @@ class TelegramClient(TelegramBareClient):
             it will be used to determine metadata from audio and video files.
 
         Returns:
-            The :tl:`Message` (or messages) containing the sent file.
+            The :tl:`Message` (or messages) containing the sent file,
+            or messages if a list of them was passed.
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
@@ -2317,13 +2321,11 @@ class TelegramClient(TelegramBareClient):
             error will be raised.
 
         Returns:
-            :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the input
-            entity.
+            :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the
+            input entity. A list will be returned if more than one was given.
         """
-        if utils.is_list_like(entity):
-            single = False
-        else:
-            single = True
+        single = not utils.is_list_like(entity)
+        if single:
             entity = (entity,)
 
         # Group input entities by string (resolve username),
