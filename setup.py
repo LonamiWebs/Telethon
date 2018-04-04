@@ -126,6 +126,11 @@ def main():
 
             license='MIT',
 
+            # See https://stackoverflow.com/a/40300957/4759433
+            # -> https://www.python.org/dev/peps/pep-0345/#requires-python
+            # -> http://setuptools.readthedocs.io/en/latest/setuptools.html
+            python_requires='>=3.4',
+
             # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
             classifiers=[
                 #   3 - Alpha
@@ -139,7 +144,6 @@ def main():
                 'License :: OSI Approved :: MIT License',
 
                 'Programming Language :: Python :: 3',
-                'Programming Language :: Python :: 3.3',
                 'Programming Language :: Python :: 3.4',
                 'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: 3.6'
