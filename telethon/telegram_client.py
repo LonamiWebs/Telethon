@@ -712,6 +712,13 @@ class TelegramClient(TelegramBareClient):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
+        The default parse mode is the same as the official applications
+        (a custom flavour of markdown). ``**bold**, `code` or __italic__``
+        are available. In addition you can send ``[links](https://example.com)``
+        and ``[mentions](@username)`` (or using IDs like in the Bot API:
+        ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
+        backticks.
+
         Args:
             entity (`entity`):
                 To who will it be sent.

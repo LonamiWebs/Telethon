@@ -35,6 +35,10 @@ to, you can make use of the `JoinChannelRequest`__ to join such channel:
 For more on channels, check the `channels namespace`__.
 
 
+__ https://lonamiwebs.github.io/Telethon/methods/channels/join_channel.html
+__ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
+
+
 Joining a private chat or channel
 *********************************
 
@@ -51,6 +55,9 @@ example, is the ``hash`` of the chat or channel. Now you can use
         updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
+__ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
+
+
 Adding someone else to such chat or channel
 *******************************************
 
@@ -63,13 +70,15 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
         # For normal chats
         from telethon.tl.functions.messages import AddChatUserRequest
 
+        # Note that ``user_to_add`` is NOT the name of the parameter.
+        # It's the user you want to add (``user_id=user_to_add``).
         client(AddChatUserRequest(
             chat_id,
             user_to_add,
             fwd_limit=10  # Allow the user to see the 10 last messages
         ))
 
-        # For channels
+        # For channels (which includes megagroups)
         from telethon.tl.functions.channels import InviteToChannelRequest
 
         client(InviteToChannelRequest(
@@ -77,6 +86,9 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
             [users_to_add]
         ))
 
+
+__ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
+__ https://lonamiwebs.github.io/Telethon/methods/channels/invite_to_channel.html
 
 
 Checking a link without joining
@@ -86,14 +98,7 @@ If you don't need to join but rather check whether it's a group or a
 channel, you can use the `CheckChatInviteRequest`__, which takes in
 the hash of said channel or group.
 
-__ https://lonamiwebs.github.io/Telethon/constructors/chat.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channel.html
-__ https://lonamiwebs.github.io/Telethon/types/chat.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/join_channel.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
-__ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/invite_to_channel.html
+
 __ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
 
 
@@ -151,7 +156,7 @@ which may have more information you need (like the role of the
 participants, total count of members, etc.)
 
 __ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
+__ https://lonamiwebs.github.io/Telethon/types/input_channel.html
 __ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
 __ https://github.com/LonamiWebs/Telethon/issues/573
@@ -208,20 +213,88 @@ Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
 
         # User will now be able to change group info, delete other people's
         # messages and pin messages.
-        
-|  Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all
-|  parameters to ``True`` to give a user full permissions, as not all
-|  permissions are related to both broadcast channels/megagroups.
-|
-|  E.g. trying to set ``post_messages=True`` in a megagroup will raise an
-|  error. It is recommended to always use keyword arguments, and to set only
-|  the permissions the user needs. If you don't need to change a permission,
-|  it can be omitted (full list `here`__).
+
+
+.. note::
+
+    Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all
+    parameters to ``True`` to give a user full permissions, as not all
+    permissions are related to both broadcast channels/megagroups.
+
+    E.g. trying to set ``post_messages=True`` in a megagroup will raise an
+    error. It is recommended to always use keyword arguments, and to set only
+    the permissions the user needs. If you don't need to change a permission,
+    it can be omitted (full list `here`__).
+
+
+Restricting Users
+*****************
+
+Similar to how you give or revoke admin permissions, you can edit the
+banned rights of an user through `EditAdminRequest`__ and its parameter
+`ChannelBannedRights`__:
+
+    .. code-block:: python
+
+        from telethon.tl.functions.channels import EditBannedRequest
+        from telethon.tl.types import ChannelBannedRights
+
+        from datetime import datetime, timedelta
+
+        # Restricting an user for 7 days, only allowing view/send messages.
+        #
+        # Note that it's "reversed". You must set to ``True`` the permissions
+        # you want to REMOVE, and leave as ``None`` those you want to KEEP.
+        rights = ChannelBannedRights(
+            until_date=datetime.now() + timedelta(days=7),
+            view_messages=None,
+            send_messages=None,
+            send_media=True,
+            send_stickers=True,
+            send_gifs=True,
+            send_games=True,
+            send_inline=True,
+            embed_links=True
+        )
+
+        # The above is equivalent to
+        rights = ChannelBannedRights(
+            until_date=datetime.now() + timedelta(days=7),
+            send_media=True,
+            send_stickers=True,
+            send_gifs=True,
+            send_games=True,
+            send_inline=True,
+            embed_links=True
+        )
+
+        client(EditBannedRequest(channel, user, rights))
+
+
+Kicking a member
+****************
+
+Telegram doesn't actually have a request to kick an user from a group.
+Instead, you need to restrict them so they can't see messages. Any date
+is enough:
+
+    .. code-block:: python
+
+        from telethon.tl.functions.channels import EditBannedRequest
+        from telethon.tl.types import ChannelBannedRights
+
+        client(EditBannedRequest(channel, user, ChannelBannedRights(
+            until_date=None,
+            view_messages=True
+        )))
+
 
 __ https://lonamiwebs.github.io/Telethon/methods/channels/edit_admin.html
 __ https://github.com/Kyle2142
 __ https://github.com/LonamiWebs/Telethon/issues/490
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_admin_rights.html
+__ https://lonamiwebs.github.io/Telethon/methods/channels/edit_banned.html
+__ https://lonamiwebs.github.io/Telethon/constructors/channel_banned_rights.html
 
 
 Increasing View Count in a Channel
