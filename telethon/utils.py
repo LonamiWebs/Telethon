@@ -91,7 +91,11 @@ def get_input_peer(entity, allow_self=True):
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return entity
     except AttributeError:
-        _raise_cast_fail(entity, 'InputPeer')
+        if hasattr(entity, 'input_entity'):
+            # e.g. custom.Dialog (can't cyclic import)
+            return entity.input_entity
+        else:
+            _raise_cast_fail(entity, 'InputPeer')
 
     if isinstance(entity, User):
         if entity.is_self and allow_self:
@@ -105,7 +109,6 @@ def get_input_peer(entity, allow_self=True):
     if isinstance(entity, (Channel, ChannelForbidden)):
         return InputPeerChannel(entity.id, entity.access_hash or 0)
 
-    # Less common cases
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
 

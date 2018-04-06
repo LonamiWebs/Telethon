@@ -2463,9 +2463,10 @@ class TelegramClient(TelegramBareClient):
         original_peer = peer
         if not isinstance(peer, int):
             try:
-                if peer.SUBCLASS_OF_ID != 0x2d45687:  # crc32(b'Peer')
+                if getattr(peer, 'SUBCLASS_OF_ID', 0) != 0x2d45687:
+                    # 0x2d45687 == crc32(b'Peer')
                     return utils.get_input_peer(peer)
-            except (AttributeError, TypeError):
+            except TypeError:
                 peer = None
 
         if not peer:
