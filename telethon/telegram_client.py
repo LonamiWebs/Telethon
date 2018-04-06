@@ -14,6 +14,7 @@ from io import BytesIO
 from mimetypes import guess_type
 
 from .crypto import CdnDecrypter
+from .tl import TLObject
 from .tl.custom import InputSizedFile
 from .tl.functions.upload import (
     SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
@@ -38,8 +39,7 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError,
-    UsernameNotOccupiedError
+    PhoneNumberOccupiedError, UsernameNotOccupiedError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -2460,19 +2460,12 @@ class TelegramClient(TelegramBareClient):
         if isinstance(peer, str):
             return utils.get_input_peer(self._get_entity_from_string(peer))
 
-        original_peer = peer
-        if not isinstance(peer, int):
-            try:
-                if getattr(peer, 'SUBCLASS_OF_ID', 0) != 0x2d45687:
-                    # 0x2d45687 == crc32(b'Peer')
-                    return utils.get_input_peer(peer)
-            except TypeError:
-                peer = None
-
-        if not peer:
-            raise TypeError(
-                'Cannot turn "{}" into an input entity.'.format(original_peer)
-            )
+        if not isinstance(peer, int) and (not isinstance(peer, TLObject)
+                                          or peer.SUBCLASS_OF_ID != 0x2d45687):
+            # Try casting the object into an input peer. Might TypeError.
+            # Don't do it if a not-found ID was given (instead ValueError).
+            # Also ignore Peer (0x2d45687 == crc32(b'Peer'))'s, lacking hash.
+            return utils.get_input_peer(peer)
 
         raise ValueError(
             'Could not find the input entity corresponding to "{}". '
