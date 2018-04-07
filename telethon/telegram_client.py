@@ -84,7 +84,8 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService, ChatParticipants
+    PhotoSizeEmpty, MessageService, ChatParticipants,
+    ChannelParticipantsBanned, ChannelParticipantsKicked
 )
 from .tl.types.messages import DialogsSlice
 from .tl.types.account import PasswordInputSettings, NoPassword
@@ -1211,7 +1212,12 @@ class TelegramClient(TelegramBareClient):
             or :tl:`ChatParticipants` for normal chats.
         """
         if isinstance(filter, type):
-            filter = filter()
+            if filter in (ChannelParticipantsBanned, ChannelParticipantsKicked,
+                          ChannelParticipantsSearch):
+                # These require a `q` parameter (support types for convenience)
+                filter = filter('')
+            else:
+                filter = filter()
 
         entity = self.get_input_entity(entity)
         if search and (filter or not isinstance(entity, InputPeerChannel)):
