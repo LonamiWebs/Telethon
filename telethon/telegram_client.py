@@ -2185,7 +2185,10 @@ class TelegramClient(TelegramBareClient):
                 for instance ``events.NewMessage``.
         """
         def decorator(f):
-            self._loop.run_until_complete(self.add_event_handler(f, event))
+            if self._loop.is_running():
+                asyncio.ensure_future(self.add_event_handler(f, event))
+            else:
+                self._loop.run_until_complete(self.add_event_handler(f, event))
             return f
 
         return decorator
