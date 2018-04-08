@@ -2,6 +2,8 @@ class RPCError(Exception):
     """Base class for all Remote Procedure Call errors."""
     code = None
     message = None
+    def __reduce__(self):
+        return type(self), ()
 
 
 class InvalidDCError(RPCError):
