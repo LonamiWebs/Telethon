@@ -151,3 +151,13 @@ class UserUpdate(EventBuilder):
         def user(self):
             """Alias around the chat (conversation)."""
             return self.chat
+
+        @property
+        def input_user(self):
+            """Alias around the input chat."""
+            return self.input_chat
+
+        @property
+        def user_id(self):
+            """Alias around `chat_id`."""
+            return self.chat_id

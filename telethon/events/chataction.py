@@ -251,7 +251,7 @@ class ChatAction(EventBuilder):
         @property
         def user(self):
             """
-            The single user that takes part in this action (e.g. joined).
+            The first user that takes part in this action (e.g. joined).
 
             Might be ``None`` if the information can't be retrieved or
             there is no user taking part.
@@ -266,6 +266,14 @@ class ChatAction(EventBuilder):
             """
             if self.input_users:
                 return self._input_users[0]
+
+        @property
+        def user_id(self):
+            """
+            Returns the marked signed ID of the first user, if any.
+            """
+            if self.input_users:
+                return utils.get_peer_id(self._input_users[0])
 
         @property
         def users(self):
@@ -311,3 +319,11 @@ class ChatAction(EventBuilder):
                     except (TypeError, ValueError):
                         pass
             return self._input_users
+
+        @property
+        def user_ids(self):
+            """
+            Returns the marked signed ID of the users, if any.
+            """
+            if self.input_users:
+                return [utils.get_peer_id(u) for u in self._input_users]

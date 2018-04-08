@@ -259,6 +259,14 @@ class NewMessage(EventBuilder):
             return self._sender
 
         @property
+        def sender_id(self):
+            """
+            Returns the marked sender integer ID, if present.
+            """
+            if self.input_sender:
+                return utils.get_peer_id(self._input_sender)
+
+        @property
         def text(self):
             """
             The message text, markdown-formatted.

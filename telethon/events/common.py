@@ -192,6 +192,14 @@ class EventCommon(abc.ABC):
 
         return self._chat
 
+    @property
+    def chat_id(self):
+        """
+        Returns the marked integer ID of the chat, if any.
+        """
+        if self._chat_peer:
+            return utils.get_peer_id(self._chat_peer)
+
     def __str__(self):
         return TLObject.pretty_format(self.to_dict())
 
