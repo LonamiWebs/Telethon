@@ -97,7 +97,7 @@ class MessageRead(EventBuilder):
             was read instead checking if it's in here.
             """
             if self._messages is None:
-                chat = self.input_chat
+                chat = await self.input_chat
                 if not chat:
                     self._messages = []
                 elif isinstance(chat, types.InputPeerChannel):

@@ -164,7 +164,7 @@ class ChatAction(EventBuilder):
             Responds to the chat action message (not as a reply).
             Shorthand for ``client.send_message(event.chat, ...)``.
             """
-            return await self._client.send_message(self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat, *args, **kwargs)
 
         async def reply(self, *args, **kwargs):
             """
@@ -177,7 +177,7 @@ class ChatAction(EventBuilder):
                 return self.respond(*args, **kwargs)
 
             kwargs['reply_to'] = self.action_message.id
-            return await self._client.send_message(self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat, *args, **kwargs)
 
         async def delete(self, *args, **kwargs):
             """
@@ -189,7 +189,7 @@ class ChatAction(EventBuilder):
             Does nothing if no message action triggered this event.
             """
             if self.action_message:
-                return await self._client.delete_messages(self.input_chat,
+                return await self._client.delete_messages(await self.input_chat,
                                                           [self.action_message],
                                                           *args, **kwargs)
 
@@ -202,7 +202,7 @@ class ChatAction(EventBuilder):
             if self._pinned_message == 0:
                 return None
 
-            if isinstance(self._pinned_message, int) and self.input_chat:
+            if isinstance(self._pinned_message, int) and await self.input_chat:
                 r = await self._client(functions.channels.GetMessagesRequest(
                     self._input_chat, [
                         types.InputMessageID(self._pinned_message)

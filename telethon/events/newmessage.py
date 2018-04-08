@@ -158,7 +158,7 @@ class NewMessage(EventBuilder):
             Responds to the message (not as a reply). This is a shorthand for
             ``client.send_message(event.chat, ...)``.
             """
-            return await self._client.send_message(self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat, *args, **kwargs)
 
         async def reply(self, *args, **kwargs):
             """
@@ -166,7 +166,7 @@ class NewMessage(EventBuilder):
             ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
             """
             kwargs['reply_to'] = self.message.id
-            return await self._client.send_message(self.input_chat, *args, **kwargs)
+            return await self._client.send_message(await self.input_chat, *args, **kwargs)
 
         async def forward_to(self, *args, **kwargs):
             """
@@ -174,7 +174,7 @@ class NewMessage(EventBuilder):
             ``client.forward_messages(entity, event.message, event.chat)``.
             """
             kwargs['messages'] = self.message.id
-            kwargs['from_peer'] = self.input_chat
+            kwargs['from_peer'] = await self.input_chat
             return await self._client.forward_messages(*args, **kwargs)
 
         async def edit(self, *args, **kwargs):
@@ -194,7 +194,7 @@ class NewMessage(EventBuilder):
                 if self.message.to_id.user_id != me.user_id:
                     return None
 
-            return await self._client.edit_message(self.input_chat,
+            return await self._client.edit_message(await self.input_chat,
                                                    self.message,
                                                    *args, **kwargs)
 
@@ -205,7 +205,7 @@ class NewMessage(EventBuilder):
             This is a shorthand for
             ``client.delete_messages(event.chat, event.message, ...)``.
             """
-            return await self._client.delete_messages(self.input_chat,
+            return await self._client.delete_messages(await self.input_chat,
                                                       [self.message],
                                                       *args, **kwargs)
 
@@ -232,7 +232,7 @@ class NewMessage(EventBuilder):
                     self._sender, self._input_sender = await self._get_entity(
                         self.message.id,
                         self.message.from_id,
-                        chat=self.input_chat
+                        chat=await self.input_chat
                     )
 
             return self._input_sender
@@ -295,9 +295,9 @@ class NewMessage(EventBuilder):
                 return None
 
             if self._reply_message is None:
-                if isinstance(self.input_chat, types.InputPeerChannel):
+                if isinstance(await self.input_chat, types.InputPeerChannel):
                     r = await self._client(functions.channels.GetMessagesRequest(
-                        self.input_chat, [
+                        await self.input_chat, [
                             types.InputMessageID(self.message.reply_to_msg_id)
                         ]
                     ))
