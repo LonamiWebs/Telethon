@@ -4,23 +4,25 @@ from threading import Event
 
 
 class TLObject:
-    def __init__(self, rpc_error=None, result=None, content_related=False):
-        self.rpc_error = rpc_error
-        self.result = result
+    def __init__(self):
+        self.rpc_error = None
+        self.result = None
 
-        # These should be overrode.
-        # Only requests/functions/queries are content related.
-        self.content_related = content_related
-
+        # These should be overrode
+        self.content_related = False  # Only requests/functions/queries are
         self._set_event()
 
     def _set_event(self):
         self.confirm_received = Event()
 
-    def __reduce__(self):
-        return (type(self), (self.rpc_error,
-                             self.result,
-                             self.content_related))
+    def __getstate__(self):
+        new_dct = dict(self.__dict__)
+        del new_dct["confirm_received"]
+        return new_dct
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self._set_event()
 
     # These should not be overrode
     @staticmethod
