@@ -20,7 +20,7 @@ Joining a public channel
 ************************
 
 Once you have the :ref:`entity <entities>` of the channel you want to join
-to, you can make use of the `JoinChannelRequest`__ to join such channel:
+to, you can make use of the :tl:`JoinChannelRequest` to join such channel:
 
     .. code-block:: python
 
@@ -35,7 +35,6 @@ to, you can make use of the `JoinChannelRequest`__ to join such channel:
 For more on channels, check the `channels namespace`__.
 
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/join_channel.html
 __ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
 
 
@@ -47,7 +46,7 @@ If all you have is a link like this one:
 enough information to join! The part after the
 ``https://t.me/joinchat/``, this is, ``AAAAAFFszQPyPEZ7wgxLtd`` on this
 example, is the ``hash`` of the chat or channel. Now you can use
-`ImportChatInviteRequest`__ as follows:
+:tl:`ImportChatInviteRequest` as follows:
 
     .. code-block:: python
 
@@ -55,15 +54,12 @@ example, is the ``hash`` of the chat or channel. Now you can use
         updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
-__ https://lonamiwebs.github.io/Telethon/methods/messages/import_chat_invite.html
-
-
 Adding someone else to such chat or channel
 *******************************************
 
 If you don't want to add yourself, maybe because you're already in,
-you can always add someone else with the `AddChatUserRequest`__, which
-use is very straightforward, or `InviteToChannelRequest`__ for channels:
+you can always add someone else with the :tl:`AddChatUserRequest`, which
+use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
 
     .. code-block:: python
 
@@ -87,19 +83,12 @@ use is very straightforward, or `InviteToChannelRequest`__ for channels:
         ))
 
 
-__ https://lonamiwebs.github.io/Telethon/methods/messages/add_chat_user.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/invite_to_channel.html
-
-
 Checking a link without joining
 *******************************
 
 If you don't need to join but rather check whether it's a group or a
-channel, you can use the `CheckChatInviteRequest`__, which takes in
+channel, you can use the :tl:`CheckChatInviteRequest`, which takes in
 the hash of said channel or group.
-
-
-__ https://lonamiwebs.github.io/Telethon/methods/messages/check_chat_invite.html
 
 
 Retrieving all chat members (channels too)
@@ -113,11 +102,11 @@ Most of the time you will just need ``client.get_participants(entity)``.
 This is what said method is doing behind the scenes as an example.
 
 In order to get all the members from a mega-group or channel, you need
-to use `GetParticipantsRequest`__. As we can see it needs an
-`InputChannel`__, (passing the mega-group or channel you're going to
-use will work), and a mandatory `ChannelParticipantsFilter`__. The
+to use :tl:`GetParticipantsRequest`. As we can see it needs an
+:tl:`InputChannel`, (passing the mega-group or channel you're going to
+use will work), and a mandatory :tl:`ChannelParticipantsFilter`. The
 closest thing to "no filter" is to simply use
-`ChannelParticipantsSearch`__ with an empty ``'q'`` string.
+:tl:`ChannelParticipantsSearch` with an empty ``'q'`` string.
 
 If we want to get *all* the members, we need to use a moving offset and
 a fixed limit:
@@ -151,34 +140,28 @@ a fixed limit:
     Refer to `issue 573`__ for more on this.
 
 
-Note that ``GetParticipantsRequest`` returns `ChannelParticipants`__,
+Note that :tl:`GetParticipantsRequest` returns :tl:`ChannelParticipants`,
 which may have more information you need (like the role of the
 participants, total count of members, etc.)
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_participants.html
-__ https://lonamiwebs.github.io/Telethon/types/input_channel.html
-__ https://lonamiwebs.github.io/Telethon/types/channel_participants_filter.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channel_participants_search.html
 __ https://github.com/LonamiWebs/Telethon/issues/573
-__ https://lonamiwebs.github.io/Telethon/constructors/channels/channel_participants.html
 
 
 Recent Actions
 **************
 
 "Recent actions" is simply the name official applications have given to
-the "admin log". Simply use `GetAdminLogRequest`__ for that, and
+the "admin log". Simply use :tl:`GetAdminLogRequest` for that, and
 you'll get AdminLogResults.events in return which in turn has the final
 `.action`__.
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/get_admin_log.html
 __ https://lonamiwebs.github.io/Telethon/types/channel_admin_log_event_action.html
 
 
 Admin Permissions
 *****************
 
-Giving or revoking admin permissions can be done with the `EditAdminRequest`__:
+Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`:
 
     .. code-block:: python
 
@@ -231,8 +214,8 @@ Restricting Users
 *****************
 
 Similar to how you give or revoke admin permissions, you can edit the
-banned rights of an user through `EditAdminRequest`__ and its parameter
-`ChannelBannedRights`__:
+banned rights of an user through :tl:`EditAdminRequest` and its parameter
+:tl:`ChannelBannedRights`:
 
     .. code-block:: python
 
@@ -289,12 +272,9 @@ is enough:
         )))
 
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/edit_admin.html
 __ https://github.com/Kyle2142
 __ https://github.com/LonamiWebs/Telethon/issues/490
 __ https://lonamiwebs.github.io/Telethon/constructors/channel_admin_rights.html
-__ https://lonamiwebs.github.io/Telethon/methods/channels/edit_banned.html
-__ https://lonamiwebs.github.io/Telethon/constructors/channel_banned_rights.html
 
 
 Increasing View Count in a Channel
@@ -302,7 +282,7 @@ Increasing View Count in a Channel
 
 It has been asked `quite`__ `a few`__ `times`__ (really, `many`__), and
 while I don't understand why so many people ask this, the solution is to
-use `GetMessagesViewsRequest`__, setting ``increment=True``:
+use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
 
     .. code-block:: python
 
@@ -326,4 +306,3 @@ __ https://github.com/LonamiWebs/Telethon/issues/233
 __ https://github.com/LonamiWebs/Telethon/issues/305
 __ https://github.com/LonamiWebs/Telethon/issues/409
 __ https://github.com/LonamiWebs/Telethon/issues/447
-__ https://lonamiwebs.github.io/Telethon/methods/messages/get_messages_views.html

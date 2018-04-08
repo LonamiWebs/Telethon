@@ -52,7 +52,7 @@ Doing stuff
   client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
   client.download_profile_photo('me')
-  messages = client.get_message_history('username')
+  messages = client.get_messages('username')
   client.download_media(messages[0])
 
 
