@@ -272,8 +272,8 @@ class ChatAction(EventBuilder):
             """
             Returns the marked signed ID of the first user, if any.
             """
-            if self.input_users:
-                return utils.get_peer_id(self._input_users[0])
+            if self._user_peers:
+                return utils.get_peer_id(self._user_peers[0])
 
         @property
         def users(self):
@@ -325,5 +325,5 @@ class ChatAction(EventBuilder):
             """
             Returns the marked signed ID of the users, if any.
             """
-            if self.input_users:
-                return [utils.get_peer_id(u) for u in self._input_users]
+            if self._user_peers:
+                return [utils.get_peer_id(u) for u in self._user_peers]
