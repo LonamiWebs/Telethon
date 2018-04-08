@@ -58,6 +58,11 @@ Many other common methods for quick scripts are also available:
         # Note that you can use 'me' or 'self' to message yourself
         await client.send_message('username', 'Hello World from Telethon!')
 
+        # .send_message's parse mode defaults to markdown, so you
+        # can use **bold**, __italics__, [links](https://example.com), `code`,
+        # and even [mentions](@username)/[mentions](tg://user?id=123456789)
+        await client.send_message('username', '**Using** __markdown__ `too`!')
+
         await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
         # The utils package has some goodies, like .get_display_name()
@@ -83,15 +88,16 @@ a single line.
 Available methods
 *****************
 
-This page lists all the "handy" methods available for you to use in the
-``TelegramClient`` class. These are simply wrappers around the "raw"
-Telegram API, making it much more manageable and easier to work with.
+The :ref:`reference <telethon-package>` lists all the "handy" methods
+available for you to use in the ``TelegramClient`` class. These are simply
+wrappers around the "raw" Telegram API, making it much more manageable and
+easier to work with.
 
 Please refer to :ref:`accessing-the-full-api` if these aren't enough,
 and don't be afraid to read the source code of the InteractiveTelegramClient_
 or even the TelegramClient_ itself to learn how it works.
 
-To see the methods available in the client, see :ref:`telethon-package`.
+See the mentioned :ref:`telethon-package` to find the available methods.
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py
 .. _TelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon/telegram_client.py

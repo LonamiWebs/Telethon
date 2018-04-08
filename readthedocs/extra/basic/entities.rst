@@ -20,6 +20,13 @@ in response to certain methods, such as :tl:`GetUsersRequest`.
     or even entire :tl:`User`, :tl:`Chat` and :tl:`Channel` objects and even
     phone numbers from people you have in your contacts.
 
+    To "encounter" an ID, you would have to "find it" like you would in the
+    normal app. If the peer is in your dialogs, you would need to
+    `client.get_dialogs() <telethon.telegram_client.TelegramClient.get_dialogs>`.
+    If the peer is someone in a group, you would similarly
+    `client.get_participants(group) <telethon.telegram_client.TelegramClient.get_participants>`.
+
+
 Getting entities
 ****************
 

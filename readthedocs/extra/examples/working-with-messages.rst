@@ -51,7 +51,7 @@ too, if that's all you have.
 Searching Messages
 *******************
 
-Messages are searched through the obvious SearchRequest_, but you may run
+Messages are searched through the obvious :tl:`SearchRequest`, but you may run
 into issues_. A valid example would be:
 
     .. code-block:: python
@@ -75,7 +75,7 @@ into issues_. A valid example would be:
         ))
 
 It's important to note that the optional parameter ``from_id`` could have
-been omitted (defaulting to ``None``). Changing it to InputUserEmpty_, as one
+been omitted (defaulting to ``None``). Changing it to :tl:`InputUserEmpty`, as one
 could think to specify "no user", won't work because this parameter is a flag,
 and it being unspecified has a different meaning.
 
@@ -128,7 +128,4 @@ send yourself the very first sticker you have:
         ))
 
 
-.. _ForwardMessagesRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_messages.html
-.. _SearchRequest: https://lonamiwebs.github.io/Telethon/methods/messages/search.html
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215
-.. _InputUserEmpty: https://lonamiwebs.github.io/Telethon/constructors/input_user_empty.html

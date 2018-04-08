@@ -14,6 +14,7 @@ from io import BytesIO
 from mimetypes import guess_type
 
 from .crypto import CdnDecrypter
+from .tl import TLObject
 from .tl.custom import InputSizedFile
 from .tl.functions.upload import (
     SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
@@ -38,8 +39,7 @@ from .errors import (
     RPCError, UnauthorizedError, PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
-    PhoneNumberOccupiedError, EmailUnconfirmedError, PasswordEmptyError,
-    UsernameNotOccupiedError
+    PhoneNumberOccupiedError, UsernameNotOccupiedError
 )
 from .network import ConnectionMode
 from .tl.custom import Draft, Dialog
@@ -84,7 +84,8 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService, ChatParticipants
+    PhotoSizeEmpty, MessageService, ChatParticipants,
+    ChannelParticipantsBanned, ChannelParticipantsKicked
 )
 from .tl.types.messages import DialogsSlice
 from .tl.types.account import PasswordInputSettings, NoPassword
@@ -354,7 +355,14 @@ class TelegramClient(TelegramBareClient):
             me = await self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
-        print('Signed in successfully as', utils.get_display_name(me))
+        signed, name = 'Signed in successfully as', utils.get_display_name(me)
+        try:
+            print(signed, name)
+        except UnicodeEncodeError:
+            # Some terminals don't support certain characters
+            print(signed, name.encode('utf-8', errors='ignore')
+                              .decode('ascii', errors='ignore'))
+
         await self._check_events_pending_resolve()
         return self
 
@@ -712,6 +720,13 @@ class TelegramClient(TelegramBareClient):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
+        The default parse mode is the same as the official applications
+        (a custom flavour of markdown). ``**bold**, `code` or __italic__``
+        are available. In addition you can send ``[links](https://example.com)``
+        and ``[mentions](@username)`` (or using IDs like in the Bot API:
+        ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
+        backticks.
+
         Args:
             entity (`entity`):
                 To who will it be sent.
@@ -820,9 +835,11 @@ class TelegramClient(TelegramBareClient):
                 order for the forward to work.
 
         Returns:
-            The list of forwarded :tl:`Message`.
+            The list of forwarded :tl:`Message`, or a single one if a list
+            wasn't provided as input.
         """
-        if not utils.is_list_like(messages):
+        single = not utils.is_list_like(messages)
+        if single:
             messages = (messages,)
 
         if not from_peer:
@@ -853,7 +870,8 @@ class TelegramClient(TelegramBareClient):
             elif isinstance(update, (UpdateNewMessage, UpdateNewChannelMessage)):
                 id_to_message[update.message.id] = update.message
 
-        return [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+        result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+        return result[0] if single else result
 
     async def edit_message(self, entity, message_id, message=None,
                            parse_mode='md', link_preview=True):
@@ -1205,7 +1223,12 @@ class TelegramClient(TelegramBareClient):
             or :tl:`ChatParticipants` for normal chats.
         """
         if isinstance(filter, type):
-            filter = filter()
+            if filter in (ChannelParticipantsBanned, ChannelParticipantsKicked,
+                          ChannelParticipantsSearch):
+                # These require a `q` parameter (support types for convenience)
+                filter = filter('')
+            else:
+                filter = filter()
 
         entity = await self.get_input_entity(entity)
         if search and (filter or not isinstance(entity, InputPeerChannel)):
@@ -1404,7 +1427,8 @@ class TelegramClient(TelegramBareClient):
             it will be used to determine metadata from audio and video files.
 
         Returns:
-            The :tl:`Message` (or messages) containing the sent file.
+            The :tl:`Message` (or messages) containing the sent file,
+            or messages if a list of them was passed.
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
@@ -2255,8 +2279,10 @@ class TelegramClient(TelegramBareClient):
         if event and not isinstance(event, type):
             event = type(event)
 
-        for i, ec in enumerate(self._event_builders):
-            ev, cb = ec
+        i = len(self._event_builders)
+        while i:
+            i -= 1
+            ev, cb = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
                 del self._event_builders[i]
                 found += 1
@@ -2313,13 +2339,11 @@ class TelegramClient(TelegramBareClient):
             error will be raised.
 
         Returns:
-            :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the input
-            entity.
+            :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the
+            input entity. A list will be returned if more than one was given.
         """
-        if utils.is_list_like(entity):
-            single = False
-        else:
-            single = True
+        single = not utils.is_list_like(entity)
+        if single:
             entity = (entity,)
 
         # Group input entities by string (resolve username),
@@ -2443,18 +2467,12 @@ class TelegramClient(TelegramBareClient):
         if isinstance(peer, str):
             return utils.get_input_peer(await self._get_entity_from_string(peer))
 
-        original_peer = peer
-        if not isinstance(peer, int):
-            try:
-                if peer.SUBCLASS_OF_ID != 0x2d45687:  # crc32(b'Peer')
-                    return utils.get_input_peer(peer)
-            except (AttributeError, TypeError):
-                peer = None
-
-        if not peer:
-            raise TypeError(
-                'Cannot turn "{}" into an input entity.'.format(original_peer)
-            )
+        if not isinstance(peer, int) and (not isinstance(peer, TLObject)
+                                          or peer.SUBCLASS_OF_ID != 0x2d45687):
+            # Try casting the object into an input peer. Might TypeError.
+            # Don't do it if a not-found ID was given (instead ValueError).
+            # Also ignore Peer (0x2d45687 == crc32(b'Peer'))'s, lacking hash.
+            return utils.get_input_peer(peer)
 
         raise ValueError(
             'Could not find the input entity corresponding to "{}". '

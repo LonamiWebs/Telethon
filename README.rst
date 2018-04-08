@@ -65,7 +65,7 @@ if you're new with ``asyncio``.
   await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
   await client.download_profile_photo('me')
-  messages = await client.get_message_history('username')
+  messages = await client.get_messages('username')
   await client.download_media(messages[0])
 
 
