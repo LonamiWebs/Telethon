@@ -229,7 +229,7 @@ class NewMessage(EventBuilder):
                     )
                 except (ValueError, TypeError):
                     # We can rely on self.input_chat for this
-                    self._sender, self._input_sender = self._get_entity(
+                    self._sender, self._input_sender = await self._get_entity(
                         self.message.id,
                         self.message.from_id,
                         chat=self.input_chat
