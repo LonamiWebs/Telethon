@@ -2276,8 +2276,10 @@ class TelegramClient(TelegramBareClient):
         if event and not isinstance(event, type):
             event = type(event)
 
-        for i, ec in enumerate(self._event_builders):
-            ev, cb = ec
+        i = len(self._event_builders)
+        while i:
+            i -= 1
+            ev, cb = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
                 del self._event_builders[i]
                 found += 1
