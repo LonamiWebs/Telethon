@@ -268,12 +268,12 @@ class ChatAction(EventBuilder):
                 return self._input_users[0]
 
         @property
-        async def user_id(self):
+        def user_id(self):
             """
             Returns the marked signed ID of the first user, if any.
             """
-            if await self.input_users:
-                return utils.get_peer_id(self._input_users[0])
+            if self._user_peers:
+                return utils.get_peer_id(self._user_peers[0])
 
         @property
         async def users(self):
@@ -321,9 +321,9 @@ class ChatAction(EventBuilder):
             return self._input_users
 
         @property
-        async def user_ids(self):
+        def user_ids(self):
             """
             Returns the marked signed ID of the users, if any.
             """
-            if await self.input_users:
-                return [utils.get_peer_id(u) for u in self._input_users]
+            if self._user_peers:
+                return [utils.get_peer_id(u) for u in self._user_peers]
