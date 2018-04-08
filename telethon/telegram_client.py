@@ -356,7 +356,14 @@ class TelegramClient(TelegramBareClient):
             me = self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
-        print('Signed in successfully as', utils.get_display_name(me))
+        signed, name = 'Signed in successfully as', utils.get_display_name(me)
+        try:
+            print(signed, name)
+        except UnicodeEncodeError:
+            # Some terminals don't support certain characters
+            print(signed, name.encode('utf-8', errors='ignore')
+                              .decode('ascii', errors='ignore'))
+
         self._check_events_pending_resolve()
         return self
 
