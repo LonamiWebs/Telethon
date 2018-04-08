@@ -8,8 +8,9 @@ class TLObject:
         self.rpc_error = rpc_error
         self.result = result
 
-        # These should be overrode
-        self.content_related = content_related  # Only requests/functions/queries are
+        # These should be overrode.
+        # Only requests/functions/queries are content related.
+        self.content_related = content_related
 
         self._set_event()
 
