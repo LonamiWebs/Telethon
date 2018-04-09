@@ -2200,17 +2200,16 @@ class TelegramClient(TelegramBareClient):
 
     # region Event handling
 
-    def on(self, event):
+    def on(self, event, *args, **kwargs):
         """
         Decorator helper method around add_event_handler().
-
         Args:
             event (`_EventBuilder` | `type`):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
         """
         def decorator(f):
-            self.add_event_handler(f, event)
+            self.add_event_handler(f, *args, event=event, **kwargs)
             return f
 
         return decorator
@@ -2222,12 +2221,12 @@ class TelegramClient(TelegramBareClient):
             self._events_pending_resolve.clear()
 
     def _on_handler(self, update):
-        for builder, callback in self._event_builders:
+        for builder, callback, args, kwargs in self._event_builders:
             event = builder.build(update)
             if event:
                 event._client = self
                 try:
-                    callback(event)
+                    callback(event, *args, **kwargs)
                 except events.StopPropagation:
                     __log__.debug(
                         "Event handler '{}' stopped chain of "
@@ -2236,18 +2235,15 @@ class TelegramClient(TelegramBareClient):
                     )
                     break
 
-    def add_event_handler(self, callback, event=None):
+    def add_event_handler(self, callback, *args, event=None, **kwargs):
         """
         Registers the given callback to be called on the specified event.
-
         Args:
             callback (`callable`):
                 The callable function accepting one parameter to be used.
-
             event (`_EventBuilder` | `type`, optional):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
-
                 If left unspecified, ``events.Raw`` (the ``Update`` objects
                 with no further processing) will be passed instead.
         """
@@ -2270,12 +2266,11 @@ class TelegramClient(TelegramBareClient):
         else:
             self._events_pending_resolve.append(event)
 
-        self._event_builders.append((event, callback))
+        self._event_builders.append((event, callback, args, kwargs))
 
     def remove_event_handler(self, callback, event=None):
         """
         Inverse operation of :meth:`add_event_handler`.
-
         If no event is given, all events for this callback are removed.
         Returns how many callbacks were removed.
         """
@@ -2286,7 +2281,7 @@ class TelegramClient(TelegramBareClient):
         i = len(self._event_builders)
         while i:
             i -= 1
-            ev, cb = self._event_builders[i]
+            ev, cb, args, kwargs = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
                 del self._event_builders[i]
                 found += 1
@@ -2298,7 +2293,7 @@ class TelegramClient(TelegramBareClient):
         Lists all added event handlers, returning a list of pairs
         consisting of (callback, event).
         """
-        return [(callback, event) for event, callback in self._event_builders]
+        return [(callback, event) for event, callback, args, kwargs in self._event_builders]
 
     def add_update_handler(self, handler):
         warnings.warn(
