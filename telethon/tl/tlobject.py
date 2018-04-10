@@ -152,6 +152,9 @@ class TLObject:
 
     def __str__(self):
         return TLObject.pretty_format(self)
+    
+    def __repr__(self):
+        return TLObject.pretty_format(self, indent=1)
 
     def stringify(self):
         return TLObject.pretty_format(self, indent=0)
