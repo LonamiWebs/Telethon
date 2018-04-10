@@ -297,7 +297,14 @@ class TelegramClient(TelegramBareClient):
                              'must only provide one of either')
 
         if not self.is_connected():
-            self.connect()
+            connected = self.connect()
+            while connected is not True:
+                print("Couldn't establish a connection to Telegram's servers. Check your connection. Trying again...")
+                connected2 = self.connect()
+                if connected2 is True:
+                    break
+                else:
+                    continue
 
         if self.is_user_authorized():
             self._check_events_pending_resolve()
