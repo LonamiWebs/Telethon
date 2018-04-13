@@ -84,7 +84,7 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService, ChatParticipants,
+    PhotoSizeEmpty, MessageService, ChatParticipants, User,
     ChannelParticipantsBanned, ChannelParticipantsKicked
 )
 from .tl.types.messages import DialogsSlice
@@ -2358,7 +2358,8 @@ class TelegramClient(TelegramBareClient):
             x if isinstance(x, str) else self.get_input_entity(x)
             for x in entity
         ]
-        users = [x for x in inputs if isinstance(x, InputPeerUser)]
+        users = [x for x in inputs
+                 if isinstance(x, (InputPeerUser, InputPeerSelf))]
         chats = [x.chat_id for x in inputs if isinstance(x, InputPeerChat)]
         channels = [x for x in inputs if isinstance(x, InputPeerChannel)]
         if users:
@@ -2385,7 +2386,12 @@ class TelegramClient(TelegramBareClient):
         # username changes.
         result = [
             self._get_entity_from_string(x) if isinstance(x, str)
-            else id_entity[utils.get_peer_id(x)]
+            else (
+                id_entity[utils.get_peer_id(x)]
+                if not isinstance(x, InputPeerSelf)
+                else next(u for u in id_entity.values()
+                          if isinstance(u, User) and u.is_self)
+            )
             for x in inputs
         ]
         return result[0] if single else result
