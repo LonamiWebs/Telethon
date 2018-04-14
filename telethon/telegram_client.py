@@ -494,6 +494,7 @@ class TelegramClient(TelegramBareClient):
 
         self.disconnect()
         self.session.delete()
+        self._authorized = False
         return True
 
     def get_me(self, input_peer=False):
