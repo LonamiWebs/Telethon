@@ -47,7 +47,8 @@ IMPORT_DEPTH = 2
 
 def gen_tl(force=True):
     from telethon_generator.tl_generator import TLGenerator
-    from telethon_generator.error_generator import generate_code
+    # TODO Generate errors again
+    #from telethon_generator.error_generator import generate_code
     generator = TLGenerator(GENERATOR_DIR)
     if generator.tlobjects_exist():
         if not force:
@@ -58,7 +59,7 @@ def gen_tl(force=True):
     print('Generating TLObjects...')
     generator.generate_tlobjects(SCHEME_TL, import_depth=IMPORT_DEPTH)
     print('Generating errors...')
-    generate_code(ERROR_LIST, json_file=ERRORS_JSON, errors_desc=ERRORS_DESC)
+    #generate_code(ERROR_LIST, json_file=ERRORS_JSON, errors_desc=ERRORS_DESC)
     print('Done.')
 
 
