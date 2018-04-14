@@ -1,7 +1,8 @@
 import json
+import re
 from collections import defaultdict
 
-import re
+from ..utils import snake_to_camel_case
 
 # Core base classes depending on the integer error code
 KNOWN_BASE_CLASSES = {
@@ -45,13 +46,8 @@ def _get_class_name(error_code):
             error_code, 'RPCError' + str(error_code).replace('-', 'Neg')
         )
 
-    if 'FIRSTNAME' in error_code:
-        error_code = error_code.replace('FIRSTNAME', 'FIRST_NAME')
-
-    result = re.sub(
-        r'_([a-z])', lambda m: m.group(1).upper(), error_code.lower()
-    )
-    return result[:1].upper() + result[1:].replace('_', '') + 'Error'
+    return snake_to_camel_case(error_code.replace('FIRSTNAME', 'FIRST_NAME'),
+                               suffix='Error')
 
 
 class Error:

@@ -1,6 +1,8 @@
 import re
 from zlib import crc32
 
+from ..utils import snake_to_camel_case
+
 CORE_TYPES = (
     0xbc799737,  # boolFalse#bc799737 = Bool;
     0x997275b5,  # boolTrue#997275b5 = Bool;
@@ -31,6 +33,7 @@ class TLObject:
         self.args = args
         self.result = result
         self.is_function = is_function
+        self.id = None
         if object_id is None:
             self.id = self.infer_id()
         else:
@@ -38,20 +41,8 @@ class TLObject:
             assert self.id == self.infer_id(),\
                 'Invalid inferred ID for ' + repr(self)
 
-    def class_name(self):
-        """Gets the class name following the Python style guidelines"""
-        return self.class_name_for(self.name, self.is_function)
-
-    @staticmethod
-    def class_name_for(typename, is_function=False):
-        """Gets the class name following the Python style guidelines"""
-        # Courtesy of http://stackoverflow.com/a/31531797/4759433
-        result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), typename)
-        result = result[:1].upper() + result[1:].replace('_', '')
-        # If it's a function, let it end with "Request" to identify them
-        if is_function:
-            result += 'Request'
-        return result
+        self.class_name = snake_to_camel_case(
+            self.name, suffix='Request' if self.is_function else '')
 
     def sorted_args(self):
         """Returns the arguments properly sorted and ready to plug-in
@@ -62,11 +53,10 @@ class TLObject:
                       key=lambda x: x.is_flag or x.can_be_inferred)
 
     def __repr__(self, ignore_id=False):
-        if getattr(self, 'id', None) is None or ignore_id:
+        if self.id is None or ignore_id:
             hex_id = ''
         else:
-            # Skip 0x and add 0's for padding
-            hex_id = '#' + hex(self.id)[2:].rjust(8, '0')
+            hex_id = '#{:08x}'.format(self.id)
 
         if self.args:
             args = ' ' + ' '.join([repr(arg) for arg in self.args])
@@ -89,25 +79,6 @@ class TLObject:
             representation
         )
         return crc32(representation.encode('ascii'))
-
-    def __str__(self):
-        # Some arguments are not valid for being represented,
-        # such as the flag indicator or generic definition
-        # (these have no explicit values until used)
-        valid_args = [arg for arg in self.args
-                      if not arg.flag_indicator and not arg.generic_definition]
-
-        args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
-
-        # Since Python's default representation for lists is using repr(),
-        # we need to str() manually on every item
-        args_format = ', '.join(
-            ['str(self.{})'.format(arg.name) if not arg.is_vector else
-             'None if not self.{0} else [str(_) for _ in self.{0}]'.format(
-                 arg.name) for arg in valid_args])
-
-        return ("'({} (ID: {}) = ({}))'.format({})"
-                .format(self.fullname, hex(self.id), args, args_format))
 
 
 class TLArg:
