@@ -46,8 +46,8 @@ def _get_class_name(error_code):
             error_code, 'RPCError' + str(error_code).replace('-', 'Neg')
         )
 
-    return snake_to_camel_case(error_code.replace('FIRSTNAME', 'FIRST_NAME'),
-                               suffix='Error')
+    return snake_to_camel_case(
+        error_code.replace('FIRSTNAME', 'FIRST_NAME').lower(), suffix='Error')
 
 
 class Error:
