@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 import os
 import re
-import sys
 import shutil
-try:
-    from .docs_writer import DocsWriter
-except (ImportError, SystemError):
-    from docs_writer import DocsWriter
 
-# Small trick so importing telethon_generator works
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from telethon_generator.parser import TLParser, TLObject
+from ..docs_writer import DocsWriter
+from ..parsers import TLObject
 
 
 # TLObject -> Python class name
@@ -245,7 +238,7 @@ def copy_replace(src, dst, replacements):
         ))
 
 
-def generate_documentation(scheme_file):
+def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     """Generates the documentation HTML files from from scheme.tl to
        /methods and /constructors, etc.
     """
@@ -259,9 +252,8 @@ def generate_documentation(scheme_file):
         'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
     }
-    tlobjects = tuple(TLParser.parse_file(scheme_file))
-
-    print('Generating constructors and functions documentation...')
+    original_paths = {k: os.path.join(output_dir, v)
+                      for k, v in original_paths.items()}
 
     # Save 'Type: [Constructors]' for use in both:
     # * Seeing the return type or constructors belonging to the same type.
@@ -281,6 +273,7 @@ def generate_documentation(scheme_file):
     for tltype, constructors in tltypes.items():
         tltypes[tltype] = list(sorted(constructors, key=lambda c: c.name))
 
+    # TODO Fix the fact that get_create_path_for doesn't know about out_dir
     for tlobject in tlobjects:
         filename = get_create_path_for(tlobject)
 
@@ -396,7 +389,6 @@ def generate_documentation(scheme_file):
 
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
-    print('Generating types documentation...')
     for tltype, constructors in tltypes.items():
         filename = get_path_for_type(tltype)
         out_dir = os.path.dirname(filename)
@@ -519,12 +511,10 @@ def generate_documentation(scheme_file):
     # This will be done automatically and not taking into account any extra
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
-    print('Generating indices...')
     for folder in ['types', 'methods', 'constructors']:
         generate_index(folder, original_paths)
 
     # Write the final core index, the main index for the rest of files
-    layer = TLParser.find_layer(scheme_file)
     types = set()
     methods = []
     constructors = []
@@ -566,8 +556,9 @@ def generate_documentation(scheme_file):
     type_urls = fmt(types, get_path_for_type)
     constructor_urls = fmt(constructors, get_create_path_for)
 
-    shutil.copy('../res/404.html', original_paths['404'])
-    copy_replace('../res/core.html', original_paths['index_all'], {
+    shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
+    copy_replace(os.path.join(input_res, 'core.html'),
+                 original_paths['index_all'], {
         '{type_count}': len(types),
         '{method_count}': len(methods),
         '{constructor_count}': len(tlobjects) - len(methods),
@@ -576,7 +567,8 @@ def generate_documentation(scheme_file):
     os.makedirs(os.path.abspath(os.path.join(
         original_paths['search.js'], os.path.pardir
     )), exist_ok=True)
-    copy_replace('../res/js/search.js', original_paths['search.js'], {
+    copy_replace(os.path.join(input_res, 'js', 'search.js'),
+                 original_paths['search.js'], {
         '{request_names}': request_names,
         '{type_names}': type_names,
         '{constructor_names}': constructor_names,
@@ -585,23 +577,16 @@ def generate_documentation(scheme_file):
         '{constructor_urls}': constructor_urls
     })
 
-    # Everything done
-    print('Documentation generated.')
+
+def _copy_resources(res_dir, out_dir):
+    for dirname, files in [('css', ['docs.css']), ('img', ['arrow.svg'])]:
+        dirpath = os.path.join(out_dir, dirname)
+        os.makedirs(dirpath, exist_ok=True)
+        for file in files:
+            shutil.copy(os.path.join(res_dir, dirname, file), dirpath)
 
 
-def copy_resources():
-    for d in ('css', 'img'):
-        os.makedirs(d, exist_ok=True)
-
-    shutil.copy('../res/img/arrow.svg', 'img')
-    shutil.copy('../res/css/docs.css', 'css')
-
-
-if __name__ == '__main__':
-    os.makedirs('generated', exist_ok=True)
-    os.chdir('generated')
-    try:
-        generate_documentation('../../telethon_generator/scheme.tl')
-        copy_resources()
-    finally:
-        os.chdir(os.pardir)
+def generate_docs(tlobjects, errors, layer, input_res, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+    _write_html_pages(tlobjects, errors, layer, input_res, output_dir)
+    _copy_resources(input_res, output_dir)
