@@ -19,87 +19,20 @@ AUTO_CASTS = {
     'InputPhoto': 'utils.get_input_photo({})'
 }
 
+BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
+              'int256', 'double', 'Bool', 'true', 'date')
 
-def generate_tlobjects(tlobjects, layer, output_dir):
-    def get_file(*paths):
-        return os.path.join(output_dir, *paths)
 
-    # First ensure that the required parent directories exist
-    os.makedirs(get_file('functions'), exist_ok=True)
-    os.makedirs(get_file('types'), exist_ok=True)
-
-    # Step 1: Group everything by {namespace: [tlobjects]} so we can
-    # easily generate __init__.py files with all the TLObjects on them.
-    namespace_functions = defaultdict(list)
-    namespace_types = defaultdict(list)
-
-    # Make use of this iteration to also store 'Type: [Constructors]',
-    # used when generating the documentation for the classes.
-    type_constructors = defaultdict(list)
-    for tlobject in tlobjects:
-        if tlobject.is_function:
-            namespace_functions[tlobject.namespace].append(tlobject)
-        else:
-            namespace_types[tlobject.namespace].append(tlobject)
-            type_constructors[tlobject.result].append(tlobject)
-
-    # Step 2: Generate the actual code
-    import_depth = 2
-    _write_init_py(
-        get_file('functions'), import_depth,
-        namespace_functions, type_constructors
-    )
-    _write_init_py(
-        get_file('types'), import_depth,
-        namespace_types, type_constructors
-    )
-
-    # Step 4: Once all the objects have been generated,
-    #         we can now group them in a single file
-    filename = os.path.join(get_file('all_tlobjects.py'))
-    with open(filename, 'w', encoding='utf-8') as file,\
-            SourceBuilder(file) as builder:
-        builder.writeln(AUTO_GEN_NOTICE)
-        builder.writeln()
-
-        builder.writeln('from . import types, functions')
-        builder.writeln()
-
-        # Create a constant variable to indicate which layer this is
-        builder.writeln('LAYER = {}', layer)
-        builder.writeln()
-
-        # Then create the dictionary containing constructor_id: class
-        builder.writeln('tlobjects = {')
-        builder.current_indent += 1
-
-        # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
-        for tlobject in tlobjects:
-            builder.write('{:#010x}: ', tlobject.id)
-            builder.write('functions' if tlobject.is_function else 'types')
-            if tlobject.namespace:
-                builder.write('.' + tlobject.namespace)
-
-            builder.writeln('.{},', tlobject.class_name)
-
-        builder.current_indent -= 1
-        builder.writeln('}')
-
-def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
+def _write_modules(out_dir, depth, namespace_tlobjects, type_constructors):
     # namespace_tlobjects: {'namespace', [TLObject]}
     os.makedirs(out_dir, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
-        file = os.path.join(out_dir, ns + '.py' if ns else '__init__.py')
-        with open(file, 'w', encoding='utf-8') as f, \
+        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
+        with open(file, 'w', encoding='utf-8') as f,\
                 SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            # Both types and functions inherit from the TLObject class
-            # so they all can be serialized and sent, however, only the
-            # functions are "content_related".
-            builder.writeln(
-                'from {}.tl.tlobject import TLObject', '.' * depth
-            )
+            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
 
@@ -182,9 +115,7 @@ def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
 
             # Generate the class for every TLObject
             for t in tlobjects:
-                _write_source_code(
-                    t, builder, depth, type_constructors
-                )
+                _write_source_code(t, builder, type_constructors)
                 builder.current_indent = 0
 
             # Write the type definitions generated earlier.
@@ -193,7 +124,7 @@ def _write_init_py(out_dir, depth, namespace_tlobjects, type_constructors):
                 builder.writeln(line)
 
 
-def _write_source_code(tlobject, builder, depth, type_constructors):
+def _write_source_code(tlobject, builder, type_constructors):
     """
     Writes the source code corresponding to the given TLObject
     by making use of the ``builder`` `SourceBuilder`.
@@ -202,6 +133,15 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
     the ``Type: [Constructors]`` must be given for proper
     importing and documentation strings.
     """
+    _write_class_init(tlobject, type_constructors, builder)
+    _write_resolve(tlobject, builder)
+    _write_to_dict(tlobject, builder)
+    _write_to_bytes(tlobject, builder)
+    _write_from_reader(tlobject, builder)
+    _write_on_response(tlobject, builder)
+
+
+def _write_class_init(tlobject, type_constructors, builder):
     builder.writeln()
     builder.writeln()
     builder.writeln('class {}(TLObject):', tlobject.class_name)
@@ -212,42 +152,18 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
                     crc32(tlobject.result.encode('ascii')))
     builder.writeln()
 
-    # Flag arguments must go last
-    args = [
-        a for a in tlobject.sorted_args()
-        if not a.flag_indicator and not a.generic_definition
-    ]
-
     # Convert the args to string parameters, flags having =None
-    args = [
-        (a.name if not a.is_flag and not a.can_be_inferred
-         else '{}=None'.format(a.name))
-        for a in args
-    ]
+    args = [(a.name if not a.is_flag and not a.can_be_inferred
+             else '{}=None'.format(a.name)) for a in tlobject.real_args]
 
     # Write the __init__ function
-    if args:
-        builder.writeln('def __init__(self, {}):', ', '.join(args))
-    else:
-        builder.writeln('def __init__(self):')
-
-    # Now update args to have the TLObject arguments, _except_
-    # those which are calculated on send or ignored, this is
-    # flag indicator and generic definitions.
-    #
-    # We don't need the generic definitions in Python
-    # because arguments can be any type
-    args = [arg for arg in tlobject.args
-            if not arg.flag_indicator and
-            not arg.generic_definition]
-
-    if args:
+    builder.writeln('def __init__({}):', ', '.join(['self'] + args))
+    if tlobject.real_args:
         # Write the docstring, to know the type of the args
         builder.writeln('"""')
-        for arg in args:
+        for arg in tlobject.real_args:
             if not arg.flag_indicator:
-                builder.writeln(':param {} {}:',
-                                arg.doc_type_hint(), arg.name)
+                builder.writeln(':param {} {}:', arg.type_hint(), arg.name)
                 builder.current_indent -= 1  # It will auto-indent (':')
 
         # We also want to know what type this request returns
@@ -274,23 +190,20 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
     # Functions have a result object and are confirmed by default
     if tlobject.is_function:
         builder.writeln('self.result = None')
-        builder.writeln(
-            'self.content_related = True')
+        builder.writeln('self.content_related = True')
 
     # Set the arguments
-    if args:
-        # Leave an empty line if there are any args
+    if tlobject.real_args:
         builder.writeln()
 
-    for arg in args:
+    for arg in tlobject.real_args:
         if not arg.can_be_inferred:
             builder.writeln('self.{0} = {0}  # type: {1}',
-                            arg.name, arg.python_type_hint())
-            continue
+                            arg.name, arg.type_hint())
 
         # Currently the only argument that can be
         # inferred are those called 'random_id'
-        if arg.name == 'random_id':
+        elif arg.name == 'random_id':
             # Endianness doesn't really matter, and 'big' is shorter
             code = "int.from_bytes(os.urandom({}), 'big', signed=True)" \
                 .format(8 if arg.type == 'long' else 4)
@@ -298,8 +211,8 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
             if arg.is_vector:
                 # Currently for the case of "messages.forwardMessages"
                 # Ensure we can infer the length from id:Vector<>
-                if not next(
-                        a for a in args if a.name == 'id').is_vector:
+                if not next(a for a in tlobject.real_args
+                            if a.name == 'id').is_vector:
                     raise ValueError(
                         'Cannot infer list of random ids for ', tlobject
                     )
@@ -314,28 +227,35 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
 
     builder.end_block()
 
-    # Write the resolve(self, client, utils) method
-    if any(arg.type in AUTO_CASTS for arg in args):
+
+def _write_resolve(tlobject, builder):
+    if any(arg.type in AUTO_CASTS for arg in tlobject.real_args):
         builder.writeln('def resolve(self, client, utils):')
-        for arg in args:
+        for arg in tlobject.real_args:
             ac = AUTO_CASTS.get(arg.type, None)
-            if ac:
-                _write_self_assign(builder, arg, ac)
+            if not ac:
+                continue
+            if arg.is_vector:
+                builder.write('self.{0} = [{1} for _x in self.{0}]',
+                              arg.name, ac.format('_x'))
+            else:
+                builder.write('self.{} = {}', arg.name,
+                              ac.format('self.' + arg.name))
+            builder.writeln(' if self.{} else None'.format(arg.name)
+                            if arg.is_flag else '')
         builder.end_block()
 
-    # Write the to_dict(self) method
+
+def _write_to_dict(tlobject, builder):
     builder.writeln('def to_dict(self):')
     builder.writeln('return {')
     builder.current_indent += 1
 
-    base_types = ('string', 'bytes', 'int', 'long', 'int128',
-                  'int256', 'double', 'Bool', 'true', 'date')
-
     builder.write("'_': '{}'", tlobject.class_name)
-    for arg in args:
+    for arg in tlobject.real_args:
         builder.writeln(',')
         builder.write("'{}': ", arg.name)
-        if arg.type in base_types:
+        if arg.type in BASE_TYPES:
             if arg.is_vector:
                 builder.write('[] if self.{0} is None else self.{0}[:]',
                               arg.name)
@@ -360,7 +280,8 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
 
     builder.end_block()
 
-    # Write the .__bytes__() function
+
+def _write_to_bytes(tlobject, builder):
     builder.writeln('def __bytes__(self):')
 
     # Some objects require more than one flag parameter to be set
@@ -390,82 +311,52 @@ def _write_source_code(tlobject, builder, depth, type_constructors):
     builder.writeln('{},', repr(struct.pack('<I', tlobject.id)))
 
     for arg in tlobject.args:
-        if write_to_bytes(builder, arg, tlobject.args):
+        if _write_arg_to_bytes(builder, arg, tlobject.args):
             builder.writeln(',')
 
     builder.current_indent -= 1
     builder.writeln('))')
     builder.end_block()
 
-    # Write the static from_reader(reader) function
-    builder.writeln('@staticmethod')
-    builder.writeln('def from_reader(reader):')
+
+def _write_from_reader(tlobject, builder):
+    builder.writeln('@classmethod')
+    builder.writeln('def from_reader(cls, reader):')
     for arg in tlobject.args:
-        write_read_code(
-            builder, arg, tlobject.args, name='_' + arg.name
-        )
+        _write_arg_read_code(builder, arg, tlobject.args, name='_' + arg.name)
 
-    builder.writeln(
-        'return {}({})',
-        tlobject.class_name,
-        ', '.join(
-            '{0}=_{0}'.format(a.name) for a in tlobject.sorted_args()
-            if not a.flag_indicator and not a.generic_definition
-        )
-    )
+    builder.writeln('return cls({})', ', '.join(
+        '{0}=_{0}'.format(a.name) for a in tlobject.real_args))
 
+
+def _write_on_response(tlobject, builder):
     # Only requests can have a different response that's not their
     # serialized body, that is, we'll be setting their .result.
     #
     # The default behaviour is reading a TLObject too, so no need
     # to override it unless necessary.
-    if tlobject.is_function and not _is_boxed(tlobject.result):
-        builder.end_block()
-        builder.writeln('def on_response(self, reader):')
-        write_request_result_code(builder, tlobject)
+    if not tlobject.is_function:
+        return
 
-
-def _is_boxed(type_):
     # https://core.telegram.org/mtproto/serialize#boxed-and-bare-types
     # TL;DR; boxed types start with uppercase always, so we can use
     # this to check whether everything in it is boxed or not.
     #
-    # The API always returns a boxed type, but it may inside a Vector<>
-    # or a namespace, and the Vector may have a not-boxed type. For this
-    # reason we find whatever index, '<' or '.'. If neither are present
-    # we will get -1, and the 0th char is always upper case thus works.
-    # For Vector types and namespaces, it will check in the right place.
-    check_after = max(type_.find('<'), type_.find('.'))
-    return type_[check_after + 1].isupper()
+    # Currently only un-boxed responses are Vector<int>/Vector<long>.
+    # If this weren't the case, we should check upper case after
+    # max(index('<'), index('.')) (and if it is, it's boxed, so return).
+    m = re.match(r'Vector<(int|long)>', tlobject.result)
+    if not m:
+        return
+
+    builder.end_block()
+    builder.writeln('def on_response(self, reader):')
+    builder.writeln('reader.read_int()  # Vector ID')
+    builder.writeln('self.result = [reader.read_{}() '
+                    'for _ in range(reader.read_int())]', m.group(1))
 
 
-def _write_self_assign(builder, arg, get_input_code):
-    """Writes self.arg = input.format(self.arg), considering vectors."""
-    if arg.is_vector:
-        builder.write('self.{0} = [{1} for _x in self.{0}]',
-                      arg.name, get_input_code.format('_x'))
-    else:
-        builder.write('self.{} = {}',
-                      arg.name, get_input_code.format('self.' + arg.name))
-
-    builder.writeln(
-        ' if self.{} else None'.format(arg.name) if arg.is_flag else ''
-    )
-
-
-def get_file_name(tlobject, add_extension=False):
-    """Gets the file name in file_name_format.py for the given TLObject"""
-
-    # Courtesy of http://stackoverflow.com/a/1176023/4759433
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', tlobject.name)
-    result = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-    if add_extension:
-        return result + '.py'
-    else:
-        return result
-
-
-def write_to_bytes(builder, arg, args, name=None):
+def _write_arg_to_bytes(builder, arg, args, name=None):
     """
     Writes the .__bytes__() code for the given argument
     :param builder: The source code builder
@@ -514,7 +405,7 @@ def write_to_bytes(builder, arg, args, name=None):
         # Also disable .is_flag since it's not needed per element
         old_flag = arg.is_flag
         arg.is_vector = arg.is_flag = False
-        write_to_bytes(builder, arg, args, name='x')
+        _write_arg_to_bytes(builder, arg, args, name='x')
         arg.is_vector = True
         arg.is_flag = old_flag
 
@@ -579,7 +470,7 @@ def write_to_bytes(builder, arg, args, name=None):
     return True  # Something was written
 
 
-def write_read_code(builder, arg, args, name):
+def _write_arg_read_code(builder, arg, args, name):
     """
     Writes the read code for the given argument, setting the
     arg.name variable to its read value.
@@ -621,7 +512,7 @@ def write_read_code(builder, arg, args, name):
         builder.writeln('for _ in range(reader.read_int()):')
         # Temporary disable .is_vector, not to enter this if again
         arg.is_vector = False
-        write_read_code(builder, arg, args, name='_x')
+        _write_arg_read_code(builder, arg, args, name='_x')
         builder.writeln('{}.append(_x)', name)
         arg.is_vector = True
 
@@ -698,32 +589,61 @@ def write_read_code(builder, arg, args, name):
         arg.is_flag = True
 
 
-def write_request_result_code(builder, tlobject):
-    """
-    Writes the receive code for the given function
+def _write_all_tlobjects(tlobjects, layer, builder):
+    builder.writeln(AUTO_GEN_NOTICE)
+    builder.writeln()
 
-    :param builder: The source code builder
-    :param tlobject: The TLObject for which the 'self.result = '
-                     will be written
-    """
-    if tlobject.result.startswith('Vector<'):
-        # Vector results are a bit special since they can also be composed
-        # of integer values and such; however, the result of requests is
-        # not parsed as arguments are and it's a bit harder to tell which
-        # is which.
-        if tlobject.result == 'Vector<int>':
-            builder.writeln('reader.read_int()  # Vector ID')
-            builder.writeln('count = reader.read_int()')
-            builder.writeln(
-                'self.result = [reader.read_int() for _ in range(count)]'
-            )
-        elif tlobject.result == 'Vector<long>':
-            builder.writeln('reader.read_int()  # Vector ID')
-            builder.writeln('count = reader.read_long()')
-            builder.writeln(
-                'self.result = [reader.read_long() for _ in range(count)]'
-            )
+    builder.writeln('from . import types, functions')
+    builder.writeln()
+
+    # Create a constant variable to indicate which layer this is
+    builder.writeln('LAYER = {}', layer)
+    builder.writeln()
+
+    # Then create the dictionary containing constructor_id: class
+    builder.writeln('tlobjects = {')
+    builder.current_indent += 1
+
+    # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
+    for tlobject in tlobjects:
+        builder.write('{:#010x}: ', tlobject.id)
+        builder.write('functions' if tlobject.is_function else 'types')
+        if tlobject.namespace:
+            builder.write('.' + tlobject.namespace)
+
+        builder.writeln('.{},', tlobject.class_name)
+
+    builder.current_indent -= 1
+    builder.writeln('}')
+
+
+def generate_tlobjects(tlobjects, layer, output_dir):
+    def get_file(*paths):
+        return os.path.join(output_dir, *paths)
+
+    os.makedirs(get_file('functions'), exist_ok=True)
+    os.makedirs(get_file('types'), exist_ok=True)
+
+    # Group everything by {namespace: [tlobjects]} to generate __init__.py
+    namespace_functions = defaultdict(list)
+    namespace_types = defaultdict(list)
+
+    # Group {type: [constructors]} to generate the documentation
+    type_constructors = defaultdict(list)
+    for tlobject in tlobjects:
+        if tlobject.is_function:
+            namespace_functions[tlobject.namespace].append(tlobject)
         else:
-            builder.writeln('self.result = reader.tgread_vector()')
-    else:
-        builder.writeln('self.result = reader.tgread_object()')
+            namespace_types[tlobject.namespace].append(tlobject)
+            type_constructors[tlobject.result].append(tlobject)
+
+    import_depth = 2
+    _write_modules(get_file('functions'), import_depth,
+                   namespace_functions, type_constructors)
+    _write_modules(get_file('types'), import_depth,
+                   namespace_types, type_constructors)
+
+    filename = os.path.join(get_file('all_tlobjects.py'))
+    with open(filename, 'w', encoding='utf-8') as file:
+        with SourceBuilder(file) as builder:
+            _write_all_tlobjects(tlobjects, layer, builder)

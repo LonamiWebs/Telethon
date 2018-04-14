@@ -44,6 +44,9 @@ class TLObject:
         self.class_name = snake_to_camel_case(
             self.name, suffix='Request' if self.is_function else '')
 
+        self.real_args = list(a for a in self.sorted_args() if not
+                              (a.flag_indicator or a.generic_definition))
+
     def sorted_args(self):
         """Returns the arguments properly sorted and ready to plug-in
            into a Python's method header (i.e., flags and those which
@@ -154,25 +157,7 @@ class TLArg:
 
         self.generic_definition = generic_definition
 
-    def doc_type_hint(self):
-        result = {
-            'int': 'int',
-            'long': 'int',
-            'int128': 'int',
-            'int256': 'int',
-            'string': 'str',
-            'date': 'datetime.datetime | None',  # None date = 0 timestamp
-            'bytes': 'bytes',
-            'true': 'bool',
-        }.get(self.type, self.type)
-        if self.is_vector:
-            result = 'list[{}]'.format(result)
-        if self.is_flag and self.type != 'date':
-            result += ' | None'
-
-        return result
-
-    def python_type_hint(self):
+    def type_hint(self):
         type = self.type
         if '.' in type:
             type = type.split('.')[1]
