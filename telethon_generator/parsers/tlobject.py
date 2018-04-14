@@ -1,100 +1,42 @@
 import re
 from zlib import crc32
 
+CORE_TYPES = (
+    0xbc799737,  # boolFalse#bc799737 = Bool;
+    0x997275b5,  # boolTrue#997275b5 = Bool;
+    0x3fedd339,  # true#3fedd339 = True;
+    0x1cb5c415,  # vector#1cb5c415 {t:Type} # [ t ] = Vector t;
+)
+
 
 class TLObject:
-    """.tl core types IDs (such as vector, booleans, etc.)"""
-    CORE_TYPES = (
-        0xbc799737,  # boolFalse#bc799737 = Bool;
-        0x997275b5,  # boolTrue#997275b5 = Bool;
-        0x3fedd339,  # true#3fedd339 = True;
-        0x1cb5c415,  # vector#1cb5c415 {t:Type} # [ t ] = Vector t;
-    )
-
     def __init__(self, fullname, object_id, args, result, is_function):
         """
         Initializes a new TLObject, given its properties.
-        Usually, this will be called from `from_tl` instead
+
         :param fullname: The fullname of the TL object (namespace.name)
-                         The namespace can be omitted
+                         The namespace can be omitted.
         :param object_id: The hexadecimal string representing the object ID
         :param args: The arguments, if any, of the TL object
         :param result: The result type of the TL object
         :param is_function: Is the object a function or a type?
         """
         # The name can or not have a namespace
+        self.fullname = fullname
         if '.' in fullname:
-            self.namespace = fullname.split('.')[0]
-            self.name = fullname.split('.')[1]
+            self.namespace, self.name = fullname.split('.', maxsplit=1)
         else:
-            self.namespace = None
-            self.name = fullname
+            self.namespace, self.name = None, fullname
 
         self.args = args
         self.result = result
         self.is_function = is_function
-
-        # The ID should be an hexadecimal string or None to be inferred
         if object_id is None:
             self.id = self.infer_id()
         else:
             self.id = int(object_id, base=16)
             assert self.id == self.infer_id(),\
                 'Invalid inferred ID for ' + repr(self)
-
-    @staticmethod
-    def from_tl(tl, is_function):
-        """Returns a TL object from the given TL scheme line"""
-
-        # Regex to match the whole line
-        match = re.match(r'''
-            ^                  # We want to match from the beginning to the end
-            ([\w.]+)           # The .tl object can contain alpha_name or namespace.alpha_name
-            (?:
-                \#             # After the name, comes the ID of the object
-                ([0-9a-f]+)    # The constructor ID is in hexadecimal form
-            )?                 # If no constructor ID was given, CRC32 the 'tl' to determine it
-
-            (?:\s              # After that, we want to match its arguments (name:type)
-                {?             # For handling the start of the '{X:Type}' case
-                \w+            # The argument name will always be an alpha-only name
-                :              # Then comes the separator between name:type
-                [\w\d<>#.?!]+  # The type is slightly more complex, since it's alphanumeric and it can
-                               # also have Vector<type>, flags:# and flags.0?default, plus :!X as type
-                }?             # For handling the end of the '{X:Type}' case
-            )*                 # Match 0 or more arguments
-            \s                 # Leave a space between the arguments and the equal
-            =
-            \s                 # Leave another space between the equal and the result
-            ([\w\d<>#.?]+)     # The result can again be as complex as any argument type
-            ;$                 # Finally, the line should always end with ;
-            ''', tl, re.IGNORECASE | re.VERBOSE)
-
-        if match is None:
-            # Probably "vector#1cb5c415 {t:Type} # [ t ] = Vector t;"
-            raise ValueError('Cannot parse TLObject', tl)
-
-        # Sub-regex to match the arguments (sadly, it cannot be embedded in the first regex)
-        args_match = re.findall(r'''
-            ({)?             # We may or may not capture the opening brace
-            (\w+)            # First we capture any alpha name with length 1 or more
-            :                # Which is separated from its type by a colon
-            ([\w\d<>#.?!]+)  # The type is slightly more complex, since it's alphanumeric and it can
-                             # also have Vector<type>, flags:# and flags.0?default, plus :!X as type
-            (})?             # We may or not capture the closing brace
-            ''', tl, re.IGNORECASE | re.VERBOSE)
-
-        # Retrieve the matched arguments
-        args = [TLArg(name, arg_type, brace != '')
-                for brace, name, arg_type, _ in args_match]
-
-        # And initialize the TLObject
-        return TLObject(
-            fullname=match.group(1),
-            object_id=match.group(2),
-            args=args,
-            result=match.group(3),
-            is_function=is_function)
 
     def class_name(self):
         """Gets the class name following the Python style guidelines"""
@@ -119,15 +61,7 @@ class TLObject:
         return sorted(self.args,
                       key=lambda x: x.is_flag or x.can_be_inferred)
 
-    def is_core_type(self):
-        """Determines whether the TLObject is a "core type"
-           (and thus should be embedded in the generated code) or not"""
-        return self.id in TLObject.CORE_TYPES
-
     def __repr__(self, ignore_id=False):
-        fullname = ('{}.{}'.format(self.namespace, self.name)
-                    if self.namespace is not None else self.name)
-
         if getattr(self, 'id', None) is None or ignore_id:
             hex_id = ''
         else:
@@ -139,12 +73,10 @@ class TLObject:
         else:
             args = ''
 
-        return '{}{}{} = {}'.format(fullname, hex_id, args, self.result)
+        return '{}{}{} = {}'.format(self.fullname, hex_id, args, self.result)
 
     def infer_id(self):
         representation = self.__repr__(ignore_id=True)
-
-        # Clean the representation
         representation = representation\
             .replace(':bytes ', ':string ')\
             .replace('?bytes ', '?string ')\
@@ -159,24 +91,23 @@ class TLObject:
         return crc32(representation.encode('ascii'))
 
     def __str__(self):
-        fullname = ('{}.{}'.format(self.namespace, self.name)
-                    if self.namespace is not None else self.name)
-
-        # Some arguments are not valid for being represented, such as the flag indicator or generic definition
+        # Some arguments are not valid for being represented,
+        # such as the flag indicator or generic definition
         # (these have no explicit values until used)
         valid_args = [arg for arg in self.args
                       if not arg.flag_indicator and not arg.generic_definition]
 
         args = ', '.join(['{}={{}}'.format(arg.name) for arg in valid_args])
 
-        # Since Python's default representation for lists is using repr(), we need to str() manually on every item
+        # Since Python's default representation for lists is using repr(),
+        # we need to str() manually on every item
         args_format = ', '.join(
             ['str(self.{})'.format(arg.name) if not arg.is_vector else
              'None if not self.{0} else [str(_) for _ in self.{0}]'.format(
                  arg.name) for arg in valid_args])
 
         return ("'({} (ID: {}) = ({}))'.format({})"
-                .format(fullname, hex(self.id), args, args_format))
+                .format(self.fullname, hex(self.id), args, args_format))
 
 
 class TLArg:
@@ -188,10 +119,7 @@ class TLArg:
         :param generic_definition: Is the argument a generic definition?
                                    (i.e. {X:Type})
         """
-        if name == 'self':  # This very only name is restricted
-            self.name = 'is_self'
-        else:
-            self.name = name
+        self.name = 'is_self' if name == 'self' else name
 
         # Default values
         self.is_vector = False
@@ -217,7 +145,8 @@ class TLArg:
             self.type = arg_type.lstrip('!')
 
             # The type may be a flag (flags.IDX?REAL_TYPE)
-            # Note that 'flags' is NOT the flags name; this is determined by a previous argument
+            # Note that 'flags' is NOT the flags name; this
+            # is determined by a previous argument
             # However, we assume that the argument will always be called 'flags'
             flag_match = re.match(r'flags.(\d+)\?([\w<>.]+)', self.type)
             if flag_match:
@@ -317,48 +246,70 @@ class TLArg:
             return '{}:{}'.format(self.name, real_type)
 
     def __repr__(self):
-        # Get rid of our special type
-        return str(self)\
-            .replace(':date', ':int')\
-            .replace('?date', '?int')
+        return str(self).replace(':date', ':int').replace('?date', '?int')
+
+
+def _from_line(line, is_function):
+    match = re.match(
+        r'^([\w.]+)'                     # 'name'
+        r'(?:#([0-9a-fA-F]+))?'          # '#optionalcode'
+        r'(?:\s{?\w+:[\w\d<>#.?!]+}?)*'  # '{args:.0?type}'
+        r'\s=\s'                         # ' = '
+        r'([\w\d<>#.?]+);$',             # '<result.type>;'
+        line
+    )
+    if match is None:
+        # Probably "vector#1cb5c415 {t:Type} # [ t ] = Vector t;"
+        raise ValueError('Cannot parse TLObject {}'.format(line))
+
+    args_match = re.findall(
+        r'({)?'
+        r'(\w+)'
+        r':'
+        r'([\w\d<>#.?!]+)'
+        r'}?',
+        line
+    )
+    return TLObject(
+        fullname=match.group(1),
+        object_id=match.group(2),
+        result=match.group(3),
+        is_function=is_function,
+        args=[TLArg(name, arg_type, brace != '')
+              for brace, name, arg_type in args_match]
+    )
 
 
 def parse_tl(file_path, ignore_core=False):
-    """This method yields TLObjects from a given .tl file"""
-
+    """This method yields TLObjects from a given .tl file."""
     with open(file_path, encoding='utf-8') as file:
-        # Start by assuming that the next found line won't
-        # be a function (and will hence be a type)
         is_function = False
-
-        # Read all the lines from the .tl file
         for line in file:
-            # Strip comments from the line
             comment_index = line.find('//')
             if comment_index != -1:
                 line = line[:comment_index]
 
             line = line.strip()
-            if line:
-                # Check whether the line is a type change
-                # (types <-> functions) or not
-                match = re.match('---(\w+)---', line)
-                if match:
-                    following_types = match.group(1)
-                    is_function = following_types == 'functions'
+            if not line:
+                continue
 
-                else:
-                    try:
-                        result = TLObject.from_tl(line, is_function)
-                        if not ignore_core or not result.is_core_type():
-                            yield result
-                    except ValueError as e:
-                        if 'vector#1cb5c415' not in str(e):
-                            raise
+            match = re.match('---(\w+)---', line)
+            if match:
+                following_types = match.group(1)
+                is_function = following_types == 'functions'
+                continue
+
+            try:
+                result = _from_line(line, is_function)
+                if not ignore_core or result.id not in CORE_TYPES:
+                    yield result
+            except ValueError as e:
+                if 'vector#1cb5c415' not in str(e):
+                    raise
 
 
 def find_layer(file_path):
-    """Finds the layer used on the specified scheme.tl file"""
+    """Finds the layer used on the specified scheme.tl file."""
     layer_regex = re.compile(r'^//\s*LAYER\s*(\d+)$')
     with open(file_path, encoding='utf-8') as file:
         for line in file:
