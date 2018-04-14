@@ -3,12 +3,6 @@
 telethon\.events package
 ========================
 
-.. automodule:: telethon.events
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 Every event (builder) subclasses `telethon.events.common.EventBuilder`,
 so all the methods in it can be used from any event builder/event instance.
 
@@ -17,8 +11,6 @@ so all the methods in it can be used from any event builder/event instance.
     :undoc-members:
     :show-inheritance:
 
-
-Below all the event types are listed:
 
 .. automodule:: telethon.events.newmessage
     :members:
@@ -54,3 +46,9 @@ Below all the event types are listed:
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. automodule:: telethon.events
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

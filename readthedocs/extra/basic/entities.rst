@@ -26,6 +26,12 @@ in response to certain methods, such as :tl:`GetUsersRequest`.
     If the peer is someone in a group, you would similarly
     `client.get_participants(group) <telethon.telegram_client.TelegramClient.get_participants>`.
 
+    Once you have encountered an ID, the library will (by default) have saved
+    their ``access_hash`` for you, which is needed to invoke most methods.
+    This is why sometimes you might encounter this error when working with
+    the library. You should ``except ValueError`` and run code that you know
+    should work to find the entity.
+
 
 Getting entities
 ****************
@@ -125,3 +131,21 @@ library, the raw requests you make to the API are also able to call
 The library will call the ``.resolve()`` method of the request, which will
 resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if
 you don't get this yet, but remember some of the details here are important.
+
+
+Full entities
+*************
+
+In addition to :tl:`PeerUser`, :tl:`InputPeerUser`, :tl:`User` (and its
+variants for chats and channels), there is also the concept of :tl:`UserFull`.
+
+This full variant has additional information such as whether the user is
+blocked, its notification settings, the bio or about of the user, etc.
+
+There is also :tl:`messages.ChatFull` which is the equivalent of full entities
+for chats and channels, with also the about section of the channel. Note that
+the ``users`` field only contains bots for the channel (so that clients can
+suggest commands to use).
+
+You can get both of these by invoking :tl:`GetFullUser`, :tl:`GetFullChat`
+and :tl:`GetFullChannel` respectively.

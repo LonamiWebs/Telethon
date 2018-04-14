@@ -727,6 +727,10 @@ class TelegramClient(TelegramBareClient):
         ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
         backticks.
 
+        Sending a ``/start`` command with a parameter (like ``?start=data``)
+        is also done through this method. Simply send ``'/start data'`` to
+        the bot.
+
         Args:
             entity (`entity`):
                 To who will it be sent.
@@ -1118,6 +1122,9 @@ class TelegramClient(TelegramBareClient):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
+
+        This effectively marks a message as read (or more than one) in the
+        given conversation.
 
         Args:
             entity (`entity`):
@@ -1868,6 +1875,10 @@ class TelegramClient(TelegramBareClient):
         """
         Downloads the given media, or the media from a specified Message.
 
+        Note that if the download is too slow, you should consider installing
+        ``cryptg`` (through ``pip install cryptg``) so that decrypting the
+        received data is done in C instead of Python (much faster).
+
         message (:tl:`Message` | :tl:`Media`):
             The media or message containing the media that will be downloaded.
 
@@ -2489,10 +2500,9 @@ class TelegramClient(TelegramBareClient):
             return utils.get_input_peer(peer)
 
         raise ValueError(
-            'Could not find the input entity corresponding to "{}". '
-            'Make sure you have encountered this user/chat/channel before. '
-            'If the peer is in your dialogs call client.get_dialogs().'
-            'If the peer belongs to a chat call client.get_participants().'
+            'Could not find the input entity for "{}". Please read https://'
+            'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
+            'find out more details.'
             .format(peer)
         )
 
