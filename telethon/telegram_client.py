@@ -1247,11 +1247,14 @@ class TelegramClient(TelegramBareClient):
 
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
-            total = self(GetFullChannelRequest(
-                entity
-            )).full_chat.participants_count
-            if _total:
-                _total[0] = total
+            if _total or (aggressive and not filter):
+                total = self(GetFullChannelRequest(
+                    entity
+                )).full_chat.participants_count
+                if _total:
+                    _total[0] = total
+            else:
+                total = 0
 
             if limit == 0:
                 return
