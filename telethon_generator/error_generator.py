@@ -1,9 +1,6 @@
 import json
 import re
-import urllib.request
 from collections import defaultdict
-
-URL = 'https://rpc.pwrtelegram.xyz/?all'
 
 known_base_classes = {
     303: 'InvalidDCError',
@@ -23,26 +20,6 @@ known_codes = {
     'AUTH_KEY_UNREGISTERED': 401,
     'USER_DEACTIVATED': 401
 }
-
-
-def fetch_errors(output, url=URL):
-    print('Opening a connection to', url, '...')
-    r = urllib.request.urlopen(urllib.request.Request(
-        url, headers={'User-Agent' : 'Mozilla/5.0'}
-    ))
-    print('Checking response...')
-    data = json.loads(
-        r.read().decode(r.info().get_param('charset') or 'utf-8')
-    )
-    if data.get('ok'):
-        print('Response was okay, saving data')
-        with open(output, 'w', encoding='utf-8') as f:
-            json.dump(data, f, sort_keys=True)
-        return True
-    else:
-        print('The data received was not okay:')
-        print(json.dumps(data, indent=4, sort_keys=True))
-        return False
 
 
 def get_class_name(error_code):
@@ -170,8 +147,5 @@ def generate_code(output, json_file, errors_desc):
 
 
 if __name__ == '__main__':
-    if input('generate (y/n)?: ').lower() == 'y':
-        generate_code('../telethon/errors/rpc_error_list.py',
-                      'errors.json', 'error_descriptions')
-    elif input('fetch (y/n)?: ').lower() == 'y':
-        fetch_errors('errors.json')
+    generate_code('../telethon/errors/rpc_error_list.py',
+                  'errors.json', 'error_descriptions')
