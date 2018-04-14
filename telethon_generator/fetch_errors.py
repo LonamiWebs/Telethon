@@ -2,7 +2,7 @@ import sys
 import json
 import urllib.request
 
-OUT = 'errors.json'
+OUT = 'data/errors.json'
 URL = 'https://rpc.pwrtelegram.xyz/?all'
 
 

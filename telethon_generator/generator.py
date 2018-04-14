@@ -2,11 +2,11 @@ from telethon_generator.parsers import parse_errors, parse_tl, find_layer
 from telethon_generator.generators import generate_errors, generate_tlobjects
 
 
-ERRORS_INPUT_JSON = 'errors.json'
-ERRORS_INPUT_DESC = 'error_descriptions'
+ERRORS_INPUT_JSON = 'data/errors.json'
+ERRORS_INPUT_DESC = 'data/error_descriptions'
 ERRORS_OUTPUT = '../telethon/errors/rpc_error_list.py'
 
-TLOBJECT_INPUT_TL = 'scheme.tl'
+TLOBJECT_INPUT_TL = 'data/scheme.tl'
 TLOBJECT_OUTPUT = '../telethon/tl'
 
 
