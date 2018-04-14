@@ -84,7 +84,7 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService, ChatParticipants, User,
+    PhotoSizeEmpty, MessageService, ChatParticipants, User, WebPage,
     ChannelParticipantsBanned, ChannelParticipantsKicked
 )
 from .tl.types.messages import DialogsSlice
@@ -1904,6 +1904,10 @@ class TelegramClient(TelegramBareClient):
         else:
             date = datetime.now()
             media = message
+
+        if isinstance(media, MessageMediaWebPage):
+            if isinstance(media.webpage, WebPage):
+                media = media.webpage.document or media.webpage.photo
 
         if isinstance(media, (MessageMediaPhoto, Photo,
                               PhotoSize, PhotoCachedSize)):
