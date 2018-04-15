@@ -7,23 +7,7 @@ from collections import defaultdict
 
 from ..docs_writer import DocsWriter
 from ..parsers import TLObject
-
-
-# TLObject -> Python class name
-def get_class_name(tlobject):
-    """Gets the class name following the Python style guidelines"""
-    # Courtesy of http://stackoverflow.com/a/31531797/4759433
-    name = tlobject.name if isinstance(tlobject, TLObject) else tlobject
-    result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
-
-    # Replace '_' with '' once again to make sure it doesn't appear on the name
-    result = result[:1].upper() + result[1:].replace('_', '')
-
-    # If it's a function, let it end with "Request" to identify them more easily
-    if isinstance(tlobject, TLObject) and tlobject.is_function:
-        result += 'Request'
-
-    return result
+from ..utils import snake_to_camel_case
 
 
 # TLObject -> filename
@@ -50,7 +34,7 @@ def get_import_code(tlobject):
     ns = '.' + tlobject.namespace if tlobject.namespace else ''
 
     return 'from telethon.tl.{}{} import {}'\
-        .format(kind, ns, get_class_name(tlobject))
+        .format(kind, ns, tlobject.class_name)
 
 
 def get_create_path_for(root, tlobject):
@@ -295,9 +279,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
         with DocsWriter(filename, type_to_path_function=path_for_type) \
                 as docs:
-            docs.write_head(
-                title=get_class_name(tlobject),
-                relative_css_path=paths['css'])
+            docs.write_head(title=tlobject.class_name,
+                            relative_css_path=paths['css'])
 
             # Create the menu (path to the current TLObject)
             docs.set_menu_separator(paths['arrow'])
@@ -305,7 +288,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                        relative_main_index=paths['index_all'])
 
             # Create the page title
-            docs.write_title(get_class_name(tlobject))
+            docs.write_title(tlobject.class_name)
 
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
@@ -352,7 +335,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                 for constructor in cs:
                     link = create_path_for(constructor)
                     link = get_relative_path(link, relative_to=filename)
-                    docs.add_row(get_class_name(constructor), link=link)
+                    docs.add_row(constructor.class_name, link=link)
                 docs.end_table()
 
             # Return (or similar types) written. Now parameters/members
@@ -441,7 +424,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
         with DocsWriter(filename, type_to_path_function=path_for_type) \
                 as docs:
             docs.write_head(
-                title=get_class_name(name),
+                title=snake_to_camel_case(name),
                 relative_css_path=paths['css'])
 
             docs.set_menu_separator(paths['arrow'])
@@ -449,7 +432,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                        relative_main_index=paths['index_all'])
 
             # Main file title
-            docs.write_title(get_class_name(name))
+            docs.write_title(snake_to_camel_case(name))
 
             # List available constructors for this type
             docs.write_title('Available constructors', level=3)
@@ -466,7 +449,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                 # Constructor full name
                 link = create_path_for(constructor)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(constructor), link=link)
+                docs.add_row(constructor.class_name, link=link)
             docs.end_table()
 
             # List all the methods which return this type
@@ -486,7 +469,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             for func in functions:
                 link = create_path_for(func)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(func), link=link)
+                docs.add_row(func.class_name, link=link)
             docs.end_table()
 
             # List all the methods which take this type as input
@@ -511,7 +494,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             for ot in other_methods:
                 link = create_path_for(ot)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(ot), link=link)
+                docs.add_row(ot.class_name, link=link)
             docs.end_table()
 
             # List every other type which has this type as a member
@@ -538,7 +521,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             for ot in other_types:
                 link = create_path_for(ot)
                 link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(ot), link=link)
+                docs.add_row(ot.class_name, link=link)
             docs.end_table()
             docs.end_body()
 
@@ -571,7 +554,9 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     cs = sorted(cs, key=lambda c: c.name)
 
     def fmt(xs):
-        ys = {x: get_class_name(x) for x in xs}  # cache TLObject: display
+        # TODO types make us have this isinstance check, fix?
+        ys = {x: x.class_name if isinstance(x, TLObject)
+              else snake_to_camel_case(x) for x in xs}
         zs = {}  # create a dict to hold those which have duplicated keys
         for y in ys.values():
             zs[y] = y in zs
