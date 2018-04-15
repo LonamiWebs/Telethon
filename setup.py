@@ -62,7 +62,7 @@ def generate(which):
     layer = find_layer(TLOBJECT_IN_TL)
 
     if not which:
-        which.append('(empty)')
+        which.extend(('tl', 'errors'))
 
     clean = 'clean' in which
     action = 'Cleaning' if clean else 'Generating'
