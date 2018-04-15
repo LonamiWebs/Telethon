@@ -3,6 +3,7 @@ import functools
 import os
 import re
 import shutil
+from collections import defaultdict
 
 from ..docs_writer import DocsWriter
 from ..parsers import TLObject
@@ -277,6 +278,11 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     for t, cs in type_to_constructors.items():
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
 
+    method_causes_errors = defaultdict(list)
+    for error in errors:
+        for method in error.caused_by:
+            method_causes_errors[method].append(error)
+
     # Since the output directory is needed everywhere apply it now
     create_path_for = functools.partial(get_create_path_for, output_dir)
     path_for_type = functools.partial(get_path_for_type, output_dir)
@@ -388,6 +394,25 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                     docs.write_text('This request takes no input parameters.')
                 else:
                     docs.write_text('This type has no members.')
+
+            if tlobject.is_function:
+                docs.write_title('Known RPC errors')
+                errors = method_causes_errors[tlobject.fullname]
+                if not errors:
+                    docs.write_text("This request can't cause any RPC error "
+                                    "as far as we know.")
+                else:
+                    docs.write_text(
+                        'This request can cause {} known error{}:'.format(
+                            len(errors), '' if len(errors) == 1 else 's'
+                    ))
+                    docs.begin_table(column_count=2)
+                    for error in errors:
+                        docs.add_row('<code>{}</code>'.format(error.name))
+                        docs.add_row('{}.'.format(error.description))
+                    docs.end_table()
+                    docs.write_text('You can import these from '
+                                    '<code>telethon.errors</code>.')
 
             # TODO Bit hacky, make everything like this? (prepending '../')
             depth = '../' * (2 if tlobject.namespace else 1)

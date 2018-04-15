@@ -51,7 +51,7 @@ def _get_class_name(error_code):
 
 
 class Error:
-    def __init__(self, int_code, str_code, description):
+    def __init__(self, int_code, str_code, description, caused_by):
         # TODO Some errors have the same str_code but different int_code
         # Should these be split into different files or doesn't really matter?
         # Telegram isn't exactly consistent with returned errors anyway.
@@ -60,6 +60,7 @@ class Error:
         self.subclass = _get_class_name(int_code)
         self.subclass_exists = int_code in KNOWN_BASE_CLASSES
         self.description = description
+        self.caused_by = list(sorted(caused_by))
 
         self.has_captures = '_X' in str_code
         if self.has_captures:
@@ -92,6 +93,7 @@ def parse_errors(json_file, descriptions_file):
         data = json.load(f)
 
     errors = defaultdict(set)
+    error_to_method = defaultdict(set)
     # PWRTelegram's API doesn't return all errors, which we do need here.
     # Add some special known-cases manually first.
     errors[420].update((
@@ -105,9 +107,11 @@ def parse_errors(json_file, descriptions_file):
         'NETWORK_MIGRATE_X', 'USER_MIGRATE_X'
     ))
     for int_code, method_errors in data['result'].items():
-        for error_list in method_errors.values():
+        for method, error_list in method_errors.items():
             for error in error_list:
-                errors[int(int_code)].add(re.sub('_\d+', '_X', error).upper())
+                error = re.sub('_\d+', '_X', error).upper()
+                errors[int(int_code)].add(error)
+                error_to_method[error].add(method)
 
     # Some errors are in the human result, but not with a code. Assume 400
     for error in data['human_result']:
@@ -131,11 +135,12 @@ def parse_errors(json_file, descriptions_file):
         for str_code in sorted(error_set):
             description = telethon_descriptions.get(
                 str_code, '\n'.join(data['human_result'].get(
-                    str_code, ['No description known.']
+                    str_code, ['No description known']
                 ))
             )
             yield Error(
                 int_code=int_code,
                 str_code=str_code,
                 description=description,
+                caused_by=error_to_method[str_code]
             )
