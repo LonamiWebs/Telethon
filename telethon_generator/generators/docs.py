@@ -44,7 +44,7 @@ def _get_create_path_for(root, tlobject):
     return os.path.join(out_dir, _get_file_name(tlobject))
 
 
-def get_path_for_type(root, type_, relative_to='.'):
+def _get_path_for_type(root, type_, relative_to='.'):
     """Similar to `_get_create_path_for` but for only type names."""
     if type_.lower() in CORE_TYPES:
         path = 'index.html#%s' % type_.lower()
@@ -112,7 +112,7 @@ def _generate_index(folder, original_paths, root):
 
     # Now that everything is setup, write the index.html file
     filename = os.path.join(folder, 'index.html')
-    with DocsWriter(filename, type_to_path=get_path_for_type) as docs:
+    with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
         docs.write_head(folder.title(), relative_css_path=paths['css'])
 
@@ -237,7 +237,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
     # Since the output directory is needed everywhere partially apply it now
     create_path_for = functools.partial(_get_create_path_for, output_dir)
-    path_for_type = functools.partial(get_path_for_type, output_dir)
+    path_for_type = functools.partial(_get_path_for_type, output_dir)
 
     for tlobject in tlobjects:
         filename = create_path_for(tlobject)
@@ -543,6 +543,10 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
         return ', '.join('"{}"'.format(formatter(x)) for x in xs)
 
     type_names = fmt(types, formatter=lambda x: x)
+
+    # Local URLs shouldn't rely on the output's root, so set empty root
+    create_path_for = functools.partial(_get_create_path_for, '')
+    path_for_type = functools.partial(_get_path_for_type, '')
     request_urls = fmt(methods, create_path_for)
     type_urls = fmt(types, path_for_type)
     constructor_urls = fmt(cs, create_path_for)
