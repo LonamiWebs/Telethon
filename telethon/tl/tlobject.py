@@ -189,6 +189,6 @@ class TLObject:
     def __bytes__(self):
         return b''
 
-    @staticmethod
-    def from_reader(reader):
+    @classmethod
+    def from_reader(cls, reader):
         return TLObject()
