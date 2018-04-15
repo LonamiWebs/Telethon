@@ -115,7 +115,7 @@ def main():
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
         # (Re)generate the code to make sure we don't push without it
-        generate(['clean', 'tl', 'errors'])
+        generate(['tl', 'errors'])
 
         # Try importing the telethon module to assert it has no errors
         try:
@@ -140,7 +140,7 @@ def main():
     else:
         # e.g. install from GitHub
         if os.path.isfile(GENERATOR_DIR):
-            generate(['clean', 'tl', 'errors'])
+            generate(['tl', 'errors'])
 
         # Get the long description from the README file
         with open('README.rst', encoding='utf-8') as f:
