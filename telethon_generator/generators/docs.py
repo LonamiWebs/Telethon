@@ -122,10 +122,11 @@ def find_title(html_file):
     return '(Unknown)'
 
 
-def build_menu(docs, filename, relative_main_index):
+def build_menu(docs, filename, root, relative_main_index):
     """Builds the menu using the given DocumentWriter up to 'filename',
        which must be a file (it cannot be a directory)"""
     # TODO Maybe this could be part of DocsWriter itself, "build path menu"
+    filename = get_relative_path(filename, root)
     docs.add_menu('API', relative_main_index)
 
     items = filename.split('/')
@@ -140,7 +141,7 @@ def build_menu(docs, filename, relative_main_index):
     docs.end_menu()
 
 
-def generate_index(folder, original_paths):
+def generate_index(folder, original_paths, root):
     """Generates the index file for the specified folder"""
 
     # Determine the namespaces listed here (as sub folders)
@@ -163,9 +164,10 @@ def generate_index(folder, original_paths):
         docs.write_head(folder.title(), relative_css_path=paths['css'])
 
         docs.set_menu_separator(paths['arrow'])
-        build_menu(docs, filename, relative_main_index=paths['index_all'])
+        build_menu(docs, filename, root,
+                   relative_main_index=paths['index_all'])
 
-        docs.write_title(folder.title())
+        docs.write_title(get_relative_path(folder, root, folder=True).title())
 
         if namespaces:
             docs.write_title('Namespaces', level=3)
@@ -173,7 +175,8 @@ def generate_index(folder, original_paths):
             namespaces.sort()
             for namespace in namespaces:
                 # For every namespace, also write the index of it
-                generate_index(os.path.join(folder, namespace), original_paths)
+                generate_index(os.path.join(folder, namespace),
+                               original_paths, root)
                 docs.add_row(namespace.title(),
                              link=os.path.join(namespace, 'index.html'))
 
@@ -292,7 +295,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             # Create the menu (path to the current TLObject)
             docs.set_menu_separator(paths['arrow'])
-            build_menu(docs, filename, relative_main_index=paths['index_all'])
+            build_menu(docs, filename, output_dir,
+                       relative_main_index=paths['index_all'])
 
             # Create the page title
             docs.write_title(get_class_name(tlobject))
@@ -416,7 +420,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                 relative_css_path=paths['css'])
 
             docs.set_menu_separator(paths['arrow'])
-            build_menu(docs, filename, relative_main_index=paths['index_all'])
+            build_menu(docs, filename, output_dir,
+                       relative_main_index=paths['index_all'])
 
             # Main file title
             docs.write_title(get_class_name(name))
@@ -517,7 +522,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
     for folder in ['types', 'methods', 'constructors']:
-        generate_index(os.path.join(output_dir, folder), original_paths)
+        generate_index(os.path.join(output_dir, folder), original_paths,
+                       output_dir)
 
     # Write the final core index, the main index for the rest of files
     types = set()
