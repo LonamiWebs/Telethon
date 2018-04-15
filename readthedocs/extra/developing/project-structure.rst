@@ -37,7 +37,11 @@ Auto-generated code
 *******************
 
 The files under ``telethon_generator/`` are used to generate the code
-that gets placed under ``telethon/tl/``. The ``TLGenerator`` takes in a
-``.tl`` file, and spits out the generated classes which represent, as
-Python classes, the request and types defined in the ``.tl`` file. It
-also constructs an index so that they can be imported easily.
+that gets placed under ``telethon/tl/``. The parsers take in files in
+a specific format (such as ``.tl`` for objects and ``.json`` for errors)
+and spit out the generated classes which represent, as Python classes,
+the request and types defined in the ``.tl`` file. It also constructs
+an index so that they can be imported easily.
+
+Custom documentation can also be generated to easily navigate through
+the vast amount of items offered by the API.
