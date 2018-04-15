@@ -232,7 +232,7 @@ def _write_class_init(tlobject, type_constructors, builder):
 
 def _write_resolve(tlobject, builder):
     if any(arg.type in AUTO_CASTS for arg in tlobject.real_args):
-        builder.writeln('def resolve(self, client, utils):')
+        builder.writeln('async def resolve(self, client, utils):')
         for arg in tlobject.real_args:
             ac = AUTO_CASTS.get(arg.type, None)
             if not ac:
