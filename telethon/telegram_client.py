@@ -2486,7 +2486,11 @@ class TelegramClient(TelegramBareClient):
             a ValueError will be raised.
 
         Returns:
-            :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`.
+            :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`
+            or :tl:`InputPeerSelf` if the parameter is ``'me'`` or ``'self'``.
+
+            If you need to get the ID of yourself, you should use
+            `get_me` with ``input_peer=True``) instead.
         """
         if peer in ('me', 'self'):
             return InputPeerSelf()
