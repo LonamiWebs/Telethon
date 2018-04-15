@@ -14,6 +14,70 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Pickle-able objects (v0.18.3)
+=============================
+
+*Published at 2018/04/15*
+
+
+Now you can use Python's ``pickle`` module to serialize ``RPCError`` and
+any other ``TLObject`` thanks to **@vegeta1k95**! A fix that was fairly
+simple, but still might be useful for many people.
+
+As a side note, the documentation at https://lonamiwebs.github.io/Telethon
+now lists known ``RPCError`` for all requests, so you know what to expect.
+This required a major rewrite, but it was well worth it!
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- `telethon.telegram_client.TelegramClient.forward_messages` now returns
+  a single item instead of a list if the input was also a single item.
+
+Additions
+~~~~~~~~~
+
+- New `telethon.events.messageread.MessageRead` event, to find out when
+  and who read which messages as soon as it happens.
+- Now you can access ``.chat_id`` on all events and ``.sender_id`` on some.
+
+Bug fixes
+~~~~~~~~~
+
+- Possibly fix some bug regarding lost ``GzipPacked`` requests.
+- The library now uses the "real" layer 75, hopefully.
+- Fixed ``.entities`` name collision on updates by making it private.
+- ``AUTH_KEY_DUPLICATED`` is handled automatically on connection.
+- Markdown parser's offset uses ``match.start()`` to allow custom regex.
+- Some filter types (as a type) were not supported by
+  `telethon.telegram_client.TelegramClient.iter_participants`.
+- `telethon.telegram_client.TelegramClient.remove_event_handler` works.
+- `telethon.telegram_client.TelegramClient.start` works on all terminals.
+- :tl:`InputPeerSelf` case was missing from
+  `telethon.telegram_client.TelegramClient.get_input_entity`.
+
+Enhancements
+~~~~~~~~~~~~
+
+- The ``parse_mode`` for messages now accepts a callable.
+- `telethon.telegram_client.TelegramClient.download_media` accepts web previews.
+- `telethon.tl.custom.dialog.Dialog` instances can now be casted into
+  :tl:`InputPeer`.
+- Better logging when reading packages "breaks".
+- Better and more powerful ``setup.py gen`` command.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The library won't call ``.get_dialogs()`` on entity not found. Instead,
+  it will ``raise ValueError()`` so you can properly ``except`` it.
+- Several new examples and updated documentation.
+- ``py:obj`` is the default Sphinx's role which simplifies ``.rst`` files.
+- ``setup.py`` now makes use of ``python_requires``.
+- Events now live in separate files.
+- Other minor changes.
+
+
 Several bug fixes (v0.18.2)
 ===========================
 

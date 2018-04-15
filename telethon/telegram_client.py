@@ -84,7 +84,7 @@ from .tl.types import (
     InputMessageEntityMentionName, DocumentAttributeVideo,
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
-    PhotoSizeEmpty, MessageService, ChatParticipants,
+    PhotoSizeEmpty, MessageService, ChatParticipants, User, WebPage,
     ChannelParticipantsBanned, ChannelParticipantsKicked
 )
 from .tl.types.messages import DialogsSlice
@@ -493,6 +493,7 @@ class TelegramClient(TelegramBareClient):
 
         self.disconnect()
         self.session.delete()
+        self._authorized = False
         return True
 
     async def get_me(self, input_peer=False):
@@ -726,6 +727,10 @@ class TelegramClient(TelegramBareClient):
         and ``[mentions](@username)`` (or using IDs like in the Bot API:
         ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
         backticks.
+
+        Sending a ``/start`` command with a parameter (like ``?start=data``)
+        is also done through this method. Simply send ``'/start data'`` to
+        the bot.
 
         Args:
             entity (`entity`):
@@ -1123,6 +1128,9 @@ class TelegramClient(TelegramBareClient):
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
 
+        This effectively marks a message as read (or more than one) in the
+        given conversation.
+
         Args:
             entity (`entity`):
                 The chat where these messages are located.
@@ -1244,11 +1252,14 @@ class TelegramClient(TelegramBareClient):
 
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, InputPeerChannel):
-            total = (await self(GetFullChannelRequest(
-                entity
-            ))).full_chat.participants_count
-            if _total:
-                _total[0] = total
+            if _total or (aggressive and not filter):
+                total = (await self(GetFullChannelRequest(
+                    entity
+                ))).full_chat.participants_count
+                if _total:
+                    _total[0] = total
+            else:
+                total = 0
 
             if limit == 0:
                 return
@@ -1870,6 +1881,10 @@ class TelegramClient(TelegramBareClient):
         """
         Downloads the given media, or the media from a specified Message.
 
+        Note that if the download is too slow, you should consider installing
+        ``cryptg`` (through ``pip install cryptg``) so that decrypting the
+        received data is done in C instead of Python (much faster).
+
         message (:tl:`Message` | :tl:`Media`):
             The media or message containing the media that will be downloaded.
 
@@ -1892,6 +1907,10 @@ class TelegramClient(TelegramBareClient):
         else:
             date = datetime.now()
             media = message
+
+        if isinstance(media, MessageMediaWebPage):
+            if isinstance(media.webpage, WebPage):
+                media = media.webpage.document or media.webpage.photo
 
         if isinstance(media, (MessageMediaPhoto, Photo,
                               PhotoSize, PhotoCachedSize)):
@@ -2354,7 +2373,8 @@ class TelegramClient(TelegramBareClient):
             x if isinstance(x, str) else await self.get_input_entity(x)
             for x in entity
         ]
-        users = [x for x in inputs if isinstance(x, InputPeerUser)]
+        users = [x for x in inputs
+                 if isinstance(x, (InputPeerUser, InputPeerSelf))]
         chats = [x.chat_id for x in inputs if isinstance(x, InputPeerChat)]
         channels = [x for x in inputs if isinstance(x, InputPeerChannel)]
         if users:
@@ -2381,7 +2401,12 @@ class TelegramClient(TelegramBareClient):
         # username changes.
         result = [
             await self._get_entity_from_string(x) if isinstance(x, str)
-            else id_entity[utils.get_peer_id(x)]
+            else (
+                id_entity[utils.get_peer_id(x)]
+                if not isinstance(x, InputPeerSelf)
+                else next(u for u in id_entity.values()
+                          if isinstance(u, User) and u.is_self)
+            )
             for x in inputs
         ]
         return result[0] if single else result
@@ -2475,10 +2500,9 @@ class TelegramClient(TelegramBareClient):
             return utils.get_input_peer(peer)
 
         raise ValueError(
-            'Could not find the input entity corresponding to "{}". '
-            'Make sure you have encountered this user/chat/channel before. '
-            'If the peer is in your dialogs call client.get_dialogs().'
-            'If the peer belongs to a chat call client.get_participants().'
+            'Could not find the input entity for "{}". Please read https://'
+            'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
+            'find out more details.'
             .format(peer)
         )
 

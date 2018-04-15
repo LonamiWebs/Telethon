@@ -91,9 +91,11 @@ def get_input_peer(entity, allow_self=True):
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return entity
     except AttributeError:
-        if hasattr(entity, 'input_entity'):
-            # e.g. custom.Dialog (can't cyclic import)
+        # e.g. custom.Dialog (can't cyclic import).
+        if allow_self and hasattr(entity, 'input_entity'):
             return entity.input_entity
+        elif hasattr(entity, 'entity'):
+            return get_input_peer(entity.entity)
         else:
             _raise_cast_fail(entity, 'InputPeer')
 

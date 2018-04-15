@@ -1,3 +1,4 @@
+from .common import Raw
 from .chataction import ChatAction
 from .messagedeleted import MessageDeleted
 from .messageedited import MessageEdited

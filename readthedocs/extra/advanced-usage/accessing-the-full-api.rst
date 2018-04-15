@@ -137,4 +137,4 @@ This can further be simplified to:
 
 __ https://lonamiwebs.github.io/Telethon
 __ https://lonamiwebs.github.io/Telethon/methods/index.html
-__ https://lonamiwebs.github.io/Telethon/?q=message
+__ https://lonamiwebs.github.io/Telethon/?q=message&redirect=no

@@ -3,6 +3,9 @@ class RPCError(Exception):
     code = None
     message = None
 
+    def __reduce__(self):
+        return type(self), ()
+
 
 class InvalidDCError(RPCError):
     """
