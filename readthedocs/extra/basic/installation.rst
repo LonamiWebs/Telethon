@@ -54,7 +54,7 @@ Manual Installation
 
 3. Enter the cloned repository: ``cd Telethon``
 
-4. Run the code generator: ``python3 setup.py gen_tl``
+4. Run the code generator: ``python3 setup.py gen tl errors``
 
 5. Done!
 

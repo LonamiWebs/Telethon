@@ -1,5 +1,7 @@
+import functools
 import os
 import re
+import shutil
 import struct
 from collections import defaultdict
 from zlib import crc32
@@ -617,10 +619,8 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     builder.writeln('}')
 
 
-def generate_tlobjects(tlobjects, layer, output_dir):
-    def get_file(*paths):
-        return os.path.join(output_dir, *paths)
-
+def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
+    get_file = functools.partial(os.path.join, output_dir)
     os.makedirs(get_file('functions'), exist_ok=True)
     os.makedirs(get_file('types'), exist_ok=True)
 
@@ -637,7 +637,6 @@ def generate_tlobjects(tlobjects, layer, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    import_depth = 2
     _write_modules(get_file('functions'), import_depth,
                    namespace_functions, type_constructors)
     _write_modules(get_file('types'), import_depth,
@@ -647,3 +646,15 @@ def generate_tlobjects(tlobjects, layer, output_dir):
     with open(filename, 'w', encoding='utf-8') as file:
         with SourceBuilder(file) as builder:
             _write_all_tlobjects(tlobjects, layer, builder)
+
+
+def clean_tlobjects(output_dir):
+    get_file = functools.partial(os.path.join, output_dir)
+    for d in ('functions', 'types'):
+        d = get_file(d)
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+
+    tl = get_file('all_tlobjects.py')
+    if os.path.isfile(tl):
+        os.remove(tl)
