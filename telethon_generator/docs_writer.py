@@ -4,7 +4,7 @@ import re
 
 class DocsWriter:
     """Utility class used to write the HTML files used on the documentation"""
-    def __init__(self, filename, type_to_path_function):
+    def __init__(self, filename, type_to_path):
         """Initializes the writer to the specified output file,
            creating the parent directories when used if required.
 
@@ -19,7 +19,7 @@ class DocsWriter:
         self.menu_separator_tag = None
 
         # Utility functions TODO There must be a better way
-        self.type_to_path = lambda t: type_to_path_function(
+        self.type_to_path = lambda t: type_to_path(
             t, relative_to=self.filename
         )
 
