@@ -553,30 +553,6 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     methods = sorted(methods, key=lambda m: m.name)
     cs = sorted(cs, key=lambda c: c.name)
 
-    def fmt(xs):
-        # TODO types make us have this isinstance check, fix?
-        ys = {x: x.class_name if isinstance(x, TLObject)
-              else snake_to_camel_case(x) for x in xs}
-        zs = {}  # create a dict to hold those which have duplicated keys
-        for y in ys.values():
-            zs[y] = y in zs
-        return ', '.join(
-            '"{}.{}"'.format(x.namespace, ys[x])
-            if zs[ys[x]] and getattr(x, 'namespace', None)
-            else '"{}"'.format(ys[x]) for x in xs
-        )
-
-    request_names = fmt(methods)
-    type_names = fmt(types)
-    constructor_names = fmt(cs)
-
-    def fmt(xs, formatter):
-        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
-
-    request_urls = fmt(methods, create_path_for)
-    type_urls = fmt(types, path_for_type)
-    constructor_urls = fmt(cs, create_path_for)
-
     shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
     copy_replace(os.path.join(input_res, 'core.html'),
                  original_paths['index_all'], {
@@ -585,6 +561,28 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
         '{constructor_count}': len(tlobjects) - len(methods),
         '{layer}': layer,
     })
+
+    def fmt(xs):
+        zs = {}  # create a dict to hold those which have duplicated keys
+        for x in xs:
+            zs[x.class_name] = x.class_name in zs
+        return ', '.join(
+            '"{}.{}"'.format(x.namespace, x.class_name)
+            if zs[x.class_name] and x.namespace
+            else '"{}"'.format(x.class_name) for x in xs
+        )
+
+    request_names = fmt(methods)
+    constructor_names = fmt(cs)
+
+    def fmt(xs, formatter):
+        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
+
+    type_names = fmt(types, formatter=lambda x: x)
+    request_urls = fmt(methods, create_path_for)
+    type_urls = fmt(types, path_for_type)
+    constructor_urls = fmt(cs, create_path_for)
+
     os.makedirs(os.path.abspath(os.path.join(
         original_paths['search.js'], os.path.pardir
     )), exist_ok=True)
