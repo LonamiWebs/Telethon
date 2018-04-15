@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import functools
 import os
 import re
 import shutil
@@ -51,7 +52,7 @@ def get_import_code(tlobject):
         .format(kind, ns, get_class_name(tlobject))
 
 
-def get_create_path_for(tlobject):
+def get_create_path_for(root, tlobject):
     """Gets the file path (and creates the parent directories)
        for the given 'tlobject', relative to nothing; only its local path"""
 
@@ -62,6 +63,7 @@ def get_create_path_for(tlobject):
         out_dir = os.path.join(out_dir, tlobject.namespace)
 
     # Ensure that it exists
+    out_dir = os.path.join(root, out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
     # Return the resulting filename
@@ -76,7 +78,7 @@ def is_core_type(type_):
     }
 
 
-def get_path_for_type(type_, relative_to='.'):
+def get_path_for_type(root, type_, relative_to='.'):
     """Similar to getting the path for a TLObject, it might not be possible
        to have the TLObject itself but rather its name (the type);
        this method works in the same way, returning a relative path"""
@@ -90,21 +92,22 @@ def get_path_for_type(type_, relative_to='.'):
     else:
         path = 'types/%s' % get_file_name(type_, True)
 
-    return get_relative_path(path, relative_to)
+    return get_relative_path(os.path.join(root, path), relative_to)
 
 
 # Destination path from the current position -> relative to the given path
-def get_relative_path(destination, relative_to):
-    if os.path.isfile(relative_to):
+def get_relative_path(destination, relative_to, folder=False):
+    if not folder:
         relative_to = os.path.dirname(relative_to)
 
     return os.path.relpath(destination, start=relative_to)
 
 
-def get_relative_paths(original, relative_to):
+def get_relative_paths(original, relative_to, folder=False):
     """Converts the dictionary of 'original' paths to relative paths
        starting from the given 'relative_to' file"""
-    return {k: get_relative_path(v, relative_to) for k, v in original.items()}
+    return {k: get_relative_path(v, relative_to, folder)
+            for k, v in original.items()}
 
 
 # Generate a index.html file for the given folder
@@ -151,7 +154,7 @@ def generate_index(folder, original_paths):
             files.append(item)
 
     # We work with relative paths
-    paths = get_relative_paths(original_paths, relative_to=folder)
+    paths = get_relative_paths(original_paths, relative_to=folder, folder=True)
 
     # Now that everything is setup, write the index.html file
     filename = os.path.join(folder, 'index.html')
@@ -242,6 +245,10 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     """Generates the documentation HTML files from from scheme.tl to
        /methods and /constructors, etc.
     """
+    # Save 'Type: [Constructors]' for use in both:
+    # * Seeing the return type or constructors belonging to the same type.
+    # * Generating the types documentation, showing available constructors.
+    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
     original_paths = {
         'css': 'css/docs.css',
         'arrow': 'img/arrow.svg',
@@ -255,32 +262,29 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     original_paths = {k: os.path.join(output_dir, v)
                       for k, v in original_paths.items()}
 
-    # Save 'Type: [Constructors]' for use in both:
-    # * Seeing the return type or constructors belonging to the same type.
-    # * Generating the types documentation, showing available constructors.
-    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
-    tltypes = {}
-    tlfunctions = {}
+    type_to_constructors = {}
+    type_to_functions = {}
     for tlobject in tlobjects:
-        # Select to which dictionary we want to store this type
-        dictionary = tlfunctions if tlobject.is_function else tltypes
-
-        if tlobject.result in dictionary:
-            dictionary[tlobject.result].append(tlobject)
+        d = type_to_functions if tlobject.is_function else type_to_constructors
+        if tlobject.result in d:
+            d[tlobject.result].append(tlobject)
         else:
-            dictionary[tlobject.result] = [tlobject]
+            d[tlobject.result] = [tlobject]
 
-    for tltype, constructors in tltypes.items():
-        tltypes[tltype] = list(sorted(constructors, key=lambda c: c.name))
+    for t, cs in type_to_constructors.items():
+        type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
 
-    # TODO Fix the fact that get_create_path_for doesn't know about out_dir
+    # Since the output directory is needed everywhere apply it now
+    create_path_for = functools.partial(get_create_path_for, output_dir)
+    path_for_type = functools.partial(get_path_for_type, output_dir)
+
     for tlobject in tlobjects:
-        filename = get_create_path_for(tlobject)
+        filename = create_path_for(tlobject)
 
         # Determine the relative paths for this file
         paths = get_relative_paths(original_paths, relative_to=filename)
 
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
+        with DocsWriter(filename, type_to_path_function=path_for_type) \
                 as docs:
             docs.write_head(
                 title=get_class_name(tlobject),
@@ -321,22 +325,22 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                     inner = tlobject.result
 
                 docs.begin_table(column_count=1)
-                docs.add_row(inner, link=get_path_for_type(
+                docs.add_row(inner, link=path_for_type(
                     inner, relative_to=filename
                 ))
                 docs.end_table()
 
-                constructors = tltypes.get(inner, [])
-                if not constructors:
+                cs = type_to_constructors.get(inner, [])
+                if not cs:
                     docs.write_text('This type has no instances available.')
-                elif len(constructors) == 1:
+                elif len(cs) == 1:
                     docs.write_text('This type can only be an instance of:')
                 else:
                     docs.write_text('This type can be an instance of either:')
 
                 docs.begin_table(column_count=2)
-                for constructor in constructors:
-                    link = get_create_path_for(constructor)
+                for constructor in cs:
+                    link = create_path_for(constructor)
                     link = get_relative_path(link, relative_to=filename)
                     docs.add_row(get_class_name(constructor), link=link)
                 docs.end_table()
@@ -368,7 +372,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                     else:
                         docs.add_row(
                             arg.type, align='center', link=
-                            get_path_for_type(arg.type, relative_to=filename)
+                            path_for_type(arg.type, relative_to=filename)
                          )
 
                     # Add a description for this argument
@@ -389,22 +393,23 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
-    for tltype, constructors in tltypes.items():
-        filename = get_path_for_type(tltype)
+    for t, cs in type_to_constructors.items():
+        filename = path_for_type(t)
         out_dir = os.path.dirname(filename)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
 
         # Since we don't have access to the full TLObject, split the type
-        if '.' in tltype:
-            namespace, name = tltype.split('.')
+        if '.' in t:
+            namespace, name = t.split('.')
         else:
-            namespace, name = None, tltype
+            namespace, name = None, t
 
         # Determine the relative paths for this file
-        paths = get_relative_paths(original_paths, relative_to=out_dir)
+        paths = get_relative_paths(original_paths, relative_to=out_dir,
+                                   folder=True)
 
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
+        with DocsWriter(filename, type_to_path_function=path_for_type) \
                 as docs:
             docs.write_head(
                 title=get_class_name(name),
@@ -418,25 +423,25 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             # List available constructors for this type
             docs.write_title('Available constructors', level=3)
-            if not constructors:
+            if not cs:
                 docs.write_text('This type has no constructors available.')
-            elif len(constructors) == 1:
+            elif len(cs) == 1:
                 docs.write_text('This type has one constructor available.')
             else:
                 docs.write_text('This type has %d constructors available.' %
-                                len(constructors))
+                                len(cs))
 
             docs.begin_table(2)
-            for constructor in constructors:
+            for constructor in cs:
                 # Constructor full name
-                link = get_create_path_for(constructor)
+                link = create_path_for(constructor)
                 link = get_relative_path(link, relative_to=filename)
                 docs.add_row(get_class_name(constructor), link=link)
             docs.end_table()
 
             # List all the methods which return this type
             docs.write_title('Methods returning this type', level=3)
-            functions = tlfunctions.get(tltype, [])
+            functions = type_to_functions.get(t, [])
             if not functions:
                 docs.write_text('No method returns this type.')
             elif len(functions) == 1:
@@ -449,7 +454,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             docs.begin_table(2)
             for func in functions:
-                link = get_create_path_for(func)
+                link = create_path_for(func)
                 link = get_relative_path(link, relative_to=filename)
                 docs.add_row(get_class_name(func), link=link)
             docs.end_table()
@@ -458,7 +463,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             docs.write_title('Methods accepting this type as input', level=3)
             other_methods = sorted(
                 (t for t in tlobjects
-                 if any(tltype == a.type for a in t.args) and t.is_function),
+                 if any(t == a.type for a in t.args) and t.is_function),
                 key=lambda t: t.name
             )
             if not other_methods:
@@ -474,7 +479,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             docs.begin_table(2)
             for ot in other_methods:
-                link = get_create_path_for(ot)
+                link = create_path_for(ot)
                 link = get_relative_path(link, relative_to=filename)
                 docs.add_row(get_class_name(ot), link=link)
             docs.end_table()
@@ -483,7 +488,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             docs.write_title('Other types containing this type', level=3)
             other_types = sorted(
                 (t for t in tlobjects
-                 if any(tltype == a.type for a in t.args)
+                 if any(t == a.type for a in t.args)
                  and not t.is_function
                  ), key=lambda t: t.name
             )
@@ -501,7 +506,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             docs.begin_table(2)
             for ot in other_types:
-                link = get_create_path_for(ot)
+                link = create_path_for(ot)
                 link = get_relative_path(link, relative_to=filename)
                 docs.add_row(get_class_name(ot), link=link)
             docs.end_table()
@@ -512,17 +517,17 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
     for folder in ['types', 'methods', 'constructors']:
-        generate_index(folder, original_paths)
+        generate_index(os.path.join(output_dir, folder), original_paths)
 
     # Write the final core index, the main index for the rest of files
     types = set()
     methods = []
-    constructors = []
+    cs = []
     for tlobject in tlobjects:
         if tlobject.is_function:
             methods.append(tlobject)
         else:
-            constructors.append(tlobject)
+            cs.append(tlobject)
 
         if not is_core_type(tlobject.result):
             if re.search('^vector<', tlobject.result, re.IGNORECASE):
@@ -532,7 +537,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
     types = sorted(types)
     methods = sorted(methods, key=lambda m: m.name)
-    constructors = sorted(constructors, key=lambda c: c.name)
+    cs = sorted(cs, key=lambda c: c.name)
 
     def fmt(xs):
         ys = {x: get_class_name(x) for x in xs}  # cache TLObject: display
@@ -547,14 +552,14 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
     request_names = fmt(methods)
     type_names = fmt(types)
-    constructor_names = fmt(constructors)
+    constructor_names = fmt(cs)
 
     def fmt(xs, formatter):
         return ', '.join('"{}"'.format(formatter(x)) for x in xs)
 
-    request_urls = fmt(methods, get_create_path_for)
-    type_urls = fmt(types, get_path_for_type)
-    constructor_urls = fmt(constructors, get_create_path_for)
+    request_urls = fmt(methods, create_path_for)
+    type_urls = fmt(types, path_for_type)
+    constructor_urls = fmt(cs, create_path_for)
 
     shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
     copy_replace(os.path.join(input_res, 'core.html'),
