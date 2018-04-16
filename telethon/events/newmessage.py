@@ -416,3 +416,10 @@ class NewMessage(EventBuilder):
             another session) or incoming (i.e. someone else sent it).
             """
             return self.message.out
+
+        @property
+        def id(self):
+            """
+            Returns the message integer ID.
+            """
+            return self.message.id
