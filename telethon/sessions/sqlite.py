@@ -18,7 +18,7 @@ CURRENT_VERSION = 3  # database version
 
 class SQLiteSession(MemorySession):
     """This session contains the required information to login into your
-       Telegram account. NEVER give the saved JSON file to anyone, since
+       Telegram account. NEVER give the saved session file to anyone, since
        they would gain instant access to all your messages and contacts.
 
        If you think the session has been compromised, close all the sessions
