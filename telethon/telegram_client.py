@@ -877,20 +877,26 @@ class TelegramClient(TelegramBareClient):
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
 
-    def edit_message(self, entity, message_id, message=None, parse_mode='md',
+    def edit_message(self, entity, message=None, text=None, parse_mode='md',
                      link_preview=True):
         """
         Edits the given message ID (to change its contents or disable preview).
 
         Args:
-            entity (`entity`):
-                From which chat to edit the message.
+            entity (`entity` | :tl:`Message`):
+                From which chat to edit the message. This can also be
+                the message to be edited, and the entity will be inferred
+                from it, so the next parameter will be assumed to be the
+                message text.
 
-            message_id (`str`):
-                The ID of the message (or ``Message`` itself) to be edited.
+            message (`int` | :tl:`Message` | `str`):
+                The ID of the message (or :tl:`Message` itself) to be edited.
+                If the `entity` was a :tl:`Message`, then this message will be
+                treated as the new text.
 
-            message (`str`, optional):
-                The new text of the message.
+            text (`str`, optional):
+                The new text of the message. Does nothing if the `entity`
+                was a :tl:`Message`.
 
             parse_mode (`str`, optional):
                 Can be 'md' or 'markdown' for markdown-like parsing (default),
@@ -900,6 +906,17 @@ class TelegramClient(TelegramBareClient):
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
+
+        Examples:
+
+            >>> client = TelegramClient(...).start()
+            >>> message = client.send_message('username', 'hello')
+            >>>
+            >>> client.edit_message('username', message, 'hello!')
+            >>> # or
+            >>> client.edit_message('username', message.id, 'Hello')
+            >>> # or
+            >>> client.edit_message(message, 'Hello!')
 
         Raises:
             ``MessageAuthorRequiredError`` if you're not the author of the
@@ -911,11 +928,16 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The edited :tl:`Message`.
         """
-        message, msg_entities = self._parse_message_text(message, parse_mode)
+        if isinstance(entity, Message):
+            text = message  # Shift the parameters to the right
+            message = entity
+            entity = entity.to_id
+
+        text, msg_entities = self._parse_message_text(text, parse_mode)
         request = EditMessageRequest(
             peer=self.get_input_entity(entity),
-            id=self._get_message_id(message_id),
-            message=message,
+            id=self._get_message_id(message),
+            message=text,
             no_webpage=not link_preview,
             entities=msg_entities
         )
