@@ -782,7 +782,9 @@ class TelegramClient(TelegramBareClient):
                     and not isinstance(message.media, MessageMediaWebPage)):
                 return self.send_file(entity, message.media)
 
-            if utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
+            if reply_to is not None:
+                reply_id = self._get_message_id(reply_to)
+            elif utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
                 reply_id = message.reply_to_msg_id
             else:
                 reply_id = None
