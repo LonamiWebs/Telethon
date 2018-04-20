@@ -780,7 +780,9 @@ class TelegramClient(TelegramBareClient):
         if isinstance(message, Message):
             if (message.media
                     and not isinstance(message.media, MessageMediaWebPage)):
-                return self.send_file(entity, message.media)
+                return self.send_file(entity, message.media,
+                                      caption=message.message,
+                                      entities=message.entities)
 
             if reply_to is not None:
                 reply_id = self._get_message_id(reply_to)
@@ -1495,7 +1497,14 @@ class TelegramClient(TelegramBareClient):
 
         entity = self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
-        caption, msg_entities = self._parse_message_text(caption, parse_mode)
+
+        # Not document since it's subject to change.
+        # Needed when a Message is passed to send_message and it has media.
+        if 'entities' in kwargs:
+            msg_entities = kwargs['entities']
+        else:
+            caption, msg_entities =\
+                self._parse_message_text(caption, parse_mode)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
