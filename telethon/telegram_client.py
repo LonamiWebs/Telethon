@@ -58,7 +58,7 @@ from .tl.functions.messages import (
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
     UploadMediaRequest, EditMessageRequest, GetFullChatRequest,
-    ForwardMessagesRequest
+    ForwardMessagesRequest, SearchRequest
 )
 
 from .tl.functions import channels
@@ -990,9 +990,13 @@ class TelegramClient(TelegramBareClient):
 
     def iter_messages(self, entity, limit=20, offset_date=None,
                       offset_id=0, max_id=0, min_id=0, add_offset=0,
+                      search=None, filter=None, from_user=None,
                       batch_size=100, wait_time=None, _total=None):
         """
         Iterator over the message history for the specified entity.
+
+        If either `search`, `filter` or `from_user` are provided,
+        :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
         Args:
             entity (`entity`):
@@ -1025,6 +1029,17 @@ class TelegramClient(TelegramBareClient):
                 Additional message offset (all of the specified offsets +
                 this offset = older messages).
 
+            search (`str`):
+                The string to be used as a search query.
+
+            filter (:tl:`MessagesFilter` | `type`):
+                The filter to use when returning messages. For instance,
+                :tl:`InputMessagesFilterPhotos` would yield only messages
+                containing photos.
+
+            from_user (`entity`):
+                Only messages from this user will be returned.
+
             batch_size (`int`):
                 Messages will be returned in chunks of this size (100 is
                 the maximum). While it makes no sense to modify this value,
@@ -1056,15 +1071,37 @@ class TelegramClient(TelegramBareClient):
         """
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
+        if search is not None or filter or from_user:
+            request = SearchRequest(
+                peer=entity,
+                q=search or '',
+                filter=filter() if isinstance(filter, type) else filter,
+                min_date=None,
+                max_date=offset_date,
+                offset_id=offset_id,
+                add_offset=add_offset,
+                limit=1,
+                max_id=max_id,
+                min_id=min_id,
+                from_id=self.get_input_entity(from_user) if from_user else None
+            )
+        else:
+            request = GetHistoryRequest(
+                peer=entity,
+                limit=1,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                min_id=min_id,
+                max_id=max_id,
+                add_offset=add_offset,
+                hash=0
+            )
+
         if limit == 0:
             if not _total:
                 return
             # No messages, but we still need to know the total message count
-            result = self(GetHistoryRequest(
-                peer=entity, limit=1,
-                offset_date=None, offset_id=0, max_id=0, min_id=0,
-                add_offset=0, hash=0
-            ))
+            result = self(request)
             _total[0] = getattr(result, 'count', len(result.messages))
             return
 
@@ -1075,17 +1112,8 @@ class TelegramClient(TelegramBareClient):
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - have, batch_size)
-            r = self(GetHistoryRequest(
-                peer=entity,
-                limit=real_limit,
-                offset_date=offset_date,
-                offset_id=offset_id,
-                max_id=max_id,
-                min_id=min_id,
-                add_offset=add_offset,
-                hash=0
-            ))
+            request.limit = min(limit - have, batch_size)
+            r = self(request)
             if _total:
                 _total[0] = getattr(r, 'count', len(r.messages))
 
@@ -1120,11 +1148,15 @@ class TelegramClient(TelegramBareClient):
                 yield message
                 have += 1
 
-            if len(r.messages) < real_limit:
+            if len(r.messages) < request.limit:
                 break
 
-            offset_id = r.messages[-1].id
-            offset_date = r.messages[-1].date
+            request.offset_id = r.messages[-1].id
+            if isinstance(request, GetHistoryRequest):
+                request.offset_date = r.messages[-1].date
+            else:
+                request.max_date = r.messages[-1].date
+
             time.sleep(wait_time)
 
     def get_messages(self, *args, **kwargs):
