@@ -798,7 +798,8 @@ class TelegramClient(TelegramBareClient):
             )
             message = message.message
         else:
-            message, msg_ent = await self._parse_message_text(message, parse_mode)
+            message, msg_ent =\
+                await self._parse_message_text(message, parse_mode)
             request = SendMessageRequest(
                 peer=entity,
                 message=message,
@@ -912,7 +913,8 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The edited :tl:`Message`.
         """
-        message, msg_entities = await self._parse_message_text(message, parse_mode)
+        message, msg_entities =\
+            await self._parse_message_text(message, parse_mode)
         request = EditMessageRequest(
             peer=await self.get_input_entity(entity),
             id=self._get_message_id(message_id),
@@ -1477,7 +1479,8 @@ class TelegramClient(TelegramBareClient):
 
         entity = await self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
-        caption, msg_entities = self._parse_message_text(caption, parse_mode)
+        caption, msg_entities =\
+            await self._parse_message_text(caption, parse_mode)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
@@ -1621,7 +1624,7 @@ class TelegramClient(TelegramBareClient):
         if not utils.is_list_like(caption):
             caption = (caption,)
         captions = [
-            self._parse_message_text(caption or '', parse_mode)
+            await self._parse_message_text(caption or '', parse_mode)
             for caption in reversed(caption)  # Pop from the end (so reverse)
         ]
         reply_to = self._get_message_id(reply_to)
