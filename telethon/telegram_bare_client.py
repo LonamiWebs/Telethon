@@ -9,7 +9,8 @@ from .crypto import rsa
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError, FloodWaitError,
     FloodTestPhoneWaitError, TypeNotFoundError, UnauthorizedError,
-    PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError
+    PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError,
+    RpcCallFailError
 )
 from .network import authenticator, MtProtoSender, Connection, ConnectionMode
 from .sessions import Session, SQLiteSession
@@ -544,9 +545,9 @@ class TelegramBareClient:
             await self._reconnect(new_dc=e.new_dc)
             return await self._invoke(call_receive, retry, *requests)
 
-        except ServerError as e:
+        except (ServerError, RpcCallFailError) as e:
             # Telegram is having some issues, just retry
-            __log__.error('Telegram servers are having internal errors %s', e)
+            __log__.warning('Telegram is having internal issues: %s', e)
 
         except (FloodWaitError, FloodTestPhoneWaitError) as e:
             __log__.warning('Request invoked too often, wait %ds', e.seconds)

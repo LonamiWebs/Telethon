@@ -297,13 +297,11 @@ class NewMessage(EventBuilder):
             if self._reply_message is None:
                 if isinstance(await self.input_chat, types.InputPeerChannel):
                     r = await self._client(functions.channels.GetMessagesRequest(
-                        await self.input_chat, [
-                            types.InputMessageID(self.message.reply_to_msg_id)
-                        ]
+                        await self.input_chat, [self.message.reply_to_msg_id]
                     ))
                 else:
                     r = await self._client(functions.messages.GetMessagesRequest(
-                        [types.InputMessageID(self.message.reply_to_msg_id)]
+                        [self.message.reply_to_msg_id]
                     ))
                 if not isinstance(r, types.messages.MessagesNotModified):
                     self._reply_message = r.messages[0]

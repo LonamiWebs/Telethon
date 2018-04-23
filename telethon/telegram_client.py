@@ -58,7 +58,7 @@ from .tl.functions.messages import (
     SendMessageRequest, GetChatsRequest, GetAllDraftsRequest,
     CheckChatInviteRequest, ReadMentionsRequest, SendMultiMediaRequest,
     UploadMediaRequest, EditMessageRequest, GetFullChatRequest,
-    ForwardMessagesRequest
+    ForwardMessagesRequest, SearchRequest
 )
 
 from .tl.functions import channels
@@ -780,9 +780,13 @@ class TelegramClient(TelegramBareClient):
         if isinstance(message, Message):
             if (message.media
                     and not isinstance(message.media, MessageMediaWebPage)):
-                return await self.send_file(entity, message.media)
+                return await self.send_file(entity, message.media,
+                                            caption=message.message,
+                                            entities=message.entities)
 
-            if utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
+            if reply_to is not None:
+                reply_id = self._get_message_id(reply_to)
+            elif utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
                 reply_id = message.reply_to_msg_id
             else:
                 reply_id = None
@@ -879,20 +883,26 @@ class TelegramClient(TelegramBareClient):
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
 
-    async def edit_message(self, entity, message_id, message=None,
+    async def edit_message(self, entity, message=None, text=None,
                            parse_mode='md', link_preview=True):
         """
         Edits the given message ID (to change its contents or disable preview).
 
         Args:
-            entity (`entity`):
-                From which chat to edit the message.
+            entity (`entity` | :tl:`Message`):
+                From which chat to edit the message. This can also be
+                the message to be edited, and the entity will be inferred
+                from it, so the next parameter will be assumed to be the
+                message text.
 
-            message_id (`str`):
-                The ID of the message (or ``Message`` itself) to be edited.
+            message (`int` | :tl:`Message` | `str`):
+                The ID of the message (or :tl:`Message` itself) to be edited.
+                If the `entity` was a :tl:`Message`, then this message will be
+                treated as the new text.
 
-            message (`str`, optional):
-                The new text of the message.
+            text (`str`, optional):
+                The new text of the message. Does nothing if the `entity`
+                was a :tl:`Message`.
 
             parse_mode (`str`, optional):
                 Can be 'md' or 'markdown' for markdown-like parsing (default),
@@ -902,6 +912,21 @@ class TelegramClient(TelegramBareClient):
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
+
+        Examples:
+
+            >>> async def main():
+            ...     client = await TelegramClient(...).start()
+            ...     message = await client.send_message('username', 'hello')
+            ...
+            ...     await client.edit_message('username', message, 'hello!')
+            ...     # or
+            ...     await client.edit_message('username', message.id, 'Hello')
+            ...     # or
+            ...     await client.edit_message(message, 'Hello!')
+            ...
+            >>> loop = ...
+            >>> loop.run_until_complete(main())
 
         Raises:
             ``MessageAuthorRequiredError`` if you're not the author of the
@@ -913,12 +938,16 @@ class TelegramClient(TelegramBareClient):
         Returns:
             The edited :tl:`Message`.
         """
-        message, msg_entities =\
-            await self._parse_message_text(message, parse_mode)
+        if isinstance(entity, Message):
+            text = message  # Shift the parameters to the right
+            message = entity
+            entity = entity.to_id
+
+        text, msg_entities = await self._parse_message_text(text, parse_mode)
         request = EditMessageRequest(
             peer=await self.get_input_entity(entity),
-            id=self._get_message_id(message_id),
-            message=message,
+            id=self._get_message_id(message),
+            message=text,
             no_webpage=not link_preview,
             entities=msg_entities
         )
@@ -967,9 +996,13 @@ class TelegramClient(TelegramBareClient):
 
     async def iter_messages(self, entity, limit=20, offset_date=None,
                             offset_id=0, max_id=0, min_id=0, add_offset=0,
+                            search=None, filter=None, from_user=None,
                             batch_size=100, wait_time=None, _total=None):
         """
         Iterator over the message history for the specified entity.
+
+        If either `search`, `filter` or `from_user` are provided,
+        :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
         Args:
             entity (`entity`):
@@ -1002,6 +1035,17 @@ class TelegramClient(TelegramBareClient):
                 Additional message offset (all of the specified offsets +
                 this offset = older messages).
 
+            search (`str`):
+                The string to be used as a search query.
+
+            filter (:tl:`MessagesFilter` | `type`):
+                The filter to use when returning messages. For instance,
+                :tl:`InputMessagesFilterPhotos` would yield only messages
+                containing photos.
+
+            from_user (`entity`):
+                Only messages from this user will be returned.
+
             batch_size (`int`):
                 Messages will be returned in chunks of this size (100 is
                 the maximum). While it makes no sense to modify this value,
@@ -1033,15 +1077,37 @@ class TelegramClient(TelegramBareClient):
         """
         entity = await self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
+        if search is not None or filter or from_user:
+            request = SearchRequest(
+                peer=entity,
+                q=search or '',
+                filter=filter() if isinstance(filter, type) else filter,
+                min_date=None,
+                max_date=offset_date,
+                offset_id=offset_id,
+                add_offset=add_offset,
+                limit=1,
+                max_id=max_id,
+                min_id=min_id,
+                from_id=self.get_input_entity(from_user) if from_user else None
+            )
+        else:
+            request = GetHistoryRequest(
+                peer=entity,
+                limit=1,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                min_id=min_id,
+                max_id=max_id,
+                add_offset=add_offset,
+                hash=0
+            )
+
         if limit == 0:
             if not _total:
                 return
             # No messages, but we still need to know the total message count
-            result = await self(GetHistoryRequest(
-                peer=entity, limit=1,
-                offset_date=None, offset_id=0, max_id=0, min_id=0,
-                add_offset=0, hash=0
-            ))
+            result = await self(request)
             _total[0] = getattr(result, 'count', len(result.messages))
             return
 
@@ -1052,17 +1118,8 @@ class TelegramClient(TelegramBareClient):
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
             # Telegram has a hard limit of 100
-            real_limit = min(limit - have, batch_size)
-            r = await self(GetHistoryRequest(
-                peer=entity,
-                limit=real_limit,
-                offset_date=offset_date,
-                offset_id=offset_id,
-                max_id=max_id,
-                min_id=min_id,
-                add_offset=add_offset,
-                hash=0
-            ))
+            request.limit = min(limit - have, batch_size)
+            r = await self(request)
             if _total:
                 _total[0] = getattr(r, 'count', len(r.messages))
 
@@ -1097,11 +1154,15 @@ class TelegramClient(TelegramBareClient):
                 yield message
                 have += 1
 
-            if len(r.messages) < real_limit:
+            if len(r.messages) < request.limit:
                 break
 
-            offset_id = r.messages[-1].id
-            offset_date = r.messages[-1].date
+            request.offset_id = r.messages[-1].id
+            if isinstance(request, GetHistoryRequest):
+                request.offset_date = r.messages[-1].date
+            else:
+                request.max_date = r.messages[-1].date
+
             await asyncio.sleep(wait_time)
 
     async def get_messages(self, *args, **kwargs):
@@ -1479,8 +1540,14 @@ class TelegramClient(TelegramBareClient):
 
         entity = await self.get_input_entity(entity)
         reply_to = self._get_message_id(reply_to)
-        caption, msg_entities =\
-            await self._parse_message_text(caption, parse_mode)
+
+        # Not document since it's subject to change.
+        # Needed when a Message is passed to send_message and it has media.
+        if 'entities' in kwargs:
+            msg_entities = kwargs['entities']
+        else:
+            caption, msg_entities =\
+                await self._parse_message_text(caption, parse_mode)
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
@@ -2481,7 +2548,11 @@ class TelegramClient(TelegramBareClient):
             If in the end the access hash required for the peer was not found,
             a ValueError will be raised.
         Returns:
-            :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`.
+            :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`
+            or :tl:`InputPeerSelf` if the parameter is ``'me'`` or ``'self'``.
+
+            If you need to get the ID of yourself, you should use
+            `get_me` with ``input_peer=True``) instead.
         """
         if peer in ('me', 'self'):
             return InputPeerSelf()
