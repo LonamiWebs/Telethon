@@ -204,9 +204,7 @@ class ChatAction(EventBuilder):
 
             if isinstance(self._pinned_message, int) and self.input_chat:
                 r = self._client(functions.channels.GetMessagesRequest(
-                    self._input_chat, [
-                        types.InputMessageID(self._pinned_message)
-                    ]
+                    self._input_chat, [self._pinned_message]
                 ))
                 try:
                     self._pinned_message = next(

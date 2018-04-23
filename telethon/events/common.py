@@ -118,15 +118,11 @@ class EventCommon(abc.ABC):
         try:
             if isinstance(chat, types.InputPeerChannel):
                 result = self._client(
-                    functions.channels.GetMessagesRequest(chat, [
-                        types.InputMessageID(msg_id)
-                    ])
+                    functions.channels.GetMessagesRequest(chat, [msg_id])
                 )
             else:
                 result = self._client(
-                    functions.messages.GetMessagesRequest([
-                        types.InputMessageID(msg_id)
-                    ])
+                    functions.messages.GetMessagesRequest([msg_id])
                 )
         except RPCError:
             return None, None

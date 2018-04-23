@@ -18,7 +18,8 @@ AUTO_CASTS = {
     'InputChannel': 'utils.get_input_channel(client.get_input_entity({}))',
     'InputUser': 'utils.get_input_user(client.get_input_entity({}))',
     'InputMedia': 'utils.get_input_media({})',
-    'InputPhoto': 'utils.get_input_photo({})'
+    'InputPhoto': 'utils.get_input_photo({})',
+    'InputMessage': 'utils.get_input_message({})'
 }
 
 BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
