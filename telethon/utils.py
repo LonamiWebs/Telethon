@@ -255,8 +255,12 @@ def get_input_media(media, is_photo=False):
     it will be treated as an :tl:`InputMediaUploadedPhoto`.
     """
     try:
-        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia'):
+        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
             return media
+        elif media.SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
+            return InputMediaPhoto(media)
+        elif media.SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
+            return InputMediaDocument(media)
     except AttributeError:
         _raise_cast_fail(media, 'InputMedia')
 
