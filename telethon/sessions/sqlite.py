@@ -13,7 +13,7 @@ from ..tl.types import (
 )
 
 EXTENSION = '.session'
-CURRENT_VERSION = 3  # database version
+CURRENT_VERSION = 4  # database version
 
 
 class SQLiteSession(MemorySession):
@@ -99,6 +99,14 @@ class SQLiteSession(MemorySession):
                     hash integer,
                     primary key(md5_digest, file_size, type)
                 )"""
+                ,
+                """update_state (
+                    id integer primary key,
+                    pts integer,
+                    qts integer,
+                    date integer,
+                    seq integer
+                )"""
             )
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
             # Migrating from JSON -> new table and may have entities
@@ -141,18 +149,30 @@ class SQLiteSession(MemorySession):
 
     def _upgrade_database(self, old):
         c = self._cursor()
-        # old == 1 doesn't have the old sent_files so no need to drop
+        if old == 1:
+            old += 1
+            # old == 1 doesn't have the old sent_files so no need to drop
         if old == 2:
+            old += 1
             # Old cache from old sent_files lasts then a day anyway, drop
             c.execute('drop table sent_files')
-        self._create_table(c, """sent_files (
-            md5_digest blob,
-            file_size integer,
-            type integer,
-            id integer,
-            hash integer,
-            primary key(md5_digest, file_size, type)
-        )""")
+            self._create_table(c, """sent_files (
+                md5_digest blob,
+                file_size integer,
+                type integer,
+                id integer,
+                hash integer,
+                primary key(md5_digest, file_size, type)
+            )""")
+        if old == 3:
+            old += 1
+            self._create_table(c, """update_state (
+                id integer primary key,
+                pts integer,
+                qts integer,
+                date integer,
+                seq integer
+            )""")
         c.close()
 
     @staticmethod
