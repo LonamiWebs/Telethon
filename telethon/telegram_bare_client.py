@@ -253,6 +253,15 @@ class TelegramBareClient:
         __log__.info('Disconnecting...')
         self._user_connected = False
         self._sender.disconnect()
+        if self._recv_loop:
+            self._recv_loop.cancel()
+            self._recv_loop = None
+        if self._ping_loop:
+            self._ping_loop.cancel()
+            self._ping_loop = None
+        if self._state_loop:
+            self._state_loop.cancel()
+            self._state_loop = None
         # TODO Shall we clear the _exported_sessions, or may be reused?
         self._first_request = True  # On reconnect it will be first again
         self.session.close()
