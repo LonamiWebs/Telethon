@@ -139,7 +139,7 @@ def main():
 
     else:
         # e.g. install from GitHub
-        if os.path.isfile(GENERATOR_DIR):
+        if os.path.isdir(GENERATOR_DIR):
             generate(['tl', 'errors'])
 
         # Get the long description from the README file
