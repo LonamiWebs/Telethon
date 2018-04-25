@@ -110,6 +110,10 @@ class UpdateState:
                 # We don't want to crash a worker thread due to any reason
                 __log__.exception('Unhandled exception on worker %d', wid)
 
+    def get_update_state(self, entity_id):
+        """Gets the updates.State corresponding to the given entity or 0."""
+        return self._state
+
     def process(self, update):
         """Processes an update object. This method is normally called by
            the library itself.

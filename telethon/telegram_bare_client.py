@@ -275,6 +275,7 @@ class TelegramBareClient:
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
         self._first_request = True  # On reconnect it will be first again
+        self.session.set_update_state(0, self.updates.get_update_state(0))
         self.session.close()
 
     def _reconnect(self, new_dc=None):

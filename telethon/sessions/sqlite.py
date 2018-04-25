@@ -5,6 +5,8 @@ from base64 import b64decode
 from os.path import isfile as file_exists
 from threading import Lock, RLock
 
+from telethon.tl import types
+
 from .memory import MemorySession, _SentFileType
 from .. import utils
 from ..crypto import AuthKey
@@ -225,6 +227,22 @@ class SQLiteSession(MemorySession):
                 self._auth_key.key if self._auth_key else b''
             ))
             c.close()
+
+    def get_update_state(self, entity_id):
+        c = self._cursor()
+        row = c.execute('select pts, qts, date, seq from update_state '
+                        'where id = ?', (entity_id,)).fetchone()
+        c.close()
+        if row:
+            return types.updates.State(*row)
+
+    def set_update_state(self, entity_id, state):
+        with self._db_lock:
+            c = self._cursor()
+            c.execute('insert or replace into update_state values (?,?,?,?,?)',
+                      (entity_id, state.pts, state.qts, state.date, state.seq))
+            c.close()
+            self.save()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
