@@ -1111,6 +1111,7 @@ class TelegramClient(TelegramBareClient):
         have = 0
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
+            start = time.time()
             # Telegram has a hard limit of 100
             request.limit = min(limit - have, batch_size)
             r = self(request)
@@ -1157,7 +1158,7 @@ class TelegramClient(TelegramBareClient):
             else:
                 request.max_date = r.messages[-1].date
 
-            time.sleep(wait_time)
+            time.sleep(max(wait_time - (time.time() - start), 0))
 
     def get_messages(self, *args, **kwargs):
         """
