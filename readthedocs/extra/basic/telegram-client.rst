@@ -67,7 +67,7 @@ Many other common methods for quick scripts are also available:
 
         # The utils package has some goodies, like .get_display_name()
         from telethon import utils
-        for message in client.get_message_history('username', limit=10):
+        for message in client.iter_messages('username', limit=10):
             print(utils.get_display_name(message.sender), message.message)
 
         # Dialogs are the conversations you have open
