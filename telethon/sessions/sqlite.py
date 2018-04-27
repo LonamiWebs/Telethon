@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sqlite3
@@ -6,7 +7,6 @@ from os.path import isfile as file_exists
 from threading import Lock, RLock
 
 from telethon.tl import types
-
 from .memory import MemorySession, _SentFileType
 from .. import utils
 from ..crypto import AuthKey
@@ -234,13 +234,16 @@ class SQLiteSession(MemorySession):
                         'where id = ?', (entity_id,)).fetchone()
         c.close()
         if row:
-            return types.updates.State(*row)
+            pts, qts, date, seq = row
+            date = datetime.datetime.utcfromtimestamp(date)
+            return types.updates.State(pts, qts, date, seq, unread_count=0)
 
     def set_update_state(self, entity_id, state):
         with self._db_lock:
             c = self._cursor()
             c.execute('insert or replace into update_state values (?,?,?,?,?)',
-                      (entity_id, state.pts, state.qts, state.date, state.seq))
+                      (entity_id, state.pts, state.qts,
+                       state.date.timestamp(), state.seq))
             c.close()
             self.save()
 
