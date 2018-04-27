@@ -2174,7 +2174,7 @@ class TelegramClient(TelegramBareClient):
 
     def download_file(self,
                       input_location,
-                      file,
+                      file=None,
                       part_size_kb=None,
                       file_size=None,
                       progress_callback=None):
@@ -2185,9 +2185,12 @@ class TelegramClient(TelegramBareClient):
             input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
 
-            file (`str` | `file`):
+            file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
+
+                If the file path is ``None``, then the result will be
+                saved in memory and returned as `bytes`.
 
             part_size_kb (`int`, optional):
                 Chunk size when downloading files. The larger, the less
@@ -2219,7 +2222,10 @@ class TelegramClient(TelegramBareClient):
             raise ValueError(
                 'The part size must be evenly divisible by 4096.')
 
-        if isinstance(file, str):
+        in_memory = file is None
+        if in_memory:
+            f = io.BytesIO()
+        elif isinstance(file, str):
             # Ensure that we'll be able to download the media
             helpers.ensure_parent_dir_exists(file)
             f = open(file, 'wb')
@@ -2261,7 +2267,11 @@ class TelegramClient(TelegramBareClient):
                 # So there is nothing left to download and write
                 if not result.bytes:
                     # Return some extra information, unless it's a CDN file
-                    return getattr(result, 'type', '')
+                    if in_memory:
+                        f.flush()
+                        return f.getvalue()
+                    else:
+                        return getattr(result, 'type', '')
 
                 f.write(result.bytes)
                 __log__.debug('Saved %d more bytes', len(result.bytes))
@@ -2276,7 +2286,7 @@ class TelegramClient(TelegramBareClient):
                     cdn_decrypter.client.disconnect()
                 except:
                     pass
-            if isinstance(file, str):
+            if isinstance(file, str) or in_memory:
                 f.close()
 
     # endregion
