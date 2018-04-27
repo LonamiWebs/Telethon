@@ -2235,6 +2235,7 @@ class TelegramClient(TelegramBareClient):
         # The used client will change if FileMigrateError occurs
         client = self
         cdn_decrypter = None
+        input_location = utils.get_input_location(input_location)
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:

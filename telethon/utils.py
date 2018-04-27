@@ -25,7 +25,8 @@ from .tl.types import (
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
-    TopPeer, InputNotifyPeer, InputMessageID
+    TopPeer, InputNotifyPeer, InputMessageID, InputFileLocation,
+    InputDocumentFileLocation, PhotoSizeEmpty
 )
 from .tl.types.contacts import ResolvedPeer
 
@@ -350,6 +351,39 @@ def get_input_message(message):
         pass
 
     _raise_cast_fail(message, 'InputMedia')
+
+
+def get_input_location(location):
+    """Similar to :meth:`get_input_peer`, but for input messages."""
+    try:
+        if location.SUBCLASS_OF_ID == 0x1523d462:
+            return location  # crc32(b'InputFileLocation'):
+    except AttributeError:
+        _raise_cast_fail(location, 'InputFileLocation')
+
+    if isinstance(location, Message):
+        location = location.media
+
+    if isinstance(location, MessageMediaDocument):
+        location = location.document
+    elif isinstance(location, MessageMediaPhoto):
+        location = location.photo
+
+    if isinstance(location, Document):
+        return InputDocumentFileLocation(
+            location.id, location.access_hash, location.version)
+    elif isinstance(location, Photo):
+        try:
+            location = next(x for x in reversed(location.sizes)
+                            if not isinstance(x, PhotoSizeEmpty)).location
+        except StopIteration:
+            pass
+
+    if isinstance(location, (FileLocation, FileLocationUnavailable)):
+        return InputFileLocation(
+            location.volume_id, location.local_id, location.secret)
+
+    _raise_cast_fail(location, 'InputFileLocation')
 
 
 def is_image(file):
