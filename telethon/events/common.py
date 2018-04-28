@@ -209,17 +209,6 @@ class EventCommon(abc.ABC):
         return d
 
 
-class Raw(EventBuilder):
-    """
-    Represents a raw event. The event is the update itself.
-    """
-    def resolve(self, client):
-        pass
-
-    def build(self, update):
-        return update
-
-
 def name_inner_event(cls):
     """Decorator to rename cls.Event 'Event' as 'cls.Event'"""
     if hasattr(cls, 'Event'):
