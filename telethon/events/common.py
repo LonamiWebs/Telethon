@@ -97,6 +97,7 @@ class EventCommon(abc.ABC):
         self._chat = None
 
         self.pattern_match = None
+        self.original_update = None
 
         self.is_private = isinstance(chat_peer, types.PeerUser)
         self.is_group = (

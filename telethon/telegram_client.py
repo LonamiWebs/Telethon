@@ -2323,6 +2323,7 @@ class TelegramClient(TelegramBareClient):
             event = builder.build(update)
             if event:
                 event._client = self
+                event.original_update = update
                 try:
                     callback(event)
                 except events.StopPropagation:
