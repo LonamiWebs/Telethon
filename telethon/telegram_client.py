@@ -2593,7 +2593,7 @@ class TelegramClient(TelegramBareClient):
         raise ValueError(
             'Could not find the input entity for "{}". Please read https://'
             'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
-            'find out more details.'
+            ' find out more details.'
             .format(peer)
         )
 

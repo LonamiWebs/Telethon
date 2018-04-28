@@ -95,7 +95,6 @@ class ChatAction(EventBuilder):
             photo (:tl:`Photo`, optional):
                 The new photo (or ``None`` if it was removed).
 
-
             user_added (`bool`):
                 ``True`` if the user was added by some other.
 
@@ -111,7 +110,7 @@ class ChatAction(EventBuilder):
             created (`bool`, optional):
                 ``True`` if this chat was just created.
 
-            new_title (`bool`, optional):
+            new_title (`str`, optional):
                 The new title string for the chat, if applicable.
 
             unpin (`bool`):
