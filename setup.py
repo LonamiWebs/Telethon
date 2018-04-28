@@ -10,14 +10,13 @@ Extra supported commands are:
 * pypi, to generate sdist, bdist_wheel, and push to PyPi
 """
 
+import itertools
 import os
 import re
-# To use a consistent encoding
 import shutil
 from codecs import open
 from sys import argv, version_info
 
-# Always prefer setuptools over distutils
 from setuptools import find_packages, setup
 
 
@@ -44,7 +43,8 @@ ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
 ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
 ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpc_error_list.py')
 
-TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'scheme.tl')
+TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
+TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
 TLOBJECT_OUT = os.path.join(LIBRARY_DIR, 'tl')
 IMPORT_DEPTH = 2
 
@@ -57,7 +57,9 @@ def generate(which):
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
-    tlobjects = list(parse_tl(TLOBJECT_IN_TL, ignore_core=True))
+    tlobjects = list(itertools.chain(
+        parse_tl(TLOBJECT_IN_CORE_TL), parse_tl(TLOBJECT_IN_TL)))
+
     errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
     layer = find_layer(TLOBJECT_IN_TL)
 
