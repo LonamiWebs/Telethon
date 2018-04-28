@@ -1083,6 +1083,7 @@ class TelegramClient(TelegramBareClient):
                 limit=1,
                 max_id=max_id,
                 min_id=min_id,
+                hash=0,
                 from_id=self.get_input_entity(from_user) if from_user else None
             )
         else:

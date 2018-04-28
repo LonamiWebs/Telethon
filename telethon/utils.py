@@ -26,7 +26,7 @@ from .tl.types import (
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
     TopPeer, InputNotifyPeer, InputMessageID, InputFileLocation,
-    InputDocumentFileLocation, PhotoSizeEmpty
+    InputDocumentFileLocation, PhotoSizeEmpty, InputDialogPeer
 )
 from .tl.types.contacts import ResolvedPeer
 
@@ -180,6 +180,24 @@ def get_input_user(entity):
         return InputUser(entity.user_id, entity.access_hash)
 
     _raise_cast_fail(entity, 'InputUser')
+
+
+def get_input_dialog(dialog):
+    """Similar to :meth:`get_input_peer`, but for dialogs"""
+    try:
+        if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
+            return dialog
+        if dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+            return InputDialogPeer(dialog)
+    except AttributeError:
+        _raise_cast_fail(dialog, 'InputDialogPeer')
+
+    try:
+        return InputDialogPeer(get_input_peer(dialog))
+    except TypeError:
+        pass
+
+    _raise_cast_fail(dialog, 'InputDialogPeer')
 
 
 def get_input_document(document):
