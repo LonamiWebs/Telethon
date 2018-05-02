@@ -17,6 +17,7 @@ AUTO_CASTS = {
     'InputPeer': 'utils.get_input_peer(await client.get_input_entity({}))',
     'InputChannel': 'utils.get_input_channel(await client.get_input_entity({}))',
     'InputUser': 'utils.get_input_user(await client.get_input_entity({}))',
+    'InputDialogPeer': 'utils.get_input_dialog(await client.get_input_entity({}))',
     'InputMedia': 'utils.get_input_media({})',
     'InputPhoto': 'utils.get_input_photo({})',
     'InputMessage': 'utils.get_input_message({})'

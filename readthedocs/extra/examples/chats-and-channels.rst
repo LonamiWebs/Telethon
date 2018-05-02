@@ -288,7 +288,7 @@ use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
 
 
         # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
-        # Obtain `msg_ids' through `.get_message_history()` or anyhow. Must be a list.
+        # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
         await client(GetMessagesViewsRequest(
             peer=channel,

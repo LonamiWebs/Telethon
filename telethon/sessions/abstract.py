@@ -68,6 +68,25 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_update_state(self, entity_id):
+        """
+        Returns the ``UpdateState`` associated with the given `entity_id`.
+        If the `entity_id` is 0, it should return the ``UpdateState`` for
+        no specific channel (the "general" state). If no state is known
+        it should ``return None``.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_update_state(self, entity_id, state):
+        """
+        Sets the given ``UpdateState`` for the specified `entity_id`, which
+        should be 0 if the ``UpdateState`` is the "general" state (and not
+        for any specific channel).
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def close(self):
         """
         Called on client disconnection. Should be used to

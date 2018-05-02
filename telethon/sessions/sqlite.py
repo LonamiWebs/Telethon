@@ -1,9 +1,11 @@
+import datetime
 import json
 import os
 import sqlite3
 from base64 import b64decode
 from os.path import isfile as file_exists
 
+from telethon.tl import types
 from .memory import MemorySession, _SentFileType
 from .. import utils
 from ..crypto import AuthKey
@@ -218,6 +220,25 @@ class SQLiteSession(MemorySession):
             self._auth_key.key if self._auth_key else b''
         ))
         c.close()
+
+    def get_update_state(self, entity_id):
+        c = self._cursor()
+        row = c.execute('select pts, qts, date, seq from update_state '
+                        'where id = ?', (entity_id,)).fetchone()
+        c.close()
+        if row:
+            pts, qts, date, seq = row
+            date = datetime.datetime.utcfromtimestamp(date)
+            return types.updates.State(pts, qts, date, seq, unread_count=0)
+
+    def set_update_state(self, entity_id, state):
+        with self._db_lock:
+            c = self._cursor()
+            c.execute('insert or replace into update_state values (?,?,?,?,?)',
+                      (entity_id, state.pts, state.qts,
+                       state.date.timestamp(), state.seq))
+            c.close()
+            self.save()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""

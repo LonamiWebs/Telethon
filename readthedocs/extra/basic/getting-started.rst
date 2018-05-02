@@ -48,7 +48,7 @@ Basic Usage
 
        # Retrieving messages from a chat
        from telethon import utils
-       async for message in client.get_message_history('username', limit=10):
+       async for message in client.iter_messages('username', limit=10):
            print(utils.get_display_name(message.sender), message.message)
 
        # Listing all the dialogs (conversations you have open)
@@ -60,7 +60,7 @@ Basic Usage
 
        # Once you have a message with .media (if message.media)
        # you can download it using client.download_media():
-       messages = await client.get_message_history('username')
+       messages = await client.get_messages('username')
        await client.download_media(messages[0])
 
    **More details**: :ref:`telegram-client`

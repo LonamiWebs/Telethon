@@ -207,7 +207,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    messages = self.get_message_history(entity, limit=10)
+                    messages = self.get_messages(entity, limit=10)
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
@@ -216,7 +216,7 @@ class InteractiveTelegramClient(TelegramClient):
                         # Note that the .sender attribute is only there for
                         # convenience, the API returns it differently. But
                         # this shouldn't concern us. See the documentation
-                        # for .get_message_history() for more information.
+                        # for .iter_messages() for more information.
                         name = get_display_name(msg.sender)
 
                         # Format the message content

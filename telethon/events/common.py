@@ -97,6 +97,7 @@ class EventCommon(abc.ABC):
         self._chat = None
 
         self.pattern_match = None
+        self.original_update = None
 
         self.is_private = isinstance(chat_peer, types.PeerUser)
         self.is_group = (
@@ -206,17 +207,6 @@ class EventCommon(abc.ABC):
         d = {k: v for k, v in self.__dict__.items() if k[0] != '_'}
         d['_'] = self._event_name
         return d
-
-
-class Raw(EventBuilder):
-    """
-    Represents a raw event. The event is the update itself.
-    """
-    async def resolve(self, client):
-        pass
-
-    def build(self, update):
-        return update
 
 
 def name_inner_event(cls):

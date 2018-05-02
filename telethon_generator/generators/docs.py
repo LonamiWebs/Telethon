@@ -439,9 +439,9 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             # List all the methods which take this type as input
             docs.write_title('Methods accepting this type as input', level=3)
             other_methods = sorted(
-                (t for t in tlobjects
-                 if any(t == a.type for a in t.args) and t.is_function),
-                key=lambda t: t.name
+                (u for u in tlobjects
+                 if any(a.type == t for a in u.args) and u.is_function),
+                key=lambda u: u.name
             )
             if not other_methods:
                 docs.write_text(
@@ -464,10 +464,9 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             # List every other type which has this type as a member
             docs.write_title('Other types containing this type', level=3)
             other_types = sorted(
-                (t for t in tlobjects
-                 if any(t == a.type for a in t.args)
-                 and not t.is_function
-                 ), key=lambda t: t.name
+                (u for u in tlobjects
+                 if any(a.type == t for a in u.args) and not u.is_function),
+                key=lambda u: u.name
             )
 
             if not other_types:

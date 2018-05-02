@@ -1089,6 +1089,7 @@ class TelegramClient(TelegramBareClient):
                 limit=1,
                 max_id=max_id,
                 min_id=min_id,
+                hash=0,
                 from_id=self.get_input_entity(from_user) if from_user else None
             )
         else:
@@ -1117,6 +1118,7 @@ class TelegramClient(TelegramBareClient):
         have = 0
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
+            start = time.time()
             # Telegram has a hard limit of 100
             request.limit = min(limit - have, batch_size)
             r = await self(request)
@@ -1163,7 +1165,7 @@ class TelegramClient(TelegramBareClient):
             else:
                 request.max_date = r.messages[-1].date
 
-            await asyncio.sleep(wait_time)
+            await asyncio.sleep(max(wait_time - (time.time() - start), 0))
 
     async def get_messages(self, *args, **kwargs):
         """
@@ -2178,7 +2180,7 @@ class TelegramClient(TelegramBareClient):
                 return result
             i += 1
 
-    async def download_file(self, input_location, file, part_size_kb=None,
+    async def download_file(self, input_location, file=None, part_size_kb=None,
                             file_size=None, progress_callback=None):
         """
         Downloads the given input location to a file.
@@ -2187,9 +2189,12 @@ class TelegramClient(TelegramBareClient):
             input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
 
-            file (`str` | `file`):
+            file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
+
+                If the file path is ``None``, then the result will be
+                saved in memory and returned as `bytes`.
 
             part_size_kb (`int`, optional):
                 Chunk size when downloading files. The larger, the less
@@ -2221,7 +2226,10 @@ class TelegramClient(TelegramBareClient):
             raise ValueError(
                 'The part size must be evenly divisible by 4096.')
 
-        if isinstance(file, str):
+        in_memory = file is None
+        if in_memory:
+            f = io.BytesIO()
+        elif isinstance(file, str):
             # Ensure that we'll be able to download the media
             helpers.ensure_parent_dir_exists(file)
             f = open(file, 'wb')
@@ -2231,6 +2239,7 @@ class TelegramClient(TelegramBareClient):
         # The used client will change if FileMigrateError occurs
         client = self
         cdn_decrypter = None
+        input_location = utils.get_input_location(input_location)
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:
@@ -2264,7 +2273,11 @@ class TelegramClient(TelegramBareClient):
                 # So there is nothing left to download and write
                 if not result.bytes:
                     # Return some extra information, unless it's a CDN file
-                    return getattr(result, 'type', '')
+                    if in_memory:
+                        f.flush()
+                        return f.getvalue()
+                    else:
+                        return getattr(result, 'type', '')
 
                 f.write(result.bytes)
                 __log__.debug('Saved %d more bytes', len(result.bytes))
@@ -2279,7 +2292,7 @@ class TelegramClient(TelegramBareClient):
                     cdn_decrypter.client.disconnect()
                 except:
                     pass
-            if isinstance(file, str):
+            if isinstance(file, str) or in_memory:
                 f.close()
 
     # endregion
@@ -2317,6 +2330,7 @@ class TelegramClient(TelegramBareClient):
             event = builder.build(update)
             if event:
                 event._client = self
+                event.original_update = update
                 try:
                     await callback(event)
                 except events.StopPropagation:
@@ -2576,7 +2590,7 @@ class TelegramClient(TelegramBareClient):
         raise ValueError(
             'Could not find the input entity for "{}". Please read https://'
             'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
-            'find out more details.'
+            ' find out more details.'
             .format(peer)
         )
 
