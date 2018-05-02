@@ -239,14 +239,25 @@ def _write_resolve(tlobject, builder):
             ac = AUTO_CASTS.get(arg.type, None)
             if not ac:
                 continue
-            if arg.is_vector:
-                builder.write('self.{0} = [{1} for _x in self.{0}]',
-                              arg.name, ac.format('_x'))
-            else:
-                builder.write('self.{} = {}', arg.name,
+
+            if arg.is_flag:
+                builder.writeln('if self.{}:', arg.name)
+
+            if not arg.is_vector:
+                builder.writeln('self.{} = {}', arg.name,
                               ac.format('self.' + arg.name))
-            builder.writeln(' if self.{} else None'.format(arg.name)
-                            if arg.is_flag else '')
+            else:
+                # Since the auto-cast might have await, we can't use that in
+                # Python 3.5's list comprehensions. Build the list manually.
+                builder.writeln('_tmp = []')
+                builder.writeln('for _x in self.{}:', arg.name)
+                builder.writeln('_tmp.append({})', ac.format('_x'))
+                builder.end_block()
+                builder.writeln('self.{} = _tmp', arg.name)
+
+            if arg.is_flag:
+                builder.end_block()
+
         builder.end_block()
 
 
