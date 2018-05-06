@@ -519,6 +519,11 @@ class TelegramBareClient:
             __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
+                try:
+                    self._sender.disconnect()
+                except:
+                    pass
+
                 return None
             else:
                 # User never called .connect(), so raise this error.
