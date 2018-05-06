@@ -39,6 +39,13 @@ Note that ``'some_name'`` will be used to save your session (persistent
 information such as access key and others) as ``'some_name.session'`` in
 your disk. This is by default a database file using Python's ``sqlite3``.
 
+.. note::
+
+    It's important that the library always accesses the same session file so
+    that you don't need to re-send the code over and over again. By default it
+    creates the file in your working directory, but absolute paths work too.
+
+
 Before using the client, you must be connected to Telegram.
 Doing so is very easy:
 

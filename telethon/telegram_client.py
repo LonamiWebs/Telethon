@@ -72,7 +72,6 @@ from .tl.functions.channels import (
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
-    InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
@@ -104,6 +103,14 @@ class TelegramClient(TelegramBareClient):
             given (it may be a full path), or the Session instance to be
             used otherwise. If it's ``None``, the session will not be saved,
             and you should call :meth:`.log_out()` when you're done.
+
+            Note that if you pass a string it will be a file in the current
+            working directory, although you can also pass absolute paths.
+
+            The session file contains enough information for you to login
+            without re-sending the code, so if you have to enter the code
+            more than once, maybe you're changing the working directory,
+            renaming or removing the file, or using random names.
 
         api_id (`int` | `str`):
             The API ID you obtained from https://my.telegram.org.
@@ -531,7 +538,8 @@ class TelegramClient(TelegramBareClient):
                            offset_peer=InputPeerEmpty(), _total=None):
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
-        Dialogs are the open "chats" or conversations with other people.
+        Dialogs are the open "chats" or conversations with other people,
+        groups you have joined, or channels you are subscribed to.
 
         Args:
             limit (`int` | `None`):
@@ -738,6 +746,11 @@ class TelegramClient(TelegramBareClient):
 
             message (`str` | :tl:`Message`):
                 The message to be sent, or another message object to resend.
+
+                The maximum length for a message is 35,000 bytes or 4,096
+                characters. Longer messages will not be sliced automatically,
+                and you should slice them manually if the text to send is
+                longer than said length.
 
             reply_to (`int` | :tl:`Message`, optional):
                 Whether to reply to a message or not. If an integer is provided,
@@ -1881,59 +1894,48 @@ class TelegramClient(TelegramBareClient):
             ``None`` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
         """
-        photo = entity
-        possible_names = []
-        try:
-            is_entity = entity.SUBCLASS_OF_ID in (
-                0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
-            )
-        except AttributeError:
-            return None  # Not even a TLObject as attribute access failed
-
-        if is_entity:
-            # Maybe it is an user or a chat? Or their full versions?
-            #
-            # The hexadecimal numbers above are simply:
-            # hex(crc32(x.encode('ascii'))) for x in
-            # ('User', 'Chat', 'UserFull', 'ChatFull')
+        # hex(crc32(x.encode('ascii'))) for x in
+        # ('User', 'Chat', 'UserFull', 'ChatFull')
+        ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
+        # ('InputPeer', 'InputUser', 'InputChannel')
+        INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
+        if not isinstance(entity, TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
             entity = await self.get_entity(entity)
+
+        possible_names = []
+        if entity.SUBCLASS_OF_ID not in ENTITIES:
+            photo = entity
+        else:
             if not hasattr(entity, 'photo'):
                 # Special case: may be a ChatFull with photo:Photo
                 # This is different from a normal UserProfilePhoto and Chat
-                if hasattr(entity, 'chat_photo'):
-                    return await self._download_photo(
-                        entity.chat_photo, file,
-                        date=None, progress_callback=None
-                    )
-                else:
-                    # Give up
+                if not hasattr(entity, 'chat_photo'):
                     return None
+
+                return await self._download_photo(
+                    entity.chat_photo, file, date=None, progress_callback=None)
 
             for attr in ('username', 'first_name', 'title'):
                 possible_names.append(getattr(entity, attr, None))
 
             photo = entity.photo
 
-        if not isinstance(photo, UserProfilePhoto) and \
-                not isinstance(photo, ChatPhoto):
-            return None
+        if isinstance(photo, (UserProfilePhoto, ChatPhoto)):
+            loc = photo.photo_big if download_big else photo.photo_small
+        else:
+            try:
+                loc = utils.get_input_location(photo)
+            except TypeError:
+                return None
 
-        photo_location = photo.photo_big if download_big else photo.photo_small
         file = self._get_proper_filename(
             file, 'profile_photo', '.jpg',
             possible_names=possible_names
         )
 
-        # Download the media with the largest size input file location
         try:
-            await self.download_file(
-                InputFileLocation(
-                    volume_id=photo_location.volume_id,
-                    local_id=photo_location.local_id,
-                    secret=photo_location.secret
-                ),
-                file
-            )
+            await self.download_file(loc, file)
+            return file
         except LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
             # The fix seems to be using the full channel chat photo.
@@ -1947,7 +1949,6 @@ class TelegramClient(TelegramBareClient):
             else:
                 # Until there's a report for chats, no need to.
                 return None
-        return file
 
     async def download_media(self, message, file=None, progress_callback=None):
         """
@@ -2028,16 +2029,8 @@ class TelegramClient(TelegramBareClient):
                     f.close()
             return file
 
-        await self.download_file(
-            InputFileLocation(
-                volume_id=photo.location.volume_id,
-                local_id=photo.location.local_id,
-                secret=photo.location.secret
-            ),
-            file,
-            file_size=photo.size,
-            progress_callback=progress_callback
-        )
+        await self.download_file(photo.location, file, file_size=photo.size,
+                                 progress_callback=progress_callback)
         return file
 
     async def _download_document(self, document, file, date, progress_callback):
@@ -2073,16 +2066,8 @@ class TelegramClient(TelegramBareClient):
             date=date, possible_names=possible_names
         )
 
-        await self.download_file(
-            InputDocumentFileLocation(
-                id=document.id,
-                access_hash=document.access_hash,
-                version=document.version
-            ),
-            file,
-            file_size=file_size,
-            progress_callback=progress_callback
-        )
+        await self.download_file(document, file, file_size=file_size,
+                                 progress_callback=progress_callback)
         return file
 
     @staticmethod
@@ -2186,8 +2171,10 @@ class TelegramClient(TelegramBareClient):
         Downloads the given input location to a file.
 
         Args:
-            input_location (:tl:`InputFileLocation`):
+            input_location (:tl:`FileLocation` | :tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
+                See `telethon.utils.get_input_location` source for a complete
+                list of supported types.
 
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
