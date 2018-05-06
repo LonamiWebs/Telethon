@@ -1874,59 +1874,55 @@ class TelegramClient(TelegramBareClient):
             ``None`` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
         """
-        photo = entity
-        possible_names = []
-        try:
-            is_entity = entity.SUBCLASS_OF_ID in (
-                0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697
-            )
-        except AttributeError:
-            return None  # Not even a TLObject as attribute access failed
-
-        if is_entity:
-            # Maybe it is an user or a chat? Or their full versions?
-            #
-            # The hexadecimal numbers above are simply:
-            # hex(crc32(x.encode('ascii'))) for x in
-            # ('User', 'Chat', 'UserFull', 'ChatFull')
+        # hex(crc32(x.encode('ascii'))) for x in
+        # ('User', 'Chat', 'UserFull', 'ChatFull')
+        ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
+        # ('InputPeer', 'InputUser', 'InputChannel')
+        INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
+        if not isinstance(entity, TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
             entity = self.get_entity(entity)
+
+        possible_names = []
+        if entity.SUBCLASS_OF_ID not in ENTITIES:
+            photo = entity
+        else:
             if not hasattr(entity, 'photo'):
                 # Special case: may be a ChatFull with photo:Photo
                 # This is different from a normal UserProfilePhoto and Chat
-                if hasattr(entity, 'chat_photo'):
-                    return self._download_photo(
-                        entity.chat_photo, file,
-                        date=None, progress_callback=None
-                    )
-                else:
-                    # Give up
+                if not hasattr(entity, 'chat_photo'):
                     return None
+
+                return self._download_photo(entity.chat_photo, file,
+                                            date=None, progress_callback=None)
 
             for attr in ('username', 'first_name', 'title'):
                 possible_names.append(getattr(entity, attr, None))
 
             photo = entity.photo
 
-        if not isinstance(photo, UserProfilePhoto) and \
-                not isinstance(photo, ChatPhoto):
-            return None
+        if isinstance(photo, (UserProfilePhoto, ChatPhoto)):
+            loc = photo.photo_big if download_big else photo.photo_small
+        else:
+            try:
+                loc = utils.get_input_location(photo)
+            except TypeError:
+                return None
 
-        photo_location = photo.photo_big if download_big else photo.photo_small
         file = self._get_proper_filename(
             file, 'profile_photo', '.jpg',
             possible_names=possible_names
         )
 
-        # Download the media with the largest size input file location
         try:
             self.download_file(
                 InputFileLocation(
-                    volume_id=photo_location.volume_id,
-                    local_id=photo_location.local_id,
-                    secret=photo_location.secret
+                    volume_id=loc.volume_id,
+                    local_id=loc.local_id,
+                    secret=loc.secret
                 ),
                 file
             )
+            return file
         except LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
             # The fix seems to be using the full channel chat photo.
@@ -1940,7 +1936,6 @@ class TelegramClient(TelegramBareClient):
             else:
                 # Until there's a report for chats, no need to.
                 return None
-        return file
 
     def download_media(self, message, file=None, progress_callback=None):
         """
