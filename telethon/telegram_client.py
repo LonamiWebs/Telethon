@@ -72,7 +72,6 @@ from .tl.functions.channels import (
 )
 from .tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
-    InputDocumentFileLocation, InputFileLocation,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
@@ -1914,14 +1913,7 @@ class TelegramClient(TelegramBareClient):
         )
 
         try:
-            self.download_file(
-                InputFileLocation(
-                    volume_id=loc.volume_id,
-                    local_id=loc.local_id,
-                    secret=loc.secret
-                ),
-                file
-            )
+            self.download_file(loc, file)
             return file
         except LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
@@ -2016,16 +2008,8 @@ class TelegramClient(TelegramBareClient):
                     f.close()
             return file
 
-        self.download_file(
-            InputFileLocation(
-                volume_id=photo.location.volume_id,
-                local_id=photo.location.local_id,
-                secret=photo.location.secret
-            ),
-            file,
-            file_size=photo.size,
-            progress_callback=progress_callback
-        )
+        self.download_file(photo.location, file, file_size=photo.size,
+                           progress_callback=progress_callback)
         return file
 
     def _download_document(self, document, file, date, progress_callback):
@@ -2061,16 +2045,8 @@ class TelegramClient(TelegramBareClient):
             date=date, possible_names=possible_names
         )
 
-        self.download_file(
-            InputDocumentFileLocation(
-                id=document.id,
-                access_hash=document.access_hash,
-                version=document.version
-            ),
-            file,
-            file_size=file_size,
-            progress_callback=progress_callback
-        )
+        self.download_file(document, file, file_size=file_size,
+                           progress_callback=progress_callback)
         return file
 
     @staticmethod
@@ -2178,8 +2154,10 @@ class TelegramClient(TelegramBareClient):
         Downloads the given input location to a file.
 
         Args:
-            input_location (:tl:`InputFileLocation`):
+            input_location (:tl:`FileLocation` | :tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
+                See `telethon.utils.get_input_location` source for a complete
+                list of supported types.
 
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
