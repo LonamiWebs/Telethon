@@ -230,6 +230,11 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     for t, cs in type_to_constructors.items():
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
 
+    # Telegram may send errors with the same str_code but different int_code.
+    # They are all imported on telethon.errors anyway so makes no difference.
+    errors = list(sorted({e.str_code: e for e in errors}.values(),
+                         key=lambda e: e.name))
+
     method_causes_errors = defaultdict(list)
     for error in errors:
         for method in error.caused_by:
