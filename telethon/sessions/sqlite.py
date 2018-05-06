@@ -232,13 +232,12 @@ class SQLiteSession(MemorySession):
             return types.updates.State(pts, qts, date, seq, unread_count=0)
 
     def set_update_state(self, entity_id, state):
-        with self._db_lock:
-            c = self._cursor()
-            c.execute('insert or replace into update_state values (?,?,?,?,?)',
-                      (entity_id, state.pts, state.qts,
-                       state.date.timestamp(), state.seq))
-            c.close()
-            self.save()
+        c = self._cursor()
+        c.execute('insert or replace into update_state values (?,?,?,?,?)',
+                  (entity_id, state.pts, state.qts,
+                   state.date.timestamp(), state.seq))
+        c.close()
+        self.save()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
