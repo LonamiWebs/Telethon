@@ -104,6 +104,14 @@ class TelegramClient(TelegramBareClient):
             used otherwise. If it's ``None``, the session will not be saved,
             and you should call :meth:`.log_out()` when you're done.
 
+            Note that if you pass a string it will be a file in the current
+            working directory, although you can also pass absolute paths.
+
+            The session file contains enough information for you to login
+            without re-sending the code, so if you have to enter the code
+            more than once, maybe you're changing the working directory,
+            renaming or removing the file, or using random names.
+
         api_id (`int` | `str`):
             The API ID you obtained from https://my.telegram.org.
 
@@ -532,7 +540,8 @@ class TelegramClient(TelegramBareClient):
                      offset_peer=InputPeerEmpty(), _total=None):
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
-        Dialogs are the open "chats" or conversations with other people.
+        Dialogs are the open "chats" or conversations with other people,
+        groups you have joined, or channels you are subscribed to.
 
         Args:
             limit (`int` | `None`):
@@ -737,6 +746,11 @@ class TelegramClient(TelegramBareClient):
 
             message (`str` | :tl:`Message`):
                 The message to be sent, or another message object to resend.
+
+                The maximum length for a message is 35,000 bytes or 4,096
+                characters. Longer messages will not be sliced automatically,
+                and you should slice them manually if the text to send is
+                longer than said length.
 
             reply_to (`int` | :tl:`Message`, optional):
                 Whether to reply to a message or not. If an integer is provided,
