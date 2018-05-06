@@ -10,17 +10,17 @@ dummyHttpWait = HttpWait;
 //int128 4*[ int ] = Int128;
 //int256 8*[ int ] = Int256;
 
-resPQ#05162463 nonce:int128 server_nonce:int128 pq:string server_public_key_fingerprints:Vector<long> = ResPQ;
+resPQ#05162463 nonce:int128 server_nonce:int128 pq:bytes server_public_key_fingerprints:Vector<long> = ResPQ;
 
-p_q_inner_data#83c95aec pq:string p:string q:string nonce:int128 server_nonce:int128 new_nonce:int256 = P_Q_inner_data;
-p_q_inner_data_temp#3c6a84d4 pq:string p:string q:string nonce:int128 server_nonce:int128 new_nonce:int256 expires_in:int = P_Q_inner_data;
+p_q_inner_data#83c95aec pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 = P_Q_inner_data;
+p_q_inner_data_temp#3c6a84d4 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 expires_in:int = P_Q_inner_data;
 
 server_DH_params_fail#79cb045d nonce:int128 server_nonce:int128 new_nonce_hash:int128 = Server_DH_Params;
-server_DH_params_ok#d0e8075c nonce:int128 server_nonce:int128 encrypted_answer:string = Server_DH_Params;
+server_DH_params_ok#d0e8075c nonce:int128 server_nonce:int128 encrypted_answer:bytes = Server_DH_Params;
 
-server_DH_inner_data#b5890dba nonce:int128 server_nonce:int128 g:int dh_prime:string g_a:string server_time:int = Server_DH_inner_data;
+server_DH_inner_data#b5890dba nonce:int128 server_nonce:int128 g:int dh_prime:bytes g_a:bytes server_time:int = Server_DH_inner_data;
 
-client_DH_inner_data#6643b654 nonce:int128 server_nonce:int128 retry_id:long g_b:string = Client_DH_Inner_Data;
+client_DH_inner_data#6643b654 nonce:int128 server_nonce:int128 retry_id:long g_b:bytes = Client_DH_Inner_Data;
 
 dh_gen_ok#3bcbf734 nonce:int128 server_nonce:int128 new_nonce_hash1:int128 = Set_client_DH_params_answer;
 dh_gen_retry#46dc1fb9 nonce:int128 server_nonce:int128 new_nonce_hash2:int128 = Set_client_DH_params_answer;
@@ -28,7 +28,7 @@ dh_gen_fail#a69dae02 nonce:int128 server_nonce:int128 new_nonce_hash3:int128 = S
 
 bind_auth_key_inner#75a3f765 nonce:long temp_auth_key_id:long perm_auth_key_id:long temp_session_id:long expires_at:int = BindAuthKeyInner;
 
-//rpc_result#f35c6d01 req_msg_id:long result:string = RpcResult;
+//rpc_result#f35c6d01 req_msg_id:long result:bytes = RpcResult;
 rpc_error#2144ca19 error_code:int error_message:string = RpcError;
 
 rpc_answer_unknown#5e2ad36e = RpcDropAnswer;
@@ -46,10 +46,10 @@ destroy_session_none#62d350c9 session_id:long = DestroySessionRes;
 new_session_created#9ec20908 first_msg_id:long unique_id:long server_salt:long = NewSession;
 
 //msg_container#73f1f8dc messages:vector<%Message> = MessageContainer;
-//message msg_id:long seqno:int bytes:int body:string = Message;
+//message msg_id:long seqno:int bytes:int body:bytes = Message;
 //msg_copy#e06046b2 orig_message:Message = MessageCopy;
 
-gzip_packed#3072cfa1 packed_data:string = Object;
+gzip_packed#3072cfa1 packed_data:bytes = Object;
 
 msgs_ack#62d6b459 msg_ids:Vector<long> = MsgsAck;
 
@@ -63,15 +63,15 @@ msgs_all_info#8cc0d131 msg_ids:Vector<long> info:string = MsgsAllInfo;
 msg_detailed_info#276d3ec6 msg_id:long answer_msg_id:long bytes:int status:int = MsgDetailedInfo;
 msg_new_detailed_info#809db6df answer_msg_id:long bytes:int status:int = MsgDetailedInfo;
 
-rsa_public_key n:string e:string = RSAPublicKey;
+rsa_public_key n:string e:bytes = RSAPublicKey;
 
 ---functions---
 
 req_pq_multi#be7e8ef1 nonce:int128 = ResPQ;
 
-req_DH_params#d712e4be nonce:int128 server_nonce:int128 p:string q:string public_key_fingerprint:long encrypted_data:string = Server_DH_Params;
+req_DH_params#d712e4be nonce:int128 server_nonce:int128 p:bytes q:bytes public_key_fingerprint:long encrypted_data:string = Server_DH_Params;
 
-set_client_DH_params#f5045f1f nonce:int128 server_nonce:int128 encrypted_data:string = Set_client_DH_params_answer;
+set_client_DH_params#f5045f1f nonce:int128 server_nonce:int128 encrypted_data:bytes = Set_client_DH_params_answer;
 
 rpc_drop_answer#58e4a740 req_msg_id:long = RpcDropAnswer;
 get_future_salts#b921bd04 num:int = FutureSalts;
