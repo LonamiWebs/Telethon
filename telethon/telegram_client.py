@@ -16,8 +16,12 @@ from mimetypes import guess_type
 from .crypto import CdnDecrypter
 from .tl import TLObject
 from .tl.custom import InputSizedFile
+from .tl.functions.updates import GetDifferenceRequest
 from .tl.functions.upload import (
     SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
+)
+from .tl.types.updates import (
+    DifferenceSlice, DifferenceEmpty, Difference, DifferenceTooLong
 )
 from .tl.types.upload import FileCdnRedirect
 
@@ -2399,6 +2403,42 @@ class TelegramClient(TelegramBareClient):
 
     def list_update_handlers(self):
         return [callback for callback, _ in self.list_event_handlers()]
+
+    def catch_up(self):
+        state = self.session.get_update_state(0)
+        self.session.catching_up = True
+        try:
+            while True:
+                d = self(GetDifferenceRequest(state.pts, state.date, state.qts))
+                if isinstance(d, DifferenceEmpty):
+                    state.date = d.date
+                    state.seq = d.seq
+                    break
+                elif isinstance(d, (DifferenceSlice, Difference)):
+                    if isinstance(d, Difference):
+                        state = d.state
+                    elif d.intermediate_state.pts > state.pts:
+                        state = d.intermediate_state
+                    else:
+                        # TODO Figure out why other applications can rely on
+                        # using always the intermediate_state to eventually
+                        # reach a DifferenceEmpty, but that leads to an
+                        # infinite loop here (so check against old pts to stop)
+                        break
+
+                    self.updates.process(Updates(
+                        users=d.users,
+                        chats=d.chats,
+                        date=state.date,
+                        seq=state.seq,
+                        updates=d.other_updates + [UpdateNewMessage(m, 0, 0)
+                                                   for m in d.new_messages]
+                    ))
+                elif isinstance(d, DifferenceTooLong):
+                    break
+        finally:
+            self.session.set_update_state(0, state)
+            self.session.catching_up = False
 
     # endregion
 
