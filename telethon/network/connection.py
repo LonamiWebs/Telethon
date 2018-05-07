@@ -192,14 +192,15 @@ class Connection:
         if packet_len <= 12:
             __log__.error('Read invalid packet length %d, '
                           'reading data left:', packet_len)
-            while True:
-                data = b''
-                try:
+            data = b''
+            try:
+                while True:
                     data += await self.read(1)
-                except TimeoutError:
-                    break
-                finally:
-                    __log__.error(repr(data))
+            except TimeoutError:
+                pass
+            finally:
+                __log__.error(repr(data))
+
             # Connection reset and hope it's fixed after
             self.conn.close()
             raise ConnectionResetError()
