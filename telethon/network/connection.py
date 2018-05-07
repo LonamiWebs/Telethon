@@ -183,26 +183,6 @@ class Connection:
         """
         packet_len_seq = self.read(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
-
-        # Sometimes Telegram seems to send a packet length of 0 (12)
-        # and after that, just a single byte. Not sure what this is.
-        # TODO Figure out what this is, and if there's a better fix.
-        if packet_len <= 12:
-            __log__.error('Read invalid packet length %d, '
-                          'reading data left:', packet_len)
-            data = b''
-            try:
-                while True:
-                    data += self.read(1)
-            except TimeoutError:
-                pass
-            finally:
-                __log__.error(repr(data))
-
-            # Connection reset and hope it's fixed after
-            self.conn.close()
-            raise ConnectionResetError()
-
         body = self.read(packet_len - 12)
         checksum = struct.unpack('<I', self.read(4))[0]
 
