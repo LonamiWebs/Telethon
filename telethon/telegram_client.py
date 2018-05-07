@@ -1190,6 +1190,7 @@ class TelegramClient(TelegramBareClient):
         return msgs
 
     def get_message_history(self, *args, **kwargs):
+        """Deprecated, see :meth:`get_messages`."""
         warnings.warn(
             'get_message_history is deprecated, use get_messages instead'
         )
@@ -1444,6 +1445,8 @@ class TelegramClient(TelegramBareClient):
                   thumb=None,
                   allow_cache=True,
                   parse_mode='md',
+                  voice_note=False,
+                  video_note=False,
                   **kwargs):
         """
         Sends a file to the specified entity.
@@ -1500,9 +1503,18 @@ class TelegramClient(TelegramBareClient):
             parse_mode (`str`, optional):
                 The parse mode for the caption message.
 
-        Kwargs:
-           If "is_voice_note" in kwargs, despite its value, and the file is
-           sent as a document, it will be sent as a voice note.
+            voice_note (`bool`, optional):
+                If ``True`` the audio will be sent as a voice note.
+
+                Set `allow_cache` to ``False`` if you sent the same file
+                without this setting before for it to work.
+
+            video_note (`bool`, optional):
+                If ``True`` the video will be sent as a video note,
+                also known as a round video message.
+
+                Set `allow_cache` to ``False`` if you sent the same file
+                without this setting before for it to work.
 
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
@@ -1541,7 +1553,8 @@ class TelegramClient(TelegramBareClient):
                     entity, x, allow_cache=allow_cache,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
-                    attributes=attributes, thumb=thumb, **kwargs
+                    attributes=attributes, thumb=thumb, voice_note=voice_note,
+                    video_note=video_note, **kwargs
                 ) for x in documents
             )
             return result
@@ -1602,6 +1615,7 @@ class TelegramClient(TelegramBareClient):
                         hachoir.parser.createParser(file)
                     )
                     attr_dict[DocumentAttributeAudio] = DocumentAttributeAudio(
+                        voice=voice_note,
                         title=m.get('title') if m.has('title') else None,
                         performer=m.get('author') if m.has('author') else None,
                         duration=int(m.get('duration').seconds
@@ -1614,13 +1628,16 @@ class TelegramClient(TelegramBareClient):
                             hachoir.parser.createParser(file)
                         )
                         doc = DocumentAttributeVideo(
+                            round_message=video_note,
                             w=m.get('width') if m.has('width') else 0,
                             h=m.get('height') if m.has('height') else 0,
                             duration=int(m.get('duration').seconds
                                          if m.has('duration') else 0)
                         )
                     else:
-                        doc = DocumentAttributeVideo(0, 0, 0)
+                        doc = DocumentAttributeVideo(0, 0, 0,
+                                                     round_message=video_note)
+
                     attr_dict[DocumentAttributeVideo] = doc
             else:
                 attr_dict = {
@@ -1629,7 +1646,7 @@ class TelegramClient(TelegramBareClient):
                             getattr(file, 'name', None) or 'unnamed'))
                 }
 
-            if 'is_voice_note' in kwargs:
+            if voice_note:
                 if DocumentAttributeAudio in attr_dict:
                     attr_dict[DocumentAttributeAudio].voice = True
                 else:
@@ -1678,7 +1695,9 @@ class TelegramClient(TelegramBareClient):
         return msg
 
     def send_voice_note(self, *args, **kwargs):
-        """Wrapper method around :meth:`send_file` with is_voice_note=True."""
+        """Deprecated, see :meth:`send_file`."""
+        warnings.warn('send_voice_note is deprecated, use '
+                      'send_file(..., voice_note=True) instead')
         kwargs['is_voice_note'] = True
         return self.send_file(*args, **kwargs)
 
@@ -2390,6 +2409,7 @@ class TelegramClient(TelegramBareClient):
         return [(callback, event) for event, callback in self._event_builders]
 
     def add_update_handler(self, handler):
+        """Deprecated, see :meth:`add_event_handler`."""
         warnings.warn(
             'add_update_handler is deprecated, use the @client.on syntax '
             'or add_event_handler(callback, events.Raw) instead (see '
