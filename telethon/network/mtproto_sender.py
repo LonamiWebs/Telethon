@@ -51,6 +51,11 @@ class MtProtoSender:
         self.session = session
         self.connection = connection
         self._loop = loop if loop else asyncio.get_event_loop()
+
+        # If  we're  invoking something from an  update thread  but we're also
+        # receiving other request from the main thread (e.g. an update arrives
+        # and we need to process it)  we must  ensure that only one is calling
+        # receive at a given moment, since the receive step is fragile.
         self._recv_lock = asyncio.Lock()
 
         # Requests (as msg_id: Message) sent waiting to be received
@@ -131,11 +136,12 @@ class MtProtoSender:
             the UpdateState that will process all the received
             Update and Updates objects.
         """
+        if self._recv_lock.locked():
+            return
+
         try:
             with await self._recv_lock:
-                # Receiving items is not an "atomic" operation since we
-                # need to read the length and then upcoming parts separated.
-                body = await self.connection.recv()
+                body = self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
