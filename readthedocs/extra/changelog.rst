@@ -14,6 +14,63 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Catching up on Updates
+======================
+
+*Published at 2018/05/07*
+
++-----------------------+
+| Scheme layer used: 76 |
++-----------------------+
+
+This update prepares the library for catching up with updates with the new
+`telethon.telegram_client.TelegramClient.catch_up` method. This feature needs
+more testing, but for now it will let you "catch up" on some old updates that
+occurred while the library was offline, and brings some new features and bug
+fixes.
+
+
+Additions
+~~~~~~~~~
+
+- Add ``search``, ``filter`` and ``from_user`` parameters to
+  `telethon.telegram_client.TelegramClient.iter_messages`.
+- `telethon.telegram_client.TelegramClient.download_file` now
+  supports a ``None`` path to return the file in memory and
+  return its ``bytes``.
+- Events now have a ``.original_update`` field.
+
+Bug fixes
+~~~~~~~~~
+
+- Fixed a race condition when receiving items from the network.
+- A disconnection is made when "retries reached 0". This hasn't been
+  tested but it might fix the bug.
+- ``reply_to`` would not override :tl:`Message` object's reply value.
+- Add missing caption when sending :tl:`Message` with media.
+
+Enhancements
+~~~~~~~~~~~~
+
+- Retry automatically on ``RpcCallFailError``. This error happened a lot
+  when iterating over many messages, and retrying often fixes it.
+- Faster `telethon.telegram_client.TelegramClient.iter_messages` by
+  sleeping only as much as needed.
+- `telethon.telegram_client.TelegramClient.edit_message` now supports
+  omitting the entity if you pass a :tl:`Message`.
+- `telethon.events.raw.Raw` can now be filtered by type.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The library now distinguishes between MTProto and API schemas.
+- :tl:`State` is now persisted to the session file.
+- Connection won't retry forever.
+- Fixed some errors and cleaned up the generation of code.
+- Fixed typos and enhanced some documentation in general.
+- Add auto-cast for :tl:`InputMessage` and :tl:`InputLocation`.
+
+
 Pickle-able objects (v0.18.3)
 =============================
 
