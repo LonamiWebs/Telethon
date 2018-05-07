@@ -57,6 +57,12 @@ class MtProtoSender:
         # Multithreading
         self._send_lock = Lock()
 
+        # If  we're  invoking something from an  update thread  but we're also
+        # receiving other request from the main thread (e.g. an update arrives
+        # and we need to process it)  we must  ensure that only one is calling
+        # receive at a given moment, since the receive step is fragile.
+        self._recv_lock = Lock()
+
     def connect(self):
         """Connects to the server."""
         self.connection.connect(self.session.server_address, self.session.port)
@@ -132,8 +138,12 @@ class MtProtoSender:
             the UpdateState that will process all the received
             Update and Updates objects.
         """
+        if self._recv_lock.locked():
+            return
+
         try:
-            body = self.connection.recv()
+            with self._recv_lock:
+                body = self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
