@@ -2426,12 +2426,12 @@ class TelegramClient(TelegramBareClient):
     def list_update_handlers(self):
         return [callback for callback, _ in self.list_event_handlers()]
 
-    def catch_up(self):
+    async def catch_up(self):
         state = self.session.get_update_state(0)
         self.session.catching_up = True
         try:
             while True:
-                d = self(GetDifferenceRequest(state.pts, state.date, state.qts))
+                d = await self(GetDifferenceRequest(state.pts, state.date, state.qts))
                 if isinstance(d, DifferenceEmpty):
                     state.date = d.date
                     state.seq = d.seq
