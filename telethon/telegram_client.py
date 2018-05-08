@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from mimetypes import guess_type
 
+from async_generator import async_generator, yield_
+
 from .crypto import CdnDecrypter
 from .tl import TLObject
 from .tl.custom import InputSizedFile
@@ -539,6 +541,7 @@ class TelegramClient(TelegramBareClient):
 
     # region Dialogs ("chats") requests
 
+    @async_generator
     async def iter_dialogs(self, limit=None, offset_date=None, offset_id=0,
                            offset_peer=InputPeerEmpty(), _total=None):
         """
@@ -608,7 +611,7 @@ class TelegramClient(TelegramBareClient):
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
-                    yield Dialog(self, d, entities, messages)
+                    yield_(Dialog(self, d, entities, messages))
 
             if len(r.dialogs) < req.limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
@@ -633,6 +636,7 @@ class TelegramClient(TelegramBareClient):
         dialogs.total = total[0]
         return dialogs
 
+    @async_generator
     async def iter_drafts(self):  # TODO: Ability to provide a `filter`
         """
         Iterator over all open draft messages.
@@ -643,7 +647,7 @@ class TelegramClient(TelegramBareClient):
         among other things.
         """
         for update in (await self(GetAllDraftsRequest())).updates:
-            yield Draft._from_update(self, update)
+            yield_(Draft._from_update(self, update))
 
     async def get_drafts(self):
         """
@@ -1012,6 +1016,7 @@ class TelegramClient(TelegramBareClient):
         else:
             return await self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
+    @async_generator
     async def iter_messages(self, entity, limit=20, offset_date=None,
                             offset_id=0, max_id=0, min_id=0, add_offset=0,
                             search=None, filter=None, from_user=None,
@@ -1171,7 +1176,7 @@ class TelegramClient(TelegramBareClient):
                             PeerChannel(message.fwd_from.channel_id)
                         )]
                     )
-                yield message
+                yield_(message)
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -1275,6 +1280,7 @@ class TelegramClient(TelegramBareClient):
 
         raise TypeError('Invalid message type: {}'.format(type(message)))
 
+    @async_generator
     async def iter_participants(self, entity, limit=None, search='',
                                 filter=None, aggressive=False, _total=None):
         """
@@ -1396,7 +1402,7 @@ class TelegramClient(TelegramBareClient):
                             seen.add(participant.user_id)
                             user = users[participant.user_id]
                             user.participant = participant
-                            yield user
+                            yield_(user)
                             if len(seen) >= limit:
                                 return
 
@@ -1423,7 +1429,7 @@ class TelegramClient(TelegramBareClient):
                 else:
                     user = users[participant.user_id]
                     user.participant = participant
-                    yield user
+                    yield_(user)
         else:
             if _total:
                 _total[0] = 1
@@ -1431,7 +1437,7 @@ class TelegramClient(TelegramBareClient):
                 user = await self.get_entity(entity)
                 if filter_entity(user):
                     user.participant = None
-                    yield user
+                    yield_(user)
 
     async def get_participants(self, *args, **kwargs):
         """
@@ -1560,15 +1566,14 @@ class TelegramClient(TelegramBareClient):
                 )
                 images = images[10:]
 
-            result.extend(
-                await self.send_file(
+            for x in documents:
+                result.append(await self.send_file(
                     entity, x, allow_cache=allow_cache,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, **kwargs
-                ) for x in documents
-            )
+                ))
             return result
 
         entity = await self.get_input_entity(entity)
@@ -2501,10 +2506,11 @@ class TelegramClient(TelegramBareClient):
         # input users (get users), input chat (get chats) and
         # input channels (get channels) to get the most entities
         # in the less amount of calls possible.
-        inputs = [
-            x if isinstance(x, str) else await self.get_input_entity(x)
-            for x in entity
-        ]
+        inputs = []
+        for x in entity:
+            inputs.append(x if isinstance(x, str)
+                          else await self.get_input_entity(x))
+
         users = [x for x in inputs
                  if isinstance(x, (InputPeerUser, InputPeerSelf))]
         chats = [x.chat_id for x in inputs if isinstance(x, InputPeerChat)]
@@ -2531,16 +2537,16 @@ class TelegramClient(TelegramBareClient):
         # chats and channels list from before. While this would reduce
         # the amount of ResolveUsername calls, it would fail to catch
         # username changes.
-        result = [
-            await self._get_entity_from_string(x) if isinstance(x, str)
-            else (
-                id_entity[utils.get_peer_id(x)]
-                if not isinstance(x, InputPeerSelf)
-                else next(u for u in id_entity.values()
-                          if isinstance(u, User) and u.is_self)
-            )
-            for x in inputs
-        ]
+        result = []
+        for x in inputs:
+            if isinstance(x, str):
+                result.append(await self._get_entity_from_string(x))
+            elif not isinstance(x, InputPeerSelf):
+                result.append(id_entity[utils.get_peer_id(x)])
+            else:
+                result.append(next(u for u in id_entity.values()
+                                   if isinstance(u, User) and u.is_self))
+
         return result[0] if single else result
 
     async def _get_entity_from_string(self, string):

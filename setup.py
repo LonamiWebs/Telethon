@@ -197,7 +197,7 @@ def main():
                 'telethon_generator/parser/tl_object.py',
                 'telethon_generator/parser/tl_parser.py',
             ]),
-            install_requires=['pyaes', 'rsa',
+            install_requires=['pyaes', 'rsa', 'async_generator'
                               'typing' if version_info < (3, 5, 2) else ""],
             extras_require={
                 'cryptg': ['cryptg']
