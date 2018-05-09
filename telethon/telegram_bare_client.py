@@ -429,11 +429,15 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5):
+    def __call__(self, *requests, retries=5, ordered=False):
         """Invokes (sends) a MTProtoRequest and returns (receives) its result.
 
            The invoke will be retried up to 'retries' times before raising
            RuntimeError().
+
+           If more than one request is given and ordered is True, then the
+           requests will be invoked sequentially in the server (useful for
+           bursts of requests that need to be ordered).
         """
         if not all(isinstance(x, TLObject) and
                    x.content_related for x in requests):
@@ -458,7 +462,7 @@ class TelegramBareClient:
             not self._idling.is_set() or self._reconnect_lock.locked()
 
         for retry in range(retries):
-            result = self._invoke(call_receive, *requests)
+            result = self._invoke(call_receive, *requests, ordered=ordered)
             if result is not None:
                 return result
 
@@ -481,7 +485,7 @@ class TelegramBareClient:
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, call_receive, *requests):
+    def _invoke(self, call_receive, *requests, ordered=False):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -506,7 +510,7 @@ class TelegramBareClient:
                         self._wrap_init_connection(GetConfigRequest())
                     )
 
-            self._sender.send(*requests)
+            self._sender.send(*requests, ordered=ordered)
 
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow

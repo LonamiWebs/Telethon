@@ -2,7 +2,6 @@
 This module contains the class used to communicate with Telegram's servers
 encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
-import gzip
 import logging
 from threading import Lock
 
@@ -14,6 +13,7 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
@@ -84,15 +84,26 @@ class MtProtoSender:
 
     # region Send and receive
 
-    def send(self, *requests):
+    def send(self, *requests, ordered=False):
         """
         Sends the specified TLObject(s) (which must be requests),
         and acknowledging any message which needed confirmation.
 
         :param requests: the requests to be sent.
+        :param ordered: whether the requests should be invoked in the
+                        order in which they appear or they can be executed
+                        in arbitrary order in the server.
         """
-        # Finally send our packed request(s)
-        messages = [TLMessage(self.session, r) for r in requests]
+        if ordered:
+            requests = iter(requests)
+            messages = [TLMessage(self.session, next(requests))]
+            for r in requests:
+                messages.append(TLMessage(
+                    self.session, InvokeAfterMsgRequest(messages[-1].msg_id, r)
+                ))
+        else:
+            messages = [TLMessage(self.session, r) for r in requests]
+
         self._pending_receive.update({m.msg_id: m for m in messages})
 
         __log__.debug('Sending requests with IDs: %s', ', '.join(
