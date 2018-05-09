@@ -1367,10 +1367,7 @@ class TelegramClient(TelegramBareClient):
                 if requests[0].offset > limit:
                     break
 
-                if len(requests) == 1:
-                    results = (self(requests[0]),)
-                else:
-                    results = self(*requests)
+                results = self(requests)
                 for i in reversed(range(len(requests))):
                     participants = results[i]
                     if not participants.users:

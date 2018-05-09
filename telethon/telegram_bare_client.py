@@ -429,32 +429,51 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5, ordered=False):
-        """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-
-           The invoke will be retried up to 'retries' times before raising
-           RuntimeError().
-
-           If more than one request is given and ordered is True, then the
-           requests will be invoked sequentially in the server (useful for
-           bursts of requests that need to be ordered).
+    def __call__(self, request, retries=5, ordered=False):
         """
+        Invokes (sends) one or more MTProtoRequests and returns (receives)
+        their result.
+
+        Args:
+            request (`TLObject` | `list`):
+                The request or requests to be invoked.
+
+            retries (`bool`, optional):
+                How many times the request should be retried automatically
+                in case it fails with a non-RPC error.
+
+               The invoke will be retried up to 'retries' times before raising
+               ``RuntimeError``.
+
+            ordered (`bool`, optional):
+                Whether the requests (if more than one was given) should be
+                executed sequentially on the server. They run in arbitrary
+                order by default.
+
+        Returns:
+            The result of the request (often a `TLObject`) or a list of
+            results if more than one request was given.
+        """
+        single = not utils.is_list_like(request)
+        if single:
+            request = (request,)
+
         if not all(isinstance(x, TLObject) and
-                   x.content_related for x in requests):
+                   x.content_related for x in request):
             raise TypeError('You can only invoke requests, not types!')
 
         if self._background_error:
             raise self._background_error
 
-        for request in requests:
-            request.resolve(self, utils)
+        for r in request:
+            r.resolve(self, utils)
 
         # For logging purposes
-        if len(requests) == 1:
-            which = type(requests[0]).__name__
+        if single:
+            which = type(request[0]).__name__
         else:
             which = '{} requests ({})'.format(
-                len(requests), [type(x).__name__ for x in requests])
+                len(request), [type(x).__name__ for x in request])
 
         # Determine the sender to be used (main or a new connection)
         __log__.debug('Invoking %s', which)
@@ -462,13 +481,13 @@ class TelegramBareClient:
             not self._idling.is_set() or self._reconnect_lock.locked()
 
         for retry in range(retries):
-            result = self._invoke(call_receive, *requests, ordered=ordered)
+            result = self._invoke(call_receive, request, ordered=ordered)
             if result is not None:
-                return result
+                return result[0] if single else result
 
             log = __log__.info if retry == 0 else __log__.warning
             log('Invoking %s failed %d times, connecting again and retrying',
-                [str(x) for x in requests], retry + 1)
+                which, retry + 1)
 
             sleep(1)
             # The ReadThread has priority when attempting reconnection,
@@ -479,13 +498,13 @@ class TelegramBareClient:
                     self._reconnect()
 
         raise RuntimeError('Number of retries reached 0 for {}.'.format(
-            [type(x).__name__ for x in requests]
+            which
         ))
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, call_receive, *requests, ordered=False):
+    def _invoke(self, call_receive, requests, ordered=False):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -510,7 +529,7 @@ class TelegramBareClient:
                         self._wrap_init_connection(GetConfigRequest())
                     )
 
-            self._sender.send(*requests, ordered=ordered)
+            self._sender.send(requests, ordered=ordered)
 
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
@@ -566,10 +585,7 @@ class TelegramBareClient:
                 # rejected by the other party as a whole."
                 return None
 
-            if len(requests) == 1:
-                return requests[0].result
-            else:
-                return [x.result for x in requests]
+            return [x.result for x in requests]
 
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:

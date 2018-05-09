@@ -5,7 +5,7 @@ encrypting every packet, and relies on a valid AuthKey in the used Session.
 import logging
 from threading import Lock
 
-from .. import helpers as utils
+from .. import helpers, utils
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -84,7 +84,7 @@ class MtProtoSender:
 
     # region Send and receive
 
-    def send(self, *requests, ordered=False):
+    def send(self, requests, ordered=False):
         """
         Sends the specified TLObject(s) (which must be requests),
         and acknowledging any message which needed confirmation.
@@ -94,6 +94,9 @@ class MtProtoSender:
                         order in which they appear or they can be executed
                         in arbitrary order in the server.
         """
+        if not utils.is_list_like(requests):
+            requests = (requests,)
+
         if ordered:
             requests = iter(requests)
             messages = [TLMessage(self.session, next(requests))]
@@ -184,7 +187,7 @@ class MtProtoSender:
         :param message: the TLMessage to be sent.
         """
         with self._send_lock:
-            self.connection.send(utils.pack_message(self.session, message))
+            self.connection.send(helpers.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
@@ -200,7 +203,7 @@ class MtProtoSender:
                 raise BufferError("Can't decode packet ({})".format(body))
 
         with BinaryReader(body) as reader:
-            return utils.unpack_message(self.session, reader)
+            return helpers.unpack_message(self.session, reader)
 
     def _process_msg(self, msg_id, sequence, reader, state):
         """
