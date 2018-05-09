@@ -1734,10 +1734,12 @@ class TelegramClient(TelegramBareClient):
         entity = await self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
-        captions = [
-            await self._parse_message_text(caption or '', parse_mode)
-            for caption in reversed(caption)  # Pop from the end (so reverse)
-        ]
+
+        captions = []
+        for caption in reversed(caption):  # Pop from the end (so reverse)
+            captions.append(await self._parse_message_text(caption or '',
+                                                           parse_mode))
+
         reply_to = self._get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet
