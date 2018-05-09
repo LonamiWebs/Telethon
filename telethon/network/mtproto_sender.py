@@ -101,9 +101,8 @@ class MtProtoSender:
             requests = iter(requests)
             messages = [TLMessage(self.session, next(requests))]
             for r in requests:
-                messages.append(TLMessage(
-                    self.session, InvokeAfterMsgRequest(messages[-1].msg_id, r)
-                ))
+                messages.append(TLMessage(self.session, r,
+                                          after_id=messages[-1].msg_id))
         else:
             messages = [TLMessage(self.session, r) for r in requests]
 
