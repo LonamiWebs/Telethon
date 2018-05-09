@@ -141,7 +141,7 @@ class MtProtoSender:
 
         try:
             with await self._recv_lock:
-                body = self.connection.recv()
+                body = await self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
