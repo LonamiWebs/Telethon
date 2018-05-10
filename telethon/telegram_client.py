@@ -611,7 +611,7 @@ class TelegramClient(TelegramBareClient):
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
-                    yield_(Dialog(self, d, entities, messages))
+                    await yield_(Dialog(self, d, entities, messages))
 
             if len(r.dialogs) < req.limit or not isinstance(r, DialogsSlice):
                 # Less than we requested means we reached the end, or
@@ -647,7 +647,7 @@ class TelegramClient(TelegramBareClient):
         among other things.
         """
         for update in (await self(GetAllDraftsRequest())).updates:
-            yield_(Draft._from_update(self, update))
+            await yield_(Draft._from_update(self, update))
 
     async def get_drafts(self):
         """
@@ -1176,7 +1176,7 @@ class TelegramClient(TelegramBareClient):
                             PeerChannel(message.fwd_from.channel_id)
                         )]
                     )
-                yield_(message)
+                await yield_(message)
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -1399,7 +1399,7 @@ class TelegramClient(TelegramBareClient):
                             seen.add(participant.user_id)
                             user = users[participant.user_id]
                             user.participant = participant
-                            yield_(user)
+                            await yield_(user)
                             if len(seen) >= limit:
                                 return
 
@@ -1426,7 +1426,7 @@ class TelegramClient(TelegramBareClient):
                 else:
                     user = users[participant.user_id]
                     user.participant = participant
-                    yield_(user)
+                    await yield_(user)
         else:
             if _total:
                 _total[0] = 1
@@ -1434,7 +1434,7 @@ class TelegramClient(TelegramBareClient):
                 user = await self.get_entity(entity)
                 if filter_entity(user):
                     user.participant = None
-                    yield_(user)
+                    await yield_(user)
 
     async def get_participants(self, *args, **kwargs):
         """
