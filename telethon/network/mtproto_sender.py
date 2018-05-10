@@ -188,7 +188,7 @@ class MtProtoSender:
 
         :param message: the TLMessage to be sent.
         """
-        await self.connection.send(utils.pack_message(self.session, message))
+        await self.connection.send(helpers.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
