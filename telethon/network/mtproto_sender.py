@@ -152,7 +152,12 @@ class MtProtoSender:
             Update and Updates objects.
         """
         if self._recv_lock.locked():
-            return
+            with self._recv_lock:
+                # Don't busy wait, acquire it but return because there's
+                # already a receive running and we don't want another one.
+                # It would lock until Telegram sent another update even if
+                # the current receive already received the expected response.
+                return
 
         try:
             with self._recv_lock:
