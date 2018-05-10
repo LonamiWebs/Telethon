@@ -3,11 +3,10 @@ This module contains the class used to communicate with Telegram's servers
 encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
 import asyncio
-import gzip
 import logging
 from asyncio import Event
 
-from .. import helpers as utils
+from .. import helpers, utils
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -15,6 +14,7 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
@@ -81,13 +81,18 @@ class MtProtoSender:
 
     # region Send and receive
 
-    async def send(self, *requests):
+    async def send(self, requests, ordered=False):
         """
         Sends the specified TLObject(s) (which must be requests),
         and acknowledging any message which needed confirmation.
 
         :param requests: the requests to be sent.
+        :param ordered: whether the requests should be invoked in the
+                        order in which they appear or they can be executed
+                        in arbitrary order in the server.
         """
+        if not utils.is_list_like(requests):
+            requests = (requests,)
 
         # Prepare the event of every request
         for r in requests:
@@ -96,8 +101,15 @@ class MtProtoSender:
             else:
                 r.confirm_received.clear()
 
-        # Finally send our packed request(s)
-        messages = [TLMessage(self.session, r) for r in requests]
+        if ordered:
+            requests = iter(requests)
+            messages = [TLMessage(self.session, next(requests))]
+            for r in requests:
+                messages.append(TLMessage(self.session, r,
+                                          after_id=messages[-1].msg_id))
+        else:
+            messages = [TLMessage(self.session, r) for r in requests]
+
         self._pending_receive.update({m.msg_id: m for m in messages})
 
         __log__.debug('Sending requests with IDs: %s', ', '.join(
@@ -137,7 +149,12 @@ class MtProtoSender:
             Update and Updates objects.
         """
         if self._recv_lock.locked():
-            return
+            with await self._recv_lock:
+                # Don't busy wait, acquire it but return because there's
+                # already a receive running and we don't want another one.
+                # It would lock until Telegram sent another update even if
+                # the current receive already received the expected response.
+                return
 
         try:
             with await self._recv_lock:
@@ -187,7 +204,7 @@ class MtProtoSender:
                 raise BufferError("Can't decode packet ({})".format(body))
 
         with BinaryReader(body) as reader:
-            return utils.unpack_message(self.session, reader)
+            return helpers.unpack_message(self.session, reader)
 
     async def _process_msg(self, msg_id, sequence, reader, state):
         """
