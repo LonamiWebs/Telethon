@@ -23,6 +23,10 @@ class Connection(abc.ABC):
         self._timeout = timeout
 
     @abc.abstractmethod
+    def connect(self, ip, port):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_timeout(self):
         """Returns the timeout used by the connection."""
         raise NotImplementedError
