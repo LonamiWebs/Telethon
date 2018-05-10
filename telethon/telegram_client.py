@@ -45,7 +45,7 @@ from .errors import (
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
     PhoneNumberOccupiedError, UsernameNotOccupiedError
 )
-from .network import ConnectionMode
+from .network import ConnectionTcpFull
 from .tl.custom import Draft, Dialog
 from .tl.functions.account import (
     GetPasswordRequest, UpdatePasswordSettingsRequest
@@ -122,11 +122,11 @@ class TelegramClient(TelegramBareClient):
         api_hash (`str`):
             The API ID you obtained from https://my.telegram.org.
 
-        connection_mode (`ConnectionMode`, optional):
-            The connection mode to be used when creating a new connection
-            to the servers. Defaults to the ``TCP_FULL`` mode.
-            This will only affect how messages are sent over the network
-            and how much processing is required before sending them.
+        connection (`telethon.network.connection.common.Connection`, optional):
+            The connection instance to be used when creating a new connection
+            to the servers. If it's a type, the `proxy` argument will be used.
+
+            Defaults to `telethon.network.connection.tcpfull.ConnectionTcpFull`.
 
         use_ipv6 (`bool`, optional):
             Whether to connect to the servers through IPv6 or not.
@@ -174,7 +174,8 @@ class TelegramClient(TelegramBareClient):
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
-                 connection_mode=ConnectionMode.TCP_FULL,
+                 *,
+                 connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
@@ -184,7 +185,7 @@ class TelegramClient(TelegramBareClient):
                  **kwargs):
         super().__init__(
             session, api_id, api_hash,
-            connection_mode=connection_mode,
+            connection=connection,
             use_ipv6=use_ipv6,
             proxy=proxy,
             update_workers=update_workers,

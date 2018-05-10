@@ -14,7 +14,7 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError,
     RpcCallFailError
 )
-from .network import authenticator, MtProtoSender, Connection, ConnectionMode
+from .network import authenticator, MtProtoSender, ConnectionTcpFull
 from .sessions import Session, SQLiteSession
 from .tl import TLObject
 from .tl.all_tlobjects import LAYER
@@ -68,7 +68,8 @@ class TelegramBareClient:
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
-                 connection_mode=ConnectionMode.TCP_FULL,
+                 *,
+                 connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
@@ -114,9 +115,10 @@ class TelegramBareClient:
         # that calls .connect(). Every other thread will spawn a new
         # temporary connection. The connection on this one is always
         # kept open so Telegram can send us updates.
-        self._sender = MtProtoSender(self.session, Connection(
-            mode=connection_mode, proxy=proxy, timeout=timeout
-        ))
+        if isinstance(connection, type):
+            connection = connection(proxy=proxy, timeout=timeout)
+
+        self._sender = MtProtoSender(self.session, connection)
 
         # Two threads may be calling reconnect() when the connection is lost,
         # we only want one to actually perform the reconnection.
