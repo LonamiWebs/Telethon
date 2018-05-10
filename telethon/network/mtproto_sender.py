@@ -79,7 +79,6 @@ class MtProtoSender:
         """Disconnects from the server."""
         __log__.info('Disconnecting MtProtoSender...')
         self.connection.close()
-        self._need_confirmation.clear()
         self._clear_all_pending()
 
     # region Send and receive
