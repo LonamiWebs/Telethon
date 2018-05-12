@@ -38,8 +38,11 @@ class TLObject:
             self.id = self.infer_id()
         else:
             self.id = int(object_id, base=16)
-            assert self.id == self.infer_id(),\
-                'Invalid inferred ID for ' + repr(self)
+            # As of layer 78 ipPortSecret won't match, Telegram may still be
+            # developing this layer and more changes shall be to expect.
+            #
+            # assert self.id == self.infer_id(),\
+            #     'Invalid inferred ID for ' + repr(self)
 
         self.class_name = snake_to_camel_case(
             self.name, suffix='Request' if self.is_function else '')
