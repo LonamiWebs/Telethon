@@ -10,9 +10,17 @@ CORE_TYPES = (
     0x1cb5c415,  # vector#1cb5c415 {t:Type} # [ t ] = Vector t;
 )
 
+# https://github.com/telegramdesktop/tdesktop/blob/4bf66cb6e93f3965b40084771b595e93d0b11bcd/Telegram/SourceFiles/codegen/scheme/codegen_scheme.py#L57-L62
+WHITELISTED_MISMATCHING_IDS = {
+    # 0 represents any layer
+    0: {'ipPortSecret', 'accessPointRule', 'help.configSimple'},
+    77: {'channel'},
+    78: {'channel'}
+}
+
 
 class TLObject:
-    def __init__(self, fullname, object_id, args, result, is_function):
+    def __init__(self, fullname, object_id, args, result, is_function, layer):
         """
         Initializes a new TLObject, given its properties.
 
@@ -22,6 +30,7 @@ class TLObject:
         :param args: The arguments, if any, of the TL object
         :param result: The result type of the TL object
         :param is_function: Is the object a function or a type?
+        :param layer: The layer this TLObject belongs to.
         """
         # The name can or not have a namespace
         self.fullname = fullname
@@ -38,11 +47,12 @@ class TLObject:
             self.id = self.infer_id()
         else:
             self.id = int(object_id, base=16)
-            # As of layer 78 ipPortSecret won't match, Telegram may still be
-            # developing this layer and more changes shall be to expect.
-            #
-            # assert self.id == self.infer_id(),\
-            #     'Invalid inferred ID for ' + repr(self)
+            whitelist = WHITELISTED_MISMATCHING_IDS[0] |\
+                WHITELISTED_MISMATCHING_IDS.get(layer, set())
+
+            if self.fullname not in whitelist:
+                assert self.id == self.infer_id(),\
+                    'Invalid inferred ID for ' + repr(self)
 
         self.class_name = snake_to_camel_case(
             self.name, suffix='Request' if self.is_function else '')
@@ -208,7 +218,7 @@ class TLArg:
         return str(self).replace(':date', ':int').replace('?date', '?int')
 
 
-def _from_line(line, is_function):
+def _from_line(line, is_function, layer):
     match = re.match(
         r'^([\w.]+)'                     # 'name'
         r'(?:#([0-9a-fA-F]+))?'          # '#optionalcode'
@@ -234,12 +244,13 @@ def _from_line(line, is_function):
         object_id=match.group(2),
         result=match.group(3),
         is_function=is_function,
+        layer=layer,
         args=[TLArg(name, arg_type, brace != '')
               for brace, name, arg_type in args_match]
     )
 
 
-def parse_tl(file_path, ignore_core=False):
+def parse_tl(file_path, layer, ignore_core=False):
     """This method yields TLObjects from a given .tl file."""
     with open(file_path, encoding='utf-8') as file:
         is_function = False
@@ -259,7 +270,7 @@ def parse_tl(file_path, ignore_core=False):
                 continue
 
             try:
-                result = _from_line(line, is_function)
+                result = _from_line(line, is_function, layer=layer)
                 if not ignore_core or result.id not in CORE_TYPES:
                     yield result
             except ValueError as e:
