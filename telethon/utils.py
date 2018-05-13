@@ -34,7 +34,16 @@ USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 
-VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
+# The only shorter-than-five-characters usernames are those used for some
+# special, very well known bots. This list may be incomplete though:
+#    "[...] @gif, @vid, @pic, @bing, @wiki, @imdb and @bold [...]"
+#
+# See https://telegram.org/blog/inline-bots#how-does-it-work
+VALID_USERNAME_RE = re.compile(
+    r'^([a-z][\w\d]{3,30}[a-z\d]'
+    r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub|ya)$',
+    re.IGNORECASE
+)
 
 
 def get_display_name(entity):

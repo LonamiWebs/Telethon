@@ -57,11 +57,11 @@ def generate(which):
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
-    tlobjects = list(itertools.chain(
-        parse_tl(TLOBJECT_IN_CORE_TL), parse_tl(TLOBJECT_IN_TL)))
-
-    errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
     layer = find_layer(TLOBJECT_IN_TL)
+    errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
+    tlobjects = list(itertools.chain(
+        parse_tl(TLOBJECT_IN_CORE_TL, layer=layer),
+        parse_tl(TLOBJECT_IN_TL, layer=layer)))
 
     if not which:
         which.extend(('tl', 'errors'))
