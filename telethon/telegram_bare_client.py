@@ -597,7 +597,7 @@ class TelegramBareClient:
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self._invoke(call_receive, *requests)
+            return self._invoke(call_receive, requests)
 
         except (ServerError, RpcCallFailError) as e:
             # Telegram is having some issues, just retry
