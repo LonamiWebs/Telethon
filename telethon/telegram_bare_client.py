@@ -570,7 +570,7 @@ class TelegramBareClient:
                 UserMigrateError) as e:
 
             await self._reconnect(new_dc=e.new_dc)
-            return await self._invoke(call_receive, retry, *requests)
+            return await self._invoke(call_receive, retry, requests)
 
         except (ServerError, RpcCallFailError) as e:
             # Telegram is having some issues, just retry
