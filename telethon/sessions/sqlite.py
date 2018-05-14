@@ -179,16 +179,8 @@ class SQLiteSession(MemorySession):
 
     @staticmethod
     def _create_table(c, *definitions):
-        """
-        Creates a table given its definition 'name (columns).
-        If the sqlite version is >= 3.8.2, it will use "without rowid".
-        See http://www.sqlite.org/releaselog/3_8_2.html.
-        """
-        required = (3, 8, 2)
-        sqlite_v = tuple(int(x) for x in sqlite3.sqlite_version.split('.'))
-        extra = ' without rowid' if sqlite_v >= required else ''
         for definition in definitions:
-            c.execute('create table {}{}'.format(definition, extra))
+            c.execute('create table {}'.format(definition))
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
