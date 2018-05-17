@@ -88,7 +88,8 @@ from .tl.types import (
     UpdateEditMessage, UpdateEditChannelMessage, UpdateShort, Updates,
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
     PhotoSizeEmpty, MessageService, ChatParticipants, User, WebPage,
-    ChannelParticipantsBanned, ChannelParticipantsKicked
+    ChannelParticipantsBanned, ChannelParticipantsKicked,
+    InputMessagesFilterEmpty
 )
 from .tl.types.messages import DialogsSlice
 from .tl.types.account import PasswordInputSettings, NoPassword
@@ -1090,6 +1091,8 @@ class TelegramClient(TelegramBareClient):
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if search is not None or filter or from_user:
+            if filter is None:
+                filter = InputMessagesFilterEmpty()
             request = SearchRequest(
                 peer=entity,
                 q=search or '',
