@@ -1137,6 +1137,7 @@ class TelegramClient(TelegramBareClient):
             wait_time = 1 if limit > 3000 else 0
 
         have = 0
+        last_id = float('inf')
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
             start = time.time()
@@ -1150,8 +1151,14 @@ class TelegramClient(TelegramBareClient):
                         for x in itertools.chain(r.users, r.chats)}
 
             for message in r.messages:
-                if isinstance(message, MessageEmpty):
+                if isinstance(message, MessageEmpty) or message.id >= last_id:
                     continue
+
+                # There has been reports that on bad connections this method
+                # was returning duplicated IDs sometimes. Using ``last_id``
+                # is an attempt to avoid these duplicates, since the message
+                # IDs are returned in descending order.
+                last_id = message.id
 
                 # Add a few extra attributes to the Message to be friendlier.
                 # To make messages more friendly, always add message
