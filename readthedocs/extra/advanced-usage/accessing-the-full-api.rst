@@ -4,6 +4,12 @@
 Accessing the Full API
 ======================
 
+.. important::
+
+    While you have access to this, you should always use the friendly
+    methods listed on :ref:`telethon-package` unless you have a better
+    reason not to, like a method not existing or you wanting more control.
+
 
 The ``TelegramClient`` doesn't offer a method for every single request
 the Telegram API supports. However, it's very simple to *call* or *invoke*

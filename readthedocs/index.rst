@@ -18,6 +18,9 @@ when you upgrade!
    If you're new here, you want to read :ref:`getting-started`. If you're
    looking for the method reference, you should check :ref:`telethon-package`.
 
+   The mentioned :ref:`telethon-package` is an important section and it
+   contains the friendly methods that **you should use** most of the time.
+
 
 What is this?
 *************

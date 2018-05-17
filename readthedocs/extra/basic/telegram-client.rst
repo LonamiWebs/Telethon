@@ -10,8 +10,10 @@ Introduction
 
 .. note::
 
-    Check the :ref:`telethon-package` if you're looking for the methods
-    reference instead of this tutorial.
+    Make sure to use the friendly methods described in :ref:`telethon-package`!
+    This section is just an introduction to using the client, but all the
+    available methods are in the :ref:`telethon-package` reference, including
+    detailed descriptions to what they do.
 
 The ``TelegramClient`` is the central class of the library, the one
 you will be using most of the time. For this reason, it's important

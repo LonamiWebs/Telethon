@@ -768,6 +768,12 @@ class TelegramClient(TelegramBareClient):
                 other false-y value is provided, the message will be sent with
                 no formatting.
 
+                If a ``callable`` is passed, it should be a function accepting
+                a `str` as an input and return as output a tuple consisting
+                of ``(parsed message str, [MessageEntity instances])``.
+
+                See :tl:`MessageEntity` for allowed message entities.
+
             link_preview (`bool`, optional):
                 Should the link preview be shown?
 
@@ -1462,9 +1468,6 @@ class TelegramClient(TelegramBareClient):
                 or its type won't be inferred, and it will be sent as an
                 "unnamed application/octet-stream".
 
-                Subsequent calls with the very same file will result in
-                immediate uploads, unless ``.clear_file_cache()`` is called.
-
                 Furthermore the file may be any media (a message, document,
                 photo or similar) so that it can be resent without the need
                 to download and re-upload it again.
@@ -1486,7 +1489,7 @@ class TelegramClient(TelegramBareClient):
                 ``(sent bytes, total)``.
 
             reply_to (`int` | :tl:`Message`):
-                Same as reply_to from .send_message().
+                Same as `reply_to` from `send_message`.
 
             attributes (`list`, optional):
                 Optional attributes that override the inferred ones, like
@@ -1761,8 +1764,8 @@ class TelegramClient(TelegramBareClient):
                     progress_callback=None):
         """
         Uploads the specified file and returns a handle (an instance of
-        InputFile or InputFileBig, as required) which can be later used
-        before it expires (they are usable during less than a day).
+        :tl:`InputFile` or :tl:`InputFileBig`, as required) which can be
+        later used before it expires (they are usable during less than a day).
 
         Uploading a file will simply return a "handle" to the file stored
         remotely in the Telegram servers, which can be later used on. This
@@ -1775,9 +1778,6 @@ class TelegramClient(TelegramBareClient):
                 or its type won't be inferred, and it will be sent as an
                 "unnamed application/octet-stream".
 
-                Subsequent calls with the very same file will result in
-                immediate uploads, unless ``.clear_file_cache()`` is called.
-
             part_size_kb (`int`, optional):
                 Chunk size when uploading files. The larger, the less
                 requests will be made (up to 512KB maximum).
@@ -1788,8 +1788,8 @@ class TelegramClient(TelegramBareClient):
                 and if this is not a ``str``, it will be ``"unnamed"``.
 
             use_cache (`type`, optional):
-                The type of cache to use (currently either ``InputDocument``
-                or ``InputPhoto``). If present and the file is small enough
+                The type of cache to use (currently either :tl:`InputDocument`
+                or :tl:`InputPhoto`). If present and the file is small enough
                 to need the MD5, it will be checked against the database,
                 and if a match is found, the upload won't be made. Instead,
                 an instance of type ``use_cache`` will be returned.
@@ -1800,7 +1800,8 @@ class TelegramClient(TelegramBareClient):
 
         Returns:
             :tl:`InputFileBig` if the file size is larger than 10MB,
-            ``InputSizedFile`` (subclass of :tl:`InputFile`) otherwise.
+            `telethon.tl.custom.input_sized_file.InputSizedFile`
+            (subclass of :tl:`InputFile`) otherwise.
         """
         if isinstance(file, (InputFile, InputFileBig)):
             return file  # Already uploaded
@@ -2357,8 +2358,9 @@ class TelegramClient(TelegramBareClient):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
 
-                If left unspecified, ``events.Raw`` (the ``Update`` objects
-                with no further processing) will be passed instead.
+                If left unspecified, `telethon.events.raw.Raw` (the
+                :tl:`Update` objects with no further processing) will
+                be passed instead.
         """
         if self.updates.workers is None:
             warnings.warn(

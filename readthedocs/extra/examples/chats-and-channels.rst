@@ -94,12 +94,13 @@ the hash of said channel or group.
 Retrieving all chat members (channels too)
 ******************************************
 
-You can use
-`client.get_participants <telethon.telegram_client.TelegramClient.get_participants>`
-to retrieve the participants (click it to see the relevant parameters).
-Most of the time you will just need ``client.get_participants(entity)``.
+.. note::
 
-This is what said method is doing behind the scenes as an example.
+    Use the `telethon.telegram_client.TelegramClient.iter_participants`
+    friendly method instead unless you have a better reason not to!
+
+    This method will handle different chat types for you automatically.
+
 
 In order to get all the members from a mega-group or channel, you need
 to use :tl:`GetParticipantsRequest`. As we can see it needs an

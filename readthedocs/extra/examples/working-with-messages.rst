@@ -11,11 +11,14 @@ Working with messages
 Forwarding messages
 *******************
 
-This request is available as a friendly method through
-`client.forward_messages <telethon.telegram_client.TelegramClient.forward_messages>`,
-and can be used like shown below:
+.. note::
 
-    .. code-block:: python
+    Use the `telethon.telegram_client.TelegramClient.forward_messages`
+    friendly method instead unless you have a better reason not to!
+
+    This method automatically accepts either a single message or many of them.
+
+.. code-block:: python
 
         # If you only have the message IDs
         client.forward_messages(
@@ -51,6 +54,14 @@ too, if that's all you have.
 Searching Messages
 *******************
 
+.. note::
+
+    Use the `telethon.telegram_client.TelegramClient.iter_messages`
+    friendly method instead unless you have a better reason not to!
+
+    This method has ``search`` and ``filter`` parameters that will
+    suit your needs.
+
 Messages are searched through the obvious :tl:`SearchRequest`, but you may run
 into issues_. A valid example would be:
 
@@ -71,7 +82,8 @@ into issues_. A valid example would be:
             limit=10,       # How many results
             max_id=0,       # Maximum message ID
             min_id=0,       # Minimum message ID
-            from_id=None    # Who must have sent the message (peer)
+            from_id=None,   # Who must have sent the message (peer)
+            hash=0          # Special number to return nothing on no-change
         ))
 
 It's important to note that the optional parameter ``from_id`` could have

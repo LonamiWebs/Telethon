@@ -1,16 +1,9 @@
-import abc
-import datetime
-import itertools
 import re
-import warnings
-
-from .. import utils
-from ..errors import RPCError
-from ..extensions import markdown
-from ..tl import TLObject, types, functions
-
 
 from .common import EventBuilder, EventCommon, name_inner_event
+from .. import utils
+from ..extensions import markdown
+from ..tl import types, functions
 
 
 @name_inner_event
@@ -155,23 +148,26 @@ class NewMessage(EventBuilder):
 
         def respond(self, *args, **kwargs):
             """
-            Responds to the message (not as a reply). This is a shorthand for
-            ``client.send_message(event.chat, ...)``.
+            Responds to the message (not as a reply). Shorthand for
+            `telethon.telegram_client.TelegramClient.send_message` with
+            ``entity`` already set.
             """
             return self._client.send_message(self.input_chat, *args, **kwargs)
 
         def reply(self, *args, **kwargs):
             """
-            Replies to the message (as a reply). This is a shorthand for
-            ``client.send_message(event.chat, ..., reply_to=event.message.id)``.
+            Replies to the message (as a reply). Shorthand for
+            `telethon.telegram_client.TelegramClient.send_message` with
+            both ``entity`` and ``reply_to`` already set.
             """
             kwargs['reply_to'] = self.message.id
             return self._client.send_message(self.input_chat, *args, **kwargs)
 
         def forward_to(self, *args, **kwargs):
             """
-            Forwards the message. This is a shorthand for
-            ``client.forward_messages(entity, event.message, event.chat)``.
+            Forwards the message. Shorthand for
+            `telethon.telegram_client.TelegramClient.forward_messages` with
+            both ``messages`` and ``from_peer`` already set.
             """
             kwargs['messages'] = self.message.id
             kwargs['from_peer'] = self.input_chat
@@ -179,11 +175,12 @@ class NewMessage(EventBuilder):
 
         def edit(self, *args, **kwargs):
             """
-            Edits the message iff it's outgoing. This is a shorthand for
-            ``client.edit_message(event.chat, event.message, ...)``.
+            Edits the message iff it's outgoing. Shorthand for
+            `telethon.telegram_client.TelegramClient.edit_message` with
+            both ``entity`` and ``message`` already set.
 
-            Returns ``None`` if the message was incoming,
-            or the edited message otherwise.
+            Returns ``None`` if the message was incoming, or the edited
+            :tl:`Message` otherwise.
             """
             if self.message.fwd_from:
                 return None
@@ -202,8 +199,9 @@ class NewMessage(EventBuilder):
             """
             Deletes the message. You're responsible for checking whether you
             have the permission to do so, or to except the error otherwise.
-            This is a shorthand for
-            ``client.delete_messages(event.chat, event.message, ...)``.
+            Shorthand for
+            `telethon.telegram_client.TelegramClient.delete_messages` with
+            ``entity`` and ``message_ids`` already set.
             """
             return self._client.delete_messages(self.input_chat,
                                                 [self.message],
