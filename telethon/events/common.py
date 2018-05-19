@@ -1,12 +1,9 @@
 import abc
-import datetime
 import itertools
-import re
 import warnings
 
 from .. import utils
 from ..errors import RPCError
-from ..extensions import markdown
 from ..tl import TLObject, types, functions
 
 

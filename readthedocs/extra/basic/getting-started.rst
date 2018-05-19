@@ -65,6 +65,8 @@ Basic Usage
 
    **More details**: :ref:`telegram-client`
 
+   See :ref:`telethon-package` for all available friendly methods.
+
 
 Handling Updates
 ****************

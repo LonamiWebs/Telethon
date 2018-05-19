@@ -12,6 +12,7 @@ the library.
     `issue 744 <https://github.com/LonamiWebs/Telethon/issues/744>`_
     so it can be included in the next revision of the documentation!
 
+.. _projects-telegram-export:
 
 telegram-export
 ***************
@@ -22,6 +23,7 @@ telegram-export
 A tool to download Telegram data (users, chats, messages, and media)
 into a database (and display the saved data).
 
+.. _projects-mautrix-telegram:
 
 mautrix-telegram
 ****************
@@ -31,6 +33,7 @@ mautrix-telegram
 
 A Matrix-Telegram hybrid puppeting/relaybot bridge.
 
+.. _projects-telegramtui:
 
 TelegramTUI
 ***********
