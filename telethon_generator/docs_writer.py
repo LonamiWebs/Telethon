@@ -31,7 +31,7 @@ class DocsWriter:
         self._script = ''
 
     # High level writing
-    def write_head(self, title, relative_css_path):
+    def write_head(self, title, relative_css_path, default_css):
         """Writes the head part for the generated document,
            with the given title and CSS
         """
@@ -45,11 +45,24 @@ class DocsWriter:
 
         self.write('''</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="''')
+    <link id="style" href="''')
 
         self.write(relative_css_path)
+        self.write('/')
+        self.write(default_css)
 
         self.write('''" rel="stylesheet">
+    <script>
+    try {
+        which = document.cookie.split('=')[1].split(';')[0];
+        if (which) {
+            document.getElementById("style").href = "''')
+        self.write(relative_css_path)
+        self.write('''/" + which;
+        }
+    } catch (e) {
+    }
+    </script>
     <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro" rel="stylesheet">
 </head>
 <body>

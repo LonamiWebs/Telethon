@@ -95,19 +95,6 @@ span.sh1 {
     color: #f70;
 }
 
-span.sh2 {
-    color: #0c7;
-}
-
-span.sh3 {
-    color: #aaa;
-    font-style: italic;
-}
-
-span.sh4 {
-    color: #06c;
-}
-
 span.tooltip {
     border-bottom: 1px dashed #444;
 }
