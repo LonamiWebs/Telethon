@@ -2445,7 +2445,7 @@ class TelegramClient(TelegramBareClient):
 
     async def catch_up(self):
         state = self.session.get_update_state(0)
-        if not state:
+        if not state or not state.pts:
             return
 
         self.session.catching_up = True

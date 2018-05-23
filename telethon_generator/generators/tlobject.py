@@ -477,6 +477,12 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
         # Else it may be a custom type
         builder.write('bytes({})', name)
 
+        # If the type is not boxed (i.e. starts with lowercase) we should
+        # not serialize the constructor ID (so remove its first 4 bytes).
+        boxed = arg.type[arg.type.find('.') + 1].isupper()
+        if not boxed:
+            builder.write('[4:]')
+
     if arg.is_flag:
         builder.write(')')
         if arg.is_vector:
