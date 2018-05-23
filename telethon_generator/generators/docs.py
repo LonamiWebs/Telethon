@@ -33,14 +33,15 @@ def get_import_code(tlobject):
         .format(kind, ns, tlobject.class_name)
 
 
-def _get_create_path_for(root, tlobject):
+def _get_create_path_for(root, tlobject, make=True):
     """Creates and returns the path for the given TLObject at root."""
     out_dir = 'methods' if tlobject.is_function else 'constructors'
     if tlobject.namespace:
         out_dir = os.path.join(out_dir, tlobject.namespace)
 
     out_dir = os.path.join(root, out_dir)
-    os.makedirs(out_dir, exist_ok=True)
+    if make:
+        os.makedirs(out_dir, exist_ok=True)
     return os.path.join(out_dir, _get_file_name(tlobject))
 
 
@@ -553,7 +554,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     type_names = fmt(types, formatter=lambda x: x)
 
     # Local URLs shouldn't rely on the output's root, so set empty root
-    create_path_for = functools.partial(_get_create_path_for, '')
+    create_path_for = functools.partial(_get_create_path_for, '', make=False)
     path_for_type = functools.partial(_get_path_for_type, '')
     request_urls = fmt(methods, create_path_for)
     type_urls = fmt(types, path_for_type)
