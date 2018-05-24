@@ -48,20 +48,16 @@ class DocsWriter:
     <link id="style" href="''')
 
         self.write(relative_css_path)
-        self.write('/')
+        self.write('/docs.')
         self.write(default_css)
 
-        self.write('''" rel="stylesheet">
+        self.write('''.css" rel="stylesheet">
     <script>
-    try {
-        which = document.cookie.split('=')[1].split(';')[0];
-        if (which) {
-            document.getElementById("style").href = "''')
+    document.getElementById("style").href = "''')
         self.write(relative_css_path)
-        self.write('''/" + which;
-        }
-    } catch (e) {
-    }
+        self.write('/docs.')
+        self.write('''" + (document.cookie
+        .split(";")[0].split("=")[1] || "light") + ".css";
     </script>
     <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro" rel="stylesheet">
 </head>

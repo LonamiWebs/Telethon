@@ -7,14 +7,10 @@
     <link id="style" href="css/docs.light.css" rel="stylesheet">
     <script>
         (function () {
-            var themes = [ 'light', 'dark' ];
             var style = document.getElementById('style');
 
             // setTheme(<link />, 'light' / 'dark')
             function setTheme(theme) {
-                if (themes.indexOf(theme) === -1) {
-                    return console.warn('Invalid theme');
-                }
                 document.cookie = 'css=' + theme + '; path=/';
                 return style.href = 'css/docs.' + theme + '.css';
             }
