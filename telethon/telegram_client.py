@@ -1673,7 +1673,7 @@ class TelegramClient(TelegramBareClient):
                                          if m.has('duration') else 0)
                         )
                     else:
-                        doc = DocumentAttributeVideo(0, 0, 0,
+                        doc = DocumentAttributeVideo(0, 1, 1,
                                                      round_message=video_note)
 
                     attr_dict[DocumentAttributeVideo] = doc
