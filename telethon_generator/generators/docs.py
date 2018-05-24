@@ -210,7 +210,6 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # TODO Tried using 'defaultdict(list)' with strange results, make it work.
     original_paths = {
         'css': 'css',
-        'default_css': 'docs.light.css',
         'arrow': 'img/arrow.svg',
         'search.js': 'js/search.js',
         '404': '404.html',
@@ -222,6 +221,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     original_paths = {k: os.path.join(output_dir, v)
                       for k, v in original_paths.items()}
 
+    original_paths['default_css'] = 'light'  # docs.<name>.css, local path
     type_to_constructors = {}
     type_to_functions = {}
     for tlobject in tlobjects:
