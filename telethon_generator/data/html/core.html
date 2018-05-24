@@ -6,13 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link id="style" href="css/docs.light.css" rel="stylesheet">
     <script>
-    try {
-        which = document.cookie.split('=')[1].split(';')[0];
-        if (which) {
-            document.getElementById("style").href = "css/" + which;
-        }
-    } catch (e) {
-    }
+        (function () {
+            var style = document.getElementById('style');
+
+            // setTheme(<link />, 'light' / 'dark')
+            function setTheme(theme) {
+                document.cookie = 'css=' + theme + '; path=/';
+                return style.href = 'css/docs.' + theme + '.css';
+            }
+
+            // setThemeOnClick(<link />, 'light' / 'dark', <a />)
+            function setThemeOnClick(theme, button) {
+                return button.addEventListener('click', function (e) {
+                    setTheme(theme);
+                    e.preventDefault();
+                    return false;
+                });
+            }
+
+            setTheme(document.cookie
+                .split(';')[0]
+                .split('=')[1] || 'light');
+
+            document.addEventListener('DOMContentLoaded', function () {
+                setThemeOnClick('light', document.getElementById('themeLight'));
+                setThemeOnClick('dark', document.getElementById('themeDark'));
+            });
+        })();
     </script>
     <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro" rel="stylesheet">
     <style>
@@ -30,7 +50,10 @@
     on what the methods, constructors and types mean. Nevertheless, this
     page aims to provide easy access to all the available methods, their
     definition and parameters.</p>
-    <p id="themeSelect"></p>
+    <p id="themeSelect">
+        <a href="#" id="themeLight">light</a> /
+        <a href="#" id="themeDark">dark</a> theme.
+    </p>
     <p>Please note that when you see this:</p>
     <pre>---functions---
 users.getUsers#0d91a548 id:Vector&lt;InputUser&gt; = Vector&lt;User&gt;</pre>
@@ -154,17 +177,5 @@ users.getUsers#0d91a548 id:Vector&lt;InputUser&gt; = Vector&lt;User&gt;</pre>
     </p>
 </div>
 <script src="js/search.js"></script>
-<script>
-document.getElementById("themeSelect").innerHTML = `
-Select
-<a href="#" onclick="setTheme('docs.light.css')">light</a> /
-<a href="#" onclick="setTheme('docs.dark.css')">dark</a> theme.
-`;
-
-function setTheme(which) {
-    style.href = "css/" + which;
-    document.cookie = "css=" + which + "; path=/";
-}
-</script>
 </body>
 </html>
