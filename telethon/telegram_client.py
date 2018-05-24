@@ -1013,7 +1013,7 @@ class TelegramClient(TelegramBareClient):
         else:
             return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
 
-    def iter_messages(self, entity, limit=20, offset_date=None,
+    def iter_messages(self, entity, limit=None, offset_date=None,
                       offset_id=0, max_id=0, min_id=0, add_offset=0,
                       search=None, filter=None, from_user=None,
                       batch_size=100, wait_time=None, _total=None):
@@ -1100,8 +1100,9 @@ class TelegramClient(TelegramBareClient):
         # We can emulate their behaviour locally by setting offset = max_id
         # and simply stopping once we hit a message with ID <= min_id.
         offset_id = max(offset_id, max_id)
-        if offset_id - min_id <= 1:  # Both exclusive, so 1 difference = empty
-            return
+        if offset_id and min_id:
+            if offset_id - min_id <= 1:
+                return
 
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
@@ -1211,9 +1212,23 @@ class TelegramClient(TelegramBareClient):
         """
         Same as :meth:`iter_messages`, but returns a list instead
         with an additional ``.total`` attribute on the list.
+
+        If the `limit` is not set, it will be 1 by default unless both
+        `min_id` **and** `max_id` are set (as *named* arguments), in
+        which case the entire range will be returned.
+
+        This is so because any integer limit would be rather arbitrary and
+        it's common to only want to fetch one message, but if a range is
+        specified it makes sense that it should return the entirety of it.
         """
         total = [0]
         kwargs['_total'] = total
+        if len(args) == 1 and 'limit' not in kwargs:
+            if 'min_id' in kwargs and 'max_id' in kwargs:
+                kwargs['limit'] = None
+            else:
+                kwargs['limit'] = 1
+
         msgs = UserList(self.iter_messages(*args, **kwargs))
         msgs.total = total[0]
         return msgs
