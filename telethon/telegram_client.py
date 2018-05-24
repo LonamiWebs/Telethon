@@ -949,7 +949,7 @@ class TelegramClient(TelegramBareClient):
 
         Raises:
             ``MessageAuthorRequiredError`` if you're not the author of the
-            message but try editing it anyway.
+            message but tried editing it anyway.
 
             ``MessageNotModifiedError`` if the contents of the message were
             not modified at all.
@@ -1044,7 +1044,7 @@ class TelegramClient(TelegramBareClient):
 
             max_id (`int`):
                 All the messages with a higher (newer) ID or equal to this will
-                be excluded
+                be excluded.
 
             min_id (`int`):
                 All the messages with a lower (older) ID or equal to this will
@@ -1094,6 +1094,15 @@ class TelegramClient(TelegramBareClient):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
+        # Telegram doesn't like min_id/max_id. If these IDs are low enough
+        # (starting from last_id - 100), the request will return nothing.
+        #
+        # We can emulate their behaviour locally by setting offset = max_id
+        # and simply stopping once we hit a message with ID <= min_id.
+        offset_id = max(offset_id, max_id)
+        if offset_id - min_id <= 1:  # Both exclusive, so 1 difference = empty
+            return
+
         entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if search is not None or filter or from_user:
@@ -1108,8 +1117,8 @@ class TelegramClient(TelegramBareClient):
                 offset_id=offset_id,
                 add_offset=add_offset,
                 limit=1,
-                max_id=max_id,
-                min_id=min_id,
+                max_id=0,
+                min_id=0,
                 hash=0,
                 from_id=self.get_input_entity(from_user) if from_user else None
             )
@@ -1119,8 +1128,8 @@ class TelegramClient(TelegramBareClient):
                 limit=1,
                 offset_date=offset_date,
                 offset_id=offset_id,
-                min_id=min_id,
-                max_id=max_id,
+                min_id=0,
+                max_id=0,
                 add_offset=add_offset,
                 hash=0
             )
@@ -1151,6 +1160,9 @@ class TelegramClient(TelegramBareClient):
                         for x in itertools.chain(r.users, r.chats)}
 
             for message in r.messages:
+                if message.id <= min_id:
+                    return
+
                 if isinstance(message, MessageEmpty) or message.id >= last_id:
                     continue
 
