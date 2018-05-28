@@ -1016,7 +1016,8 @@ class TelegramClient(TelegramBareClient):
     def iter_messages(self, entity, limit=None, offset_date=None,
                       offset_id=0, max_id=0, min_id=0, add_offset=0,
                       search=None, filter=None, from_user=None,
-                      batch_size=100, wait_time=None, _total=None):
+                      batch_size=100, wait_time=None, ids=None,
+                      _total=None):
         """
         Iterator over the message history for the specified entity.
 
@@ -1076,6 +1077,15 @@ class TelegramClient(TelegramBareClient):
                 If left to ``None``, it will default to 1 second only if
                 the limit is higher than 3000.
 
+            ids (`int`, `list`):
+                A single integer ID (or several IDs) for the message that
+                should be returned. This parameter takes precedence over
+                the rest (which will be ignored if this is set). This can
+                for instance be used to get the message with ID 123 from
+                a channel. Note that if the message doesn't exist, ``None``
+                will appear in its place, so that zipping the list of IDs
+                with the messages can match one-to-one.
+
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
@@ -1094,6 +1104,13 @@ class TelegramClient(TelegramBareClient):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
+        entity = self.get_input_entity(entity)
+        if ids:
+            if not utils.is_list_like(ids):
+                ids = (ids,)
+            yield from self._iter_ids(entity, ids, total=_total)
+            return
+
         # Telegram doesn't like min_id/max_id. If these IDs are low enough
         # (starting from last_id - 100), the request will return nothing.
         #
@@ -1104,7 +1121,6 @@ class TelegramClient(TelegramBareClient):
             if offset_id - min_id <= 1:
                 return
 
-        entity = self.get_input_entity(entity)
         limit = float('inf') if limit is None else int(limit)
         if search is not None or filter or from_user:
             if filter is None:
@@ -1173,27 +1189,7 @@ class TelegramClient(TelegramBareClient):
                 # IDs are returned in descending order.
                 last_id = message.id
 
-                # Add a few extra attributes to the Message to be friendlier.
-                # To make messages more friendly, always add message
-                # to service messages, and action to normal messages.
-                message.message = getattr(message, 'message', None)
-                message.action = getattr(message, 'action', None)
-                message.to = entities[utils.get_peer_id(message.to_id)]
-                message.sender = (
-                    None if not message.from_id else
-                    entities[utils.get_peer_id(message.from_id)]
-                )
-                if getattr(message, 'fwd_from', None):
-                    message.fwd_from.sender = (
-                        None if not message.fwd_from.from_id else
-                        entities[utils.get_peer_id(message.fwd_from.from_id)]
-                    )
-                    message.fwd_from.channel = (
-                        None if not message.fwd_from.channel_id else
-                        entities[utils.get_peer_id(
-                            PeerChannel(message.fwd_from.channel_id)
-                        )]
-                    )
+                self._make_message_friendly(message, entities)
                 yield message
                 have += 1
 
@@ -1208,6 +1204,58 @@ class TelegramClient(TelegramBareClient):
 
             time.sleep(max(wait_time - (time.time() - start), 0))
 
+    @staticmethod
+    def _make_message_friendly(message, entities):
+        """
+        Add a few extra attributes to the :tl:`Message` to be friendlier.
+
+        To make messages more friendly, always add message
+        to service messages, and action to normal messages.
+        """
+        # TODO Create an actual friendlier class
+        message.message = getattr(message, 'message', None)
+        message.action = getattr(message, 'action', None)
+        message.to = entities[utils.get_peer_id(message.to_id)]
+        message.sender = (
+            None if not message.from_id else
+            entities[utils.get_peer_id(message.from_id)]
+        )
+        if getattr(message, 'fwd_from', None):
+            message.fwd_from.sender = (
+                None if not message.fwd_from.from_id else
+                entities[utils.get_peer_id(message.fwd_from.from_id)]
+            )
+            message.fwd_from.channel = (
+                None if not message.fwd_from.channel_id else
+                entities[utils.get_peer_id(
+                    PeerChannel(message.fwd_from.channel_id)
+                )]
+            )
+
+    def _iter_ids(self, entity, ids, total):
+        """
+        Special case for `iter_messages` when it should only fetch some IDs.
+        """
+        if total:
+            total[0] = len(ids)
+
+        if isinstance(entity, InputPeerChannel):
+            r = self(channels.GetMessagesRequest(entity, ids))
+        else:
+            r = self(messages.GetMessagesRequest(ids))
+
+        entities = {utils.get_peer_id(x): x
+                    for x in itertools.chain(r.users, r.chats)}
+
+        # Telegram seems to return the messages in the order in which
+        # we asked them for, so we don't need to check it ourselves.
+        for message in r.messages:
+            if isinstance(message, MessageEmpty):
+                yield None
+            else:
+                self._make_message_friendly(message, entities)
+                yield message
+
     def get_messages(self, *args, **kwargs):
         """
         Same as :meth:`iter_messages`, but returns a list instead
@@ -1220,6 +1268,10 @@ class TelegramClient(TelegramBareClient):
         This is so because any integer limit would be rather arbitrary and
         it's common to only want to fetch one message, but if a range is
         specified it makes sense that it should return the entirety of it.
+
+        If `ids` is present in the *named* arguments and is not a list,
+        a single :tl:`Message` will be returned for convenience instead
+        of a list.
         """
         total = [0]
         kwargs['_total'] = total
@@ -1231,6 +1283,9 @@ class TelegramClient(TelegramBareClient):
 
         msgs = UserList(self.iter_messages(*args, **kwargs))
         msgs.total = total[0]
+        if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
+            return msgs[0]
+
         return msgs
 
     def get_message_history(self, *args, **kwargs):
