@@ -36,8 +36,18 @@
 body {
     font-family: 'Hack', monospace;
     color: #0a0;
-    background-color:#000;
+    background-color: #000;
     font-size: 16px;
+}
+
+::-moz-selection {
+    color: #000;
+    background: #0a0;
+}
+
+::selection {
+    color: #000;
+    background: #0a0;
 }
 
 a {

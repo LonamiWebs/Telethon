@@ -7,7 +7,7 @@ Session Files
 The first parameter you pass to the constructor of the ``TelegramClient`` is
 the ``session``, and defaults to be the session name (or full path). That is,
 if you create a ``TelegramClient('anon')`` instance and connect, an
-``anon.session`` file will be created on the working directory.
+``anon.session`` file will be created in the working directory.
 
 Note that if you pass a string it will be a file in the current working
 directory, although you can also pass absolute paths.

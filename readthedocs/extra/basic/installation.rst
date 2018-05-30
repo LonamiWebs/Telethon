@@ -58,8 +58,7 @@ Manual Installation
 
 5. Done!
 
-To generate the `method documentation`__, ``cd docs`` and then
-``python3 generate.py`` (if some pages render bad do it twice).
+To generate the `method documentation`__, ``python3 setup.py gen docs``.
 
 
 Optional dependencies
