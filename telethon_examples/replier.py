@@ -2,9 +2,9 @@
 """
 A example script to automatically send messages based on certain triggers.
 
-The script makes uses of environment variables to determine the API ID,
-hash, phone and such to be used. You may want to add these to your .bashrc
-file, including TG_API_ID, TG_API_HASH, TG_PHONE and optionally TG_SESSION.
+NOTE: To run this script you MUST have 'TG_API_ID' and 'TG_API_HASH' in
+      your environment variables. This is a good way to use these private
+      values. See https://superuser.com/q/284342.
 
 This script assumes that you have certain files on the working directory,
 such as "xfiles.m4a" or "anytime.png" for some of the automated replies.

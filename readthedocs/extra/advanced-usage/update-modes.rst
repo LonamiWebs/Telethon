@@ -26,7 +26,7 @@ That's it! This is the old way to listen for raw updates, with no further
 processing. If this feels annoying for you, remember that you can always
 use :ref:`working-with-updates` but maybe use this for some other cases.
 
-Now let's do something more interesting. Every time an user talks to use,
+Now let's do something more interesting. Every time an user talks to us,
 let's reply to them with the same text reversed:
 
     .. code-block:: python

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # A simple script to print all updates received
+#
+# NOTE: To run this script you MUST have 'TG_API_ID' and 'TG_API_HASH' in
+#       your environment variables. This is a good way to use these private
+#       values. See https://superuser.com/q/284342.
 
 from os import environ
 
@@ -23,7 +27,7 @@ def main():
     else:
         client.start()
 
-    client.add_update_handler(update_handler)
+    client.add_event_handler(update_handler)
     print('(Press Ctrl+C to stop this)')
     client.idle()
 

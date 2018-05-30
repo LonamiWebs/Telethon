@@ -33,14 +33,15 @@ def get_import_code(tlobject):
         .format(kind, ns, tlobject.class_name)
 
 
-def _get_create_path_for(root, tlobject):
+def _get_create_path_for(root, tlobject, make=True):
     """Creates and returns the path for the given TLObject at root."""
     out_dir = 'methods' if tlobject.is_function else 'constructors'
     if tlobject.namespace:
         out_dir = os.path.join(out_dir, tlobject.namespace)
 
     out_dir = os.path.join(root, out_dir)
-    os.makedirs(out_dir, exist_ok=True)
+    if make:
+        os.makedirs(out_dir, exist_ok=True)
     return os.path.join(out_dir, _get_file_name(tlobject))
 
 
@@ -114,7 +115,9 @@ def _generate_index(folder, original_paths, root):
     filename = os.path.join(folder, 'index.html')
     with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
-        docs.write_head(folder.title(), relative_css_path=paths['css'])
+        docs.write_head(folder.title(),
+                        relative_css_path=paths['css'],
+                        default_css=original_paths['default_css'])
 
         docs.set_menu_separator(paths['arrow'])
         _build_menu(docs, filename, root,
@@ -206,7 +209,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # * Generating the types documentation, showing available constructors.
     # TODO Tried using 'defaultdict(list)' with strange results, make it work.
     original_paths = {
-        'css': 'css/docs.css',
+        'css': 'css',
         'arrow': 'img/arrow.svg',
         'search.js': 'js/search.js',
         '404': '404.html',
@@ -218,6 +221,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     original_paths = {k: os.path.join(output_dir, v)
                       for k, v in original_paths.items()}
 
+    original_paths['default_css'] = 'light'  # docs.<name>.css, local path
     type_to_constructors = {}
     type_to_functions = {}
     for tlobject in tlobjects:
@@ -251,7 +255,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
         with DocsWriter(filename, type_to_path=path_for_type) as docs:
             docs.write_head(title=tlobject.class_name,
-                            relative_css_path=paths['css'])
+                            relative_css_path=paths['css'],
+                            default_css=original_paths['default_css'])
 
             # Create the menu (path to the current TLObject)
             docs.set_menu_separator(paths['arrow'])
@@ -392,9 +397,9 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                  for k, v in original_paths.items()}
 
         with DocsWriter(filename, type_to_path=path_for_type) as docs:
-            docs.write_head(
-                title=snake_to_camel_case(name),
-                relative_css_path=paths['css'])
+            docs.write_head(title=snake_to_camel_case(name),
+                            relative_css_path=paths['css'],
+                            default_css=original_paths['default_css'])
 
             docs.set_menu_separator(paths['arrow'])
             _build_menu(docs, filename, output_dir,
@@ -549,7 +554,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     type_names = fmt(types, formatter=lambda x: x)
 
     # Local URLs shouldn't rely on the output's root, so set empty root
-    create_path_for = functools.partial(_get_create_path_for, '')
+    create_path_for = functools.partial(_get_create_path_for, '', make=False)
     path_for_type = functools.partial(_get_path_for_type, '')
     request_urls = fmt(methods, create_path_for)
     type_urls = fmt(types, path_for_type)
@@ -570,7 +575,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
 
 def _copy_resources(res_dir, out_dir):
-    for dirname, files in [('css', ['docs.css']), ('img', ['arrow.svg'])]:
+    for dirname, files in [('css', ['docs.light.css', 'docs.dark.css']),
+                           ('img', ['arrow.svg'])]:
         dirpath = os.path.join(out_dir, dirname)
         os.makedirs(dirpath, exist_ok=True)
         for file in files:

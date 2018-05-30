@@ -28,8 +28,16 @@ class NewMessage(EventBuilder):
     """
     def __init__(self, incoming=None, outgoing=None,
                  chats=None, blacklist_chats=False, pattern=None):
+        if incoming is not None and outgoing is None:
+            outgoing = not incoming
+        elif outgoing is not None and incoming is None:
+            incoming = not incoming
+
         if incoming and outgoing:
-            raise ValueError('Can only set either incoming or outgoing')
+            self.incoming = self.outgoing = None  # Same as no filter
+        elif all(x is not None and not x for x in (incoming, outgoing)):
+            raise ValueError("Don't create an event handler if you "
+                             "don't want neither incoming or outgoing!")
 
         super().__init__(chats=chats, blacklist_chats=blacklist_chats)
         self.incoming = incoming

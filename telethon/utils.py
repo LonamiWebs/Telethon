@@ -552,8 +552,13 @@ def resolve_id(marked_id):
     if marked_id >= 0:
         return marked_id, PeerUser
 
-    if str(marked_id).startswith('-100'):
-        return int(str(marked_id)[4:]), PeerChannel
+    # There have been report of chat IDs being 10000xyz, which means their
+    # marked version is -10000xyz, which in turn looks like a channel but
+    # it becomes 00xyz (= xyz). Hence, we must assert that there are only
+    # two zeroes.
+    m = re.match(r'-100([^0]\d*)', str(marked_id))
+    if m:
+        return int(m.group(1)), PeerChannel
 
     return -marked_id, PeerChat
 
