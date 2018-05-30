@@ -38,7 +38,7 @@ Getting entities
 
 Through the use of the :ref:`sessions`, the library will automatically
 remember the ID and hash pair, along with some extra information, so
-you're able to just do this:
+you're able to just do this (inside an ``async def``):
 
     .. code-block:: python
 

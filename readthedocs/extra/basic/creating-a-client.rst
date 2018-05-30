@@ -84,19 +84,21 @@ As a full example:
 
     .. code-block:: python
 
-        client = TelegramClient('anon', api_id, api_hash)
-        assert await client.connect()
-        if not client.is_user_authorized():
-            await client.send_code_request(phone_number)
-            me = await client.sign_in(phone_number, input('Enter code: '))
+        async def main():
+            client = TelegramClient('anon', api_id, api_hash)
+            assert await client.connect()
+            if not client.is_user_authorized():
+                await client.send_code_request(phone_number)
+                me = await client.sign_in(phone_number, input('Enter code: '))
 
 
 All of this, however, can be done through a call to ``.start()``:
 
     .. code-block:: python
 
-        client = TelegramClient('anon', api_id, api_hash)
-        await client.start()
+        async def main():
+            client = TelegramClient('anon', api_id, api_hash)
+            await client.start()
 
 
 The code shown is just what ``.start()`` will be doing behind the scenes
@@ -159,7 +161,7 @@ account, calling :meth:`telethon.TelegramClient.sign_in` will raise a
         import getpass
         from telethon.errors import SessionPasswordNeededError
 
-        client.sign_in(phone)
+        await client.sign_in(phone)
         try:
             await client.sign_in(code=input('Enter code: '))
         except SessionPasswordNeededError:

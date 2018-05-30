@@ -256,7 +256,9 @@ class TelegramClient(TelegramBareClient):
         also taking into consideration that 2FA may be enabled in the account.
 
         Example usage:
-            >>> client = await TelegramClient(session, api_id, api_hash).start(phone)
+            >>> import asyncio
+            >>> rc = asyncio.get_event_loop().run_until_complete
+            >>> client = rc(TelegramClient(session, api_id, api_hash).start(phone))
             Please enter the code you received: 12345
             Please enter your password: *******
             (You are now logged in)
@@ -945,6 +947,7 @@ class TelegramClient(TelegramBareClient):
 
         Examples:
 
+            >>> import asyncio
             >>> async def main():
             ...     client = await TelegramClient(...).start()
             ...     message = await client.send_message('username', 'hello')
@@ -955,7 +958,7 @@ class TelegramClient(TelegramBareClient):
             ...     # or
             ...     await client.edit_message(message, 'Hello!')
             ...
-            >>> loop = ...
+            >>> loop = asyncio.get_event_loop()
             >>> loop.run_until_complete(main())
 
         Raises:

@@ -32,7 +32,7 @@ need of manually importing the requests you need.
 
 For instance, retrieving your own user can be done in a single line:
 
-    ``myself = client.get_me()``
+    ``myself = await client.get_me()``
 
 Internally, this method has sent a request to Telegram, who replied with
 the information about your own user, and then the desired information
@@ -53,7 +53,8 @@ The so called "entities" are another important whole concept on its own,
 but for now you don't need to worry about it. Simply know that they are
 a good way to get information about an user, chat or channel.
 
-Many other common methods for quick scripts are also available:
+Many other common methods for quick scripts are also available.
+Note that you should be writing this inside of an ``async def``:
 
     .. code-block:: python
 

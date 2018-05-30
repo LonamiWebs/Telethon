@@ -31,27 +31,32 @@ Getting Started
     .. code-block:: python
 
         import asyncio
+        loop = asyncio.get_event_loop()
+
         from telethon import TelegramClient, events
 
-        client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
-        await client.start()
+        client = TelegramClient(...)
+        loop.run_until_complete(client.start())
 
         @client.on(events.NewMessage)
         async def my_event_handler(event):
             if 'hello' in event.raw_text:
                 await event.reply('hi!')
 
-        asyncio.get_event_loop().run_forever()
+        loop.run_forever()
 
 
 Not much, but there might be some things unclear. What does this code do?
 
     .. code-block:: python
 
+        import asyncio
+        loop = asyncio.get_event_loop()
+
         from telethon import TelegramClient, events
 
-        client = TelegramClient(..., update_workers=1, spawn_read_thread=False)
-        await client.start()
+        client = TelegramClient(...)
+        loop.run_until_complete(client.start())
 
 
 This is normal initialization (of course, pass session name, API ID and hash).
@@ -78,7 +83,7 @@ message, we ``reply`` to the event with a ``'hi!'`` message.
 
     .. code-block:: python
 
-        asyncio.get_event_loop().run_forever()
+        loop.run_forever()
 
 
 Finally, this tells the script that we're done with our code, and want

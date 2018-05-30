@@ -67,7 +67,7 @@ Or we call ``.get_input_entity()``:
 
     .. code-block:: python
 
-        peer = client.get_input_entity('someone')
+        peer = await client.get_input_entity('someone')
 
 When you're going to invoke an API method, most require you to pass an
 :tl:`InputUser`, :tl:`InputChat`, or so on, this is why using
@@ -78,7 +78,7 @@ If you also need to have information about the whole user, use
 
     .. code-block:: python
 
-        entity = client.get_entity('someone')
+        entity = await client.get_entity('someone')
 
 In the later case, when you use the entity, the library will cast it to
 its "input" version for you. If you already have the complete user and
@@ -104,7 +104,7 @@ request we do:
 
     .. code-block:: python
 
-        result = client(SendMessageRequest(peer, 'Hello there!'))
+        result = await client(SendMessageRequest(peer, 'Hello there!'))
         # __call__ is an alias for client.invoke(request). Both will work
 
 Message sent! Of course, this is only an example. There are nearly 250
@@ -113,18 +113,19 @@ as you wish. Remember to use the right types! To sum up:
 
     .. code-block:: python
 
-        result = client(SendMessageRequest(
-            client.get_input_entity('username'), 'Hello there!'
-        ))
+        async def method():
+            result = await client(SendMessageRequest(
+                client.get_input_entity('username'), 'Hello there!'
+            ))
 
 
 This can further be simplified to:
 
     .. code-block:: python
 
-        result = client(SendMessageRequest('username', 'Hello there!'))
+        result = await client(SendMessageRequest('username', 'Hello there!'))
         # Or even
-        result = client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
+        result = await client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
 
 
 .. note::
