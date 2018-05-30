@@ -1,5 +1,5 @@
 from . import Draft
-from .. import TLObject
+from .. import TLObject, types
 from ... import utils
 
 
@@ -38,6 +38,9 @@ class Dialog:
             Display name for this dialog. For chats and channels this is
             their title, and for users it's "First-Name Last-Name".
 
+        title (`str`):
+            Alias for `name`.
+
         unread_count (`int`):
             How many messages are currently unread in this dialog. Note that
             this value won't update when new messages arrive.
@@ -49,6 +52,16 @@ class Dialog:
         draft (`telethon.tl.custom.draft.Draft`):
             The draft object in this dialog. It will not be ``None``,
             so you can call ``draft.set_message(...)``.
+
+        is_user (`bool`):
+            ``True`` if the `entity` is a :tl:`User`.
+
+        is_group (`bool`):
+            ``True`` if the `entity` is a :tl:`Chat`
+            or a :tl:`Channel` megagroup.
+
+        is_channel (`bool`):
+            ``True`` if the `entity` is a :tl:`Channel`.
     """
     def __init__(self, client, dialog, entities, messages):
         # Both entities and messages being dicts {ID: item}
@@ -61,12 +74,19 @@ class Dialog:
         self.entity = entities[utils.get_peer_id(dialog.peer)]
         self.input_entity = utils.get_input_peer(self.entity)
         self.id = utils.get_peer_id(self.entity)  # ^ May be InputPeerSelf()
-        self.name = utils.get_display_name(self.entity)
+        self.name = self.title = utils.get_display_name(self.entity)
 
         self.unread_count = dialog.unread_count
         self.unread_mentions_count = dialog.unread_mentions_count
 
         self.draft = Draft(client, dialog.peer, dialog.draft)
+
+        self.is_user = isinstance(self.entity, types.User)
+        self.is_group = (
+            isinstance(self.entity, types.Chat) or
+            (isinstance(self.entity, types.Channel) and self.entity.megagroup)
+        )
+        self.is_channel = isinstance(self.entity, types.Channel)
 
     def send_message(self, *args, **kwargs):
         """
