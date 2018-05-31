@@ -27,7 +27,7 @@ class Message:
         self._text = None
         self._reply_to = None
         self._buttons = None
-        self._buttons_flat = []
+        self._buttons_flat = None
         self._sender = entities.get(self.original_message.from_id)
         self._chat = entities.get(get_peer_id(self.original_message.to_id))
         self._input_sender = None
@@ -260,6 +260,8 @@ class Message:
         If the message has a non-inline keyboard, clicking it will
         send the message, switch to inline, or open its URL.
 
+        Does nothing if the message has no buttons.
+
         Args:
             i (`int`):
                 Clicks the i'th button (starting from the index 0).
@@ -296,6 +298,9 @@ class Message:
         """
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
+
+        if not self.buttons:
+            return  # Accessing the property sets self._buttons[_flat]
 
         if text is not None:
             if callable(text):
