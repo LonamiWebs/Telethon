@@ -191,6 +191,8 @@ class Message:
                         get_peer_id(types.PeerChannel(fwd.channel_id)))
         return self._fwd_from_entity
 
+    # TODO events.NewMessage and this class share a lot of code; merge them?
+    # Can we consider the event of a new message to be a message in itself?
     def reply(self, *args, **kwargs):
         """
         Replies to the message (as a reply). Shorthand for
@@ -200,6 +202,38 @@ class Message:
         kwargs['reply_to'] = self.original_message.id
         return self._client.send_message(self.original_message.to_id,
                                          *args, **kwargs)
+
+    def edit(self, *args, **kwargs):
+        """
+        Edits the message iff it's outgoing. Shorthand for
+        `telethon.telegram_client.TelegramClient.edit_message` with
+        both ``entity`` and ``message`` already set.
+
+        Returns ``None`` if the message was incoming, or the edited
+        :tl:`Message` otherwise.
+        """
+        if self.original_message.fwd_from:
+            return None
+        if not self.original_message.out:
+            if not isinstance(self.original_message.to_id, types.PeerUser):
+                return None
+            me = self._client.get_me(input_peer=True)
+            if self.original_message.to_id.user_id != me.user_id:
+                return None
+
+        return self._client.edit_message(
+            self.input_chat, self.original_message, *args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Deletes the message. You're responsible for checking whether you
+        have the permission to do so, or to except the error otherwise.
+        Shorthand for
+        `telethon.telegram_client.TelegramClient.delete_messages` with
+        ``entity`` and ``message_ids`` already set.
+        """
+        return self._client.delete_messages(
+            self.input_chat, [self.original_message], *args, **kwargs)
 
     def download_media(self, *args, **kwargs):
         """
