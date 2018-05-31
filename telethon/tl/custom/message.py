@@ -21,9 +21,6 @@ class Message:
     """
     def __init__(self, client, original, entities, input_chat):
         self.original_message = original
-        self.__getattribute__ = self.original_message.__getattribute__
-        self.__str__ = self.original_message.__str__
-        self.__repr__ = self.original_message.__repr__
         self.stringify = self.original_message.stringify
         self.to_dict = self.original_message.to_dict
         self._client = client
@@ -36,8 +33,14 @@ class Message:
         self._from_input_user = None
         self._input_chat = input_chat
 
-    def __getattribute__(self, item):
+    def __getattr__(self, item):
         return getattr(self.original_message, item)
+
+    def __str__(self):
+        return str(self.original_message)
+
+    def __repr__(self):
+        return repr(self.original_message)
 
     @property
     def client(self):
