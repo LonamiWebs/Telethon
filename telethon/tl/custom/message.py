@@ -50,6 +50,9 @@ class Message:
     def __repr__(self):
         return repr(self.original_message)
 
+    def __bytes__(self):
+        return bytes(self.original_message)
+
     @property
     def client(self):
         return self._client
@@ -296,7 +299,7 @@ class Message:
                 returns ``True``. The callable should accept a single
                 `telethon.tl.custom.messagebutton.MessageButton` argument.
         """
-        if sum(int(x is not None) for x in (i, text, filter)) >= 2:
+        if (i, text, filter).count(None) >= 2:
             raise ValueError('You can only set either of i, text or filter')
 
         if not self.buttons:
