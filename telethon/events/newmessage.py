@@ -3,7 +3,7 @@ import re
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
 from ..extensions import markdown
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 
 @name_inner_event
@@ -153,6 +153,11 @@ class NewMessage(EventBuilder):
 
             self.is_reply = bool(message.reply_to_msg_id)
             self._reply_message = None
+
+        def _set_client(self, client):
+            super()._set_client(client)
+            self.message = custom.Message(
+                client, self.message, self._entities, None)
 
         def respond(self, *args, **kwargs):
             """

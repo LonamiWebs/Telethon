@@ -1,6 +1,6 @@
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 
 @name_inner_event
@@ -157,6 +157,12 @@ class ChatAction(EventBuilder):
             self._input_users = None
             self.new_title = new_title
             self.unpin = unpin
+
+        def _set_client(self, client):
+            super()._set_client(client)
+            if self.action_message:
+                self.action_message = custom.Message(
+                    client, self.action_message, self._entities, None)
 
         def respond(self, *args, **kwargs):
             """

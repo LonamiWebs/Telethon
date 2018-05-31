@@ -103,6 +103,12 @@ class EventCommon(abc.ABC):
         )
         self.is_channel = isinstance(chat_peer, types.PeerChannel)
 
+    def _set_client(self, client):
+        """
+        Setter so subclasses can act accordingly when the client is set.
+        """
+        self._client = client
+
     def _get_entity(self, msg_id, entity_id, chat=None):
         """
         Helper function to call :tl:`GetMessages` on the give msg_id and

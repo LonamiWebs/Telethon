@@ -2416,7 +2416,7 @@ class TelegramClient(TelegramBareClient):
         for builder, callback in self._event_builders:
             event = builder.build(update)
             if event:
-                event._client = self
+                event._set_client(self)
                 event.original_update = update
                 try:
                     callback(event)

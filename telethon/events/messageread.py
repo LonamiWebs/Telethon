@@ -100,16 +100,9 @@ class MessageRead(EventBuilder):
                 chat = self.input_chat
                 if not chat:
                     self._messages = []
-                elif isinstance(chat, types.InputPeerChannel):
-                    self._messages =\
-                        self._client(functions.channels.GetMessagesRequest(
-                            chat, self._message_ids
-                        )).messages
                 else:
-                    self._messages =\
-                        self._client(functions.messages.GetMessagesRequest(
-                            self._message_ids
-                        )).messages
+                    self._messages = self._client.get_messages(
+                        chat, ids=self._message_ids)
 
             return self._messages
 
