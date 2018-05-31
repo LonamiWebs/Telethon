@@ -1,6 +1,6 @@
 from .. import types
 from ...extensions import markdown
-from ...utils import get_peer_id
+from ...utils import get_input_peer, get_peer_id
 from .messagebutton import MessageButton
 
 
@@ -19,7 +19,7 @@ class Message:
             Attributes not described here are the same as those available
             in the original :tl:`Message`.
     """
-    def __init__(self, client, original, entities=None):
+    def __init__(self, client, original, entities, input_chat):
         self.original_message = original
         self.__getattribute__ = self.original_message.__getattribute__
         self.__str__ = self.original_message.__str__
@@ -31,8 +31,10 @@ class Message:
         self._reply_to = None
         self._buttons = None
         self._buttons_flat = []
-        self.from_user = entities[self.original_message.from_id]
-        self.chat = entities[get_peer_id(self.original_message.to_id)]
+        self._from_user = entities.get(self.original_message.from_id)
+        self._chat = entities.get(get_peer_id(self.original_message.to_id))
+        self._from_input_user = None
+        self._input_chat = input_chat
 
     def __getattribute__(self, item):
         return getattr(self.original_message, item)
@@ -59,6 +61,46 @@ class Message:
         The raw message text, ignoring any formatting.
         """
         return self.original_message.message
+
+    @property
+    def from_user(self):
+        if self._from_user is None:
+            self._from_user = self._client.get_entity(self.from_input_user)
+        return self._from_user
+
+    @property
+    def chat(self):
+        if self._chat is None:
+            self._chat = self._client.get_entity(self.input_chat)
+        return self._chat
+
+    @property
+    def from_input_user(self):
+        if self._from_input_user is None:
+            if self._from_user is not None:
+                self._from_input_user = get_input_peer(self._from_user)
+            else:
+                self._from_input_user = self._client.get_input_entity(
+                    self.original_message.from_id)
+        return self._from_input_user
+
+    @property
+    def input_chat(self):
+        if self._input_chat is None:
+            if self._chat is not None:
+                self._chat = get_input_peer(self._chat)
+            else:
+                self._chat = self._client.get_input_entity(
+                    self.original_message.to_id)
+        return self._input_chat
+
+    @property
+    def user_id(self):
+        return self.original_message.from_id
+
+    @property
+    def chat_id(self):
+        return get_peer_id(self.original_message.to_id)
 
     @property
     def buttons(self):
