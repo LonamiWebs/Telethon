@@ -32,6 +32,14 @@ class Message:
         self._chat = entities.get(get_peer_id(self.original_message.to_id))
         self._input_sender = None
         self._input_chat = input_chat
+        self._fwd_from_entity = None
+        if getattr(self.original_message, 'fwd_from', None):
+            fwd = self.original_message.fwd_from
+            if fwd.from_id:
+                self._fwd_from_entity = entities.get(fwd.from_id)
+            elif fwd.channel_id:
+                self._fwd_from_entity = entities.get(get_peer_id(
+                    types.PeerChannel(fwd.channel_id)))
 
     def __getattr__(self, item):
         return getattr(self.original_message, item)
@@ -165,6 +173,23 @@ class Message:
                 self.original_message.to_id,
                 ids=self.original_message.reply_to_msg_id
             )
+
+    @property
+    def fwd_from_entity(self):
+        """
+        If the :tl:`Message` is a forwarded message, returns the :tl:`User`
+        or :tl:`Channel` who originally sent the message, or ``None``.
+        """
+        if self._fwd_from_entity is None:
+            if getattr(self.original_message, 'fwd_from', None):
+                fwd = self.original_message.fwd_from
+                if fwd.from_id:
+                    self._fwd_from_entity = self._client.get_entity(
+                        fwd.from_id)
+                elif fwd.channel_id:
+                    self._fwd_from_entity = self._client.get_entity(
+                        get_peer_id(types.PeerChannel(fwd.channel_id)))
+        return self._fwd_from_entity
 
     def reply(self, *args, **kwargs):
         """
