@@ -28,9 +28,9 @@ class Message:
         self._reply_to = None
         self._buttons = None
         self._buttons_flat = []
-        self._from_user = entities.get(self.original_message.from_id)
+        self._sender = entities.get(self.original_message.from_id)
         self._chat = entities.get(get_peer_id(self.original_message.to_id))
-        self._from_input_user = None
+        self._input_sender = None
         self._input_chat = input_chat
 
     def __getattr__(self, item):
@@ -50,8 +50,10 @@ class Message:
     def text(self):
         """
         The message text, markdown-formatted.
+        Will be ``None`` for :tl:`MessageService`.
         """
-        if self._text is None:
+        if self._text is None\
+                and isinstance(self.original_message, types.Message):
             if not self.original_message.entities:
                 return self.original_message.message
             self._text = markdown.unparse(self.original_message.message,
@@ -62,14 +64,33 @@ class Message:
     def raw_text(self):
         """
         The raw message text, ignoring any formatting.
+        Will be ``None`` for :tl:`MessageService`.
         """
-        return self.original_message.message
+        if isinstance(self.original_message, types.Message):
+            return self.original_message.message
 
     @property
-    def from_user(self):
-        if self._from_user is None:
-            self._from_user = self._client.get_entity(self.from_input_user)
-        return self._from_user
+    def message(self):
+        """
+        The raw message text, ignoring any formatting.
+        Will be ``None`` for :tl:`MessageService`.
+        """
+        return self.raw_text
+
+    @property
+    def action(self):
+        """
+        The :tl:`MessageAction` for the :tl:`MessageService`.
+        Will be ``None`` for :tl:`Message`.
+        """
+        if isinstance(self.original_message, types.MessageService):
+            return self.original_message.action
+
+    @property
+    def sender(self):
+        if self._sender is None:
+            self._sender = self._client.get_entity(self.input_sender)
+        return self._sender
 
     @property
     def chat(self):
@@ -78,14 +99,14 @@ class Message:
         return self._chat
 
     @property
-    def from_input_user(self):
-        if self._from_input_user is None:
-            if self._from_user is not None:
-                self._from_input_user = get_input_peer(self._from_user)
+    def input_sender(self):
+        if self._input_sender is None:
+            if self._sender is not None:
+                self._input_sender = get_input_peer(self._sender)
             else:
-                self._from_input_user = self._client.get_input_entity(
+                self._input_sender = self._client.get_input_entity(
                     self.original_message.from_id)
-        return self._from_input_user
+        return self._input_sender
 
     @property
     def input_chat(self):
@@ -115,8 +136,8 @@ class Message:
             if isinstance(self.original_message.reply_markup, (
                     types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
                 self._buttons = [[
-                    MessageButton(self._client, button, self.from_user,
-                                  self.chat, self.original_message.id)
+                    MessageButton(self._client, button, self.input_sender,
+                                  self.input_chat, self.original_message.id)
                     for button in row.buttons
                 ] for row in self.original_message.reply_markup.rows]
                 self._buttons_flat = [x for row in self._buttons for x in row]
