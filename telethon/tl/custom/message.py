@@ -41,6 +41,14 @@ class Message:
                 self._fwd_from_entity = entities.get(get_peer_id(
                     types.PeerChannel(fwd.channel_id)))
 
+    def __new__(cls, client, original, entities, input_chat):
+        if isinstance(original, types.Message):
+            return super().__new__(_CustomMessage)
+        elif isinstance(original, types.MessageService):
+            return super().__new__(_CustomMessageService)
+        else:
+            return cls
+
     def __getattr__(self, item):
         return getattr(self.original_message, item)
 
@@ -328,3 +336,11 @@ class Message:
             return self._buttons_flat[i].click()
         else:
             return self._buttons[i][j].click()
+
+
+class _CustomMessage(Message, types.Message):
+    pass
+
+
+class _CustomMessageService(Message, types.MessageService):
+    pass
