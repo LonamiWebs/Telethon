@@ -25,12 +25,15 @@ class Message:
         self.to_dict = self.original_message.to_dict
         self._client = client
         self._text = None
-        self._reply_to = None
+        self._reply_message = None
         self._buttons = None
         self._buttons_flat = None
         self._sender = entities.get(self.original_message.from_id)
         self._chat = entities.get(get_peer_id(self.original_message.to_id))
-        self._input_sender = None
+        if self._sender:
+            self._input_sender = get_input_peer(self._sender)
+        else:
+            self._input_sender = None
         self._input_chat = input_chat
         self._fwd_from_entity = None
         if getattr(self.original_message, 'fwd_from', None):
@@ -105,45 +108,127 @@ class Message:
         if isinstance(self.original_message, types.MessageService):
             return self.original_message.action
 
+    def _reload_message(self):
+        """
+        Re-fetches this message to reload the sender and chat entities,
+        along with their input versions.
+        """
+        try:
+            chat = self.input_chat if self.is_channel else None
+            msg = self._client.get_messages(chat, ids=self.original_message.id)
+        except ValueError:
+            return  # We may not have the input chat/get message failed
+        if not msg:
+            return  # The message may be deleted and it will be None
+
+        self._sender = msg._sender
+        self._input_sender = msg._input_sender
+        self._chat = msg._chat
+        self._input_chat = msg._input_chat
+
     @property
     def sender(self):
+        """
+        This (:tl:`User`) may make an API call the first time to get
+        the most up to date version of the sender (mostly when the event
+        doesn't belong to a channel), so keep that in mind.
+
+        `input_sender` needs to be available (often the case).
+        """
         if self._sender is None:
-            self._sender = self._client.get_entity(self.input_sender)
+            try:
+                self._sender = self._client.get_entity(self.input_sender)
+            except ValueError:
+                self._reload_message()
         return self._sender
 
     @property
     def chat(self):
         if self._chat is None:
-            self._chat = self._client.get_entity(self.input_chat)
+            try:
+                self._chat = self._client.get_entity(self.input_chat)
+            except ValueError:
+                self._reload_message()
         return self._chat
 
     @property
     def input_sender(self):
+        """
+        This (:tl:`InputPeer`) is the input version of the user who
+        sent the message. Similarly to `input_chat`, this doesn't have
+        things like username or similar, but still useful in some cases.
+
+        Note that this might not be available if the library can't
+        find the input chat, or if the message a broadcast on a channel.
+        """
         if self._input_sender is None:
+            if self.is_channel and not self.is_group:
+                return None
             if self._sender is not None:
                 self._input_sender = get_input_peer(self._sender)
             else:
-                self._input_sender = self._client.get_input_entity(
-                    self.original_message.from_id)
+                try:
+                    self._input_sender = self._client.get_input_entity(
+                        self.original_message.from_id)
+                except ValueError:
+                    self._reload_message()
         return self._input_sender
 
     @property
     def input_chat(self):
         if self._input_chat is None:
+            if self._chat is None:
+                try:
+                    self._chat = self._client.get_input_entity(
+                        self.original_message.to_id)
+                except ValueError:
+                    # There's a chance that the chat is a recent new dialog.
+                    # The input chat cannot rely on ._reload_message() because
+                    # said method may need the input chat.
+                    target = self.chat_id
+                    for d in self._client.iter_dialogs(100):
+                        if d.id == target:
+                            self._chat = d.entity
+                            break
             if self._chat is not None:
-                self._chat = get_input_peer(self._chat)
-            else:
-                self._chat = self._client.get_input_entity(
-                    self.original_message.to_id)
+                self._input_chat = get_input_peer(self._chat)
+
         return self._input_chat
 
     @property
-    def user_id(self):
+    def sender_id(self):
+        """
+        Returns the marked sender integer ID, if present.
+        """
         return self.original_message.from_id
 
     @property
     def chat_id(self):
+        """
+        Returns the marked chat integer ID.
+        """
         return get_peer_id(self.original_message.to_id)
+
+    @property
+    def is_private(self):
+        """True if the message was sent as a private message."""
+        return isinstance(self.original_message.to_id, types.PeerUser)
+
+    @property
+    def is_group(self):
+        """True if the message was sent on a group or megagroup."""
+        return not self.original_message.broadcast and isinstance(
+            self.original_message.to_id, (types.PeerChat, types.PeerChannel))
+
+    @property
+    def is_channel(self):
+        """True if the message was sent on a megagroup or channel."""
+        return isinstance(self.original_message.to_id, types.PeerChannel)
+
+    @property
+    def is_reply(self):
+        """True if the message is a reply to some other or not."""
+        return bool(self.original_message.reply_to_msg_id)
 
     @property
     def buttons(self):
@@ -170,20 +255,115 @@ class Message:
         return len(self._buttons_flat) if self.buttons else 0
 
     @property
-    def reply_to(self):
+    def photo(self):
+        """
+        If the message media is a photo,
+        this returns the :tl:`Photo` object.
+        """
+        if isinstance(self.original_message.media, types.MessageMediaPhoto):
+            photo = self.original_message.media.photo
+            if isinstance(photo, types.Photo):
+                return photo
+
+    @property
+    def document(self):
+        """
+        If the message media is a document,
+        this returns the :tl:`Document` object.
+        """
+        if isinstance(self.original_message.media, types.MessageMediaDocument):
+            doc = self.original_message.media.document
+            if isinstance(doc, types.Document):
+                return doc
+
+    def _document_by_attribute(self, kind, condition=None):
+        """
+        Helper method to return the document only if it has an attribute
+        that's an instance of the given kind, and passes the condition.
+        """
+        doc = self.document
+        if doc:
+            for attr in doc.attributes:
+                if isinstance(attr, kind):
+                    if not condition or condition(doc):
+                        return doc
+
+    @property
+    def audio(self):
+        """
+        If the message media is a document with an Audio attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeAudio,
+                                           lambda attr: not attr.voice)
+
+    @property
+    def voice(self):
+        """
+        If the message media is a document with a Voice attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeAudio,
+                                           lambda attr: attr.voice)
+
+    @property
+    def video(self):
+        """
+        If the message media is a document with a Video attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeVideo)
+
+    @property
+    def video_note(self):
+        """
+        If the message media is a document with a Video attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeVideo,
+                                           lambda attr: attr.round_message)
+
+    @property
+    def gif(self):
+        """
+        If the message media is a document with an Animated attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeAnimated)
+
+    @property
+    def sticker(self):
+        """
+        If the message media is a document with a Sticker attribute,
+        this returns the :tl:`Document` object.
+        """
+        return self._document_by_attribute(types.DocumentAttributeSticker)
+
+    @property
+    def out(self):
+        """
+        Whether the message is outgoing (i.e. you sent it from
+        another session) or incoming (i.e. someone else sent it).
+        """
+        return self.original_message.out
+
+    @property
+    def reply_message(self):
         """
         The :tl:`Message` that this message is replying to, or ``None``.
 
         Note that this will make a network call to fetch the message and
         will later be cached.
         """
-        if self._reply_to is None:
+        if self._reply_message is None:
             if not self.original_message.reply_to_msg_id:
                 return None
-            self._reply_to = self._client.get_messages(
-                self.original_message.to_id,
+            self._reply_message = self._client.get_messages(
+                self.input_chat if self.is_channel else None,
                 ids=self.original_message.reply_to_msg_id
             )
+
+        return self._reply_message
 
     @property
     def fwd_from_entity(self):
@@ -202,8 +382,14 @@ class Message:
                         get_peer_id(types.PeerChannel(fwd.channel_id)))
         return self._fwd_from_entity
 
-    # TODO events.NewMessage and this class share a lot of code; merge them?
-    # Can we consider the event of a new message to be a message in itself?
+    def respond(self, *args, **kwargs):
+        """
+        Responds to the message (not as a reply). Shorthand for
+        `telethon.telegram_client.TelegramClient.send_message` with
+        ``entity`` already set.
+        """
+        return self._client.send_message(self.input_chat, *args, **kwargs)
+
     def reply(self, *args, **kwargs):
         """
         Replies to the message (as a reply). Shorthand for
@@ -213,6 +399,20 @@ class Message:
         kwargs['reply_to'] = self.original_message.id
         return self._client.send_message(self.original_message.to_id,
                                          *args, **kwargs)
+
+    def forward_to(self, *args, **kwargs):
+        """
+        Forwards the message. Shorthand for
+        `telethon.telegram_client.TelegramClient.forward_messages` with
+        both ``messages`` and ``from_peer`` already set.
+
+        If you need to forward more than one message at once, don't use
+        this `forward_to` method. Use a
+        `telethon.telegram_client.TelegramClient` instance directly.
+        """
+        kwargs['messages'] = self.original_message.id
+        kwargs['from_peer'] = self.input_chat
+        return self._client.forward_messages(*args, **kwargs)
 
     def edit(self, *args, **kwargs):
         """
@@ -242,6 +442,10 @@ class Message:
         Shorthand for
         `telethon.telegram_client.TelegramClient.delete_messages` with
         ``entity`` and ``message_ids`` already set.
+
+        If you need to delete more than one message at once, don't use
+        this `delete` method. Use a
+        `telethon.telegram_client.TelegramClient` instance directly.
         """
         return self._client.delete_messages(
             self.input_chat, [self.original_message], *args, **kwargs)
