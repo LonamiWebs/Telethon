@@ -1,6 +1,6 @@
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 
 @name_inner_event
@@ -158,6 +158,12 @@ class ChatAction(EventBuilder):
             self.new_title = new_title
             self.unpin = unpin
 
+        def _set_client(self, client):
+            super()._set_client(client)
+            if self.action_message:
+                self.action_message = custom.Message(
+                    client, self.action_message, self._entities, None)
+
         def respond(self, *args, **kwargs):
             """
             Responds to the chat action message (not as a reply). Shorthand for
@@ -198,8 +204,8 @@ class ChatAction(EventBuilder):
         @property
         def pinned_message(self):
             """
-            If ``new_pin`` is ``True``, this returns the (:tl:`Message`)
-            object that was pinned.
+            If ``new_pin`` is ``True``, this returns the
+            `telethon.tl.custom.message.Message` object that was pinned.
             """
             if self._pinned_message == 0:
                 return None

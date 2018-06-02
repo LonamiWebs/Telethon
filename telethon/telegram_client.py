@@ -89,10 +89,11 @@ from .tl.types import (
     MessageMediaWebPage, ChannelParticipantsSearch, PhotoSize, PhotoCachedSize,
     PhotoSizeEmpty, MessageService, ChatParticipants, User, WebPage,
     ChannelParticipantsBanned, ChannelParticipantsKicked,
-    InputMessagesFilterEmpty
+    InputMessagesFilterEmpty, UpdatesCombined
 )
 from .tl.types.messages import DialogsSlice
 from .tl.types.account import PasswordInputSettings, NoPassword
+from .tl import custom
 from .extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
@@ -599,9 +600,10 @@ class TelegramClient(TelegramBareClient):
 
             if _total:
                 _total[0] = getattr(r, 'count', len(r.dialogs))
-            messages = {m.id: m for m in r.messages}
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
+            messages = {m.id: custom.Message(self, m, entities, None)
+                        for m in r.messages}
 
             # Happens when there are pinned dialogs
             if len(r.dialogs) > limit:
@@ -652,8 +654,7 @@ class TelegramClient(TelegramBareClient):
         """
         return list(self.iter_drafts())
 
-    @staticmethod
-    def _get_response_message(request, result):
+    def _get_response_message(self, request, result, input_chat):
         """
         Extracts the response message known a request and Update result.
         The request may also be the ID of the message to match.
@@ -672,26 +673,36 @@ class TelegramClient(TelegramBareClient):
 
         if isinstance(result, UpdateShort):
             updates = [result.update]
-        elif isinstance(result, Updates):
+            entities = {}
+        elif isinstance(result, (Updates, UpdatesCombined)):
             updates = result.updates
+            entities = {utils.get_peer_id(x): x
+                        for x in itertools.chain(result.users, result.chats)}
         else:
             return
 
+        found = None
         for update in updates:
             if isinstance(update, (UpdateNewChannelMessage, UpdateNewMessage)):
                 if update.message.id == msg_id:
-                    return update.message
+                    found = update.message
+                    break
 
             elif (isinstance(update, UpdateEditMessage) and
                     not isinstance(request.peer, InputPeerChannel)):
                 if request.id == update.message.id:
-                    return update.message
+                    found = update.message
+                    break
 
             elif (isinstance(update, UpdateEditChannelMessage) and
                     utils.get_peer_id(request.peer) ==
                         utils.get_peer_id(update.message.to_id)):
                 if request.id == update.message.id:
-                    return update.message
+                    found = update.message
+                    break
+
+        if found:
+            return custom.Message(self, found, entities, input_chat)
 
     def _parse_message_text(self, message, parse_mode):
         """
@@ -789,7 +800,7 @@ class TelegramClient(TelegramBareClient):
                 Has no effect when sending a file.
 
         Returns:
-            The sent :tl:`Message`.
+            The sent `telethon.tl.custom.message.Message`.
         """
         if file is not None:
             return self.send_file(
@@ -839,17 +850,18 @@ class TelegramClient(TelegramBareClient):
 
         result = self(request)
         if isinstance(result, UpdateShortSentMessage):
-            return Message(
+            to_id, cls = utils.resolve_id(utils.get_peer_id(entity))
+            return custom.Message(self, Message(
                 id=result.id,
-                to_id=entity,
+                to_id=cls(to_id),
                 message=message,
                 date=result.date,
                 out=result.out,
                 media=result.media,
                 entities=result.entities
-            )
+            ), {}, input_chat=entity)
 
-        return self._get_response_message(request, result)
+        return self._get_response_message(request, result, entity)
 
     def forward_messages(self, entity, messages, from_peer=None):
         """
@@ -868,8 +880,8 @@ class TelegramClient(TelegramBareClient):
                 order for the forward to work.
 
         Returns:
-            The list of forwarded :tl:`Message`, or a single one if a list
-            wasn't provided as input.
+            The list of forwarded `telethon.tl.custom.message.Message`,
+            or a single one if a list wasn't provided as input.
         """
         single = not utils.is_list_like(messages)
         if single:
@@ -895,13 +907,20 @@ class TelegramClient(TelegramBareClient):
             to_peer=entity
         )
         result = self(req)
+        if isinstance(result, (Updates, UpdatesCombined)):
+            entities = {utils.get_peer_id(x): x
+                        for x in itertools.chain(result.users, result.chats)}
+        else:
+            entities = {}
+
         random_to_id = {}
         id_to_message = {}
         for update in result.updates:
             if isinstance(update, UpdateMessageID):
                 random_to_id[update.random_id] = update.id
             elif isinstance(update, (UpdateNewMessage, UpdateNewChannelMessage)):
-                id_to_message[update.message.id] = update.message
+                id_to_message[update.message.id] = custom.Message(
+                    self, update.message, entities, input_chat=entity)
 
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
@@ -955,23 +974,23 @@ class TelegramClient(TelegramBareClient):
             not modified at all.
 
         Returns:
-            The edited :tl:`Message`.
+            The edited `telethon.tl.custom.message.Message`.
         """
         if isinstance(entity, Message):
             text = message  # Shift the parameters to the right
             message = entity
             entity = entity.to_id
 
+        entity = self.get_input_entity(entity)
         text, msg_entities = self._parse_message_text(text, parse_mode)
         request = EditMessageRequest(
-            peer=self.get_input_entity(entity),
+            peer=entity,
             id=self._get_message_id(message),
             message=text,
             no_webpage=not link_preview,
             entities=msg_entities
         )
-        result = self(request)
-        return self._get_response_message(request, result)
+        return self._get_response_message(request, self(request), entity)
 
     def delete_messages(self, entity, message_ids, revoke=True):
         """
@@ -1090,12 +1109,7 @@ class TelegramClient(TelegramBareClient):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
-            Instances of :tl:`Message` with extra attributes:
-
-                * ``.sender`` = entity of the sender.
-                * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
-                * ``.fwd_from.channel`` = if fwd_from, original channel.
-                * ``.to`` = entity to which the message was sent.
+            Instances of `telethon.tl.custom.message.Message`.
 
         Notes:
             Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
@@ -1104,7 +1118,11 @@ class TelegramClient(TelegramBareClient):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
-        entity = self.get_input_entity(entity)
+        # It's possible to get messages by ID without their entity, so only
+        # fetch the input version if we're not using IDs or if it was given.
+        if not ids or entity:
+            entity = self.get_input_entity(entity)
+
         if ids:
             if not utils.is_list_like(ids):
                 ids = (ids,)
@@ -1189,8 +1207,7 @@ class TelegramClient(TelegramBareClient):
                 # IDs are returned in descending order.
                 last_id = message.id
 
-                self._make_message_friendly(message, entities)
-                yield message
+                yield custom.Message(self, message, entities, entity)
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -1203,34 +1220,6 @@ class TelegramClient(TelegramBareClient):
                 request.max_date = r.messages[-1].date
 
             time.sleep(max(wait_time - (time.time() - start), 0))
-
-    @staticmethod
-    def _make_message_friendly(message, entities):
-        """
-        Add a few extra attributes to the :tl:`Message` to be friendlier.
-
-        To make messages more friendly, always add message
-        to service messages, and action to normal messages.
-        """
-        # TODO Create an actual friendlier class
-        message.message = getattr(message, 'message', None)
-        message.action = getattr(message, 'action', None)
-        message.to = entities[utils.get_peer_id(message.to_id)]
-        message.sender = (
-            None if not message.from_id else
-            entities[utils.get_peer_id(message.from_id)]
-        )
-        if getattr(message, 'fwd_from', None):
-            message.fwd_from.sender = (
-                None if not message.fwd_from.from_id else
-                entities[utils.get_peer_id(message.fwd_from.from_id)]
-            )
-            message.fwd_from.channel = (
-                None if not message.fwd_from.channel_id else
-                entities[utils.get_peer_id(
-                    PeerChannel(message.fwd_from.channel_id)
-                )]
-            )
 
     def _iter_ids(self, entity, ids, total):
         """
@@ -1253,8 +1242,7 @@ class TelegramClient(TelegramBareClient):
             if isinstance(message, MessageEmpty):
                 yield None
             else:
-                self._make_message_friendly(message, entities)
-                yield message
+                yield custom.Message(self, message, entities, entity)
 
     def get_messages(self, *args, **kwargs):
         """
@@ -1354,6 +1342,9 @@ class TelegramClient(TelegramBareClient):
 
         if isinstance(message, int):
             return message
+
+        if isinstance(message, custom.Message):
+            return message.original_message.id
 
         try:
             if message.SUBCLASS_OF_ID == 0x790009e3:
@@ -1614,8 +1605,8 @@ class TelegramClient(TelegramBareClient):
             it will be used to determine metadata from audio and video files.
 
         Returns:
-            The :tl:`Message` (or messages) containing the sent file,
-            or messages if a list of them was passed.
+            The `telethon.tl.custom.message.Message` (or messages) containing
+            the sent file, or messages if a list of them was passed.
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
@@ -1676,7 +1667,8 @@ class TelegramClient(TelegramBareClient):
                                            reply_to_msg_id=reply_to,
                                            message=caption,
                                            entities=msg_entities)
-                return self._get_response_message(request, self(request))
+                return self._get_response_message(request, self(request),
+                                                  entity)
 
         as_image = utils.is_image(file) and not force_document
         use_cache = InputPhoto if as_image else InputDocument
@@ -1774,7 +1766,7 @@ class TelegramClient(TelegramBareClient):
         # send the media message to the desired entity.
         request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to,
                                    message=caption, entities=msg_entities)
-        msg = self._get_response_message(request, self(request))
+        msg = self._get_response_message(request, self(request), entity)
         if msg and isinstance(file_handle, InputSizedFile):
             # There was a response message and we didn't use cached
             # version, so cache whatever we just sent to the database.
@@ -1840,7 +1832,7 @@ class TelegramClient(TelegramBareClient):
             entity, reply_to_msg_id=reply_to, multi_media=media
         ))
         return [
-            self._get_response_message(update.id, result)
+            self._get_response_message(update.id, result, entity)
             for update in result.updates
             if isinstance(update, UpdateMessageID)
         ]
@@ -2423,7 +2415,7 @@ class TelegramClient(TelegramBareClient):
         for builder, callback in self._event_builders:
             event = builder.build(update)
             if event:
-                event._client = self
+                event._set_client(self)
                 event.original_update = update
                 try:
                     callback(event)

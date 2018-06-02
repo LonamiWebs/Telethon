@@ -91,7 +91,8 @@ class MessageRead(EventBuilder):
         @property
         def messages(self):
             """
-            The list of :tl:`Message` **which contents'** were read.
+            The list of `telethon.tl.custom.message.Message`
+            **which contents'** were read.
 
             Use :meth:`is_read` if you need to check whether a message
             was read instead checking if it's in here.
@@ -100,16 +101,9 @@ class MessageRead(EventBuilder):
                 chat = self.input_chat
                 if not chat:
                     self._messages = []
-                elif isinstance(chat, types.InputPeerChannel):
-                    self._messages =\
-                        self._client(functions.channels.GetMessagesRequest(
-                            chat, self._message_ids
-                        )).messages
                 else:
-                    self._messages =\
-                        self._client(functions.messages.GetMessagesRequest(
-                            self._message_ids
-                        )).messages
+                    self._messages = self._client.get_messages(
+                        chat, ids=self._message_ids)
 
             return self._messages
 

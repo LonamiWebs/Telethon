@@ -19,3 +19,21 @@ telethon\.tl\.custom\.dialog module
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+telethon\.tl\.custom\.message module
+------------------------------------
+
+.. automodule:: telethon.tl.custom.message
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+telethon\.tl\.custom\.messagebutton module
+------------------------------------------
+
+.. automodule:: telethon.tl.custom.messagebutton
+    :members:
+    :undoc-members:
+    :show-inheritance:
