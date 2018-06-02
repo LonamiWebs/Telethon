@@ -31,7 +31,7 @@ class NewMessage(EventBuilder):
         if incoming is not None and outgoing is None:
             outgoing = not incoming
         elif outgoing is not None and incoming is None:
-            incoming = not incoming
+            incoming = not outgoing
 
         if incoming and outgoing:
             self.incoming = self.outgoing = None  # Same as no filter
