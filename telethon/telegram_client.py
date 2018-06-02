@@ -1123,7 +1123,11 @@ class TelegramClient(TelegramBareClient):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
-        entity = self.get_input_entity(entity)
+        # It's possible to get messages by ID without their entity, so only
+        # fetch the input version if we're not using IDs or if it was given.
+        if not ids or entity:
+            entity = self.get_input_entity(entity)
+
         if ids:
             if not utils.is_list_like(ids):
                 ids = (ids,)
