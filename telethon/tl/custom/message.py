@@ -66,6 +66,10 @@ class Message:
 
     @property
     def client(self):
+        """
+        Returns the `telethon.telegram_client.TelegramClient` instance that
+        created this instance.
+        """
         return self._client
 
     @property
@@ -176,6 +180,15 @@ class Message:
 
     @property
     def input_chat(self):
+        """
+        This (:tl:`InputPeer`) is the input version of the chat where the
+        message was sent. Similarly to `input_sender`, this doesn't have
+        things like username or similar, but still useful in some cases.
+
+        Note that this might not be available if the library doesn't know
+        where the message came from, and it may fetch the dialogs to try
+        to find it in the worst case.
+        """
         if self._input_chat is None:
             if self._chat is None:
                 try:
@@ -350,7 +363,8 @@ class Message:
     @property
     def reply_message(self):
         """
-        The :tl:`Message` that this message is replying to, or ``None``.
+        The `telethon.tl.custom.message.Message` that this message is replying
+        to, or ``None``.
 
         Note that this will make a network call to fetch the message and
         will later be cached.

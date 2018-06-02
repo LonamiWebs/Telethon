@@ -91,7 +91,8 @@ class MessageRead(EventBuilder):
         @property
         def messages(self):
             """
-            The list of :tl:`Message` **which contents'** were read.
+            The list of `telethon.tl.custom.message.Message`
+            **which contents'** were read.
 
             Use :meth:`is_read` if you need to check whether a message
             was read instead checking if it's in here.

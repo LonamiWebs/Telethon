@@ -22,6 +22,10 @@ class MessageButton:
 
     @property
     def client(self):
+        """
+        Returns the `telethon.telegram_client.TelegramClient` instance that
+        created this instance.
+        """
         return self._client
 
     @property

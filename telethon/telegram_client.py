@@ -800,7 +800,7 @@ class TelegramClient(TelegramBareClient):
                 Has no effect when sending a file.
 
         Returns:
-            The sent :tl:`Message`.
+            The sent `telethon.tl.custom.message.Message`.
         """
         if file is not None:
             return self.send_file(
@@ -880,8 +880,8 @@ class TelegramClient(TelegramBareClient):
                 order for the forward to work.
 
         Returns:
-            The list of forwarded :tl:`Message`, or a single one if a list
-            wasn't provided as input.
+            The list of forwarded `telethon.tl.custom.message.Message`,
+            or a single one if a list wasn't provided as input.
         """
         single = not utils.is_list_like(messages)
         if single:
@@ -974,7 +974,7 @@ class TelegramClient(TelegramBareClient):
             not modified at all.
 
         Returns:
-            The edited :tl:`Message`.
+            The edited `telethon.tl.custom.message.Message`.
         """
         if isinstance(entity, Message):
             text = message  # Shift the parameters to the right
@@ -1109,12 +1109,7 @@ class TelegramClient(TelegramBareClient):
                 A single-item list to pass the total parameter by reference.
 
         Yields:
-            Instances of :tl:`Message` with extra attributes:
-
-                * ``.sender`` = entity of the sender.
-                * ``.fwd_from.sender`` = if fwd_from, who sent it originally.
-                * ``.fwd_from.channel`` = if fwd_from, original channel.
-                * ``.to`` = entity to which the message was sent.
+            Instances of `telethon.tl.custom.message.Message`.
 
         Notes:
             Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
@@ -1610,8 +1605,8 @@ class TelegramClient(TelegramBareClient):
             it will be used to determine metadata from audio and video files.
 
         Returns:
-            The :tl:`Message` (or messages) containing the sent file,
-            or messages if a list of them was passed.
+            The `telethon.tl.custom.message.Message` (or messages) containing
+            the sent file, or messages if a list of them was passed.
         """
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.

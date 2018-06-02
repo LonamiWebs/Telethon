@@ -204,8 +204,8 @@ class ChatAction(EventBuilder):
         @property
         def pinned_message(self):
             """
-            If ``new_pin`` is ``True``, this returns the (:tl:`Message`)
-            object that was pinned.
+            If ``new_pin`` is ``True``, this returns the
+            `telethon.tl.custom.message.Message` object that was pinned.
             """
             if self._pinned_message == 0:
                 return None
