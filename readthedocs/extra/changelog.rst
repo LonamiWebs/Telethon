@@ -14,8 +14,93 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
-Catching up on Updates
-======================
+Custom Message class (v0.19.1)
+==============================
+
+*Published at 2018/06/03*
+
++-----------------------+
+| Scheme layer used: 80 |
++-----------------------+
+
+
+This update brings a new `telethon.tl.custom.message.Message` object!
+
+All the methods in the `telethon.telegram_client.TelegramClient` that
+used to return a :tl:`Message` will now return this object instead, which
+means you can do things like the following:
+
+.. code-block:: python
+
+    msg = client.send_message(chat, 'Hello!')
+    msg.edit('Hello there!')
+    msg.reply('Good day!')
+    print(msg.sender)
+
+Refer to its documentation to see all you can do, again, click
+`telethon.tl.custom.message.Message` to go to its page.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- The `telethon.network.connection.common.Connection` class is now an ABC,
+  and the old ``ConnectionMode`` is now gone. Use a specific connection (like
+  `telethon.network.connection.tcpabridged.ConnectionTcpAbridged`) instead.
+
+Additions
+~~~~~~~~~
+
+- You can get messages by their ID with
+  `telethon.telegram_client.TelegramClient.get_messages`'s ``ids`` parameter:
+
+  .. code-block:: python
+
+      message = client.get_messages(chats, ids=123)  # Single message
+      message_list = client.get_messages(chats, ids=[777, 778])  # Multiple
+
+- More convenience properties for `telethon.tl.custom.dialog.Dialog`.
+- New default `telethon.telegram_client.TelegramClient.parse_mode`.
+- You can edit the media of messages that already have some media.
+- New dark theme in the online ``tl`` reference, check it out at
+  https://lonamiwebs.github.io/Telethon/.
+
+Bug fixes
+~~~~~~~~~
+
+- Some IDs start with ``1000`` and these would be wrongly treated as channels.
+- Some short usernames like ``@vote`` were being ignored.
+- `telethon.telegram_client.TelegramClient.iter_messages`'s ``from_user``
+  was failing if no filter had been set.
+- `telethon.telegram_client.TelegramClient.iter_messages`'s ``min_id/max_id``
+  was being ignored by Telegram. This is now worked around.
+- `telethon.telegram_client.TelegramClient.catch_up` would fail with empty
+  states.
+- `telethon.events.newmessage.NewMessage` supports ``incoming=False``
+  to indicate ``outgoing=True``.
+
+Enhancements
+~~~~~~~~~~~~
+
+- You can now send multiply requests at once while preserving the order:
+
+  .. code-block:: python
+
+      from telethon.tl.functions.messages import SendMessageRequest
+      client([SendMessageRequest(chat, 'Hello 1!'),
+              SendMessageRequest(chat, 'Hello 2!')], ordered=True)
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- ``without rowid`` is not used in SQLite anymore.
+- Unboxed serialization would fail.
+- Different default limit for ``iter_messages`` and ``get_messages``.
+- Some clean-up in the ``telethon_generator/`` package.
+
+
+Catching up on Updates (v0.19)
+==============================
 
 *Published at 2018/05/07*
 
