@@ -5,6 +5,7 @@ from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
 from ...errors import RPCError
 from ...extensions import markdown
+from ...utils import Default
 
 
 class Draft:
@@ -82,7 +83,7 @@ class Draft:
         """
         return not self._text
 
-    def set_message(self, text=None, reply_to=0, parse_mode='md',
+    def set_message(self, text=None, reply_to=0, parse_mode=Default,
                     link_preview=None):
         """
         Changes the draft message on the Telegram servers. The changes are
@@ -127,7 +128,7 @@ class Draft:
 
         return result
 
-    def send(self, clear=True, parse_mode='md'):
+    def send(self, clear=True, parse_mode=Default):
         """
         Sends the contents of this draft to the dialog. This is just a
         wrapper around ``send_message(dialog.input_entity, *args, **kwargs)``.

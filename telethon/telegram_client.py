@@ -81,7 +81,7 @@ from .tl.types import (
     InputUserSelf, UserProfilePhoto, ChatPhoto, UpdateMessageID,
     UpdateNewChannelMessage, UpdateNewMessage, UpdateShortSentMessage,
     PeerUser, InputPeerUser, InputPeerChat, InputPeerChannel, MessageEmpty,
-    ChatInvite, ChatInviteAlready, PeerChannel, Photo, InputPeerSelf,
+    ChatInvite, ChatInviteAlready, Photo, InputPeerSelf,
     InputSingleMedia, InputMediaPhoto, InputPhoto, InputFile, InputFileBig,
     InputDocument, InputMediaDocument, Document, MessageEntityTextUrl,
     InputMessageEntityMentionName, DocumentAttributeVideo,
@@ -94,6 +94,7 @@ from .tl.types import (
 from .tl.types.messages import DialogsSlice
 from .tl.types.account import PasswordInputSettings, NoPassword
 from .tl import custom
+from .utils import Default
 from .extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
@@ -199,6 +200,9 @@ class TelegramClient(TelegramBareClient):
 
         self._event_builders = []
         self._events_pending_resolve = []
+
+        # Default parse mode
+        self._parse_mode = markdown
 
         # Some fields to easy signing in. Let {phone: hash} be
         # a dictionary because the user may change their mind.
@@ -704,26 +708,78 @@ class TelegramClient(TelegramBareClient):
         if found:
             return custom.Message(self, found, entities, input_chat)
 
+    @property
+    def parse_mode(self):
+        """
+        This property is the default parse mode used when sending messages.
+        Defaults to `telethon.extensions.markdown`. It will always
+        be either ``None`` or an object with ``parse`` and ``unparse``
+        methods.
+
+        When setting a different value it should be one of:
+
+        * Object with ``parse`` and ``unparse`` methods.
+        * A ``callable`` to act as the parse method.
+        * A ``str`` indicating the ``parse_mode``. For Markdown ``'md'``
+          or ``'markdown'`` may be used. For HTML, ``'htm'`` or ``'html'``
+          may be used.
+
+        The ``parse`` method should be a function accepting a single
+        parameter, the text to parse, and returning a tuple consisting
+        of ``(parsed message str, [MessageEntity instances])``.
+
+        The ``unparse`` method should be the inverse of ``parse`` such
+        that ``assert text == unparse(*parse(text))``.
+
+        See :tl:`MessageEntity` for allowed message entities.
+        """
+        return self._parse_mode
+
+    @parse_mode.setter
+    def parse_mode(self, mode):
+        self._parse_mode = self._sanitize_parse_mode(mode)
+
+    @staticmethod
+    def _sanitize_parse_mode(mode):
+        if not mode:
+            return None
+
+        if callable(mode):
+            class CustomMode:
+                @staticmethod
+                def unparse(text, entities):
+                    raise NotImplementedError
+            CustomMode.parse = mode
+            return CustomMode
+        elif (all(hasattr(mode, x) for x in ('parse', 'unparse'))
+                and all(callable(x) for x in (mode.parse, mode.unparse))):
+            return mode
+        elif isinstance(mode, str):
+            try:
+                return {
+                    'md': markdown,
+                    'markdown': markdown,
+                    'htm': html,
+                    'html': html
+                }[mode.lower()]
+            except KeyError:
+                raise ValueError('Unknown parse mode {}'.format(mode))
+        else:
+            raise TypeError('Invalid parse mode type {}'.format(mode))
+
     def _parse_message_text(self, message, parse_mode):
         """
         Returns a (parsed message, entities) tuple depending on ``parse_mode``.
         """
+        if parse_mode == Default:
+            parse_mode = self._parse_mode
+        else:
+            parse_mode = self._sanitize_parse_mode(parse_mode)
+
         if not parse_mode:
             return message, []
 
-        if isinstance(parse_mode, str):
-            parse_mode = parse_mode.lower()
-            if parse_mode in {'md', 'markdown'}:
-                message, msg_entities = markdown.parse(message)
-            elif parse_mode.startswith('htm'):
-                message, msg_entities = html.parse(message)
-            else:
-                raise ValueError('Unknown parsing mode: {}'.format(parse_mode))
-        elif callable(parse_mode):
-            message, msg_entities = parse_mode(message)
-        else:
-            raise TypeError('Invalid parsing mode type: {}'.format(parse_mode))
-
+        message, msg_entities = parse_mode.parse(message)
         for i, e in enumerate(msg_entities):
             if isinstance(e, MessageEntityTextUrl):
                 m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
@@ -740,9 +796,9 @@ class TelegramClient(TelegramBareClient):
 
         return message, msg_entities
 
-    def send_message(self, entity, message='', reply_to=None, parse_mode='md',
-                     link_preview=True, file=None, force_document=False,
-                     clear_draft=False):
+    def send_message(self, entity, message='', reply_to=None,
+                     parse_mode=Default, link_preview=True, file=None,
+                     force_document=False, clear_draft=False):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -773,17 +829,9 @@ class TelegramClient(TelegramBareClient):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
 
-            parse_mode (`str`, optional):
-                Can be 'md' or 'markdown' for markdown-like parsing (default),
-                or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
-                other false-y value is provided, the message will be sent with
-                no formatting.
-
-                If a ``callable`` is passed, it should be a function accepting
-                a `str` as an input and return as output a tuple consisting
-                of ``(parsed message str, [MessageEntity instances])``.
-
-                See :tl:`MessageEntity` for allowed message entities.
+            parse_mode (`object`, optional):
+                See the `TelegramClient.parse_mode` property for allowed
+                values. Markdown parsing will be used by default.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -925,8 +973,8 @@ class TelegramClient(TelegramBareClient):
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
 
-    def edit_message(self, entity, message=None, text=None, parse_mode='md',
-                     link_preview=True):
+    def edit_message(self, entity, message=None, text=None,
+                     parse_mode=Default, link_preview=True):
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -946,11 +994,9 @@ class TelegramClient(TelegramBareClient):
                 The new text of the message. Does nothing if the `entity`
                 was a :tl:`Message`.
 
-            parse_mode (`str`, optional):
-                Can be 'md' or 'markdown' for markdown-like parsing (default),
-                or 'htm' or 'html' for HTML-like parsing. If ``None`` or any
-                other false-y value is provided, the message will be sent with
-                no formatting.
+            parse_mode (`object`, optional):
+                See the `TelegramClient.parse_mode` property for allowed
+                values. Markdown parsing will be used by default.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -1531,7 +1577,7 @@ class TelegramClient(TelegramBareClient):
                   attributes=None,
                   thumb=None,
                   allow_cache=True,
-                  parse_mode='md',
+                  parse_mode=Default,
                   voice_note=False,
                   video_note=False,
                   **kwargs):
@@ -1584,8 +1630,9 @@ class TelegramClient(TelegramBareClient):
                 Must be ``False`` if you wish to use different attributes
                 or thumb than those that were used when the file was cached.
 
-            parse_mode (`str`, optional):
-                The parse mode for the caption message.
+            parse_mode (`object`, optional):
+                See the `TelegramClient.parse_mode` property for allowed
+                values. Markdown parsing will be used by default.
 
             voice_note (`bool`, optional):
                 If ``True`` the audio will be sent as a voice note.
@@ -1788,7 +1835,7 @@ class TelegramClient(TelegramBareClient):
 
     def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
-                    parse_mode='md'):
+                    parse_mode=Default):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing

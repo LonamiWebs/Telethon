@@ -46,6 +46,14 @@ VALID_USERNAME_RE = re.compile(
 )
 
 
+class Default:
+    """
+    Sentinel value to indicate that the default value should be used.
+    Currently used for the ``parse_mode``, where a ``None`` mode should
+    be considered different from using the default.
+    """
+
+
 def get_display_name(entity):
     """
     Gets the display name for the given entity, if it's an :tl:`User`,
