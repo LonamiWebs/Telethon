@@ -129,7 +129,7 @@ class NewMessage(EventBuilder):
                 available members and methods.
         """
         def __init__(self, message):
-            self.__dict__ = message.__dict__
+            self.__dict__['_init'] = False
             if not message.out and isinstance(message.to_id, types.PeerUser):
                 # Incoming message (e.g. from a bot) has to_id=us, and
                 # from_id=bot (the actual "chat" from an user's perspective).
@@ -144,8 +144,18 @@ class NewMessage(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            # Note that this new message also shares the same __dict__.
-            # By treating everything as the same message it simplifies
-            # the mess that would otherwise be using get/setattr.
             self.message = custom.Message(
                 client, self.message, self._entities, None)
+            self.__dict__['_init'] = True  # No new attributes can be set
+
+        def __getattr__(self, item):
+            if item in self.__dict__:
+                return self.__dict__[item]
+            else:
+                return getattr(self.message, item)
+
+        def __setattr__(self, name, value):
+            if not self.__dict__['_init'] or name in self.__dict__:
+                self.__dict__[name] = value
+            else:
+                setattr(self.message, name, value)
