@@ -1602,6 +1602,111 @@ class TelegramClient(TelegramBareClient):
 
     # region Uploading files
 
+    def _file_to_media(self, file, force_document=False,
+                       progress_callback=None, attributes=None, thumb=None,
+                       allow_cache=True, voice_note=False, video_note=False):
+        if not isinstance(file, (str, bytes, io.IOBase)):
+            # The user may pass a Message containing media (or the media,
+            # or anything similar) that should be treated as a file. Try
+            # getting the input media for whatever they passed and send it.
+            try:
+                return None, utils.get_input_media(file)
+            except TypeError:
+                return None, None  # Can't turn whatever was given into media
+
+        as_image = utils.is_image(file) and not force_document
+        use_cache = InputPhoto if as_image else InputDocument
+        file_handle = self.upload_file(
+            file, progress_callback=progress_callback,
+            use_cache=use_cache if allow_cache else None
+        )
+
+        if isinstance(file_handle, use_cache):
+            # File was cached, so an instance of use_cache was returned
+            if as_image:
+                media = InputMediaPhoto(file_handle)
+            else:
+                media = InputMediaDocument(file_handle)
+        elif as_image:
+            media = InputMediaUploadedPhoto(file_handle)
+        else:
+            mime_type = None
+            if isinstance(file, str):
+                # Determine mime-type and attributes
+                # Take the first element by using [0] since it returns a tuple
+                mime_type = guess_type(file)[0]
+                attr_dict = {
+                    DocumentAttributeFilename:
+                        DocumentAttributeFilename(os.path.basename(file))
+                }
+                if utils.is_audio(file) and hachoir:
+                    m = hachoir.metadata.extractMetadata(
+                        hachoir.parser.createParser(file)
+                    )
+                    attr_dict[DocumentAttributeAudio] = DocumentAttributeAudio(
+                        voice=voice_note,
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('author') if m.has('author') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+
+                if not force_document and utils.is_video(file):
+                    if hachoir:
+                        m = hachoir.metadata.extractMetadata(
+                            hachoir.parser.createParser(file)
+                        )
+                        doc = DocumentAttributeVideo(
+                            round_message=video_note,
+                            w=m.get('width') if m.has('width') else 0,
+                            h=m.get('height') if m.has('height') else 0,
+                            duration=int(m.get('duration').seconds
+                                         if m.has('duration') else 0)
+                        )
+                    else:
+                        doc = DocumentAttributeVideo(
+                            0, 1, 1, round_message=video_note)
+
+                    attr_dict[DocumentAttributeVideo] = doc
+            else:
+                attr_dict = {
+                    DocumentAttributeFilename: DocumentAttributeFilename(
+                        os.path.basename(
+                            getattr(file, 'name', None) or 'unnamed'))
+                }
+
+            if voice_note:
+                if DocumentAttributeAudio in attr_dict:
+                    attr_dict[DocumentAttributeAudio].voice = True
+                else:
+                    attr_dict[DocumentAttributeAudio] = \
+                        DocumentAttributeAudio(0, voice=True)
+
+            # Now override the attributes if any. As we have a dict of
+            # {cls: instance}, we can override any class with the list
+            # of attributes provided by the user easily.
+            if attributes:
+                for a in attributes:
+                    attr_dict[type(a)] = a
+
+            # Ensure we have a mime type, any; but it cannot be None
+            # 'The "octet-stream" subtype is used to indicate that a body
+            # contains arbitrary binary data.'
+            if not mime_type:
+                mime_type = 'application/octet-stream'
+
+            input_kw = {}
+            if thumb:
+                input_kw['thumb'] = self.upload_file(thumb)
+
+            media = InputMediaUploadedDocument(
+                file=file_handle,
+                mime_type=mime_type,
+                attributes=list(attr_dict.values()),
+                **input_kw
+            )
+        return file_handle, media
+
     def send_file(self, entity, file, caption='',
                   force_document=False, progress_callback=None,
                   reply_to=None,
@@ -1732,116 +1837,7 @@ class TelegramClient(TelegramBareClient):
             caption, msg_entities =\
                 self._parse_message_text(caption, parse_mode)
 
-        if not isinstance(file, (str, bytes, io.IOBase)):
-            # The user may pass a Message containing media (or the media,
-            # or anything similar) that should be treated as a file. Try
-            # getting the input media for whatever they passed and send it.
-            try:
-                media = utils.get_input_media(file)
-            except TypeError:
-                pass  # Can't turn whatever was given into media
-            else:
-                request = SendMediaRequest(entity, media,
-                                           reply_to_msg_id=reply_to,
-                                           message=caption,
-                                           entities=msg_entities)
-                return self._get_response_message(request, self(request),
-                                                  entity)
-
-        as_image = utils.is_image(file) and not force_document
-        use_cache = InputPhoto if as_image else InputDocument
-        file_handle = self.upload_file(
-            file, progress_callback=progress_callback,
-            use_cache=use_cache if allow_cache else None
-        )
-
-        if isinstance(file_handle, use_cache):
-            # File was cached, so an instance of use_cache was returned
-            if as_image:
-                media = InputMediaPhoto(file_handle)
-            else:
-                media = InputMediaDocument(file_handle)
-        elif as_image:
-            media = InputMediaUploadedPhoto(file_handle)
-        else:
-            mime_type = None
-            if isinstance(file, str):
-                # Determine mime-type and attributes
-                # Take the first element by using [0] since it returns a tuple
-                mime_type = guess_type(file)[0]
-                attr_dict = {
-                    DocumentAttributeFilename:
-                        DocumentAttributeFilename(os.path.basename(file))
-                }
-                if utils.is_audio(file) and hachoir:
-                    m = hachoir.metadata.extractMetadata(
-                        hachoir.parser.createParser(file)
-                    )
-                    attr_dict[DocumentAttributeAudio] = DocumentAttributeAudio(
-                        voice=voice_note,
-                        title=m.get('title') if m.has('title') else None,
-                        performer=m.get('author') if m.has('author') else None,
-                        duration=int(m.get('duration').seconds
-                                     if m.has('duration') else 0)
-                    )
-
-                if not force_document and utils.is_video(file):
-                    if hachoir:
-                        m = hachoir.metadata.extractMetadata(
-                            hachoir.parser.createParser(file)
-                        )
-                        doc = DocumentAttributeVideo(
-                            round_message=video_note,
-                            w=m.get('width') if m.has('width') else 0,
-                            h=m.get('height') if m.has('height') else 0,
-                            duration=int(m.get('duration').seconds
-                                         if m.has('duration') else 0)
-                        )
-                    else:
-                        doc = DocumentAttributeVideo(0, 1, 1,
-                                                     round_message=video_note)
-
-                    attr_dict[DocumentAttributeVideo] = doc
-            else:
-                attr_dict = {
-                    DocumentAttributeFilename: DocumentAttributeFilename(
-                        os.path.basename(
-                            getattr(file, 'name', None) or 'unnamed'))
-                }
-
-            if voice_note:
-                if DocumentAttributeAudio in attr_dict:
-                    attr_dict[DocumentAttributeAudio].voice = True
-                else:
-                    attr_dict[DocumentAttributeAudio] = \
-                        DocumentAttributeAudio(0, voice=True)
-
-            # Now override the attributes if any. As we have a dict of
-            # {cls: instance}, we can override any class with the list
-            # of attributes provided by the user easily.
-            if attributes:
-                for a in attributes:
-                    attr_dict[type(a)] = a
-
-            # Ensure we have a mime type, any; but it cannot be None
-            # 'The "octet-stream" subtype is used to indicate that a body
-            # contains arbitrary binary data.'
-            if not mime_type:
-                mime_type = 'application/octet-stream'
-
-            input_kw = {}
-            if thumb:
-                input_kw['thumb'] = self.upload_file(thumb)
-
-            media = InputMediaUploadedDocument(
-                file=file_handle,
-                mime_type=mime_type,
-                attributes=list(attr_dict.values()),
-                **input_kw
-            )
-
-        # Once the media type is properly specified and the file uploaded,
-        # send the media message to the desired entity.
+        file_handle, media = self._file_to_media(file, allow_cache=allow_cache)
         request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to,
                                    message=caption, entities=msg_entities)
         msg = self._get_response_message(request, self(request), entity)
