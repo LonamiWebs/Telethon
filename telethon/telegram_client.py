@@ -91,7 +91,7 @@ from .tl.types import (
     ChannelParticipantsBanned, ChannelParticipantsKicked,
     InputMessagesFilterEmpty, UpdatesCombined
 )
-from .tl.types.messages import DialogsSlice
+from .tl.types.messages import DialogsSlice, MessagesNotModified
 from .tl.types.account import PasswordInputSettings, NoPassword
 from .tl import custom
 from .utils import Default
@@ -1220,7 +1220,10 @@ class TelegramClient(TelegramBareClient):
                 return
             # No messages, but we still need to know the total message count
             result = self(request)
-            _total[0] = getattr(result, 'count', len(result.messages))
+            if isinstance(result, MessagesNotModified):
+                _total[0] = result.count
+            else:
+                _total[0] = getattr(result, 'count', len(result.messages))
             return
 
         if wait_time is None:
@@ -1278,6 +1281,10 @@ class TelegramClient(TelegramBareClient):
             r = self(channels.GetMessagesRequest(entity, ids))
         else:
             r = self(messages.GetMessagesRequest(ids))
+
+        if isinstance(r, MessagesNotModified):
+            for _ in ids:
+                yield None
 
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(r.users, r.chats)}
