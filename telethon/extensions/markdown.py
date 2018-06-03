@@ -36,6 +36,9 @@ def parse(message, delimiters=None, url_re=None):
     :param url_re: the URL bytes regex to be used. Must have two groups.
     :return: a tuple consisting of (clean message, [message entities]).
     """
+    if not message:
+        return message, []
+
     if url_re is None:
         url_re = DEFAULT_URL_RE
     elif isinstance(url_re, str):
@@ -137,7 +140,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     :param entities: the MessageEntity's applied to the text.
     :return: a markdown-like text representing the combination of both inputs.
     """
-    if not entities:
+    if not text or not entities:
         return text
 
     if not delimiters:
