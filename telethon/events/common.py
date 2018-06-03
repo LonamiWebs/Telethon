@@ -151,7 +151,6 @@ class EventCommon(abc.ABC):
 
         Note that this might be ``None`` if the library can't find it.
         """
-
         if self._input_chat is None and self._chat_peer is not None:
             try:
                 self._input_chat = self._client.get_input_entity(
