@@ -82,7 +82,7 @@ Bug fixes
 Enhancements
 ~~~~~~~~~~~~
 
-- You can now send multiply requests at once while preserving the order:
+- You can now send multiple requests at once while preserving the order:
 
   .. code-block:: python
 

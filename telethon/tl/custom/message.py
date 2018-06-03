@@ -547,7 +547,7 @@ class Message:
                 returns ``True``. The callable should accept a single
                 `telethon.tl.custom.messagebutton.MessageButton` argument.
         """
-        if (i, text, filter).count(None) >= 2:
+        if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
 
         if not self.buttons:
