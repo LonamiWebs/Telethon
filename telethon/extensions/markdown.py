@@ -4,15 +4,16 @@ for use within the library, which attempts to handle emojies correctly,
 since they seem to count as two characters and it's a bit strange.
 """
 import re
-import struct
 
 from ..tl import TLObject
-
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityTextUrl
 )
-
+from ..utils import (
+    add_surrogate as _add_surrogate,
+    del_surrogate as _del_surrogate
+)
 
 DEFAULT_DELIMITERS = {
     '**': MessageEntityBold,
@@ -23,19 +24,6 @@ DEFAULT_DELIMITERS = {
 
 DEFAULT_URL_RE = re.compile(r'\[([\S\s]+?)\]\((.+?)\)')
 DEFAULT_URL_FORMAT = '[{0}]({1})'
-
-
-def _add_surrogate(text):
-    return ''.join(
-        # SMP -> Surrogate Pairs (Telegram offsets are calculated with these).
-        # See https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview for more.
-        ''.join(chr(y) for y in struct.unpack('<HH', x.encode('utf-16le')))
-        if (0x10000 <= ord(x) <= 0x10FFFF) else x for x in text
-    )
-
-
-def _del_surrogate(text):
-    return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
 def parse(message, delimiters=None, url_re=None):
@@ -181,28 +169,3 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
             )
 
     return _del_surrogate(text)
-
-
-def get_inner_text(text, entity):
-    """
-    Gets the inner text that's surrounded by the given entity or entities.
-    For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
-
-    :param text: the original text.
-    :param entity: the entity or entities that must be matched.
-    :return: a single result or a list of the text surrounded by the entities.
-    """
-    if isinstance(entity, TLObject):
-        entity = (entity,)
-        multiple = True
-    else:
-        multiple = False
-
-    text = _add_surrogate(text)
-    result = []
-    for e in entity:
-        start = e.offset
-        end = e.offset + e.length
-        result.append(_del_surrogate(text[start:end]))
-
-    return result if multiple else result[0]

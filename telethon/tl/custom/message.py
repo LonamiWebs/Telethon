@@ -1,6 +1,5 @@
 from .. import types
-from ...extensions import markdown
-from ...utils import get_input_peer, get_peer_id
+from ...utils import get_input_peer, get_peer_id, get_inner_text
 from .messagebutton import MessageButton
 
 
@@ -55,6 +54,9 @@ class Message:
     def __getattr__(self, item):
         return getattr(self.original_message, item)
 
+    def __setattr__(self, name, value):
+        return setattr(self.original_message, name, value)
+
     def __str__(self):
         return str(self.original_message)
 
@@ -75,16 +77,27 @@ class Message:
     @property
     def text(self):
         """
-        The message text, markdown-formatted.
+        The message text, formatted using the client's default parse mode.
         Will be ``None`` for :tl:`MessageService`.
         """
         if self._text is None\
                 and isinstance(self.original_message, types.Message):
-            if not self.original_message.entities:
+            if not self._client.parse_mode:
                 return self.original_message.message
-            self._text = markdown.unparse(self.original_message.message,
-                                          self.original_message.entities or [])
+            self._text = self._client.parse_mode.unparse(
+                self.original_message.message, self.original_message.entities)
         return self._text
+
+    @text.setter
+    def text(self, value):
+        if isinstance(self.original_message, types.Message):
+            if self._client.parse_mode:
+                msg, ent = self._client.parse_mode.parse(value)
+            else:
+                msg, ent = value, []
+            self.original_message.message = msg
+            self.original_message.entities = ent
+            self._text = value
 
     @property
     def raw_text(self):
@@ -95,6 +108,13 @@ class Message:
         if isinstance(self.original_message, types.Message):
             return self.original_message.message
 
+    @raw_text.setter
+    def raw_text(self, value):
+        if isinstance(self.original_message, types.Message):
+            self.original_message.message = value
+            self.original_message.entities = []
+            self._text = None
+
     @property
     def message(self):
         """
@@ -102,6 +122,10 @@ class Message:
         Will be ``None`` for :tl:`MessageService`.
         """
         return self.raw_text
+
+    @message.setter
+    def message(self, value):
+        self.raw_text = value
 
     @property
     def action(self):
@@ -478,8 +502,8 @@ class Message:
         Returns a list of tuples [(:tl:`MessageEntity`, `str`)], the string
         being the inner text of the message entity (like bold, italics, etc).
         """
-        texts = markdown.get_inner_text(self.original_message.message,
-                                        self.original_message.entities)
+        texts = get_inner_text(self.original_message.message,
+                               self.original_message.entities)
         return list(zip(self.original_message.entities, texts))
 
     def click(self, i=None, j=None, *, text=None, filter=None):

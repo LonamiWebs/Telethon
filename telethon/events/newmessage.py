@@ -148,3 +148,6 @@ class NewMessage(EventBuilder):
 
         def __getattr__(self, item):
             return getattr(self.message, item)
+
+        def __setattr__(self, name, value):
+            return setattr(self.original_message, name, value)
