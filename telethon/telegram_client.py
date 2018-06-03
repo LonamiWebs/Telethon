@@ -16,6 +16,7 @@ from mimetypes import guess_type
 from .crypto import CdnDecrypter
 from .tl import TLObject
 from .tl.custom import InputSizedFile
+from .tl.functions.help import AcceptTermsOfServiceRequest
 from .tl.functions.updates import GetDifferenceRequest
 from .tl.functions.upload import (
     SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
@@ -208,6 +209,7 @@ class TelegramClient(TelegramBareClient):
         # a dictionary because the user may change their mind.
         self._phone_code_hash = {}
         self._phone = None
+        self._tos = None
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
@@ -237,6 +239,7 @@ class TelegramClient(TelegramBareClient):
 
         if not phone_hash:
             result = self(SendCodeRequest(phone, self.api_id, self.api_hash))
+            self._tos = result.terms_of_service
             self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
         else:
             force_sms = True
@@ -257,6 +260,12 @@ class TelegramClient(TelegramBareClient):
         """
         Convenience method to interactively connect and sign in if required,
         also taking into consideration that 2FA may be enabled in the account.
+
+        If the phone doesn't belong to an existing account (and will hence
+        `sign_up` for a new one),  **you are agreeing to Telegram's
+        Terms of Service. This is required and your account
+        will be banned otherwise.** See https://telegram.org/tos
+        and https://core.telegram.org/api/terms.
 
         Example usage:
             >>> client = TelegramClient(session, api_id, api_hash).start(phone)
@@ -467,6 +476,11 @@ class TelegramClient(TelegramBareClient):
         Signs up to Telegram if you don't have an account yet.
         You must call .send_code_request(phone) first.
 
+        **By using this method you're agreeing to Telegram's
+        Terms of Service. This is required and your account
+        will be banned otherwise.** See https://telegram.org/tos
+        and https://core.telegram.org/api/terms.
+
         Args:
             code (`str` | `int`):
                 The code sent by Telegram
@@ -483,6 +497,16 @@ class TelegramClient(TelegramBareClient):
         if self.is_user_authorized():
             self._check_events_pending_resolve()
             return self.get_me()
+
+        if self._tos and self._tos.text:
+            if self.parse_mode:
+                t = self.parse_mode.unparse(self._tos.text, self._tos.entities)
+            else:
+                t = self._tos.text
+            sys.stderr.write("By signing up you agree to Telegram's TOS:"
+                             "\n{}\n".format(t))
+            sys.stderr.flush()
+            self(AcceptTermsOfServiceRequest(self._tos.id))
 
         result = self(SignUpRequest(
             phone_number=self._phone,

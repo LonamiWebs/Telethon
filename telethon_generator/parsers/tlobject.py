@@ -15,7 +15,9 @@ WHITELISTED_MISMATCHING_IDS = {
     # 0 represents any layer
     0: {'ipPortSecret', 'accessPointRule', 'help.configSimple'},
     77: {'channel'},
-    78: {'channel'}
+    78: {'channel'},
+    79: {'channel'},
+    80: {'channel'},
 }
 
 
