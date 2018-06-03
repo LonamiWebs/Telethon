@@ -998,7 +998,8 @@ class TelegramClient(TelegramBareClient):
         return result[0] if single else result
 
     def edit_message(self, entity, message=None, text=None,
-                     parse_mode=Default, link_preview=True):
+                     parse_mode=Default, link_preview=True,
+                     file=None):
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -1024,6 +1025,10 @@ class TelegramClient(TelegramBareClient):
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
+
+            file (`str` | `bytes` | `file` | `media`, optional):
+                The file object that should replace the existing media
+                in the message.
 
         Examples:
 
@@ -1053,14 +1058,18 @@ class TelegramClient(TelegramBareClient):
 
         entity = self.get_input_entity(entity)
         text, msg_entities = self._parse_message_text(text, parse_mode)
+        file_handle, media = self._file_to_media(file)
         request = EditMessageRequest(
             peer=entity,
             id=self._get_message_id(message),
             message=text,
             no_webpage=not link_preview,
-            entities=msg_entities
+            entities=msg_entities,
+            media=media
         )
-        return self._get_response_message(request, self(request), entity)
+        msg = self._get_response_message(request, self(request), entity)
+        self._cache_media(msg, file, file_handle)
+        return msg
 
     def delete_messages(self, entity, message_ids, revoke=True):
         """
@@ -1605,6 +1614,9 @@ class TelegramClient(TelegramBareClient):
     def _file_to_media(self, file, force_document=False,
                        progress_callback=None, attributes=None, thumb=None,
                        allow_cache=True, voice_note=False, video_note=False):
+        if not file:
+            return None, None
+
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
@@ -1706,6 +1718,17 @@ class TelegramClient(TelegramBareClient):
                 **input_kw
             )
         return file_handle, media
+
+    def _cache_media(self, msg, file, file_handle, force_document=False):
+        if file and msg and isinstance(file_handle, InputSizedFile):
+            # There was a response message and we didn't use cached
+            # version, so cache whatever we just sent to the database.
+            md5, size = file_handle.md5, file_handle.size
+            if utils.is_image(file) and not force_document:
+                to_cache = utils.get_input_photo(msg.media.photo)
+            else:
+                to_cache = utils.get_input_document(msg.media.document)
+            self.session.cache_file(md5, size, to_cache)
 
     def send_file(self, entity, file, caption='',
                   force_document=False, progress_callback=None,
@@ -1841,15 +1864,7 @@ class TelegramClient(TelegramBareClient):
         request = SendMediaRequest(entity, media, reply_to_msg_id=reply_to,
                                    message=caption, entities=msg_entities)
         msg = self._get_response_message(request, self(request), entity)
-        if msg and isinstance(file_handle, InputSizedFile):
-            # There was a response message and we didn't use cached
-            # version, so cache whatever we just sent to the database.
-            md5, size = file_handle.md5, file_handle.size
-            if as_image:
-                to_cache = utils.get_input_photo(msg.media.photo)
-            else:
-                to_cache = utils.get_input_document(msg.media.document)
-            self.session.cache_file(md5, size, to_cache)
+        self._cache_media(msg, file, file_handle, force_document=force_document)
 
         return msg
 
