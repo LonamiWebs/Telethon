@@ -129,6 +129,8 @@ class NewMessage(EventBuilder):
                 available members and methods.
         """
         def __init__(self, message):
+            # Having to override __setattr__ makes things... complicated
+            self.__dict__['_init'] = False
             if not message.out and isinstance(message.to_id, types.PeerUser):
                 # Incoming message (e.g. from a bot) has to_id=us, and
                 # from_id=bot (the actual "chat" from an user's perspective).
@@ -145,9 +147,13 @@ class NewMessage(EventBuilder):
             super()._set_client(client)
             self.message = custom.Message(
                 client, self.message, self._entities, None)
+            self._init = True
 
         def __getattr__(self, item):
             return getattr(self.message, item)
 
         def __setattr__(self, name, value):
-            return setattr(self.original_message, name, value)
+            if self._init:
+                setattr(self.__dict__['message'], name, value)
+            else:
+                super().__setattr__(name, value)

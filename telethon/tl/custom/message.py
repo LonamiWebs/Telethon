@@ -19,7 +19,10 @@ class Message:
             in the original :tl:`Message`.
     """
     def __init__(self, client, original, entities, input_chat):
-        self.__dict__['_init'] = False
+        # Share the original dictionary. Modifications to this
+        # object should also be reflected in the original one.
+        # This way there's no need to worry about get/setattr.
+        self.__dict__ = original.__dict__
         self.original_message = original
         self.stringify = self.original_message.stringify
         self.to_dict = self.original_message.to_dict
@@ -43,7 +46,6 @@ class Message:
             elif fwd.channel_id:
                 self._fwd_from_entity = entities.get(get_peer_id(
                     types.PeerChannel(fwd.channel_id)))
-        self._init = True
 
     def __new__(cls, client, original, entities, input_chat):
         if isinstance(original, types.Message):
@@ -52,15 +54,6 @@ class Message:
             return super().__new__(_CustomMessageService)
         else:
             return cls
-
-    def __getattr__(self, item):
-        return getattr(self.original_message, item)
-
-    def __setattr__(self, name, value):
-        if not self._init or name in self.__dict__:
-            self.__dict__[name] = value
-        else:
-            setattr(self.original_message, name, value)
 
     def __str__(self):
         return str(self.original_message)
