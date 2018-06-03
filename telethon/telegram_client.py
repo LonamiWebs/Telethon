@@ -503,10 +503,8 @@ class TelegramClient(TelegramBareClient):
                 t = self.parse_mode.unparse(self._tos.text, self._tos.entities)
             else:
                 t = self._tos.text
-            sys.stderr.write("By signing up you agree to Telegram's TOS:"
-                             "\n{}\n".format(t))
+            sys.stderr.write("{}\n".format(t))
             sys.stderr.flush()
-            self(AcceptTermsOfServiceRequest(self._tos.id))
 
         result = self(SignUpRequest(
             phone_number=self._phone,
@@ -515,6 +513,9 @@ class TelegramClient(TelegramBareClient):
             first_name=first_name,
             last_name=last_name
         ))
+
+        if self._tos:
+            self(AcceptTermsOfServiceRequest(self._tos.id))
 
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
