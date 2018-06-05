@@ -2,6 +2,7 @@
 Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
+import itertools
 import math
 import mimetypes
 import os
@@ -54,6 +55,17 @@ class Default:
     Currently used for the ``parse_mode``, where a ``None`` mode should
     be considered different from using the default.
     """
+
+
+def chunks(iterable, size=100):
+    """
+    Turns the given iterable into chunks of the specified size,
+    which is 100 by default since that's what Telegram uses the most.
+    """
+    it = iter(iterable)
+    size -= 1
+    for head in it:
+        yield itertools.chain([head], itertools.islice(it, size))
 
 
 def get_display_name(entity):

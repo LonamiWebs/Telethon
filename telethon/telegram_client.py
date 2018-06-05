@@ -1092,25 +1092,24 @@ class TelegramClient(TelegramBareClient):
                 This has no effect on channels or megagroups.
 
         Returns:
-            The :tl:`AffectedMessages`.
+            A list of :tl:`AffectedMessages`, each item being the result
+            for the delete calls of the messages in chunks of 100 each.
         """
         if not utils.is_list_like(message_ids):
             message_ids = (message_ids,)
 
-        message_ids = [
+        message_ids = (
             m.id if isinstance(m, (Message, MessageService, MessageEmpty))
             else int(m) for m in message_ids
-        ]
+        )
 
-        if entity is None:
-            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
-
-        entity = self.get_input_entity(entity)
-
+        entity = self.get_input_entity(entity) if entity else None
         if isinstance(entity, InputPeerChannel):
-            return self(channels.DeleteMessagesRequest(entity, message_ids))
+            return self([channels.DeleteMessagesRequest(entity, list(c))
+                         for c in utils.chunks(message_ids)])
         else:
-            return self(messages.DeleteMessagesRequest(message_ids, revoke=revoke))
+            return self([messages.DeleteMessagesRequest(list(c), revoke)
+                         for c in utils.chunks(message_ids)])
 
     def iter_messages(self, entity, limit=None, offset_date=None,
                       offset_id=0, max_id=0, min_id=0, add_offset=0,
