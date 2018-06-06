@@ -73,12 +73,13 @@ class TcpClient:
         if self._socket is None:
             self._socket = self._create_socket(mode, self.proxy)
 
-        asyncio.wait_for(self._loop.sock_connect(self._socket, address),
-                         self.timeout, loop=self._loop)
+        await asyncio.wait_for(self._loop.sock_connect(self._socket, address),
+                               self.timeout, loop=self._loop)
 
     @property
     def is_connected(self):
         """Determines whether the client is connected or not."""
+        # TODO fileno() is >= 0 even before calling sock_connect!
         return self._socket is not None and self._socket.fileno() >= 0
 
     def close(self):
@@ -123,7 +124,7 @@ class TcpClient:
                     timeout=self.timeout,
                     loop=self._loop
                 )
-                if not partial == 0:
+                if not partial:
                     raise ConnectionResetError()
 
                 buffer.write(partial)
