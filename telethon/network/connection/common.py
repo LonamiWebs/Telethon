@@ -1,5 +1,14 @@
 """
 This module holds the abstract `Connection` class.
+
+The `Connection.send` and `Connection.recv` methods need **not** to be
+safe across several tasks and may use any amount of ``await`` keywords.
+
+The code using these `Connection`'s should be responsible for using
+an ``async with asyncio.Lock:`` block when calling said methods.
+
+Said subclasses need not to worry about reconnecting either, and
+should let the errors propagate instead.
 """
 import abc
 from datetime import timedelta
@@ -23,7 +32,7 @@ class Connection(abc.ABC):
         self._timeout = timeout
 
     @abc.abstractmethod
-    def connect(self, ip, port):
+    async def connect(self, ip, port):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -41,7 +50,7 @@ class Connection(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def close(self):
+    async def close(self):
         """Closes the connection."""
         raise NotImplementedError
 
@@ -51,11 +60,11 @@ class Connection(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def recv(self):
+    async def recv(self):
         """Receives and unpacks a message"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def send(self, message):
+    async def send(self, message):
         """Encapsulates and sends the given message"""
         raise NotImplementedError

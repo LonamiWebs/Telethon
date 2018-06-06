@@ -3,9 +3,9 @@ import os
 import struct
 from hashlib import sha1, sha256
 
-from telethon.crypto import AES
-from telethon.errors import SecurityError
-from telethon.extensions import BinaryReader
+from .crypto import AES
+from .errors import SecurityError, BrokenAuthKeyError
+from .extensions import BinaryReader
 
 
 # region Multiple utilities
@@ -46,15 +46,22 @@ def pack_message(session, message):
     return key_id + msg_key + AES.encrypt_ige(data + padding, aes_key, aes_iv)
 
 
-def unpack_message(session, reader):
+def unpack_message(session, body):
     """Unpacks a message following MtProto 2.0 guidelines"""
     # See https://core.telegram.org/mtproto/description
-    if reader.read_long(signed=False) != session.auth_key.key_id:
+    if len(body) < 8:
+        if body == b'l\xfe\xff\xff':
+            raise BrokenAuthKeyError()
+        else:
+            raise BufferError("Can't decode packet ({})".format(body))
+
+    key_id = struct.unpack('<Q', body[:8])[0]
+    if key_id != session.auth_key.key_id:
         raise SecurityError('Server replied with an invalid auth key')
 
-    msg_key = reader.read(16)
+    msg_key = body[8:24]
     aes_key, aes_iv = calc_key(session.auth_key.key, msg_key, False)
-    data = BinaryReader(AES.decrypt_ige(reader.read(), aes_key, aes_iv))
+    data = BinaryReader(AES.decrypt_ige(body[24:], aes_key, aes_iv))
 
     data.read_long()  # remote_salt
     if data.read_long() != session.id:

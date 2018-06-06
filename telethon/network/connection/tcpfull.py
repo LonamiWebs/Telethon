@@ -20,7 +20,7 @@ class ConnectionTcpFull(Connection):
         self.read = self.conn.read
         self.write = self.conn.write
 
-    def connect(self, ip, port):
+    async def connect(self, ip, port):
         try:
             self.conn.connect(ip, port)
         except OSError as e:
@@ -37,13 +37,13 @@ class ConnectionTcpFull(Connection):
     def is_connected(self):
         return self.conn.connected
 
-    def close(self):
+    async def close(self):
         self.conn.close()
 
     def clone(self):
         return ConnectionTcpFull(self._proxy, self._timeout)
 
-    def recv(self):
+    async def recv(self):
         packet_len_seq = self.read(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
         body = self.read(packet_len - 12)
@@ -55,7 +55,7 @@ class ConnectionTcpFull(Connection):
 
         return body
 
-    def send(self, message):
+    async def send(self, message):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(message) + 12

@@ -6,7 +6,7 @@ from threading import Event
 class TLObject:
     def __init__(self):
         self.rpc_error = None
-        self.result = None
+        self.result = None  # An asyncio.Future set later
 
         # These should be overrode
         self.content_related = False  # Only requests/functions/queries are
