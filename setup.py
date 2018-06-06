@@ -11,6 +11,7 @@ Extra supported commands are:
 """
 
 import itertools
+import json
 import os
 import re
 import shutil
@@ -43,6 +44,8 @@ ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
 ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
 ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpc_error_list.py')
 
+INVALID_BM_IN = os.path.join(GENERATOR_DIR, 'data', 'invalid_bot_methods.json')
+
 TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
 TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
 TLOBJECT_OUT = os.path.join(LIBRARY_DIR, 'tl')
@@ -57,11 +60,14 @@ def generate(which):
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
+    with open(INVALID_BM_IN) as f:
+        ib = set(json.load(f))
+
     layer = find_layer(TLOBJECT_IN_TL)
     errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
     tlobjects = list(itertools.chain(
-        parse_tl(TLOBJECT_IN_CORE_TL, layer=layer),
-        parse_tl(TLOBJECT_IN_TL, layer=layer)))
+        parse_tl(TLOBJECT_IN_CORE_TL, layer=layer, invalid_bot_methods=ib),
+        parse_tl(TLOBJECT_IN_TL, layer=layer, invalid_bot_methods=ib)))
 
     if not which:
         which.extend(('tl', 'errors'))

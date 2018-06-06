@@ -266,6 +266,10 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             # Create the page title
             docs.write_title(tlobject.class_name)
 
+            if tlobject.is_function:
+                docs.write_text('Bots <strong>can{}</strong> use this method.'
+                                .format("" if tlobject.bot_usable else "'t"))
+
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
             docs.write_copy_button('Copy import to the clipboard',

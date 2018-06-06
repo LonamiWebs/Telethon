@@ -44,6 +44,7 @@ class TLObject:
         self.args = args
         self.result = result
         self.is_function = is_function
+        self.bot_usable = None
         self.id = None
         if object_id is None:
             self.id = self.infer_id()
@@ -252,8 +253,11 @@ def _from_line(line, is_function, layer):
     )
 
 
-def parse_tl(file_path, layer, ignore_core=False):
+def parse_tl(file_path, layer, ignore_core=False, invalid_bot_methods=None):
     """This method yields TLObjects from a given .tl file."""
+    if invalid_bot_methods is None:
+        invalid_bot_methods = set()
+
     with open(file_path, encoding='utf-8') as file:
         is_function = False
         for line in file:
@@ -274,6 +278,9 @@ def parse_tl(file_path, layer, ignore_core=False):
             try:
                 result = _from_line(line, is_function, layer=layer)
                 if not ignore_core or result.id not in CORE_TYPES:
+                    result.bot_usable =\
+                        result.fullname not in invalid_bot_methods
+
                     yield result
             except ValueError as e:
                 if 'vector#1cb5c415' not in str(e):
