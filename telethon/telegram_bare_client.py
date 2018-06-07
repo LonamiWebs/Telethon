@@ -14,7 +14,7 @@ from .errors import (
     PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError,
     RpcCallFailError
 )
-from .network import authenticator, MtProtoSender, ConnectionTcpFull
+from .network import authenticator, MTProtoSender, ConnectionTcpFull
 from .sessions import Session, SQLiteSession
 from .tl import TLObject
 from .tl.all_tlobjects import LAYER
