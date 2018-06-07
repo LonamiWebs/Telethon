@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from .connection import ConnectionTcpFull
-from .. import helpers
+from .. import helpers, utils
 from ..errors import BadMessageError, rpc_message_to_error
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
@@ -125,7 +125,7 @@ class MTProtoSender:
             self._send_loop_handle.cancel()
             self._recv_loop_handle.cancel()
 
-    async def send(self, request):
+    async def send(self, request, ordered=False):
         """
         This method enqueues the given request to be sent.
 
@@ -153,10 +153,25 @@ class MTProtoSender:
         # TODO Perhaps this method should be synchronous and just return
         # a `Future` that you need to further ``await`` instead of the
         # currently double ``await (await send())``?
-        message = TLMessage(self.session, request)
-        self._pending_messages[message.msg_id] = message
-        await self._send_queue.put(message)
-        return message.future
+        if utils.is_list_like(request):
+            if not ordered:
+                # False-y values must be None to do after_id = ordered and ...
+                ordered = None
+
+            result = []
+            after_id = None
+            for r in request:
+                message = TLMessage(self.session, r, after_id=after_id)
+                self._pending_messages[message.msg_id] = message
+                after_id = ordered and message.msg_id
+                await self._send_queue.put(message)
+                result.append(message.future)
+            return result
+        else:
+            message = TLMessage(self.session, request)
+            self._pending_messages[message.msg_id] = message
+            await self._send_queue.put(message)
+            return message.future
 
     # Loops
 
@@ -307,7 +322,6 @@ class MTProtoSender:
         bad_salt = reader.tgread_object()
         self.session.salt = bad_salt.new_server_salt
         self.session.save()
-        # TODO Will this work properly for containers?
         await self._send_queue.put(self._pending_messages[bad_salt.bad_msg_id])
 
     async def _handle_bad_notification(self, msg_id, seq, reader):
