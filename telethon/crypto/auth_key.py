@@ -37,4 +37,4 @@ class AuthKey:
         data = new_nonce + struct.pack('<BQ', number, self.aux_hash)
 
         # Calculates the message key from the given data
-        return sha1(data).digest()[4:20]
+        return int.from_bytes(sha1(data).digest()[4:20], 'little', signed=True)

@@ -72,17 +72,23 @@ async def do_authentication(sender):
         encrypted_data=cipher_text
     ))
 
-    if isinstance(server_dh_params, ServerDHParamsFail):
-        raise SecurityError('Server DH params fail: TODO')
-
-    if not isinstance(server_dh_params, ServerDHParamsOk):
-        raise AssertionError(server_dh_params)
+    assert isinstance(server_dh_params, (ServerDHParamsOk, ServerDHParamsFail))
 
     if server_dh_params.nonce != res_pq.nonce:
         raise SecurityError('Invalid nonce from server')
 
     if server_dh_params.server_nonce != res_pq.server_nonce:
         raise SecurityError('Invalid server nonce from server')
+
+    if isinstance(server_dh_params, ServerDHParamsFail):
+        nnh = int.from_bytes(
+            sha1(new_nonce.to_bytes(32, 'little', signed=True)).digest()[4:20],
+            'little', signed=True
+        )
+        if server_dh_params.new_nonce_hash != nnh:
+            raise SecurityError('Invalid DH fail nonce from server')
+
+    assert isinstance(server_dh_params, ServerDHParamsOk)
 
     # Step 3 sending: Complete DH Exchange
     key, iv = utils.generate_key_data_from_nonce(
@@ -99,8 +105,7 @@ async def do_authentication(sender):
     with BinaryReader(plain_text_answer) as reader:
         reader.read(20)  # hash sum
         server_dh_inner = reader.tgread_object()
-        if not isinstance(server_dh_inner, ServerDHInnerData):
-            raise AssertionError(server_dh_inner)
+        assert isinstance(server_dh_inner, ServerDHInnerData)
 
     if server_dh_inner.nonce != res_pq.nonce:
         raise SecurityError('Invalid nonce in encrypted answer')
@@ -136,31 +141,25 @@ async def do_authentication(sender):
         encrypted_data=client_dh_encrypted,
     ))
 
-    if isinstance(dh_gen, DhGenOk):
-        if dh_gen.nonce != res_pq.nonce:
-            raise SecurityError('Invalid nonce from server')
+    nonce_types = (DhGenOk, DhGenRetry, DhGenFail)
+    assert isinstance(dh_gen, nonce_types)
+    name = dh_gen.__class__.__name__
+    if dh_gen.nonce != res_pq.nonce:
+        raise SecurityError('Invalid {} nonce from server'.format(name))
 
-        if dh_gen.server_nonce != res_pq.server_nonce:
-            raise SecurityError('Invalid server nonce from server')
+    if dh_gen.server_nonce != res_pq.server_nonce:
+        raise SecurityError('Invalid {} server nonce from server'.format(name))
 
-        auth_key = AuthKey(rsa.get_byte_array(gab))
-        new_nonce_hash = int.from_bytes(
-            auth_key.calc_new_nonce_hash(new_nonce, 1), 'little', signed=True
-        )
+    auth_key = AuthKey(rsa.get_byte_array(gab))
+    nonce_number = 1 + nonce_types.index(type(dh_gen))
+    new_nonce_hash = auth_key.calc_new_nonce_hash(new_nonce, nonce_number)
 
-        if dh_gen.new_nonce_hash1 != new_nonce_hash:
-            raise SecurityError('Invalid new nonce hash')
+    dh_hash = getattr(dh_gen, 'new_nonce_hash{}'.format(nonce_number))
+    if dh_hash != new_nonce_hash:
+        raise SecurityError('Invalid new nonce hash')
 
-        return auth_key, time_offset
-
-    elif isinstance(dh_gen, DhGenRetry):
-        raise NotImplementedError('DhGenRetry')
-
-    elif isinstance(dh_gen, DhGenFail):
-        raise NotImplementedError('DhGenFail')
-
-    else:
-        raise NotImplementedError('DH Gen unknown: {}'.format(dh_gen))
+    assert isinstance(dh_gen, DhGenOk)
+    return auth_key, time_offset
 
 
 def get_int(byte_array, signed=True):

@@ -105,7 +105,7 @@ class MTProtoSender:
             await self._connection.connect(ip, port)
         self._user_connected = True
 
-        # TODO Handle SecurityError, AssertionError, NotImplementedError
+        # TODO Handle SecurityError, AssertionError
         if self.session.auth_key is None:
             plain = MTProtoPlainSender(self._connection)
             self.session.auth_key, self.session.time_offset =\
