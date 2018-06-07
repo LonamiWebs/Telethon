@@ -79,11 +79,34 @@ class MTProtoSender:
             self._recv_loop_handle.cancel()
 
     async def send(self, request):
-        # TODO Should the asyncio.Future creation belong here?
-        request.result = asyncio.Future()
+        """
+        This method enqueues the given request to be sent.
+
+        The request will be wrapped inside a `TLMessage` until its
+        response arrives, and the `Future` response of the `TLMessage`
+        is immediately returned so that one can further ``await`` it:
+
+        .. code-block:: python
+
+            async def method():
+                # Sending (enqueued for the send loop)
+                future = await sender.send(request)
+                # Receiving (waits for the receive loop to read the result)
+                result = await future
+
+        Designed like this because Telegram may send the response at
+        any point, and it can send other items while one waits for it.
+        Once the response for this future arrives, it is set with the
+        received result, quite similar to how a ``receive()`` call
+        would otherwise work.
+
+        Since the receiving part is "built in" the future, it's
+        impossible to await receive a result that was never sent.
+        """
         message = TLMessage(self.session, request)
         self._pending_messages[message.msg_id] = message
         await self._send_queue.put(message)
+        return message.future
 
     # Loops
 
@@ -129,7 +152,7 @@ class MTProtoSender:
         inner_code = reader.read_int(signed=False)
         reader.seek(-4)
 
-        message = self._pending_messages.pop(message_id)
+        message = self._pending_messages.pop(message_id, None)
         if inner_code == 0x2144ca19:  # RPC Error
             reader.seek(4)
             if self.session.report_errors and message:
@@ -142,17 +165,23 @@ class MTProtoSender:
                     reader.read_int(), reader.tgread_string()
                 )
 
-            # TODO Acknowledge that we received the error request_id
-            # TODO Set message.request exception
+            await self._send_queue.put(
+                TLMessage(self.session, MsgsAck([msg_id])))
+
+            if not message.future.cancelled():
+                message.future.set_exception(error)
+            return
         elif message:
-            # TODO Make on_response result.set_result() instead replacing it
             if inner_code == GzipPacked.CONSTRUCTOR_ID:
                 with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
-                    message.on_response(compressed_reader)
+                    result = message.request.read_result(compressed_reader)
             else:
-                message.on_response(reader)
+                result = message.request.read_result(reader)
 
             # TODO Process possible entities
+            if not message.future.cancelled():
+                message.future.set_result(result)
+            return
 
         # TODO Try reading an object
 

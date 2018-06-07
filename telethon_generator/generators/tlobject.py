@@ -142,7 +142,7 @@ def _write_source_code(tlobject, builder, type_constructors):
     _write_to_dict(tlobject, builder)
     _write_to_bytes(tlobject, builder)
     _write_from_reader(tlobject, builder)
-    _write_on_response(tlobject, builder)
+    _write_read_result(tlobject, builder)
 
 
 def _write_class_init(tlobject, type_constructors, builder):
@@ -333,7 +333,7 @@ def _write_from_reader(tlobject, builder):
         '{0}=_{0}'.format(a.name) for a in tlobject.real_args))
 
 
-def _write_on_response(tlobject, builder):
+def _write_read_result(tlobject, builder):
     # Only requests can have a different response that's not their
     # serialized body, that is, we'll be setting their .result.
     #
@@ -354,9 +354,10 @@ def _write_on_response(tlobject, builder):
         return
 
     builder.end_block()
-    builder.writeln('def on_response(self, reader):')
+    builder.writeln('@staticmethod')
+    builder.writeln('def read_result(reader):')
     builder.writeln('reader.read_int()  # Vector ID')
-    builder.writeln('self.result = [reader.read_{}() '
+    builder.writeln('return [reader.read_{}() '
                     'for _ in range(reader.read_int())]', m.group(1))
 
 

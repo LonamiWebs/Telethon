@@ -1,3 +1,4 @@
+import asyncio
 import struct
 
 from . import TLObject, GzipPacked
@@ -5,7 +6,20 @@ from ..tl.functions import InvokeAfterMsgRequest
 
 
 class TLMessage(TLObject):
-    """https://core.telegram.org/mtproto/service_messages#simple-container"""
+    """
+    https://core.telegram.org/mtproto/service_messages#simple-container.
+
+    Messages are what's ultimately sent to Telegram:
+        message msg_id:long seqno:int bytes:int body:bytes = Message;
+
+    Each message has its own unique identifier, and the body is simply
+    the serialized request that should be executed on the server. Then
+    Telegram will, at some point, respond with the result for this msg.
+
+    Thus it makes sense that requests and their result are bound to a
+    sent `TLMessage`, and this result can be represented as a `Future`
+    that will eventually be set with either a result, error or cancelled.
+    """
     def __init__(self, session, request, after_id=None):
         super().__init__()
         del self.content_related
@@ -13,6 +27,7 @@ class TLMessage(TLObject):
         self.seq_no = session.generate_sequence(request.content_related)
         self.request = request
         self.container_msg_id = None
+        self.future = asyncio.Future()
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can

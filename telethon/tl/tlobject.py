@@ -5,35 +5,9 @@ from threading import Event
 
 class TLObject:
     def __init__(self):
-        self.rpc_error = None
-        self.result = None  # An asyncio.Future set later
-
-        # These should be overrode
+        # TODO Perhaps content_related makes more sense as another type?
+        # Something like class TLRequest(TLObject), request inherit this
         self.content_related = False  # Only requests/functions/queries are
-        
-        # Internal parameter to tell pickler in which state Event object was
-        self._event_is_set = False 
-        self._set_event()
-
-    def _set_event(self):
-        self.confirm_received = Event()
-        
-        # Set Event state to 'set' if needed
-        if self._event_is_set:
-            self.confirm_received.set()
-
-    def __getstate__(self):
-        # Save state of the Event object 
-        self._event_is_set = self.confirm_received.is_set()
-        
-        # Exclude Event object from dict and return new state
-        new_dct = dict(self.__dict__)
-        del new_dct["confirm_received"]
-        return new_dct
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self._set_event()
 
     # These should not be overrode
     @staticmethod
@@ -164,8 +138,9 @@ class TLObject:
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
     # These are nearly always the same for all subclasses
-    def on_response(self, reader):
-        self.result = reader.tgread_object()
+    @staticmethod
+    def read_result(reader):
+        return reader.tgread_object()
 
     def __eq__(self, o):
         return isinstance(o, type(self)) and self.to_dict() == o.to_dict()
