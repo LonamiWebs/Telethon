@@ -3,7 +3,7 @@ import logging
 
 from .connection import ConnectionTcpFull
 from .. import helpers, utils
-from ..errors import BadMessageError, rpc_message_to_error
+from ..errors import BadMessageError, TypeNotFoundError, rpc_message_to_error
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
@@ -231,11 +231,8 @@ class MTProtoSender:
         self._pending_ack.add(msg_id)
         code = reader.read_int(signed=False)
         reader.seek(-4)
-        handler = self._handlers.get(code)
-        if handler:
-            await handler(msg_id, seq, reader)
-        else:
-            pass  # TODO Process updates and their entities
+        handler = self._handlers.get(code, self._handle_update)
+        await handler(msg_id, seq, reader)
 
     async def _handle_rpc_result(self, msg_id, seq, reader):
         """
@@ -277,12 +274,20 @@ class MTProtoSender:
             else:
                 result = message.request.read_result(reader)
 
-            # TODO Process possible entities
+            self.session.process_entities(result)
             if not message.future.cancelled():
                 message.future.set_result(result)
             return
-
-        # TODO Try reading an object
+        else:
+            # TODO We should not get responses to things we never sent
+            try:
+                if inner_code == GzipPacked.CONSTRUCTOR_ID:
+                    with BinaryReader(GzipPacked.read(reader)) as creader:
+                        obj = creader.tgread_object()
+                else:
+                    obj = reader.tgread_object()
+            except TypeNotFoundError:
+                pass
 
     async def _handle_container(self, msg_id, seq, reader):
         """
@@ -303,6 +308,15 @@ class MTProtoSender:
         """
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
             await self._process_message(msg_id, seq, compressed_reader)
+
+    async def _handle_update(self, msg_id, seq, reader):
+        try:
+            obj = reader.tgread_object()
+        except TypeNotFoundError:
+            return
+
+        # TODO Further handling of the update
+        self.session.process_entities(obj)
 
     async def _handle_pong(self, msg_id, seq, reader):
         """
