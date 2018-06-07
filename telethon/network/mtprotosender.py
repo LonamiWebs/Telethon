@@ -122,6 +122,7 @@ class MTProtoSender:
                 message.future.cancel()
 
             self._pending_messages.clear()
+            self._pending_ack.clear()
             self._send_loop_handle.cancel()
             self._recv_loop_handle.cancel()
 
@@ -183,6 +184,11 @@ class MTProtoSender:
         Besides `connect`, only this method ever sends data.
         """
         while self._user_connected:
+            if self._pending_ack:
+                await self._send_queue.put(TLMessage(
+                    self.session, MsgsAck(list(self._pending_ack))))
+                self._pending_ack.clear()
+
             message = await self._send_queue.get()
             if isinstance(message, list):
                 message = TLMessage(self.session, MessageContainer(message))
@@ -222,7 +228,6 @@ class MTProtoSender:
         acknowledged and dispatches control to different ``_handle_*``
         method based on its type.
         """
-        # TODO Send pending ack
         self._pending_ack.add(msg_id)
         code = reader.read_int(signed=False)
         reader.seek(-4)
