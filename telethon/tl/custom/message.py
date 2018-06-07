@@ -495,13 +495,31 @@ class Message:
         return self._client.download_media(self.original_message,
                                            *args, **kwargs)
 
-    def get_entities_text(self):
+    def get_entities_text(self, cls=None):
         """
         Returns a list of tuples [(:tl:`MessageEntity`, `str`)], the string
         being the inner text of the message entity (like bold, italics, etc).
+
+        Args:
+            cls (`type`):
+                Returns entities matching this type only. For example,
+                the following will print the text for all ``code`` entities:
+
+                >>> from telethon.tl.types import MessageEntityCode
+                >>>
+                >>> m = Message(...)
+                >>> for _, inner_text in m.get_entities_text(MessageEntityCode):
+                >>>     print(inner_text)
         """
-        texts = get_inner_text(self.original_message.message,
-                               self.original_message.entities)
+        if cls and self.original_message.entities:
+            texts = get_inner_text(
+                self.original_message.message,
+                [c for c in self.original_message.entities
+                 if isinstance(c, cls)]
+            )
+        else:
+            texts = get_inner_text(self.original_message.message,
+                                   self.original_message.entities)
         return list(zip(self.original_message.entities, texts))
 
     def click(self, i=None, j=None, *, text=None, filter=None):

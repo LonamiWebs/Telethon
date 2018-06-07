@@ -527,29 +527,23 @@ def del_surrogate(text):
     return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
-def get_inner_text(text, entity):
+def get_inner_text(text, entities):
     """
-    Gets the inner text that's surrounded by the given entity or entities.
+    Gets the inner text that's surrounded by the given entities.
     For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
 
-    :param text: the original text.
-    :param entity: the entity or entities that must be matched.
+    :param text:     the original text.
+    :param entities: the entity or entities that must be matched.
     :return: a single result or a list of the text surrounded by the entities.
     """
-    if isinstance(entity, TLObject):
-        entity = (entity,)
-        multiple = True
-    else:
-        multiple = False
-
     text = add_surrogate(text)
     result = []
-    for e in entity:
+    for e in entities:
         start = e.offset
         end = e.offset + e.length
         result.append(del_surrogate(text[start:end]))
 
-    return result if multiple else result[0]
+    return result
 
 
 def get_peer_id(peer):
