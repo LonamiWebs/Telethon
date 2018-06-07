@@ -9,12 +9,11 @@ from ..errors import BrokenAuthKeyError
 from ..extensions import BinaryReader
 
 
-class MtProtoPlainSender:
+class MTProtoPlainSender:
     """
     MTProto Mobile Protocol plain sender
     (https://core.telegram.org/mtproto/description#unencrypted-messages)
     """
-
     def __init__(self, connection):
         """
         Initializes the MTProto plain sender.
@@ -26,43 +25,27 @@ class MtProtoPlainSender:
         self._last_msg_id = 0
         self._connection = connection
 
-    def connect(self):
-        """Connects to Telegram's servers."""
-        self._connection.connect()
-
-    def disconnect(self):
-        """Disconnects from Telegram's servers."""
-        self._connection.close()
-
-    def send(self, data):
+    async def send(self, request):
         """
-        Sends a plain packet (auth_key_id = 0) containing the
-        given message body (data).
-
-        :param data: the data to be sent.
+        Sends and receives the result for the given request.
         """
-        self._connection.send(
-            struct.pack('<QQi', 0, self._get_new_msg_id(), len(data)) + data
+        body = bytes(request)
+        msg_id = self._get_new_msg_id()
+        await self._connection.send(
+            struct.pack('<QQi', 0, msg_id, len(body)) + body
         )
 
-    def receive(self):
-        """
-        Receives a plain packet from the network.
-
-        :return: the response body.
-        """
-        body = self._connection.recv()
+        body = await self._connection.recv()
         if body == b'l\xfe\xff\xff':  # -404 little endian signed
             # Broken authorization, must reset the auth key
             raise BrokenAuthKeyError()
 
         with BinaryReader(body) as reader:
-            reader.read_long()  # auth_key_id
-            reader.read_long()  # msg_id
-            message_length = reader.read_int()
-
-            response = reader.read(message_length)
-            return response
+            assert reader.read_long() == 0  # auth_key_id
+            assert reader.read_long() > msg_id  # msg_id
+            assert reader.read_int()  # length
+            # No need to read "length" bytes first, just read the object
+            return reader.tgread_object()
 
     def _get_new_msg_id(self):
         """Generates a new message ID based on the current time since epoch."""

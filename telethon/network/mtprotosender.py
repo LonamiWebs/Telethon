@@ -1,9 +1,13 @@
 import asyncio
 import logging
 
+from . import MTProtoPlainSender, authenticator
 from .connection import ConnectionTcpFull
 from .. import helpers, utils
-from ..errors import BadMessageError, TypeNotFoundError, rpc_message_to_error
+from ..errors import (
+    BadMessageError, TypeNotFoundError, BrokenAuthKeyError, SecurityError,
+    rpc_message_to_error
+)
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
@@ -100,6 +104,13 @@ class MTProtoSender:
         async with self._send_lock:
             await self._connection.connect(ip, port)
         self._user_connected = True
+
+        # TODO Handle SecurityError, AssertionError, NotImplementedError
+        if self.session.auth_key is None:
+            plain = MTProtoPlainSender(self._connection)
+            self.session.auth_key, self.session.time_offset =\
+                await authenticator.do_authentication(plain)
+
         self._send_loop_handle = asyncio.ensure_future(self._send_loop())
         self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
 
@@ -214,11 +225,20 @@ class MTProtoSender:
                 body = await self._connection.recv()
 
             # TODO Check salt, session_id and sequence_number
-            message, remote_msg_id, remote_seq = helpers.unpack_message(
-                self.session, body)
-
-            with BinaryReader(message) as reader:
-                await self._process_message(remote_msg_id, remote_seq, reader)
+            try:
+                message, remote_msg_id, remote_seq =\
+                    helpers.unpack_message(self.session, body)
+            except (BrokenAuthKeyError, BufferError):
+                # TODO Are these temporary or do we need a new key?
+                pass
+            except SecurityError:
+                # TODO Can we safely ignore these? Has the message
+                # been decoded correctly?
+                pass
+            else:
+                with BinaryReader(message) as reader:
+                    await self._process_message(
+                        remote_msg_id, remote_seq, reader)
 
     # Response Handlers
 

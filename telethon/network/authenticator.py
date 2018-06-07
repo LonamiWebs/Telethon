@@ -14,56 +14,24 @@ from .. import helpers as utils
 from ..crypto import AES, AuthKey, Factorization, rsa
 from ..errors import SecurityError
 from ..extensions import BinaryReader
-from ..network import MtProtoPlainSender
 from ..tl.functions import (
     ReqPqMultiRequest, ReqDHParamsRequest, SetClientDHParamsRequest
 )
 
 
-def do_authentication(connection, retries=5):
-    """
-    Performs the authentication steps on the given connection.
-    Raises an error if all attempts fail.
-
-    :param connection: the connection to be used (must be connected).
-    :param retries: how many times should we retry on failure.
-    :return:
-    """
-    if not retries or retries < 0:
-        retries = 1
-
-    last_error = None
-    while retries:
-        try:
-            return _do_authentication(connection)
-        except (SecurityError, AssertionError, NotImplementedError) as e:
-            last_error = e
-        retries -= 1
-    raise last_error
-
-
-def _do_authentication(connection):
+async def do_authentication(sender):
     """
     Executes the authentication process with the Telegram servers.
 
-    :param connection: the connection to be used (must be connected).
+    :param sender: a connected `MTProtoPlainSender`.
     :return: returns a (authorization key, time offset) tuple.
     """
-    sender = MtProtoPlainSender(connection)
-
     # Step 1 sending: PQ Request, endianness doesn't matter since it's random
-    req_pq_request = ReqPqMultiRequest(
-        nonce=int.from_bytes(os.urandom(16), 'big', signed=True)
-    )
-    sender.send(bytes(req_pq_request))
-    with BinaryReader(sender.receive()) as reader:
-        req_pq_request.on_response(reader)
+    nonce = int.from_bytes(os.urandom(16), 'big', signed=True)
+    res_pq = await sender.send(ReqPqMultiRequest(nonce))
+    assert isinstance(res_pq, ResPQ)
 
-    res_pq = req_pq_request.result
-    if not isinstance(res_pq, ResPQ):
-        raise AssertionError(res_pq)
-
-    if res_pq.nonce != req_pq_request.nonce:
+    if res_pq.nonce != nonce:
         raise SecurityError('Invalid nonce from server')
 
     pq = get_int(res_pq.pq)
@@ -96,20 +64,14 @@ def _do_authentication(connection):
             )
         )
 
-    req_dh_params = ReqDHParamsRequest(
+    server_dh_params = await sender.send(ReqDHParamsRequest(
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         p=p, q=q,
         public_key_fingerprint=target_fingerprint,
         encrypted_data=cipher_text
-    )
-    sender.send(bytes(req_dh_params))
+    ))
 
-    # Step 2 response: DH Exchange
-    with BinaryReader(sender.receive()) as reader:
-        req_dh_params.on_response(reader)
-
-    server_dh_params = req_dh_params.result
     if isinstance(server_dh_params, ServerDHParamsFail):
         raise SecurityError('Server DH params fail: TODO')
 
@@ -168,18 +130,12 @@ def _do_authentication(connection):
     client_dh_encrypted = AES.encrypt_ige(client_dh_inner_hashed, key, iv)
 
     # Prepare Set client DH params
-    set_client_dh = SetClientDHParamsRequest(
+    dh_gen = await sender.send(SetClientDHParamsRequest(
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         encrypted_data=client_dh_encrypted,
-    )
-    sender.send(bytes(set_client_dh))
+    ))
 
-    # Step 3 response: Complete DH Exchange
-    with BinaryReader(sender.receive()) as reader:
-        set_client_dh.on_response(reader)
-
-    dh_gen = set_client_dh.result
     if isinstance(dh_gen, DhGenOk):
         if dh_gen.nonce != res_pq.nonce:
             raise SecurityError('Invalid nonce from server')
