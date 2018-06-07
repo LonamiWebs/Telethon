@@ -347,7 +347,6 @@ class MtProtoSender:
 
         # Our salt is unsigned, but the objects work with signed salts
         self.session.salt = bad_salt.new_server_salt
-        self.session.save()
 
         # "the bad_server_salt response is received with the
         # correct salt, and the message is to be re-sent with it"
