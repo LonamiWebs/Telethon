@@ -77,17 +77,6 @@ def _find_title(html_file):
     return '(Unknown)'
 
 
-def _find_if_bot_can_use(html_file):
-    """Finds if this method can be used by bots."""
-    with open(html_file) as fp:
-        for line in fp:
-            if "<strong>can't</strong>" in line:
-                return False
-            elif "<strong>can</strong>" in line:
-                return True
-    return False
-
-
 def _build_menu(docs, filename, root, relative_main_index):
     """Builds the menu using the given DocumentWriter up to 'filename',
        which must be a file (it cannot be a directory)"""
@@ -107,23 +96,36 @@ def _build_menu(docs, filename, root, relative_main_index):
     docs.end_menu()
 
 
-def _generate_index(folder, original_paths, root, bots_index=False):
+def _generate_index(folder, original_paths, root, bots_index=False, bots_index_paths=list()):
     """Generates the index file for the specified folder"""
     # Determine the namespaces listed here (as sub folders)
     # and the files (.html files) that we should link to
     namespaces = []
     files = []
-    for item in os.listdir(folder):
-        if os.path.isdir(os.path.join(folder, item)):
-            namespaces.append(item)
-        elif item != 'index.html':
-            files.append(item)
+    INDEX = 'index.html'
+    BOT_INDEX = 'botindex.html'
+
+    if not bots_index:
+        for item in os.listdir(folder):
+            if os.path.isdir(os.path.join(folder, item)):
+                namespaces.append(item)
+            elif item not in (INDEX, BOT_INDEX):
+                files.append(item)
+    else:
+        # bots_index_paths should be a list of "namespace\method.html"
+        # or "method.html"
+        for item in bots_index_paths:
+            dirname = os.path.dirname(item)
+            if dirname != '' and dirname not in namespaces:
+                namespaces.append(dirname)
+            elif dirname == '' and item not in (INDEX, BOT_INDEX):
+                files.append(item)
 
     paths = {k: _get_relative_path(v, folder, folder=True)
              for k, v in original_paths.items()}
 
     # Now that everything is setup, write the index.html file
-    filename = os.path.join(folder, 'index.html') if not bots_index else os.path.join(folder, 'botindex.html')
+    filename = os.path.join(folder, BOT_INDEX if bots_index else INDEX)
 
     with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
@@ -138,38 +140,37 @@ def _generate_index(folder, original_paths, root, bots_index=False):
         docs.write_title(_get_relative_path(folder, root, folder=True).title())
         if bots_index:
             docs.write_text('These are the methods that you can use as a bot. '
-                            'Click <a href="index.html">here</a> to view them all.')
+                            'Click <a href="{}">here</a> to view them all.'.format(INDEX))
         else:
-            docs.write_text('Click <a href="botindex.html">here</a> to view the methods that you can use as a bot.')
+            docs.write_text('Click <a href="{}">here</a> to view the methods '
+                            'that you can use as a bot.'.format(BOT_INDEX))
         if namespaces:
             docs.write_title('Namespaces', level=3)
             docs.begin_table(4)
             namespaces.sort()
             for namespace in namespaces:
                 # For every namespace, also write the index of it
+                namespace_paths = []
+                if bots_index:
+                    for item in bots_index_paths:
+                        if os.path.dirname(item) == namespace:
+                            namespace_paths.append(os.path.basename(item))
                 _generate_index(os.path.join(folder, namespace),
-                                original_paths, root, bots_index)
+                                original_paths, root, bots_index, namespace_paths)
                 docs.add_row(namespace.title(),
-                             link=os.path.join(namespace, 'index.html' if not bots_index else 'botindex.html'))
+                             link=os.path.join(namespace,
+                                               INDEX if not bots_index else BOT_INDEX))
 
             docs.end_table()
 
         docs.write_title('Available items')
         docs.begin_table(2)
 
-        if bots_index:
-            files = [(f, _find_title(os.path.join(folder, f)), _find_if_bot_can_use(os.path.join(folder, f))) for f in files]
-            files.sort(key=lambda t: t[1])
+        files = [(f, _find_title(os.path.join(folder, f))) for f in files]
+        files.sort(key=lambda t: t[1])
 
-            for file, title, if_bot_can_use in files:
-                if if_bot_can_use:
-                    docs.add_row(title, link=file)
-        else:
-            files = [(f, _find_title(os.path.join(folder, f))) for f in files]
-            files.sort(key=lambda t: t[1])
-
-            for file, title in files:
-                docs.add_row(title, link=file)
+        for file, title in files:
+            docs.add_row(title, link=file)
 
         docs.end_table()
         docs.end_body()
@@ -273,6 +274,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # Since the output directory is needed everywhere partially apply it now
     create_path_for = functools.partial(_get_create_path_for, output_dir)
     path_for_type = functools.partial(_get_path_for_type, output_dir)
+    bot_docs_paths = []
 
     for tlobject in tlobjects:
         filename = create_path_for(tlobject)
@@ -295,6 +297,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             if tlobject.is_function:
                 docs.write_text('Bots <strong>can{}</strong> use this method.'
                                 .format("" if tlobject.bot_usable else "'t"))
+                if tlobject.is_function and tlobject.bot_usable:
+                    bot_docs_paths.append(filename)
 
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
@@ -408,6 +412,11 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             docs.add_script(src='prependPath = "{}";'.format(depth))
             docs.add_script(relative_src=paths['search.js'])
             docs.end_body()
+
+    temp = []
+    for item in bot_docs_paths:
+        temp.append(os.path.sep.join(item.split(os.path.sep)[2:]))
+    bot_docs_paths = temp
 
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
@@ -536,7 +545,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
         _generate_index(os.path.join(output_dir, folder), original_paths,
                         output_dir)
 
-    _generate_index(os.path.join(output_dir, 'methods'), original_paths, output_dir, True)
+    _generate_index(os.path.join(output_dir, 'methods'), original_paths, output_dir, True, bot_docs_paths)
 
     # Write the final core index, the main index for the rest of files
     types = set()
