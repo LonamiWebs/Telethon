@@ -35,6 +35,7 @@ class MemorySession(Session):
 
         self._files = {}
         self._entities = set()
+        self._update_states = {}
 
     def set_dc(self, dc_id, server_address, port):
         self._dc_id = dc_id or 0
@@ -56,6 +57,12 @@ class MemorySession(Session):
     @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
+
+    def get_update_state(self, entity_id):
+        return self._update_states.get(entity_id, None)
+
+    def set_update_state(self, entity_id, state):
+        self._update_states[entity_id] = state
 
     def close(self):
         pass
@@ -196,14 +203,15 @@ class MemorySession(Session):
             result = self.get_entity_rows_by_name(key)
 
         if result:
-            i, h = result  # unpack resulting tuple
-            i, k = utils.resolve_id(i)  # removes the mark and returns kind
-            if k == PeerUser:
-                return InputPeerUser(i, h)
-            elif k == PeerChat:
-                return InputPeerChat(i)
-            elif k == PeerChannel:
-                return InputPeerChannel(i, h)
+            entity_id, entity_hash = result  # unpack resulting tuple
+            entity_id, kind = utils.resolve_id(entity_id)
+            # removes the mark and returns type of entity
+            if kind == PeerUser:
+                return InputPeerUser(entity_id, entity_hash)
+            elif kind == PeerChat:
+                return InputPeerChat(entity_id)
+            elif kind == PeerChannel:
+                return InputPeerChannel(entity_id, entity_hash)
         else:
             raise ValueError('Could not find input entity with key ', key)
 

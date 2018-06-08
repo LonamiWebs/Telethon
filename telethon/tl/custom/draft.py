@@ -1,8 +1,11 @@
 import datetime
 
+from .. import TLObject
 from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
+from ...errors import RPCError
 from ...extensions import markdown
+from ...utils import Default
 
 
 class Draft:
@@ -12,13 +15,13 @@ class Draft:
     instances of this class when calling :meth:`get_drafts()`.
 
     Args:
-        date (:obj:`datetime`):
+        date (`datetime`):
             The date of the draft.
 
-        link_preview (:obj:`bool`):
+        link_preview (`bool`):
             Whether the link preview is enabled or not.
 
-        reply_to_msg_id (:obj:`int`):
+        reply_to_msg_id (`int`):
             The message ID that the draft will reply to.
     """
     def __init__(self, client, peer, draft):
@@ -80,7 +83,7 @@ class Draft:
         """
         return not self._text
 
-    def set_message(self, text=None, reply_to=0, parse_mode='md',
+    def set_message(self, text=None, reply_to=0, parse_mode=Default,
                     link_preview=None):
         """
         Changes the draft message on the Telegram servers. The changes are
@@ -125,7 +128,7 @@ class Draft:
 
         return result
 
-    def send(self, clear=True, parse_mode='md'):
+    def send(self, clear=True, parse_mode=Default):
         """
         Sends the contents of this draft to the dialog. This is just a
         wrapper around ``send_message(dialog.input_entity, *args, **kwargs)``.
@@ -141,3 +144,24 @@ class Draft:
         Deletes this draft, and returns ``True`` on success.
         """
         return self.set_message(text='')
+
+    def to_dict(self):
+        try:
+            entity = self.entity
+        except RPCError as e:
+            entity = e
+
+        return {
+            '_': 'Draft',
+            'text': self.text,
+            'entity': entity,
+            'date': self.date,
+            'link_preview': self.link_preview,
+            'reply_to_msg_id': self.reply_to_msg_id
+        }
+
+    def __str__(self):
+        return TLObject.pretty_format(self.to_dict())
+
+    def stringify(self):
+        return TLObject.pretty_format(self.to_dict(), indent=0)

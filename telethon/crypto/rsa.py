@@ -28,7 +28,7 @@ def get_byte_array(integer):
     # Reference: https://core.telegram.org/mtproto/auth_key
     return int.to_bytes(
         integer,
-        length=(integer.bit_length() + 8 - 1) // 8,  # 8 bits per byte,
+        (integer.bit_length() + 8 - 1) // 8,  # 8 bits per byte,
         byteorder='big',
         signed=False
     )

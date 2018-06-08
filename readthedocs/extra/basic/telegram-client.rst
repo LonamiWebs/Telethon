@@ -10,8 +10,10 @@ Introduction
 
 .. note::
 
-    Check the :ref:`telethon-package` if you're looking for the methods
-    reference instead of this tutorial.
+    Make sure to use the friendly methods described in :ref:`telethon-package`!
+    This section is just an introduction to using the client, but all the
+    available methods are in the :ref:`telethon-package` reference, including
+    detailed descriptions to what they do.
 
 The ``TelegramClient`` is the central class of the library, the one
 you will be using most of the time. For this reason, it's important
@@ -58,11 +60,16 @@ Many other common methods for quick scripts are also available:
         # Note that you can use 'me' or 'self' to message yourself
         client.send_message('username', 'Hello World from Telethon!')
 
+        # .send_message's parse mode defaults to markdown, so you
+        # can use **bold**, __italics__, [links](https://example.com), `code`,
+        # and even [mentions](@username)/[mentions](tg://user?id=123456789)
+        client.send_message('username', '**Using** __markdown__ `too`!')
+
         client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
         # The utils package has some goodies, like .get_display_name()
         from telethon import utils
-        for message in client.get_message_history('username', limit=10):
+        for message in client.iter_messages('username', limit=10):
             print(utils.get_display_name(message.sender), message.message)
 
         # Dialogs are the conversations you have open
@@ -83,15 +90,16 @@ a single line.
 Available methods
 *****************
 
-This page lists all the "handy" methods available for you to use in the
-``TelegramClient`` class. These are simply wrappers around the "raw"
-Telegram API, making it much more manageable and easier to work with.
+The :ref:`reference <telethon-package>` lists all the "handy" methods
+available for you to use in the ``TelegramClient`` class. These are simply
+wrappers around the "raw" Telegram API, making it much more manageable and
+easier to work with.
 
 Please refer to :ref:`accessing-the-full-api` if these aren't enough,
 and don't be afraid to read the source code of the InteractiveTelegramClient_
 or even the TelegramClient_ itself to learn how it works.
 
-To see the methods available in the client, see :ref:`telethon-package`.
+See the mentioned :ref:`telethon-package` to find the available methods.
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py
 .. _TelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon/telegram_client.py

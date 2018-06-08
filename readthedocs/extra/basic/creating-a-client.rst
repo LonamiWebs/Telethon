@@ -39,6 +39,13 @@ Note that ``'some_name'`` will be used to save your session (persistent
 information such as access key and others) as ``'some_name.session'`` in
 your disk. This is by default a database file using Python's ``sqlite3``.
 
+.. note::
+
+    It's important that the library always accesses the same session file so
+    that you don't need to re-send the code over and over again. By default it
+    creates the file in your working directory, but absolute paths work too.
+
+
 Before using the client, you must be connected to Telegram.
 Doing so is very easy:
 
@@ -150,36 +157,44 @@ The mentioned ``.start()`` method will handle this for you as well, but
 you must set the ``password=`` parameter beforehand (it won't be asked).
 
 If you don't have 2FA enabled, but you would like to do so through the library,
-take as example the following code snippet:
+use ``client.edit_2fa()``.
+Be sure to know what you're doing when using this function and
+you won't run into any problems.
+Take note that if you want to set only the email/hint and leave 
+the current password unchanged, you need to "redo" the 2fa.
+
+See the examples below:
 
     .. code-block:: python
 
-        import os
-        from hashlib import sha256
-        from telethon.tl.functions import account
-        from telethon.tl.types.account import PasswordInputSettings
-
-        new_salt = client(account.GetPasswordRequest()).new_salt
-        salt = new_salt + os.urandom(8)  # new random salt
-
-        pw = 'secret'.encode('utf-8')  # type your new password here
-        hint = 'hint'
-
-        pw_salted = salt + pw + salt
-        pw_hash = sha256(pw_salted).digest()
-
-        result = client(account.UpdatePasswordSettingsRequest(
-            current_password_hash=salt,
-            new_settings=PasswordInputSettings(
-                new_salt=salt,
-                new_password_hash=pw_hash,
-                hint=hint
-            )
-        ))
-
-Thanks to `Issue 259 <https://github.com/LonamiWebs/Telethon/issues/259>`_
-for the tip!
-
+        from telethon.errors import EmailUnconfirmedError
+        
+        # Sets 2FA password for first time:
+        client.edit_2fa(new_password='supersecurepassword')
+        
+        # Changes password:
+        client.edit_2fa(current_password='supersecurepassword', 
+                        new_password='changedmymind')
+        
+        # Clears current password (i.e. removes 2FA):
+        client.edit_2fa(current_password='changedmymind', new_password=None)
+        
+        # Sets new password with recovery email:
+        try:
+            client.edit_2fa(new_password='memes and dreams', 
+                            email='JohnSmith@example.com')
+            # Raises error (you need to check your email to complete 2FA setup.)
+        except EmailUnconfirmedError:
+            # You can put email checking code here if desired.
+            pass
+            
+        # Also take note that unless you remove 2FA or explicitly
+        # give email parameter again it will keep the last used setting
+        
+        # Set hint after already setting password:
+        client.edit_2fa(current_password='memes and dreams',
+                        new_password='memes and dreams',
+                        hint='It keeps you alive')
 
 __ https://github.com/Anorov/PySocks#installation
 __ https://github.com/Anorov/PySocks#usage-1

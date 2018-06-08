@@ -20,6 +20,19 @@ in response to certain methods, such as :tl:`GetUsersRequest`.
     or even entire :tl:`User`, :tl:`Chat` and :tl:`Channel` objects and even
     phone numbers from people you have in your contacts.
 
+    To "encounter" an ID, you would have to "find it" like you would in the
+    normal app. If the peer is in your dialogs, you would need to
+    `client.get_dialogs() <telethon.telegram_client.TelegramClient.get_dialogs>`.
+    If the peer is someone in a group, you would similarly
+    `client.get_participants(group) <telethon.telegram_client.TelegramClient.get_participants>`.
+
+    Once you have encountered an ID, the library will (by default) have saved
+    their ``access_hash`` for you, which is needed to invoke most methods.
+    This is why sometimes you might encounter this error when working with
+    the library. You should ``except ValueError`` and run code that you know
+    should work to find the entity.
+
+
 Getting entities
 ****************
 
@@ -32,7 +45,7 @@ you're able to just do this:
         # Dialogs are the "conversations you have open".
         # This method returns a list of Dialog, which
         # has the .entity attribute and other information.
-        dialogs = client.get_dialogs(limit=200)
+        dialogs = client.get_dialogs()
 
         # All of these work and do the same.
         lonami = client.get_entity('lonami')
@@ -44,25 +57,16 @@ you're able to just do this:
         contact = client.get_entity('+34xxxxxxxxx')
         friend  = client.get_entity(friend_id)
 
-        # Using Peer/InputPeer (note that the API may return these)
-        # users, chats and channels may all have the same ID, so it's
-        # necessary to wrap (at least) chat and channels inside Peer.
-        #
-        # NOTICE how the IDs *must* be wrapped inside a Peer() so the
-        # library knows their type.
+        # Getting entities through their ID (User, Chat or Channel)
+        entity = client.get_entity(some_id)
+
+        # You can be more explicit about the type for said ID by wrapping
+        # it inside a Peer instance. This is recommended but not necessary.
         from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+
         my_user    = client.get_entity(PeerUser(some_id))
         my_chat    = client.get_entity(PeerChat(some_id))
         my_channel = client.get_entity(PeerChannel(some_id))
-
-
-.. warning::
-
-    As it has been mentioned already, getting the entity of a channel
-    through e.g. ``client.get_entity(channel id)`` will **not** work.
-    You would use ``client.get_entity(types.PeerChannel(channel id))``.
-    Remember that supergroups are channels and normal groups are chats.
-    This is a common mistake!
 
 
 All methods in the :ref:`telegram-client` call ``.get_input_entity()`` prior
@@ -127,3 +131,21 @@ library, the raw requests you make to the API are also able to call
 The library will call the ``.resolve()`` method of the request, which will
 resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if
 you don't get this yet, but remember some of the details here are important.
+
+
+Full entities
+*************
+
+In addition to :tl:`PeerUser`, :tl:`InputPeerUser`, :tl:`User` (and its
+variants for chats and channels), there is also the concept of :tl:`UserFull`.
+
+This full variant has additional information such as whether the user is
+blocked, its notification settings, the bio or about of the user, etc.
+
+There is also :tl:`messages.ChatFull` which is the equivalent of full entities
+for chats and channels, with also the about section of the channel. Note that
+the ``users`` field only contains bots for the channel (so that clients can
+suggest commands to use).
+
+You can get both of these by invoking :tl:`GetFullUser`, :tl:`GetFullChat`
+and :tl:`GetFullChannel` respectively.

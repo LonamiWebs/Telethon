@@ -1,124 +1,75 @@
 #!/usr/bin/env python3
+import functools
 import os
 import re
-import sys
 import shutil
-try:
-    from .docs_writer import DocsWriter
-except (ImportError, SystemError):
-    from docs_writer import DocsWriter
+from collections import defaultdict
 
-# Small trick so importing telethon_generator works
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from telethon_generator.parser import TLParser, TLObject
+from ..docs_writer import DocsWriter
+from ..parsers import TLObject
+from ..utils import snake_to_camel_case
 
 
-# TLObject -> Python class name
-def get_class_name(tlobject):
-    """Gets the class name following the Python style guidelines"""
-    # Courtesy of http://stackoverflow.com/a/31531797/4759433
+CORE_TYPES = {
+    'int', 'long', 'int128', 'int256', 'double',
+    'vector', 'string', 'bool', 'true', 'bytes', 'date'
+}
+
+
+def _get_file_name(tlobject):
+    """``ClassName -> class_name.html``."""
     name = tlobject.name if isinstance(tlobject, TLObject) else tlobject
-    result = re.sub(r'_([a-z])', lambda m: m.group(1).upper(), name)
-
-    # Replace '_' with '' once again to make sure it doesn't appear on the name
-    result = result[:1].upper() + result[1:].replace('_', '')
-
-    # If it's a function, let it end with "Request" to identify them more easily
-    if isinstance(tlobject, TLObject) and tlobject.is_function:
-        result += 'Request'
-
-    return result
-
-
-# TLObject -> filename
-def get_file_name(tlobject, add_extension=False):
-    """Gets the file name in file_name_format.html for the given TLObject.
-       Only its name may also be given if the full TLObject is not available"""
-    if isinstance(tlobject, TLObject):
-        name = tlobject.name
-    else:
-        name = tlobject
-
     # Courtesy of http://stackoverflow.com/a/1176023/4759433
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     result = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-    if add_extension:
-        return result + '.html'
-    else:
-        return result
+    return '{}.html'.format(result)
 
 
-# TLObject -> from ... import ...
 def get_import_code(tlobject):
+    """``TLObject -> from ... import ...``."""
     kind = 'functions' if tlobject.is_function else 'types'
     ns = '.' + tlobject.namespace if tlobject.namespace else ''
-
     return 'from telethon.tl.{}{} import {}'\
-        .format(kind, ns, get_class_name(tlobject))
+        .format(kind, ns, tlobject.class_name)
 
 
-def get_create_path_for(tlobject):
-    """Gets the file path (and creates the parent directories)
-       for the given 'tlobject', relative to nothing; only its local path"""
-
-    # Determine the output directory
+def _get_create_path_for(root, tlobject, make=True):
+    """Creates and returns the path for the given TLObject at root."""
     out_dir = 'methods' if tlobject.is_function else 'constructors'
-
     if tlobject.namespace:
         out_dir = os.path.join(out_dir, tlobject.namespace)
 
-    # Ensure that it exists
-    os.makedirs(out_dir, exist_ok=True)
-
-    # Return the resulting filename
-    return os.path.join(out_dir, get_file_name(tlobject, add_extension=True))
-
-
-def is_core_type(type_):
-    """Returns "true" if the type is considered a core type"""
-    return type_.lower() in {
-        'int', 'long', 'int128', 'int256', 'double',
-        'vector', 'string', 'bool', 'true', 'bytes', 'date'
-    }
+    out_dir = os.path.join(root, out_dir)
+    if make:
+        os.makedirs(out_dir, exist_ok=True)
+    return os.path.join(out_dir, _get_file_name(tlobject))
 
 
-def get_path_for_type(type_, relative_to='.'):
-    """Similar to getting the path for a TLObject, it might not be possible
-       to have the TLObject itself but rather its name (the type);
-       this method works in the same way, returning a relative path"""
-    if is_core_type(type_):
+def _get_path_for_type(root, type_, relative_to='.'):
+    """Similar to `_get_create_path_for` but for only type names."""
+    if type_.lower() in CORE_TYPES:
         path = 'index.html#%s' % type_.lower()
-
     elif '.' in type_:
-        # If it's not a core type, then it has to be a custom Telegram type
         namespace, name = type_.split('.')
-        path = 'types/%s/%s' % (namespace, get_file_name(name, True))
+        path = 'types/%s/%s' % (namespace, _get_file_name(name))
     else:
-        path = 'types/%s' % get_file_name(type_, True)
+        path = 'types/%s' % _get_file_name(type_)
 
-    return get_relative_path(path, relative_to)
+    return _get_relative_path(os.path.join(root, path), relative_to)
 
 
-# Destination path from the current position -> relative to the given path
-def get_relative_path(destination, relative_to):
-    if os.path.isfile(relative_to):
+def _get_relative_path(destination, relative_to, folder=False):
+    """Return the relative path to destination from relative_to."""
+    if not folder:
         relative_to = os.path.dirname(relative_to)
 
     return os.path.relpath(destination, start=relative_to)
 
 
-def get_relative_paths(original, relative_to):
-    """Converts the dictionary of 'original' paths to relative paths
-       starting from the given 'relative_to' file"""
-    return {k: get_relative_path(v, relative_to) for k, v in original.items()}
-
-
-# Generate a index.html file for the given folder
-def find_title(html_file):
-    """Finds the <title> for the given HTML file, or (Unknown)"""
-    with open(html_file) as handle:
-        for line in handle:
+def _find_title(html_file):
+    """Finds the <title> for the given HTML file, or (Unknown)."""
+    with open(html_file) as fp:
+        for line in fp:
             if '<title>' in line:
                 # + 7 to skip len('<title>')
                 return line[line.index('<title>') + 7:line.index('</title>')]
@@ -126,10 +77,11 @@ def find_title(html_file):
     return '(Unknown)'
 
 
-def build_menu(docs, filename, relative_main_index):
+def _build_menu(docs, filename, root, relative_main_index):
     """Builds the menu using the given DocumentWriter up to 'filename',
        which must be a file (it cannot be a directory)"""
     # TODO Maybe this could be part of DocsWriter itself, "build path menu"
+    filename = _get_relative_path(filename, root)
     docs.add_menu('API', relative_main_index)
 
     items = filename.split('/')
@@ -144,9 +96,8 @@ def build_menu(docs, filename, relative_main_index):
     docs.end_menu()
 
 
-def generate_index(folder, original_paths):
+def _generate_index(folder, original_paths, root):
     """Generates the index file for the specified folder"""
-
     # Determine the namespaces listed here (as sub folders)
     # and the files (.html files) that we should link to
     namespaces = []
@@ -157,27 +108,30 @@ def generate_index(folder, original_paths):
         elif item != 'index.html':
             files.append(item)
 
-    # We work with relative paths
-    paths = get_relative_paths(original_paths, relative_to=folder)
+    paths = {k: _get_relative_path(v, folder, folder=True)
+             for k, v in original_paths.items()}
 
     # Now that everything is setup, write the index.html file
     filename = os.path.join(folder, 'index.html')
-    with DocsWriter(filename, type_to_path_function=get_path_for_type) as docs:
+    with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
-        docs.write_head(folder.title(), relative_css_path=paths['css'])
+        docs.write_head(folder.title(),
+                        relative_css_path=paths['css'],
+                        default_css=original_paths['default_css'])
 
         docs.set_menu_separator(paths['arrow'])
-        build_menu(docs, filename, relative_main_index=paths['index_all'])
+        _build_menu(docs, filename, root,
+                    relative_main_index=paths['index_all'])
 
-        docs.write_title(folder.title())
-
+        docs.write_title(_get_relative_path(folder, root, folder=True).title())
         if namespaces:
             docs.write_title('Namespaces', level=3)
             docs.begin_table(4)
             namespaces.sort()
             for namespace in namespaces:
                 # For every namespace, also write the index of it
-                generate_index(os.path.join(folder, namespace), original_paths)
+                _generate_index(os.path.join(folder, namespace),
+                                original_paths, root)
                 docs.add_row(namespace.title(),
                              link=os.path.join(namespace, 'index.html'))
 
@@ -186,7 +140,7 @@ def generate_index(folder, original_paths):
         docs.write_title('Available items')
         docs.begin_table(2)
 
-        files = [(f, find_title(os.path.join(folder, f))) for f in files]
+        files = [(f, _find_title(os.path.join(folder, f))) for f in files]
         files.sort(key=lambda t: t[1])
 
         for file, title in files:
@@ -196,8 +150,8 @@ def generate_index(folder, original_paths):
         docs.end_body()
 
 
-def get_description(arg):
-    """Generates a proper description for the given argument"""
+def _get_description(arg):
+    """Generates a proper description for the given argument."""
     desc = []
     otherwise = False
     if arg.can_be_inferred:
@@ -235,7 +189,7 @@ def get_description(arg):
     )
 
 
-def copy_replace(src, dst, replacements):
+def _copy_replace(src, dst, replacements):
     """Copies the src file into dst applying the replacements dict"""
     with open(src) as infile, open(dst, 'w') as outfile:
         outfile.write(re.sub(
@@ -245,12 +199,17 @@ def copy_replace(src, dst, replacements):
         ))
 
 
-def generate_documentation(scheme_file):
-    """Generates the documentation HTML files from from scheme.tl to
-       /methods and /constructors, etc.
+def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     """
+    Generates the documentation HTML files from from ``scheme.tl``
+    to ``/methods`` and ``/constructors``, etc.
+    """
+    # Save 'Type: [Constructors]' for use in both:
+    # * Seeing the return type or constructors belonging to the same type.
+    # * Generating the types documentation, showing available constructors.
+    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
     original_paths = {
-        'css': 'css/docs.css',
+        'css': 'css',
         'arrow': 'img/arrow.svg',
         'search.js': 'js/search.js',
         '404': '404.html',
@@ -259,46 +218,57 @@ def generate_documentation(scheme_file):
         'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
     }
-    tlobjects = tuple(TLParser.parse_file(scheme_file))
+    original_paths = {k: os.path.join(output_dir, v)
+                      for k, v in original_paths.items()}
 
-    print('Generating constructors and functions documentation...')
-
-    # Save 'Type: [Constructors]' for use in both:
-    # * Seeing the return type or constructors belonging to the same type.
-    # * Generating the types documentation, showing available constructors.
-    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
-    tltypes = {}
-    tlfunctions = {}
+    original_paths['default_css'] = 'light'  # docs.<name>.css, local path
+    type_to_constructors = {}
+    type_to_functions = {}
     for tlobject in tlobjects:
-        # Select to which dictionary we want to store this type
-        dictionary = tlfunctions if tlobject.is_function else tltypes
-
-        if tlobject.result in dictionary:
-            dictionary[tlobject.result].append(tlobject)
+        d = type_to_functions if tlobject.is_function else type_to_constructors
+        if tlobject.result in d:
+            d[tlobject.result].append(tlobject)
         else:
-            dictionary[tlobject.result] = [tlobject]
+            d[tlobject.result] = [tlobject]
 
-    for tltype, constructors in tltypes.items():
-        tltypes[tltype] = list(sorted(constructors, key=lambda c: c.name))
+    for t, cs in type_to_constructors.items():
+        type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
+
+    # Telegram may send errors with the same str_code but different int_code.
+    # They are all imported on telethon.errors anyway so makes no difference.
+    errors = list(sorted({e.str_code: e for e in errors}.values(),
+                         key=lambda e: e.name))
+
+    method_causes_errors = defaultdict(list)
+    for error in errors:
+        for method in error.caused_by:
+            method_causes_errors[method].append(error)
+
+    # Since the output directory is needed everywhere partially apply it now
+    create_path_for = functools.partial(_get_create_path_for, output_dir)
+    path_for_type = functools.partial(_get_path_for_type, output_dir)
 
     for tlobject in tlobjects:
-        filename = get_create_path_for(tlobject)
+        filename = create_path_for(tlobject)
+        paths = {k: _get_relative_path(v, filename)
+                 for k, v in original_paths.items()}
 
-        # Determine the relative paths for this file
-        paths = get_relative_paths(original_paths, relative_to=filename)
-
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
-                as docs:
-            docs.write_head(
-                title=get_class_name(tlobject),
-                relative_css_path=paths['css'])
+        with DocsWriter(filename, type_to_path=path_for_type) as docs:
+            docs.write_head(title=tlobject.class_name,
+                            relative_css_path=paths['css'],
+                            default_css=original_paths['default_css'])
 
             # Create the menu (path to the current TLObject)
             docs.set_menu_separator(paths['arrow'])
-            build_menu(docs, filename, relative_main_index=paths['index_all'])
+            _build_menu(docs, filename, output_dir,
+                        relative_main_index=paths['index_all'])
 
             # Create the page title
-            docs.write_title(get_class_name(tlobject))
+            docs.write_title(tlobject.class_name)
+
+            if tlobject.is_function:
+                docs.write_text('Bots <strong>can{}</strong> use this method.'
+                                .format("" if tlobject.bot_usable else "'t"))
 
             # Write the code definition for this TLObject
             docs.write_code(tlobject)
@@ -328,24 +298,24 @@ def generate_documentation(scheme_file):
                     inner = tlobject.result
 
                 docs.begin_table(column_count=1)
-                docs.add_row(inner, link=get_path_for_type(
+                docs.add_row(inner, link=path_for_type(
                     inner, relative_to=filename
                 ))
                 docs.end_table()
 
-                constructors = tltypes.get(inner, [])
-                if not constructors:
+                cs = type_to_constructors.get(inner, [])
+                if not cs:
                     docs.write_text('This type has no instances available.')
-                elif len(constructors) == 1:
+                elif len(cs) == 1:
                     docs.write_text('This type can only be an instance of:')
                 else:
                     docs.write_text('This type can be an instance of either:')
 
                 docs.begin_table(column_count=2)
-                for constructor in constructors:
-                    link = get_create_path_for(constructor)
-                    link = get_relative_path(link, relative_to=filename)
-                    docs.add_row(get_class_name(constructor), link=link)
+                for constructor in cs:
+                    link = create_path_for(constructor)
+                    link = _get_relative_path(link, relative_to=filename)
+                    docs.add_row(constructor.class_name, link=link)
                 docs.end_table()
 
             # Return (or similar types) written. Now parameters/members
@@ -375,11 +345,11 @@ def generate_documentation(scheme_file):
                     else:
                         docs.add_row(
                             arg.type, align='center', link=
-                            get_path_for_type(arg.type, relative_to=filename)
+                            path_for_type(arg.type, relative_to=filename)
                          )
 
                     # Add a description for this argument
-                    docs.add_row(get_description(arg))
+                    docs.add_row(_get_description(arg))
 
                 docs.end_table()
             else:
@@ -387,6 +357,25 @@ def generate_documentation(scheme_file):
                     docs.write_text('This request takes no input parameters.')
                 else:
                     docs.write_text('This type has no members.')
+
+            if tlobject.is_function:
+                docs.write_title('Known RPC errors')
+                errors = method_causes_errors[tlobject.fullname]
+                if not errors:
+                    docs.write_text("This request can't cause any RPC error "
+                                    "as far as we know.")
+                else:
+                    docs.write_text(
+                        'This request can cause {} known error{}:'.format(
+                            len(errors), '' if len(errors) == 1 else 's'
+                    ))
+                    docs.begin_table(column_count=2)
+                    for error in errors:
+                        docs.add_row('<code>{}</code>'.format(error.name))
+                        docs.add_row('{}.'.format(error.description))
+                    docs.end_table()
+                    docs.write_text('You can import these from '
+                                    '<code>telethon.errors</code>.')
 
             # TODO Bit hacky, make everything like this? (prepending '../')
             depth = '../' * (2 if tlobject.namespace else 1)
@@ -396,55 +385,54 @@ def generate_documentation(scheme_file):
 
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
-    print('Generating types documentation...')
-    for tltype, constructors in tltypes.items():
-        filename = get_path_for_type(tltype)
+    for t, cs in type_to_constructors.items():
+        filename = path_for_type(t)
         out_dir = os.path.dirname(filename)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
 
         # Since we don't have access to the full TLObject, split the type
-        if '.' in tltype:
-            namespace, name = tltype.split('.')
+        if '.' in t:
+            namespace, name = t.split('.')
         else:
-            namespace, name = None, tltype
+            namespace, name = None, t
 
-        # Determine the relative paths for this file
-        paths = get_relative_paths(original_paths, relative_to=out_dir)
+        paths = {k: _get_relative_path(v, out_dir, folder=True)
+                 for k, v in original_paths.items()}
 
-        with DocsWriter(filename, type_to_path_function=get_path_for_type) \
-                as docs:
-            docs.write_head(
-                title=get_class_name(name),
-                relative_css_path=paths['css'])
+        with DocsWriter(filename, type_to_path=path_for_type) as docs:
+            docs.write_head(title=snake_to_camel_case(name),
+                            relative_css_path=paths['css'],
+                            default_css=original_paths['default_css'])
 
             docs.set_menu_separator(paths['arrow'])
-            build_menu(docs, filename, relative_main_index=paths['index_all'])
+            _build_menu(docs, filename, output_dir,
+                        relative_main_index=paths['index_all'])
 
             # Main file title
-            docs.write_title(get_class_name(name))
+            docs.write_title(snake_to_camel_case(name))
 
             # List available constructors for this type
             docs.write_title('Available constructors', level=3)
-            if not constructors:
+            if not cs:
                 docs.write_text('This type has no constructors available.')
-            elif len(constructors) == 1:
+            elif len(cs) == 1:
                 docs.write_text('This type has one constructor available.')
             else:
                 docs.write_text('This type has %d constructors available.' %
-                                len(constructors))
+                                len(cs))
 
             docs.begin_table(2)
-            for constructor in constructors:
+            for constructor in cs:
                 # Constructor full name
-                link = get_create_path_for(constructor)
-                link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(constructor), link=link)
+                link = create_path_for(constructor)
+                link = _get_relative_path(link, relative_to=filename)
+                docs.add_row(constructor.class_name, link=link)
             docs.end_table()
 
             # List all the methods which return this type
             docs.write_title('Methods returning this type', level=3)
-            functions = tlfunctions.get(tltype, [])
+            functions = type_to_functions.get(t, [])
             if not functions:
                 docs.write_text('No method returns this type.')
             elif len(functions) == 1:
@@ -457,17 +445,17 @@ def generate_documentation(scheme_file):
 
             docs.begin_table(2)
             for func in functions:
-                link = get_create_path_for(func)
-                link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(func), link=link)
+                link = create_path_for(func)
+                link = _get_relative_path(link, relative_to=filename)
+                docs.add_row(func.class_name, link=link)
             docs.end_table()
 
             # List all the methods which take this type as input
             docs.write_title('Methods accepting this type as input', level=3)
             other_methods = sorted(
-                (t for t in tlobjects
-                 if any(tltype == a.type for a in t.args) and t.is_function),
-                key=lambda t: t.name
+                (u for u in tlobjects
+                 if any(a.type == t for a in u.args) and u.is_function),
+                key=lambda u: u.name
             )
             if not other_methods:
                 docs.write_text(
@@ -482,18 +470,17 @@ def generate_documentation(scheme_file):
 
             docs.begin_table(2)
             for ot in other_methods:
-                link = get_create_path_for(ot)
-                link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(ot), link=link)
+                link = create_path_for(ot)
+                link = _get_relative_path(link, relative_to=filename)
+                docs.add_row(ot.class_name, link=link)
             docs.end_table()
 
             # List every other type which has this type as a member
             docs.write_title('Other types containing this type', level=3)
             other_types = sorted(
-                (t for t in tlobjects
-                 if any(tltype == a.type for a in t.args)
-                 and not t.is_function
-                 ), key=lambda t: t.name
+                (u for u in tlobjects
+                 if any(a.type == t for a in u.args) and not u.is_function),
+                key=lambda u: u.name
             )
 
             if not other_types:
@@ -509,9 +496,9 @@ def generate_documentation(scheme_file):
 
             docs.begin_table(2)
             for ot in other_types:
-                link = get_create_path_for(ot)
-                link = get_relative_path(link, relative_to=filename)
-                docs.add_row(get_class_name(ot), link=link)
+                link = create_path_for(ot)
+                link = _get_relative_path(link, relative_to=filename)
+                docs.add_row(ot.class_name, link=link)
             docs.end_table()
             docs.end_body()
 
@@ -519,22 +506,21 @@ def generate_documentation(scheme_file):
     # This will be done automatically and not taking into account any extra
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
-    print('Generating indices...')
     for folder in ['types', 'methods', 'constructors']:
-        generate_index(folder, original_paths)
+        _generate_index(os.path.join(output_dir, folder), original_paths,
+                        output_dir)
 
     # Write the final core index, the main index for the rest of files
-    layer = TLParser.find_layer(scheme_file)
     types = set()
     methods = []
-    constructors = []
+    cs = []
     for tlobject in tlobjects:
         if tlobject.is_function:
             methods.append(tlobject)
         else:
-            constructors.append(tlobject)
+            cs.append(tlobject)
 
-        if not is_core_type(tlobject.result):
+        if not tlobject.result.lower() in CORE_TYPES:
             if re.search('^vector<', tlobject.result, re.IGNORECASE):
                 types.add(tlobject.result.split('<')[1].strip('>'))
             else:
@@ -542,41 +528,47 @@ def generate_documentation(scheme_file):
 
     types = sorted(types)
     methods = sorted(methods, key=lambda m: m.name)
-    constructors = sorted(constructors, key=lambda c: c.name)
+    cs = sorted(cs, key=lambda c: c.name)
 
-    def fmt(xs):
-        ys = {x: get_class_name(x) for x in xs}  # cache TLObject: display
-        zs = {}  # create a dict to hold those which have duplicated keys
-        for y in ys.values():
-            zs[y] = y in zs
-        return ', '.join(
-            '"{}.{}"'.format(x.namespace, ys[x])
-            if zs[ys[x]] and getattr(x, 'namespace', None)
-            else '"{}"'.format(ys[x]) for x in xs
-        )
-
-    request_names = fmt(methods)
-    type_names = fmt(types)
-    constructor_names = fmt(constructors)
-
-    def fmt(xs, formatter):
-        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
-
-    request_urls = fmt(methods, get_create_path_for)
-    type_urls = fmt(types, get_path_for_type)
-    constructor_urls = fmt(constructors, get_create_path_for)
-
-    shutil.copy('../res/404.html', original_paths['404'])
-    copy_replace('../res/core.html', original_paths['index_all'], {
+    shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
+    _copy_replace(os.path.join(input_res, 'core.html'),
+                  original_paths['index_all'], {
         '{type_count}': len(types),
         '{method_count}': len(methods),
         '{constructor_count}': len(tlobjects) - len(methods),
         '{layer}': layer,
     })
+
+    def fmt(xs):
+        zs = {}  # create a dict to hold those which have duplicated keys
+        for x in xs:
+            zs[x.class_name] = x.class_name in zs
+        return ', '.join(
+            '"{}.{}"'.format(x.namespace, x.class_name)
+            if zs[x.class_name] and x.namespace
+            else '"{}"'.format(x.class_name) for x in xs
+        )
+
+    request_names = fmt(methods)
+    constructor_names = fmt(cs)
+
+    def fmt(xs, formatter):
+        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
+
+    type_names = fmt(types, formatter=lambda x: x)
+
+    # Local URLs shouldn't rely on the output's root, so set empty root
+    create_path_for = functools.partial(_get_create_path_for, '', make=False)
+    path_for_type = functools.partial(_get_path_for_type, '')
+    request_urls = fmt(methods, create_path_for)
+    type_urls = fmt(types, path_for_type)
+    constructor_urls = fmt(cs, create_path_for)
+
     os.makedirs(os.path.abspath(os.path.join(
         original_paths['search.js'], os.path.pardir
     )), exist_ok=True)
-    copy_replace('../res/js/search.js', original_paths['search.js'], {
+    _copy_replace(os.path.join(input_res, 'js', 'search.js'),
+                  original_paths['search.js'], {
         '{request_names}': request_names,
         '{type_names}': type_names,
         '{constructor_names}': constructor_names,
@@ -585,23 +577,17 @@ def generate_documentation(scheme_file):
         '{constructor_urls}': constructor_urls
     })
 
-    # Everything done
-    print('Documentation generated.')
+
+def _copy_resources(res_dir, out_dir):
+    for dirname, files in [('css', ['docs.light.css', 'docs.dark.css']),
+                           ('img', ['arrow.svg'])]:
+        dirpath = os.path.join(out_dir, dirname)
+        os.makedirs(dirpath, exist_ok=True)
+        for file in files:
+            shutil.copy(os.path.join(res_dir, dirname, file), dirpath)
 
 
-def copy_resources():
-    for d in ('css', 'img'):
-        os.makedirs(d, exist_ok=True)
-
-    shutil.copy('../res/img/arrow.svg', 'img')
-    shutil.copy('../res/css/docs.css', 'css')
-
-
-if __name__ == '__main__':
-    os.makedirs('generated', exist_ok=True)
-    os.chdir('generated')
-    try:
-        generate_documentation('../../telethon_generator/scheme.tl')
-        copy_resources()
-    finally:
-        os.chdir(os.pardir)
+def generate_docs(tlobjects, errors, layer, input_res, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+    _write_html_pages(tlobjects, errors, layer, input_res, output_dir)
+    _copy_resources(input_res, output_dir)

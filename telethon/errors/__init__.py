@@ -12,6 +12,7 @@ from .common import (
 )
 
 # This imports the base errors too, as they're imported there
+from .rpc_base_errors import *
 from .rpc_error_list import *
 
 
@@ -77,6 +78,9 @@ def rpc_message_to_error(code, message, report_method=None):
 
     if code == 404:
         return NotFoundError(message)
+
+    if code == 406:
+        return AuthKeyError(message)
 
     if code == 500:
         return ServerError(message)

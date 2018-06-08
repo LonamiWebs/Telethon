@@ -6,18 +6,18 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 
 Extra supported commands are:
-* gen_tl, to generate the classes required for Telethon to run
-* clean_tl, to clean these generated classes
+* gen, to generate the classes required for Telethon to run or docs
 * pypi, to generate sdist, bdist_wheel, and push to PyPi
 """
 
-# To use a consistent encoding
-from codecs import open
-from sys import argv, version_info
+import itertools
+import json
 import os
 import re
+import shutil
+from codecs import open
+from sys import argv, version_info
 
-# Always prefer setuptools over distutils
 from setuptools import find_packages, setup
 
 
@@ -37,44 +37,93 @@ class TempWorkDir:
         os.chdir(self.original)
 
 
-ERROR_LIST = 'telethon/errors/rpc_error_list.py'
-ERRORS_JSON = 'telethon_generator/errors.json'
-ERRORS_DESC = 'telethon_generator/error_descriptions'
-SCHEME_TL = 'telethon_generator/scheme.tl'
-GENERATOR_DIR = 'telethon/tl'
+GENERATOR_DIR = 'telethon_generator'
+LIBRARY_DIR = 'telethon'
+
+ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
+ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
+ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpc_error_list.py')
+
+INVALID_BM_IN = os.path.join(GENERATOR_DIR, 'data', 'invalid_bot_methods.json')
+
+TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
+TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
+TLOBJECT_OUT = os.path.join(LIBRARY_DIR, 'tl')
 IMPORT_DEPTH = 2
 
+DOCS_IN_RES = os.path.join(GENERATOR_DIR, 'data', 'html')
+DOCS_OUT = 'docs'
 
-def gen_tl(force=True):
-    from telethon_generator.tl_generator import TLGenerator
-    from telethon_generator.error_generator import generate_code
-    generator = TLGenerator(GENERATOR_DIR)
-    if generator.tlobjects_exist():
-        if not force:
-            return
-        print('Detected previous TLObjects. Cleaning...')
-        generator.clean_tlobjects()
 
-    print('Generating TLObjects...')
-    generator.generate_tlobjects(SCHEME_TL, import_depth=IMPORT_DEPTH)
-    print('Generating errors...')
-    generate_code(ERROR_LIST, json_file=ERRORS_JSON, errors_desc=ERRORS_DESC)
-    print('Done.')
+def generate(which):
+    from telethon_generator.parsers import parse_errors, parse_tl, find_layer
+    from telethon_generator.generators import\
+        generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
+
+    with open(INVALID_BM_IN) as f:
+        ib = set(json.load(f))
+
+    layer = find_layer(TLOBJECT_IN_TL)
+    errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
+    tlobjects = list(itertools.chain(
+        parse_tl(TLOBJECT_IN_CORE_TL, layer=layer, invalid_bot_methods=ib),
+        parse_tl(TLOBJECT_IN_TL, layer=layer, invalid_bot_methods=ib)))
+
+    if not which:
+        which.extend(('tl', 'errors'))
+
+    clean = 'clean' in which
+    action = 'Cleaning' if clean else 'Generating'
+    if clean:
+        which.remove('clean')
+
+    if 'all' in which:
+        which.remove('all')
+        for x in ('tl', 'errors', 'docs'):
+            if x not in which:
+                which.append(x)
+
+    if 'tl' in which:
+        which.remove('tl')
+        print(action, 'TLObjects...')
+        if clean:
+            clean_tlobjects(TLOBJECT_OUT)
+        else:
+            generate_tlobjects(tlobjects, layer, IMPORT_DEPTH, TLOBJECT_OUT)
+
+    if 'errors' in which:
+        which.remove('errors')
+        print(action, 'RPCErrors...')
+        if clean:
+            if os.path.isfile(ERRORS_OUT):
+                os.remove(ERRORS_OUT)
+        else:
+            with open(ERRORS_OUT, 'w', encoding='utf-8') as file:
+                generate_errors(errors, file)
+
+    if 'docs' in which:
+        which.remove('docs')
+        print(action, 'documentation...')
+        if clean:
+            if os.path.isdir(DOCS_OUT):
+                shutil.rmtree(DOCS_OUT)
+        else:
+            generate_docs(tlobjects, errors, layer, DOCS_IN_RES, DOCS_OUT)
+
+    if which:
+        print('The following items were not understood:', which)
+        print('  Consider using only "tl", "errors" and/or "docs".')
+        print('  Using only "clean" will clean them. "all" to act on all.')
+        print('  For instance "gen tl errors".')
 
 
 def main():
-    if len(argv) >= 2 and argv[1] == 'gen_tl':
-        gen_tl()
-
-    elif len(argv) >= 2 and argv[1] == 'clean_tl':
-        from telethon_generator.tl_generator import TLGenerator
-        print('Cleaning...')
-        TLGenerator(GENERATOR_DIR).clean_tlobjects()
-        print('Done.')
+    if len(argv) >= 2 and argv[1] == 'gen':
+        generate(argv[2:])
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
         # (Re)generate the code to make sure we don't push without it
-        gen_tl()
+        generate(['tl', 'errors'])
 
         # Try importing the telethon module to assert it has no errors
         try:
@@ -96,14 +145,10 @@ def main():
         for x in ('build', 'dist', 'Telethon.egg-info'):
             rmtree(x, ignore_errors=True)
 
-    elif len(argv) >= 2 and argv[1] == 'fetch_errors':
-        from telethon_generator.error_generator import fetch_errors
-        fetch_errors(ERRORS_JSON)
-
     else:
-        # Call gen_tl() if the scheme.tl file exists, e.g. install from GitHub
-        if os.path.isfile(SCHEME_TL):
-            gen_tl(force=False)
+        # e.g. install from GitHub
+        if os.path.isdir(GENERATOR_DIR):
+            generate(['tl', 'errors'])
 
         # Get the long description from the README file
         with open('README.rst', encoding='utf-8') as f:
@@ -126,6 +171,11 @@ def main():
 
             license='MIT',
 
+            # See https://stackoverflow.com/a/40300957/4759433
+            # -> https://www.python.org/dev/peps/pep-0345/#requires-python
+            # -> http://setuptools.readthedocs.io/en/latest/setuptools.html
+            python_requires='>=3.4',
+
             # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
             classifiers=[
                 #   3 - Alpha
@@ -139,7 +189,6 @@ def main():
                 'License :: OSI Approved :: MIT License',
 
                 'Programming Language :: Python :: 3',
-                'Programming Language :: Python :: 3.3',
                 'Programming Language :: Python :: 3.4',
                 'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: 3.6'

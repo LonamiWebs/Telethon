@@ -2,11 +2,10 @@
 This module contains the class used to communicate with Telegram's servers
 encrypting every packet, and relies on a valid AuthKey in the used Session.
 """
-import gzip
 import logging
 from threading import Lock
 
-from .. import helpers as utils
+from .. import helpers, utils
 from ..errors import (
     BadMessageError, InvalidChecksumError, BrokenAuthKeyError,
     rpc_message_to_error
@@ -14,6 +13,7 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
+from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
@@ -57,6 +57,12 @@ class MtProtoSender:
         # Multithreading
         self._send_lock = Lock()
 
+        # If  we're  invoking something from an  update thread  but we're also
+        # receiving other request from the main thread (e.g. an update arrives
+        # and we need to process it)  we must  ensure that only one is calling
+        # receive at a given moment, since the receive step is fragile.
+        self._recv_lock = Lock()
+
     def connect(self):
         """Connects to the server."""
         self.connection.connect(self.session.server_address, self.session.port)
@@ -73,20 +79,32 @@ class MtProtoSender:
         """Disconnects from the server."""
         __log__.info('Disconnecting MtProtoSender...')
         self.connection.close()
-        self._need_confirmation.clear()
         self._clear_all_pending()
 
     # region Send and receive
 
-    def send(self, *requests):
+    def send(self, requests, ordered=False):
         """
         Sends the specified TLObject(s) (which must be requests),
         and acknowledging any message which needed confirmation.
 
         :param requests: the requests to be sent.
+        :param ordered: whether the requests should be invoked in the
+                        order in which they appear or they can be executed
+                        in arbitrary order in the server.
         """
-        # Finally send our packed request(s)
-        messages = [TLMessage(self.session, r) for r in requests]
+        if not utils.is_list_like(requests):
+            requests = (requests,)
+
+        if ordered:
+            requests = iter(requests)
+            messages = [TLMessage(self.session, next(requests))]
+            for r in requests:
+                messages.append(TLMessage(self.session, r,
+                                          after_id=messages[-1].msg_id))
+        else:
+            messages = [TLMessage(self.session, r) for r in requests]
+
         self._pending_receive.update({m.msg_id: m for m in messages})
 
         __log__.debug('Sending requests with IDs: %s', ', '.join(
@@ -132,8 +150,17 @@ class MtProtoSender:
             the UpdateState that will process all the received
             Update and Updates objects.
         """
+        if self._recv_lock.locked():
+            with self._recv_lock:
+                # Don't busy wait, acquire it but return because there's
+                # already a receive running and we don't want another one.
+                # It would lock until Telegram sent another update even if
+                # the current receive already received the expected response.
+                return
+
         try:
-            body = self.connection.recv()
+            with self._recv_lock:
+                body = self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
@@ -163,7 +190,7 @@ class MtProtoSender:
         :param message: the TLMessage to be sent.
         """
         with self._send_lock:
-            self.connection.send(utils.pack_message(self.session, message))
+            self.connection.send(helpers.pack_message(self.session, message))
 
     def _decode_msg(self, body):
         """
@@ -179,7 +206,7 @@ class MtProtoSender:
                 raise BufferError("Can't decode packet ({})".format(body))
 
         with BinaryReader(body) as reader:
-            return utils.unpack_message(self.session, reader)
+            return helpers.unpack_message(self.session, reader)
 
     def _process_msg(self, msg_id, sequence, reader, state):
         """
@@ -476,11 +503,13 @@ class MtProtoSender:
         reader.read_int(signed=False)  # code
         request_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
+        reader.seek(-4)
 
         __log__.debug('Received response for request with ID %d', request_id)
         request = self._pop_request(request_id)
 
         if inner_code == 0x2144ca19:  # RPC Error
+            reader.seek(4)
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
                     reader.read_int(), reader.tgread_string(),
@@ -505,12 +534,10 @@ class MtProtoSender:
             return True  # All contents were read okay
 
         elif request:
-            if inner_code == 0x3072cfa1:  # GZip packed
-                unpacked_data = gzip.decompress(reader.tgread_bytes())
-                with BinaryReader(unpacked_data) as compressed_reader:
+            if inner_code == GzipPacked.CONSTRUCTOR_ID:
+                with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
                     request.on_response(compressed_reader)
             else:
-                reader.seek(-4)
                 request.on_response(reader)
 
             self.session.process_entities(request.result)
@@ -525,10 +552,17 @@ class MtProtoSender:
         # session, it will be skipped by the handle_container().
         # For some reason this also seems to happen when downloading
         # photos, where the server responds with FileJpeg().
-        try:
-            obj = reader.tgread_object()
-        except Exception as e:
-            obj = '(failed to read: %s)' % e
+        def _try_read(r):
+            try:
+                return r.tgread_object()
+            except Exception as e:
+                return '(failed to read: {})'.format(e)
+
+        if inner_code == GzipPacked.CONSTRUCTOR_ID:
+            with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
+                obj = _try_read(compressed_reader)
+        else:
+            obj = _try_read(reader)
 
         __log__.warning(
             'Lost request (ID %d) with code %s will be skipped, contents: %s',

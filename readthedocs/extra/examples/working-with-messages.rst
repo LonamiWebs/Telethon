@@ -11,18 +11,30 @@ Working with messages
 Forwarding messages
 *******************
 
-Note that ForwardMessageRequest_ (note it's Message, singular) will *not*
-work if channels are involved. This is because channel (and megagroups) IDs
-are not unique, so you also need to know who the sender is (a parameter this
-request doesn't have).
+.. note::
 
-Either way, you are encouraged to use ForwardMessagesRequest_ (note it's
-Message*s*, plural) *always*, since it is more powerful, as follows:
+    Use the `telethon.telegram_client.TelegramClient.forward_messages`
+    friendly method instead unless you have a better reason not to!
 
-    .. code-block:: python
+    This method automatically accepts either a single message or many of them.
 
+.. code-block:: python
+
+        # If you only have the message IDs
+        client.forward_messages(
+            entity,  # to which entity you are forwarding the messages
+            message_ids,  # the IDs of the messages (or message) to forward
+            from_entity  # who sent the messages?
+        )
+
+        # If you have ``Message`` objects
+        client.forward_messages(
+            entity,  # to which entity you are forwarding the messages
+            messages  # the messages (or message) to forward
+        )
+
+        # You can also do it manually if you prefer
         from telethon.tl.functions.messages import ForwardMessagesRequest
-        #                                             note the s ^
 
         messages = foo()  # retrieve a few messages (or even one, in a list)
         from_entity = bar()
@@ -42,7 +54,15 @@ too, if that's all you have.
 Searching Messages
 *******************
 
-Messages are searched through the obvious SearchRequest_, but you may run
+.. note::
+
+    Use the `telethon.telegram_client.TelegramClient.iter_messages`
+    friendly method instead unless you have a better reason not to!
+
+    This method has ``search`` and ``filter`` parameters that will
+    suit your needs.
+
+Messages are searched through the obvious :tl:`SearchRequest`, but you may run
 into issues_. A valid example would be:
 
     .. code-block:: python
@@ -62,11 +82,12 @@ into issues_. A valid example would be:
             limit=10,       # How many results
             max_id=0,       # Maximum message ID
             min_id=0,       # Minimum message ID
-            from_id=None    # Who must have sent the message (peer)
+            from_id=None,   # Who must have sent the message (peer)
+            hash=0          # Special number to return nothing on no-change
         ))
 
 It's important to note that the optional parameter ``from_id`` could have
-been omitted (defaulting to ``None``). Changing it to InputUserEmpty_, as one
+been omitted (defaulting to ``None``). Changing it to :tl:`InputUserEmpty`, as one
 could think to specify "no user", won't work because this parameter is a flag,
 and it being unspecified has a different meaning.
 
@@ -119,8 +140,4 @@ send yourself the very first sticker you have:
         ))
 
 
-.. _ForwardMessageRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_message.html
-.. _ForwardMessagesRequest: https://lonamiwebs.github.io/Telethon/methods/messages/forward_messages.html
-.. _SearchRequest: https://lonamiwebs.github.io/Telethon/methods/messages/search.html
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215
-.. _InputUserEmpty: https://lonamiwebs.github.io/Telethon/constructors/input_user_empty.html

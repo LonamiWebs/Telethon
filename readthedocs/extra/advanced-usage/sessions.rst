@@ -7,7 +7,15 @@ Session Files
 The first parameter you pass to the constructor of the ``TelegramClient`` is
 the ``session``, and defaults to be the session name (or full path). That is,
 if you create a ``TelegramClient('anon')`` instance and connect, an
-``anon.session`` file will be created on the working directory.
+``anon.session`` file will be created in the working directory.
+
+Note that if you pass a string it will be a file in the current working
+directory, although you can also pass absolute paths.
+
+The session file contains enough information for you to login without
+re-sending the code, so if you have to enter the code more than once,
+maybe you're changing the working directory, renaming or removing the
+file, or using random names.
 
 These database files using ``sqlite3`` contain the required information to
 talk to the Telegram servers, such as to which IP the client should connect,

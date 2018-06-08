@@ -14,6 +14,242 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Custom Message class (v0.19.1)
+==============================
+
+*Published at 2018/06/03*
+
++-----------------------+
+| Scheme layer used: 80 |
++-----------------------+
+
+
+This update brings a new `telethon.tl.custom.message.Message` object!
+
+All the methods in the `telethon.telegram_client.TelegramClient` that
+used to return a :tl:`Message` will now return this object instead, which
+means you can do things like the following:
+
+.. code-block:: python
+
+    msg = client.send_message(chat, 'Hello!')
+    msg.edit('Hello there!')
+    msg.reply('Good day!')
+    print(msg.sender)
+
+Refer to its documentation to see all you can do, again, click
+`telethon.tl.custom.message.Message` to go to its page.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- The `telethon.network.connection.common.Connection` class is now an ABC,
+  and the old ``ConnectionMode`` is now gone. Use a specific connection (like
+  `telethon.network.connection.tcpabridged.ConnectionTcpAbridged`) instead.
+
+Additions
+~~~~~~~~~
+
+- You can get messages by their ID with
+  `telethon.telegram_client.TelegramClient.get_messages`'s ``ids`` parameter:
+
+  .. code-block:: python
+
+      message = client.get_messages(chats, ids=123)  # Single message
+      message_list = client.get_messages(chats, ids=[777, 778])  # Multiple
+
+- More convenience properties for `telethon.tl.custom.dialog.Dialog`.
+- New default `telethon.telegram_client.TelegramClient.parse_mode`.
+- You can edit the media of messages that already have some media.
+- New dark theme in the online ``tl`` reference, check it out at
+  https://lonamiwebs.github.io/Telethon/.
+
+Bug fixes
+~~~~~~~~~
+
+- Some IDs start with ``1000`` and these would be wrongly treated as channels.
+- Some short usernames like ``@vote`` were being ignored.
+- `telethon.telegram_client.TelegramClient.iter_messages`'s ``from_user``
+  was failing if no filter had been set.
+- `telethon.telegram_client.TelegramClient.iter_messages`'s ``min_id/max_id``
+  was being ignored by Telegram. This is now worked around.
+- `telethon.telegram_client.TelegramClient.catch_up` would fail with empty
+  states.
+- `telethon.events.newmessage.NewMessage` supports ``incoming=False``
+  to indicate ``outgoing=True``.
+
+Enhancements
+~~~~~~~~~~~~
+
+- You can now send multiple requests at once while preserving the order:
+
+  .. code-block:: python
+
+      from telethon.tl.functions.messages import SendMessageRequest
+      client([SendMessageRequest(chat, 'Hello 1!'),
+              SendMessageRequest(chat, 'Hello 2!')], ordered=True)
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- ``without rowid`` is not used in SQLite anymore.
+- Unboxed serialization would fail.
+- Different default limit for ``iter_messages`` and ``get_messages``.
+- Some clean-up in the ``telethon_generator/`` package.
+
+
+Catching up on Updates (v0.19)
+==============================
+
+*Published at 2018/05/07*
+
++-----------------------+
+| Scheme layer used: 76 |
++-----------------------+
+
+This update prepares the library for catching up with updates with the new
+`telethon.telegram_client.TelegramClient.catch_up` method. This feature needs
+more testing, but for now it will let you "catch up" on some old updates that
+occurred while the library was offline, and brings some new features and bug
+fixes.
+
+
+Additions
+~~~~~~~~~
+
+- Add ``search``, ``filter`` and ``from_user`` parameters to
+  `telethon.telegram_client.TelegramClient.iter_messages`.
+- `telethon.telegram_client.TelegramClient.download_file` now
+  supports a ``None`` path to return the file in memory and
+  return its ``bytes``.
+- Events now have a ``.original_update`` field.
+
+Bug fixes
+~~~~~~~~~
+
+- Fixed a race condition when receiving items from the network.
+- A disconnection is made when "retries reached 0". This hasn't been
+  tested but it might fix the bug.
+- ``reply_to`` would not override :tl:`Message` object's reply value.
+- Add missing caption when sending :tl:`Message` with media.
+
+Enhancements
+~~~~~~~~~~~~
+
+- Retry automatically on ``RpcCallFailError``. This error happened a lot
+  when iterating over many messages, and retrying often fixes it.
+- Faster `telethon.telegram_client.TelegramClient.iter_messages` by
+  sleeping only as much as needed.
+- `telethon.telegram_client.TelegramClient.edit_message` now supports
+  omitting the entity if you pass a :tl:`Message`.
+- `telethon.events.raw.Raw` can now be filtered by type.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The library now distinguishes between MTProto and API schemas.
+- :tl:`State` is now persisted to the session file.
+- Connection won't retry forever.
+- Fixed some errors and cleaned up the generation of code.
+- Fixed typos and enhanced some documentation in general.
+- Add auto-cast for :tl:`InputMessage` and :tl:`InputLocation`.
+
+
+Pickle-able objects (v0.18.3)
+=============================
+
+*Published at 2018/04/15*
+
+
+Now you can use Python's ``pickle`` module to serialize ``RPCError`` and
+any other ``TLObject`` thanks to **@vegeta1k95**! A fix that was fairly
+simple, but still might be useful for many people.
+
+As a side note, the documentation at https://lonamiwebs.github.io/Telethon
+now lists known ``RPCError`` for all requests, so you know what to expect.
+This required a major rewrite, but it was well worth it!
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+- `telethon.telegram_client.TelegramClient.forward_messages` now returns
+  a single item instead of a list if the input was also a single item.
+
+Additions
+~~~~~~~~~
+
+- New `telethon.events.messageread.MessageRead` event, to find out when
+  and who read which messages as soon as it happens.
+- Now you can access ``.chat_id`` on all events and ``.sender_id`` on some.
+
+Bug fixes
+~~~~~~~~~
+
+- Possibly fix some bug regarding lost ``GzipPacked`` requests.
+- The library now uses the "real" layer 75, hopefully.
+- Fixed ``.entities`` name collision on updates by making it private.
+- ``AUTH_KEY_DUPLICATED`` is handled automatically on connection.
+- Markdown parser's offset uses ``match.start()`` to allow custom regex.
+- Some filter types (as a type) were not supported by
+  `telethon.telegram_client.TelegramClient.iter_participants`.
+- `telethon.telegram_client.TelegramClient.remove_event_handler` works.
+- `telethon.telegram_client.TelegramClient.start` works on all terminals.
+- :tl:`InputPeerSelf` case was missing from
+  `telethon.telegram_client.TelegramClient.get_input_entity`.
+
+Enhancements
+~~~~~~~~~~~~
+
+- The ``parse_mode`` for messages now accepts a callable.
+- `telethon.telegram_client.TelegramClient.download_media` accepts web previews.
+- `telethon.tl.custom.dialog.Dialog` instances can now be casted into
+  :tl:`InputPeer`.
+- Better logging when reading packages "breaks".
+- Better and more powerful ``setup.py gen`` command.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The library won't call ``.get_dialogs()`` on entity not found. Instead,
+  it will ``raise ValueError()`` so you can properly ``except`` it.
+- Several new examples and updated documentation.
+- ``py:obj`` is the default Sphinx's role which simplifies ``.rst`` files.
+- ``setup.py`` now makes use of ``python_requires``.
+- Events now live in separate files.
+- Other minor changes.
+
+
+Several bug fixes (v0.18.2)
+===========================
+
+*Published at 2018/03/27*
+
+Just a few bug fixes before they become too many.
+
+Additions
+~~~~~~~~~
+
+- Getting an entity by its positive ID should be enough, regardless of their
+  type (whether it's an ``User``, a ``Chat`` or a ``Channel``). Although
+  wrapping them inside a ``Peer`` is still recommended, it's not necessary.
+- New ``client.edit_2fa`` function to change your Two Factor Authentication
+  settings.
+- ``.stringify()`` and string representation for custom ``Dialog/Draft``.
+
+Bug fixes
+~~~~~~~~~
+
+- Some bug regarding ``.get_input_peer``.
+- ``events.ChatAction`` wasn't picking up all the pins.
+- ``force_document=True`` was being ignored for albums.
+- Now you're able to send ``Photo`` and ``Document`` as files.
+- Wrong access to a member on chat forbidden error for ``.get_participants``.
+  An empty list is returned instead.
+- ``me/self`` check for ``.get[_input]_entity`` has been moved up so if
+  someone has "me" or "self" as their name they won't be retrieved.
+
+
 Iterator methods (v0.18.1)
 ==========================
 

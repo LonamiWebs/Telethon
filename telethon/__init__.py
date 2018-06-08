@@ -1,7 +1,7 @@
 import logging
 from .telegram_bare_client import TelegramBareClient
 from .telegram_client import TelegramClient
-from .network import ConnectionMode
+from .network import connection
 from . import tl, version
 
 

@@ -11,9 +11,10 @@ from .crypto import rsa
 from .errors import (
     RPCError, BrokenAuthKeyError, ServerError, FloodWaitError,
     FloodTestPhoneWaitError, TypeNotFoundError, UnauthorizedError,
-    PhoneMigrateError, NetworkMigrateError, UserMigrateError
+    PhoneMigrateError, NetworkMigrateError, UserMigrateError, AuthKeyError,
+    RpcCallFailError
 )
-from .network import authenticator, MtProtoSender, Connection, ConnectionMode
+from .network import authenticator, MtProtoSender, ConnectionTcpFull
 from .sessions import Session, SQLiteSession
 from .tl import TLObject
 from .tl.all_tlobjects import LAYER
@@ -67,7 +68,8 @@ class TelegramBareClient:
     # region Initialization
 
     def __init__(self, session, api_id, api_hash,
-                 connection_mode=ConnectionMode.TCP_FULL,
+                 *,
+                 connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
                  update_workers=None,
@@ -113,9 +115,10 @@ class TelegramBareClient:
         # that calls .connect(). Every other thread will spawn a new
         # temporary connection. The connection on this one is always
         # kept open so Telegram can send us updates.
-        self._sender = MtProtoSender(self.session, Connection(
-            mode=connection_mode, proxy=proxy, timeout=timeout
-        ))
+        if isinstance(connection, type):
+            connection = connection(proxy=proxy, timeout=timeout)
+
+        self._sender = MtProtoSender(self.session, connection)
 
         # Two threads may be calling reconnect() when the connection is lost,
         # we only want one to actually perform the reconnection.
@@ -227,6 +230,15 @@ class TelegramBareClient:
             self.disconnect()
             return self.connect(_sync_updates=_sync_updates)
 
+        except AuthKeyError as e:
+            # As of late March 2018 there were two AUTH_KEY_DUPLICATED
+            # reports. Retrying with a clean auth_key should fix this.
+            __log__.warning('Auth key error %s. Clearing it and retrying.', e)
+            self.disconnect()
+            self.session.auth_key = None
+            self.session.save()
+            return self.connect(_sync_updates=_sync_updates)
+
         except (RPCError, ConnectionError) as e:
             # Probably errors from the previous session, ignore them
             __log__.error('Connection failed due to %s', e)
@@ -265,6 +277,7 @@ class TelegramBareClient:
 
         # TODO Shall we clear the _exported_sessions, or may be reused?
         self._first_request = True  # On reconnect it will be first again
+        self.session.set_update_state(0, self.updates.get_update_state(0))
         self.session.close()
 
     def _reconnect(self, new_dc=None):
@@ -418,28 +431,51 @@ class TelegramBareClient:
 
     # region Invoking Telegram requests
 
-    def __call__(self, *requests, retries=5):
-        """Invokes (sends) a MTProtoRequest and returns (receives) its result.
-
-           The invoke will be retried up to 'retries' times before raising
-           RuntimeError().
+    def __call__(self, request, retries=5, ordered=False):
         """
+        Invokes (sends) one or more MTProtoRequests and returns (receives)
+        their result.
+
+        Args:
+            request (`TLObject` | `list`):
+                The request or requests to be invoked.
+
+            retries (`bool`, optional):
+                How many times the request should be retried automatically
+                in case it fails with a non-RPC error.
+
+               The invoke will be retried up to 'retries' times before raising
+               ``RuntimeError``.
+
+            ordered (`bool`, optional):
+                Whether the requests (if more than one was given) should be
+                executed sequentially on the server. They run in arbitrary
+                order by default.
+
+        Returns:
+            The result of the request (often a `TLObject`) or a list of
+            results if more than one request was given.
+        """
+        single = not utils.is_list_like(request)
+        if single:
+            request = (request,)
+
         if not all(isinstance(x, TLObject) and
-                   x.content_related for x in requests):
+                   x.content_related for x in request):
             raise TypeError('You can only invoke requests, not types!')
 
         if self._background_error:
             raise self._background_error
 
-        for request in requests:
-            request.resolve(self, utils)
+        for r in request:
+            r.resolve(self, utils)
 
         # For logging purposes
-        if len(requests) == 1:
-            which = type(requests[0]).__name__
+        if single:
+            which = type(request[0]).__name__
         else:
             which = '{} requests ({})'.format(
-                len(requests), [type(x).__name__ for x in requests])
+                len(request), [type(x).__name__ for x in request])
 
         # Determine the sender to be used (main or a new connection)
         __log__.debug('Invoking %s', which)
@@ -447,13 +483,13 @@ class TelegramBareClient:
             not self._idling.is_set() or self._reconnect_lock.locked()
 
         for retry in range(retries):
-            result = self._invoke(call_receive, *requests)
+            result = self._invoke(call_receive, request, ordered=ordered)
             if result is not None:
-                return result
+                return result[0] if single else result
 
             log = __log__.info if retry == 0 else __log__.warning
             log('Invoking %s failed %d times, connecting again and retrying',
-                [str(x) for x in requests], retry + 1)
+                which, retry + 1)
 
             sleep(1)
             # The ReadThread has priority when attempting reconnection,
@@ -464,13 +500,13 @@ class TelegramBareClient:
                     self._reconnect()
 
         raise RuntimeError('Number of retries reached 0 for {}.'.format(
-            [type(x).__name__ for x in requests]
+            which
         ))
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
     invoke = __call__
 
-    def _invoke(self, call_receive, *requests):
+    def _invoke(self, call_receive, requests, ordered=False):
         try:
             # Ensure that we start with no previous errors (i.e. resending)
             for x in requests:
@@ -495,7 +531,7 @@ class TelegramBareClient:
                         self._wrap_init_connection(GetConfigRequest())
                     )
 
-            self._sender.send(*requests)
+            self._sender.send(requests, ordered=ordered)
 
             if not call_receive:
                 # TODO This will be slightly troublesome if we allow
@@ -530,6 +566,11 @@ class TelegramBareClient:
             __log__.warning('Connection was reset while invoking')
             if self._user_connected:
                 # Server disconnected us, __call__ will try reconnecting.
+                try:
+                    self._sender.disconnect()
+                except:
+                    pass
+
                 return None
             else:
                 # User never called .connect(), so raise this error.
@@ -546,10 +587,7 @@ class TelegramBareClient:
                 # rejected by the other party as a whole."
                 return None
 
-            if len(requests) == 1:
-                return requests[0].result
-            else:
-                return [x.result for x in requests]
+            return [x.result for x in requests]
 
         except (PhoneMigrateError, NetworkMigrateError,
                 UserMigrateError) as e:
@@ -559,11 +597,11 @@ class TelegramBareClient:
             # be on the very first connection (not authorized, not running),
             # but may be an issue for people who actually travel?
             self._reconnect(new_dc=e.new_dc)
-            return self._invoke(call_receive, *requests)
+            return self._invoke(call_receive, requests)
 
-        except ServerError as e:
+        except (ServerError, RpcCallFailError) as e:
             # Telegram is having some issues, just retry
-            __log__.error('Telegram servers are having internal errors %s', e)
+            __log__.warning('Telegram is having internal issues: %s', e)
 
         except (FloodWaitError, FloodTestPhoneWaitError) as e:
             __log__.warning('Request invoked too often, wait %ds', e.seconds)

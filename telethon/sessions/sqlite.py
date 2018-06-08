@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sqlite3
@@ -5,6 +6,7 @@ from base64 import b64decode
 from os.path import isfile as file_exists
 from threading import Lock, RLock
 
+from telethon.tl import types
 from .memory import MemorySession, _SentFileType
 from .. import utils
 from ..crypto import AuthKey
@@ -13,12 +15,12 @@ from ..tl.types import (
 )
 
 EXTENSION = '.session'
-CURRENT_VERSION = 3  # database version
+CURRENT_VERSION = 4  # database version
 
 
 class SQLiteSession(MemorySession):
     """This session contains the required information to login into your
-       Telegram account. NEVER give the saved JSON file to anyone, since
+       Telegram account. NEVER give the saved session file to anyone, since
        they would gain instant access to all your messages and contacts.
 
        If you think the session has been compromised, close all the sessions
@@ -99,6 +101,14 @@ class SQLiteSession(MemorySession):
                     hash integer,
                     primary key(md5_digest, file_size, type)
                 )"""
+                ,
+                """update_state (
+                    id integer primary key,
+                    pts integer,
+                    qts integer,
+                    date integer,
+                    seq integer
+                )"""
             )
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
             # Migrating from JSON -> new table and may have entities
@@ -141,32 +151,36 @@ class SQLiteSession(MemorySession):
 
     def _upgrade_database(self, old):
         c = self._cursor()
-        # old == 1 doesn't have the old sent_files so no need to drop
+        if old == 1:
+            old += 1
+            # old == 1 doesn't have the old sent_files so no need to drop
         if old == 2:
+            old += 1
             # Old cache from old sent_files lasts then a day anyway, drop
             c.execute('drop table sent_files')
-        self._create_table(c, """sent_files (
-            md5_digest blob,
-            file_size integer,
-            type integer,
-            id integer,
-            hash integer,
-            primary key(md5_digest, file_size, type)
-        )""")
+            self._create_table(c, """sent_files (
+                md5_digest blob,
+                file_size integer,
+                type integer,
+                id integer,
+                hash integer,
+                primary key(md5_digest, file_size, type)
+            )""")
+        if old == 3:
+            old += 1
+            self._create_table(c, """update_state (
+                id integer primary key,
+                pts integer,
+                qts integer,
+                date integer,
+                seq integer
+            )""")
         c.close()
 
     @staticmethod
     def _create_table(c, *definitions):
-        """
-        Creates a table given its definition 'name (columns).
-        If the sqlite version is >= 3.8.2, it will use "without rowid".
-        See http://www.sqlite.org/releaselog/3_8_2.html.
-        """
-        required = (3, 8, 2)
-        sqlite_v = tuple(int(x) for x in sqlite3.sqlite_version.split('.'))
-        extra = ' without rowid' if sqlite_v >= required else ''
         for definition in definitions:
-            c.execute('create table {}{}'.format(definition, extra))
+            c.execute('create table {}'.format(definition))
 
     # Data from sessions should be kept as properties
     # not to fetch the database every time we need it
@@ -205,6 +219,25 @@ class SQLiteSession(MemorySession):
                 self._auth_key.key if self._auth_key else b''
             ))
             c.close()
+
+    def get_update_state(self, entity_id):
+        c = self._cursor()
+        row = c.execute('select pts, qts, date, seq from update_state '
+                        'where id = ?', (entity_id,)).fetchone()
+        c.close()
+        if row:
+            pts, qts, date, seq = row
+            date = datetime.datetime.utcfromtimestamp(date)
+            return types.updates.State(pts, qts, date, seq, unread_count=0)
+
+    def set_update_state(self, entity_id, state):
+        with self._db_lock:
+            c = self._cursor()
+            c.execute('insert or replace into update_state values (?,?,?,?,?)',
+                      (entity_id, state.pts, state.qts,
+                       state.date.timestamp(), state.seq))
+            c.close()
+            self.save()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""

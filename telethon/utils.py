@@ -2,14 +2,17 @@
 Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
+import itertools
 import math
 import mimetypes
 import os
 import re
+import struct
 import types
 from collections import UserList
 from mimetypes import guess_extension
 
+from .tl import TLObject
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -25,7 +28,8 @@ from .tl.types import (
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
-    TopPeer, InputNotifyPeer
+    TopPeer, InputNotifyPeer, InputMessageID, InputFileLocation,
+    InputDocumentFileLocation, PhotoSizeEmpty, InputDialogPeer
 )
 from .tl.types.contacts import ResolvedPeer
 
@@ -33,7 +37,35 @@ USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 
-VALID_USERNAME_RE = re.compile(r'^[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]$')
+# The only shorter-than-five-characters usernames are those used for some
+# special, very well known bots. This list may be incomplete though:
+#    "[...] @gif, @vid, @pic, @bing, @wiki, @imdb and @bold [...]"
+#
+# See https://telegram.org/blog/inline-bots#how-does-it-work
+VALID_USERNAME_RE = re.compile(
+    r'^([a-z][\w\d]{3,30}[a-z\d]'
+    r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub|ya)$',
+    re.IGNORECASE
+)
+
+
+class Default:
+    """
+    Sentinel value to indicate that the default value should be used.
+    Currently used for the ``parse_mode``, where a ``None`` mode should
+    be considered different from using the default.
+    """
+
+
+def chunks(iterable, size=100):
+    """
+    Turns the given iterable into chunks of the specified size,
+    which is 100 by default since that's what Telegram uses the most.
+    """
+    it = iter(iterable)
+    size -= 1
+    for head in it:
+        yield itertools.chain([head], itertools.islice(it, size))
 
 
 def get_display_name(entity):
@@ -91,7 +123,13 @@ def get_input_peer(entity, allow_self=True):
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return entity
     except AttributeError:
-        _raise_cast_fail(entity, 'InputPeer')
+        # e.g. custom.Dialog (can't cyclic import).
+        if allow_self and hasattr(entity, 'input_entity'):
+            return entity.input_entity
+        elif hasattr(entity, 'entity'):
+            return get_input_peer(entity.entity)
+        else:
+            _raise_cast_fail(entity, 'InputPeer')
 
     if isinstance(entity, User):
         if entity.is_self and allow_self:
@@ -105,7 +143,6 @@ def get_input_peer(entity, allow_self=True):
     if isinstance(entity, (Channel, ChannelForbidden)):
         return InputPeerChannel(entity.id, entity.access_hash or 0)
 
-    # Less common cases
     if isinstance(entity, InputUser):
         return InputPeerUser(entity.user_id, entity.access_hash)
 
@@ -174,6 +211,24 @@ def get_input_user(entity):
         return InputUser(entity.user_id, entity.access_hash)
 
     _raise_cast_fail(entity, 'InputUser')
+
+
+def get_input_dialog(dialog):
+    """Similar to :meth:`get_input_peer`, but for dialogs"""
+    try:
+        if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
+            return dialog
+        if dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+            return InputDialogPeer(dialog)
+    except AttributeError:
+        _raise_cast_fail(dialog, 'InputDialogPeer')
+
+    try:
+        return InputDialogPeer(get_input_peer(dialog))
+    except TypeError:
+        pass
+
+    _raise_cast_fail(dialog, 'InputDialogPeer')
 
 
 def get_input_document(document):
@@ -250,8 +305,12 @@ def get_input_media(media, is_photo=False):
     it will be treated as an :tl:`InputMediaUploadedPhoto`.
     """
     try:
-        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia'):
+        if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
             return media
+        elif media.SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
+            return InputMediaPhoto(media)
+        elif media.SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
+            return InputMediaDocument(media)
     except AttributeError:
         _raise_cast_fail(media, 'InputMedia')
 
@@ -261,10 +320,20 @@ def get_input_media(media, is_photo=False):
             ttl_seconds=media.ttl_seconds
         )
 
+    if isinstance(media, (Photo, photos.Photo, PhotoEmpty)):
+        return InputMediaPhoto(
+            id=get_input_photo(media)
+        )
+
     if isinstance(media, MessageMediaDocument):
         return InputMediaDocument(
             id=get_input_document(media.document),
             ttl_seconds=media.ttl_seconds
+        )
+
+    if isinstance(media, (Document, DocumentEmpty)):
+        return InputMediaDocument(
+            id=get_input_document(media)
         )
 
     if isinstance(media, FileLocation):
@@ -316,6 +385,54 @@ def get_input_media(media, is_photo=False):
         return get_input_media(media.media, is_photo=is_photo)
 
     _raise_cast_fail(media, 'InputMedia')
+
+
+def get_input_message(message):
+    """Similar to :meth:`get_input_peer`, but for input messages."""
+    try:
+        if isinstance(message, int):  # This case is really common too
+            return InputMessageID(message)
+        elif message.SUBCLASS_OF_ID == 0x54b6bcc5:  # crc32(b'InputMessage'):
+            return message
+        elif message.SUBCLASS_OF_ID == 0x790009e3:  # crc32(b'Message'):
+            return InputMessageID(message.id)
+    except AttributeError:
+        pass
+
+    _raise_cast_fail(message, 'InputMedia')
+
+
+def get_input_location(location):
+    """Similar to :meth:`get_input_peer`, but for input messages."""
+    try:
+        if location.SUBCLASS_OF_ID == 0x1523d462:
+            return location  # crc32(b'InputFileLocation'):
+    except AttributeError:
+        _raise_cast_fail(location, 'InputFileLocation')
+
+    if isinstance(location, Message):
+        location = location.media
+
+    if isinstance(location, MessageMediaDocument):
+        location = location.document
+    elif isinstance(location, MessageMediaPhoto):
+        location = location.photo
+
+    if isinstance(location, Document):
+        return InputDocumentFileLocation(
+            location.id, location.access_hash, location.version)
+    elif isinstance(location, Photo):
+        try:
+            location = next(x for x in reversed(location.sizes)
+                            if not isinstance(x, PhotoSizeEmpty)).location
+        except StopIteration:
+            pass
+
+    if isinstance(location, (FileLocation, FileLocationUnavailable)):
+        return InputFileLocation(
+            location.volume_id, location.local_id, location.secret)
+
+    _raise_cast_fail(location, 'InputFileLocation')
 
 
 def is_image(file):
@@ -397,6 +514,38 @@ def _fix_peer_id(peer_id):
     return int(peer_id)
 
 
+def add_surrogate(text):
+    return ''.join(
+        # SMP -> Surrogate Pairs (Telegram offsets are calculated with these).
+        # See https://en.wikipedia.org/wiki/Plane_(Unicode)#Overview for more.
+        ''.join(chr(y) for y in struct.unpack('<HH', x.encode('utf-16le')))
+        if (0x10000 <= ord(x) <= 0x10FFFF) else x for x in text
+    )
+
+
+def del_surrogate(text):
+    return text.encode('utf-16', 'surrogatepass').decode('utf-16')
+
+
+def get_inner_text(text, entities):
+    """
+    Gets the inner text that's surrounded by the given entities.
+    For instance: text = 'hey!', entity = MessageEntityBold(2, 2) -> 'y!'.
+
+    :param text:     the original text.
+    :param entities: the entity or entities that must be matched.
+    :return: a single result or a list of the text surrounded by the entities.
+    """
+    text = add_surrogate(text)
+    result = []
+    for e in entities:
+        start = e.offset
+        end = e.offset + e.length
+        result.append(del_surrogate(text[start:end]))
+
+    return result
+
+
 def get_peer_id(peer):
     """
     Finds the ID of the given peer, and converts it to the "bot api" format
@@ -457,8 +606,13 @@ def resolve_id(marked_id):
     if marked_id >= 0:
         return marked_id, PeerUser
 
-    if str(marked_id).startswith('-100'):
-        return int(str(marked_id)[4:]), PeerChannel
+    # There have been report of chat IDs being 10000xyz, which means their
+    # marked version is -10000xyz, which in turn looks like a channel but
+    # it becomes 00xyz (= xyz). Hence, we must assert that there are only
+    # two zeroes.
+    m = re.match(r'-100([^0]\d*)', str(marked_id))
+    if m:
+        return int(m.group(1)), PeerChannel
 
     return -marked_id, PeerChat
 

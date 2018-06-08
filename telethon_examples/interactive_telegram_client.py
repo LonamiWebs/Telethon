@@ -3,7 +3,8 @@ from getpass import getpass
 
 from telethon.utils import get_display_name
 
-from telethon import ConnectionMode, TelegramClient
+from telethon import TelegramClient, events
+from telethon.network import ConnectionTcpAbridged
 from telethon.errors import SessionPasswordNeededError
 from telethon.tl.types import (
     PeerChat, UpdateShortChatMessage, UpdateShortMessage
@@ -70,11 +71,11 @@ class InteractiveTelegramClient(TelegramClient):
             # These parameters should be passed always, session name and API
             session_user_id, api_id, api_hash,
 
-            # You can optionally change the connection mode by using this enum.
-            # This changes how much data will be sent over the network with
-            # every request, and how it will be formatted. Default is
-            # ConnectionMode.TCP_FULL, and smallest is TCP_TCP_ABRIDGED.
-            connection_mode=ConnectionMode.TCP_ABRIDGED,
+            # You can optionally change the connection mode by passing a
+            # type or an instance of it. This changes how the sent packets
+            # look (low-level concept you normally shouldn't worry about).
+            # Default is ConnectionTcpFull, smallest is ConnectionTcpAbridged.
+            connection=ConnectionTcpAbridged,
 
             # If you're using a proxy, set it here.
             proxy=proxy,
@@ -126,10 +127,11 @@ class InteractiveTelegramClient(TelegramClient):
     def run(self):
         """Main loop of the TelegramClient, will wait for user action"""
 
-        # Once everything is ready, we can add an update handler. Every
-        # update object will be passed to the self.update_handler method,
-        # where we can process it as we need.
-        self.add_update_handler(self.update_handler)
+        # Once everything is ready, we can add an event handler.
+        #
+        # Events are an abstraction over Telegram's "Updates" and
+        # are much easier to use.
+        self.add_event_handler(self.message_handler, events.NewMessage)
 
         # Enter a while loop to chat as long as the user wants
         while True:
@@ -207,7 +209,7 @@ class InteractiveTelegramClient(TelegramClient):
                 # History
                 elif msg == '!h':
                     # First retrieve the messages and some information
-                    messages = self.get_message_history(entity, limit=10)
+                    messages = self.get_messages(entity, limit=10)
 
                     # Iterate over all (in reverse order so the latest appear
                     # the last in the console) and print them with format:
@@ -216,7 +218,7 @@ class InteractiveTelegramClient(TelegramClient):
                         # Note that the .sender attribute is only there for
                         # convenience, the API returns it differently. But
                         # this shouldn't concern us. See the documentation
-                        # for .get_message_history() for more information.
+                        # for .iter_messages() for more information.
                         name = get_display_name(msg.sender)
 
                         # Format the message content
@@ -334,31 +336,29 @@ class InteractiveTelegramClient(TelegramClient):
             bytes_to_string(total_bytes), downloaded_bytes / total_bytes)
         )
 
-    def update_handler(self, update):
-        """Callback method for received Updates"""
+    def message_handler(self, event):
+        """Callback method for received events.NewMessage"""
 
-        # We have full control over what we want to do with the updates.
-        # In our case we only want to react to chat messages, so we use
-        # isinstance() to behave accordingly on these cases.
-        if isinstance(update, UpdateShortMessage):
-            who = self.get_entity(update.user_id)
-            if update.out:
+        # Note that accessing ``.sender`` and ``.chat`` may be slow since
+        # these are not cached and must be queried always! However it lets
+        # us access the chat title and user name.
+        if event.is_group:
+            if event.out:
+                sprint('>> sent "{}" to chat {}'.format(
+                    event.text, get_display_name(event.chat)
+                ))
+            else:
+                sprint('<< {} @ {} sent "{}"'.format(
+                    get_display_name(event.sender),
+                    get_display_name(event.chat),
+                    event.text
+                ))
+        else:
+            if event.out:
                 sprint('>> "{}" to user {}'.format(
-                    update.message, get_display_name(who)
+                    event.text, get_display_name(event.chat)
                 ))
             else:
                 sprint('<< {} sent "{}"'.format(
-                    get_display_name(who), update.message
-                ))
-
-        elif isinstance(update, UpdateShortChatMessage):
-            which = self.get_entity(PeerChat(update.chat_id))
-            if update.out:
-                sprint('>> sent "{}" to chat {}'.format(
-                    update.message, get_display_name(which)
-                ))
-            else:
-                who = self.get_entity(update.from_id)
-                sprint('<< {} @ {} sent "{}"'.format(
-                    get_display_name(which), get_display_name(who), update.message
+                    get_display_name(event.chat), event.text
                 ))

@@ -4,11 +4,17 @@
 Accessing the Full API
 ======================
 
+.. important::
 
-The ``TelegramClient`` doesn't offer a method for every single request
-the Telegram API supports. However, it's very simple to *call* or *invoke*
-any request. Whenever you need something, don't forget to `check the
-documentation`__ and look for the `method you need`__. There you can go
+    While you have access to this, you should always use the friendly
+    methods listed on :ref:`telethon-package` unless you have a better
+    reason not to, like a method not existing or you wanting more control.
+
+
+The `telethon.telegram_client.TelegramClient` doesn't offer a method for every
+single request the Telegram API supports. However, it's very simple to *call*
+or *invoke* any request. Whenever you need something, don't forget to `check
+the documentation`__ and look for the `method you need`__. There you can go
 through a sorted list of everything you can do.
 
 
@@ -24,9 +30,9 @@ You should also refer to the documentation to see what the objects
 (constructors) Telegram returns look like. Every constructor inherits
 from a common type, and that's the reason for this distinction.
 
-Say ``client.send_message()`` didn't exist, we could use the `search`__
-to look for "message". There we would find :tl:`SendMessageRequest`,
-which we can work with.
+Say `telethon.telegram_client.TelegramClient.send_message` didn't exist,
+we could use the `search`__ to look for "message". There we would find
+:tl:`SendMessageRequest`, which we can work with.
 
 Every request is a Python class, and has the parameters needed for you
 to invoke it. You can also call ``help(request)`` for information on
@@ -57,7 +63,7 @@ construct one, for instance:
 
         peer = InputPeerUser(user_id, user_hash)
 
-Or we call ``.get_input_entity()``:
+Or we call `telethon.telegram_client.TelegramClient.get_input_entity()`:
 
     .. code-block:: python
 
@@ -68,7 +74,7 @@ When you're going to invoke an API method, most require you to pass an
 ``.get_input_entity()`` is more straightforward (and often
 immediate, if you've seen the user before, know their ID, etc.).
 If you also need to have information about the whole user, use
-``.get_entity()`` instead:
+`telethon.telegram_client.TelegramClient.get_entity()` instead:
 
     .. code-block:: python
 
@@ -77,7 +83,7 @@ If you also need to have information about the whole user, use
 In the later case, when you use the entity, the library will cast it to
 its "input" version for you. If you already have the complete user and
 want to cache its input version so the library doesn't have to do this
-every time its used, simply call ``.get_input_peer``:
+every time its used, simply call `telethon.utils.get_input_peer`:
 
     .. code-block:: python
 
@@ -137,4 +143,4 @@ This can further be simplified to:
 
 __ https://lonamiwebs.github.io/Telethon
 __ https://lonamiwebs.github.io/Telethon/methods/index.html
-__ https://lonamiwebs.github.io/Telethon/?q=message
+__ https://lonamiwebs.github.io/Telethon/?q=message&redirect=no

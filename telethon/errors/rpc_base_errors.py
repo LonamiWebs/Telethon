@@ -3,6 +3,9 @@ class RPCError(Exception):
     code = None
     message = None
 
+    def __reduce__(self):
+        return type(self), ()
+
 
 class InvalidDCError(RPCError):
     """
@@ -50,6 +53,19 @@ class NotFoundError(RPCError):
     """
     code = 404
     message = 'NOT_FOUND'
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
+class AuthKeyError(RPCError):
+    """
+    Errors related to invalid authorization key, like
+    AUTH_KEY_DUPLICATED which can cause the connection to fail.
+    """
+    code = 406
+    message = 'AUTH_KEY'
 
     def __init__(self, message):
         super().__init__(message)

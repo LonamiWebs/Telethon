@@ -34,7 +34,7 @@ class HigherLevelTests(unittest.TestCase):
                 progress_callback=lambda c, t:
                     print('test_cdn_download:uploading {:.2%}...'.format(c/t))
             )
-            msg = client.get_message_history(me)[1][0]
+            msg = client.get_messages(me)[1][0]
 
             out = BytesIO()
             client.download_media(msg, out)
