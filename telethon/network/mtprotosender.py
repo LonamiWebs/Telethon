@@ -39,11 +39,12 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, session):
+    def __init__(self, session, retries=5):
         self.session = session
         self._connection = ConnectionTcpFull()
         self._ip = None
         self._port = None
+        self._retries = retries
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -109,14 +110,31 @@ class MTProtoSender:
         await self._connect()
 
     async def _connect(self):
-        async with self._send_lock:
-            await self._connection.connect(self._ip, self._port)
+        _last_error = ConnectionError()
+        for _ in range(self._retries):
+            try:
+                async with self._send_lock:
+                    await self._connection.connect(self._ip, self._port)
+            except OSError as e:
+                _last_error = e
+            else:
+                break
+        else:
+            raise _last_error
 
-        # TODO Handle SecurityError, AssertionError
         if self.session.auth_key is None:
+            _last_error = SecurityError()
             plain = MTProtoPlainSender(self._connection)
-            self.session.auth_key, self.session.time_offset =\
-                await authenticator.do_authentication(plain)
+            for _ in range(self._retries):
+                try:
+                    self.session.auth_key, self.session.time_offset =\
+                        await authenticator.do_authentication(plain)
+                except (SecurityError, AssertionError) as e:
+                    _last_error = e
+                else:
+                    break
+            else:
+                raise _last_error
 
         self._send_loop_handle = asyncio.ensure_future(self._send_loop())
         self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
@@ -146,8 +164,6 @@ class MTProtoSender:
         try:
             async with self._send_lock:
                 await self._connection.close()
-        except:
-            __log__.exception('Ignoring exception upon disconnection')
         finally:
             for message in self._pending_messages.values():
                 message.future.cancel()
