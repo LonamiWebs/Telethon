@@ -110,66 +110,6 @@ class MTProtoSender:
         self._user_connected = True
         await self._connect()
 
-    async def _connect(self):
-        __log__.info('Connecting to {}:{}...'.format(self._ip, self._port))
-        _last_error = ConnectionError()
-        for retry in range(1, self._retries + 1):
-            try:
-                __log__.debug('Connection attempt {}...'.format(retry))
-                async with self._send_lock:
-                    await self._connection.connect(self._ip, self._port)
-            except OSError as e:
-                _last_error = e
-                __log__.warning('Attempt {} at connecting failed: {}'
-                                .format(retry, e))
-            else:
-                break
-        else:
-            raise _last_error
-
-        __log__.debug('Connection success!')
-        if self.session.auth_key is None:
-            _last_error = SecurityError()
-            plain = MTProtoPlainSender(self._connection)
-            for retry in range(1, self._retries + 1):
-                try:
-                    __log__.debug('New auth_key attempt {}...'.format(retry))
-                    self.session.auth_key, self.session.time_offset =\
-                        await authenticator.do_authentication(plain)
-                except (SecurityError, AssertionError) as e:
-                    _last_error = e
-                    __log__.warning('Attempt {} at new auth_key failed: {}'
-                                    .format(retry, e))
-                else:
-                    break
-            else:
-                raise _last_error
-
-        __log__.debug('Starting send loop')
-        self._send_loop_handle = asyncio.ensure_future(self._send_loop())
-        __log__.debug('Starting receive loop')
-        self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
-        __log__.info('Connection to {} complete!'.format(self._ip))
-
-    async def _reconnect(self):
-        """
-        Cleanly disconnects and then reconnects.
-        """
-        self._reconnecting = True
-
-        __log__.debug('Awaiting for the send loop before reconnecting...')
-        await self._send_loop_handle
-
-        __log__.debug('Awaiting for the receive loop before reconnecting...')
-        await self._recv_loop_handle
-
-        __log__.debug('Closing current connection...')
-        async with self._send_lock:
-            await self._connection.close()
-
-        self._reconnecting = False
-        await self._connect()
-
     async def disconnect(self):
         """
         Cleanly disconnects the instance from the network, cancels
@@ -249,6 +189,73 @@ class MTProtoSender:
             self._pending_messages[message.msg_id] = message
             await self._send_queue.put(message)
             return message.future
+
+    # Private methods
+
+    async def _connect(self):
+        """
+        Performs the actual connection, retrying, generating the
+        authorization key if necessary, and starting the send and
+        receive loops.
+        """
+        __log__.info('Connecting to {}:{}...'.format(self._ip, self._port))
+        _last_error = ConnectionError()
+        for retry in range(1, self._retries + 1):
+            try:
+                __log__.debug('Connection attempt {}...'.format(retry))
+                async with self._send_lock:
+                    await self._connection.connect(self._ip, self._port)
+            except OSError as e:
+                _last_error = e
+                __log__.warning('Attempt {} at connecting failed: {}'
+                                .format(retry, e))
+            else:
+                break
+        else:
+            raise _last_error
+
+        __log__.debug('Connection success!')
+        if self.session.auth_key is None:
+            _last_error = SecurityError()
+            plain = MTProtoPlainSender(self._connection)
+            for retry in range(1, self._retries + 1):
+                try:
+                    __log__.debug('New auth_key attempt {}...'.format(retry))
+                    self.session.auth_key, self.session.time_offset =\
+                        await authenticator.do_authentication(plain)
+                except (SecurityError, AssertionError) as e:
+                    _last_error = e
+                    __log__.warning('Attempt {} at new auth_key failed: {}'
+                                    .format(retry, e))
+                else:
+                    break
+            else:
+                raise _last_error
+
+        __log__.debug('Starting send loop')
+        self._send_loop_handle = asyncio.ensure_future(self._send_loop())
+        __log__.debug('Starting receive loop')
+        self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
+        __log__.info('Connection to {} complete!'.format(self._ip))
+
+    async def _reconnect(self):
+        """
+        Cleanly disconnects and then reconnects.
+        """
+        self._reconnecting = True
+
+        __log__.debug('Awaiting for the send loop before reconnecting...')
+        await self._send_loop_handle
+
+        __log__.debug('Awaiting for the receive loop before reconnecting...')
+        await self._recv_loop_handle
+
+        __log__.debug('Closing current connection...')
+        async with self._send_lock:
+            await self._connection.close()
+
+        self._reconnecting = False
+        await self._connect()
 
     # Loops
 
