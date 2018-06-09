@@ -20,14 +20,22 @@ class TLMessage(TLObject):
     sent `TLMessage`, and this result can be represented as a `Future`
     that will eventually be set with either a result, error or cancelled.
     """
-    def __init__(self, session, request, after_id=None):
+    def __init__(self, msg_id, seq_no, body=None, request=None, after_id=0):
         super().__init__()
-        del self.content_related
-        self.msg_id = session.get_new_msg_id()
-        self.seq_no = session.generate_sequence(request.content_related)
-        self.request = request
+        self.msg_id = msg_id
+        self.seq_no = seq_no
         self.container_msg_id = None
         self.future = asyncio.Future()
+
+        # TODO Perhaps it's possible to merge body and request?
+        # We need things like rpc_result and gzip_packed to
+        # be readable by the ``BinaryReader`` for such purpose.
+
+        # Used for incoming, not-decoded messages
+        self.body = body
+
+        # Used for outgoing, not-encoded messages
+        self.request = request
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can

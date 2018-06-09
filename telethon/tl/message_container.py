@@ -1,6 +1,7 @@
 import struct
 
 from . import TLObject
+from .tl_message import TLMessage
 
 
 class MessageContainer(TLObject):
@@ -33,7 +34,8 @@ class MessageContainer(TLObject):
             inner_msg_id = reader.read_long()
             inner_sequence = reader.read_int()
             inner_length = reader.read_int()
-            yield inner_msg_id, inner_sequence, inner_length
+            yield TLMessage(inner_msg_id, inner_sequence,
+                            body=reader.read(inner_length))
 
     def __str__(self):
         return TLObject.pretty_format(self)
