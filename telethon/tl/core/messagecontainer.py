@@ -1,7 +1,7 @@
 import struct
 
-from . import TLObject
-from .tl_message import TLMessage
+from ..tlobject import TLObject
+from .tlmessage import TLMessage
 
 
 class MessageContainer(TLObject):
@@ -42,3 +42,12 @@ class MessageContainer(TLObject):
 
     def stringify(self):
         return TLObject.pretty_format(self, indent=0)
+
+    @classmethod
+    def from_reader(cls, reader):
+        # This assumes that .read_* calls are done in the order they appear
+        return MessageContainer([TLMessage(
+            msg_id=reader.read_long(),
+            seq_no=reader.read_int(),
+            body=reader.read(reader.read_int())
+        ) for _ in range(reader.read_int())])

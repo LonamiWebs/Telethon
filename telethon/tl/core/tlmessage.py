@@ -1,8 +1,9 @@
 import asyncio
 import struct
 
-from . import TLObject, GzipPacked
-from ..tl.functions import InvokeAfterMsgRequest
+from .gzippacked import GzipPacked
+from .. import TLObject
+from ..functions import InvokeAfterMsgRequest
 
 
 class TLMessage(TLObject):

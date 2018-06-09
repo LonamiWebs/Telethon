@@ -1,7 +1,7 @@
 import gzip
 import struct
 
-from . import TLObject
+from .. import TLObject
 
 
 class GzipPacked(TLObject):
@@ -36,3 +36,7 @@ class GzipPacked(TLObject):
     def read(reader):
         assert reader.read_int(signed=False) == GzipPacked.CONSTRUCTOR_ID
         return gzip.decompress(reader.tgread_bytes())
+
+    @classmethod
+    def from_reader(cls, reader):
+        return GzipPacked(gzip.decompress(reader.tgread_bytes()))

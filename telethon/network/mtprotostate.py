@@ -6,7 +6,7 @@ from hashlib import sha256
 from ..crypto import AES
 from ..errors import SecurityError, BrokenAuthKeyError
 from ..extensions import BinaryReader
-from ..tl import TLMessage
+from ..tl.core import TLMessage
 
 
 class MTProtoState:

@@ -40,49 +40,49 @@ def report_error(code, message, report_method):
         "We really don't want to crash when just reporting an error"
 
 
-def rpc_message_to_error(code, message, report_method=None):
+def rpc_message_to_error(rpc_error, report_method=None):
     """
     Converts a Telegram's RPC Error to a Python error.
 
-    :param code: the integer code of the error (like 400).
-    :param message: the message representing the error.
+    :param rpc_error: the RpcError instance.
     :param report_method: if present, the ID of the method that caused it.
     :return: the RPCError as a Python exception that represents this error.
     """
     if report_method is not None:
         Thread(
             target=report_error,
-            args=(code, message, report_method)
+            args=(rpc_error.error_code, rpc_error.error_message, report_method)
         ).start()
 
     # Try to get the error by direct look-up, otherwise regex
     # TODO Maybe regexes could live in a separate dictionary?
-    cls = rpc_errors_all.get(message, None)
+    cls = rpc_errors_all.get(rpc_error.error_message, None)
     if cls:
         return cls()
 
     for msg_regex, cls in rpc_errors_all.items():
-        m = re.match(msg_regex, message)
+        m = re.match(msg_regex, rpc_error.error_message)
         if m:
             capture = int(m.group(1)) if m.groups() else None
             return cls(capture=capture)
 
-    if code == 400:
-        return BadRequestError(message)
+    if rpc_error.error_code == 400:
+        return BadRequestError(rpc_error.error_message)
 
-    if code == 401:
-        return UnauthorizedError(message)
+    if rpc_error.error_code == 401:
+        return UnauthorizedError(rpc_error.error_message)
 
-    if code == 403:
-        return ForbiddenError(message)
+    if rpc_error.error_code == 403:
+        return ForbiddenError(rpc_error.error_message)
 
-    if code == 404:
-        return NotFoundError(message)
+    if rpc_error.error_code == 404:
+        return NotFoundError(rpc_error.error_message)
 
-    if code == 406:
-        return AuthKeyError(message)
+    if rpc_error.error_code == 406:
+        return AuthKeyError(rpc_error.error_message)
 
-    if code == 500:
-        return ServerError(message)
+    if rpc_error.error_code == 500:
+        return ServerError(rpc_error.error_message)
 
-    return RPCError('{} (code {})'.format(message, code))
+    return RPCError('{} (code {})'.format(
+        rpc_error.error_message, rpc_error.error_code))
