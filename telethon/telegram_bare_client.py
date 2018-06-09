@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import logging
 import platform
+import warnings
 from datetime import timedelta, datetime
 
 from . import version, errors, utils
@@ -418,7 +419,10 @@ class TelegramBareClient:
         raise ValueError('Number of retries reached 0')
 
     # Let people use client.invoke(SomeRequest()) instead client(...)
-    invoke = __call__
+    async def invoke(self, *args, **kwargs):
+        warnings.warn('client.invoke(...) is deprecated, '
+                      'use client(...) instead')
+        return await self(*args, **kwargs)
 
     # endregion
 
