@@ -250,6 +250,23 @@ class MTProtoSender:
         self._reconnecting = False
         await self._connect()
 
+    def _clean_containers(self, msg_ids):
+        """
+        Helper method to clean containers from the pending messages
+        once a wrapped msg_id of them has been acknowledged.
+
+        This is the only way we can resend TLMessage(MessageContainer)
+        on bad notifications and also mark them as received once any
+        of their inner TLMessage is acknowledged.
+        """
+        for i in reversed(range(len(self._pending_containers))):
+            message = self._pending_containers[i]
+            for msg in message.obj.messages:
+                if msg.msg_id in msg_ids:
+                    del self._pending_containers[i]
+                    del self._pending_messages[message.msg_id]
+                    break
+
     # Loops
 
     async def _send_loop(self):
@@ -520,23 +537,6 @@ class MTProtoSender:
         # TODO https://goo.gl/LMyN7A
         __log__.debug('Handling new session created')
         self.state.salt = message.obj.server_salt
-
-    def _clean_containers(self, msg_ids):
-        """
-        Helper method to clean containers from the pending messages
-        once a wrapped msg_id of them has been acknowledged.
-
-        This is the only way we can resend TLMessage(MessageContainer)
-        on bad notifications and also mark them as received once any
-        of their inner TLMessage is acknowledged.
-        """
-        for i in reversed(range(len(self._pending_containers))):
-            message = self._pending_containers[i]
-            for msg in message.obj.messages:
-                if msg.msg_id in msg_ids:
-                    del self._pending_containers[i]
-                    del self._pending_messages[message.msg_id]
-                    break
 
     async def _handle_ack(self, message):
         """

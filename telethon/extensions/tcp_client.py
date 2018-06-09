@@ -21,8 +21,6 @@ except ImportError:
 __log__ = logging.getLogger(__name__)
 
 
-# TODO Except asyncio.TimeoutError, ConnectionError, OSError...
-# ...for connect, write and read (in the upper levels, not here)
 class TcpClient:
     """A simple TCP client to ease the work with sockets and proxies."""
     def __init__(self, proxy=None, timeout=5):
