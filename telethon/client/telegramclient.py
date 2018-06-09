@@ -11,17 +11,17 @@ from collections import UserList
 from io import BytesIO
 from mimetypes import guess_type
 
-from .crypto import CdnDecrypter
-from .tl.custom import InputSizedFile
-from .tl.functions.help import AcceptTermsOfServiceRequest
-from .tl.functions.updates import GetDifferenceRequest
-from .tl.functions.upload import (
+from ..crypto import CdnDecrypter
+from ..tl.custom import InputSizedFile
+from ..tl.functions.help import AcceptTermsOfServiceRequest
+from ..tl.functions.updates import GetDifferenceRequest
+from ..tl.functions.upload import (
     SaveBigFilePartRequest, SaveFilePartRequest, GetFileRequest
 )
-from .tl.types.updates import (
+from ..tl.types.updates import (
     DifferenceSlice, DifferenceEmpty, Difference, DifferenceTooLong
 )
-from .tl.types.upload import FileCdnRedirect
+from ..tl.types.upload import FileCdnRedirect
 
 try:
     import socks
@@ -35,23 +35,23 @@ try:
 except ImportError:
     hachoir = None
 
-from . import TelegramBareClient
-from . import helpers, events
-from .errors import (
+from .telegrambaseclient import TelegramBaseClient
+from .. import helpers, events
+from ..errors import (
     PhoneCodeEmptyError, PhoneCodeExpiredError,
     PhoneCodeHashEmptyError, PhoneCodeInvalidError, LocationInvalidError,
     SessionPasswordNeededError, FileMigrateError, PhoneNumberUnoccupiedError,
     PhoneNumberOccupiedError
 )
-from .tl.custom import Draft, Dialog
-from .tl.functions.account import (
+from ..tl.custom import Draft, Dialog
+from ..tl.functions.account import (
     GetPasswordRequest, UpdatePasswordSettingsRequest
 )
-from .tl.functions.auth import (
+from ..tl.functions.auth import (
     CheckPasswordRequest, LogOutRequest, SendCodeRequest, SignInRequest,
     SignUpRequest, ResendCodeRequest, ImportBotAuthorizationRequest
 )
-from .tl.functions.messages import (
+from ..tl.functions.messages import (
     GetDialogsRequest, GetHistoryRequest, SendMediaRequest,
     SendMessageRequest, GetAllDraftsRequest,
     ReadMentionsRequest, SendMultiMediaRequest,
@@ -59,13 +59,13 @@ from .tl.functions.messages import (
     ForwardMessagesRequest, SearchRequest
 )
 
-from .tl.functions import channels
-from .tl.functions import messages
+from ..tl.functions import channels
+from ..tl.functions import messages
 
-from .tl.functions.channels import (
+from ..tl.functions.channels import (
     GetFullChannelRequest, GetParticipantsRequest
 )
-from .tl.types import (
+from ..tl.types import (
     DocumentAttributeAudio, DocumentAttributeFilename,
     InputMediaUploadedDocument, InputMediaUploadedPhoto, InputPeerEmpty,
     Message, MessageMediaContact, MessageMediaDocument, MessageMediaPhoto,
@@ -81,21 +81,21 @@ from .tl.types import (
     ChannelParticipantsBanned, ChannelParticipantsKicked,
     InputMessagesFilterEmpty, UpdatesCombined
 )
-from .tl.types.messages import DialogsSlice, MessagesNotModified
-from .tl.types.account import PasswordInputSettings, NoPassword
-from .tl import custom
-from .utils import Default
-from .extensions import markdown, html
+from ..tl.types.messages import DialogsSlice, MessagesNotModified
+from ..tl.types.account import PasswordInputSettings, NoPassword
+from ..tl import custom
+from ..utils import Default
+from ..extensions import markdown, html
 
 __log__ = logging.getLogger(__name__)
 import os
 from datetime import datetime
-from . import utils
-from .errors import RPCError
-from .tl import TLObject
+from .. import utils
+from ..errors import RPCError
+from ..tl import TLObject
 
 
-class TelegramClient(TelegramBareClient):
+class TelegramClient(TelegramBaseClient):
     """
     Initializes the Telegram client with the specified API ID and Hash. This
     is identical to the `telethon.telegram_bare_client.TelegramBareClient`
