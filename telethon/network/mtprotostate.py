@@ -119,13 +119,8 @@ class MTProtoState:
 
         remote_msg_id = reader.read_long()
         remote_sequence = reader.read_int()
-        msg_len = reader.read_int()
-        before = reader.tell_position()
+        reader.read_int()  # msg_len for the inner object, padding ignored
         obj = reader.tgread_object()
-        if reader.tell_position() != before + msg_len:
-            reader.set_position(before)
-            __log__.warning('Data left after TLObject {}: {!r}'
-                            .format(obj, reader.read(msg_len)))
 
         return TLMessage(remote_msg_id, remote_sequence, obj)
 
