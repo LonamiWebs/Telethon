@@ -5,14 +5,14 @@ import time
 import warnings
 from collections import UserList
 
-from .files import FileMethods
+from .uploads import UploadMethods
 from .. import utils
 from ..tl import types, functions, custom
 
 __log__ = logging.getLogger(__name__)
 
 
-class MessageMethods(FileMethods):
+class MessageMethods(UploadMethods):
 
     # region Public methods
 

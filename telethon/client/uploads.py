@@ -15,13 +15,15 @@ from ..tl import types, functions, custom
 
 try:
     import hachoir
+    import hachoir.metadata
+    import hachoir.parser
 except ImportError:
     hachoir = None
 
 __log__ = logging.getLogger(__name__)
 
 
-class FileMethods(UserMethods):
+class UploadMethods(UserMethods):
 
     # region Public methods
 

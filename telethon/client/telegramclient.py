@@ -21,12 +21,6 @@ try:
 except ImportError:
     socks = None
 
-try:
-    import hachoir
-    import hachoir.metadata
-    import hachoir.parser
-except ImportError:
-    hachoir = None
 
 from .telegrambaseclient import TelegramBaseClient
 from .. import helpers, events

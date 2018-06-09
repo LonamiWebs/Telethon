@@ -1,18 +1,16 @@
 import abc
-import asyncio
-import itertools
 import logging
 import platform
 import warnings
 from datetime import timedelta, datetime
 
-from .. import version, errors, utils
+from .. import version
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
 from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession
-from ..tl import TLObject, types, functions
+from ..tl import TLObject, functions
 from ..tl.all_tlobjects import LAYER
 from ..update_state import UpdateState
 
