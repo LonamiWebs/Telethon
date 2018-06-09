@@ -402,6 +402,27 @@ def get_input_message(message):
     _raise_cast_fail(message, 'InputMedia')
 
 
+def get_message_id(message):
+    """Sanitizes the 'reply_to' parameter a user may send"""
+    if message is None:
+        return None
+
+    if isinstance(message, int):
+        return message
+
+    if hasattr(message, 'original_message'):
+        return message.original_message.id
+
+    try:
+        if message.SUBCLASS_OF_ID == 0x790009e3:
+            # hex(crc32(b'Message')) = 0x790009e3
+            return message.id
+    except AttributeError:
+        pass
+
+    raise TypeError('Invalid message type: {}'.format(type(message)))
+
+
 def get_input_location(location):
     """Similar to :meth:`get_input_peer`, but for input messages."""
     try:
