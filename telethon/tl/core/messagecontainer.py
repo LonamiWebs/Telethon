@@ -1,7 +1,10 @@
+import logging
 import struct
 
-from ..tlobject import TLObject
 from .tlmessage import TLMessage
+from ..tlobject import TLObject
+
+__log__ = logging.getLogger(__name__)
 
 
 class MessageContainer(TLObject):
@@ -26,17 +29,6 @@ class MessageContainer(TLObject):
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
         ) + b''.join(bytes(m) for m in self.messages)
 
-    @staticmethod
-    def iter_read(reader):
-        reader.read_int(signed=False)  # code
-        size = reader.read_int()
-        for _ in range(size):
-            inner_msg_id = reader.read_long()
-            inner_sequence = reader.read_int()
-            inner_length = reader.read_int()
-            yield TLMessage(inner_msg_id, inner_sequence,
-                            body=reader.read(inner_length))
-
     def __str__(self):
         return TLObject.pretty_format(self)
 
@@ -46,8 +38,16 @@ class MessageContainer(TLObject):
     @classmethod
     def from_reader(cls, reader):
         # This assumes that .read_* calls are done in the order they appear
-        return MessageContainer([TLMessage(
-            msg_id=reader.read_long(),
-            seq_no=reader.read_int(),
-            body=reader.read(reader.read_int())
-        ) for _ in range(reader.read_int())])
+        messages = []
+        for _ in range(reader.read_int()):
+            msg_id = reader.read_long()
+            seq_no = reader.read_int()
+            length = reader.read_int()
+            before = reader.tell_position()
+            obj = reader.tgread_object()
+            messages.append(TLMessage(msg_id, seq_no, obj))
+            if reader.tell_position() != before + length:
+                reader.set_position(before)
+                __log__.warning('Data left after TLObject {}: {!r}'
+                                .format(obj, reader.read(length)))
+        return MessageContainer(messages)

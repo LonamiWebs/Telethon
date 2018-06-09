@@ -1,3 +1,4 @@
+import logging
 import os
 import struct
 import time
@@ -7,6 +8,8 @@ from ..crypto import AES
 from ..errors import SecurityError, BrokenAuthKeyError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
+
+__log__ = logging.getLogger(__name__)
 
 
 class MTProtoState:
@@ -33,15 +36,15 @@ class MTProtoState:
         self._sequence = 0
         self._last_msg_id = 0
 
-    def create_message(self, request, after=None):
+    def create_message(self, obj, after=None):
         """
         Creates a new `telethon.tl.tl_message.TLMessage` from
         the given `telethon.tl.tlobject.TLObject` instance.
         """
         return TLMessage(
             msg_id=self._get_new_msg_id(),
-            seq_no=self._get_seq_no(request.content_related),
-            request=request,
+            seq_no=self._get_seq_no(obj.content_related),
+            obj=obj,
             after_id=after.msg_id if after else None
         )
 
@@ -100,25 +103,31 @@ class MTProtoState:
 
         msg_key = body[8:24]
         aes_key, aes_iv = self._calc_key(self.auth_key.key, msg_key, False)
-        data = BinaryReader(AES.decrypt_ige(body[24:], aes_key, aes_iv))
-
-        data.read_long()  # remote_salt
-        if data.read_long() != self.id:
-            raise SecurityError('Server replied with a wrong session ID')
-
-        remote_msg_id = data.read_long()
-        remote_sequence = data.read_int()
-        msg_len = data.read_int()
-        message = data.read(msg_len)
+        body = AES.decrypt_ige(body[24:], aes_key, aes_iv)
 
         # https://core.telegram.org/mtproto/security_guidelines
         # Sections "checking sha256 hash" and "message length"
-        our_key = sha256(self.auth_key.key[96:96 + 32] + data.get_bytes())
+        our_key = sha256(self.auth_key.key[96:96 + 32] + body)
         if msg_key != our_key.digest()[8:24]:
             raise SecurityError(
                 "Received msg_key doesn't match with expected one")
 
-        return TLMessage(remote_msg_id, remote_sequence, body=message)
+        reader = BinaryReader(body)
+        reader.read_long()  # remote_salt
+        if reader.read_long() != self.id:
+            raise SecurityError('Server replied with a wrong session ID')
+
+        remote_msg_id = reader.read_long()
+        remote_sequence = reader.read_int()
+        msg_len = reader.read_int()
+        before = reader.tell_position()
+        obj = reader.tgread_object()
+        if reader.tell_position() != before + msg_len:
+            reader.set_position(before)
+            __log__.warning('Data left after TLObject {}: {!r}'
+                            .format(obj, reader.read(msg_len)))
+
+        return TLMessage(remote_msg_id, remote_sequence, obj)
 
     def _get_new_msg_id(self):
         """

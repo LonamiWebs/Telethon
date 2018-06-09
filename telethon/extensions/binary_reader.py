@@ -141,7 +141,10 @@ class BinaryReader:
             if clazz is None:
                 # If there was still no luck, give up
                 self.seek(-4)  # Go back
-                raise TypeNotFoundError(constructor_id)
+                pos = self.tell_position()
+                error = TypeNotFoundError(constructor_id, self.read())
+                self.set_position(pos)
+                raise error
 
         return clazz.from_reader(self)
 

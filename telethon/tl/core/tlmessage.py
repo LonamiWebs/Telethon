@@ -21,22 +21,13 @@ class TLMessage(TLObject):
     sent `TLMessage`, and this result can be represented as a `Future`
     that will eventually be set with either a result, error or cancelled.
     """
-    def __init__(self, msg_id, seq_no, body=None, request=None, after_id=0):
+    def __init__(self, msg_id, seq_no, obj=None, after_id=0):
         super().__init__()
         self.msg_id = msg_id
         self.seq_no = seq_no
+        self.obj = obj
         self.container_msg_id = None
         self.future = asyncio.Future()
-
-        # TODO Perhaps it's possible to merge body and request?
-        # We need things like rpc_result and gzip_packed to
-        # be readable by the ``BinaryReader`` for such purpose.
-
-        # Used for incoming, not-decoded messages
-        self.body = body
-
-        # Used for outgoing, not-encoded messages
-        self.request = request
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can
@@ -47,17 +38,17 @@ class TLMessage(TLObject):
         return {
             'msg_id': self.msg_id,
             'seq_no': self.seq_no,
-            'request': self.request,
+            'obj': self.obj,
             'container_msg_id': self.container_msg_id,
             'after_id': self.after_id
         }
 
     def __bytes__(self):
         if self.after_id is None:
-            body = GzipPacked.gzip_if_smaller(self.request)
+            body = GzipPacked.gzip_if_smaller(self.obj)
         else:
             body = GzipPacked.gzip_if_smaller(
-                InvokeAfterMsgRequest(self.after_id, self.request))
+                InvokeAfterMsgRequest(self.after_id, self.obj))
 
         return struct.pack('<qii', self.msg_id, self.seq_no, len(body)) + body
 
