@@ -96,7 +96,8 @@ def _build_menu(docs, filename, root, relative_main_index):
     docs.end_menu()
 
 
-def _generate_index(folder, original_paths, root, bots_index=False, bots_index_paths=list()):
+def _generate_index(folder, original_paths, root,
+                    bots_index=False, bots_index_paths=()):
     """Generates the index file for the specified folder"""
     # Determine the namespaces listed here (as sub folders)
     # and the files (.html files) that we should link to
@@ -140,7 +141,8 @@ def _generate_index(folder, original_paths, root, bots_index=False, bots_index_p
         docs.write_title(_get_relative_path(folder, root, folder=True).title())
         if bots_index:
             docs.write_text('These are the methods that you can use as a bot. '
-                            'Click <a href="{}">here</a> to view them all.'.format(INDEX))
+                            'Click <a href="{}">here</a> to '
+                            'view them all.'.format(INDEX))
         else:
             docs.write_text('Click <a href="{}">here</a> to view the methods '
                             'that you can use as a bot.'.format(BOT_INDEX))
@@ -156,10 +158,14 @@ def _generate_index(folder, original_paths, root, bots_index=False, bots_index_p
                         if os.path.dirname(item) == namespace:
                             namespace_paths.append(os.path.basename(item))
                 _generate_index(os.path.join(folder, namespace),
-                                original_paths, root, bots_index, namespace_paths)
-                docs.add_row(namespace.title(),
-                             link=os.path.join(namespace,
-                                               INDEX if not bots_index else BOT_INDEX))
+                                original_paths, root,
+                                bots_index, namespace_paths)
+                if bots_index:
+                    docs.add_row(namespace.title(),
+                                 link=os.path.join(namespace, BOT_INDEX)
+                else:
+                    docs.add_row(namespace.title(),
+                                 link=os.path.join(namespace, INDEX))
 
             docs.end_table()
 
@@ -545,7 +551,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
         _generate_index(os.path.join(output_dir, folder), original_paths,
                         output_dir)
 
-    _generate_index(os.path.join(output_dir, 'methods'), original_paths, output_dir, True, bot_docs_paths)
+    _generate_index(os.path.join(output_dir, 'methods'), original_paths,
+                    output_dir, True, bot_docs_paths)
 
     # Write the final core index, the main index for the rest of files
     types = set()
