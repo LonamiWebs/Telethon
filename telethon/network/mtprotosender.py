@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from . import MTProtoPlainSender, authenticator
-from .connection import ConnectionTcpFull
 from .. import utils
 from ..errors import (
     BadMessageError, TypeNotFoundError, BrokenAuthKeyError, SecurityError,
@@ -39,12 +38,16 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, state, retries=5):
+    def __init__(self, state, connection, *, retries=5,
+                 first_query=None, update_callback=None):
         self.state = state
-        self._connection = ConnectionTcpFull()
+        self._connection = connection
         self._ip = None
         self._port = None
         self._retries = retries
+        self._first_query = first_query
+        self._is_first_query = bool(first_query)
+        self._update_callback = update_callback
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -109,6 +112,9 @@ class MTProtoSender:
         self._port = port
         self._user_connected = True
         await self._connect()
+
+    def is_connected(self):
+        return self._user_connected
 
     async def disconnect(self):
         """
@@ -227,6 +233,12 @@ class MTProtoSender:
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = asyncio.ensure_future(self._send_loop())
+        if self._is_first_query:
+            __log__.debug('Running first query')
+            self._is_first_query = False
+            async with self._send_lock:
+                self.send(self._first_query)
+
         __log__.debug('Starting receive loop')
         self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
         __log__.info('Connection to {} complete!'.format(self._ip))
@@ -445,9 +457,8 @@ class MTProtoSender:
     async def _handle_update(self, message):
         __log__.debug('Handling update {}'
                       .format(message.obj.__class__.__name__))
-
-        # TODO Further handling of the update
-        # TODO Process entities
+        if self._update_callback:
+            self._update_callback(message.obj)
 
     async def _handle_pong(self, message):
         """
