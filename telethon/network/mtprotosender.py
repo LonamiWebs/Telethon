@@ -142,7 +142,7 @@ class MTProtoSender:
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
 
-    async def send(self, request, ordered=False):
+    def send(self, request, ordered=False):
         """
         This method enqueues the given request to be sent.
 
@@ -154,7 +154,7 @@ class MTProtoSender:
 
             async def method():
                 # Sending (enqueued for the send loop)
-                future = await sender.send(request)
+                future = sender.send(request)
                 # Receiving (waits for the receive loop to read the result)
                 result = await future
 
@@ -167,23 +167,20 @@ class MTProtoSender:
         Since the receiving part is "built in" the future, it's
         impossible to await receive a result that was never sent.
         """
-        # TODO Perhaps this method should be synchronous and just return
-        # a `Future` that you need to further ``await`` instead of the
-        # currently double ``await (await send())``?
         if utils.is_list_like(request):
             result = []
             after = None
             for r in request:
                 message = self.state.create_message(r, after=after)
                 self._pending_messages[message.msg_id] = message
-                await self._send_queue.put(message)
+                self._send_queue.put_nowait(message)
                 result.append(message.future)
                 after = ordered and message
             return result
         else:
             message = self.state.create_message(request)
             self._pending_messages[message.msg_id] = message
-            await self._send_queue.put(message)
+            self._send_queue.put_nowait(message)
             return message.future
 
     # Private methods
@@ -264,7 +261,7 @@ class MTProtoSender:
         """
         while self._user_connected and not self._reconnecting:
             if self._pending_ack:
-                await self._send_queue.put(self.state.create_message(
+                self._send_queue.put_nowait(self.state.create_message(
                     MsgsAck(list(self._pending_ack))
                 ))
                 self._pending_ack.clear()
@@ -299,7 +296,7 @@ class MTProtoSender:
                     if m.future.cancelled():
                         self._pending_messages.pop(m.msg_id, None)
                     else:
-                        await self._send_queue.put(m)
+                        self._send_queue.put_nowait(m)
 
             __log__.debug('Outgoing messages sent!')
 
@@ -387,7 +384,7 @@ class MTProtoSender:
         if rpc_result.error:
             # TODO Report errors if possible/enabled
             error = rpc_message_to_error(rpc_result.error)
-            await self._send_queue.put(self.state.create_message(
+            self._send_queue.put_nowait(self.state.create_message(
                 MsgsAck([message.msg_id])
             ))
 
@@ -459,7 +456,7 @@ class MTProtoSender:
         __log__.debug('Handling bad salt')
         bad_salt = message.obj
         self.state.salt = bad_salt.new_server_salt
-        await self._send_queue.put(self._pending_messages[bad_salt.bad_msg_id])
+        self._send_queue.put_nowait(self._pending_messages[bad_salt.bad_msg_id])
 
     async def _handle_bad_notification(self, message):
         """
@@ -489,7 +486,7 @@ class MTProtoSender:
             return
 
         # Messages are to be re-sent once we've corrected the issue
-        await self._send_queue.put(self._pending_messages[bad_msg.bad_msg_id])
+        self._send_queue.put_nowait(self._pending_messages[bad_msg.bad_msg_id])
 
     async def _handle_detailed_info(self, message):
         """
@@ -603,7 +600,7 @@ class _ContainerQueue(asyncio.Queue):
         while not self.empty():
             item = self.get_nowait()
             if isinstance(item.obj, MessageContainer):
-                await self.put(item)
+                self.put_nowait(item)
                 break
             else:
                 result.append(item)
