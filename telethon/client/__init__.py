@@ -9,3 +9,14 @@ first implementor is `telethon.client.users.UserMethods`, since calling
 requests require them to be resolved first, and that requires accessing
 entities (users).
 """
+from .telegrambaseclient import TelegramBaseClient
+from .users import UserMethods  # Required for everything
+from .messageparse import MessageParseMethods  # Required for messages
+from .uploads import UploadMethods  # Required for messages to send files
+from .messages import MessageMethods
+from .chats import ChatMethods
+from .dialogs import DialogMethods
+from .downloads import DownloadMethods
+from .auth import AuthMethods
+from .updates import UpdateMethods
+from .telegramclient import TelegramClient
