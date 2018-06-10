@@ -5,6 +5,7 @@ import time
 import warnings
 from collections import UserList
 
+from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .. import utils
 from ..tl import types, functions, custom
@@ -12,7 +13,7 @@ from ..tl import types, functions, custom
 __log__ = logging.getLogger(__name__)
 
 
-class MessageMethods(UploadMethods):
+class MessageMethods(UploadMethods, MessageParseMethods):
 
     # region Public methods
 
