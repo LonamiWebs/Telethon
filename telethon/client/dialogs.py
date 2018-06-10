@@ -9,6 +9,7 @@ from ..tl import types, functions, custom
 
 
 class DialogMethods(UserMethods):
+
     # region Public methods
 
     @async_generator
@@ -103,10 +104,13 @@ class DialogMethods(UserMethods):
         """
         total = [0]
         kwargs['_total'] = total
-        dialogs = UserList(x async for x in self.iter_dialogs(*args, **kwargs))
+        dialogs = UserList()
+        async for x in self.iter_dialogs(*args, **kwargs):
+            dialogs.append(x)
         dialogs.total = total[0]
         return dialogs
 
+    @async_generator
     async def iter_drafts(self):  # TODO: Ability to provide a `filter`
         """
         Iterator over all open draft messages.
@@ -124,6 +128,9 @@ class DialogMethods(UserMethods):
         """
         Same as :meth:`iter_drafts`, but returns a list instead.
         """
-        return list(x async for x in self.iter_drafts())
+        result = []
+        async for x in self.iter_drafts():
+            result.append(x)
+        return result
 
     # endregion

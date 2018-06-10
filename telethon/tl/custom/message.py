@@ -269,24 +269,26 @@ class Message:
         return bool(self.original_message.reply_to_msg_id)
 
     @property
-    def buttons(self):
+    async def buttons(self):
         """
         Returns a matrix (list of lists) containing all buttons of the message
         as `telethon.tl.custom.messagebutton.MessageButton` instances.
         """
         if self._buttons is None and self.original_message.reply_markup:
+            sender = await self.input_sender
+            chat = await self.input_chat
             if isinstance(self.original_message.reply_markup, (
                     types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
                 self._buttons = [[
-                    MessageButton(self._client, button, self.input_sender,
-                                  self.input_chat, self.original_message.id)
+                    MessageButton(self._client, button, sender, chat,
+                                  self.original_message.id)
                     for button in row.buttons
                 ] for row in self.original_message.reply_markup.rows]
                 self._buttons_flat = [x for row in self._buttons for x in row]
         return self._buttons
 
     @property
-    def button_count(self):
+    async def button_count(self):
         """
         Returns the total button count.
         """
@@ -398,7 +400,7 @@ class Message:
             if not self.original_message.reply_to_msg_id:
                 return None
             self._reply_message = await self._client.get_messages(
-                self.input_chat if self.is_channel else None,
+                await self.input_chat if self.is_channel else None,
                 ids=self.original_message.reply_to_msg_id
             )
 

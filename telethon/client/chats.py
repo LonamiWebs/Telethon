@@ -179,8 +179,9 @@ class ChatMethods(UserMethods):
         """
         total = [0]
         kwargs['_total'] = total
-        participants = UserList(x async for x in
-                                self.iter_participants(*args, **kwargs))
+        participants = UserList()
+        async for x in self.iter_participants(*args, **kwargs):
+            participants.append(x)
         participants.total = total[0]
         return participants
 

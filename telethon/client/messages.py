@@ -244,7 +244,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             else:
                 kwargs['limit'] = 1
 
-        msgs = UserList(x async for x in self.iter_messages(*args, **kwargs))
+        msgs = UserList()
+        async for x in self.iter_messages(*args, **kwargs):
+            msgs.append(x)
         msgs.total = total[0]
         if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
             return msgs[0]
