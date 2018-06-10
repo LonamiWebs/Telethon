@@ -1,14 +1,17 @@
 import itertools
 from collections import UserList
 
+from async_generator import async_generator, yield_
+
 from .users import UserMethods
-from ..tl import types, functions, custom
 from .. import utils
+from ..tl import types, functions, custom
 
 
 class DialogMethods(UserMethods):
     # region Public methods
 
+    @async_generator
     async def iter_dialogs(
             self, limit=None, offset_date=None, offset_id=0,
             offset_peer=types.InputPeerEmpty(), _total=None):
@@ -80,7 +83,7 @@ class DialogMethods(UserMethods):
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
-                    yield custom.Dialog(self, d, entities, messages)
+                    await yield_(custom.Dialog(self, d, entities, messages))
 
             if len(r.dialogs) < req.limit\
                     or not isinstance(r, types.messages.DialogsSlice):
@@ -115,7 +118,7 @@ class DialogMethods(UserMethods):
         """
         r = await self(functions.messages.GetAllDraftsRequest())
         for update in r.updates:
-            yield custom.Draft._from_update(self, update)
+            await yield_(custom.Draft._from_update(self, update))
 
     async def get_drafts(self):
         """
