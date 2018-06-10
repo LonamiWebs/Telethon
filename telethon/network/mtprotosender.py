@@ -311,7 +311,7 @@ class MTProtoSender:
             while not any(m.future.cancelled() for m in messages):
                 try:
                     async with self._send_lock:
-                        __log__.debug('Sending {} bytes...', len(body))
+                        __log__.debug('Sending {} bytes...'.format(len(body)))
                         await self._connection.send(body)
                     break
                 # TODO Are there more exceptions besides timeout?
