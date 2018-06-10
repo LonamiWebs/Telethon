@@ -51,7 +51,7 @@ class MessageButton:
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
-    def click(self):
+    async def click(self):
         """
         Clicks the inline keyboard button of the message, if any.
 
@@ -59,15 +59,17 @@ class MessageButton:
         send the message, switch to inline, or open its URL.
         """
         if isinstance(self.button, types.KeyboardButton):
-            return self._client.send_message(
+            return await self._client.send_message(
                 self._chat, self.button.text, reply_to=self._msg_id)
         elif isinstance(self.button, types.KeyboardButtonCallback):
-            return self._client(functions.messages.GetBotCallbackAnswerRequest(
+            req = functions.messages.GetBotCallbackAnswerRequest(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data
-            ), retries=1)
+            )
+            return await self._client(req, retries=1)
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
-            return self._client(functions.messages.StartBotRequest(
+            req = functions.messages.StartBotRequest(
                 bot=self._from, peer=self._chat, start_param=self.button.query
-            ), retries=1)
+            )
+            return await self._client(req, retries=1)
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)
