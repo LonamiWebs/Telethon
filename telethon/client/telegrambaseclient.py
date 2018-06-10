@@ -96,8 +96,9 @@ class TelegramBaseClient(abc.ABC):
     # Current TelegramClient version
     __version__ = version.__version__
 
-    # Server configuration (with .dc_options)
+    # Cached server configuration (with .dc_options), can be "global"
     _config = None
+    _cdn_config = None
 
     # region Initialization
 
@@ -219,8 +220,13 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
+        had_auth = self.session.auth_key is not None
         await self._sender.connect(
             self.session.server_address, self.session.port)
+
+        if not had_auth:
+            self.session.auth_key = self._sender.state.auth_key
+            self.session.save()
 
     def is_connected(self):
         """
@@ -237,22 +243,20 @@ class TelegramBaseClient(abc.ABC):
         # self.session.set_update_state(0, self.updates.get_update_state(0))
         self.session.close()
 
-    def _switch_dc(self, new_dc):
+    async def _switch_dc(self, new_dc):
         """
         Permanently switches the current connection to the new data center.
         """
-        # TODO Implement
-        raise NotImplementedError
-        dc = self._get_dc(new_dc)
-        __log__.info('Reconnecting to new data center %s', dc)
+        __log__.info('Reconnecting to new data center %s', new_dc)
+        dc = await self._get_dc(new_dc)
 
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
-        self.session.auth_key = None
+        self.session.auth_key = self._sender.state.auth_key = None
         self.session.save()
-        self.disconnect()
-        return self.connect()
+        await self.disconnect()
+        return await self.connect()
 
     # endregion
 
@@ -260,31 +264,20 @@ class TelegramBaseClient(abc.ABC):
 
     async def _get_dc(self, dc_id, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
-        if not TelegramBaseClient._config:
-            TelegramBaseClient._config =\
-                await self(functions.help.GetConfigRequest())
+        cls = self.__class__
+        if not cls._config:
+            cls._config = await self(functions.help.GetConfigRequest())
 
-        try:
-            if cdn:
-                # Ensure we have the latest keys for the CDNs
-                result = await self(functions.help.GetCdnConfigRequest())
-                for pk in result.public_keys:
-                    rsa.add_key(pk.public_key)
+        if cdn and not self._cdn_config:
+            cls._cdn_config = await self(functions.help.GetCdnConfigRequest())
+            for pk in cls._cdn_config.public_keys:
+                rsa.add_key(pk.public_key)
 
-            return next(
-                dc for dc in TelegramBaseClient._config.dc_options
-                if dc.id == dc_id
-                and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
-            )
-        except StopIteration:
-            if not cdn:
-                raise
-
-            # New configuration, perhaps a new CDN was added?
-            TelegramBaseClient._config =\
-                await self(functions.help.GetConfigRequest())
-
-            return self._get_dc(dc_id, cdn=cdn)
+        return next(
+            dc for dc in cls._config.dc_options
+            if dc.id == dc_id
+            and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
+        )
 
     async def _get_exported_client(self, dc_id):
         """Creates and connects a new TelegramBareClient for the desired DC.

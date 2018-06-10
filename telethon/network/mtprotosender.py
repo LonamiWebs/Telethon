@@ -215,6 +215,7 @@ class MTProtoSender:
 
         __log__.debug('Connection success!')
         if self.state.auth_key is None:
+            self._is_first_query = True
             _last_error = SecurityError()
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
@@ -233,14 +234,13 @@ class MTProtoSender:
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = asyncio.ensure_future(self._send_loop())
+        __log__.debug('Starting receive loop')
+        self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
         if self._is_first_query:
             __log__.debug('Running first query')
             self._is_first_query = False
-            async with self._send_lock:
-                self.send(self._first_query)
+            await self.send(self._first_query)
 
-        __log__.debug('Starting receive loop')
-        self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):
@@ -327,7 +327,8 @@ class MTProtoSender:
                     else:
                         self._send_queue.put_nowait(m)
 
-            __log__.debug('Outgoing messages sent!')
+            __log__.debug('Outgoing messages {} sent!'
+                          .format(', '.join(str(m.msg_id) for m in messages)))
 
     async def _recv_loop(self):
         """
