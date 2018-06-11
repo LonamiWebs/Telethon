@@ -1,4 +1,5 @@
 from .. import types, functions
+from ...errors import BotTimeout
 import webbrowser
 
 
@@ -65,11 +66,13 @@ class MessageButton:
             req = functions.messages.GetBotCallbackAnswerRequest(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data
             )
-            return await self._client(req, retries=1)
+            try:
+                return await self._client(req)
+            except BotTimeout:
+                return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
-            req = functions.messages.StartBotRequest(
+            return await self._client(functions.messages.StartBotRequest(
                 bot=self._from, peer=self._chat, start_param=self.button.query
-            )
-            return await self._client(req, retries=1)
+            ))
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)

@@ -97,6 +97,19 @@ class ServerError(RPCError):
         self.message = message
 
 
+class BotTimeout(RPCError):
+    """
+    Clicking the inline buttons of bots that never (or take to long to)
+    call ``answerCallbackQuery`` will result in this "special" RPCError.
+    """
+    code = -503
+    message = 'Timeout'
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
 class BadMessageError(Exception):
     """Occurs when handling a bad_message_notification."""
     ErrorMessages = {
@@ -142,3 +155,9 @@ class BadMessageError(Exception):
             'Unknown error code (this should not happen): {}.'.format(code)))
 
         self.code = code
+
+
+base_errors = {x.code: x for x in (
+    InvalidDCError, BadRequestError, UnauthorizedError, ForbiddenError,
+    NotFoundError, AuthKeyError, FloodError, ServerError, BotTimeout
+)}

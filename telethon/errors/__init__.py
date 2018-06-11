@@ -66,23 +66,5 @@ def rpc_message_to_error(rpc_error, report_method=None):
             capture = int(m.group(1)) if m.groups() else None
             return cls(capture=capture)
 
-    if rpc_error.error_code == 400:
-        return BadRequestError(rpc_error.error_message)
-
-    if rpc_error.error_code == 401:
-        return UnauthorizedError(rpc_error.error_message)
-
-    if rpc_error.error_code == 403:
-        return ForbiddenError(rpc_error.error_message)
-
-    if rpc_error.error_code == 404:
-        return NotFoundError(rpc_error.error_message)
-
-    if rpc_error.error_code == 406:
-        return AuthKeyError(rpc_error.error_message)
-
-    if rpc_error.error_code == 500:
-        return ServerError(rpc_error.error_message)
-
-    return RPCError('{} (code {})'.format(
-        rpc_error.error_message, rpc_error.error_code))
+    cls = base_errors.get(rpc_error.error_code, RPCError)
+    return cls(rpc_error.error_message)
