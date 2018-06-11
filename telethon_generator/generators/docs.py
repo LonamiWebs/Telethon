@@ -113,13 +113,13 @@ def _generate_index(folder, original_paths, root,
             elif item not in (INDEX, BOT_INDEX):
                 files.append(item)
     else:
-        # bots_index_paths should be a list of "namespace\method.html"
+        # bots_index_paths should be a list of "namespace/method.html"
         # or "method.html"
         for item in bots_index_paths:
             dirname = os.path.dirname(item)
-            if dirname != '' and dirname not in namespaces:
+            if dirname and dirname not in namespaces:
                 namespaces.append(dirname)
-            elif dirname == '' and item not in (INDEX, BOT_INDEX):
+            elif not dirname and item not in (INDEX, BOT_INDEX):
                 files.append(item)
 
     paths = {k: _get_relative_path(v, folder, folder=True)
@@ -127,7 +127,6 @@ def _generate_index(folder, original_paths, root,
 
     # Now that everything is setup, write the index.html file
     filename = os.path.join(folder, BOT_INDEX if bots_index else INDEX)
-
     with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
         docs.write_head(folder.title(),
