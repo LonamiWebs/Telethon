@@ -215,7 +215,7 @@ class MTProtoSender:
 
         __log__.debug('Connection success!')
         if self.state.auth_key is None:
-            self._is_first_query = True
+            self._is_first_query = bool(self._first_query)
             _last_error = SecurityError()
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):

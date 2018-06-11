@@ -84,8 +84,9 @@ class TcpClient:
         """Closes the connection."""
         if self._socket is not None:
             try:
-                self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
+            except OSError:
+                pass
             finally:
                 self._socket = None
 
