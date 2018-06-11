@@ -161,7 +161,7 @@ def _generate_index(folder, original_paths, root,
                                 bots_index, namespace_paths)
                 if bots_index:
                     docs.add_row(namespace.title(),
-                                 link=os.path.join(namespace, BOT_INDEX)
+                                 link=os.path.join(namespace, BOT_INDEX))
                 else:
                     docs.add_row(namespace.title(),
                                  link=os.path.join(namespace, INDEX))
