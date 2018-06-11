@@ -54,10 +54,20 @@ class MessageButton:
 
     async def click(self):
         """
-        Clicks the inline keyboard button of the message, if any.
+        Emulates the behaviour of clicking this button.
 
-        If the message has a non-inline keyboard, clicking it will
-        send the message, switch to inline, or open its URL.
+        If it's a normal :tl:`KeyboardButton` with text, a message will be
+        sent, and the sent `telethon.tl.custom.message.Message` returned.
+
+        If it's an inline :tl:`KeyboardButtonCallback` with text and data,
+        it will be "clicked" and the :tl:`BotCallbackAnswer` returned.
+
+        If it's an inline :tl:`KeyboardButtonSwitchInline` button, the
+        :tl:`StartBotRequest` will be invoked and the resulting updates
+        returned.
+
+        If it's a :tl:`KeyboardButtonUrl`, the URL of the button will
+        be passed to ``webbrowser.open`` and return ``True`` on success.
         """
         if isinstance(self.button, types.KeyboardButton):
             return await self._client.send_message(

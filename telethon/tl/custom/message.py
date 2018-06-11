@@ -512,10 +512,8 @@ class Message:
 
     async def click(self, i=None, j=None, *, text=None, filter=None):
         """
-        Clicks the inline keyboard button of the message, if any.
-
-        If the message has a non-inline keyboard, clicking it will
-        send the message, switch to inline, or open its URL.
+        Calls `telethon.tl.custom.messagebutton.MessageButton.click`
+        for the specified button.
 
         Does nothing if the message has no buttons.
 
