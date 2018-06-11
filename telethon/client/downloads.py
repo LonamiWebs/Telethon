@@ -199,9 +199,8 @@ class DownloadMethods(UserMethods):
         else:
             f = file
 
-        # The used client will change if FileMigrateError occurs
-        client = self
-        cdn_decrypter = None
+        # The used sender will change if ``FileMigrateError`` occurs
+        sender = self._sender
         input_location = utils.get_input_location(input_location)
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
@@ -209,47 +208,32 @@ class DownloadMethods(UserMethods):
             offset = 0
             while True:
                 try:
-                    if cdn_decrypter:
-                        result = cdn_decrypter.get_file()
-                    else:
-                        result = client(functions.upload.GetFileRequest(
-                            input_location, offset, part_size
-                        ))
-
-                        if isinstance(result, types.upload.FileCdnRedirect):
-                            __log__.info('File lives in a CDN')
-                            cdn_decrypter, result = \
-                                await CdnDecrypter.prepare_decrypter(
-                                    client, await self._get_cdn_client(result),
-                                    result
-                                )
-
+                    result = await sender.send(functions.upload.GetFileRequest(
+                        input_location, offset, part_size
+                    ))
+                    if isinstance(result, types.upload.FileCdnRedirect):
+                        # TODO Implement
+                        raise NotImplementedError
                 except errors.FileMigrateError as e:
                     __log__.info('File lives in another DC')
-                    client = await self._get_exported_client(e.new_dc)
+                    sender = await self._get_exported_sender(e.new_dc)
                     continue
 
                 offset += part_size
-
-                # If we have received no data (0 bytes), the file is over
-                # So there is nothing left to download and write
                 if not result.bytes:
-                    # Return some extra information, unless it's a CDN file
                     if in_memory:
                         f.flush()
                         return f.getvalue()
                     else:
                         return getattr(result, 'type', '')
 
+                __log__.debug('Saving %d more bytes', len(result.bytes))
                 f.write(result.bytes)
-                __log__.debug('Saved %d more bytes', len(result.bytes))
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
-            if client != self:
-                await client.disconnect()
-            if cdn_decrypter:
-                await cdn_decrypter.client.disconnect()
+            if sender != self._sender:
+                await sender.disconnect()
             if isinstance(file, str) or in_memory:
                 f.close()
 
