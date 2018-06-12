@@ -32,7 +32,8 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
               'int256', 'double', 'Bool', 'true', 'date')
 
 
-def _write_modules(out_dir, depth, namespace_tlobjects, type_constructors):
+def _write_modules(
+        out_dir, depth, kind, namespace_tlobjects, type_constructors):
     # namespace_tlobjects: {'namespace', [TLObject]}
     os.makedirs(out_dir, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -41,7 +42,7 @@ def _write_modules(out_dir, depth, namespace_tlobjects, type_constructors):
                 SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
+            builder.writeln('from {}.tl.tlobject import {}', '.' * depth, kind)
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
 
@@ -124,7 +125,7 @@ def _write_modules(out_dir, depth, namespace_tlobjects, type_constructors):
 
             # Generate the class for every TLObject
             for t in tlobjects:
-                _write_source_code(t, builder, type_constructors)
+                _write_source_code(t, kind, builder, type_constructors)
                 builder.current_indent = 0
 
             # Write the type definitions generated earlier.
@@ -133,7 +134,7 @@ def _write_modules(out_dir, depth, namespace_tlobjects, type_constructors):
                 builder.writeln(line)
 
 
-def _write_source_code(tlobject, builder, type_constructors):
+def _write_source_code(tlobject, kind, builder, type_constructors):
     """
     Writes the source code corresponding to the given TLObject
     by making use of the ``builder`` `SourceBuilder`.
@@ -142,7 +143,7 @@ def _write_source_code(tlobject, builder, type_constructors):
     the ``Type: [Constructors]`` must be given for proper
     importing and documentation strings.
     """
-    _write_class_init(tlobject, type_constructors, builder)
+    _write_class_init(tlobject, kind, type_constructors, builder)
     _write_resolve(tlobject, builder)
     _write_to_dict(tlobject, builder)
     _write_to_bytes(tlobject, builder)
@@ -150,10 +151,10 @@ def _write_source_code(tlobject, builder, type_constructors):
     _write_read_result(tlobject, builder)
 
 
-def _write_class_init(tlobject, type_constructors, builder):
+def _write_class_init(tlobject, kind, type_constructors, builder):
     builder.writeln()
     builder.writeln()
-    builder.writeln('class {}(TLObject):', tlobject.class_name)
+    builder.writeln('class {}({}):', tlobject.class_name, kind)
 
     # Class-level variable to store its Telegram's constructor ID
     builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
@@ -165,46 +166,39 @@ def _write_class_init(tlobject, type_constructors, builder):
     args = [(a.name if not a.is_flag and not a.can_be_inferred
              else '{}=None'.format(a.name)) for a in tlobject.real_args]
 
-    # Write the __init__ function
+    # Write the __init__ function if it has any argument
+    if not tlobject.real_args:
+        return
+
     builder.writeln('def __init__({}):', ', '.join(['self'] + args))
-    if tlobject.real_args:
-        # Write the docstring, to know the type of the args
-        builder.writeln('"""')
-        for arg in tlobject.real_args:
-            if not arg.flag_indicator:
-                builder.writeln(':param {} {}:', arg.type_hint(), arg.name)
-                builder.current_indent -= 1  # It will auto-indent (':')
+    # Write the docstring, to know the type of the args
+    builder.writeln('"""')
+    for arg in tlobject.real_args:
+        if not arg.flag_indicator:
+            builder.writeln(':param {} {}:', arg.type_hint(), arg.name)
+            builder.current_indent -= 1  # It will auto-indent (':')
 
-        # We also want to know what type this request returns
-        # or to which type this constructor belongs to
-        builder.writeln()
-        if tlobject.is_function:
-            builder.write(':returns {}: ', tlobject.result)
-        else:
-            builder.write('Constructor for {}: ', tlobject.result)
-
-        constructors = type_constructors[tlobject.result]
-        if not constructors:
-            builder.writeln('This type has no constructors.')
-        elif len(constructors) == 1:
-            builder.writeln('Instance of {}.',
-                            constructors[0].class_name)
-        else:
-            builder.writeln('Instance of either {}.', ', '.join(
-                c.class_name for c in constructors))
-
-        builder.writeln('"""')
-
-    builder.writeln('super().__init__()')
-    # Functions have a result object and are confirmed by default
+    # We also want to know what type this request returns
+    # or to which type this constructor belongs to
+    builder.writeln()
     if tlobject.is_function:
-        builder.writeln('self.result = None')
-        builder.writeln('self.content_related = True')
+        builder.write(':returns {}: ', tlobject.result)
+    else:
+        builder.write('Constructor for {}: ', tlobject.result)
+
+    constructors = type_constructors[tlobject.result]
+    if not constructors:
+        builder.writeln('This type has no constructors.')
+    elif len(constructors) == 1:
+        builder.writeln('Instance of {}.',
+                        constructors[0].class_name)
+    else:
+        builder.writeln('Instance of either {}.', ', '.join(
+            c.class_name for c in constructors))
+
+    builder.writeln('"""')
 
     # Set the arguments
-    if tlobject.real_args:
-        builder.writeln()
-
     for arg in tlobject.real_args:
         if not arg.can_be_inferred:
             builder.writeln('self.{0} = {0}  # type: {1}',
@@ -453,7 +447,7 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
         builder.write("struct.pack('<d', {})", name)
 
     elif 'string' == arg.type:
-        builder.write('TLObject.serialize_bytes({})', name)
+        builder.write('self.serialize_bytes({})', name)
 
     elif 'Bool' == arg.type:
         # 0x997275b5 if boolean else 0xbc799737
@@ -463,10 +457,10 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
         pass  # These are actually NOT written! Only used for flags
 
     elif 'bytes' == arg.type:
-        builder.write('TLObject.serialize_bytes({})', name)
+        builder.write('self.serialize_bytes({})', name)
 
     elif 'date' == arg.type:  # Custom format
-        builder.write('TLObject.serialize_datetime({})', name)
+        builder.write('self.serialize_datetime({})', name)
 
     else:
         # Else it may be a custom type
@@ -651,9 +645,9 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    _write_modules(get_file('functions'), import_depth,
+    _write_modules(get_file('functions'), import_depth, 'TLRequest',
                    namespace_functions, type_constructors)
-    _write_modules(get_file('types'), import_depth,
+    _write_modules(get_file('types'), import_depth, 'TLObject',
                    namespace_types, type_constructors)
 
     filename = os.path.join(get_file('all_tlobjects.py'))

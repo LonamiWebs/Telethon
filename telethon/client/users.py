@@ -3,17 +3,17 @@ import itertools
 
 from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils
-from ..tl import TLObject, types, functions
+from ..tl import TLObject, TLRequest, types, functions
+
+
+_NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
 
 class UserMethods(TelegramBaseClient):
     async def __call__(self, request, retries=5, ordered=False):
-        requests = (request,) if not utils.is_list_like(request) else request
-        if not all(isinstance(x, TLObject) and
-                   x.content_related for x in requests):
-            raise TypeError('You can only invoke requests, not types!')
-
-        for r in requests:
+        for r in (request if utils.is_list_like(request) else (request,)):
+            if not isinstance(r, TLRequest):
+                raise _NOT_A_REQUEST
             await r.resolve(self, utils)
 
         for _ in range(retries):

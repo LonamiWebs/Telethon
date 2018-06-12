@@ -8,6 +8,7 @@ from ..crypto import AES
 from ..errors import SecurityError, BrokenAuthKeyError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
+from ..tl.tlobject import TLRequest
 
 __log__ = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class MTProtoState:
         """
         return TLMessage(
             msg_id=self._get_new_msg_id(),
-            seq_no=self._get_seq_no(obj.content_related),
+            seq_no=self._get_seq_no(isinstance(obj, TLRequest)),
             obj=obj,
             after_id=after.msg_id if after else None
         )

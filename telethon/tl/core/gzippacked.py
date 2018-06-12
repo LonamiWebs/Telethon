@@ -1,7 +1,7 @@
 import gzip
 import struct
 
-from .. import TLObject
+from .. import TLObject, TLRequest
 
 
 class GzipPacked(TLObject):
@@ -21,7 +21,7 @@ class GzipPacked(TLObject):
         """
         data = bytes(request)
         # TODO This threshold could be configurable
-        if request.content_related and len(data) > 512:
+        if isinstance(request, TLRequest) and len(data) > 512:
             gzipped = bytes(GzipPacked(data))
             return gzipped if len(gzipped) < len(data) else data
         else:

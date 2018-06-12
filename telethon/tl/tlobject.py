@@ -3,16 +3,11 @@ from datetime import datetime, date
 
 
 class TLObject:
-    def __init__(self):
-        # TODO Perhaps content_related makes more sense as another type?
-        # Something like class TLRequest(TLObject), request inherit this
-        self.content_related = False  # Only requests/functions/queries are
-
-    # These should not be overrode
     @staticmethod
     def pretty_format(obj, indent=None):
-        """Pretty formats the given object as a string which is returned.
-           If indent is None, a single line will be returned.
+        """
+        Pretty formats the given object as a string which is returned.
+        If indent is None, a single line will be returned.
         """
         if indent is None:
             if isinstance(obj, TLObject):
@@ -136,11 +131,6 @@ class TLObject:
 
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
-    # These are nearly always the same for all subclasses
-    @staticmethod
-    def read_result(reader):
-        return reader.tgread_object()
-
     def __eq__(self, o):
         return isinstance(o, type(self)) and self.to_dict() == o.to_dict()
 
@@ -153,16 +143,24 @@ class TLObject:
     def stringify(self):
         return TLObject.pretty_format(self, indent=0)
 
-    # These should be overrode
-    async def resolve(self, client, utils):
-        pass
-
     def to_dict(self):
-        return {}
+        raise NotImplementedError
 
     def __bytes__(self):
-        return b''
+        raise NotImplementedError
 
     @classmethod
     def from_reader(cls, reader):
-        return TLObject()
+        raise NotImplementedError
+
+
+class TLRequest(TLObject):
+    """
+    Represents a content-related `TLObject` (a request that can be sent).
+    """
+    @staticmethod
+    def read_result(reader):
+        return reader.tgread_object()
+
+    async def resolve(self, client, utils):
+        pass

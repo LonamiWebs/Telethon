@@ -11,13 +11,10 @@ class MessageContainer(TLObject):
     CONSTRUCTOR_ID = 0x73f1f8dc
 
     def __init__(self, messages):
-        super().__init__()
-        self.content_related = False
         self.messages = messages
 
     def to_dict(self, recursive=True):
         return {
-            'content_related': self.content_related,
             'messages':
                 ([] if self.messages is None else [
                     None if x is None else x.to_dict() for x in self.messages
