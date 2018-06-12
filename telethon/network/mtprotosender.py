@@ -472,7 +472,7 @@ class MTProtoSender:
         pong = message.obj
         message = self._pending_messages.pop(pong.msg_id, None)
         if message:
-            message.future.set_result(pong.obj)
+            message.future.set_result(pong)
 
     async def _handle_bad_server_salt(self, message):
         """
