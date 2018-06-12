@@ -27,7 +27,7 @@ class Draft:
     def __init__(self, client, peer, draft):
         self._client = client
         self._peer = peer
-        if not draft:
+        if not draft or not isinstance(draft, DraftMessage):
             draft = DraftMessage('', None, None, None, None)
 
         self._text = markdown.unparse(draft.message, draft.entities)
