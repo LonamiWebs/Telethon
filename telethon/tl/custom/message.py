@@ -252,8 +252,11 @@ class Message:
     @property
     def is_group(self):
         """True if the message was sent on a group or megagroup."""
-        return not self.original_message.broadcast and isinstance(
-            self.original_message.to_id, (types.PeerChat, types.PeerChannel))
+        return (
+            isinstance(self.original_message.to_id, (types.PeerChat,
+                                                     types.PeerChannel))
+            and not self.original_message.post
+        )
 
     @property
     def is_channel(self):
