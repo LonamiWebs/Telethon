@@ -58,10 +58,6 @@ class MTProtoSender:
         self._user_connected = False
         self._reconnecting = False
 
-        # Send and receive calls must be atomic
-        self._send_lock = asyncio.Lock()
-        self._recv_lock = asyncio.Lock()
-
         # We need to join the loops upon disconnection
         self._send_loop_handle = None
         self._recv_loop_handle = None
@@ -129,8 +125,7 @@ class MTProtoSender:
         self._user_connected = False
         try:
             __log__.debug('Closing current connection...')
-            async with self._send_lock:
-                await self._connection.close()
+            await self._connection.close()
         finally:
             __log__.debug('Cancelling {} pending message(s)...'
                           .format(len(self._pending_messages)))
@@ -202,8 +197,7 @@ class MTProtoSender:
         for retry in range(1, self._retries + 1):
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
-                async with self._send_lock:
-                    await self._connection.connect(self._ip, self._port)
+                await self._connection.connect(self._ip, self._port)
             except OSError as e:
                 _last_error = e
                 __log__.warning('Attempt {} at connecting failed: {}'
@@ -256,8 +250,7 @@ class MTProtoSender:
         await self._recv_loop_handle
 
         __log__.debug('Closing current connection...')
-        async with self._send_lock:
-            await self._connection.close()
+        await self._connection.close()
 
         self._reconnecting = False
         await self._connect()
@@ -310,9 +303,8 @@ class MTProtoSender:
 
             while not any(m.future.cancelled() for m in messages):
                 try:
-                    async with self._send_lock:
-                        __log__.debug('Sending {} bytes...'.format(len(body)))
-                        await self._connection.send(body)
+                    __log__.debug('Sending {} bytes...'.format(len(body)))
+                    await self._connection.send(body)
                     break
                 # TODO Are there more exceptions besides timeout?
                 except asyncio.TimeoutError:
@@ -344,8 +336,7 @@ class MTProtoSender:
             # on its own after a short delay.
             try:
                 __log__.debug('Receiving items from the network...')
-                async with self._recv_lock:
-                    body = await self._connection.recv()
+                body = await self._connection.recv()
             except asyncio.TimeoutError:
                 # TODO If nothing is received for a minute, send a request
                 continue
