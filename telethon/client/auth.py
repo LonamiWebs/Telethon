@@ -311,8 +311,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
         phone_hash = self._phone_code_hash.get(phone)
 
         if not phone_hash:
-            result = await self(functions.auth.SendCodeRequest(
-                phone, self.api_id, self.api_hash))
+            try:
+                result = await self(functions.auth.SendCodeRequest(
+                    phone, self.api_id, self.api_hash))
+            except errors.AuthRestartError:
+                return self.send_code_request(phone, force_sms=force_sms)
+
             self._tos = result.terms_of_service
             self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
         else:
