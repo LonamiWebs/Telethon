@@ -1,4 +1,5 @@
 import re
+import struct
 from zlib import crc32
 
 from ..utils import snake_to_camel_case
@@ -99,6 +100,18 @@ class TLObject:
         )
         return crc32(representation.encode('ascii'))
 
+    def to_dict(self):
+        return {
+            'id':
+                str(struct.unpack('i', struct.pack('I', self.id))[0]),
+            'method' if self.is_function else 'predicate':
+                self.fullname,
+            'params':
+                [x.to_dict() for x in self.args if not x.generic_definition],
+            'type':
+                self.result
+        }
+
 
 class TLArg:
     def __init__(self, name, arg_type, generic_definition):
@@ -194,7 +207,7 @@ class TLArg:
 
         return result
 
-    def __str__(self):
+    def real_type(self):
         # Find the real type representation by updating it as required
         real_type = self.type
         if self.flag_indicator:
@@ -212,13 +225,22 @@ class TLArg:
         if self.is_flag:
             real_type = 'flags.{}?{}'.format(self.flag_index, real_type)
 
+        return real_type
+
+    def __str__(self):
         if self.generic_definition:
-            return '{{{}:{}}}'.format(self.name, real_type)
+            return '{{{}:{}}}'.format(self.name, self.real_type())
         else:
-            return '{}:{}'.format(self.name, real_type)
+            return '{}:{}'.format(self.name, self.real_type())
 
     def __repr__(self):
         return str(self).replace(':date', ':int').replace('?date', '?int')
+
+    def to_dict(self):
+        return {
+            'name': self.name.replace('is_self', 'self'),
+            'type': re.sub(r'\bdate$', 'int', self.real_type())
+        }
 
 
 def _from_line(line, is_function, layer):
@@ -253,7 +275,7 @@ def _from_line(line, is_function, layer):
     )
 
 
-def parse_tl(file_path, layer, ignore_core=False, invalid_bot_methods=None):
+def parse_tl(file_path, layer, invalid_bot_methods=None):
     """This method yields TLObjects from a given .tl file."""
     if invalid_bot_methods is None:
         invalid_bot_methods = set()
@@ -277,11 +299,8 @@ def parse_tl(file_path, layer, ignore_core=False, invalid_bot_methods=None):
 
             try:
                 result = _from_line(line, is_function, layer=layer)
-                if not ignore_core or result.id not in CORE_TYPES:
-                    result.bot_usable =\
-                        result.fullname not in invalid_bot_methods
-
-                    yield result
+                result.bot_usable = result.fullname not in invalid_bot_methods
+                yield result
             except ValueError as e:
                 if 'vector#1cb5c415' not in str(e):
                     raise

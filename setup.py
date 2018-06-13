@@ -61,13 +61,13 @@ def generate(which):
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
     with open(INVALID_BM_IN) as f:
-        ib = set(json.load(f))
+        invalid_bot_methods = set(json.load(f))
 
     layer = find_layer(TLOBJECT_IN_TL)
     errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
     tlobjects = list(itertools.chain(
-        parse_tl(TLOBJECT_IN_CORE_TL, layer=layer, invalid_bot_methods=ib),
-        parse_tl(TLOBJECT_IN_TL, layer=layer, invalid_bot_methods=ib)))
+        parse_tl(TLOBJECT_IN_CORE_TL, layer, invalid_bot_methods),
+        parse_tl(TLOBJECT_IN_TL, layer, invalid_bot_methods)))
 
     if not which:
         which.extend(('tl', 'errors'))
@@ -109,6 +109,31 @@ def generate(which):
                 shutil.rmtree(DOCS_OUT)
         else:
             generate_docs(tlobjects, errors, layer, DOCS_IN_RES, DOCS_OUT)
+
+    if 'json' in which:
+        which.remove('json')
+        print(action, 'JSON schema...')
+        mtproto = 'mtproto_api.json'
+        telegram = 'telegram_api.json'
+        if clean:
+            for x in (mtproto, telegram):
+                if os.path.isfile(x):
+                    os.remove(x)
+        else:
+            def gen_json(fin, fout):
+                methods = []
+                constructors = []
+                for tl in parse_tl(fin, layer):
+                    if tl.is_function:
+                        methods.append(tl.to_dict())
+                    else:
+                        constructors.append(tl.to_dict())
+                what = {'constructors': constructors, 'methods': methods}
+                with open(fout, 'w') as f:
+                    json.dump(what, f, indent=2)
+
+            gen_json(TLOBJECT_IN_CORE_TL, mtproto)
+            gen_json(TLOBJECT_IN_TL, telegram)
 
     if which:
         print('The following items were not understood:', which)
