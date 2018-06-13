@@ -12,7 +12,6 @@ from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession
 from ..tl import TLObject, functions
 from ..tl.all_tlobjects import LAYER
-from ..update_state import UpdateState
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -171,16 +170,13 @@ class TelegramBaseClient(abc.ABC):
         self._connection = connection
         self._sender = MTProtoSender(
             state, connection,
-            first_query=self._init_with(functions.help.GetConfigRequest())
+            first_query=self._init_with(functions.help.GetConfigRequest()),
+            update_callback=self._handle_update
         )
 
         # Cache :tl:`ExportedAuthorization` as ``dc_id: MTProtoState``
         # to easily import them when getting an exported sender.
         self._exported_auths = {}
-
-        # This member will process updates if enabled.
-        # One may change self.updates.enabled at any later point.
-        self.updates = UpdateState()
 
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
@@ -366,5 +362,9 @@ class TelegramBaseClient(abc.ABC):
         warnings.warn('client.invoke(...) is deprecated, '
                       'use client(...) instead')
         return await self(*args, **kwargs)
+
+    @abc.abstractmethod
+    def _handle_update(self, update):
+        raise NotImplementedError
 
     # endregion

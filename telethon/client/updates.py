@@ -1,10 +1,10 @@
+import asyncio
+import logging
 import warnings
 
 from .users import UserMethods
+from .. import events, utils
 from ..tl import types, functions
-from .. import events
-
-import logging
 
 __log__ = logging.getLogger(__name__)
 
@@ -44,7 +44,6 @@ class UpdateMethods(UserMethods):
                 :tl:`Update` objects with no further processing) will
                 be passed instead.
         """
-        self.updates.handler = self._on_handler
         if isinstance(event, type):
             event = event()
         elif not event:
@@ -124,7 +123,7 @@ class UpdateMethods(UserMethods):
                         # infinite loop here (so check against old pts to stop)
                         break
 
-                    self.updates.process(types.Updates(
+                    self._handle_update(types.Updates(
                         users=d.users,
                         chats=d.chats,
                         date=state.date,
@@ -144,8 +143,12 @@ class UpdateMethods(UserMethods):
 
     # region Private methods
 
-    async def _on_handler(self, update):
+    def _handle_update(self, update):
+        asyncio.ensure_future(self._dispatch_update(update))
+
+    async def _dispatch_update(self, update):
         if self._events_pending_resolve:
+            # TODO Add lock not to resolve them twice
             for event in self._events_pending_resolve:
                 await event.resolve(self)
             self._events_pending_resolve.clear()

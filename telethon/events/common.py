@@ -7,7 +7,7 @@ from ..errors import RPCError
 from ..tl import TLObject, types, functions
 
 
-def _into_id_set(client, chats):
+async def _into_id_set(client, chats):
     """Helper util to turn the input chat or chats into a set of IDs."""
     if chats is None:
         return None
@@ -30,9 +30,9 @@ def _into_id_set(client, chats):
             # 0x2d45687 == crc32(b'Peer')
             result.add(utils.get_peer_id(chat))
         else:
-            chat = client.get_input_entity(chat)
+            chat = await client.get_input_entity(chat)
             if isinstance(chat, types.InputPeerSelf):
-                chat = client.get_me(input_peer=True)
+                chat = await client.get_me(input_peer=True)
             result.add(utils.get_peer_id(chat))
 
     return result
@@ -62,10 +62,10 @@ class EventBuilder(abc.ABC):
     def build(self, update):
         """Builds an event for the given update if possible, or returns None"""
 
-    def resolve(self, client):
+    async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
-        self.chats = _into_id_set(client, self.chats)
-        self._self_id = client.get_me(input_peer=True).user_id
+        self.chats = await _into_id_set(client, self.chats)
+        self._self_id = await client.get_me(input_peer=True).user_id
 
     def _filter_event(self, event):
         """
