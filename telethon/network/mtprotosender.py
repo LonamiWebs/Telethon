@@ -12,7 +12,8 @@ from ..tl.core import RpcResult, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
-    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
+    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
+    MsgsStateInfo, MsgsAllInfo, MsgResendReq
 )
 
 __log__ = logging.getLogger(__name__)
@@ -89,7 +90,10 @@ class MTProtoSender:
             MsgNewDetailedInfo.CONSTRUCTOR_ID: self._handle_new_detailed_info,
             NewSessionCreated.CONSTRUCTOR_ID: self._handle_new_session_created,
             MsgsAck.CONSTRUCTOR_ID: self._handle_ack,
-            FutureSalts.CONSTRUCTOR_ID: self._handle_future_salts
+            FutureSalts.CONSTRUCTOR_ID: self._handle_future_salts,
+            MsgsStateReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
+            MsgResendReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
+            MsgsAllInfo.CONSTRUCTOR_ID: self._handle_msg_all,
         }
 
     # Public API
@@ -586,6 +590,19 @@ class MTProtoSender:
         msg = self._pending_messages.pop(message.msg_id, None)
         if msg:
             msg.future.set_result(message.obj)
+
+    async def _handle_state_forgotten(self, message):
+        """
+        Handles both :tl:`MsgsStateReq` and :tl:`MsgResendReq` by
+        enqueuing a :tl:`MsgsStateInfo` to be sent at a later point.
+        """
+        self.send(MsgsStateInfo(req_msg_id=message.msg_id,
+                                info=chr(1) * len(message.obj.msg_ids)))
+
+    async def _handle_msg_all(self, message):
+        """
+        Handles :tl:`MsgsAllInfo` by doing nothing (yet).
+        """
 
 
 class _ContainerQueue(asyncio.Queue):
