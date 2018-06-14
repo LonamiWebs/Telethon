@@ -127,7 +127,8 @@ class EventCommon(abc.ABC):
             except ValueError:
                 ch = isinstance(self._chat_peer, types.PeerChannel)
                 if not ch and self._message_id is not None:
-                    msg = await self._client.get_messages(ids=self._message_id)
+                    msg = await self._client.get_messages(
+                        None, ids=self._message_id)
                     self._chat = msg._chat
                     self._input_chat = msg._input_chat
                 else:

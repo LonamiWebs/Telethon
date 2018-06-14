@@ -37,7 +37,11 @@ class Message:
             self._input_sender = get_input_peer(self._sender)
         else:
             self._input_sender = None
+
         self._input_chat = input_chat
+        if not self._input_chat and self._chat:
+            self._input_chat = get_input_peer(self._chat)
+
         self._fwd_from_entity = None
         if getattr(self.original_message, 'fwd_from', None):
             fwd = self.original_message.fwd_from
