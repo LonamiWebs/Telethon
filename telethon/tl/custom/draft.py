@@ -47,18 +47,18 @@ class Draft:
         return cls(client=client, peer=update.peer, draft=update.draft)
 
     @property
-    def entity(self):
+    async def entity(self):
         """
         The entity that belongs to this dialog (user, chat or channel).
         """
-        return self._client.get_entity(self._peer)
+        return await self._client.get_entity(self._peer)
 
     @property
-    def input_entity(self):
+    async def input_entity(self):
         """
         Input version of the entity.
         """
-        return self._client.get_input_entity(self._peer)
+        return await self._client.get_input_entity(self._peer)
 
     @property
     def text(self):
@@ -83,8 +83,9 @@ class Draft:
         """
         return not self._text
 
-    def set_message(self, text=None, reply_to=0, parse_mode=Default,
-                    link_preview=None):
+    async def set_message(
+            self, text=None, reply_to=0, parse_mode=Default,
+            link_preview=None):
         """
         Changes the draft message on the Telegram servers. The changes are
         reflected in this object.
@@ -110,8 +111,10 @@ class Draft:
         if link_preview is None:
             link_preview = self.link_preview
 
-        raw_text, entities = self._client._parse_message_text(text, parse_mode)
-        result = self._client(SaveDraftRequest(
+        raw_text, entities =\
+            await self._client._parse_message_text(text, parse_mode)
+
+        result = await self._client(SaveDraftRequest(
             peer=self._peer,
             message=raw_text,
             no_webpage=not link_preview,
@@ -128,22 +131,22 @@ class Draft:
 
         return result
 
-    def send(self, clear=True, parse_mode=Default):
+    async def send(self, clear=True, parse_mode=Default):
         """
         Sends the contents of this draft to the dialog. This is just a
         wrapper around ``send_message(dialog.input_entity, *args, **kwargs)``.
         """
-        self._client.send_message(self._peer, self.text,
-                                  reply_to=self.reply_to_msg_id,
-                                  link_preview=self.link_preview,
-                                  parse_mode=parse_mode,
-                                  clear_draft=clear)
+        await self._client.send_message(
+            self._peer, self.text, reply_to=self.reply_to_msg_id,
+            link_preview=self.link_preview, parse_mode=parse_mode,
+            clear_draft=clear
+        )
 
-    def delete(self):
+    async def delete(self):
         """
         Deletes this draft, and returns ``True`` on success.
         """
-        return self.set_message(text='')
+        return await self.set_message(text='')
 
     def to_dict(self):
         try:

@@ -8,6 +8,7 @@ from struct import unpack
 
 from ..errors import TypeNotFoundError
 from ..tl.all_tlobjects import tlobjects
+from ..tl.core import core_objects
 
 
 class BinaryReader:
@@ -136,9 +137,14 @@ class BinaryReader:
             elif value == 0x1cb5c415:  # Vector
                 return [self.tgread_object() for _ in range(self.read_int())]
 
-            # If there was still no luck, give up
-            self.seek(-4)  # Go back
-            raise TypeNotFoundError(constructor_id)
+            clazz = core_objects.get(constructor_id, None)
+            if clazz is None:
+                # If there was still no luck, give up
+                self.seek(-4)  # Go back
+                pos = self.tell_position()
+                error = TypeNotFoundError(constructor_id, self.read())
+                self.set_position(pos)
+                raise error
 
         return clazz.from_reader(self)
 

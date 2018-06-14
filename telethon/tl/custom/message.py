@@ -134,14 +134,15 @@ class Message:
         if isinstance(self.original_message, types.MessageService):
             return self.original_message.action
 
-    def _reload_message(self):
+    async def _reload_message(self):
         """
         Re-fetches this message to reload the sender and chat entities,
         along with their input versions.
         """
         try:
-            chat = self.input_chat if self.is_channel else None
-            msg = self._client.get_messages(chat, ids=self.original_message.id)
+            chat = await self.input_chat if self.is_channel else None
+            msg = await self._client.get_messages(
+                chat, ids=self.original_message.id)
         except ValueError:
             return  # We may not have the input chat/get message failed
         if not msg:
@@ -153,7 +154,7 @@ class Message:
         self._input_chat = msg._input_chat
 
     @property
-    def sender(self):
+    async def sender(self):
         """
         This (:tl:`User`) may make an API call the first time to get
         the most up to date version of the sender (mostly when the event
@@ -163,22 +164,24 @@ class Message:
         """
         if self._sender is None:
             try:
-                self._sender = self._client.get_entity(self.input_sender)
+                self._sender =\
+                    await self._client.get_entity(await self.input_sender)
             except ValueError:
-                self._reload_message()
+                await self._reload_message()
         return self._sender
 
     @property
-    def chat(self):
+    async def chat(self):
         if self._chat is None:
             try:
-                self._chat = self._client.get_entity(self.input_chat)
+                self._chat =\
+                    await self._client.get_entity(await self.input_chat)
             except ValueError:
-                self._reload_message()
+                await self._reload_message()
         return self._chat
 
     @property
-    def input_sender(self):
+    async def input_sender(self):
         """
         This (:tl:`InputPeer`) is the input version of the user who
         sent the message. Similarly to `input_chat`, this doesn't have
@@ -194,14 +197,14 @@ class Message:
                 self._input_sender = get_input_peer(self._sender)
             else:
                 try:
-                    self._input_sender = self._client.get_input_entity(
+                    self._input_sender = await self._client.get_input_entity(
                         self.original_message.from_id)
                 except ValueError:
-                    self._reload_message()
+                    await self._reload_message()
         return self._input_sender
 
     @property
-    def input_chat(self):
+    async def input_chat(self):
         """
         This (:tl:`InputPeer`) is the input version of the chat where the
         message was sent. Similarly to `input_sender`, this doesn't have
@@ -214,14 +217,14 @@ class Message:
         if self._input_chat is None:
             if self._chat is None:
                 try:
-                    self._chat = self._client.get_input_entity(
+                    self._chat = await self._client.get_input_entity(
                         self.original_message.to_id)
                 except ValueError:
                     # There's a chance that the chat is a recent new dialog.
                     # The input chat cannot rely on ._reload_message() because
                     # said method may need the input chat.
                     target = self.chat_id
-                    for d in self._client.iter_dialogs(100):
+                    async for d in self._client.iter_dialogs(100):
                         if d.id == target:
                             self._chat = d.entity
                             break
@@ -269,24 +272,26 @@ class Message:
         return bool(self.original_message.reply_to_msg_id)
 
     @property
-    def buttons(self):
+    async def buttons(self):
         """
         Returns a matrix (list of lists) containing all buttons of the message
         as `telethon.tl.custom.messagebutton.MessageButton` instances.
         """
         if self._buttons is None and self.original_message.reply_markup:
+            sender = await self.input_sender
+            chat = await self.input_chat
             if isinstance(self.original_message.reply_markup, (
                     types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
                 self._buttons = [[
-                    MessageButton(self._client, button, self.input_sender,
-                                  self.input_chat, self.original_message.id)
+                    MessageButton(self._client, button, sender, chat,
+                                  self.original_message.id)
                     for button in row.buttons
                 ] for row in self.original_message.reply_markup.rows]
                 self._buttons_flat = [x for row in self._buttons for x in row]
         return self._buttons
 
     @property
-    def button_count(self):
+    async def button_count(self):
         """
         Returns the total button count.
         """
@@ -386,7 +391,7 @@ class Message:
         return self.original_message.out
 
     @property
-    def reply_message(self):
+    async def reply_message(self):
         """
         The `telethon.tl.custom.message.Message` that this message is replying
         to, or ``None``.
@@ -397,15 +402,15 @@ class Message:
         if self._reply_message is None:
             if not self.original_message.reply_to_msg_id:
                 return None
-            self._reply_message = self._client.get_messages(
-                self.input_chat if self.is_channel else None,
+            self._reply_message = await self._client.get_messages(
+                await self.input_chat if self.is_channel else None,
                 ids=self.original_message.reply_to_msg_id
             )
 
         return self._reply_message
 
     @property
-    def fwd_from_entity(self):
+    async def fwd_from_entity(self):
         """
         If the :tl:`Message` is a forwarded message, returns the :tl:`User`
         or :tl:`Channel` who originally sent the message, or ``None``.
@@ -414,32 +419,33 @@ class Message:
             if getattr(self.original_message, 'fwd_from', None):
                 fwd = self.original_message.fwd_from
                 if fwd.from_id:
-                    self._fwd_from_entity = self._client.get_entity(
-                        fwd.from_id)
+                    self._fwd_from_entity =\
+                        await self._client.get_entity(fwd.from_id)
                 elif fwd.channel_id:
-                    self._fwd_from_entity = self._client.get_entity(
+                    self._fwd_from_entity = await self._client.get_entity(
                         get_peer_id(types.PeerChannel(fwd.channel_id)))
         return self._fwd_from_entity
 
-    def respond(self, *args, **kwargs):
+    async def respond(self, *args, **kwargs):
         """
         Responds to the message (not as a reply). Shorthand for
         `telethon.telegram_client.TelegramClient.send_message` with
         ``entity`` already set.
         """
-        return self._client.send_message(self.input_chat, *args, **kwargs)
+        return await self._client.send_message(
+            await self.input_chat, *args, **kwargs)
 
-    def reply(self, *args, **kwargs):
+    async def reply(self, *args, **kwargs):
         """
         Replies to the message (as a reply). Shorthand for
         `telethon.telegram_client.TelegramClient.send_message` with
         both ``entity`` and ``reply_to`` already set.
         """
         kwargs['reply_to'] = self.original_message.id
-        return self._client.send_message(self.original_message.to_id,
-                                         *args, **kwargs)
+        return await self._client.send_message(
+            await self.input_chat, *args, **kwargs)
 
-    def forward_to(self, *args, **kwargs):
+    async def forward_to(self, *args, **kwargs):
         """
         Forwards the message. Shorthand for
         `telethon.telegram_client.TelegramClient.forward_messages` with
@@ -450,10 +456,10 @@ class Message:
         `telethon.telegram_client.TelegramClient` instance directly.
         """
         kwargs['messages'] = self.original_message.id
-        kwargs['from_peer'] = self.input_chat
-        return self._client.forward_messages(*args, **kwargs)
+        kwargs['from_peer'] = await self.input_chat
+        return await self._client.forward_messages(*args, **kwargs)
 
-    def edit(self, *args, **kwargs):
+    async def edit(self, *args, **kwargs):
         """
         Edits the message iff it's outgoing. Shorthand for
         `telethon.telegram_client.TelegramClient.edit_message` with
@@ -471,10 +477,10 @@ class Message:
             if self.original_message.to_id.user_id != me.user_id:
                 return None
 
-        return self._client.edit_message(
-            self.input_chat, self.original_message, *args, **kwargs)
+        return await self._client.edit_message(
+            await self.input_chat, self.original_message, *args, **kwargs)
 
-    def delete(self, *args, **kwargs):
+    async def delete(self, *args, **kwargs):
         """
         Deletes the message. You're responsible for checking whether you
         have the permission to do so, or to except the error otherwise.
@@ -486,17 +492,17 @@ class Message:
         this `delete` method. Use a
         `telethon.telegram_client.TelegramClient` instance directly.
         """
-        return self._client.delete_messages(
-            self.input_chat, [self.original_message], *args, **kwargs)
+        return await self._client.delete_messages(
+            await self.input_chat, [self.original_message], *args, **kwargs)
 
-    def download_media(self, *args, **kwargs):
+    async def download_media(self, *args, **kwargs):
         """
         Downloads the media contained in the message, if any.
         `telethon.telegram_client.TelegramClient.download_media` with
         the ``message`` already set.
         """
-        return self._client.download_media(self.original_message,
-                                           *args, **kwargs)
+        return await self._client.download_media(
+            self.original_message, *args, **kwargs)
 
     def get_entities_text(self, cls=None):
         """
@@ -525,12 +531,10 @@ class Message:
                                    self.original_message.entities)
         return list(zip(self.original_message.entities, texts))
 
-    def click(self, i=None, j=None, *, text=None, filter=None):
+    async def click(self, i=None, j=None, *, text=None, filter=None):
         """
-        Clicks the inline keyboard button of the message, if any.
-
-        If the message has a non-inline keyboard, clicking it will
-        send the message, switch to inline, or open its URL.
+        Calls `telethon.tl.custom.messagebutton.MessageButton.click`
+        for the specified button.
 
         Does nothing if the message has no buttons.
 
@@ -571,32 +575,32 @@ class Message:
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
 
-        if not self.buttons:
+        if not await self.buttons:
             return  # Accessing the property sets self._buttons[_flat]
 
         if text is not None:
             if callable(text):
                 for button in self._buttons_flat:
                     if text(button.text):
-                        return button.click()
+                        return await button.click()
             else:
                 for button in self._buttons_flat:
                     if button.text == text:
-                        return button.click()
+                        return await button.click()
             return
 
         if filter is not None:
             for button in self._buttons_flat:
                 if filter(button):
-                    return button.click()
+                    return await button.click()
             return
 
         if i is None:
             i = 0
         if j is None:
-            return self._buttons_flat[i].click()
+            return await self._buttons_flat[i].click()
         else:
-            return self._buttons[i][j].click()
+            return await self._buttons[i][j].click()
 
 
 class _CustomMessage(Message, types.Message):

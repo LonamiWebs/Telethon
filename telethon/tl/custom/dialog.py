@@ -88,12 +88,13 @@ class Dialog:
         )
         self.is_channel = isinstance(self.entity, types.Channel)
 
-    def send_message(self, *args, **kwargs):
+    async def send_message(self, *args, **kwargs):
         """
         Sends a message to this dialog. This is just a wrapper around
         ``client.send_message(dialog.input_entity, *args, **kwargs)``.
         """
-        return self._client.send_message(self.input_entity, *args, **kwargs)
+        return await self._client.send_message(
+            self.input_entity, *args, **kwargs)
 
     def to_dict(self):
         return {

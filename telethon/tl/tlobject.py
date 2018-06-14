@@ -1,45 +1,13 @@
 import struct
 from datetime import datetime, date
-from threading import Event
 
 
 class TLObject:
-    def __init__(self):
-        self.rpc_error = None
-        self.result = None
-
-        # These should be overrode
-        self.content_related = False  # Only requests/functions/queries are
-        
-        # Internal parameter to tell pickler in which state Event object was
-        self._event_is_set = False 
-        self._set_event()
-
-    def _set_event(self):
-        self.confirm_received = Event()
-        
-        # Set Event state to 'set' if needed
-        if self._event_is_set:
-            self.confirm_received.set()
-
-    def __getstate__(self):
-        # Save state of the Event object 
-        self._event_is_set = self.confirm_received.is_set()
-        
-        # Exclude Event object from dict and return new state
-        new_dct = dict(self.__dict__)
-        del new_dct["confirm_received"]
-        return new_dct
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self._set_event()
-
-    # These should not be overrode
     @staticmethod
     def pretty_format(obj, indent=None):
-        """Pretty formats the given object as a string which is returned.
-           If indent is None, a single line will be returned.
+        """
+        Pretty formats the given object as a string which is returned.
+        If indent is None, a single line will be returned.
         """
         if indent is None:
             if isinstance(obj, TLObject):
@@ -163,10 +131,6 @@ class TLObject:
 
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
-    # These are nearly always the same for all subclasses
-    def on_response(self, reader):
-        self.result = reader.tgread_object()
-
     def __eq__(self, o):
         return isinstance(o, type(self)) and self.to_dict() == o.to_dict()
 
@@ -179,16 +143,24 @@ class TLObject:
     def stringify(self):
         return TLObject.pretty_format(self, indent=0)
 
-    # These should be overrode
-    def resolve(self, client, utils):
-        pass
-
     def to_dict(self):
-        return {}
+        raise NotImplementedError
 
     def __bytes__(self):
-        return b''
+        raise NotImplementedError
 
     @classmethod
     def from_reader(cls, reader):
-        return TLObject()
+        raise NotImplementedError
+
+
+class TLRequest(TLObject):
+    """
+    Represents a content-related `TLObject` (a request that can be sent).
+    """
+    @staticmethod
+    def read_result(reader):
+        return reader.tgread_object()
+
+    async def resolve(self, client, utils):
+        pass

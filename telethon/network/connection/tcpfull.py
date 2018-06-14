@@ -20,9 +20,9 @@ class ConnectionTcpFull(Connection):
         self.read = self.conn.read
         self.write = self.conn.write
 
-    def connect(self, ip, port):
+    async def connect(self, ip, port):
         try:
-            self.conn.connect(ip, port)
+            await self.conn.connect(ip, port)
         except OSError as e:
             if e.errno == errno.EISCONN:
                 return  # Already connected, no need to re-set everything up
@@ -35,19 +35,20 @@ class ConnectionTcpFull(Connection):
         return self.conn.timeout
 
     def is_connected(self):
-        return self.conn.connected
+        return self.conn.is_connected
 
-    def close(self):
+    async def close(self):
         self.conn.close()
 
     def clone(self):
         return ConnectionTcpFull(self._proxy, self._timeout)
 
-    def recv(self):
-        packet_len_seq = self.read(8)  # 4 and 4
+    async def recv(self):
+        packet_len_seq = await self.read(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
-        body = self.read(packet_len - 12)
-        checksum = struct.unpack('<I', self.read(4))[0]
+        body = await self.read(packet_len - 8)
+        checksum = struct.unpack('<I', body[-4:])[0]
+        body = body[:-4]
 
         valid_checksum = crc32(packet_len_seq + body)
         if checksum != valid_checksum:
@@ -55,11 +56,11 @@ class ConnectionTcpFull(Connection):
 
         return body
 
-    def send(self, message):
+    async def send(self, message):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(message) + 12
         data = struct.pack('<ii', length, self._send_counter) + message
         crc = struct.pack('<I', crc32(data))
         self._send_counter += 1
-        self.write(data + crc)
+        await self.write(data + crc)

@@ -1,4 +1,5 @@
 from .. import types, functions
+from ...errors import BotTimeout
 import webbrowser
 
 
@@ -51,23 +52,37 @@ class MessageButton:
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
-    def click(self):
+    async def click(self):
         """
-        Clicks the inline keyboard button of the message, if any.
+        Emulates the behaviour of clicking this button.
 
-        If the message has a non-inline keyboard, clicking it will
-        send the message, switch to inline, or open its URL.
+        If it's a normal :tl:`KeyboardButton` with text, a message will be
+        sent, and the sent `telethon.tl.custom.message.Message` returned.
+
+        If it's an inline :tl:`KeyboardButtonCallback` with text and data,
+        it will be "clicked" and the :tl:`BotCallbackAnswer` returned.
+
+        If it's an inline :tl:`KeyboardButtonSwitchInline` button, the
+        :tl:`StartBotRequest` will be invoked and the resulting updates
+        returned.
+
+        If it's a :tl:`KeyboardButtonUrl`, the URL of the button will
+        be passed to ``webbrowser.open`` and return ``True`` on success.
         """
         if isinstance(self.button, types.KeyboardButton):
-            return self._client.send_message(
+            return await self._client.send_message(
                 self._chat, self.button.text, reply_to=self._msg_id)
         elif isinstance(self.button, types.KeyboardButtonCallback):
-            return self._client(functions.messages.GetBotCallbackAnswerRequest(
+            req = functions.messages.GetBotCallbackAnswerRequest(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data
-            ), retries=1)
+            )
+            try:
+                return await self._client(req)
+            except BotTimeout:
+                return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
-            return self._client(functions.messages.StartBotRequest(
+            return await self._client(functions.messages.StartBotRequest(
                 bot=self._from, peer=self._chat, start_param=self.button.query
-            ), retries=1)
+            ))
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)

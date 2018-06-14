@@ -1,6 +1,5 @@
 import logging
-from .telegram_bare_client import TelegramBareClient
-from .telegram_client import TelegramClient
+from .client.telegramclient import TelegramClient
 from .network import connection
 from .tl import types, functions
 from . import version, events, utils
