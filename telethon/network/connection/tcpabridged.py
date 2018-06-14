@@ -9,26 +9,26 @@ class ConnectionTcpAbridged(ConnectionTcpFull):
     only require 1 byte if the packet length is less than
     508 bytes (127 << 2, which is very common).
     """
-    def connect(self, ip, port):
-        result = super().connect(ip, port)
-        self.conn.write(b'\xef')
+    async def connect(self, ip, port):
+        result = await super().connect(ip, port)
+        await self.conn.write(b'\xef')
         return result
 
     def clone(self):
         return ConnectionTcpAbridged(self._proxy, self._timeout)
 
-    def recv(self):
-        length = struct.unpack('<B', self.read(1))[0]
+    async def recv(self):
+        length = struct.unpack('<B', await self.read(1))[0]
         if length >= 127:
-            length = struct.unpack('<i', self.read(3) + b'\0')[0]
+            length = struct.unpack('<i', await self.read(3) + b'\0')[0]
 
-        return self.read(length << 2)
+        return await self.read(length << 2)
 
-    def send(self, message):
+    async def send(self, message):
         length = len(message) >> 2
         if length < 127:
             length = struct.pack('B', length)
         else:
             length = b'\x7f' + int.to_bytes(length, 3, 'little')
 
-        self.write(length + message)
+        await self.write(length + message)

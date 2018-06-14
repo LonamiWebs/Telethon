@@ -18,8 +18,8 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         self.read = lambda s: self._aes_decrypt.encrypt(self.conn.read(s))
         self.write = lambda d: self.conn.write(self._aes_encrypt.encrypt(d))
 
-    def connect(self, ip, port):
-        result = ConnectionTcpFull.connect(self, ip, port)
+    async def connect(self, ip, port):
+        result = await ConnectionTcpFull.connect(self, ip, port)
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee' * 4)
         while True:
@@ -43,7 +43,7 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         self._aes_decrypt = AESModeCTR(decrypt_key, decrypt_iv)
 
         random[56:64] = self._aes_encrypt.encrypt(bytes(random))[56:64]
-        self.conn.write(bytes(random))
+        await self.conn.write(bytes(random))
         return result
 
     def clone(self):

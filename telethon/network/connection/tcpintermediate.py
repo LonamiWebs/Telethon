@@ -8,16 +8,16 @@ class ConnectionTcpIntermediate(ConnectionTcpFull):
     Intermediate mode between `ConnectionTcpFull` and `ConnectionTcpAbridged`.
     Always sends 4 extra bytes for the packet length.
     """
-    def connect(self, ip, port):
-        result = super().connect(ip, port)
-        self.conn.write(b'\xee\xee\xee\xee')
+    async def connect(self, ip, port):
+        result = await super().connect(ip, port)
+        await self.conn.write(b'\xee\xee\xee\xee')
         return result
 
     def clone(self):
         return ConnectionTcpIntermediate(self._proxy, self._timeout)
 
-    def recv(self):
-        return self.read(struct.unpack('<i', self.read(4))[0])
+    async def recv(self):
+        return await self.read(struct.unpack('<i', await self.read(4))[0])
 
-    def send(self, message):
-        self.write(struct.pack('<i', len(message)) + message)
+    async def send(self, message):
+        await self.write(struct.pack('<i', len(message)) + message)

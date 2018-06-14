@@ -2,7 +2,7 @@ import itertools
 import logging
 from datetime import datetime
 from queue import Queue, Empty
-from threading import RLock, Thread
+from threading import RLock
 
 from . import utils
 from .tl import types as tl

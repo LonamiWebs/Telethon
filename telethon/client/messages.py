@@ -518,7 +518,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             entities=msg_entities,
             media=media
         )
-        msg = self._get_response_message(request, self(request), entity)
+        msg = self._get_response_message(request, await self(request), entity)
         self._cache_media(msg, file, file_handle)
         return msg
 

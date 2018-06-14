@@ -109,40 +109,8 @@ class EventCommon(abc.ABC):
         """
         self._client = client
 
-    def _get_entity(self, msg_id, entity_id, chat=None):
-        """
-        Helper function to call :tl:`GetMessages` on the give msg_id and
-        return the input entity whose ID is the given entity ID.
-
-        If ``chat`` is present it must be an :tl:`InputPeer`.
-
-        Returns a tuple of ``(entity, input_peer)`` if it was found, or
-        a tuple of ``(None, None)`` if it couldn't be.
-        """
-        try:
-            if isinstance(chat, types.InputPeerChannel):
-                result = self._client(
-                    functions.channels.GetMessagesRequest(chat, [msg_id])
-                )
-            else:
-                result = self._client(
-                    functions.messages.GetMessagesRequest([msg_id])
-                )
-        except RPCError:
-            return None, None
-
-        entity = {
-            utils.get_peer_id(x): x for x in itertools.chain(
-                getattr(result, 'chats', []),
-                getattr(result, 'users', []))
-        }.get(entity_id)
-        if entity:
-            return entity, utils.get_input_peer(entity)
-        else:
-            return None, None
-
     @property
-    def input_chat(self):
+    async def input_chat(self):
         """
         The (:tl:`InputPeer`) (group, megagroup or channel) on which
         the event occurred. This doesn't have the title or anything,
@@ -153,19 +121,12 @@ class EventCommon(abc.ABC):
         """
         if self._input_chat is None and self._chat_peer is not None:
             try:
-                self._input_chat = self._client.get_input_entity(
+                self._input_chat = await self._client.get_input_entity(
                     self._chat_peer
                 )
-            except (ValueError, TypeError):
-                # The library hasn't seen this chat, get the message
-                if not isinstance(self._chat_peer, types.PeerChannel):
-                    # TODO For channels, getDifference? Maybe looking
-                    # in the dialogs (which is already done) is enough.
-                    if self._message_id is not None:
-                        self._chat, self._input_chat = self._get_entity(
-                            self._message_id,
-                            utils.get_peer_id(self._chat_peer)
-                        )
+            except ValueError:
+                pass
+
         return self._input_chat
 
     @property
@@ -173,7 +134,7 @@ class EventCommon(abc.ABC):
         return self._client
 
     @property
-    def chat(self):
+    async def chat(self):
         """
         The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
         the event occurred. This property may make an API call the first time
@@ -184,10 +145,10 @@ class EventCommon(abc.ABC):
             return None
 
         if self._chat is None:
-            self._chat = self._entities.get(utils.get_peer_id(self._input_chat))
+            self._chat = self._entities.get(utils.get_peer_id(self._chat_peer))
 
         if self._chat is None:
-            self._chat = self._client.get_entity(self._input_chat)
+            self._chat = await self._client.get_entity(self._input_chat)
 
         return self._chat
 
