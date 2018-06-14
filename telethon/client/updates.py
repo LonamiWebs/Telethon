@@ -144,7 +144,7 @@ class UpdateMethods(UserMethods):
     # region Private methods
 
     def _handle_update(self, update):
-        asyncio.ensure_future(self._dispatch_update(update))
+        asyncio.ensure_future(self._dispatch_update(update), loop=self._loop)
 
     async def _dispatch_update(self, update):
         if self._events_pending_resolve:

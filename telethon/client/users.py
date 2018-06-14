@@ -30,7 +30,7 @@ class UserMethods(TelegramBaseClient):
                 pass
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
                 if e.seconds <= self.session.flood_sleep_threshold:
-                    await asyncio.sleep(e.seconds)
+                    await asyncio.sleep(e.seconds, loop=self._loop)
                 else:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,

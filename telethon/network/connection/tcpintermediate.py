@@ -13,9 +13,6 @@ class ConnectionTcpIntermediate(ConnectionTcpFull):
         await self.conn.write(b'\xee\xee\xee\xee')
         return result
 
-    def clone(self):
-        return ConnectionTcpIntermediate(self._proxy, self._timeout)
-
     async def recv(self):
         return await self.read(struct.unpack('<i', await self.read(4))[0])
 

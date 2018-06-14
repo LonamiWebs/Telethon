@@ -21,13 +21,15 @@ class Connection(abc.ABC):
     Subclasses should implement the actual protocol
     being used when encoding/decoding messages.
     """
-    def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
+    def __init__(self, *, loop, proxy=None, timeout=timedelta(seconds=5)):
         """
         Initializes a new connection.
 
+        :param loop: the event loop to be used.
         :param proxy: whether to use a proxy or not.
         :param timeout: timeout to be used for all operations.
         """
+        self._loop = loop
         self._proxy = proxy
         self._timeout = timeout
 
@@ -54,10 +56,13 @@ class Connection(abc.ABC):
         """Closes the connection."""
         raise NotImplementedError
 
-    @abc.abstractmethod
     def clone(self):
         """Creates a copy of this Connection."""
-        raise NotImplementedError
+        return self.__class__(
+            loop=self._loop,
+            proxy=self._proxy,
+            timeout=self._timeout
+        )
 
     @abc.abstractmethod
     async def recv(self):

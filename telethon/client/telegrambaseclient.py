@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import logging
 import platform
 import warnings
@@ -112,7 +113,8 @@ class TelegramBaseClient(abc.ABC):
                  system_version=None,
                  app_version=None,
                  lang_code='en',
-                 system_lang_code='en'):
+                 system_lang_code='en',
+                 loop=None):
         """Refer to TelegramClient.__init__ for docs on this method"""
         if not api_id or not api_hash:
             raise ValueError(
@@ -120,6 +122,7 @@ class TelegramBaseClient(abc.ABC):
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
+        self._loop = loop or asyncio.get_event_loop()
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
@@ -143,12 +146,9 @@ class TelegramBaseClient(abc.ABC):
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
-        # This is the main sender, which will be used from the thread
-        # that calls .connect(). Every other thread will spawn a new
-        # temporary connection. The connection on this one is always
-        # kept open so Telegram can send us updates.
         if isinstance(connection, type):
-            connection = connection(proxy=proxy, timeout=timeout)
+            connection = connection(
+                proxy=proxy, timeout=timeout, loop=self._loop)
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -169,7 +169,7 @@ class TelegramBaseClient(abc.ABC):
         state = MTProtoState(self.session.auth_key)
         self._connection = connection
         self._sender = MTProtoSender(
-            state, connection,
+            state, connection, self._loop,
             first_query=self._init_with(functions.help.GetConfigRequest()),
             update_callback=self._handle_update
         )
@@ -208,6 +208,14 @@ class TelegramBaseClient(abc.ABC):
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
+
+    # endregion
+
+    # region Properties
+
+    @property
+    def loop(self):
+        return self._loop
 
     # endregion
 
@@ -287,12 +295,11 @@ class TelegramBaseClient(abc.ABC):
         auth = self._exported_auths.get(dc_id)
         dc = await self._get_dc(dc_id)
         state = MTProtoState(auth)
-        # TODO Don't hardcode ConnectionTcpFull()
         # Can't reuse self._sender._connection as it has its own seqno.
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(state, ConnectionTcpFull())
+        sender = MTProtoSender(state, self._connection.clone(), self._loop)
         await sender.connect(dc.ip_address, dc.port)
         if not auth:
             __log__.info('Exporting authorization for data center %s', dc)

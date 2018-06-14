@@ -39,10 +39,11 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, state, connection, *, retries=5,
+    def __init__(self, state, connection, loop, *, retries=5,
                  first_query=None, update_callback=None):
         self.state = state
         self._connection = connection
+        self._loop = loop
         self._ip = None
         self._port = None
         self._retries = retries
@@ -231,9 +232,13 @@ class MTProtoSender:
                 raise _last_error
 
         __log__.debug('Starting send loop')
-        self._send_loop_handle = asyncio.ensure_future(self._send_loop())
+        self._send_loop_handle = asyncio.ensure_future(
+            self._send_loop(), loop=self._loop)
+
         __log__.debug('Starting receive loop')
-        self._recv_loop_handle = asyncio.ensure_future(self._recv_loop())
+        self._recv_loop_handle = asyncio.ensure_future(
+            self._recv_loop(), loop=self._loop)
+
         if self._is_first_query:
             __log__.debug('Running first query')
             self._is_first_query = False
@@ -347,11 +352,11 @@ class MTProtoSender:
                 continue
             except ConnectionError as e:
                 __log__.info('Connection reset while receiving %s', e)
-                asyncio.ensure_future(self._reconnect())
+                asyncio.ensure_future(self._reconnect(), loop=self._loop)
                 break
             except OSError as e:
                 __log__.warning('OSError while receiving %s', e)
-                asyncio.ensure_future(self._reconnect())
+                asyncio.ensure_future(self._reconnect(), loop=self._loop)
                 break
 
             # TODO Check salt, session_id and sequence_number
@@ -370,7 +375,7 @@ class MTProtoSender:
                 # an actually broken authkey?
                 __log__.warning('Broken authorization key?: {}'.format(e))
                 self.state.auth_key = None
-                asyncio.ensure_future(self._reconnect())
+                asyncio.ensure_future(self._reconnect(), loop=self._loop)
                 break
             except SecurityError as e:
                 # A step while decoding had the incorrect data. This message

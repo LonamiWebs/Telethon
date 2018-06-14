@@ -13,10 +13,12 @@ class ConnectionTcpFull(Connection):
     Default Telegram mode. Sends 12 additional bytes and
     needs to calculate the CRC value of the packet itself.
     """
-    def __init__(self, proxy=None, timeout=timedelta(seconds=5)):
-        super().__init__(proxy, timeout)
+    def __init__(self, *, loop, proxy=None, timeout=timedelta(seconds=5)):
+        super().__init__(loop=loop, proxy=proxy, timeout=timeout)
         self._send_counter = 0
-        self.conn = TcpClient(proxy=self._proxy, timeout=self._timeout)
+        self.conn = TcpClient(
+            proxy=self._proxy, timeout=self._timeout, loop=self._loop
+        )
         self.read = self.conn.read
         self.write = self.conn.write
 
@@ -39,9 +41,6 @@ class ConnectionTcpFull(Connection):
 
     async def close(self):
         self.conn.close()
-
-    def clone(self):
-        return ConnectionTcpFull(self._proxy, self._timeout)
 
     async def recv(self):
         packet_len_seq = await self.read(8)  # 4 and 4

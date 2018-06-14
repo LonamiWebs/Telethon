@@ -14,9 +14,6 @@ class ConnectionTcpAbridged(ConnectionTcpFull):
         await self.conn.write(b'\xef')
         return result
 
-    def clone(self):
-        return ConnectionTcpAbridged(self._proxy, self._timeout)
-
     async def recv(self):
         length = struct.unpack('<B', await self.read(1))[0]
         if length >= 127:

@@ -38,16 +38,16 @@ class TcpClient:
     class SocketClosed(ConnectionError):
         pass
 
-    def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
+    def __init__(self, *, loop, proxy=None, timeout=timedelta(seconds=5)):
         """
         Initializes the TCP client.
 
         :param proxy: the proxy to be used, if any.
         :param timeout: the timeout for connect, read and write operations.
         """
+        self._loop = loop
         self.proxy = proxy
         self._socket = None
-        self._loop = loop or asyncio.get_event_loop()
         self._closed = asyncio.Event(loop=self._loop)
         self._closed.set()
 
