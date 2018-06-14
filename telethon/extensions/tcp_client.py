@@ -95,8 +95,6 @@ class TcpClient:
                 loop=self._loop
             )
             self._closed.clear()
-        except asyncio.TimeoutError as e:
-            raise TimeoutError() from e
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
                 raise ConnectionResetError() from e
@@ -137,7 +135,7 @@ class TcpClient:
         if not self.is_connected:
             raise self.SocketClosed()
         if not done:
-            raise TimeoutError()
+            raise asyncio.TimeoutError()
         return done.pop().result()
 
     async def write(self, data):
@@ -147,12 +145,10 @@ class TcpClient:
         """
         if not self.is_connected:
             raise ConnectionResetError('Not connected')
+
         try:
             await self._wait_timeout_or_close(self.sock_sendall(data))
-        except self.SocketClosed:
-            raise ConnectionResetError('Socket has closed')
         except OSError as e:
-            __log__.info('OSError "%s" while writing data', e)
             if e.errno in CONN_RESET_ERRNOS:
                 raise ConnectionResetError() from e
             else:
@@ -175,17 +171,13 @@ class TcpClient:
                     partial = await self._wait_timeout_or_close(
                         self.sock_recv(bytes_left)
                     )
-                except TimeoutError as e:
+                except asyncio.TimeoutError:
                     if bytes_left < size:
                         __log__.warning(
-                            'socket timeout "%s" when %d/%d had been received',
-                            e, size - bytes_left, size
+                            'Timeout when partial %d/%d had been received',
+                            size - bytes_left, size
                         )
                     raise
-                except self.SocketClosed:
-                    raise ConnectionResetError(
-                        'Socket has closed while reading data'
-                    )
                 except OSError as e:
                     if e.errno in CONN_RESET_ERRNOS:
                         raise ConnectionResetError() from e
