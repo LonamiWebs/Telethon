@@ -306,9 +306,10 @@ class MTProtoSender:
                     __log__.debug('Sending {} bytes...'.format(len(body)))
                     await self._connection.send(body)
                     break
-                # TODO Are there more exceptions besides timeout?
                 except asyncio.TimeoutError:
                     continue
+                except OSError as e:
+                    __log__.warning('OSError while sending %s', e)
             else:
                 # Remove the cancelled messages from pending
                 __log__.info('Some futures were cancelled, aborted send')
@@ -341,12 +342,16 @@ class MTProtoSender:
                 # TODO If nothing is received for a minute, send a request
                 continue
             except ConnectionError as e:
-                __log__.info('Connection reset while receiving: {}'.format(e))
+                __log__.info('Connection reset while receiving %s', e)
+                asyncio.ensure_future(self._reconnect())
+                break
+            except OSError as e:
+                __log__.warning('OSError while receiving %s', e)
                 asyncio.ensure_future(self._reconnect())
                 break
 
             # TODO Check salt, session_id and sequence_number
-            __log__.debug('Decoding packet of {} bytes...'.format(len(body)))
+            __log__.debug('Decoding packet of %d bytes...', len(body))
             try:
                 message = self.state.unpack_message(body)
             except (BrokenAuthKeyError, BufferError) as e:
