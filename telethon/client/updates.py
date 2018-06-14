@@ -150,13 +150,12 @@ class UpdateMethods(UserMethods):
                         itertools.chain(update.users, update.chats)}
             for u in update.updates:
                 u._entities = entities
-                asyncio.ensure_future(
-                    self._dispatch_update(u), loop=self._loop)
+                self._loop.create_task(self._dispatch_update(u))
             return
         if isinstance(update, types.UpdateShort):
             update = update.update
         update._entities = {}
-        asyncio.ensure_future(self._dispatch_update(update), loop=self._loop)
+        self._loop.create_task(self._dispatch_update(update))
 
     async def _dispatch_update(self, update):
         if self._events_pending_resolve:

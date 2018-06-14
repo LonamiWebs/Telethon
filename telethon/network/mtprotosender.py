@@ -232,12 +232,10 @@ class MTProtoSender:
                 raise _last_error
 
         __log__.debug('Starting send loop')
-        self._send_loop_handle = asyncio.ensure_future(
-            self._send_loop(), loop=self._loop)
+        self._send_loop_handle = self._loop.create_task(self._send_loop())
 
         __log__.debug('Starting receive loop')
-        self._recv_loop_handle = asyncio.ensure_future(
-            self._recv_loop(), loop=self._loop)
+        self._recv_loop_handle = self._loop.create_task(self._recv_loop())
 
         if self._is_first_query:
             __log__.debug('Running first query')
@@ -352,11 +350,11 @@ class MTProtoSender:
                 continue
             except ConnectionError as e:
                 __log__.info('Connection reset while receiving %s', e)
-                asyncio.ensure_future(self._reconnect(), loop=self._loop)
+                self._loop.create_task(self._reconnect())
                 break
             except OSError as e:
                 __log__.warning('OSError while receiving %s', e)
-                asyncio.ensure_future(self._reconnect(), loop=self._loop)
+                self._loop.create_task(self._reconnect())
                 break
 
             # TODO Check salt, session_id and sequence_number
@@ -375,7 +373,7 @@ class MTProtoSender:
                 # an actually broken authkey?
                 __log__.warning('Broken authorization key?: {}'.format(e))
                 self.state.auth_key = None
-                asyncio.ensure_future(self._reconnect(), loop=self._loop)
+                self._loop.create_task(self._reconnect())
                 break
             except SecurityError as e:
                 # A step while decoding had the incorrect data. This message
