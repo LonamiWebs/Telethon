@@ -65,7 +65,7 @@ class EventBuilder(abc.ABC):
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
         self.chats = await _into_id_set(client, self.chats)
-        self._self_id = await client.get_me(input_peer=True).user_id
+        self._self_id = (await client.get_me(input_peer=True)).user_id
 
     def _filter_event(self, event):
         """
