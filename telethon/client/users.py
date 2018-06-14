@@ -35,6 +35,10 @@ class UserMethods(TelegramBaseClient):
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
                     errors.UserMigrateError) as e:
+                should_raise = isinstance(errors.PhoneMigrateError,
+                                          errors.NetworkMigrateError)
+                if should_raise and await self.is_user_authorized():
+                    raise
                 await self._switch_dc(e.new_dc)
 
         raise ValueError('Number of retries reached 0')
@@ -70,6 +74,14 @@ class UserMethods(TelegramBaseClient):
             return self._self_input_peer if input_peer else me
         except errors.UnauthorizedError:
             return None
+
+    async def is_user_authorized(self):
+        """
+        Returns ``True`` if the user is authorized.
+        """
+        if self._authorized is None:
+            self._authorized = await self.get_me() is not None
+        return self._authorized
 
     async def get_entity(self, entity):
         """

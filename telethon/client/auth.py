@@ -159,9 +159,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return self
 
-    async def is_user_authorized(self):
-        return await self.get_me() is not None
-
     async def sign_in(
             self, phone=None, code=None, password=None,
             bot_token=None, phone_code_hash=None):
@@ -239,6 +236,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
+        self._authorized = True
         return result.user
 
     async def sign_up(self, code, first_name, last_name=''):
@@ -291,6 +289,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
+        self._authorized = True
         return result.user
 
     async def send_code_request(self, phone, force_sms=False):
