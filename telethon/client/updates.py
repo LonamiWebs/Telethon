@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import logging
 import warnings
 
@@ -144,6 +145,17 @@ class UpdateMethods(UserMethods):
     # region Private methods
 
     def _handle_update(self, update):
+        if isinstance(update, (types.Updates, types.UpdatesCombined)):
+            entities = {utils.get_peer_id(x): x for x in
+                        itertools.chain(update.users, update.chats)}
+            for u in update.updates:
+                u._entities = entities
+                asyncio.ensure_future(
+                    self._dispatch_update(u), loop=self._loop)
+            return
+        if isinstance(update, types.UpdateShort):
+            update = update.update
+        update._entities = {}
         asyncio.ensure_future(self._dispatch_update(update), loop=self._loop)
 
     async def _dispatch_update(self, update):
