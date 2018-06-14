@@ -125,7 +125,21 @@ class EventCommon(abc.ABC):
                     self._chat_peer
                 )
             except ValueError:
-                pass
+                ch = isinstance(self._chat_peer, types.PeerChannel)
+                if not ch and self._message_id is not None:
+                    msg = await self._client.get_messages(ids=self._message_id)
+                    self._chat = msg._chat
+                    self._input_chat = msg._input_chat
+                else:
+                    target = utils.get_peer_id(self._chat_peer)
+                    async for d in self._client.iter_dialogs():
+                        if d.id == target:
+                            self._chat = d.entity
+                            self._input_chat = d.input_entity
+                            # TODO Don't break, exhaust the iterator, otherwise
+                            # async_generator raises RuntimeError: partially-
+                            # exhausted async_generator 'xyz' garbage collected
+                            # break
 
         return self._input_chat
 
