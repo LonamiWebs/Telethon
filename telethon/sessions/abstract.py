@@ -67,6 +67,22 @@ class Session(ABC):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def user_id(self):
+        """
+        Returns an ``user_id`` which the session related to.
+        """
+        raise NotImplementedError
+
+    @user_id.setter
+    @abstractmethod
+    def user_id(self, value):
+        """
+        Sets the ``user_id`` which the session related to.
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def get_update_state(self, entity_id):
         """
@@ -94,7 +110,7 @@ class Session(ABC):
         """
 
     @abstractmethod
-    def save(self):
+    async def save(self):
         """
         Called whenever important properties change. It should
         make persist the relevant session information to disk.
@@ -102,7 +118,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self):
+    async def delete(self):
         """
         Called upon client.log_out(). Should delete the stored
         information from disk since it's not valid anymore.
@@ -125,7 +141,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_input_entity(self, key):
+    async def get_input_entity(self, key):
         """
         Turns the given key into an ``InputPeer`` (e.g. ``InputPeerUser``).
         The library uses this method whenever an ``InputPeer`` is needed
@@ -135,7 +151,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def cache_file(self, md5_digest, file_size, instance):
+    async def cache_file(self, md5_digest, file_size, instance):
         """
         Caches the given file information persistently, so that it
         doesn't need to be re-uploaded in case the file is used again.
@@ -146,7 +162,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_file(self, md5_digest, file_size, cls):
+    async def get_file(self, md5_digest, file_size, cls):
         """
         Returns an instance of ``cls`` if the ``md5_digest`` and ``file_size``
         match an existing saved record. The class will either be an

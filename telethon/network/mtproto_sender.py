@@ -14,11 +14,11 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl import TLMessage, MessageContainer, GzipPacked
 from ..tl.all_tlobjects import tlobjects
-from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
-    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo
+    MsgNewDetailedInfo, MsgDetailedInfo, MsgsStateReq, MsgResendReq,
+    MsgsAllInfo, MsgsStateInfo, RpcError
 )
 
 __log__ = logging.getLogger(__name__)
@@ -56,7 +56,8 @@ class MtProtoSender:
         # receiving other request from the main thread (e.g. an update arrives
         # and we need to process it)  we must  ensure that only one is calling
         # receive at a given moment, since the receive step is fragile.
-        self._recv_lock = asyncio.Lock()
+        self._read_lock = asyncio.Lock(loop=self._loop)
+        self._write_lock = asyncio.Lock(loop=self._loop)
 
         # Requests (as msg_id: Message) sent waiting to be received
         self._pending_receive = {}
@@ -73,11 +74,12 @@ class MtProtoSender:
         """
         return self.connection.is_connected()
 
-    def disconnect(self):
+    def disconnect(self, clear_pendings=True):
         """Disconnects from the server."""
         __log__.info('Disconnecting MtProtoSender...')
         self.connection.close()
-        self._clear_all_pending()
+        if clear_pendings:
+            self._clear_all_pending()
 
     # region Send and receive
 
@@ -90,6 +92,7 @@ class MtProtoSender:
         :param ordered: whether the requests should be invoked in the
                         order in which they appear or they can be executed
                         in arbitrary order in the server.
+        :return: a list of msg_ids which are correspond to sent requests.
         """
         if not utils.is_list_like(requests):
             requests = (requests,)
@@ -111,6 +114,7 @@ class MtProtoSender:
             messages = [TLMessage(self.session, r) for r in requests]
 
         self._pending_receive.update({m.msg_id: m for m in messages})
+        msg_ids = [m.msg_id for m in messages]
 
         __log__.debug('Sending requests with IDs: %s', ', '.join(
             '{}: {}'.format(m.request.__class__.__name__, m.msg_id)
@@ -128,12 +132,18 @@ class MtProtoSender:
                 m.container_msg_id = message.msg_id
 
         await self._send_message(message)
+        return msg_ids
+
+    def forget_pendings(self, msg_ids):
+        for msg_id in msg_ids:
+            if msg_id in self._pending_receive:
+                del self._pending_receive[msg_id]
 
     async def _send_acknowledge(self, msg_id):
         """Sends a message acknowledge for the given msg_id."""
         await self._send_message(TLMessage(self.session, MsgsAck([msg_id])))
 
-    async def receive(self, update_state):
+    async def receive(self, updates_handler):
         """
         Receives a single message from the connected endpoint.
 
@@ -144,21 +154,13 @@ class MtProtoSender:
         Any unhandled object (likely updates) will be passed to
         update_state.process(TLObject).
 
-        :param update_state:
-            the UpdateState that will process all the received
+        :param updates_handler:
+            the handler that will process all the received
             Update and Updates objects.
         """
-        if self._recv_lock.locked():
-            with await self._recv_lock:
-                # Don't busy wait, acquire it but return because there's
-                # already a receive running and we don't want another one.
-                # It would lock until Telegram sent another update even if
-                # the current receive already received the expected response.
-                return
-
+        await self._read_lock.acquire()
         try:
-            with await self._recv_lock:
-                body = await self.connection.recv()
+            body = await self.connection.recv()
         except (BufferError, InvalidChecksumError):
             # TODO BufferError, we should spot the cause...
             # "No more bytes left"; something wrong happened, clear
@@ -172,11 +174,12 @@ class MtProtoSender:
                               len(self._pending_receive))
             self._clear_all_pending()
             return
+        finally:
+            self._read_lock.release()
 
         message, remote_msg_id, remote_seq = self._decode_msg(body)
         with BinaryReader(message) as reader:
-            await self._process_msg(remote_msg_id, remote_seq, reader, update_state)
-            await self._send_acknowledge(remote_msg_id)
+            await self._process_msg(remote_msg_id, remote_seq, reader, updates_handler)
 
     # endregion
 
@@ -188,7 +191,11 @@ class MtProtoSender:
 
         :param message: the TLMessage to be sent.
         """
-        await self.connection.send(helpers.pack_message(self.session, message))
+        await self._write_lock.acquire()
+        try:
+            await self.connection.send(helpers.pack_message(self.session, message))
+        finally:
+            self._write_lock.release()
 
     def _decode_msg(self, body):
         """
@@ -206,14 +213,14 @@ class MtProtoSender:
         with BinaryReader(body) as reader:
             return helpers.unpack_message(self.session, reader)
 
-    async def _process_msg(self, msg_id, sequence, reader, state):
+    async def _process_msg(self, msg_id, sequence, reader, updates_handler):
         """
         Processes the message read from the network inside reader.
 
         :param msg_id: the ID of the message.
         :param sequence: the sequence of the message.
         :param reader: the BinaryReader that contains the message.
-        :param state: the current UpdateState.
+        :param updates_handler: the handler to process Update and Updates objects.
         :return: true if the message was handled correctly, false otherwise.
         """
         # TODO Check salt, session_id and sequence_number
@@ -224,15 +231,16 @@ class MtProtoSender:
         # These are a bit of special case, not yet generated by the code gen
         if code == 0xf35c6d01:  # rpc_result, (response of an RPC call)
             __log__.debug('Processing Remote Procedure Call result')
+            await self._send_acknowledge(msg_id)
             return await self._handle_rpc_result(msg_id, sequence, reader)
 
         if code == MessageContainer.CONSTRUCTOR_ID:
             __log__.debug('Processing container result')
-            return await self._handle_container(msg_id, sequence, reader, state)
+            return await self._handle_container(msg_id, sequence, reader, updates_handler)
 
         if code == GzipPacked.CONSTRUCTOR_ID:
             __log__.debug('Processing gzipped result')
-            return await self._handle_gzip_packed(msg_id, sequence, reader, state)
+            return await self._handle_gzip_packed(msg_id, sequence, reader, updates_handler)
 
         if code not in tlobjects:
             __log__.warning(
@@ -250,6 +258,14 @@ class MtProtoSender:
         if isinstance(obj, BadServerSalt):
             return await self._handle_bad_server_salt(msg_id, sequence, obj)
 
+        if isinstance(obj, (MsgsStateReq, MsgResendReq)):
+            # just answer we don't know anything
+            return await self._handle_msgs_state_forgotten(msg_id, sequence, obj)
+
+        if isinstance(obj, MsgsAllInfo):
+            # not interesting now
+            return True
+
         if isinstance(obj, BadMsgNotification):
             return await self._handle_bad_msg_notification(msg_id, sequence, obj)
 
@@ -259,11 +275,8 @@ class MtProtoSender:
         if isinstance(obj, MsgNewDetailedInfo):
             return await self._handle_msg_new_detailed_info(msg_id, sequence, obj)
 
-        if isinstance(obj, NewSessionCreated):
-            return await self._handle_new_session_created(msg_id, sequence, obj)
-
         if isinstance(obj, MsgsAck):  # may handle the request we wanted
-            # Ignore every ack request *unless* when logging out, when it's
+            # Ignore every ack request *unless* when logging out,
             # when it seems to only make sense. We also need to set a non-None
             # result since Telegram doesn't send the response for these.
             for msg_id in obj.msg_ids:
@@ -284,8 +297,9 @@ class MtProtoSender:
 
         # If the object isn't any of the above, then it should be an Update.
         self.session.process_entities(obj)
-        if state:
-            state.process(obj)
+        await self._send_acknowledge(msg_id)
+        if updates_handler:
+            updates_handler(obj)
 
         return True
 
@@ -372,22 +386,24 @@ class MtProtoSender:
 
         return True
 
-    async def _handle_container(self, msg_id, sequence, reader, state):
+    async def _handle_container(self, msg_id, sequence, reader, updates_handler):
         """
         Handles a MessageContainer response.
 
         :param msg_id: the ID of the message.
         :param sequence: the sequence of the message.
         :param reader: the reader containing the MessageContainer.
+        :param updates_handler: handler to handle Update and Updates objects.
         :return: true, as it always succeeds.
         """
+        __log__.debug('Handling container')
         for inner_msg_id, _, inner_len in MessageContainer.iter_read(reader):
             begin_position = reader.tell_position()
 
             # Note that this code is IMPORTANT for skipping RPC results of
             # lost requests (i.e., ones from the previous connection session)
             try:
-                if not await self._process_msg(inner_msg_id, sequence, reader, state):
+                if not await self._process_msg(inner_msg_id, sequence, reader, updates_handler):
                     reader.set_position(begin_position + inner_len)
             except:
                 # If any error is raised, something went wrong; skip the packet
@@ -406,12 +422,15 @@ class MtProtoSender:
         :return: true, as it always succeeds.
         """
         self.session.salt = bad_salt.new_server_salt
-        self.session.save()
 
         # "the bad_server_salt response is received with the
         # correct salt, and the message is to be re-sent with it"
         await self._resend_request(bad_salt.bad_msg_id)
 
+        return True
+
+    async def _handle_msgs_state_forgotten(self, msg_id, sequence, req):
+        await self._send_message(TLMessage(self.session, MsgsStateInfo(msg_id, chr(1) * len(req.msg_ids))))
         return True
 
     async def _handle_bad_msg_notification(self, msg_id, sequence, bad_msg):
@@ -476,19 +495,6 @@ class MtProtoSender:
         await self._send_acknowledge(msg_new.answer_msg_id)
         return True
 
-    async def _handle_new_session_created(self, msg_id, sequence, new_session):
-        """
-        Handles a NewSessionCreated response.
-
-        :param msg_id: the ID of the message.
-        :param sequence: the sequence of the message.
-        :param reader: the reader containing the NewSessionCreated.
-        :return: true, as it always succeeds.
-        """
-        self.session.salt = new_session.server_salt
-        # TODO https://goo.gl/LMyN7A
-        return True
-
     async def _handle_rpc_result(self, msg_id, sequence, reader):
         """
         Handles a RPCResult response.
@@ -507,7 +513,7 @@ class MtProtoSender:
         __log__.debug('Received response for request with ID %d', request_id)
         request = self._pop_request(request_id)
 
-        if inner_code == 0x2144ca19:  # RPC Error
+        if inner_code == RpcError.CONSTRUCTOR_ID:  # RPC Error
             reader.seek(4)
             if self.session.report_errors and request:
                 error = rpc_message_to_error(
@@ -530,6 +536,7 @@ class MtProtoSender:
             return True  # All contents were read okay
 
         elif request:
+            __log__.debug('Reading request response')
             if inner_code == GzipPacked.CONSTRUCTOR_ID:
                 with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
                     request.on_response(compressed_reader)
@@ -566,16 +573,18 @@ class MtProtoSender:
         )
         return False
 
-    async def _handle_gzip_packed(self, msg_id, sequence, reader, state):
+    async def _handle_gzip_packed(self, msg_id, sequence, reader, updates_handler):
         """
         Handles a GzipPacked response.
 
         :param msg_id: the ID of the message.
         :param sequence: the sequence of the message.
         :param reader: the reader containing the GzipPacked.
+        :param updates_handler: the handler to process Update and Updates objects.
         :return: the result of processing the packed message.
         """
+        __log__.debug('Handling gzip packed data')
         with BinaryReader(GzipPacked.read(reader)) as compressed_reader:
-            return await self._process_msg(msg_id, sequence, compressed_reader, state)
+            return await self._process_msg(msg_id, sequence, compressed_reader, updates_handler)
 
     # endregion

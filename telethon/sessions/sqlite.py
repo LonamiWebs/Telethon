@@ -213,7 +213,7 @@ class SQLiteSession(MemorySession):
         ))
         c.close()
 
-    def get_update_state(self, entity_id):
+    async def get_update_state(self, entity_id):
         c = self._cursor()
         row = c.execute('select pts, qts, date, seq from update_state '
                         'where id = ?', (entity_id,)).fetchone()
@@ -223,7 +223,7 @@ class SQLiteSession(MemorySession):
             date = datetime.datetime.utcfromtimestamp(date)
             return types.updates.State(pts, qts, date, seq, unread_count=0)
 
-    def set_update_state(self, entity_id, state):
+    async def set_update_state(self, entity_id, state):
         c = self._cursor()
         c.execute('insert or replace into update_state values (?,?,?,?,?)',
                   (entity_id, state.pts, state.qts,
@@ -231,7 +231,7 @@ class SQLiteSession(MemorySession):
         c.close()
         self.save()
 
-    def save(self):
+    async def save(self):
         """Saves the current session object as session_user_id.session"""
         self._conn.commit()
 
@@ -248,7 +248,7 @@ class SQLiteSession(MemorySession):
                 self._conn.close()
                 self._conn = None
 
-    def delete(self):
+    async def delete(self):
         """Deletes the current session file"""
         if self.filename == ':memory:':
             return True
@@ -319,7 +319,7 @@ class SQLiteSession(MemorySession):
 
     # File processing
 
-    def get_file(self, md5_digest, file_size, cls):
+    async def get_file(self, md5_digest, file_size, cls):
         tuple_ = self._cursor().execute(
             'select id, hash from sent_files '
             'where md5_digest = ? and file_size = ? and type = ?',
@@ -329,7 +329,7 @@ class SQLiteSession(MemorySession):
             # Both allowed classes have (id, access_hash) as parameters
             return cls(tuple_[0], tuple_[1])
 
-    def cache_file(self, md5_digest, file_size, instance):
+    async def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
 

@@ -6,32 +6,33 @@ import asyncio
 import errno
 import logging
 import socket
-import time
 from datetime import timedelta
 from io import BytesIO, BufferedWriter
 
-MAX_TIMEOUT = 15  # in seconds
 CONN_RESET_ERRNOS = {
     errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
-    errno.EINVAL, errno.ENOTCONN
+    errno.EINVAL, errno.ENOTCONN, errno.EHOSTUNREACH,
+    errno.ECONNREFUSED, errno.ECONNRESET, errno.ECONNABORTED,
+    errno.ENETDOWN, errno.ENETRESET, errno.ECONNABORTED,
+    errno.EHOSTDOWN, errno.EPIPE, errno.ESHUTDOWN
 }
+# catched: EHOSTUNREACH, ECONNREFUSED, ECONNRESET, ENETUNREACH
+# ConnectionError: EPIPE, ESHUTDOWN, ECONNABORTED, ECONNREFUSED, ECONNRESET
 
 try:
     import socks
 except ImportError:
     socks = None
 
-MAX_TIMEOUT = 15  # in seconds
-CONN_RESET_ERRNOS = {
-    errno.EBADF, errno.ENOTSOCK, errno.ENETUNREACH,
-    errno.EINVAL, errno.ENOTCONN
-}
-
 __log__ = logging.getLogger(__name__)
 
 
 class TcpClient:
     """A simple TCP client to ease the work with sockets and proxies."""
+
+    class SocketClosed(ConnectionError):
+        pass
+
     def __init__(self, proxy=None, timeout=timedelta(seconds=5), loop=None):
         """
         Initializes the TCP client.
@@ -42,6 +43,8 @@ class TcpClient:
         self.proxy = proxy
         self._socket = None
         self._loop = loop if loop else asyncio.get_event_loop()
+        self._closed = asyncio.Event(loop=self._loop)
+        self._closed.set()
 
         if isinstance(timeout, timedelta):
             self.timeout = timeout.seconds
@@ -76,41 +79,28 @@ class TcpClient:
         else:
             mode, address = socket.AF_INET, (ip, port)
 
-        timeout = 1
-        while True:
-            try:
-                if not self._socket:
-                    self._recreate_socket(mode)
+        try:
+            if not self._socket:
+                self._recreate_socket(mode)
 
-                await self._loop.sock_connect(self._socket, address)
-                break  # Successful connection, stop retrying to connect
-            except ConnectionError:
-                self._socket = None
-                await asyncio.sleep(timeout)
-                timeout = min(timeout * 2, MAX_TIMEOUT)
-            except OSError as e:
-                __log__.info('OSError "%s" raised while connecting', e)
-                # Stop retrying to connect if proxy connection error occurred
-                if socks and isinstance(e, socks.ProxyConnectionError):
-                    raise
-                # There are some errors that we know how to handle, and
-                # the loop will allow us to retry
-                if e.errno in (errno.EBADF, errno.ENOTSOCK, errno.EINVAL,
-                               errno.ECONNREFUSED,  # Windows-specific follow
-                               getattr(errno, 'WSAEACCES', None)):
-                    # Bad file descriptor, i.e. socket was closed, set it
-                    # to none to recreate it on the next iteration
-                    self._socket = None
-                    await asyncio.sleep(timeout)
-                    timeout *= 2
-                    if timeout > MAX_TIMEOUT:
-                        raise
-                else:
-                    raise
+            await asyncio.wait_for(
+                self._loop.sock_connect(self._socket, address),
+                timeout=self.timeout,
+                loop=self._loop
+            )
+
+            self._closed.clear()
+        except asyncio.TimeoutError as e:
+            raise TimeoutError() from e
+        except OSError as e:
+            if e.errno in CONN_RESET_ERRNOS:
+                self._raise_connection_reset(e)
+            else:
+                raise
 
     def _get_connected(self):
         """Determines whether the client is connected or not."""
-        return self._socket is not None and self._socket.fileno() >= 0
+        return not self._closed.is_set()
 
     connected = property(fget=_get_connected)
 
@@ -118,12 +108,29 @@ class TcpClient:
         """Closes the connection."""
         try:
             if self._socket is not None:
-                self._socket.shutdown(socket.SHUT_RDWR)
+                if self.connected:
+                    self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
         except OSError:
             pass  # Ignore ENOTCONN, EBADF, and any other error when closing
         finally:
             self._socket = None
+            self._closed.set()
+
+    async def _wait_close(self, coro):
+        done, running = await asyncio.wait(
+            [coro, self._closed.wait()],
+            timeout=self.timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+            loop=self._loop
+        )
+        for r in running:
+            r.cancel()
+        if not self.connected:
+            raise self.SocketClosed()
+        if not done:
+            raise TimeoutError()
+        return done.pop().result()
 
     async def write(self, data):
         """
@@ -131,21 +138,12 @@ class TcpClient:
 
         :param data: the data to send.
         """
-        if self._socket is None:
-            self._raise_connection_reset(None)
-
+        if not self.connected:
+            raise ConnectionResetError('No connection')
         try:
-            await asyncio.wait_for(
-                self.sock_sendall(data),
-                timeout=self.timeout,
-                loop=self._loop
-            )
-        except asyncio.TimeoutError as e:
-            __log__.debug('socket.timeout "%s" while writing data', e)
-            raise TimeoutError() from e
-        except ConnectionError as e:
-            __log__.info('ConnectionError "%s" while writing data', e)
-            self._raise_connection_reset(e)
+            await self._wait_close(self.sock_sendall(data))
+        except self.SocketClosed:
+            raise ConnectionResetError('Socket has closed')
         except OSError as e:
             __log__.info('OSError "%s" while writing data', e)
             if e.errno in CONN_RESET_ERRNOS:
@@ -160,21 +158,15 @@ class TcpClient:
         :param size: the size of the block to be read.
         :return: the read data with len(data) == size.
         """
-        if self._socket is None:
-            self._raise_connection_reset(None)
-
         with BufferedWriter(BytesIO(), buffer_size=size) as buffer:
             bytes_left = size
+            partial = b''
             while bytes_left != 0:
+                if not self.connected:
+                    raise ConnectionResetError('No connection')
                 try:
-                    if self._socket is None:
-                        self._raise_connection_reset()
-                    partial = await asyncio.wait_for(
-                        self.sock_recv(bytes_left),
-                        timeout=self.timeout,
-                        loop=self._loop
-                    )
-                except asyncio.TimeoutError as e:
+                    partial = await self._wait_close(self.sock_recv(bytes_left))
+                except TimeoutError as e:
                     # These are somewhat common if the server has nothing
                     # to send to us, so use a lower logging priority.
                     if bytes_left < size:
@@ -187,10 +179,9 @@ class TcpClient:
                             'socket.timeout "%s" while reading data', e
                         )
 
-                    raise TimeoutError() from e
-                except ConnectionError as e:
-                    __log__.info('ConnectionError "%s" while reading data', e)
-                    self._raise_connection_reset(e)
+                    raise
+                except self.SocketClosed:
+                    raise ConnectionResetError('Socket has closed while reading data')
                 except OSError as e:
                     if e.errno != errno.EBADF:
                         # Ignore bad file descriptor while closing
@@ -202,7 +193,7 @@ class TcpClient:
                         raise
 
                 if len(partial) == 0:
-                    self._raise_connection_reset(None)
+                    self._raise_connection_reset('No data on read')
 
                 buffer.write(partial)
                 bytes_left -= len(partial)
@@ -211,10 +202,12 @@ class TcpClient:
             buffer.flush()
             return buffer.raw.getvalue()
 
-    def _raise_connection_reset(self, original):
-        """Disconnects the client and raises ConnectionResetError."""
+    def _raise_connection_reset(self, error):
+        description = error if isinstance(error, str) else str(error)
+        if isinstance(error, str):
+            error = Exception(error)
         self.close()  # Connection reset -> flag as socket closed
-        raise ConnectionResetError('The server has closed the connection.') from original
+        raise ConnectionResetError(description) from error
 
     # due to new https://github.com/python/cpython/pull/4386
     def sock_recv(self, n):
@@ -225,7 +218,7 @@ class TcpClient:
     def _sock_recv(self, fut, registered_fd, n):
         if registered_fd is not None:
             self._loop.remove_reader(registered_fd)
-        if fut.cancelled():
+        if fut.cancelled() or self._socket is None:
             return
 
         try:
@@ -249,7 +242,7 @@ class TcpClient:
     def _sock_sendall(self, fut, registered_fd, data):
         if registered_fd:
             self._loop.remove_writer(registered_fd)
-        if fut.cancelled():
+        if fut.cancelled() or self._socket is None:
             return
 
         try:

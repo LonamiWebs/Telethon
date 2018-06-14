@@ -32,6 +32,7 @@ class MemorySession(Session):
         self._server_address = None
         self._port = None
         self._auth_key = None
+        self._user_id = None
 
         self._files = {}
         self._entities = set()
@@ -58,6 +59,14 @@ class MemorySession(Session):
     def auth_key(self, value):
         self._auth_key = value
 
+    @property
+    def user_id(self):
+        return self._user_id
+
+    @user_id.setter
+    def user_id(self, value):
+        self._user_id = value
+
     def get_update_state(self, entity_id):
         return self._update_states.get(entity_id, None)
 
@@ -67,10 +76,10 @@ class MemorySession(Session):
     def close(self):
         pass
 
-    def save(self):
+    async def save(self):
         pass
 
-    def delete(self):
+    async def delete(self):
         pass
 
     def _entity_values_to_row(self, id, hash, username, phone, name):
@@ -170,7 +179,7 @@ class MemorySession(Session):
         except StopIteration:
             pass
 
-    def get_input_entity(self, key):
+    async def get_input_entity(self, key):
         try:
             if key.SUBCLASS_OF_ID in (0xc91c90b6, 0xe669bf46, 0x40f202fd):
                 # hex(crc32(b'InputPeer', b'InputUser' and b'InputChannel'))
@@ -215,14 +224,14 @@ class MemorySession(Session):
         else:
             raise ValueError('Could not find input entity with key ', key)
 
-    def cache_file(self, md5_digest, file_size, instance):
+    async def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
         key = (md5_digest, file_size, _SentFileType.from_type(instance))
         value = (instance.id, instance.access_hash)
         self._files[key] = value
 
-    def get_file(self, md5_digest, file_size, cls):
+    async def get_file(self, md5_digest, file_size, cls):
         key = (md5_digest, file_size, _SentFileType.from_type(cls))
         try:
             return cls(self._files[key])

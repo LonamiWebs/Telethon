@@ -510,7 +510,7 @@ class TelegramClient(TelegramBareClient):
             return False
 
         self.disconnect()
-        self.session.delete()
+        await self.session.delete()
         self._authorized = False
         return True
 
@@ -1805,7 +1805,7 @@ class TelegramClient(TelegramBareClient):
                 to_cache = utils.get_input_photo(msg.media.photo)
             else:
                 to_cache = utils.get_input_document(msg.media.document)
-            self.session.cache_file(md5, size, to_cache)
+            await self.session.cache_file(md5, size, to_cache)
 
         return msg
 
@@ -1849,7 +1849,7 @@ class TelegramClient(TelegramBareClient):
                 input_photo = utils.get_input_photo((await self(UploadMediaRequest(
                     entity, media=InputMediaUploadedPhoto(fh)
                 ))).photo)
-                self.session.cache_file(fh.md5, fh.size, input_photo)
+                await self.session.cache_file(fh.md5, fh.size, input_photo)
                 fh = input_photo
 
             if captions:
@@ -1957,7 +1957,7 @@ class TelegramClient(TelegramBareClient):
                     file = stream.read()
             hash_md5.update(file)
             if use_cache:
-                cached = self.session.get_file(
+                cached = await self.session.get_file(
                     hash_md5.digest(), file_size, cls=use_cache
                 )
                 if cached:
@@ -2122,7 +2122,7 @@ class TelegramClient(TelegramBareClient):
                 media, file, date, progress_callback
             )
         elif isinstance(media, MessageMediaContact):
-            return await self._download_contact(
+            return self._download_contact(
                 media, file
             )
 
@@ -2472,7 +2472,7 @@ class TelegramClient(TelegramBareClient):
                 be passed instead.
         """
 
-        self.updates.handler = self._on_handler
+        self.update_handler = self._on_handler
         if isinstance(event, type):
             event = event()
         elif not event:
@@ -2555,7 +2555,7 @@ class TelegramClient(TelegramBareClient):
                         # infinite loop here (so check against old pts to stop)
                         break
 
-                    self.updates.process(Updates(
+                    self._updates_handler(Updates(
                         users=d.users,
                         chats=d.chats,
                         date=state.date,
@@ -2572,10 +2572,6 @@ class TelegramClient(TelegramBareClient):
     # endregion
 
     # region Small utilities to make users' life easier
-
-    async def _set_connected_and_authorized(self):
-        await super()._set_connected_and_authorized()
-        await self._check_events_pending_resolve()
 
     async def get_entity(self, entity):
         """
@@ -2694,7 +2690,7 @@ class TelegramClient(TelegramBareClient):
             try:
                 # Nobody with this username, maybe it's an exact name/title
                 return await self.get_entity(
-                    self.session.get_input_entity(string))
+                    await self.session.get_input_entity(string))
             except ValueError:
                 pass
 
@@ -2729,7 +2725,7 @@ class TelegramClient(TelegramBareClient):
 
         try:
             # First try to get the entity from cache, otherwise figure it out
-            return self.session.get_input_entity(peer)
+            return await self.session.get_input_entity(peer)
         except ValueError:
             pass
 
