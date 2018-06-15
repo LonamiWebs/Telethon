@@ -203,10 +203,10 @@ class MTProtoSender:
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
                 await self._connection.connect(self._ip, self._port)
-            except OSError as e:
+            except (asyncio.TimeoutError, OSError) as e:
                 _last_error = e
-                __log__.warning('Attempt {} at connecting failed: {}'
-                                .format(retry, e))
+                __log__.warning('Attempt {} at connecting failed: {}: {}'
+                                .format(retry, type(e).__name__, e))
             else:
                 break
         else:
