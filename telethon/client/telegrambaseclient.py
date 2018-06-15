@@ -192,6 +192,7 @@ class TelegramBaseClient(abc.ABC):
         # TODO maybe we can have ._last_request instead if any req works?
         self._last_state = datetime.now()
         self._state_delay = timedelta(hours=1)
+        self._state = None
 
         # Some further state for subclasses
         self._event_builders = []

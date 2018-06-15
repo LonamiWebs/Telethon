@@ -35,8 +35,9 @@ class UserMethods(TelegramBaseClient):
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
                     errors.UserMigrateError) as e:
-                should_raise = isinstance(errors.PhoneMigrateError,
-                                          errors.NetworkMigrateError)
+                should_raise = isinstance(e, (
+                    errors.PhoneMigrateError,  errors.NetworkMigrateError
+                ))
                 if should_raise and await self.is_user_authorized():
                     raise
                 await self._switch_dc(e.new_dc)
@@ -79,9 +80,14 @@ class UserMethods(TelegramBaseClient):
         """
         Returns ``True`` if the user is authorized.
         """
-        if self._authorized is None:
-            self._authorized = await self.get_me() is not None
-        return self._authorized
+        if self._self_input_peer is not None or self._state is not None:
+            return True
+
+        try:
+            self._state = await self(functions.updates.GetStateRequest())
+            return True
+        except errors.RPCError:
+            return False
 
     async def get_entity(self, entity):
         """
