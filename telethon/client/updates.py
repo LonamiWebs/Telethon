@@ -159,9 +159,14 @@ class UpdateMethods(UserMethods):
 
     async def _dispatch_update(self, update):
         if self._events_pending_resolve:
-            # TODO Add lock not to resolve them twice
-            for event in self._events_pending_resolve:
-                await event.resolve(self)
+            if self._event_resolve_lock.locked():
+                async with self._event_resolve_lock:
+                    pass
+            else:
+                async with self._event_resolve_lock:
+                    for event in self._events_pending_resolve:
+                        await event.resolve(self)
+
             self._events_pending_resolve.clear()
 
         for builder, callback in self._event_builders:

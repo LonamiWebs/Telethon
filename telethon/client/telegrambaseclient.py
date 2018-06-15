@@ -196,6 +196,7 @@ class TelegramBaseClient(abc.ABC):
         # Some further state for subclasses
         self._event_builders = []
         self._events_pending_resolve = []
+        self._event_resolve_lock = asyncio.Lock()
 
         # Default parse mode
         self._parse_mode = markdown
