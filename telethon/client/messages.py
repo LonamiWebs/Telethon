@@ -1,7 +1,6 @@
 import asyncio
 import itertools
 import logging
-import time
 import warnings
 from collections import UserList
 
@@ -217,8 +216,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             else:
                 request.max_date = r.messages[-1].date
 
+            now = asyncio.get_event_loop().time()
             await asyncio.sleep(
-                max(wait_time - (time.time() - start), 0), loop=self._loop)
+                max(wait_time - (now - start), 0), loop=self._loop)
 
     async def get_messages(self, *args, **kwargs):
         """
