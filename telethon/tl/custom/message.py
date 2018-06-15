@@ -31,13 +31,14 @@ class Message:
         self._reply_message = None
         self._buttons = None
         self._buttons_flat = None
+
         self._sender = entities.get(self.original_message.from_id)
-        self._chat = entities.get(get_peer_id(self.original_message.to_id))
         if self._sender:
             self._input_sender = get_input_peer(self._sender)
         else:
             self._input_sender = None
 
+        self._chat = entities.get(self.chat_id)
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
             self._input_chat = get_input_peer(self._chat)
@@ -247,9 +248,18 @@ class Message:
     @property
     def chat_id(self):
         """
-        Returns the marked chat integer ID.
+        Returns the marked chat integer ID. Note that this value **will
+        be different** from `to_id` for incoming private messages, since
+        the chat *to* which the messages go is to your own person, but
+        the *chat* itself is with the one who sent the message.
+
+        TL;DR; this gets the ID that you expect.
         """
-        return get_peer_id(self.original_message.to_id)
+        if not self.original_message.out\
+                and isinstance(self.original_message.to_id, types.PeerUser):
+            return self.original_message.from_id
+        else:
+            return get_peer_id(self.original_message.to_id)
 
     @property
     def is_private(self):
