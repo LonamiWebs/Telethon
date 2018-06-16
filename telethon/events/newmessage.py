@@ -91,6 +91,14 @@ class NewMessage(EventBuilder):
             return
 
         event._entities = update._entities
+
+        # Make messages sent to ourselves outgoing unless they're forwarded.
+        # This makes it consistent with official client's appearance.
+        ori = event.message
+        if isinstance(ori.to_id, types.PeerUser):
+            if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
+                event.message.out = True
+
         return self._message_filter_event(event)
 
     def _message_filter_event(self, event):

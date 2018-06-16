@@ -401,6 +401,12 @@ class Message:
         """
         Whether the message is outgoing (i.e. you sent it from
         another session) or incoming (i.e. someone else sent it).
+
+        Note that messages in your own chat are always incoming,
+        but this property will be ``True`` if you send a message
+        to your own chat. Messages you forward to your chat are
+        *not* considered outgoing, just like official clients
+        display them.
         """
         return self.original_message.out
 
