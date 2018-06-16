@@ -631,13 +631,15 @@ class _ContainerQueue(asyncio.Queue):
     """
     async def get(self):
         result = await super().get()
-        if self.empty() or isinstance(result.obj, MessageContainer):
+        if self.empty() or result == _reconnect_sentinel or\
+                isinstance(result.obj, MessageContainer):
             return result
 
         result = [result]
         while not self.empty():
             item = self.get_nowait()
-            if isinstance(item.obj, MessageContainer):
+            if item == _reconnect_sentinel or\
+                    isinstance(item.obj, MessageContainer):
                 self.put_nowait(item)
                 break
             else:
