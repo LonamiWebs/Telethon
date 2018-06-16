@@ -19,6 +19,12 @@ from ..tl.types import (
 __log__ = logging.getLogger(__name__)
 
 
+# Place this object in the send queue when a reconnection is needed
+# so there is an item to read and we can early quit the loop, since
+# without this it will block until there's something in the queue.
+_reconnect_sentinel = object()
+
+
 # TODO Create some kind of "ReconnectionPolicy" that allows specifying
 # what should be done in case of some errors, with some sane defaults.
 # For instance, should all messages be set with an error upon network
@@ -249,6 +255,7 @@ class MTProtoSender:
         Cleanly disconnects and then reconnects.
         """
         self._reconnecting = True
+        self._send_queue.put_nowait(_reconnect_sentinel)
 
         __log__.debug('Awaiting for the send loop before reconnecting...')
         await self._send_loop_handle
@@ -296,6 +303,9 @@ class MTProtoSender:
                 self._pending_ack.clear()
 
             messages = await self._send_queue.get()
+            if messages == _reconnect_sentinel and self._reconnecting:
+                break
+
             if isinstance(messages, list):
                 message = self.state.create_message(MessageContainer(messages))
                 self._pending_messages[message.msg_id] = message
