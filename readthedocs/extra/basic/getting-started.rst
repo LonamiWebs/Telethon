@@ -53,7 +53,7 @@ Basic Usage
 
        # Listing all the dialogs (conversations you have open)
        for dialog in client.get_dialogs(limit=10):
-           print(utils.get_display_name(dialog.entity), dialog.draft.message)
+           print(utils.get_display_name(dialog.entity), dialog.draft.text)
 
        # Downloading profile photos (default path is the working directory)
        client.download_profile_photo('username')

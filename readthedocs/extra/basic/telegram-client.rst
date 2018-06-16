@@ -74,7 +74,7 @@ Many other common methods for quick scripts are also available:
 
         # Dialogs are the conversations you have open
         for dialog in client.get_dialogs(limit=10):
-            print(utils.get_display_name(dialog.entity), dialog.draft.message)
+            print(utils.get_display_name(dialog.entity), dialog.draft.text)
 
         # Default path is the working directory
         client.download_profile_photo('username')

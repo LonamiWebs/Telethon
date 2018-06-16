@@ -215,7 +215,7 @@ Restricting Users
 *****************
 
 Similar to how you give or revoke admin permissions, you can edit the
-banned rights of an user through :tl:`EditAdminRequest` and its parameter
+banned rights of an user through :tl:`EditBannedRequest` and its parameter
 :tl:`ChannelBannedRights`:
 
     .. code-block:: python
