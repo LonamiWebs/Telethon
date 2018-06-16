@@ -2,6 +2,7 @@ import hashlib
 import io
 import logging
 import os
+import pathlib
 import warnings
 from io import BytesIO
 from mimetypes import guess_type
@@ -360,6 +361,9 @@ class UploadMethods(MessageParseMethods, UserMethods):
             allow_cache=True, voice_note=False, video_note=False):
         if not file:
             return None, None
+
+        if isinstance(file, pathlib.Path):
+            file = str(file.absolute())
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,

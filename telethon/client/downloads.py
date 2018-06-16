@@ -2,10 +2,10 @@ import datetime
 import io
 import logging
 import os
+import pathlib
 
 from .users import UserMethods
 from .. import utils, helpers, errors
-from ..crypto import CdnDecrypter
 from ..tl import TLObject, types, functions
 
 __log__ = logging.getLogger(__name__)
@@ -367,6 +367,9 @@ class DownloadMethods(UserMethods):
            If any modification is made to the path, this method will
            ensure that no existing file will be overwritten.
         """
+        if isinstance(file, pathlib.Path):
+            file = str(file.absolute())
+
         if file is not None and not isinstance(file, str):
             # Probably a stream-like object, we cannot set a filename here
             return file
