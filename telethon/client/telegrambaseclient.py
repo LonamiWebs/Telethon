@@ -218,6 +218,13 @@ class TelegramBaseClient(abc.ABC):
     def loop(self):
         return self._loop
 
+    @property
+    def connection_dropped(self):
+        """
+        Future that resolves when the connection to Telegram ends.
+        """
+        return self._sender.connection_dropped
+
     # endregion
 
     # region Connecting

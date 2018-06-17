@@ -63,6 +63,7 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
+        self._connection_dropped = None
 
         # We need to join the loops upon disconnection
         self._send_loop_handle = None
@@ -157,6 +158,10 @@ class MTProtoSender:
             self._recv_loop_handle.cancel()
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
+        if error is not None:
+            self._connection_dropped.set_result(None)
+        else:
+            self._connection_dropped.set_exception(error)
 
     def send(self, request, ordered=False):
         """
@@ -199,6 +204,16 @@ class MTProtoSender:
             self._send_queue.put_nowait(message)
             return message.future
 
+    @property
+    def connection_dropped(self):
+        """
+        Future that resolves when the connection to Telegram ends.
+        """
+        if self._connection_dropped is not None:
+            return self._connection_dropped
+        else:
+            raise ConnectionError('No connection yet')
+
     # Private methods
 
     async def _connect(self):
@@ -235,9 +250,10 @@ class MTProtoSender:
                 else:
                     break
             else:
-                await self._disconnect()
-                raise ConnectionError('auth_key generation failed {} times'
-                                      .format(self._retries))
+                e = ConnectionError('auth_key generation failed {} times'
+                                    .format(self._retries))
+                await self._disconnect(error=e)
+                raise e
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = self._loop.create_task(self._send_loop())
@@ -245,6 +261,7 @@ class MTProtoSender:
         __log__.debug('Starting receive loop')
         self._recv_loop_handle = self._loop.create_task(self._recv_loop())
 
+        self._connection_dropped = asyncio.Future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):

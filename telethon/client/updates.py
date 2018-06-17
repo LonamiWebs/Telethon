@@ -14,6 +14,12 @@ class UpdateMethods(UserMethods):
 
     # region Public methods
 
+    def run_loop(self):
+        """
+        Runs the event loop.
+        """
+        self.loop.run_until_complete(self.connection_dropped)
+
     def on(self, event):
         """
         Decorator helper method around add_event_handler().
