@@ -19,7 +19,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             phone=lambda: input('Please enter your phone: '),
             password=lambda: getpass.getpass('Please enter your password: '),
             bot_token=None, force_sms=False, code_callback=None,
-            first_name='New User', last_name=''):
+            first_name='New User', last_name='', max_attempts=3):
         """
         Convenience method to interactively connect and sign in if required,
         also taking into consideration that 2FA may be enabled in the account.
@@ -66,6 +66,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
             last_name (`str`, optional):
                 Similar to the first name, but for the last. Optional.
 
+            max_attempts (`int`, optional):
+                How many times the code/password callback should be
+                retried or switching between signing in and signing up.
+
         Returns:
             This `TelegramClient`, so initialization
             can be chained with ``.start()``.
@@ -103,7 +107,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         me = None
         attempts = 0
-        max_attempts = 3
         two_step_detected = False
 
         sent_code = await self.send_code_request(phone, force_sms=force_sms)
@@ -143,10 +146,20 @@ class AuthMethods(MessageParseMethods, UserMethods):
                     "Two-step verification is enabled for this account. "
                     "Please provide the 'password' argument to 'start()'."
                 )
-            # TODO If callable given make it retry on invalid
+
             if callable(password):
-                password = password()
-            me = await self.sign_in(phone=phone, password=password)
+                for _ in range(max_attempts):
+                    try:
+                        me = await self.sign_in(
+                            phone=phone, password=password())
+                        break
+                    except errors.PasswordHashInvalidError:
+                        print('Invalid password. Please try again',
+                              file=sys.stderr)
+                else:
+                    raise errors.PasswordHashInvalidError()
+            else:
+                me = await self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
         signed, name = 'Signed in successfully as', utils.get_display_name(me)
