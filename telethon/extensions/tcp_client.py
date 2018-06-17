@@ -107,6 +107,7 @@ class TcpClient:
 
     def close(self):
         """Closes the connection."""
+        fd = self._socket.fileno()
         try:
             if self._socket is not None:
                 if self.is_connected:
@@ -117,6 +118,8 @@ class TcpClient:
         finally:
             self._socket = None
             self._closed.set()
+            if fd:
+                self._loop.remove_reader(fd)
 
     async def _wait_timeout_or_close(self, coro):
         """
