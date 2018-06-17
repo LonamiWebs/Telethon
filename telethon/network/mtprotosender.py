@@ -158,10 +158,10 @@ class MTProtoSender:
             self._recv_loop_handle.cancel()
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
-        if error is not None:
-            self._connection_dropped.set_result(None)
-        else:
+        if error:
             self._connection_dropped.set_exception(error)
+        else:
+            self._connection_dropped.set_result(None)
 
     def send(self, request, ordered=False):
         """
