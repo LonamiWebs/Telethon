@@ -188,6 +188,9 @@ class MTProtoSender:
         Since the receiving part is "built in" the future, it's
         impossible to await receive a result that was never sent.
         """
+        if not self._user_connected:
+            raise ConnectionError('Cannot send requests while disconnected')
+
         if utils.is_list_like(request):
             result = []
             after = None
