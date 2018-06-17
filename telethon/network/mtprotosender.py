@@ -63,7 +63,7 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._connection_dropped = None
+        self._disconnected = None
 
         # We need to join the loops upon disconnection
         self._send_loop_handle = None
@@ -159,9 +159,9 @@ class MTProtoSender:
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
         if error:
-            self._connection_dropped.set_exception(error)
+            self._disconnected.set_exception(error)
         else:
-            self._connection_dropped.set_result(None)
+            self._disconnected.set_result(None)
 
     def send(self, request, ordered=False):
         """
@@ -205,14 +205,15 @@ class MTProtoSender:
             return message.future
 
     @property
-    def connection_dropped(self):
+    def disconnected(self):
         """
-        Future that resolves when the connection to Telegram ends.
+        Future that resolves when the connection to Telegram
+        ends, either by user action or in the background.
         """
-        if self._connection_dropped is not None:
-            return self._connection_dropped
+        if self._disconnected is not None:
+            return self._disconnected
         else:
-            raise ConnectionError('No connection yet')
+            raise ConnectionError('Sender was never connected')
 
     # Private methods
 
@@ -262,8 +263,8 @@ class MTProtoSender:
         self._recv_loop_handle = self._loop.create_task(self._recv_loop())
 
         # First connection or manual reconnection after a failure
-        if self._connection_dropped is None or self._connection_dropped.done():
-            self._connection_dropped = asyncio.Future()
+        if self._disconnected is None or self._disconnected.done():
+            self._disconnected = asyncio.Future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):

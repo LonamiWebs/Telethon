@@ -14,7 +14,7 @@ class UpdateMethods(UserMethods):
 
     # region Public methods
 
-    def run_loop(self):
+    def run_until_disconnected(self):
         """
         Runs the event loop until `disconnect` is called or if an error
         while connecting/sending/receiving occurs in the background. In
@@ -22,10 +22,10 @@ class UpdateMethods(UserMethods):
         to ``except`` it on your own code.
 
         This method shouldn't be called from ``async def`` as the loop
-        will be running already. Use ``await client.connection_dropped``
-        in this situation instead.
+        will be running already. Use ``await client.disconnected`` in
+        this situation instead.
         """
-        self.loop.run_until_complete(self.connection_dropped)
+        self.loop.run_until_complete(self.disconnected)
 
     def on(self, event):
         """
