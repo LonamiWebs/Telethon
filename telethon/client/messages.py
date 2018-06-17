@@ -634,10 +634,13 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         if total:
             total[0] = len(ids)
 
+        from_id = None  # By default, no need to validate from_id
         if isinstance(entity, types.InputPeerChannel):
             r = await self(functions.channels.GetMessagesRequest(entity, ids))
         else:
             r = await self(functions.messages.GetMessagesRequest(ids))
+            if entity:
+                from_id = utils.get_peer_id(entity)
 
         if isinstance(r, types.messages.MessagesNotModified):
             for _ in ids:
@@ -649,8 +652,13 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         # Telegram seems to return the messages in the order in which
         # we asked them for, so we don't need to check it ourselves.
+        #
+        # The passed message IDs may not belong to the desired entity
+        # since the user can enter arbitrary numbers which can belong to
+        # arbitrary chats. Validate these unless ``from_id is None``.
         for message in r.messages:
-            if isinstance(message, types.MessageEmpty):
+            if isinstance(message, types.MessageEmpty) or (
+                    from_id and utils.get_peer_id(message.to_id) != from_id):
                 await yield_(None)
             else:
                 await yield_(custom.Message(self, message, entities, entity))
