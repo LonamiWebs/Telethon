@@ -107,7 +107,7 @@ class TelegramBaseClient(abc.ABC):
                  connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
-                 timeout=timedelta(seconds=5),
+                 timeout=timedelta(seconds=10),
                  report_errors=True,
                  device_model=None,
                  system_version=None,

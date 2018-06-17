@@ -11,7 +11,6 @@ import asyncio
 import errno
 import logging
 import socket
-from datetime import timedelta
 from io import BytesIO
 
 CONN_RESET_ERRNOS = {
@@ -38,7 +37,7 @@ class TcpClient:
     class SocketClosed(ConnectionError):
         pass
 
-    def __init__(self, *, loop, proxy=None, timeout=timedelta(seconds=5)):
+    def __init__(self, *, loop, timeout, proxy=None):
         """
         Initializes the TCP client.
 
