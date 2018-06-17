@@ -16,9 +16,14 @@ class UpdateMethods(UserMethods):
 
     def run_loop(self):
         """
-        Runs the event loop until a disconnection occurs, either from
-        Telegram or by user action. If the loop is already running you
-        should ``await client.connection_dropped`` instead.
+        Runs the event loop until `disconnect` is called or if an error
+        while connecting/sending/receiving occurs in the background. In
+        the latter case, said error will ``raise`` so you have a chance
+        to ``except`` it on your own code.
+
+        This method shouldn't be called from ``async def`` as the loop
+        will be running already. Use ``await client.connection_dropped``
+        in this situation instead.
         """
         self.loop.run_until_complete(self.connection_dropped)
 
