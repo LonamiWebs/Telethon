@@ -132,6 +132,9 @@ class MTProtoSender:
             __log__.info('User is already disconnected!')
             return
 
+        await self._disconnect()
+
+    async def _disconnect(self, error=None):
         __log__.info('Disconnecting from {}...'.format(self._ip))
         self._user_connected = False
         try:
@@ -141,7 +144,10 @@ class MTProtoSender:
             __log__.debug('Cancelling {} pending message(s)...'
                           .format(len(self._pending_messages)))
             for message in self._pending_messages.values():
-                message.future.cancel()
+                if error and not message.future.done():
+                    message.future.set_exception(error)
+                else:
+                    message.future.cancel()
 
             self._pending_messages.clear()
             self._pending_ack.clear()
@@ -204,24 +210,22 @@ class MTProtoSender:
         receive loops.
         """
         __log__.info('Connecting to {}:{}...'.format(self._ip, self._port))
-        _last_error = ConnectionError()
         for retry in range(1, self._retries + 1):
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
                 await self._connection.connect(self._ip, self._port)
             except (asyncio.TimeoutError, OSError) as e:
-                _last_error = e
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
             else:
                 break
         else:
-            raise _last_error
+            raise ConnectionError('Connection to Telegram failed {} times'
+                                  .format(self._retries))
 
         __log__.debug('Connection success!')
         if self.state.auth_key is None:
             self._is_first_query = bool(self._first_query)
-            _last_error = SecurityError()
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
                 try:
@@ -229,13 +233,14 @@ class MTProtoSender:
                     self.state.auth_key, self.state.time_offset =\
                         await authenticator.do_authentication(plain)
                 except (SecurityError, AssertionError) as e:
-                    _last_error = e
                     __log__.warning('Attempt {} at new auth_key failed: {}'
                                     .format(retry, e))
                 else:
                     break
             else:
-                raise _last_error
+                await self._disconnect()
+                raise ConnectionError('auth_key generation failed {} times'
+                                      .format(self._retries))
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = self._loop.create_task(self._send_loop())
@@ -267,7 +272,12 @@ class MTProtoSender:
         await self._connection.close()
 
         self._reconnecting = False
-        await self._connect()
+        try:
+            await self._connect()
+        except ConnectionError as e:
+            __log__.error('Failed to reconnect automatically, '
+                          'disconnecting with error {}'.format(e))
+            await self._disconnect(error=e)
 
     def _clean_containers(self, msg_ids):
         """
