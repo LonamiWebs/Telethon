@@ -45,16 +45,14 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, state, connection, loop, *, retries=5,
-                 first_query=None, update_callback=None):
+    def __init__(self, state, connection, loop, *,
+                 retries=5, update_callback=None):
         self.state = state
         self._connection = connection
         self._loop = loop
         self._ip = None
         self._port = None
         self._retries = retries
-        self._first_query = first_query
-        self._is_first_query = bool(first_query)
         self._update_callback = update_callback
 
         # Whether the user has explicitly connected or disconnected.
@@ -225,7 +223,6 @@ class MTProtoSender:
 
         __log__.debug('Connection success!')
         if self.state.auth_key is None:
-            self._is_first_query = bool(self._first_query)
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
                 try:
@@ -247,11 +244,6 @@ class MTProtoSender:
 
         __log__.debug('Starting receive loop')
         self._recv_loop_handle = self._loop.create_task(self._recv_loop())
-
-        if self._is_first_query:
-            __log__.debug('Running first query')
-            self._is_first_query = False
-            await self.send(self._first_query)
 
         __log__.info('Connection to {} complete!'.format(self._ip))
 

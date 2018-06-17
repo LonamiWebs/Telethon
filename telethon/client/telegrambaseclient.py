@@ -170,7 +170,6 @@ class TelegramBaseClient(abc.ABC):
         self._connection = connection
         self._sender = MTProtoSender(
             state, connection, self._loop,
-            first_query=self._init_with(functions.help.GetConfigRequest()),
             update_callback=self._handle_update
         )
 
@@ -230,6 +229,9 @@ class TelegramBaseClient(abc.ABC):
         had_auth = self.session.auth_key is not None
         await self._sender.connect(
             self.session.server_address, self.session.port)
+
+        await self._sender.send(self._init_with(
+            functions.help.GetConfigRequest()))
 
         if not had_auth:
             self.session.auth_key = self._sender.state.auth_key
