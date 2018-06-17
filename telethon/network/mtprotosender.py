@@ -261,7 +261,9 @@ class MTProtoSender:
         __log__.debug('Starting receive loop')
         self._recv_loop_handle = self._loop.create_task(self._recv_loop())
 
-        self._connection_dropped = asyncio.Future()
+        # First connection or manual reconnection after a failure
+        if self._connection_dropped is None or self._connection_dropped.done():
+            self._connection_dropped = asyncio.Future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):
