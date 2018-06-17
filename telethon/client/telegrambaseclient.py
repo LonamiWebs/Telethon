@@ -218,6 +218,14 @@ class TelegramBaseClient(abc.ABC):
     def loop(self):
         return self._loop
 
+    @property
+    def disconnected(self):
+        """
+        Future that resolves when the connection to Telegram
+        ends, either by user action or in the background.
+        """
+        return self._sender.disconnected
+
     # endregion
 
     # region Connecting
