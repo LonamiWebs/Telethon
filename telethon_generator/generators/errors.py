@@ -45,8 +45,10 @@ def generate_errors(errors, f):
         f.write(')\n')
 
     # Create the actual {CODE: ErrorClassName} dict once classes are defined
-    # TODO Actually make a difference between regex/exact
-    f.write('\n\nrpc_errors_all = {\n')
-    for error in itertools.chain(regex_match, exact_match):
+    f.write('\n\nrpc_errors_dict = {\n')
+    for error in exact_match:
         f.write('    {}: {},\n'.format(repr(error.pattern), error.name))
-    f.write('}\n')
+    f.write('}\n\nrpc_errors_re = (\n')
+    for error in regex_match:
+        f.write('    ({}, {}),\n'.format(repr(error.pattern), error.name))
+    f.write(')\n')

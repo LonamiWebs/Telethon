@@ -55,12 +55,11 @@ def rpc_message_to_error(rpc_error, report_method=None):
         ).start()
 
     # Try to get the error by direct look-up, otherwise regex
-    # TODO Maybe regexes could live in a separate dictionary?
-    cls = rpc_errors_all.get(rpc_error.error_message, None)
+    cls = rpc_errors_dict.get(rpc_error.error_message, None)
     if cls:
         return cls()
 
-    for msg_regex, cls in rpc_errors_all.items():
+    for msg_regex, cls in rpc_errors_re:
         m = re.match(msg_regex, rpc_error.error_message)
         if m:
             capture = int(m.group(1)) if m.groups() else None
