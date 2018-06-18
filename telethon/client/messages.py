@@ -211,10 +211,27 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 break
 
             request.offset_id = r.messages[-1].id
-            if isinstance(request, functions.messages.GetHistoryRequest):
-                request.offset_date = r.messages[-1].date
+            # Find the first message that's not empty (in some rare cases
+            # it can happen that the last message is :tl:`MessageEmpty`)
+            last_message = None
+            for m in reversed(r.messages):
+                if not isinstance(m, types.MessageEmpty):
+                    last_message = m
+                    break
+
+            if last_message is None:
+                # There are some cases where all the messages we get start
+                # being empty. This can happen on migrated mega-groups if
+                # the history was cleared, and we're using search. Telegram
+                # acts incredibly weird sometimes. Messages are returned but
+                # only "empty", not their contents. If this is the case we
+                # should just give up since there won't be any new Message.
+                break
             else:
-                request.max_date = r.messages[-1].date
+                if isinstance(request, functions.messages.GetHistoryRequest):
+                    request.offset_date = last_message.date
+                else:
+                    request.max_date = last_message.date
 
             now = asyncio.get_event_loop().time()
             await asyncio.sleep(
