@@ -80,7 +80,6 @@ def _find_title(html_file):
 def _build_menu(docs, filename, root, relative_main_index):
     """Builds the menu using the given DocumentWriter up to 'filename',
        which must be a file (it cannot be a directory)"""
-    # TODO Maybe this could be part of DocsWriter itself, "build path menu"
     filename = _get_relative_path(filename, root)
     docs.add_menu('API', relative_main_index)
 
@@ -238,7 +237,6 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     # Save 'Type: [Constructors]' for use in both:
     # * Seeing the return type or constructors belonging to the same type.
     # * Generating the types documentation, showing available constructors.
-    # TODO Tried using 'defaultdict(list)' with strange results, make it work.
     original_paths = {
         'css': 'css',
         'arrow': 'img/arrow.svg',
@@ -254,14 +252,11 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                       for k, v in original_paths.items()}
 
     original_paths['default_css'] = 'light'  # docs.<name>.css, local path
-    type_to_constructors = {}
-    type_to_functions = {}
+    type_to_constructors = defaultdict(list)
+    type_to_functions = defaultdict(list)
     for tlobject in tlobjects:
         d = type_to_functions if tlobject.is_function else type_to_constructors
-        if tlobject.result in d:
-            d[tlobject.result].append(tlobject)
-        else:
-            d[tlobject.result] = [tlobject]
+        d[tlobject.result].append(tlobject)
 
     for t, cs in type_to_constructors.items():
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
@@ -412,7 +407,6 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                     docs.write_text('You can import these from '
                                     '<code>telethon.errors</code>.')
 
-            # TODO Bit hacky, make everything like this? (prepending '../')
             depth = '../' * (2 if tlobject.namespace else 1)
             docs.add_script(src='prependPath = "{}";'.format(depth))
             docs.add_script(relative_src=paths['search.js'])

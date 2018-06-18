@@ -219,13 +219,6 @@ class TelegramBaseClient(abc.ABC):
         self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
 
-        # Also have another delay for GetStateRequest.
-        #
-        # If the connection is kept alive for long without invoking any
-        # high level request the server simply stops sending updates.
-        # TODO maybe we can have ._last_request instead if any req works?
-        self._last_state = datetime.now()
-        self._state_delay = timedelta(hours=1)
         self._state = None
         self._updates_handle = None
         self._last_request = time.time()
@@ -295,8 +288,6 @@ class TelegramBaseClient(abc.ABC):
         Disconnects from Telegram.
         """
         await self._sender.disconnect()
-        # TODO What to do with the update state? Does it belong here?
-        # self.session.set_update_state(0, self.updates.get_update_state(0))
         self.session.close()
 
     async def _switch_dc(self, new_dc):

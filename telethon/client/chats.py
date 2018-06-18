@@ -138,7 +138,6 @@ class ChatMethods(UserMethods):
                                 return
 
         elif isinstance(entity, types.InputPeerChat):
-            # TODO We *could* apply the `filter` here ourselves
             full = await self(
                 functions.messages.GetFullChatRequest(entity.chat_id))
             if not isinstance(

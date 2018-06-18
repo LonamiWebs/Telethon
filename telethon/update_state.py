@@ -73,7 +73,6 @@ class UpdateState:
             for u in update.updates:
                 u._entities = entities
                 self._updates.put(u)
-        # TODO Handle "tl.UpdatesTooLong"
         else:
             update._entities = {}
             self._updates.put(update)

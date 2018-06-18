@@ -111,7 +111,7 @@ class DialogMethods(UserMethods):
         return dialogs
 
     @async_generator
-    async def iter_drafts(self):  # TODO: Ability to provide a `filter`
+    async def iter_drafts(self):
         """
         Iterator over all open draft messages.
 

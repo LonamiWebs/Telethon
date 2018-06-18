@@ -25,11 +25,6 @@ __log__ = logging.getLogger(__name__)
 _reconnect_sentinel = object()
 
 
-# TODO Create some kind of "ReconnectionPolicy" that allows specifying
-# what should be done in case of some errors, with some sane defaults.
-# For instance, should all messages be set with an error upon network
-# loss? Should we try reconnecting forever? A certain amount of times?
-# A timeout? What about recoverable errors, like connection reset?
 class MTProtoSender:
     """
     MTProto Mobile Protocol sender
@@ -386,10 +381,6 @@ class MTProtoSender:
         Besides `connect`, only this method ever receives data.
         """
         while self._user_connected and not self._reconnecting:
-            # TODO Are there more exceptions besides timeout?
-            # Disconnecting or switching off WiFi only resulted in
-            # timeouts, and once the network was back it continued
-            # on its own after a short delay.
             try:
                 __log__.debug('Receiving items from the network...')
                 body = await self._connection.recv()
