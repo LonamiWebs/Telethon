@@ -545,7 +545,13 @@ class MTProtoSender:
         bad_salt = message.obj
         __log__.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
         self.state.salt = bad_salt.new_server_salt
-        self._send_queue.put_nowait(self._pending_messages[bad_salt.bad_msg_id])
+        try:
+            self._send_queue.put_nowait(
+                self._pending_messages[bad_salt.bad_msg_id])
+        except KeyError:
+            # May be MsgsAck, those are not saved in pending messages
+            __log__.info('Message %d not resent due to bad salt',
+                         bad_salt.bad_msg_id)
 
     async def _handle_bad_notification(self, message):
         """
@@ -575,7 +581,13 @@ class MTProtoSender:
             return
 
         # Messages are to be re-sent once we've corrected the issue
-        self._send_queue.put_nowait(self._pending_messages[bad_msg.bad_msg_id])
+        try:
+            self._send_queue.put_nowait(
+                self._pending_messages[bad_msg.bad_msg_id])
+        except KeyError:
+            # May be MsgsAck, those are not saved in pending messages
+            __log__.info('Message %d not resent due to bad msg',
+                         bad_msg.bad_msg_id)
 
     async def _handle_detailed_info(self, message):
         """
