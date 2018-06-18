@@ -540,6 +540,9 @@ class Message:
                 >>> for _, inner_text in m.get_entities_text(MessageEntityCode):
                 >>>     print(inner_text)
         """
+        if not self.original_message.entities:
+            return []
+
         if cls and self.original_message.entities:
             texts = get_inner_text(
                 self.original_message.message,
