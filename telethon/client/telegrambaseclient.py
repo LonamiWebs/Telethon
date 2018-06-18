@@ -2,6 +2,7 @@ import abc
 import asyncio
 import logging
 import platform
+import sys
 import time
 import warnings
 from datetime import timedelta, datetime
@@ -66,8 +67,33 @@ class TelegramBaseClient(abc.ABC):
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
         timeout (`int` | `float` | `timedelta`, optional):
-            The timeout to be used when receiving responses from
-            the network. Defaults to 5 seconds.
+            The timeout to be used when connecting, sending and receiving
+            responses from the network. This is **not** the timeout to
+            be used when ``await``'ing for invoked requests, and you
+            should use ``asyncio.wait`` or ``asyncio.wait_for`` for that.
+
+        request_retries (`int`, optional):
+            How many times a request should be retried. Request are retried
+            when Telegram is having internal issues (due to either
+            ``errors.ServerError`` or ``errors.RpcCallFailError``),
+            when there is a ``errors.FloodWaitError`` less than
+            ``session.flood_sleep_threshold``, or when there's a
+            migrate error.
+
+            May set to a false-y value (``0`` or ``None``) for infinite
+            retries, but this is not recommended, since some requests can
+            always trigger a call fail (such as searching for messages).
+
+        connection_retries (`int`, optional):
+            How many times the reconnection should retry, either on the
+            initial connection or when Telegram disconnects us. May be
+            set to a false-y value (``0`` or ``None``) for infinite
+            retries, but this is not recommended, since the program can
+            get stuck in an infinite loop.
+
+        auto_reconnect (`bool`, optional):
+            Whether reconnection should be retried `connection_retries`
+            times automatically if Telegram disconnects us or not.
 
         report_errors (`bool`, optional):
             Whether to report RPC errors or not. Defaults to ``True``,
@@ -109,6 +135,9 @@ class TelegramBaseClient(abc.ABC):
                  use_ipv6=False,
                  proxy=None,
                  timeout=timedelta(seconds=10),
+                 request_retries=5,
+                 connection_retries=5,
+                 auto_reconnect=True,
                  report_errors=True,
                  device_model=None,
                  system_version=None,
@@ -116,7 +145,6 @@ class TelegramBaseClient(abc.ABC):
                  lang_code='en',
                  system_lang_code='en',
                  loop=None):
-        """Refer to TelegramClient.__init__ for docs on this method"""
         if not api_id or not api_hash:
             raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
@@ -147,6 +175,10 @@ class TelegramBaseClient(abc.ABC):
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
+        self._request_retries = request_retries or sys.maxsize
+        self._connection_retries = connection_retries or sys.maxsize
+        self._auto_reconnect = auto_reconnect
+
         if isinstance(connection, type):
             connection = connection(
                 proxy=proxy, timeout=timeout, loop=self._loop)
@@ -171,6 +203,8 @@ class TelegramBaseClient(abc.ABC):
         self._connection = connection
         self._sender = MTProtoSender(
             state, connection, self._loop,
+            retries=self._connection_retries,
+            auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update
         )
 
@@ -361,7 +395,7 @@ class TelegramBaseClient(abc.ABC):
     # region Invoking Telegram requests
 
     @abc.abstractmethod
-    def __call__(self, request, retries=5, ordered=False):
+    def __call__(self, request, ordered=False):
         """
         Invokes (sends) one or more MTProtoRequests and returns (receives)
         their result.

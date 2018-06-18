@@ -12,14 +12,14 @@ _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
 
 class UserMethods(TelegramBaseClient):
-    async def __call__(self, request, retries=5, ordered=False):
+    async def __call__(self, request, ordered=False):
         for r in (request if utils.is_list_like(request) else (request,)):
             if not isinstance(r, TLRequest):
                 raise _NOT_A_REQUEST
             await r.resolve(self, utils)
 
         self._last_request = time.time()
-        for _ in range(retries):
+        for _ in range(self._request_retries):
             try:
                 future = self._sender.send(request, ordered=ordered)
                 if isinstance(future, list):
@@ -40,6 +40,7 @@ class UserMethods(TelegramBaseClient):
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
                     errors.UserMigrateError) as e:
+                __log__.info('Phone migrated to %d', e.new_dc)
                 should_raise = isinstance(e, (
                     errors.PhoneMigrateError,  errors.NetworkMigrateError
                 ))

@@ -46,13 +46,14 @@ class MTProtoSender:
     key exists yet.
     """
     def __init__(self, state, connection, loop, *,
-                 retries=5, update_callback=None):
+                 retries=5, auto_reconnect=True, update_callback=None):
         self.state = state
         self._connection = connection
         self._loop = loop
         self._ip = None
         self._port = None
         self._retries = retries
+        self._auto_reconnect = auto_reconnect
         self._update_callback = update_callback
 
         # Whether the user has explicitly connected or disconnected.
@@ -287,12 +288,17 @@ class MTProtoSender:
         await self._connection.close()
 
         self._reconnecting = False
-        try:
-            await self._connect()
-        except ConnectionError as e:
-            __log__.error('Failed to reconnect automatically, '
-                          'disconnecting with error {}'.format(e))
-            await self._disconnect(error=e)
+
+        retries = self._retries if self._auto_reconnect else 0
+        for retry in range(1, retries + 1):
+            try:
+                await self._connect()
+                break
+            except ConnectionError:
+                __log__.info('Failed reconnection retry %d/%d', retry, retries)
+        else:
+            __log__.error('Failed to reconnect automatically.')
+            await self._disconnect(error=ConnectionError())
 
     def _clean_containers(self, msg_ids):
         """
