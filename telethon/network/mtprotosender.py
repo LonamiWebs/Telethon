@@ -214,7 +214,7 @@ class MTProtoSender:
         ends, either by user action or in the background.
         """
         if self._disconnected is not None:
-            return self._disconnected
+            return asyncio.shield(self._disconnected, loop=self._loop)
         else:
             raise ConnectionError('Sender was never connected')
 
