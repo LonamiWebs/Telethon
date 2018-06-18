@@ -177,7 +177,11 @@ class UpdateMethods(UserMethods):
         rnd = lambda: random.randrange(-2**63, 2**63)
         while self.is_connected():
             try:
-                await asyncio.wait_for(self.disconnected, timeout=60)
+                await asyncio.wait_for(
+                    asyncio.shield(self.disconnected, loop=self._loop),
+                    timeout=60,
+                    loop=self._loop
+                )
                 continue  # We actually just want to act upon timeout
             except asyncio.TimeoutError:
                 pass
