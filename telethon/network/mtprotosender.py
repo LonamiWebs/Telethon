@@ -350,6 +350,8 @@ class MTProtoSender:
                     break
                 except asyncio.TimeoutError:
                     continue
+                except asyncio.CancelledError:
+                    return
                 except OSError as e:
                     __log__.warning('OSError while sending %s', e)
                 except:
@@ -385,6 +387,8 @@ class MTProtoSender:
                 body = await self._connection.recv()
             except asyncio.TimeoutError:
                 continue
+            except asyncio.CancelledError:
+                return
             except Exception as e:
                 if isinstance(e, ConnectionError):
                     __log__.info('Connection reset while receiving %s', e)
@@ -432,10 +436,12 @@ class MTProtoSender:
             else:
                 try:
                     await self._process_message(message)
+                except asyncio.CancelledError:
+                    return
                 except:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
-                await asyncio.sleep(1)
+                    await asyncio.sleep(1)
 
     # Response Handlers
 
