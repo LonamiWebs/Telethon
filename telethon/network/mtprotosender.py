@@ -339,8 +339,10 @@ class MTProtoSender:
                 message = messages
                 messages = [message]
 
-            __log__.debug('Packing {} outgoing message(s)...'
-                          .format(len(messages)))
+            __log__.debug(
+                'Packing %d outgoing message(s) %s...', len(messages),
+                ', '.join(x.obj.__class__.__name__ for x in messages)
+            )
             body = self.state.pack_message(message)
 
             while not any(m.future.cancelled() for m in messages):
@@ -466,8 +468,8 @@ class MTProtoSender:
         """
         rpc_result = message.obj
         message = self._pending_messages.pop(rpc_result.req_msg_id, None)
-        __log__.debug('Handling RPC result for message {}'
-                      .format(rpc_result.req_msg_id))
+        __log__.debug('Handling RPC result for message %d',
+                      rpc_result.req_msg_id)
 
         if rpc_result.error:
             # TODO Report errors if possible/enabled
@@ -526,8 +528,8 @@ class MTProtoSender:
 
             pong#347773c5 msg_id:long ping_id:long = Pong;
         """
-        __log__.debug('Handling pong')
         pong = message.obj
+        __log__.debug('Handling pong for message %d', pong.msg_id)
         message = self._pending_messages.pop(pong.msg_id, None)
         if message:
             message.future.set_result(pong)
@@ -540,8 +542,8 @@ class MTProtoSender:
             bad_server_salt#edab447b bad_msg_id:long bad_msg_seqno:int
             error_code:int new_server_salt:long = BadMsgNotification;
         """
-        __log__.debug('Handling bad salt')
         bad_salt = message.obj
+        __log__.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
         self.state.salt = bad_salt.new_server_salt
         self._send_queue.put_nowait(self._pending_messages[bad_salt.bad_msg_id])
 
@@ -553,8 +555,8 @@ class MTProtoSender:
             bad_msg_notification#a7eff811 bad_msg_id:long bad_msg_seqno:int
             error_code:int = BadMsgNotification;
         """
-        __log__.debug('Handling bad message')
         bad_msg = message.obj
+        __log__.debug('Handling bad msg for message %d', bad_msg.bad_msg_id)
         if bad_msg.error_code in (16, 17):
             # Sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
@@ -583,8 +585,9 @@ class MTProtoSender:
             bytes:int status:int = MsgDetailedInfo;
         """
         # TODO https://goo.gl/VvpCC6
-        __log__.debug('Handling detailed info')
-        self._pending_ack.add(message.obj.answer_msg_id)
+        msg_id = message.obj.answer_msg_id
+        __log__.debug('Handling detailed info for message %d', msg_id)
+        self._pending_ack.add(msg_id)
 
     async def _handle_new_detailed_info(self, message):
         """
@@ -594,8 +597,9 @@ class MTProtoSender:
             bytes:int status:int = MsgDetailedInfo;
         """
         # TODO https://goo.gl/G7DPsR
-        __log__.debug('Handling new detailed info')
-        self._pending_ack.add(message.obj.answer_msg_id)
+        msg_id = message.obj.answer_msg_id
+        __log__.debug('Handling new detailed info for message %d', msg_id)
+        self._pending_ack.add(msg_id)
 
     async def _handle_new_session_created(self, message):
         """
@@ -623,8 +627,8 @@ class MTProtoSender:
         also removes containers messages when any of their inner
         messages are acknowledged.
         """
-        __log__.debug('Handling acknowledge')
         ack = message.obj
+        __log__.debug('Handling acknowledge for %s', str(ack.msg_ids))
         if self._pending_containers:
             self._clean_containers(ack.msg_ids)
 
@@ -644,7 +648,7 @@ class MTProtoSender:
         """
         # TODO save these salts and automatically adjust to the
         # correct one whenever the salt in use expires.
-        __log__.debug('Handling future salts')
+        __log__.debug('Handling future salts for message %d', message.msg_id)
         msg = self._pending_messages.pop(message.msg_id, None)
         if msg:
             msg.future.set_result(message.obj)
