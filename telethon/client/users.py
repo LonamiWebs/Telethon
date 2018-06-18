@@ -25,10 +25,14 @@ class UserMethods(TelegramBaseClient):
                 if isinstance(future, list):
                     results = []
                     for f in future:
-                        results.append(await f)
+                        result = await f
+                        self.session.process_entities(result)
+                        results.append(result)
                     return results
                 else:
-                    return await future
+                    result = await future
+                    self.session.process_entities(result)
+                    return result
             except (errors.ServerError, errors.RpcCallFailError) as e:
                 __log__.warning('Telegram is having internal issues %s: %s',
                                 e.__class__.__name__, e)
