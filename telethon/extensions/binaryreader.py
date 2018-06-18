@@ -7,7 +7,7 @@ from io import BufferedReader, BytesIO
 from struct import unpack
 
 from ..errors import TypeNotFoundError
-from ..tl.all_tlobjects import tlobjects
+from ..tl.alltlobjects import tlobjects
 from ..tl.core import core_objects
 
 

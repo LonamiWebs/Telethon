@@ -42,7 +42,7 @@ LIBRARY_DIR = 'telethon'
 
 ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
 ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
-ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpc_error_list.py')
+ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpcerrorlist.py')
 
 INVALID_BM_IN = os.path.join(GENERATOR_DIR, 'data', 'invalid_bot_methods.json')
 

@@ -5,7 +5,7 @@ import re
 import shutil
 from collections import defaultdict
 
-from ..docs_writer import DocsWriter
+from ..docswriter import DocsWriter
 from ..parsers import TLObject
 from ..utils import snake_to_camel_case
 

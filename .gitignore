@@ -5,8 +5,8 @@ docs/
 # Generated code
 telethon/tl/functions/
 telethon/tl/types/
-telethon/tl/all_tlobjects.py
-telethon/errors/rpc_error_list.py
+telethon/tl/alltlobjects.py
+telethon/errors/rpcerrorlist.py
 
 # User session
 *.session

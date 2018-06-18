@@ -14,7 +14,7 @@ from ..network import MTProtoSender, ConnectionTcpFull
 from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession
 from ..tl import TLObject, functions
-from ..tl.all_tlobjects import LAYER
+from ..tl.alltlobjects import LAYER
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'

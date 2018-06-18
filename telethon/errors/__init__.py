@@ -12,8 +12,8 @@ from .common import (
 )
 
 # This imports the base errors too, as they're imported there
-from .rpc_base_errors import *
-from .rpc_error_list import *
+from .rpcbaseerrors import *
+from .rpcerrorlist import *
 
 
 def report_error(code, message, report_method):

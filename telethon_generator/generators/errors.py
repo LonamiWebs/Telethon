@@ -1,6 +1,3 @@
-import itertools
-
-
 def generate_errors(errors, f):
     # Exact/regex match to create {CODE: ErrorClassName}
     exact_match = []
@@ -20,7 +17,7 @@ def generate_errors(errors, f):
             exact_match.append(error)
 
     # Imports and new subclass creation
-    f.write('from .rpc_base_errors import RPCError, {}\n'
+    f.write('from .rpcbaseerrors import RPCError, {}\n'
             .format(", ".join(sorted(import_base))))
 
     for cls, int_code in sorted(create_base.items(), key=lambda t: t[1]):
