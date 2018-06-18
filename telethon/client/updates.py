@@ -1,6 +1,8 @@
 import asyncio
 import itertools
 import logging
+import random
+import time
 import warnings
 
 from .users import UserMethods
@@ -169,6 +171,35 @@ class UpdateMethods(UserMethods):
             update = update.update
         update._entities = {}
         self._loop.create_task(self._dispatch_update(update))
+
+    async def _update_loop(self):
+        # Pings' ID don't really need to be secure, just "random"
+        rnd = lambda: random.randrange(-2**63, 2**63)
+        while self.is_connected():
+            try:
+                await asyncio.wait_for(self.disconnected, timeout=60)
+                continue  # We actually just want to act upon timeout
+            except asyncio.TimeoutError:
+                pass
+            except:
+                continue  # Any disconnected exception should be ignored
+
+            # We also don't really care about their result.
+            # Just send them periodically.
+            self._sender.send(functions.PingRequest(rnd()))
+
+            # We need to send some content-related request at least hourly
+            # for Telegram to keep delivering updates, otherwise they will
+            # just stop even if we're connected. Do so every 30 minutes.
+            #
+            # TODO Call getDifference instead since it's more relevant
+            if time.time() - self._last_request > 30 * 60:
+                if not await self.is_user_authorized():
+                    # What can be the user doing for so
+                    # long without being logged in...?
+                    continue
+
+                await self(functions.updates.GetStateRequest())
 
     async def _dispatch_update(self, update):
         if self._events_pending_resolve:

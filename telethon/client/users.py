@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import time
 
 from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils
@@ -16,6 +17,7 @@ class UserMethods(TelegramBaseClient):
                 raise _NOT_A_REQUEST
             await r.resolve(self, utils)
 
+        self._last_request = time.time()
         for _ in range(retries):
             try:
                 future = self._sender.send(request, ordered=ordered)

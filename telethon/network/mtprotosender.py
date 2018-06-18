@@ -384,7 +384,6 @@ class MTProtoSender:
                 __log__.debug('Receiving items from the network...')
                 body = await self._connection.recv()
             except asyncio.TimeoutError:
-                # TODO If nothing is received for a minute, send a request
                 continue
             except Exception as e:
                 if isinstance(e, ConnectionError):

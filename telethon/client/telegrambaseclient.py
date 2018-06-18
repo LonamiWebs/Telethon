@@ -2,6 +2,7 @@ import abc
 import asyncio
 import logging
 import platform
+import time
 import warnings
 from datetime import timedelta, datetime
 
@@ -192,6 +193,8 @@ class TelegramBaseClient(abc.ABC):
         self._last_state = datetime.now()
         self._state_delay = timedelta(hours=1)
         self._state = None
+        self._updates_handle = None
+        self._last_request = time.time()
 
         # Some further state for subclasses
         self._event_builders = []
@@ -240,6 +243,8 @@ class TelegramBaseClient(abc.ABC):
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
+
+        self._updates_handle = self._loop.create_task(self._update_loop())
 
         if not had_auth:
             self.session.auth_key = self._sender.state.auth_key
@@ -384,6 +389,10 @@ class TelegramBaseClient(abc.ABC):
 
     @abc.abstractmethod
     def _handle_update(self, update):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _update_loop(self):
         raise NotImplementedError
 
     # endregion
