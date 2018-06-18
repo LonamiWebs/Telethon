@@ -352,6 +352,9 @@ class MTProtoSender:
                     continue
                 except OSError as e:
                     __log__.warning('OSError while sending %s', e)
+                except:
+                    __log__.exception('Unhandled exception while sending')
+                    await asyncio.sleep(1)
             else:
                 # Remove the cancelled messages from pending
                 __log__.info('Some futures were cancelled, aborted send')
@@ -383,12 +386,15 @@ class MTProtoSender:
             except asyncio.TimeoutError:
                 # TODO If nothing is received for a minute, send a request
                 continue
-            except ConnectionError as e:
-                __log__.info('Connection reset while receiving %s', e)
-                self._loop.create_task(self._reconnect())
-                break
-            except OSError as e:
-                __log__.warning('OSError while receiving %s', e)
+            except Exception as e:
+                if isinstance(e, ConnectionError):
+                    __log__.info('Connection reset while receiving %s', e)
+                elif isinstance(e, OSError):
+                    __log__.warning('OSError while receiving %s', e)
+                else:
+                    __log__.exception('Unhandled exception while receiving')
+                    await asyncio.sleep(1)
+
                 self._loop.create_task(self._reconnect())
                 break
 
@@ -414,14 +420,23 @@ class MTProtoSender:
                 # A step while decoding had the incorrect data. This message
                 # should not be considered safe and it should be ignored.
                 __log__.warning('Security error while unpacking a '
-                                'received message:'.format(e))
+                                'received message: {}'.format(e))
                 continue
             except TypeNotFoundError as e:
                 # The payload inside the message was not a known TLObject.
                 __log__.info('Server replied with an unknown type {:08x}: {!r}'
                              .format(e.invalid_constructor_id, e.remaining))
+                continue
+            except:
+                __log__.exception('Unhandled exception while unpacking')
+                await asyncio.sleep(1)
             else:
-                await self._process_message(message)
+                try:
+                    await self._process_message(message)
+                except:
+                    __log__.exception('Unhandled exception while '
+                                      'processing %s', message)
+                await asyncio.sleep(1)
 
     # Response Handlers
 
