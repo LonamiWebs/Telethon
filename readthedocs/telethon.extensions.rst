@@ -2,10 +2,10 @@ telethon\.extensions package
 ============================
 
 
-telethon\.extensions\.binary\_reader module
--------------------------------------------
+telethon\.extensions\.binaryreader module
+-----------------------------------------
 
-.. automodule:: telethon.extensions.binary_reader
+.. automodule:: telethon.extensions.binaryreader
     :members:
     :undoc-members:
     :show-inheritance:
@@ -18,12 +18,18 @@ telethon\.extensions\.markdown module
     :undoc-members:
     :show-inheritance:
 
-telethon\.extensions\.tcp\_client module
-----------------------------------------
+telethon\.extensions\.html module
+---------------------------------
 
-.. automodule:: telethon.extensions.tcp_client
+.. automodule:: telethon.extensions.html
     :members:
     :undoc-members:
     :show-inheritance:
 
+telethon\.extensions\.tcpclient module
+--------------------------------------
 
+.. automodule:: telethon.extensions.tcpclient
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -2,14 +2,6 @@ telethon\.network package
 =========================
 
 
-telethon\.network\.authenticator module
----------------------------------------
-
-.. automodule:: telethon.network.authenticator
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 telethon\.network\.connection module
 ------------------------------------
 
@@ -18,20 +10,26 @@ telethon\.network\.connection module
     :undoc-members:
     :show-inheritance:
 
-telethon\.network\.mtproto\_plain\_sender module
+telethon\.network\.mtprotoplainsender module
 ------------------------------------------------
 
-.. automodule:: telethon.network.mtproto_plain_sender
+.. automodule:: telethon.network.mtprotoplainsender
     :members:
     :undoc-members:
     :show-inheritance:
 
-telethon\.network\.mtproto\_sender module
+telethon\.network\.mtprotosender module
 -----------------------------------------
 
-.. automodule:: telethon.network.mtproto_sender
+.. automodule:: telethon.network.mtprotosender
     :members:
     :undoc-members:
     :show-inheritance:
 
+telethon\.network\.authenticator module
+---------------------------------------
 
+.. automodule:: telethon.network.authenticator
+    :members:
+    :undoc-members:
+    :show-inheritance:

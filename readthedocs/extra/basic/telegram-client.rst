@@ -10,9 +10,9 @@ Introduction
 
 .. note::
 
-    Make sure to use the friendly methods described in :ref:`telethon-package`!
+    Make sure to use the friendly methods described in :ref:`telethon-client`!
     This section is just an introduction to using the client, but all the
-    available methods are in the :ref:`telethon-package` reference, including
+    available methods are in the :ref:`telethon-client` reference, including
     detailed descriptions to what they do.
 
 The ``TelegramClient`` is the central class of the library, the one
@@ -99,7 +99,7 @@ Please refer to :ref:`accessing-the-full-api` if these aren't enough,
 and don't be afraid to read the source code of the InteractiveTelegramClient_
 or even the TelegramClient_ itself to learn how it works.
 
-See the mentioned :ref:`telethon-package` to find the available methods.
+See the mentioned :ref:`telethon-client` to find the available methods.
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py
 .. _TelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon/telegram_client.py

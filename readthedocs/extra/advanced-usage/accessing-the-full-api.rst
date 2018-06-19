@@ -7,7 +7,7 @@ Accessing the Full API
 .. important::
 
     While you have access to this, you should always use the friendly
-    methods listed on :ref:`telethon-package` unless you have a better
+    methods listed on :ref:`telethon-client` unless you have a better
     reason not to, like a method not existing or you wanting more control.
 
 

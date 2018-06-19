@@ -58,4 +58,3 @@ so all the methods in it can be used from any event builder/event instance.
     :members:
     :undoc-members:
     :show-inheritance:
-

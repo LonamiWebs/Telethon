@@ -13,12 +13,10 @@ telethon\.errors\.common module
     :undoc-members:
     :show-inheritance:
 
-telethon\.errors\.rpc\_base\_errors module
-------------------------------------------
+telethon\.errors\.rpcbaseerrors module
+--------------------------------------
 
-.. automodule:: telethon.errors.rpc_base_errors
+.. automodule:: telethon.errors.rpcbaseerrors
     :members:
     :undoc-members:
     :show-inheritance:
-
-
