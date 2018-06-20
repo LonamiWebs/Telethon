@@ -67,7 +67,7 @@ class NewMessage(EventBuilder):
 
         # Should we short-circuit? E.g. perform no check at all
         self._no_check = all(x is None for x in (
-            self.chats, self.incoming, self.outgoing,
+            self.chats, self.incoming, self.outgoing, self.pattern,
             self.from_users, self.forwards, self.from_users
         ))
 
@@ -166,6 +166,22 @@ class NewMessage(EventBuilder):
 
                 See `telethon.tl.custom.message.Message` for the rest of
                 available members and methods.
+
+            pattern_match (`obj`):
+                The resulting object from calling the passed ``pattern`` function.
+                Here's an example using a string (defaults to regex match):
+
+                >>> from telethon import TelegramClient, events
+                >>> client = TelegramClient(...)
+                >>>
+                >>> @client.on(events.NewMessage(pattern=r'hi (\w+)!'))
+                ... def handler(event):
+                ...     # In this case, the result is a ``Match`` object
+                ...     # since the ``str`` pattern was converted into
+                ...     # the ``re.compile(pattern).match`` function.
+                ...     print('Welcomed', event.pattern_match.group(1))
+                ...
+                >>>
         """
         def __init__(self, message):
             self.__dict__['_init'] = False
@@ -179,6 +195,7 @@ class NewMessage(EventBuilder):
             super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
+            self.pattern_match = None
             self.message = message
 
         def _set_client(self, client):

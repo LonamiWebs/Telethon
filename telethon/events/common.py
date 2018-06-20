@@ -85,25 +85,9 @@ class EventCommon(abc.ABC):
     """
     Intermediate class with common things to all events.
 
-    Attributes:
-        pattern_match (`obj`):
-            The resulting object from calling the passed ``pattern`` function.
-            Here's an example using a string (defaults to regex match):
-
-            >>> from telethon import TelegramClient, events
-            >>> client = TelegramClient(...)
-            >>>
-            >>> @client.on(events.NewMessage(pattern=r'hi (\w+)!'))
-            ... def handler(event):
-            ...     # In this case, the result is a ``Match`` object
-            ...     # since the ``str`` pattern was converted into
-            ...     # the ``re.compile(pattern).match`` function.
-            ...     print('Welcomed', event.pattern_match.group(1))
-            ...
-            >>>
-
-        original_update (:tl:`Update`):
-            The original Telegram update object that caused this event.
+    All events (except `Raw`) have ``is_private``, ``is_group``
+    and ``is_channel`` boolean properties, as well as an
+    ``original_update`` field containing the original :tl:`Update`.
     """
     _event_name = 'Event'
 
@@ -114,8 +98,6 @@ class EventCommon(abc.ABC):
         self._message_id = msg_id
         self._input_chat = None
         self._chat = None
-
-        self.pattern_match = None
         self.original_update = None
 
         self.is_private = isinstance(chat_peer, types.PeerUser)
