@@ -107,6 +107,12 @@ class DialogMethods(UserMethods):
 
             req.offset_date = r.messages[-1].date
             req.offset_peer = entities[utils.get_peer_id(r.dialogs[-1].peer)]
+            if req.offset_id == r.messages[-1].id:
+                # In some very rare cases this will get stuck in an infinite
+                # loop, where the offsets will get reused over and over. If
+                # the new offset is the same as the one before, break already.
+                break
+
             req.offset_id = r.messages[-1].id
             req.exclude_pinned = True
 
