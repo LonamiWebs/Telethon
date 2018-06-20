@@ -80,6 +80,13 @@ class MTProtoSender:
         # We need to acknowledge every response from Telegram
         self._pending_ack = set()
 
+        # Similar to pending_messages but only for the last ack.
+        # Ack can't be put in the messages because Telegram never
+        # responds to acknowledges (they're just that, acknowledges),
+        # so it would grow to infinite otherwise, but on bad salt it's
+        # necessary to resend them just like everything else.
+        self._last_ack = None
+
         # Jump table from response ID to method that handles it
         self._handlers = {
             RpcResult.CONSTRUCTOR_ID: self._handle_rpc_result,
@@ -146,6 +153,7 @@ class MTProtoSender:
 
             self._pending_messages.clear()
             self._pending_ack.clear()
+            self._last_ack = None
 
             __log__.debug('Cancelling the send loop...')
             self._send_loop_handle.cancel()
@@ -323,9 +331,10 @@ class MTProtoSender:
         """
         while self._user_connected and not self._reconnecting:
             if self._pending_ack:
-                self._send_queue.put_nowait(self.state.create_message(
+                self._last_ack = self.state.create_message(
                     MsgsAck(list(self._pending_ack))
-                ))
+                )
+                self._send_queue.put_nowait(self._last_ack)
                 self._pending_ack.clear()
 
             messages = await self._send_queue.get()
@@ -542,6 +551,10 @@ class MTProtoSender:
         bad_salt = message.obj
         __log__.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
         self.state.salt = bad_salt.new_server_salt
+        if self._last_ack and bad_salt.bad_msg_id == self._last_ack.msg_id:
+            self._send_queue.put_nowait(self._last_ack)
+            return
+
         try:
             self._send_queue.put_nowait(
                 self._pending_messages[bad_salt.bad_msg_id])
