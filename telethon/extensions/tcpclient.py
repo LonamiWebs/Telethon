@@ -107,9 +107,10 @@ class TcpClient:
 
     def close(self):
         """Closes the connection."""
-        fd = self._socket.fileno()
+        fd = None
         try:
             if self._socket is not None:
+                fd = self._socket.fileno()
                 if self.is_connected:
                     self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
