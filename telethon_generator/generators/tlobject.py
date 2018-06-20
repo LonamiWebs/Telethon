@@ -238,14 +238,22 @@ def _write_resolve(tlobject, builder):
             ac = AUTO_CASTS.get(arg.type, None)
             if not ac:
                 continue
+
+            if arg.is_flag:
+                builder.writeln('if self.{}:', arg.name)
+
             if arg.is_vector:
-                builder.write('self.{0} = [{1} for _x in self.{0}]',
-                              arg.name, ac.format('_x'))
+                builder.writeln('_tmp = []')
+                builder.writeln('for _x in self.{0}:', arg.name)
+                builder.writeln('_tmp.append({})', ac.format('_x'))
+                builder.end_block()
+                builder.writeln('self.{} = _tmp', arg.name)
             else:
-                builder.write('self.{} = {}', arg.name,
+                builder.writeln('self.{} = {}', arg.name,
                               ac.format('self.' + arg.name))
-            builder.writeln(' if self.{} else None'.format(arg.name)
-                            if arg.is_flag else '')
+
+            if arg.is_flag:
+                builder.end_block()
         builder.end_block()
 
 

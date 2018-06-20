@@ -129,15 +129,15 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 )
                 images = images[10:]
 
-            result.extend(
-                await self.send_file(
+            for x in documents:
+                result.append(await self.send_file(
                     entity, x, allow_cache=allow_cache,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, **kwargs
-                ) for x in documents
-            )
+                ))
+
             return result
 
         entity = await self.get_input_entity(entity)
@@ -186,10 +186,11 @@ class UploadMethods(MessageParseMethods, UserMethods):
         entity = await self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
-        captions = [
-            await self._parse_message_text(caption or '', parse_mode)
-            for caption in reversed(caption)  # Pop from the end (so reverse)
-        ]
+
+        captions = []
+        for c in reversed(caption):  # Pop from the end (so reverse)
+            captions.append(await self._parse_message_text(c or '', parse_mode))
+
         reply_to = utils.get_message_id(reply_to)
 
         # Need to upload the media first, but only if they're not cached yet

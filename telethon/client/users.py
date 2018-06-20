@@ -130,10 +130,13 @@ class UserMethods(TelegramBaseClient):
         # input users (get users), input chat (get chats) and
         # input channels (get channels) to get the most entities
         # in the less amount of calls possible.
-        inputs = [
-            x if isinstance(x, str) else await self.get_input_entity(x)
-            for x in entity
-        ]
+        inputs = []
+        for x in entity:
+            if isinstance(x, str):
+                inputs.append(x)
+            else:
+                inputs.append(await self.get_input_entity(x))
+
         users = [x for x in inputs
                  if isinstance(x, (types.InputPeerUser, types.InputPeerSelf))]
         chats = [x.chat_id for x in inputs
@@ -164,16 +167,18 @@ class UserMethods(TelegramBaseClient):
         # chats and channels list from before. While this would reduce
         # the amount of ResolveUsername calls, it would fail to catch
         # username changes.
-        result = [
-            await self._get_entity_from_string(x) if isinstance(x, str)
-            else (
-                id_entity[utils.get_peer_id(x)]
-                if not isinstance(x, types.InputPeerSelf)
-                else next(u for u in id_entity.values()
-                          if isinstance(u, types.User) and u.is_self)
-            )
-            for x in inputs
-        ]
+        result = []
+        for x in inputs:
+            if isinstance(x, str):
+                result.append(await self._get_entity_from_string(x))
+            elif not isinstance(x, types.InputPeerSelf):
+                result.append(id_entity[utils.get_peer_id(x)])
+            else:
+                result.append(next(
+                    u for u in id_entity.values()
+                    if isinstance(u, types.User) and u.is_self
+                ))
+
         return result[0] if single else result
 
     async def get_input_entity(self, peer):
