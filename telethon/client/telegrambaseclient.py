@@ -13,7 +13,7 @@ from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
 from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession
-from ..tl import TLObject, functions
+from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
 
 DEFAULT_DC_ID = 4
@@ -219,9 +219,10 @@ class TelegramBaseClient(abc.ABC):
         self._last_ping = datetime.now()
         self._ping_delay = timedelta(minutes=1)
 
-        self._state = None
         self._updates_handle = None
         self._last_request = time.time()
+        self._channel_pts = {}
+        self._state = types.updates.State(0, 0, datetime.now(), 0, -1)
 
         # Some further state for subclasses
         self._event_builders = []

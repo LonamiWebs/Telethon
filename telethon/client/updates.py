@@ -175,12 +175,24 @@ class UpdateMethods(UserMethods):
                         itertools.chain(update.users, update.chats)}
             for u in update.updates:
                 u._entities = entities
-                self._loop.create_task(self._dispatch_update(u))
-            return
+                self._handle_update(u)
         if isinstance(update, types.UpdateShort):
-            update = update.update
-        update._entities = {}
-        self._loop.create_task(self._dispatch_update(update))
+            self._handle_update(update.update)
+        else:
+            update._entities = getattr(update, '_entities', {})
+            self._loop.create_task(self._dispatch_update(update))
+
+        need_diff = False
+        if hasattr(update, 'pts'):
+            if self._state.pts and (update.pts - self._state.pts) > 1:
+                need_diff = True
+            self._state.pts = update.pts
+        if hasattr(update, 'date'):
+            self._state.date = update.date
+        if hasattr(update, 'seq'):
+            self._state.seq = update.seq
+
+        # TODO make use of need_diff
 
     async def _update_loop(self):
         # Pings' ID don't really need to be secure, just "random"

@@ -92,6 +92,9 @@ class DialogMethods(UserMethods):
                 if peer_id not in seen:
                     seen.add(peer_id)
                     cd = custom.Dialog(self, d, entities, messages)
+                    if cd.dialog.pts:
+                        self._channel_pts[cd.id] = cd.dialog.pts
+
                     if not ignore_migrated or getattr(
                             cd.entity, 'migrated_to', None) is None:
                         await yield_(cd)
