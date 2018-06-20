@@ -15,7 +15,8 @@ class DialogMethods(UserMethods):
     @async_generator
     async def iter_dialogs(
             self, limit=None, offset_date=None, offset_id=0,
-            offset_peer=types.InputPeerEmpty(), _total=None):
+            offset_peer=types.InputPeerEmpty(), ignore_migrated=False,
+            _total=None):
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
         Dialogs are the open "chats" or conversations with other people,
@@ -37,6 +38,12 @@ class DialogMethods(UserMethods):
 
             offset_peer (:tl:`InputPeer`, optional):
                 The peer to be used as an offset.
+
+            ignore_migrated (`bool`, optional):
+                Whether :tl:`Chat` that have ``migrated_to`` a :tl:`Channel`
+                should be included or not. By default all the chats in your
+                dialogs are returned, but setting this to ``True`` will hide
+                them in the same way official applications do.
 
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
@@ -84,7 +91,10 @@ class DialogMethods(UserMethods):
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
-                    await yield_(custom.Dialog(self, d, entities, messages))
+                    cd = custom.Dialog(self, d, entities, messages)
+                    if not ignore_migrated or getattr(
+                            cd.entity, 'migrated_to', None) is None:
+                        await yield_(cd)
 
             if len(r.dialogs) < req.limit\
                     or not isinstance(r, types.messages.DialogsSlice):
