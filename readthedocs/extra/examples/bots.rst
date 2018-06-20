@@ -15,26 +15,26 @@ You can query an inline bot, such as `@VoteBot`__ (note, *query*,
 not *interact* with a voting message), by making use of the
 :tl:`GetInlineBotResultsRequest` request:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.messages import GetInlineBotResultsRequest
+    from telethon.tl.functions.messages import GetInlineBotResultsRequest
 
-        bot_results = client(GetInlineBotResultsRequest(
-            bot, user_or_chat, 'query', ''
-        ))
+    bot_results = client(GetInlineBotResultsRequest(
+        bot, user_or_chat, 'query', ''
+    ))
 
 And you can select any of their results by using
 :tl:`SendInlineBotResultRequest`:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.messages import SendInlineBotResultRequest
+    from telethon.tl.functions.messages import SendInlineBotResultRequest
 
-        client(SendInlineBotResultRequest(
-            get_input_peer(user_or_chat),
-            obtained_query_id,
-            obtained_str_id
-        ))
+    client(SendInlineBotResultRequest(
+        get_input_peer(user_or_chat),
+        obtained_query_id,
+        obtained_str_id
+    ))
 
 
 Talking to Bots with special reply markup
@@ -43,15 +43,15 @@ Talking to Bots with special reply markup
 To interact with a message that has a special reply markup, such as
 `@VoteBot`__ polls, you would use :tl:`GetBotCallbackAnswerRequest`:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
+    from telethon.tl.functions.messages import GetBotCallbackAnswerRequest
 
-        client(GetBotCallbackAnswerRequest(
-            user_or_chat,
-            msg.id,
-            data=msg.reply_markup.rows[wanted_row].buttons[wanted_button].data
-        ))
+    client(GetBotCallbackAnswerRequest(
+        user_or_chat,
+        msg.id,
+        data=msg.reply_markup.rows[wanted_row].buttons[wanted_button].data
+    ))
 
 It's a bit verbose, but it has all the information you would need to
 show it visually (button rows, and buttons within each row, each with

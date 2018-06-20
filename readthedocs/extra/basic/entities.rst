@@ -22,9 +22,9 @@ in response to certain methods, such as :tl:`GetUsersRequest`.
 
     To "encounter" an ID, you would have to "find it" like you would in the
     normal app. If the peer is in your dialogs, you would need to
-    `client.get_dialogs() <telethon.telegram_client.TelegramClient.get_dialogs>`.
+    `client.get_dialogs() <telethon.client.dialogs.DialogMethods.get_dialogs>`.
     If the peer is someone in a group, you would similarly
-    `client.get_participants(group) <telethon.telegram_client.TelegramClient.get_participants>`.
+    `client.get_participants(group) <telethon.client.chats.ChatMethods.get_participants>`.
 
     Once you have encountered an ID, the library will (by default) have saved
     their ``access_hash`` for you, which is needed to invoke most methods.
@@ -69,9 +69,11 @@ you're able to just do this:
         my_channel = client.get_entity(PeerChannel(some_id))
 
 
-All methods in the :ref:`telegram-client` call ``.get_input_entity()`` prior
+All methods in the :ref:`telegram-client` call `.get_input_entity()
+<telethon.client.users.UserMethods.get_input_entity>` prior
 to sending the requst to save you from the hassle of doing so manually.
-That way, convenience calls such as ``client.send_message('lonami', 'hi!')``
+That way, convenience calls such as `client.send_message('lonami', 'hi!')
+<telethon.client.messages.MessageMethods.send_message>`
 become possible.
 
 Every entity the library encounters (in any response to any call) will by
@@ -88,8 +90,10 @@ Entities vs. Input Entities
 
     Don't worry if you don't understand this section, just remember some
     of the details listed here are important. When you're calling a method,
-    don't call ``.get_entity()`` beforehand, just use the username or phone,
-    or the entity retrieved by other means like ``.get_dialogs()``.
+    don't call `client.get_entity() <telethon.client.users.UserMethods.get_entity>`
+    beforehand, just use the username or phone, or the entity retrieved by
+    other means like `client.get_dialogs()
+    <telethon.client.dialogs.DialogMethods.get_dialogs>`.
 
 
 On top of the normal types, the API also make use of what they call their
@@ -108,21 +112,27 @@ before you can "use them".
 
 As we just mentioned, API calls don't need to know the whole information
 about the entities, only their ID and hash. For this reason, another method,
-``.get_input_entity()`` is available. This will always use the cache while
-possible, making zero API calls most of the time. When a request is made,
-if you provided the full entity, e.g. an :tl:`User`, the library will convert
-it to the required :tl:`InputPeer` automatically for you.
+`client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`
+is available. This will always use the cache while possible, making zero API
+calls most of the time. When a request is made, if you provided the full
+entity, e.g. an :tl:`User`, the library will convert it to the required
+:tl:`InputPeer` automatically for you.
 
-**You should always favour** ``.get_input_entity()`` **over** ``.get_entity()``
+**You should always favour**
+`client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`
+**over**
+`client.get_entity() <telethon.client.users.UserMethods.get_entity>`
 for this reason! Calling the latter will always make an API call to get
 the most recent information about said entity, but invoking requests don't
-need this information, just the ``InputPeer``. Only use ``.get_entity()``
+need this information, just the :tl:`InputPeer`. Only use
+`client.get_entity() <telethon.client.users.UserMethods.get_entity>`
 if you need to get actual information, like the username, name, title, etc.
 of the entity.
 
 To further simplify the workflow, since the version ``0.16.2`` of the
 library, the raw requests you make to the API are also able to call
-``.get_input_entity`` wherever needed, so you can even do things like:
+`client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`
+wherever needed, so you can even do things like:
 
     .. code-block:: python
 

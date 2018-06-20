@@ -5,21 +5,27 @@ Working with Updates
 ====================
 
 
-The library comes with the :mod:`events` module. *Events* are an abstraction
+The library comes with the `telethon.events` module. *Events* are an abstraction
 over what Telegram calls `updates`__, and are meant to ease simple and common
 usage when dealing with them, since there are many updates. If you're looking
 for the method reference, check :ref:`telethon-events-package`, otherwise,
 let's dive in!
 
 
-.. note::
+.. important::
 
     The library logs by default no output, and any exception that occurs
     inside your handlers will be "hidden" from you to prevent the thread
     from terminating (so it can still deliver events). You should enable
-    logging (``import logging; logging.basicConfig(level=logging.ERROR)``)
-    when working with events, at least the error level, to see if this is
-    happening so you can debug the error.
+    logging when working with events, at least the error level, to see if
+    this is happening so you can debug the error.
+
+    **When using updates, please enable logging:**
+
+    .. code-block:: python
+
+        import logging
+        logging.basicConfig(level=logging.ERROR)
 
 
 .. contents::
@@ -62,7 +68,8 @@ Nothing we don't know already.
 
 
 This Python decorator will attach itself to the ``my_event_handler``
-definition, and basically means that *on* a ``NewMessage`` *event*,
+definition, and basically means that *on* a `NewMessage
+<telethon.events.newmessage.NewMessage>` *event*,
 the callback function you're about to define will be called:
 
     .. code-block:: python
@@ -72,8 +79,10 @@ the callback function you're about to define will be called:
                 event.reply('hi!')
 
 
-If a ``NewMessage`` event occurs, and ``'hello'`` is in the text of the
-message, we ``reply`` to the event with a ``'hi!'`` message.
+If a `NewMessage
+<telethon.events.newmessage.NewMessage>` event occurs,
+and ``'hello'`` is in the text of the message, we ``reply`` to the event
+with a ``'hi!'`` message.
 
     .. code-block:: python
 
@@ -88,10 +97,11 @@ do other things instead idling. For this refer to :ref:`update-modes`.
 More on events
 **************
 
-The ``NewMessage`` event has much more than what was shown. You can access
-the ``.sender`` of the message through that member, or even see if the message
-had ``.media``, a ``.photo`` or a ``.document`` (which you could download with
-for example ``client.download_media(event.photo)``.
+The `NewMessage <telethon.events.newmessage.NewMessage>` event has much
+more than what was shown. You can access the ``.sender`` of the message
+through that member, or even see if the message had ``.media``, a ``.photo``
+or a ``.document`` (which you could download with for example
+`client.download_media(event.photo) <telethon.client.downloads.DownloadMethods.download_media>`.
 
 If you don't want to ``.reply`` as a reply, you can use the ``.respond()``
 method instead. Of course, there are more events such as ``ChatAction`` or
@@ -102,34 +112,35 @@ instance, ``NewMessage.Event``), except for the ``Raw`` event which just
 passes the ``Update`` object.
 
 Note that ``.reply()`` and ``.respond()`` are just wrappers around the
-``client.send_message()`` method which supports the ``file=`` parameter.
-This means you can reply with a photo if you do ``client.reply(file=photo)``.
+`client.send_message() <telethon.client.messages.MessageMethods.send_message>`
+method which supports the ``file=`` parameter.
+This means you can reply with a photo if you do ``event.reply(file=photo)``.
 
 You can put the same event on many handlers, and even different events on
 the same handler. You can also have a handler work on only specific chats,
 for example:
 
 
-    .. code-block:: python
+.. code-block:: python
 
-        import ast
-        import random
-
-
-        # Either a single item or a list of them will work for the chats.
-        # You can also use the IDs, Peers, or even User/Chat/Channel objects.
-        @client.on(events.NewMessage(chats=('TelethonChat', 'TelethonOffTopic')))
-        def normal_handler(event):
-            if 'roll' in event.raw_text:
-                event.reply(str(random.randint(1, 6)))
+    import ast
+    import random
 
 
-        # Similarly, you can use incoming=True for messages that you receive
-        @client.on(events.NewMessage(chats='TelethonOffTopic', outgoing=True))
-        def admin_handler(event):
-            if event.raw_text.startswith('eval'):
-                expression = event.raw_text.replace('eval', '').strip()
-                event.reply(str(ast.literal_eval(expression)))
+    # Either a single item or a list of them will work for the chats.
+    # You can also use the IDs, Peers, or even User/Chat/Channel objects.
+    @client.on(events.NewMessage(chats=('TelethonChat', 'TelethonOffTopic')))
+    def normal_handler(event):
+        if 'roll' in event.raw_text:
+            event.reply(str(random.randint(1, 6)))
+
+
+    # Similarly, you can use incoming=True for messages that you receive
+    @client.on(events.NewMessage(chats='TelethonOffTopic', outgoing=True))
+    def admin_handler(event):
+        if event.raw_text.startswith('eval'):
+            expression = event.raw_text.replace('eval', '').strip()
+            event.reply(str(ast.literal_eval(expression)))
 
 
 You can pass one or more chats to the ``chats`` parameter (as a list or tuple),
@@ -143,15 +154,20 @@ solution. Try it!
 Events without decorators
 *************************
 
-If for any reason you can't use the ``@client.on`` syntax, don't worry.
-You can call ``client.add_event_handler(callback, event)`` to achieve
+If for any reason you can't use the `@client.on
+<telethon.client.updates.UpdateMethods.on>` syntax, don't worry.
+You can call `client.add_event_handler(callback, event)
+<telethon.client.updates.UpdateMethods.add_event_handler>` to achieve
 the same effect.
 
-Similar to that method, you also have :meth:`client.remove_event_handler`
-and :meth:`client.list_event_handlers` which do as they names indicate.
+Similarly, you also have `client.remove_event_handler
+<telethon.client.updates.UpdateMethods.remove_event_handler>`
+and `client.list_event_handlers
+<telethon.client.updates.UpdateMethods.list_event_handlers>`.
 
-The ``event`` type is optional in all methods and defaults to ``events.Raw``
-for adding, and ``None`` when removing (so all callbacks would be removed).
+The ``event`` type is optional in all methods and defaults to
+`events.Raw <telethon.events.raw.Raw>` for adding, and ``None`` when
+removing (so all callbacks would be removed).
 
 
 Stopping propagation of Updates
@@ -159,8 +175,8 @@ Stopping propagation of Updates
 
 There might be cases when an event handler is supposed to be used solitary and
 it makes no sense to process any other handlers in the chain. For this case,
-it is possible to raise a ``StopPropagation`` exception which will cause the
-propagation of the update through your handlers to stop:
+it is possible to raise a `telethon.events.StopPropagation` exception which
+will cause the propagation of the update through your handlers to stop:
 
     .. code-block:: python
 

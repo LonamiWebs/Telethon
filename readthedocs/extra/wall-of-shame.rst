@@ -50,14 +50,14 @@ The current winner is `issue
 
 **Issue:**
 
-    .. figure:: https://user-images.githubusercontent.com/6297805/29822978-9a9a6ef0-8ccd-11e7-9ec5-934ea0f57681.jpg
-       :alt: Winner issue
+.. figure:: https://user-images.githubusercontent.com/6297805/29822978-9a9a6ef0-8ccd-11e7-9ec5-934ea0f57681.jpg
+:alt: Winner issue
 
-       Winner issue
+Winner issue
 
 **Answer:**
 
-    .. figure:: https://user-images.githubusercontent.com/6297805/29822983-9d523402-8ccd-11e7-9fb1-5783740ee366.jpg
-       :alt: Winner issue answer
+.. figure:: https://user-images.githubusercontent.com/6297805/29822983-9d523402-8ccd-11e7-9fb1-5783740ee366.jpg
+:alt: Winner issue answer
 
-       Winner issue answer
+Winner issue answer

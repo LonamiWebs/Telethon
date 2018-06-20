@@ -177,6 +177,12 @@ class Message:
 
     @property
     async def chat(self):
+        """
+        The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
+        the event occurred. This property may make an API call the first time
+        to get the most up to date version of the chat (mostly when the event
+        doesn't belong to a channel), so keep that in mind.
+        """
         if self._chat is None:
             try:
                 self._chat =\

@@ -12,26 +12,31 @@ that servers as a nice interface with the most commonly used methods on
 Telegram such as sending messages, retrieving the message history,
 handling updates, etc.
 
-The ``TelegramClient`` inherits the ``TelegramBareClient``. The later is
-basically a pruned version of the ``TelegramClient``, which knows basic
-stuff like ``.invoke()``\ 'ing requests, downloading files, or switching
-between data centers. This is primary to keep the method count per class
-and file low and manageable.
+The ``TelegramClient`` inherits from several mixing ``Method`` classes,
+since there are so many methods that having them in a single file would
+make maintenance painful (it was three thousand lines before this separation
+happened!). It's a "god object", but there is only a way to interact with
+Telegram really.
 
-Both clients make use of the ``network/mtproto_sender.py``. The
-``MtProtoSender`` class handles packing requests with the ``salt``,
-``id``, ``sequence``, etc., and also handles how to process responses
-(i.e. pong, RPC errors). This class communicates through Telegram via
-its ``.connection`` member.
+The ``TelegramBaseClient`` is an ABC which will support all of these mixins
+so they can work together nicely. It doesn't even know how to invoke things
+because they need to be resolved with user information first (to work with
+input entities comfortably).
 
-The ``Connection`` class uses a ``extensions/tcp_client``, a C#-like
-``TcpClient`` to ease working with sockets in Python. All the
+The client makes use of the ``network/mtprotosender.py``. The
+``MTProtoSender`` is responsible for connecting, reconnecting,
+packing, unpacking, sending and receiving items from the network.
+Basically, the low-level communication with Telegram, and handling
+MTProto-related functions and types such as ``BadSalt``.
+
+The sender makes use of a ``Connection`` class which knows the format in
+which outgoing messages should be sent (how to encode their length and
+their body, if they're further encrypted).
+
+For now, all connection modes make use of the ``extensions/tcpclient``,
+a C#-like ``TcpClient`` to ease working with sockets in Python. All the
 ``TcpClient`` know is how to connect through TCP and writing/reading
 from the socket with optional cancel.
-
-The ``Connection`` class bundles up all the connections modes and sends
-and receives the messages accordingly (TCP full, obfuscated,
-intermediate…).
 
 Auto-generated code
 *******************

@@ -4,7 +4,8 @@
 Session Files
 ==============
 
-The first parameter you pass to the constructor of the ``TelegramClient`` is
+The first parameter you pass to the constructor of the
+:ref:`TelegramClient <telethon-client>` is
 the ``session``, and defaults to be the session name (or full path). That is,
 if you create a ``TelegramClient('anon')`` instance and connect, an
 ``anon.session`` file will be created in the working directory.
@@ -42,7 +43,8 @@ If you don't want to use the default SQLite session storage, you can also use
 one of the other implementations or implement your own storage.
 
 To use a custom session storage, simply pass the custom session instance to
-``TelegramClient`` instead of the session name.
+:ref:`TelegramClient <telethon-client>` instead of
+the session name.
 
 Telethon contains two implementations of the abstract ``Session`` class:
 

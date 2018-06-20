@@ -82,7 +82,29 @@ class EventBuilder(abc.ABC):
 
 
 class EventCommon(abc.ABC):
-    """Intermediate class with common things to all events"""
+    """
+    Intermediate class with common things to all events.
+
+    Attributes:
+        pattern_match (`obj`):
+            The resulting object from calling the passed ``pattern`` function.
+            Here's an example using a string (defaults to regex match):
+
+            >>> from telethon import TelegramClient, events
+            >>> client = TelegramClient(...)
+            >>>
+            >>> @client.on(events.NewMessage(pattern=r'hi (\w+)!'))
+            ... def handler(event):
+            ...     # In this case, the result is a ``Match`` object
+            ...     # since the ``str`` pattern was converted into
+            ...     # the ``re.compile(pattern).match`` function.
+            ...     print('Welcomed', event.pattern_match.group(1))
+            ...
+            >>>
+
+        original_update (:tl:`Update`):
+            The original Telegram update object that caused this event.
+    """
     _event_name = 'Event'
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
@@ -146,6 +168,9 @@ class EventCommon(abc.ABC):
 
     @property
     def client(self):
+        """
+        The `telethon.TelegramClient` that created this event.
+        """
         return self._client
 
     @property

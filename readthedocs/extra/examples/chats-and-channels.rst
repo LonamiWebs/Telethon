@@ -22,14 +22,14 @@ Joining a public channel
 Once you have the :ref:`entity <entities>` of the channel you want to join
 to, you can make use of the :tl:`JoinChannelRequest` to join such channel:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.channels import JoinChannelRequest
-        client(JoinChannelRequest(channel))
+    from telethon.tl.functions.channels import JoinChannelRequest
+    client(JoinChannelRequest(channel))
 
-        # In the same way, you can also leave such channel
-        from telethon.tl.functions.channels import LeaveChannelRequest
-        client(LeaveChannelRequest(input_channel))
+    # In the same way, you can also leave such channel
+    from telethon.tl.functions.channels import LeaveChannelRequest
+    client(LeaveChannelRequest(input_channel))
 
 
 For more on channels, check the `channels namespace`__.
@@ -48,10 +48,10 @@ enough information to join! The part after the
 example, is the ``hash`` of the chat or channel. Now you can use
 :tl:`ImportChatInviteRequest` as follows:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.messages import ImportChatInviteRequest
-        updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
+    from telethon.tl.functions.messages import ImportChatInviteRequest
+    updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
 Adding someone else to such chat or channel
@@ -61,26 +61,26 @@ If you don't want to add yourself, maybe because you're already in,
 you can always add someone else with the :tl:`AddChatUserRequest`, which
 use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
 
-    .. code-block:: python
+.. code-block:: python
 
-        # For normal chats
-        from telethon.tl.functions.messages import AddChatUserRequest
+    # For normal chats
+    from telethon.tl.functions.messages import AddChatUserRequest
 
-        # Note that ``user_to_add`` is NOT the name of the parameter.
-        # It's the user you want to add (``user_id=user_to_add``).
-        client(AddChatUserRequest(
-            chat_id,
-            user_to_add,
-            fwd_limit=10  # Allow the user to see the 10 last messages
-        ))
+    # Note that ``user_to_add`` is NOT the name of the parameter.
+    # It's the user you want to add (``user_id=user_to_add``).
+    client(AddChatUserRequest(
+        chat_id,
+        user_to_add,
+        fwd_limit=10  # Allow the user to see the 10 last messages
+    ))
 
-        # For channels (which includes megagroups)
-        from telethon.tl.functions.channels import InviteToChannelRequest
+    # For channels (which includes megagroups)
+    from telethon.tl.functions.channels import InviteToChannelRequest
 
-        client(InviteToChannelRequest(
-            channel,
-            [users_to_add]
-        ))
+    client(InviteToChannelRequest(
+        channel,
+        [users_to_add]
+    ))
 
 
 Checking a link without joining
@@ -112,25 +112,25 @@ closest thing to "no filter" is to simply use
 If we want to get *all* the members, we need to use a moving offset and
 a fixed limit:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.channels import GetParticipantsRequest
-        from telethon.tl.types import ChannelParticipantsSearch
-        from time import sleep
+    from telethon.tl.functions.channels import GetParticipantsRequest
+    from telethon.tl.types import ChannelParticipantsSearch
+    from time import sleep
 
-        offset = 0
-        limit = 100
-        all_participants = []
+    offset = 0
+    limit = 100
+    all_participants = []
 
-        while True:
-            participants = client(GetParticipantsRequest(
-                channel, ChannelParticipantsSearch(''), offset, limit,
-                hash=0
-            ))
-            if not participants.users:
-                break
-            all_participants.extend(participants.users)
-            offset += len(participants.users)
+    while True:
+        participants = client(GetParticipantsRequest(
+            channel, ChannelParticipantsSearch(''), offset, limit,
+            hash=0
+        ))
+        if not participants.users:
+            break
+        all_participants.extend(participants.users)
+        offset += len(participants.users)
 
 
 .. note::
@@ -164,39 +164,39 @@ Admin Permissions
 
 Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.channels import EditAdminRequest
-        from telethon.tl.types import ChannelAdminRights
+    from telethon.tl.functions.channels import EditAdminRequest
+    from telethon.tl.types import ChannelAdminRights
 
-        # You need both the channel and who to grant permissions
-        # They can either be channel/user or input channel/input user.
-        #
-        # ChannelAdminRights is a list of granted permissions.
-        # Set to True those you want to give.
-        rights = ChannelAdminRights(
-            post_messages=None,
-            add_admins=None,
-            invite_users=None,
-            change_info=True,
-            ban_users=None,
-            delete_messages=True,
-            pin_messages=True,
-            invite_link=None,
-            edit_messages=None
-        ) 
-        # Equivalent to:
-        #     rights = ChannelAdminRights(
-        #         change_info=True,
-        #         delete_messages=True,
-        #         pin_messages=True
-        #     )
+    # You need both the channel and who to grant permissions
+    # They can either be channel/user or input channel/input user.
+    #
+    # ChannelAdminRights is a list of granted permissions.
+    # Set to True those you want to give.
+    rights = ChannelAdminRights(
+        post_messages=None,
+        add_admins=None,
+        invite_users=None,
+        change_info=True,
+        ban_users=None,
+        delete_messages=True,
+        pin_messages=True,
+        invite_link=None,
+        edit_messages=None
+    )
+    # Equivalent to:
+    #     rights = ChannelAdminRights(
+    #         change_info=True,
+    #         delete_messages=True,
+    #         pin_messages=True
+    #     )
 
-        # Once you have a ChannelAdminRights, invoke it
-        client(EditAdminRequest(channel, user, rights))
+    # Once you have a ChannelAdminRights, invoke it
+    client(EditAdminRequest(channel, user, rights))
 
-        # User will now be able to change group info, delete other people's
-        # messages and pin messages.
+    # User will now be able to change group info, delete other people's
+    # messages and pin messages.
 
 
 .. note::
@@ -218,41 +218,41 @@ Similar to how you give or revoke admin permissions, you can edit the
 banned rights of an user through :tl:`EditBannedRequest` and its parameter
 :tl:`ChannelBannedRights`:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.channels import EditBannedRequest
-        from telethon.tl.types import ChannelBannedRights
+    from telethon.tl.functions.channels import EditBannedRequest
+    from telethon.tl.types import ChannelBannedRights
 
-        from datetime import datetime, timedelta
+    from datetime import datetime, timedelta
 
-        # Restricting an user for 7 days, only allowing view/send messages.
-        #
-        # Note that it's "reversed". You must set to ``True`` the permissions
-        # you want to REMOVE, and leave as ``None`` those you want to KEEP.
-        rights = ChannelBannedRights(
-            until_date=datetime.now() + timedelta(days=7),
-            view_messages=None,
-            send_messages=None,
-            send_media=True,
-            send_stickers=True,
-            send_gifs=True,
-            send_games=True,
-            send_inline=True,
-            embed_links=True
-        )
+    # Restricting an user for 7 days, only allowing view/send messages.
+    #
+    # Note that it's "reversed". You must set to ``True`` the permissions
+    # you want to REMOVE, and leave as ``None`` those you want to KEEP.
+    rights = ChannelBannedRights(
+        until_date=datetime.now() + timedelta(days=7),
+        view_messages=None,
+        send_messages=None,
+        send_media=True,
+        send_stickers=True,
+        send_gifs=True,
+        send_games=True,
+        send_inline=True,
+        embed_links=True
+    )
 
-        # The above is equivalent to
-        rights = ChannelBannedRights(
-            until_date=datetime.now() + timedelta(days=7),
-            send_media=True,
-            send_stickers=True,
-            send_gifs=True,
-            send_games=True,
-            send_inline=True,
-            embed_links=True
-        )
+    # The above is equivalent to
+    rights = ChannelBannedRights(
+        until_date=datetime.now() + timedelta(days=7),
+        send_media=True,
+        send_stickers=True,
+        send_gifs=True,
+        send_games=True,
+        send_inline=True,
+        embed_links=True
+    )
 
-        client(EditBannedRequest(channel, user, rights))
+    client(EditBannedRequest(channel, user, rights))
 
 
 Kicking a member
@@ -262,15 +262,15 @@ Telegram doesn't actually have a request to kick an user from a group.
 Instead, you need to restrict them so they can't see messages. Any date
 is enough:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.channels import EditBannedRequest
-        from telethon.tl.types import ChannelBannedRights
+    from telethon.tl.functions.channels import EditBannedRequest
+    from telethon.tl.types import ChannelBannedRights
 
-        client(EditBannedRequest(channel, user, ChannelBannedRights(
-            until_date=None,
-            view_messages=True
-        )))
+    client(EditBannedRequest(channel, user, ChannelBannedRights(
+        until_date=None,
+        view_messages=True
+    )))
 
 
 __ https://github.com/Kyle2142
@@ -285,17 +285,17 @@ It has been asked `quite`__ `a few`__ `times`__ (really, `many`__), and
 while I don't understand why so many people ask this, the solution is to
 use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
 
-    .. code-block:: python
+.. code-block:: python
 
 
-        # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
-        # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
+    # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
+    # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
-        client(GetMessagesViewsRequest(
-            peer=channel,
-            id=msg_ids,
-            increment=True
-        ))
+    client(GetMessagesViewsRequest(
+        peer=channel,
+        id=msg_ids,
+        increment=True
+    ))
 
 
 Note that you can only do this **once or twice a day** per account,

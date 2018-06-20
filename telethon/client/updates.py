@@ -31,7 +31,16 @@ class UpdateMethods(UserMethods):
 
     def on(self, event):
         """
-        Decorator helper method around add_event_handler().
+        Decorator helper method around `add_event_handler`. Example:
+
+        >>> from telethon import TelegramClient, events
+        >>> client = TelegramClient(...)
+        >>>
+        >>> @client.on(events.NewMessage)
+        ... async def handler(event):
+        ...     ...
+        ...
+        >>>
 
         Args:
             event (`_EventBuilder` | `type`):

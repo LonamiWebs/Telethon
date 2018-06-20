@@ -20,31 +20,31 @@ Forwarding messages
 
 .. code-block:: python
 
-        # If you only have the message IDs
-        client.forward_messages(
-            entity,  # to which entity you are forwarding the messages
-            message_ids,  # the IDs of the messages (or message) to forward
-            from_entity  # who sent the messages?
-        )
+    # If you only have the message IDs
+    client.forward_messages(
+        entity,  # to which entity you are forwarding the messages
+        message_ids,  # the IDs of the messages (or message) to forward
+        from_entity  # who sent the messages?
+    )
 
-        # If you have ``Message`` objects
-        client.forward_messages(
-            entity,  # to which entity you are forwarding the messages
-            messages  # the messages (or message) to forward
-        )
+    # If you have ``Message`` objects
+    client.forward_messages(
+        entity,  # to which entity you are forwarding the messages
+        messages  # the messages (or message) to forward
+    )
 
-        # You can also do it manually if you prefer
-        from telethon.tl.functions.messages import ForwardMessagesRequest
+    # You can also do it manually if you prefer
+    from telethon.tl.functions.messages import ForwardMessagesRequest
 
-        messages = foo()  # retrieve a few messages (or even one, in a list)
-        from_entity = bar()
-        to_entity = baz()
+    messages = foo()  # retrieve a few messages (or even one, in a list)
+    from_entity = bar()
+    to_entity = baz()
 
-        client(ForwardMessagesRequest(
-            from_peer=from_entity,  # who sent these messages?
-            id=[msg.id for msg in messages],  # which are the messages?
-            to_peer=to_entity  # who are we forwarding them to?
-        ))
+    client(ForwardMessagesRequest(
+        from_peer=from_entity,  # who sent these messages?
+        id=[msg.id for msg in messages],  # which are the messages?
+        to_peer=to_entity  # who are we forwarding them to?
+    ))
 
 The named arguments are there for clarity, although they're not needed because
 they appear in order. You can obviously just wrap a single message on the list
@@ -65,26 +65,26 @@ Searching Messages
 Messages are searched through the obvious :tl:`SearchRequest`, but you may run
 into issues_. A valid example would be:
 
-    .. code-block:: python
+.. code-block:: python
 
-        from telethon.tl.functions.messages import SearchRequest
-        from telethon.tl.types import InputMessagesFilterEmpty
+    from telethon.tl.functions.messages import SearchRequest
+    from telethon.tl.types import InputMessagesFilterEmpty
 
-        filter = InputMessagesFilterEmpty()
-        result = client(SearchRequest(
-            peer=peer,      # On which chat/conversation
-            q='query',      # What to search for
-            filter=filter,  # Filter to use (maybe filter for media)
-            min_date=None,  # Minimum date
-            max_date=None,  # Maximum date
-            offset_id=0,    # ID of the message to use as offset
-            add_offset=0,   # Additional offset
-            limit=10,       # How many results
-            max_id=0,       # Maximum message ID
-            min_id=0,       # Minimum message ID
-            from_id=None,   # Who must have sent the message (peer)
-            hash=0          # Special number to return nothing on no-change
-        ))
+    filter = InputMessagesFilterEmpty()
+    result = client(SearchRequest(
+        peer=peer,      # On which chat/conversation
+        q='query',      # What to search for
+        filter=filter,  # Filter to use (maybe filter for media)
+        min_date=None,  # Minimum date
+        max_date=None,  # Maximum date
+        offset_id=0,    # ID of the message to use as offset
+        add_offset=0,   # Additional offset
+        limit=10,       # How many results
+        max_id=0,       # Maximum message ID
+        min_id=0,       # Minimum message ID
+        from_id=None,   # Who must have sent the message (peer)
+        hash=0          # Special number to return nothing on no-change
+    ))
 
 It's important to note that the optional parameter ``from_id`` could have
 been omitted (defaulting to ``None``). Changing it to :tl:`InputUserEmpty`, as one
@@ -113,31 +113,31 @@ referenced through this pair of ID/hash (unique per user), and you need to
 use this handle when sending a "document" message. This working example will
 send yourself the very first sticker you have:
 
-    .. code-block:: python
+.. code-block:: python
 
-        # Get all the sticker sets this user has
-        sticker_sets = client(GetAllStickersRequest(0))
+    # Get all the sticker sets this user has
+    sticker_sets = client(GetAllStickersRequest(0))
 
-        # Choose a sticker set
-        sticker_set = sticker_sets.sets[0]
+    # Choose a sticker set
+    sticker_set = sticker_sets.sets[0]
 
-        # Get the stickers for this sticker set
-        stickers = client(GetStickerSetRequest(
-            stickerset=InputStickerSetID(
-                id=sticker_set.id, access_hash=sticker_set.access_hash
+    # Get the stickers for this sticker set
+    stickers = client(GetStickerSetRequest(
+        stickerset=InputStickerSetID(
+            id=sticker_set.id, access_hash=sticker_set.access_hash
+        )
+    ))
+
+    # Stickers are nothing more than files, so send that
+    client(SendMediaRequest(
+        peer=client.get_me(),
+        media=InputMediaDocument(
+            id=InputDocument(
+                id=stickers.documents[0].id,
+                access_hash=stickers.documents[0].access_hash
             )
-        ))
-
-        # Stickers are nothing more than files, so send that
-        client(SendMediaRequest(
-            peer=client.get_me(),
-            media=InputMediaDocument(
-                id=InputDocument(
-                    id=stickers.documents[0].id,
-                    access_hash=stickers.documents[0].access_hash
-                )
-            )
-        ))
+        )
+    ))
 
 
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215
