@@ -338,8 +338,11 @@ class MTProtoSender:
                 self._pending_ack.clear()
 
             messages = await self._send_queue.get()
-            if messages == _reconnect_sentinel and self._reconnecting:
-                break
+            if messages == _reconnect_sentinel:
+                if self._reconnecting:
+                    break
+                else:
+                    continue
 
             if isinstance(messages, list):
                 message = self.state.create_message(MessageContainer(messages))
@@ -364,11 +367,17 @@ class MTProtoSender:
                     continue
                 except asyncio.CancelledError:
                     return
-                except OSError as e:
-                    __log__.warning('OSError while sending %s', e)
-                except:
-                    __log__.exception('Unhandled exception while sending')
-                    await asyncio.sleep(1)
+                except Exception as e:
+                    if isinstance(e, ConnectionError):
+                        __log__.info('Connection reset while sending %s', e)
+                    elif isinstance(e, OSError):
+                        __log__.warning('OSError while sending %s', e)
+                    else:
+                        __log__.exception('Unhandled exception while receiving')
+                        await asyncio.sleep(1)
+
+                    self._loop.create_task(self._reconnect())
+                    break
             else:
                 # Remove the cancelled messages from pending
                 __log__.info('Some futures were cancelled, aborted send')
