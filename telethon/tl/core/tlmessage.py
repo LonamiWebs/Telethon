@@ -22,7 +22,6 @@ class TLMessage(TLObject):
     that will eventually be set with either a result, error or cancelled.
     """
     def __init__(self, msg_id, seq_no, obj=None, after_id=0):
-        super().__init__()
         self.msg_id = msg_id
         self.seq_no = seq_no
         self.obj = obj
@@ -34,8 +33,9 @@ class TLMessage(TLObject):
         # easily invoke after while confirming the original request.
         self.after_id = after_id
 
-    def to_dict(self, recursive=True):
+    def to_dict(self):
         return {
+            '_': 'TLMessage',
             'msg_id': self.msg_id,
             'seq_no': self.seq_no,
             'obj': self.obj,
@@ -51,9 +51,3 @@ class TLMessage(TLObject):
                 InvokeAfterMsgRequest(self.after_id, self.obj))
 
         return struct.pack('<qii', self.msg_id, self.seq_no, len(body)) + body
-
-    def __str__(self):
-        return TLObject.pretty_format(self)
-
-    def stringify(self):
-        return TLObject.pretty_format(self, indent=0)

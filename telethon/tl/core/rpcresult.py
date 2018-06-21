@@ -1,8 +1,9 @@
 from .gzippacked import GzipPacked
+from .. import TLObject
 from ..types import RpcError
 
 
-class RpcResult:
+class RpcResult(TLObject):
     CONSTRUCTOR_ID = 0xf35c6d01
 
     def __init__(self, req_msg_id, body, error):
@@ -21,3 +22,11 @@ class RpcResult:
 
         reader.seek(-4)
         return RpcResult(msg_id, reader.read(), None)
+
+    def to_dict(self):
+        return {
+            '_': 'RpcResult',
+            'req_msg_id': self.req_msg_id,
+            'body': self.body,
+            'error': self.error
+        }

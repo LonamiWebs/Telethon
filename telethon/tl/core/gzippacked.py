@@ -8,7 +8,6 @@ class GzipPacked(TLObject):
     CONSTRUCTOR_ID = 0x3072cfa1
 
     def __init__(self, data):
-        super().__init__()
         self.data = data
 
     @staticmethod
@@ -38,3 +37,9 @@ class GzipPacked(TLObject):
     @classmethod
     def from_reader(cls, reader):
         return GzipPacked(gzip.decompress(reader.tgread_bytes()))
+
+    def to_dict(self):
+        return {
+            '_': 'GzipPacked',
+            'data': self.data
+        }

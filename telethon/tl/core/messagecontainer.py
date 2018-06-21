@@ -13,24 +13,19 @@ class MessageContainer(TLObject):
     def __init__(self, messages):
         self.messages = messages
 
-    def to_dict(self, recursive=True):
+    def to_dict(self):
         return {
+            '_': 'MessageContainer',
             'messages':
-                ([] if self.messages is None else [
+                [] if self.messages is None else [
                     None if x is None else x.to_dict() for x in self.messages
-                ]) if recursive else self.messages,
+                ],
         }
 
     def __bytes__(self):
         return struct.pack(
             '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
         ) + b''.join(bytes(m) for m in self.messages)
-
-    def __str__(self):
-        return TLObject.pretty_format(self)
-
-    def stringify(self):
-        return TLObject.pretty_format(self, indent=0)
 
     @classmethod
     def from_reader(cls, reader):
