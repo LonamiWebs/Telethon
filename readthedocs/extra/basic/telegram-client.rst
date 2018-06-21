@@ -34,7 +34,14 @@ For instance, retrieving your own user can be done in a single line:
 
 .. code-block:: python
 
-    myself = client.get_me()
+    import asyncio
+
+    async def main():
+        myself = await client.get_me()
+
+    if __name__ == '__main__':
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(main())
 
 Internally, this method has sent a request to Telegram, who replied with
 the information about your own user, and then the desired information
@@ -46,10 +53,11 @@ how the library refers to either of these:
 
 .. code-block:: python
 
-    # The method will infer that you've passed an username
-    # It also accepts phone numbers, and will get the user
-    # from your contact list.
-    lonami = client.get_entity('lonami')
+    async def main():
+        # The method will infer that you've passed an username
+        # It also accepts phone numbers, and will get the user
+        # from your contact list.
+        lonami = await client.get_entity('lonami')
 
 The so called "entities" are another important whole concept on its own,
 but for now you don't need to worry about it. Simply know that they are
@@ -59,30 +67,31 @@ Many other common methods for quick scripts are also available:
 
 .. code-block:: python
 
-    # Note that you can use 'me' or 'self' to message yourself
-    client.send_message('username', 'Hello World from Telethon!')
+    async def main():
+        # Note that you can use 'me' or 'self' to message yourself
+        await client.send_message('username', 'Hello World from Telethon!')
 
-    # .send_message's parse mode defaults to markdown, so you
-    # can use **bold**, __italics__, [links](https://example.com), `code`,
-    # and even [mentions](@username)/[mentions](tg://user?id=123456789)
-    client.send_message('username', '**Using** __markdown__ `too`!')
+        # .send_message's parse mode defaults to markdown, so you
+        # can use **bold**, __italics__, [links](https://example.com), `code`,
+        # and even [mentions](@username)/[mentions](tg://user?id=123456789)
+        await client.send_message('username', '**Using** __markdown__ `too`!')
 
-    client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+        await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-    # The utils package has some goodies, like .get_display_name()
-    from telethon import utils
-    for message in client.iter_messages('username', limit=10):
-        print(utils.get_display_name(message.sender), message.message)
+        # The utils package has some goodies, like .get_display_name()
+        from telethon import utils
+        async for message in client.iter_messages('username', limit=10):
+            print(utils.get_display_name(message.sender), message.message)
 
-    # Dialogs are the conversations you have open
-    for dialog in client.get_dialogs(limit=10):
-        print(utils.get_display_name(dialog.entity), dialog.draft.text)
+        # Dialogs are the conversations you have open
+        async for dialog in client.get_dialogs(limit=10):
+            print(dialog.name, dialog.draft.text)
 
-    # Default path is the working directory
-    client.download_profile_photo('username')
+        # Default path is the working directory
+        await client.download_profile_photo('username')
 
-    # Call .disconnect() when you're done
-    client.disconnect()
+        # Call .disconnect() when you're done
+        await client.disconnect()
 
 Remember that you can call ``.stringify()`` to any object Telegram returns
 to pretty print it. Calling ``str(result)`` does the same operation, but on

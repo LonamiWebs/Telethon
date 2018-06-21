@@ -21,6 +21,9 @@ Creating a client
 
 .. code-block:: python
 
+    import asyncio
+    loop = asyncio.get_event_loop()
+
     from telethon import TelegramClient
 
     # These example values won't work. You must get your own api_id and
@@ -29,7 +32,7 @@ Creating a client
     api_hash = '0123456789abcdef0123456789abcdef'
 
     client = TelegramClient('session_name', api_id, api_hash)
-    client.start()
+    loop.run_until_complete(client.start())
 
 **More details**: :ref:`creating-a-client`
 
@@ -39,31 +42,36 @@ Basic Usage
 
 .. code-block:: python
 
-    # Getting information about yourself
-    print(client.get_me().stringify())
+    async def main():
+        # Getting information about yourself
+        me = await client.get_me()
+        print(me.stringify())
 
-    # Sending a message (you can use 'me' or 'self' to message yourself)
-    client.send_message('username', 'Hello World from Telethon!')
+        # Sending a message (you can use 'me' or 'self' to message yourself)
+        await client.send_message('username', 'Hello World from Telethon!')
 
-    # Sending a file
-    client.send_file('username', '/home/myself/Pictures/holidays.jpg')
+        # Sending a file
+        await client.send_file('username', '/home/myself/Pictures/holidays.jpg')
 
-    # Retrieving messages from a chat
-    from telethon import utils
-    for message in client.iter_messages('username', limit=10):
-        print(utils.get_display_name(message.sender), message.message)
+        # Retrieving messages from a chat
+        from telethon import utils
+        async for message in client.iter_messages('username', limit=10):
+            print(utils.get_display_name(message.sender), message.message)
 
-    # Listing all the dialogs (conversations you have open)
-    for dialog in client.get_dialogs(limit=10):
-        print(utils.get_display_name(dialog.entity), dialog.draft.text)
+        # Listing all the dialogs (conversations you have open)
+        async for dialog in client.get_dialogs(limit=10):
+            print(dialog.name, dialog.draft.text)
 
-    # Downloading profile photos (default path is the working directory)
-    client.download_profile_photo('username')
+        # Downloading profile photos (default path is the working directory)
+        await client.download_profile_photo('username')
 
-    # Once you have a message with .media (if message.media)
-    # you can download it using client.download_media():
-    messages = client.get_messages('username')
-    client.download_media(messages[0])
+        # Once you have a message with .media (if message.media)
+        # you can download it using client.download_media(),
+        # or even using message.download_media():
+        messages = await client.get_messages('username')
+        await messages[0].download_media()
+
+    loop.run_until_complete(main())
 
 **More details**: :ref:`telegram-client`
 
@@ -77,15 +85,11 @@ Handling Updates
 
     from telethon import events
 
-    # We need to have some worker running
-    client.updates.workers = 1
-
     @client.on(events.NewMessage(incoming=True, pattern='(?i)hi'))
-    def handler(event):
-        event.reply('Hello!')
+    async def handler(event):
+        await event.reply('Hello!')
 
-    # If you want to handle updates you can't let the script end.
-    input('Press enter to exit.')
+    client.run_until_disconnected()
 
 **More details**: :ref:`working-with-updates`
 

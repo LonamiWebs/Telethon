@@ -174,8 +174,8 @@ class NewMessage(EventBuilder):
                 >>> from telethon import TelegramClient, events
                 >>> client = TelegramClient(...)
                 >>>
-                >>> @client.on(events.NewMessage(pattern=r'hi (\w+)!'))
-                ... def handler(event):
+                >>> @client.on(events.NewMessage(pattern=r'hi (\\w+)!'))
+                ... async def handler(event):
                 ...     # In this case, the result is a ``Match`` object
                 ...     # since the ``str`` pattern was converted into
                 ...     # the ``re.compile(pattern).match`` function.

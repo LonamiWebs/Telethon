@@ -22,6 +22,17 @@ when you upgrade!
    contains the friendly methods that **you should use** most of the time.
 
 
+.. note::
+   The library uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
+   by default, but you if you don't know how to use ``asyncio`` you can use
+   `a simpler version <https://github.com/LonamiWebs/Telethon/tree/sync>`_
+   (select the "sync" version in ``readthedocs``' bottom left corner).
+
+   However, **you are encouraged to use asyncio**, it will make your scripts
+   faster and more powerful. :ref:`asyncio-crash-course` will teach you why
+   ``asyncio`` is good and how to use it.
+
+
 What is this?
 *************
 
@@ -39,6 +50,7 @@ heavy job for you, so you can focus on developing an application.
 
    extra/basic/getting-started
    extra/basic/installation
+   extra/basic/asyncio-crash-course
    extra/basic/creating-a-client
    extra/basic/telegram-client
    extra/basic/entities

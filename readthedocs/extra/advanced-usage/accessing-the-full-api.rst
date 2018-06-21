@@ -69,7 +69,9 @@ Or we call `client.get_input_entity
 
 .. code-block:: python
 
-    peer = client.get_input_entity('someone')
+    import asyncio
+    loop = asyncio.get_event_loop()
+    peer = loop.run_until_complete(client.get_input_entity('someone'))
 
 When you're going to invoke an API method, most require you to pass an
 :tl:`InputUser`, :tl:`InputChat`, or so on, this is why using
@@ -81,7 +83,7 @@ instead:
 
 .. code-block:: python
 
-    entity = client.get_entity('someone')
+    entity = loop.run_until_complete(client.get_entity('someone'))
 
 In the later case, when you use the entity, the library will cast it to
 its "input" version for you. If you already have the complete user and
@@ -110,7 +112,9 @@ request we do:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest(peer, 'Hello there!'))
+    result = loop.run_until_complete(
+        client(SendMessageRequest(peer, 'Hello there!'))
+    )
     # __call__ is an alias for client.invoke(request). Both will work
 
 Message sent! Of course, this is only an example. There are nearly 250
@@ -119,19 +123,21 @@ as you wish. Remember to use the right types! To sum up:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest(
+    result = loop.run_until_complete(client(SendMessageRequest(
         client.get_input_entity('username'), 'Hello there!'
-    ))
+    )))
 
 
 This can further be simplified to:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest('username', 'Hello there!'))
-    # Or even
-    result = client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
+    async def main():
+        result = await client(SendMessageRequest('username', 'Hello there!'))
+        # Or even
+        result = await client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
 
+    loop.run_until_complete(main())
 
 .. note::
 
