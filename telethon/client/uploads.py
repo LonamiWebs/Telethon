@@ -270,6 +270,9 @@ class UploadMethods(MessageParseMethods, UserMethods):
         if isinstance(file, (types.InputFile, types.InputFileBig)):
             return file  # Already uploaded
 
+        if not file_name and getattr(file, 'name', None):
+            file_name = file.name
+
         if isinstance(file, str):
             file_size = os.path.getsize(file)
         elif isinstance(file, bytes):

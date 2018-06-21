@@ -490,26 +490,36 @@ def get_input_location(location):
     _raise_cast_fail(location, 'InputFileLocation')
 
 
+def _get_extension(file):
+    """
+    Gets the extension for the given file, which can be either a
+    str or an ``open()``'ed file (which has a ``.name`` attribute).
+    """
+    if isinstance(file, str):
+        return os.path.splitext(file)[-1]
+    elif getattr(file, 'name', None):
+        return _get_extension(file.name)
+    else:
+        return ''
+
+
 def is_image(file):
     """
     Returns ``True`` if the file extension looks like an image file to Telegram.
     """
-    if not isinstance(file, str):
-        return False
-    _, ext = os.path.splitext(file)
-    return re.match(r'\.(png|jpe?g)', ext, re.IGNORECASE)
+    return re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
 
 
 def is_audio(file):
     """Returns ``True`` if the file extension looks like an audio file."""
-    return (isinstance(file, str) and
-            (mimetypes.guess_type(file)[0] or '').startswith('audio/'))
+    file = 'a' + _get_extension(file)
+    return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
 
 
 def is_video(file):
     """Returns ``True`` if the file extension looks like a video file."""
-    return (isinstance(file, str) and
-            (mimetypes.guess_type(file)[0] or '').startswith('video/'))
+    file = 'a' + _get_extension(file)
+    return (mimetypes.guess_type(file)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):
