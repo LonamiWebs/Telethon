@@ -16,7 +16,7 @@ import os
 import re
 import shutil
 from codecs import open
-from sys import argv, version_info
+from sys import argv
 
 from setuptools import find_packages, setup
 
@@ -183,7 +183,7 @@ def main():
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
-            name='Telethon',
+            name='Telethon-aio',
             version=version,
             description="Full-featured Telegram client library for Python 3",
             long_description=long_description,
@@ -199,7 +199,7 @@ def main():
             # See https://stackoverflow.com/a/40300957/4759433
             # -> https://www.python.org/dev/peps/pep-0345/#requires-python
             # -> http://setuptools.readthedocs.io/en/latest/setuptools.html
-            python_requires='>=3.4',
+            python_requires='>=3.5',
 
             # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
             classifiers=[
@@ -214,21 +214,15 @@ def main():
                 'License :: OSI Approved :: MIT License',
 
                 'Programming Language :: Python :: 3',
-                'Programming Language :: Python :: 3.4',
                 'Programming Language :: Python :: 3.5',
                 'Programming Language :: Python :: 3.6'
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
-                'telethon_generator', 'telethon_tests', 'run_tests.py',
-                'try_telethon.py',
-                'telethon_generator/parser/__init__.py',
-                'telethon_generator/parser/source_builder.py',
-                'telethon_generator/parser/tl_object.py',
-                'telethon_generator/parser/tl_parser.py',
+                'telethon_*', 'run_tests.py', 'try_telethon.py'
             ]),
             install_requires=['pyaes', 'rsa',
-                              'typing' if version_info < (3, 5, 2) else ""],
+                              'async_generator'],
             extras_require={
                 'cryptg': ['cryptg']
             }
