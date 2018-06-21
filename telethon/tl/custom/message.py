@@ -167,10 +167,10 @@ class Message:
 
         `input_sender` needs to be available (often the case).
         """
-        if self._sender is None:
+        if self._sender is None and await self.input_sender:
             try:
                 self._sender =\
-                    await self._client.get_entity(await self.input_sender)
+                    await self._client.get_entity(self._input_sender)
             except ValueError:
                 await self._reload_message()
         return self._sender
@@ -183,10 +183,10 @@ class Message:
         to get the most up to date version of the chat (mostly when the event
         doesn't belong to a channel), so keep that in mind.
         """
-        if self._chat is None:
+        if self._chat is None and await self.input_chat:
             try:
                 self._chat =\
-                    await self._client.get_entity(await self.input_chat)
+                    await self._client.get_entity(self._input_chat)
             except ValueError:
                 await self._reload_message()
         return self._chat
