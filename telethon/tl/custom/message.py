@@ -31,6 +31,7 @@ class Message:
         self._reply_message = None
         self._buttons = None
         self._buttons_flat = None
+        self._buttons_count = None
 
         self._sender = entities.get(self.original_message.from_id)
         if self._sender:
@@ -159,15 +160,22 @@ class Message:
         self._input_chat = msg._input_chat
 
     @property
-    async def sender(self):
+    def sender(self):
         """
-        This (:tl:`User`) may make an API call the first time to get
-        the most up to date version of the sender (mostly when the event
-        doesn't belong to a channel), so keep that in mind.
+        Returns the :tl:`User` that sent this message. It may be ``None``
+        if the message has no sender or if Telegram didn't send the sender
+        inside message events.
 
-        `input_sender` needs to be available (often the case).
+        If you're using `telethon.events`, use `get_sender` instead.
         """
-        if self._sender is None and await self.input_sender:
+        return self._sender
+
+    async def get_sender(self):
+        """
+        Returns `sender`, but will make an API call to find the
+        sender unless it's already cached.
+        """
+        if self._sender is None and await self.get_input_sender():
             try:
                 self._sender =\
                     await self._client.get_entity(self._input_sender)
@@ -176,14 +184,22 @@ class Message:
         return self._sender
 
     @property
-    async def chat(self):
+    def chat(self):
         """
-        The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
-        the event occurred. This property may make an API call the first time
-        to get the most up to date version of the chat (mostly when the event
-        doesn't belong to a channel), so keep that in mind.
+        Returns the :tl:`User`, :tl:`Chat` or :tl:`Channel` where this message
+        was sent. It may be ``None`` if Telegram didn't send the chat inside
+        message events.
+
+        If you're using `telethon.events`, use `get_chat` instead.
         """
-        if self._chat is None and await self.input_chat:
+        return self._chat
+
+    async def get_chat(self):
+        """
+        Returns `chat`, but will make an API call to find the
+        chat unless it's already cached.
+        """
+        if self._chat is None and await self.get_input_chat():
             try:
                 self._chat =\
                     await self._client.get_entity(self._input_chat)
@@ -192,7 +208,7 @@ class Message:
         return self._chat
 
     @property
-    async def input_sender(self):
+    def input_sender(self):
         """
         This (:tl:`InputPeer`) is the input version of the user who
         sent the message. Similarly to `input_chat`, this doesn't have
@@ -204,18 +220,25 @@ class Message:
         if self._input_sender is None:
             if self.is_channel and not self.is_group:
                 return None
-            if self._sender is not None:
-                self._input_sender = get_input_peer(self._sender)
-            else:
-                try:
-                    self._input_sender = await self._client.get_input_entity(
-                        self.original_message.from_id)
-                except ValueError:
-                    await self._reload_message()
+            try:
+                self._input_sender = self._client.session\
+                    .get_input_entity(self.original_message.from_id)
+            except ValueError:
+                pass
+        return self._input_sender
+
+    async def get_input_sender(self):
+        """
+        Returns `input_sender`, but will make an API call to find the
+        input sender unless it's already cached.
+        """
+        if self.input_sender is None\
+                and not self.is_channel and not self.is_group:
+            await self._reload_message()
         return self._input_sender
 
     @property
-    async def input_chat(self):
+    def input_chat(self):
         """
         This (:tl:`InputPeer`) is the input version of the chat where the
         message was sent. Similarly to `input_sender`, this doesn't have
@@ -226,21 +249,29 @@ class Message:
         to find it in the worst case.
         """
         if self._input_chat is None:
-            if self._chat is None:
-                try:
-                    self._chat = await self._client.get_input_entity(
-                        self.original_message.to_id)
-                except ValueError:
-                    # There's a chance that the chat is a recent new dialog.
-                    # The input chat cannot rely on ._reload_message() because
-                    # said method may need the input chat.
-                    target = self.chat_id
-                    async for d in self._client.iter_dialogs(100):
-                        if d.id == target:
-                            self._chat = d.entity
-                            break
-            if self._chat is not None:
-                self._input_chat = get_input_peer(self._chat)
+            try:
+                self._input_chat = self._client.session \
+                    .get_input_entity(self.original_message.to_id)
+            except ValueError:
+                pass
+
+        return self._input_chat
+
+    async def get_input_chat(self):
+        """
+        Returns `input_chat`, but will make an API call to find the
+        input chat unless it's already cached.
+        """
+        if self.input_chat is None:
+            # There's a chance that the chat is a recent new dialog.
+            # The input chat cannot rely on ._reload_message() because
+            # said method may need the input chat.
+            target = self.chat_id
+            async for d in self._client.iter_dialogs(100):
+                if d.id == target:
+                    self._chat = d.entity
+                    self._input_chat = d.input_entity
+                    break
 
         return self._input_chat
 
@@ -291,31 +322,60 @@ class Message:
         """True if the message is a reply to some other or not."""
         return bool(self.original_message.reply_to_msg_id)
 
+    def _set_buttons(self, sender, chat):
+        """
+        Helper methods to set the buttons given the input sender and chat.
+        """
+        if isinstance(self.original_message.reply_markup, (
+                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+            self._buttons = [[
+                MessageButton(self._client, button, sender, chat,
+                              self.original_message.id)
+                for button in row.buttons
+            ] for row in self.original_message.reply_markup.rows]
+            self._buttons_flat = [x for row in self._buttons for x in row]
+
     @property
-    async def buttons(self):
+    def buttons(self):
         """
         Returns a matrix (list of lists) containing all buttons of the message
         as `telethon.tl.custom.messagebutton.MessageButton` instances.
         """
         if self._buttons is None and self.original_message.reply_markup:
-            sender = await self.input_sender
-            chat = await self.input_chat
-            if isinstance(self.original_message.reply_markup, (
-                    types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
-                self._buttons = [[
-                    MessageButton(self._client, button, sender, chat,
-                                  self.original_message.id)
-                    for button in row.buttons
-                ] for row in self.original_message.reply_markup.rows]
-                self._buttons_flat = [x for row in self._buttons for x in row]
+            if self.input_sender and self.input_chat:
+                self._set_buttons(self._input_sender, self._input_chat)
+
+        return self._buttons
+
+    async def get_buttons(self):
+        """
+        Returns `buttons`, but will make an API call to find the
+        input chat (needed for the buttons) unless it's already cached.
+        """
+        if not self.buttons:
+            sender = await self.get_input_sender()
+            chat = await self.get_input_chat()
+            if sender and chat:
+                self._set_buttons(sender, chat)
+
         return self._buttons
 
     @property
-    async def button_count(self):
+    def button_count(self):
         """
         Returns the total button count.
         """
-        return len(self._buttons_flat) if self.buttons else 0
+        if self._buttons_count is not None and isinstance(
+                self.original_message.reply_markup, (
+                        types.ReplyInlineMarkup, types.ReplyKeyboardMarkup
+                )):
+            self._buttons_count = sum(
+                1
+                for row in self.original_message.reply_markup.rows
+                for _ in row.buttons
+            )
+
+        return self._buttons_count or 0
 
     @property
     def photo(self):
@@ -416,8 +476,7 @@ class Message:
         """
         return self.original_message.out
 
-    @property
-    async def reply_message(self):
+    async def get_reply_message(self):
         """
         The `telethon.tl.custom.message.Message` that this message is replying
         to, or ``None``.
@@ -435,8 +494,7 @@ class Message:
 
         return self._reply_message
 
-    @property
-    async def fwd_from_entity(self):
+    async def get_fwd_sender(self):
         """
         If the :tl:`Message` is a forwarded message, returns the :tl:`User`
         or :tl:`Channel` who originally sent the message, or ``None``.
