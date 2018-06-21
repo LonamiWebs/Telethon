@@ -222,7 +222,10 @@ class TelegramBaseClient(abc.ABC):
         self._updates_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
-        self._state = types.updates.State(0, 0, datetime.now(), 0, -1)
+
+        # Start with invalid state (-1) so we can have somewhere to store
+        # the state, but also be able to determine if we are authorized.
+        self._state = types.updates.State(-1, 0, datetime.now(), 0, -1)
 
         # Some further state for subclasses
         self._event_builders = []

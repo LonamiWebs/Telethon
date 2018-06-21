@@ -90,7 +90,7 @@ class UserMethods(TelegramBaseClient):
         """
         Returns ``True`` if the user is authorized.
         """
-        if self._self_input_peer is not None or self._state is not None:
+        if self._self_input_peer is not None or self._state.pts != -1:
             return True
 
         try:
