@@ -155,17 +155,20 @@ class MTProtoSender:
             self._pending_ack.clear()
             self._last_ack = None
 
-            __log__.debug('Cancelling the send loop...')
-            self._send_loop_handle.cancel()
+            if self._send_loop_handle:
+                __log__.debug('Cancelling the send loop...')
+                self._send_loop_handle.cancel()
 
-            __log__.debug('Cancelling the receive loop...')
-            self._recv_loop_handle.cancel()
+            if self._recv_loop_handle:
+                __log__.debug('Cancelling the receive loop...')
+                self._recv_loop_handle.cancel()
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
-        if error:
-            self._disconnected.set_exception(error)
-        else:
-            self._disconnected.set_result(None)
+        if self._disconnected:
+            if error:
+                self._disconnected.set_exception(error)
+            else:
+                self._disconnected.set_result(None)
 
     def send(self, request, ordered=False):
         """
@@ -252,11 +255,10 @@ class MTProtoSender:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
                     self.state.auth_key, self.state.time_offset =\
                         await authenticator.do_authentication(plain)
+                    break
                 except (SecurityError, AssertionError) as e:
                     __log__.warning('Attempt {} at new auth_key failed: {}'
                                     .format(retry, e))
-                else:
-                    break
             else:
                 e = ConnectionError('auth_key generation failed {} times'
                                     .format(self._retries))
