@@ -101,22 +101,31 @@ class UserMethods(TelegramBaseClient):
 
     async def get_entity(self, entity):
         """
-        Turns the given entity into a valid Telegram user or chat.
+        Turns the given entity into a valid Telegram :tl:`User`, :tl:`Chat`
+        or :tl:`Channel`. You can also pass a list or iterable of entities,
+        and they will be efficiently fetched from the network.
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
-            The entity (or iterable of entities) to be transformed.
-            If it's a string which can be converted to an integer or starts
-            with '+' it will be resolved as if it were a phone number.
+            If an username is given, **the username will be resolved** making
+            an API call every time. Resolving usernames is an expensive
+            operation and will start hitting flood waits around 50 usernames
+            in a short period of time.
 
-            If it doesn't start with '+' or starts with a '@' it will be
-            be resolved from the username. If no exact match is returned,
-            an error will be raised.
+            If you want to get the entity for a *cached* username, you should
+            first `get_input_entity(username) <get_input_entity>` which will
+            use the cache), and then use `get_entity` with the result of the
+            previous call.
 
-            If the entity is an integer or a Peer, its information will be
-            returned through a call to self.get_input_peer(entity).
+            Similar limits apply to invite links, and you should use their
+            ID instead.
 
-            If the entity is neither, and it's not a TLObject, an
-            error will be raised.
+            Using phone numbers, exact names, integer IDs or :tl:`Peer`
+            rely on a `get_input_entity` first, which in turn needs the
+            entity to be in cache, unless a :tl:`InputPeer` was passed.
+
+            Unsupported types will raise ``TypeError``.
+
+            If the entity can't be found, ``ValueError`` will be raised.
 
         Returns:
             :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the
@@ -184,20 +193,54 @@ class UserMethods(TelegramBaseClient):
     async def get_input_entity(self, peer):
         """
         Turns the given peer into its input entity version. Most requests
-        use this kind of InputUser, InputChat and so on, so this is the
-        most suitable call to make for those cases.
+        use this kind of :tl:`InputPeer`, so this is the most suitable call
+        to make for those cases. **Generally you should let the library do
+        its job** and don't worry about getting the input entity first, but
+        if you're going to use an entity often, consider making the call:
+
+        >>> import asyncio
+        >>> rc = asyncio.get_event_loop().run_until_complete
+        >>>
+        >>> from telethon import TelegramClient
+        >>> client = TelegramClient(...)
+        >>> # If you're going to use "username" often in your code
+        >>> # (make a lot of calls), consider getting its input entity
+        >>> # once, and then using the "user" everywhere instead.
+        >>> user = rc(client.get_input_entity('username'))
+        >>> # The same applies to IDs, chats or channels.
+        >>> chat = rc(client.get_input_entity(-123456789))
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
-            The integer ID of an user or otherwise either of a
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`, for
-            which to get its ``Input*`` version.
+            If an username is given, **the library will use the cache**. This
+            means that it's possible to be using an username that *changed*.
 
-            If this ``Peer`` hasn't been seen before by the library, the top
-            dialogs will be loaded and their entities saved to the session
-            file (unless this feature was disabled explicitly).
+            If the username is not found in the cache, it will be fetched.
+            The same rules apply to phone numbers (``'+34 123456789'``).
 
-            If in the end the access hash required for the peer was not found,
-            a ValueError will be raised.
+            If an exact name is given, it must be in the cache too. This
+            is not reliable as different people can share the same name
+            and which entity is returned is arbitrary, and should be used
+            only for quick tests.
+
+            If a positive integer ID is given, the entity will be searched
+            in cached users, chats or channels, without making any call.
+
+            If a negative integer ID is given, the entity will be searched
+            exactly as either a chat (prefixed with ``-``) or as a channel
+            (prefixed with ``-100``).
+
+            If a :tl:`Peer` is given, it will be searched exactly in the
+            cache as either an user, chat or channel.
+
+            If the given object can be turned into an input entity directly,
+            said operation will be done.
+
+            Invite links make an API call **always** and are expensive.
+            You should use the chat ID instead.
+
+            Unsupported types will raise ``TypeError``.
+
+            If the entity can't be found, ``ValueError`` will be raised.
 
         Returns:
             :tl:`InputPeerUser`, :tl:`InputPeerChat` or :tl:`InputPeerChannel`
