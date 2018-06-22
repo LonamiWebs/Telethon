@@ -27,7 +27,10 @@ class UpdateMethods(UserMethods):
         will be running already. Use ``await client.disconnected`` in
         this situation instead.
         """
-        self.loop.run_until_complete(self.disconnected)
+        try:
+            self.loop.run_until_complete(self.disconnected)
+        except KeyboardInterrupt:
+            self.loop.run_until_complete(self.disconnect())
 
     def on(self, event):
         """
