@@ -45,6 +45,19 @@ class MessageParseMethods(UserMethods):
 
     # region Private methods
 
+    async def _replace_with_mention(self, entities, i, user):
+        """
+        Helper method to replace ``entities[i]`` to mention ``user``,
+        or do nothing if it can't be found.
+        """
+        try:
+            entities[i] = types.InputMessageEntityMentionName(
+                entities[i].offset, entities[i].length,
+                await self.get_input_entity(user)
+            )
+        except (ValueError, TypeError):
+            pass
+
     async def _parse_message_text(self, message, parse_mode):
         """
         Returns a (parsed message, entities) tuple depending on ``parse_mode``.
@@ -62,15 +75,11 @@ class MessageParseMethods(UserMethods):
             if isinstance(e, types.MessageEntityTextUrl):
                 m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
                 if m:
-                    try:
-                        msg_entities[i] = types.InputMessageEntityMentionName(
-                            e.offset, e.length, await self.get_input_entity(
-                                int(m.group(1)) if m.group(1) else e.url
-                            )
-                        )
-                    except (ValueError, TypeError):
-                        # Make no replacement
-                        pass
+                    user = int(m.group(1)) if m.group(1) else e.url
+                    await self._replace_with_mention(msg_entities, i, user)
+            elif isinstance(e, (types.MessageEntityMentionName,
+                                types.InputMessageEntityMentionName)):
+                await self._replace_with_mention(msg_entities, i, e.user_id)
 
         return message, msg_entities
 
