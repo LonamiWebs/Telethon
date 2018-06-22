@@ -82,7 +82,8 @@ the callback function you're about to define will be called:
 
 If a `NewMessage
 <telethon.events.newmessage.NewMessage>` event occurs,
-and ``'hello'`` is in the text of the message, we ``reply`` to the event
+and ``'hello'`` is in the text of the message, we `.reply()
+<telethon.tl.custom.message.Message.reply>` to the event
 with a ``'hi!'`` message.
 
 .. code-block:: python
@@ -101,23 +102,35 @@ More on events
 **************
 
 The `NewMessage <telethon.events.newmessage.NewMessage>` event has much
-more than what was shown. You can access the ``.sender`` of the message
-through that member, or even see if the message had ``.media``, a ``.photo``
-or a ``.document`` (which you could download with for example
-`client.download_media(event.photo) <telethon.client.downloads.DownloadMethods.download_media>`.
+more than what was shown. You can access the `.sender
+<telethon.tl.custom.message.Message.sender>` of the message
+through that member, or even see if the message had `.media
+<telethon.tl.custom.message.Message.media>`, a `.photo
+<telethon.tl.custom.message.Message.photo>` or a `.document
+<telethon.tl.custom.message.Message.document>` (which you
+could download with for example `client.download_media(event.photo)
+<telethon.client.downloads.DownloadMethods.download_media>`.
 
-If you don't want to ``.reply`` as a reply, you can use the ``.respond()``
-method instead. Of course, there are more events such as ``ChatAction`` or
-``UserUpdate``, and they're all used in the same way. Simply add the
-``@client.on(events.XYZ)`` decorator on the top of your handler and you're
-done! The event that will be passed always is of type ``XYZ.Event`` (for
-instance, ``NewMessage.Event``), except for the ``Raw`` event which just
-passes the ``Update`` object.
+If you don't want to `.reply()
+<telethon.tl.custom.message.Message.reply>` as a reply,
+you can use the `.respond() <telethon.tl.custom.message.Message.respond>`
+method instead. Of course, there are more events such as `ChatAction
+<telethon.events.chataction.ChatAction>` or `UserUpdate
+<telethon.events.userupdate.UserUpdate>`, and they're all
+used in the same way. Simply add the `@client.on(events.XYZ)
+<telethon.client.updates.UpdateMethods.on>` decorator on the top
+of your handler and you're done! The event that will be passed always
+is of type ``XYZ.Event`` (for instance, `NewMessage.Event
+<telethon.events.newmessage.NewMessage.Event>`), except for the `Raw
+<telethon.events.raw.Raw>` event which just passes the :tl:`Update` object.
 
-Note that ``.reply()`` and ``.respond()`` are just wrappers around the
+Note that `.reply()
+<telethon.tl.custom.message.Message.reply>` and `.respond()
+<telethon.tl.custom.message.Message.respond>` are just wrappers around the
 `client.send_message() <telethon.client.messages.MessageMethods.send_message>`
 method which supports the ``file=`` parameter.
-This means you can reply with a photo if you do ``event.reply(file=photo)``.
+This means you can reply with a photo if you do `event.reply(file=photo)
+<telethon.tl.custom.message.Message.reply>`.
 
 You can put the same event on many handlers, and even different events on
 the same handler. You can also have a handler work on only specific chats,
@@ -152,6 +165,45 @@ want to handle incoming or outgoing messages (those you receive or those you
 send). In this example, people can say ``'roll'`` and you will reply with a
 random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
+
+
+Properties vs. methods
+**********************
+
+The event shown above acts just like a `custom.Message
+<telethon.tl.custom.message.Message>`, which means you
+can access all the properties it has, like ``.sender``.
+
+**However** events are different to other methods in the client, like
+`client.get_messages <telethon.client.messages.MessageMethods.get_messages>`.
+Events *may not* send information about the sender or chat, which means it
+can be ``None``, but all the methods defined in the client always have this
+information so it doesn't need to be re-fetched. For this reason, you have
+``get_`` methods, which will make a network call if necessary.
+
+In short, you should do this:
+
+.. code-block:: python
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        # event.input_chat may be None, use event.get_input_chat()
+        chat = await event.get_input_chat()
+        sender = await event.get_sender()
+        buttons = await event.get_buttons()
+
+    async def main():
+        async for message in client.iter_messages('me', 10):
+            # Methods from the client always have these properties ready
+            chat = message.input_chat
+            sender = message.sender
+            buttons = message.buttons
+
+Notice, properties (`message.sender
+<telethon.tl.custom.message.Message.sender>`) don't need an ``await``, but
+methods (`message.get_sender
+<telethon.tl.custom.message.Message.get_sender>`) **do** need an ``await``,
+and you should use methods in events for these properties that may need network.
 
 
 Events without decorators

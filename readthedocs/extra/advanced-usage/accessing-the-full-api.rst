@@ -93,7 +93,7 @@ every time its used, simply call `telethon.utils.get_input_peer`:
 .. code-block:: python
 
     from telethon import utils
-    peer = utils.get_input_user(entity)
+    peer = utils.get_input_peer(entity)
 
 
 .. note::
@@ -117,8 +117,8 @@ request we do:
     )
     # __call__ is an alias for client.invoke(request). Both will work
 
-Message sent! Of course, this is only an example. There are nearly 250
-methods available as of layer 73, and you can use every single of them
+Message sent! Of course, this is only an example. There are over 250
+methods available as of layer 80, and you can use every single of them
 as you wish. Remember to use the right types! To sum up:
 
 .. code-block:: python

@@ -30,14 +30,16 @@ this is, any "method" listed on the API. There are a few methods (and
 growing!) on the :ref:`TelegramClient <telethon-client>` class that abstract
 you from the need of manually importing the requests you need.
 
-For instance, retrieving your own user can be done in a single line:
+For instance, retrieving your own user can be done in a single line
+(if we ignore the boilerplate needed to setup ``asyncio``, which only
+needs to be done once for your entire program):
 
 .. code-block:: python
 
     import asyncio
 
     async def main():
-        myself = await client.get_me()
+        myself = await client.get_me()  # <- a single line!
 
     if __name__ == '__main__':
         loop = asyncio.get_event_loop()

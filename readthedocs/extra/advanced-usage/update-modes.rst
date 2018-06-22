@@ -24,8 +24,8 @@ loop, you should use `client.run_until_disconnected
 
 
 Behind the scenes, this method is ``await``'ing on the `client.disconnected
-<telethon.client.telegrambaseclient.disconnected>` property, so the code above
-and the following are equivalent:
+<telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>` property,
+so the code above and the following are equivalent:
 
 
 .. code-block:: python
@@ -42,7 +42,8 @@ and the following are equivalent:
 
 
 You could also run `client.disconnected
-<telethon.client.telegrambaseclient.disconnected>` until it completed.
+<telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>`
+until it completed.
 
 But if you don't want to ``await``, then you should know what you want
 to be doing instead! What matters is that you shouldn't let your script

@@ -59,6 +59,11 @@ their methods.
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: telethon.client.downloads
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: telethon.client.uploads
     :members:
     :undoc-members:
