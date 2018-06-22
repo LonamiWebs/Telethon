@@ -146,7 +146,7 @@ class Message:
         along with their input versions.
         """
         try:
-            chat = await self.input_chat if self.is_channel else None
+            chat = await self.get_input_chat() if self.is_channel else None
             msg = await self._client.get_messages(
                 chat, ids=self.original_message.id)
         except ValueError:
@@ -488,7 +488,7 @@ class Message:
             if not self.original_message.reply_to_msg_id:
                 return None
             self._reply_message = await self._client.get_messages(
-                await self.input_chat if self.is_channel else None,
+                await self.get_input_chat() if self.is_channel else None,
                 ids=self.original_message.reply_to_msg_id
             )
 
@@ -517,7 +517,7 @@ class Message:
         ``entity`` already set.
         """
         return await self._client.send_message(
-            await self.input_chat, *args, **kwargs)
+            await self.get_input_chat(), *args, **kwargs)
 
     async def reply(self, *args, **kwargs):
         """
@@ -527,7 +527,7 @@ class Message:
         """
         kwargs['reply_to'] = self.original_message.id
         return await self._client.send_message(
-            await self.input_chat, *args, **kwargs)
+            await self.get_input_chat(), *args, **kwargs)
 
     async def forward_to(self, *args, **kwargs):
         """
@@ -540,7 +540,7 @@ class Message:
         `telethon.telegram_client.TelegramClient` instance directly.
         """
         kwargs['messages'] = self.original_message.id
-        kwargs['from_peer'] = await self.input_chat
+        kwargs['from_peer'] = await self.get_input_chat()
         return await self._client.forward_messages(*args, **kwargs)
 
     async def edit(self, *args, **kwargs):
@@ -562,7 +562,9 @@ class Message:
                 return None
 
         return await self._client.edit_message(
-            await self.input_chat, self.original_message, *args, **kwargs)
+            await self.get_input_chat(), self.original_message,
+            *args, **kwargs
+        )
 
     async def delete(self, *args, **kwargs):
         """
@@ -577,7 +579,9 @@ class Message:
         `telethon.telegram_client.TelegramClient` instance directly.
         """
         return await self._client.delete_messages(
-            await self.input_chat, [self.original_message], *args, **kwargs)
+            await self.get_input_chat(), [self.original_message],
+            *args, **kwargs
+        )
 
     async def download_media(self, *args, **kwargs):
         """
