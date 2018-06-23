@@ -39,6 +39,14 @@ class Message:
         else:
             self._input_sender = None
 
+        # Determine the right chat where the message
+        # was sent, not *to which ID* it was sent.
+        if not self.original_message.out \
+                and isinstance(self.original_message.to_id, types.PeerUser):
+            self._chat_peer = types.PeerUser(self.original_message.from_id)
+        else:
+            self._chat_peer = self.original_message.to_id
+
         self._chat = entities.get(self.chat_id)
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
@@ -250,8 +258,8 @@ class Message:
         """
         if self._input_chat is None:
             try:
-                self._input_chat = self._client.session \
-                    .get_input_entity(self.original_message.to_id)
+                self._input_chat =\
+                    self._client.session.get_input_entity(self._chat_peer)
             except ValueError:
                 pass
 
@@ -292,11 +300,7 @@ class Message:
 
         TL;DR; this gets the ID that you expect.
         """
-        if not self.original_message.out\
-                and isinstance(self.original_message.to_id, types.PeerUser):
-            return self.original_message.from_id
-        else:
-            return get_peer_id(self.original_message.to_id)
+        return get_peer_id(self._chat_peer)
 
     @property
     def is_private(self):
