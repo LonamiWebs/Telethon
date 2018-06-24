@@ -28,7 +28,6 @@ class SQLiteSession(MemorySession):
 
     def __init__(self, session_id=None):
         super().__init__()
-        # These values will NOT be saved
         self.filename = ':memory:'
         self.save_entities = True
 
@@ -226,10 +225,11 @@ class SQLiteSession(MemorySession):
                   (entity_id, state.pts, state.qts,
                    state.date.timestamp(), state.seq))
         c.close()
-        self.save()
 
     def save(self):
         """Saves the current session object as session_user_id.session"""
+        # This is a no-op if there are no changes to commit, so there's
+        # no need for us to keep track of an "unsaved changes" variable.
         self._conn.commit()
 
     def _cursor(self):
@@ -243,6 +243,7 @@ class SQLiteSession(MemorySession):
         """Closes the connection unless we're working in-memory"""
         if self.filename != ':memory:':
             if self._conn is not None:
+                self._conn.commit()
                 self._conn.close()
                 self._conn = None
 
@@ -282,7 +283,6 @@ class SQLiteSession(MemorySession):
         self._cursor().executemany(
             'insert or replace into entities values (?,?,?,?,?)', rows
         )
-        self.save()
 
     def _fetchone_entity(self, query, args):
         c = self._cursor()
@@ -337,4 +337,3 @@ class SQLiteSession(MemorySession):
                 _SentFileType.from_type(type(instance)).value,
                 instance.id, instance.access_hash
         ))
-        self.save()

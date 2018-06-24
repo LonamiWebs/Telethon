@@ -215,6 +215,12 @@ class UpdateMethods(UserMethods):
             # Just send them periodically.
             self._sender.send(functions.PingRequest(rnd()))
 
+            # Entities and cached files are not saved when they are
+            # inserted because this is a rather expensive operation
+            # (default's sqlite3 takes ~0.1s to commit changes). Do
+            # it every minute instead. No-op if there's nothing new.
+            self.session.save()
+
             # We need to send some content-related request at least hourly
             # for Telegram to keep delivering updates, otherwise they will
             # just stop even if we're connected. Do so every 30 minutes.
