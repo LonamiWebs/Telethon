@@ -114,37 +114,46 @@ class EventCommon(abc.ABC):
         self._client = client
 
     @property
-    async def input_chat(self):
+    def input_chat(self):
         """
-        The (:tl:`InputPeer`) (group, megagroup or channel) on which
-        the event occurred. This doesn't have the title or anything,
-        but is useful if you don't need those to avoid further
-        requests.
+        This (:tl:`InputPeer`) is the input version of the chat where the
+        event occurred. This doesn't have things like username or similar,
+        but is still useful in some cases.
 
-        Note that this might be ``None`` if the library can't find it.
+        Note that this might not be available if the library doesn't have
+        enough information available.
         """
         if self._input_chat is None and self._chat_peer is not None:
             try:
-                self._input_chat = await self._client.get_input_entity(
-                    self._chat_peer
-                )
+                self._input_chat =\
+                    self._client.session.get_input_entity(self._chat_peer)
             except ValueError:
-                ch = isinstance(self._chat_peer, types.PeerChannel)
-                if not ch and self._message_id is not None:
-                    msg = await self._client.get_messages(
-                        None, ids=self._message_id)
-                    self._chat = msg._chat
-                    self._input_chat = msg._input_chat
-                else:
-                    target = utils.get_peer_id(self._chat_peer)
-                    async for d in self._client.iter_dialogs():
-                        if d.id == target:
-                            self._chat = d.entity
-                            self._input_chat = d.input_entity
-                            # TODO Don't break, exhaust the iterator, otherwise
-                            # async_generator raises RuntimeError: partially-
-                            # exhausted async_generator 'xyz' garbage collected
-                            # break
+                pass
+
+        return self._input_chat
+
+    async def get_input_chat(self):
+        """
+        Returns `input_chat`, but will make an API call to find the
+        input chat unless it's already cached.
+        """
+        if self.input_chat is None and self._chat_peer is not None:
+            ch = isinstance(self._chat_peer, types.PeerChannel)
+            if not ch and self._message_id is not None:
+                msg = await self._client.get_messages(
+                    None, ids=self._message_id)
+                self._chat = msg._chat
+                self._input_chat = msg._input_chat
+            else:
+                target = utils.get_peer_id(self._chat_peer)
+                async for d in self._client.iter_dialogs(100):
+                    if d.id == target:
+                        self._chat = d.entity
+                        self._input_chat = d.input_entity
+                        # TODO Don't break, exhaust the iterator, otherwise
+                        # async_generator raises RuntimeError: partially-
+                        # exhausted async_generator 'xyz' garbage collected
+                        # break
 
         return self._input_chat
 
@@ -156,12 +165,13 @@ class EventCommon(abc.ABC):
         return self._client
 
     @property
-    async def chat(self):
+    def chat(self):
         """
-        The (:tl:`User` | :tl:`Chat` | :tl:`Channel`, optional) on which
+        The :tl:`User`, :tl:`Chat` or :tl:`Channel` on which
         the event occurred. This property may make an API call the first time
         to get the most up to date version of the chat (mostly when the event
-        doesn't belong to a channel), so keep that in mind.
+        doesn't belong to a channel), so keep that in mind. You should use
+        `get_chat` instead, unless you want to avoid an API call.
         """
         if not self.input_chat:
             return None
@@ -169,9 +179,19 @@ class EventCommon(abc.ABC):
         if self._chat is None:
             self._chat = self._entities.get(utils.get_peer_id(self._chat_peer))
 
-        if self._chat is None:
-            self._chat = await self._client.get_entity(self._input_chat)
+        return self._chat
 
+    async def get_chat(self):
+        """
+        Returns `chat`, but will make an API call to find the
+        chat unless it's already cached.
+        """
+        if self.chat is None and await self.get_input_chat():
+            try:
+                self._chat =\
+                    await self._client.get_entity(self._input_chat)
+            except ValueError:
+                pass
         return self._chat
 
     @property

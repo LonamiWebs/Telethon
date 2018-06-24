@@ -253,8 +253,7 @@ class Message:
         things like username or similar, but still useful in some cases.
 
         Note that this might not be available if the library doesn't know
-        where the message came from, and it may fetch the dialogs to try
-        to find it in the worst case.
+        where the message came from.
         """
         if self._input_chat is None:
             try:
