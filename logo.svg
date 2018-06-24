@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Logo hand-made by Lonami (C) LonamiWebs 2018 -->
+<svg
+    xmlns:svg="http://www.w3.org/2000/svg"
+    xmlns="http://www.w3.org/2000/svg"
+    width="100" height="100">
+  <circle cx="50" cy="50" r="45" fill="#3777b0" />
+  <path d="M20 30 L18 32 L18 42 L35.25 42 L48 87 L50 85 L60.25 42 L78 42 L80 40 Z" fill="#f0a727" />
+  <rect x="20" y="30" width="60" height="10" fill="#ffd750" />
+  <path d="M50 85 L37.25 40 L62.25 40 Z" fill="#ffd750" />
+</svg>

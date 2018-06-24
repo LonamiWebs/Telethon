@@ -14,6 +14,160 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Core Rewrite in asyncio (v1.0-rc1)
+==================================
+
+*Published at 2018/06/24*
+
++-----------------------+
+| Scheme layer used: 81 |
++-----------------------+
+
+This version is a major overhaul of the library internals. The core has
+been rewritten, cleaned up and refactored to fix some oddities that have
+been growing inside the library.
+
+This means that the code is easier to understand and reason about,
+including the code flow such as conditions, exceptions, where to
+reconnect, how the library should behave, and separating different
+retry types such as disconnections or call fails, but it also means
+that **some things will necessarily break** in this version.
+
+All requests that touch the network are now methods and need to
+have their ``await`` (or be ran until their completion).
+
+Also, the library finally has the simple logo it deserved: a carefully
+hand-written ``.svg`` file representing a T following Python's colours.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- If you relied on internals like the ``MtProtoSender`` and the
+  ``TelegramBareClient``, both are gone. They are now `MTProtoSender
+  <telethon.network.mtprotosender.MTProtoSender>` and `TelegramBaseClient
+  <telethon.client.telegrambaseclient.TelegramBaseClient>` and they behave
+  differently.
+- Underscores have been renamed from filenames. This means
+  ``telethon.errors.rpc_error_list`` won't work, but you should
+  have been using `telethon.errors` all this time instead.
+- `client.connect <telethon.client.telegrambaseclient.TelegramBaseClient.connect>`
+  no longer returns ``True`` on success. Instead, you should ``except`` the
+  possible ``ConnectionError`` and act accordingly. This makes it easier to
+  not ignore the error.
+- You can no longer set ``retries=n`` when calling a request manually. The
+  limit works differently now, and it's done on a per-client basis.
+- Accessing `.sender <telethon.tl.custom.message.Message.sender>`,
+  `.chat <telethon.tl.custom.message.Message.chat>` and similar may *not* work
+  in events anymore, since previously they could access the network. The new
+  rule is that properties are not allowed to make API calls. You should use
+  `.get_sender() <telethon.tl.custom.message.Message.get_sender>`,
+  `.get_chat() <telethon.tl.custom.message.Message.get_chat>` instead while
+  using events. You can safely access properties if you get messages through
+  `client.get_messages() <telethon.client.messages.MessageMethods.get_messages>`
+  or other methods in the client.
+- The above point means ``reply_message`` is now `.get_reply_message()
+  <telethon.tl.custom.message.Message.get_reply_message>`, and ``fwd_from_entity``
+  is now `get_fwd_sender() <telethon.tl.custom.message.Message.get_fwd_sender>`.
+  Also ``forward`` was gone in the previous version, and you should be using
+  ``fwd_from`` instead.
+
+
+Additions
+~~~~~~~~~
+
+- Telegram's Terms Of Service are now accepted when creating a new account.
+  This can possibly help avoid bans. This has no effect for accounts that
+  were created before.
+- The `method reference <https://lonamiwebs.github.io/Telethon/>`_ now shows
+  which methods can be used if you sign in with a ``bot_token``.
+- There's a new `client.disconnected
+  <telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>` future
+  which you can wait on. When a disconnection occurs, you will now, instead
+  letting it happen in the background.
+- More configurable retries parameters, such as auto-reconnection, retries
+  when connecting, and retries when sending a request.
+- You can filter `events.NewMessage <telethon.events.newmessage.NewMessage>`
+  by sender ID, and also whether they are forwards or not.
+- New ``ignore_migrated`` parameter for `client.iter_dialogs
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>`.
+
+Bug fixes
+~~~~~~~~~
+
+- Several fixes to `telethon.events.newmessage.NewMessage`.
+- Removed named ``length`` argument in ``to_bytes`` for PyPy.
+- Raw events failed due to not having ``._set_client``.
+- `message.get_entities_text
+  <telethon.tl.custom.message.Message.get_entities_text>` properly
+  supports filtering, even if there are no message entities.
+- `message.click <telethon.tl.custom.message.Message.click>` works better.
+- The server started sending :tl:`DraftMessageEmpty` which the library
+  didn't handle correctly when getting dialogs.
+- The "correct" chat is now always returned from returned messages.
+- ``to_id`` was not validated when retrieving messages by their IDs.
+- ``'__'`` is no longer considered valid in usernames.
+- The ``fd`` is removed from the reader upon closing the socket. This
+  should be noticeable in Windows.
+- :tl:`MessageEmpty` is now handled when searching messages.
+- Fixed a rare infinite loop bug in `client.iter_dialogs
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>` for some people.
+- Fixed ``TypeError`` when there is no `.sender
+  <telethon.tl.custom.message.Message.sender>`.
+
+Enhancements
+~~~~~~~~~~~~
+
+- You can now delete over 100 messages at once with `client.delete_messages
+  <telethon.client.messages.MessageMethods.delete_messages>`.
+- Signing in now accounts for ``AuthRestartError`` itself, and also handles
+  ``PasswordHashInvalidError``.
+- ``__all__`` is now defined, so ``from telethon import *`` imports sane
+  defaults (client, events and utils). This is however discouraged and should
+  be used only in quick scripts.
+- ``pathlib.Path`` is now supported for downloading and uploading media.
+- Messages you send to yourself are now considered outgoing, unless they
+  are forwarded.
+- The documentation has been updated with a brand new ``asyncio`` crash
+  course to encourage you use it. You can still use the threaded version
+  if you want though.
+- ``.name`` property is now properly supported when sending and downloading
+  files.
+- Custom ``parse_mode``, which can now be set per-client, support
+  :tl:`MessageEntityMentionName` so you can return those now.
+- The session file is saved less often, which could result in a noticeable
+  speed-up when working with a lot of incoming updates.
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- The flow for sending a request is as follows: the ``TelegramClient`` creates
+  a ``MTProtoSender`` with a ``Connection``, and the sender starts send and
+  receive loops. Sending a request means enqueueing it in the sender, which
+  will eventually pack and encrypt it with its ``ConnectionState`` instead
+  of using the entire ``Session`` instance. When the data is packed, it will
+  be sent over the ``Connection`` and ultimately over the ``TcpClient``.
+
+- Reconnection occurs at the ``MTProtoSender`` level, and receiving responses
+  follows a similar process, but now ``asyncio.Future`` is used for the results
+  which are no longer part of all ``TLObject``, instead are part of the
+  ``TLMessage`` which simplifies things.
+
+- Objects can no longer be ``content_related`` and instead subclass
+  ``TLRequest``, making the separation of concerns easier.
+
+- The ``TelegramClient`` has been split into several mixin classes to avoid
+  having a 3,000-lines-long file with all the methods.
+
+- More special cases in the ``MTProtoSender`` have been cleaned up, and also
+  some attributes from the ``Session`` which didn't really belong there since
+  they weren't being saved.
+
+- The ``telethon_generator/`` can now convert ``.tl`` files into ``.json``,
+  mostly as a proof of concept, but it might be useful for other people.
+
+
 Custom Message class (v0.19.1)
 ==============================
 

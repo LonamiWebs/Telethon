@@ -4,8 +4,9 @@ Telethon
 
   ⭐️ Thanks **everyone** who has starred the project, it means a lot!
 
-**Telethon** is an `asyncio <https://docs.python.org/3/library/asyncio.html>`_
-**Python 3** library to interact with Telegram's API.
+|logo| **Telethon** is an `asyncio
+<https://docs.python.org/3/library/asyncio.html>`_ **Python 3** library
+to interact with Telegram's API.
 
 If you don't like ``asyncio``, you can still use `a simpler version
 <https://github.com/LonamiWebs/Telethon/tree/sync>`_ that uses threads instead.
@@ -72,3 +73,8 @@ Next steps
 Do you like how Telethon looks? Check out `Read The Docs
 <http://telethon.rtfd.io/>`_ for a more in-depth explanation,
 with examples, troubleshooting issues, and more useful information.
+
+
+.. |logo| image:: logo.svg
+    :width: 24pt
+    :height: 24pt
