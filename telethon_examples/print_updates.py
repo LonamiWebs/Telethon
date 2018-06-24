@@ -5,6 +5,7 @@
 #       your environment variables. This is a good way to use these private
 #       values. See https://superuser.com/q/284342.
 
+import asyncio
 from os import environ
 
 # environ is used to get API information from environment variables
@@ -13,28 +14,27 @@ from os import environ
 from telethon import TelegramClient
 
 
-def main():
+async def main():
     session_name = environ.get('TG_SESSION', 'session')
     client = TelegramClient(session_name,
                             int(environ['TG_API_ID']),
                             environ['TG_API_HASH'],
-                            proxy=None,
-                            update_workers=4,
-                            spawn_read_thread=False)
+                            proxy=None)
 
     if 'TG_PHONE' in environ:
-        client.start(phone=environ['TG_PHONE'])
+        await client.start(phone=environ['TG_PHONE'])
     else:
-        client.start()
+        await client.start()
 
     client.add_event_handler(update_handler)
     print('(Press Ctrl+C to stop this)')
-    client.idle()
+    await client.disconnected
 
 
-def update_handler(update):
+async def update_handler(update):
     print(update)
 
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

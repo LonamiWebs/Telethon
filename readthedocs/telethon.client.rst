@@ -20,7 +20,7 @@ its own methods, which you all can use.
         # Now you can use all client methods listed below, like for example...
         await client.send_message('me', 'Hello to myself!')
 
-    asyncio.get_event_loop().run_until_complete()
+    asyncio.get_event_loop().run_until_complete(main())
 
 
 You **don't** need to import these `AuthMethods`, `MessageMethods`, etc.
