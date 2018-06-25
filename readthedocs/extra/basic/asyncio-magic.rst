@@ -4,6 +4,22 @@
 Magic with asyncio
 ==================
 
+.. important::
+
+    TL; DR; If you've upgraded to Telethon 1.0 from a previous version
+    **and you're not using events or updates**, add this line:
+
+    .. code-block:: python
+
+        import telethon.sync
+
+    At the beginning of your main script and you will be good. If you
+    do use updates or events, keep reading, or use `a simpler version
+    <https://github.com/LonamiWebs/Telethon/tree/sync>`_ (discouraged).
+
+    You might also want to check the :ref:`changelog`.
+
+
 The sync module
 ***************
 

@@ -8,9 +8,9 @@ Telethon
 <https://docs.python.org/3/library/asyncio.html>`_ **Python 3** library
 to interact with Telegram's API.
 
-If you don't like ``asyncio``, you can still use `a simpler version
-<https://github.com/LonamiWebs/Telethon/tree/sync>`_ that uses threads instead.
-
+**If you're upgrading from Telethon pre-1.0 to 1.0, please make sure to read**
+`this section of the documentation
+<https://telethon.readthedocs.io/en/latest/extra/basic/asyncio-magic.html>`_.
 
 What is this?
 -------------
