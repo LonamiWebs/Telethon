@@ -280,14 +280,18 @@ class SQLiteSession(MemorySession):
         if not rows:
             return
 
-        self._cursor().executemany(
+        c = self._cursor()
+        c.executemany(
             'insert or replace into entities values (?,?,?,?,?)', rows
         )
+        c.close()
 
     def _fetchone_entity(self, query, args):
         c = self._cursor()
         c.execute(query, args)
-        return c.fetchone()
+        t = c.fetchone()
+        c.close()
+        return t
 
     def get_entity_rows_by_phone(self, phone):
         return self._fetchone_entity(
@@ -318,11 +322,13 @@ class SQLiteSession(MemorySession):
     # File processing
 
     def get_file(self, md5_digest, file_size, cls):
-        tuple_ = self._cursor().execute(
+        c = self._cursor()
+        tuple_ = c.execute(
             'select id, hash from sent_files '
             'where md5_digest = ? and file_size = ? and type = ?',
             (md5_digest, file_size, _SentFileType.from_type(cls).value)
         ).fetchone()
+        c.close()
         if tuple_:
             # Both allowed classes have (id, access_hash) as parameters
             return cls(tuple_[0], tuple_[1])
@@ -331,9 +337,11 @@ class SQLiteSession(MemorySession):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
 
-        self._cursor().execute(
+        c = self._cursor()
+        c.execute(
             'insert or replace into sent_files values (?,?,?,?,?)', (
                 md5_digest, file_size,
                 _SentFileType.from_type(type(instance)).value,
                 instance.id, instance.access_hash
         ))
+        c.close()
