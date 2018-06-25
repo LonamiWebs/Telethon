@@ -5,7 +5,7 @@ from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
 from ...errors import RPCError
 from ...extensions import markdown
-from ...utils import Default
+from ...utils import Default, get_peer_id, get_input_peer
 
 
 class Draft:
@@ -24,9 +24,12 @@ class Draft:
         reply_to_msg_id (`int`):
             The message ID that the draft will reply to.
     """
-    def __init__(self, client, peer, draft):
+    def __init__(self, client, peer, draft, entity):
         self._client = client
         self._peer = peer
+        self._entity = entity
+        self._input_entity = get_input_peer(entity) if entity else None
+
         if not draft or not isinstance(draft, DraftMessage):
             draft = DraftMessage('', None, None, None, None)
 
@@ -37,28 +40,57 @@ class Draft:
         self.reply_to_msg_id = draft.reply_to_msg_id
 
     @classmethod
-    def _from_update(cls, client, update):
-        if not isinstance(update, UpdateDraftMessage):
-            raise TypeError(
-                'You can only create a new `Draft` from a corresponding '
-                '`UpdateDraftMessage` object.'
-            )
+    def _from_dialog(cls, client, dialog):
+        return cls(client=client, peer=dialog.dialog.peer,
+                   draft=dialog.dialog.draft, entity=dialog.entity)
 
-        return cls(client=client, peer=update.peer, draft=update.draft)
+    @classmethod
+    def _from_update(cls, client, update, entities=None):
+        assert isinstance(update, UpdateDraftMessage)
+        return cls(client=client, peer=update.peer, draft=update.draft,
+                   entity=(entities or {}).get(get_peer_id(update.peer)))
 
     @property
-    async def entity(self):
+    def entity(self):
         """
         The entity that belongs to this dialog (user, chat or channel).
         """
-        return await self._client.get_entity(self._peer)
+        return self._entity
 
     @property
-    async def input_entity(self):
+    def input_entity(self):
         """
         Input version of the entity.
         """
-        return await self._client.get_input_entity(self._peer)
+        if not self._input_entity:
+            try:
+                self._input_entity =\
+                    self._client.session.get_input_entity(self._peer)
+            except ValueError:
+                pass
+
+        return self._input_entity
+
+    async def get_entity(self):
+        """
+        Returns `entity` but will make an API call if necessary.
+        """
+        if not self.entity and await self.get_input_entity():
+            try:
+                self._entity =\
+                    self._client.get_entity(self._input_entity)
+            except ValueError:
+                pass
+
+        return self._entity
+
+    async def get_input_entity(self):
+        """
+        Returns `input_entity` but will make an API call if necessary.
+        """
+        # We don't actually have an API call we can make yet
+        # to get more info, but keep this method for consistency.
+        return self.input_entity
 
     @property
     def text(self):

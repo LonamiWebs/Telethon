@@ -204,8 +204,7 @@ class ChatAction(EventBuilder):
             return await self._client.delete_messages(
                 await self.input_chat, [self.action_message], *args, **kwargs)
 
-        @property
-        async def pinned_message(self):
+        async def get_pinned_message(self):
             """
             If ``new_pin`` is ``True``, this returns the
             `telethon.tl.custom.message.Message` object that was pinned.
@@ -230,48 +229,77 @@ class ChatAction(EventBuilder):
                 return self._pinned_message
 
         @property
-        async def added_by(self):
+        def added_by(self):
             """
             The user who added ``users``, if applicable (``None`` otherwise).
             """
             if self._added_by and not isinstance(self._added_by, types.User):
                 aby = self._entities.get(utils.get_peer_id(self._added_by))
-                if not aby:
-                    aby = await self._client.get_entity(self._added_by)
-                self._added_by = aby
+                if aby:
+                    self._added_by = aby
+
+            return self._added_by
+
+        async def get_added_by(self):
+            """
+            Returns `added_by` but will make an API call if necessary.
+            """
+            if not self.added_by and self._added_by:
+                self._added_by = await self._client.get_entity(self._added_by)
 
             return self._added_by
 
         @property
-        async def kicked_by(self):
+        def kicked_by(self):
             """
             The user who kicked ``users``, if applicable (``None`` otherwise).
             """
             if self._kicked_by and not isinstance(self._kicked_by, types.User):
                 kby = self._entities.get(utils.get_peer_id(self._kicked_by))
                 if kby:
-                    kby = await self._client.get_entity(self._kicked_by)
-                self._kicked_by = kby
+                    self._kicked_by = kby
+
+            return self._kicked_by
+
+        async def get_kicked_by(self):
+            """
+            Returns `kicked_by` but will make an API call if necessary.
+            """
+            if not self.kicked_by and self._kicked_by:
+                self._kicked_by = await self._client.get_entity(self._kicked_by)
 
             return self._kicked_by
 
         @property
-        async def user(self):
+        def user(self):
             """
             The first user that takes part in this action (e.g. joined).
 
             Might be ``None`` if the information can't be retrieved or
             there is no user taking part.
             """
-            if await self.users:
+            if self.users:
                 return self._users[0]
 
-        @property
-        async def input_user(self):
+        async def get_user(self):
+            """
+            Returns `user` but will make an API call if necessary.
+            """
+            if self.users or await self.get_users():
+                return self._users[0]
+
+        def input_user(self):
             """
             Input version of the ``self.user`` property.
             """
-            if await self.input_users:
+            if self.input_users:
+                return self._input_users[0]
+
+        async def get_input_user(self):
+            """
+            Returns `input_user` but will make an API call if necessary.
+            """
+            if self.input_users or await self.get_input_users():
                 return self._input_users[0]
 
         @property
@@ -283,7 +311,7 @@ class ChatAction(EventBuilder):
                 return utils.get_peer_id(self._user_peers[0])
 
         @property
-        async def users(self):
+        def users(self):
             """
             A list of users that take part in this action (e.g. joined).
 
@@ -294,6 +322,22 @@ class ChatAction(EventBuilder):
                 return []
 
             if self._users is None:
+                self._users = [
+                    self._entities[utils.get_peer_id(peer)]
+                    for peer in self._user_peers
+                    if utils.get_peer_id(peer) in self._entities
+                ]
+
+            return self._users
+
+        async def get_users(self):
+            """
+            Returns `users` but will make an API call if necessary.
+            """
+            if not self._user_peers:
+                return []
+
+            if self._users is None or len(self._users) != len(self._user_peers):
                 have, missing = [], []
                 for peer in self._user_peers:
                     user = self._entities.get(utils.get_peer_id(peer))
@@ -312,7 +356,7 @@ class ChatAction(EventBuilder):
             return self._users
 
         @property
-        async def input_users(self):
+        def input_users(self):
             """
             Input version of the ``self.users`` property.
             """
@@ -321,11 +365,18 @@ class ChatAction(EventBuilder):
                 for peer in self._user_peers:
                     try:
                         self._input_users.append(
-                            await self._client.get_input_entity(peer)
+                            self._client.session.get_input_entity(peer)
                         )
-                    except (TypeError, ValueError):
+                    except ValueError:
                         pass
-            return self._input_users
+            return self._input_users or []
+
+        async def get_input_users(self):
+            """
+            Returns `input_users` but will make an API call if necessary.
+            """
+            # TODO Maybe we could re-fetch the message
+            return self.input_users
 
         @property
         def user_ids(self):

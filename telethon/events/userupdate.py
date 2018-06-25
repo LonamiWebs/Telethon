@@ -148,16 +148,24 @@ class UserUpdate(EventBuilder):
                     self.uploading = self.video = True
 
         @property
-        async def user(self):
-            """Alias around the chat (conversation)."""
-            return await self.chat
+        def user(self):
+            """Alias for `chat` (conversation)."""
+            return self.chat
+
+        async def get_user(self):
+            """Alias for `get_chat` (conversation)."""
+            return await self.get_chat()
 
         @property
-        async def input_user(self):
-            """Alias around the input chat."""
-            return await self.input_chat
+        def input_user(self):
+            """Alias for `input_chat`."""
+            return self.input_chat
+
+        async def get_input_user(self):
+            """Alias for `get_input_chat`."""
+            return await self.get_input_chat()
 
         @property
-        async def user_id(self):
-            """Alias around `chat_id`."""
+        def user_id(self):
+            """Alias for `chat_id`."""
             return self.chat_id
