@@ -16,6 +16,12 @@ class UpdateMethods(UserMethods):
 
     # region Public methods
 
+    async def _run_until_disconnected(self):
+        try:
+            await self.disconnected
+        except KeyboardInterrupt:
+            await self.disconnect()
+
     def run_until_disconnected(self):
         """
         Runs the event loop until `disconnect` is called or if an error
@@ -23,14 +29,13 @@ class UpdateMethods(UserMethods):
         the latter case, said error will ``raise`` so you have a chance
         to ``except`` it on your own code.
 
-        This method shouldn't be called from ``async def`` as the loop
-        will be running already. Use ``await client.disconnected`` in
-        this situation instead.
+        If the loop is already running, this method returns a coroutine
+        that you should await on your own code.
         """
-        try:
-            self.loop.run_until_complete(self.disconnected)
-        except KeyboardInterrupt:
-            self.loop.run_until_complete(self.disconnect())
+        if self.loop.is_running():
+            return self._run_until_disconnected()  # Let the user await it
+        else:
+            self.loop.run_until_complete(self._run_until_disconnected())
 
     def on(self, event):
         """
