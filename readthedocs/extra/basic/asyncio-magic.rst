@@ -1,8 +1,117 @@
-.. _asyncio-crash-course:
+.. _asyncio-magic:
 
-===========================
-A Crash Course into asyncio
-===========================
+==================
+Magic with asyncio
+==================
+
+The sync module
+***************
+
+It's time to tell you the truth. The library has been doing magic behind
+the scenes. We're sorry to tell you this, but at least it wasn't dark magic!
+
+You may have noticed one of these lines across the documentation:
+
+.. code-block:: python
+
+    from telethon import sync
+    # or
+    import telethon.sync
+
+Either of these lines will import the *magic* ``sync`` module. When you
+import this module, you can suddenly use all the methods defined in the
+:ref:`TelegramClient <telethon-client>` like so:
+
+.. code-block:: python
+
+    client.send_message('me', 'Hello!')
+
+    for dialog in client.iter_dialogs():
+        print(dialog.title)
+
+
+What happened behind the scenes is that all those methods, called *coroutines*,
+were rewritten to be normal methods that will block (with some exceptions).
+This means you can use the library without worrying about ``asyncio`` and
+event loops.
+
+However, this only works until you run the event loop yourself explicitly:
+
+.. code-block:: python
+
+    import asyncio
+
+    async def coro():
+        client.send_message('me', 'Hello!')  # <- no longer works!
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(coro())
+
+
+What things will work and when?
+*******************************
+
+You can use all the methods in the :ref:`TelegramClient <telethon-client>`
+in a synchronous, blocking way without trouble, as long as you're not running
+the loop as we saw above (the ``loop.run_until_complete(...)`` line runs "the
+loop"). If you're running the loop, then *you* are the one responsible to
+``await`` everything. So to fix the code above:
+
+.. code-block:: python
+
+    import asyncio
+
+    async def coro():
+        await client.send_message('me', 'Hello!')
+        # ^ notice this new await
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(coro())
+
+The library can only run the loop until the method completes if the loop
+isn't already running, which is why the magic can't work if you run the
+loop yourself.
+
+**When you work with updates or events**, the loop needs to be
+running one way or another (using `client.run_until_disconnected()
+<telethon.client.updates.UpdateMethods.run_until_disconnected>` runs the loop),
+so your event handlers must be ``async def``.
+
+.. important::
+
+    Turning your event handlers into ``async def`` is the biggest change
+    between Telethon pre-1.0 and 1.0, but updating will likely cause a
+    noticeable speed-up in your programs. Keep reading!
+
+
+So in short, you can use **all** methods in the client with ``await`` or
+without it if the loop isn't running:
+
+.. code-block:: python
+
+    client.send_message('me', 'Hello!')  # works
+
+    async def main():
+        await client.send_message('me', 'Hello!')  # also works
+
+    loop.run_until_complete(main())
+
+
+When you work with updates, you should stick using the ``async def main``
+way, since your event handlers will be ``async def`` too.
+
+.. note::
+
+    There are two exceptions. Both `client.run_until_disconnected()
+    <telethon.client.updates.UpdateMethods.run_until_disconnected>` and
+    `client.start() <telethon.client.updates.UpdateMethods.start>` work in
+    and outside of ``async def`` for convenience without importing the
+    magic module. The rest of methods remain ``async`` unless you import it.
+
+You can skip the rest if you already know how ``asyncio`` works and you
+already understand what the magic does and how it works. Just remember
+to ``await`` all your methods if you're inside an ``async def`` or are
+using updates and you will be good.
 
 
 Why asyncio?
@@ -51,8 +160,11 @@ To get started with ``asyncio``, all you need is to setup your main
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
 
+You don't need to ``import telethon.sync`` if you're going to work this
+way. This is the best way to work in real programs since the loop won't
+be starting and ending all the time, but is a bit more annoying to setup.
 
-Inside ``async def main():``, you can use the ``await`` keyword. Most
+Inside ``async def main()``, you can use the ``await`` keyword. Most
 methods in the :ref:`TelegramClient <telethon-client>` are ``async def``.
 You must ``await`` all ``async def``, also known as a *coroutines*:
 
@@ -78,9 +190,11 @@ Another way to use ``async def`` is to use ``loop.run_until_complete(f())``,
 but the loop must not be running before.
 
 If you want to handle updates (and don't let the script die), you must
-`await client.disconnected <telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>`
+`await client.run_until_disconnected()
+<telethon.client.updates.UpdateMethods.run_until_disconnected>`
 which is a property that you can wait on until you call
-`await client.disconnect() <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`:
+`await client.disconnect()
+<telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`:
 
 
 .. code-block:: python
@@ -93,13 +207,18 @@ which is a property that you can wait on until you call
 
     async def main():
         await client.start()
-        await client.disconnected
+        await client.run_until_disconnected()
 
     if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
 
-This is the same as using the ``run_until_disconnected()`` method:
+`client.run_until_disconnected()
+<telethon.client.updates.UpdateMethods.run_until_disconnected>` and
+`client.start()
+<telethon.client.auth.AuthMethods.start>` are special-cased and work
+inside or outside ``async def`` for convenience, even without importing
+the ``sync`` module, so you can also do this:
 
 .. code-block:: python
 
@@ -110,8 +229,7 @@ This is the same as using the ``run_until_disconnected()`` method:
         print(event)
 
     if __name__ == '__main__':
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(client.start())
+        client.start()
         client.run_until_disconnected()
 
 
@@ -172,9 +290,11 @@ a lot less. You can also rename the run method to something shorter:
     rc(asyncio.sleep(1))
     rc(message.delete())
 
-The documentation will use all these three styles so you can get used
-to them. Which one to use is up to you, but generally you should work
-inside an ``async def main()`` and just run the loop there.
+The documentation generally runs the loop until complete behind the
+scenes if you've imported the magic ``sync`` module, but if you haven't,
+you need to run the loop yourself. We recommend that you use the
+``async def main()`` method to do all your work with ``await``.
+It's the easiest and most performant thing to do.
 
 
 More resources to learn asyncio

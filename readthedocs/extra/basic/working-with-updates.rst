@@ -4,6 +4,16 @@
 Working with Updates
 ====================
 
+.. important::
+
+    Make sure you have read at least the first part of :ref:`asyncio-magic`
+    before working with updates. **This is a big change from Telethon pre-1.0
+    and 1.0, and your old handlers won't work with this version**.
+
+    To port your code to the new version, you should just prefix all your
+    event handlers with ``async`` and ``await`` everything that makes an
+    API call, such as replying, deleting messages, etc.
+
 
 The library comes with the `telethon.events` module. *Events* are an abstraction
 over what Telegram calls `updates`__, and are meant to ease simple and common
@@ -36,7 +46,6 @@ Getting Started
 
 .. code-block:: python
 
-    import asyncio
     from telethon import TelegramClient, events
 
     client = TelegramClient('name', api_id, api_hash)
@@ -46,7 +55,7 @@ Getting Started
         if 'hello' in event.raw_text:
             await event.reply('hi!')
 
-    asyncio.get_event_loop().run_until_complete(client.start())
+    client.start()
     client.run_until_disconnected()
 
 
@@ -54,7 +63,6 @@ Not much, but there might be some things unclear. What does this code do?
 
 .. code-block:: python
 
-    import asyncio
     from telethon import TelegramClient, events
 
     client = TelegramClient('name', api_id, api_hash)
@@ -86,15 +94,21 @@ and ``'hello'`` is in the text of the message, we `.reply()
 <telethon.tl.custom.message.Message.reply>` to the event
 with a ``'hi!'`` message.
 
+Do you notice anything different? Yes! Event handlers **must** be ``async``
+for them to work, and **every method using the network** needs to have an
+``await``, otherwise, Python's ``asyncio`` will tell you that you forgot
+to do so, so you can easily add it.
+
 .. code-block:: python
 
-    asyncio.get_event_loop().run_until_complete(client.start())
+    client.start()
     client.run_until_disconnected()
 
 
 Finally, this tells the client that we're done with our code. We run the
-``asyncio`` loop until the client starts, and then we run it again until
-we are disconnected. Of course, you can do other things instead of running
+``asyncio`` loop until the client starts (this is done behind the scenes,
+since the method is so common), and then we run it again until we are
+disconnected. Of course, you can do other things instead of running
 until disconnected. For this refer to :ref:`update-modes`.
 
 

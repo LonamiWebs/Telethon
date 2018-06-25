@@ -20,32 +20,31 @@ Forwarding messages
 
 .. code-block:: python
 
-    async def main():
-        # If you only have the message IDs
-        await client.forward_messages(
-            entity,  # to which entity you are forwarding the messages
-            message_ids,  # the IDs of the messages (or message) to forward
-            from_entity  # who sent the messages?
-        )
+    # If you only have the message IDs
+    client.forward_messages(
+        entity,  # to which entity you are forwarding the messages
+        message_ids,  # the IDs of the messages (or message) to forward
+        from_entity  # who sent the messages?
+    )
 
-        # If you have ``Message`` objects
-        await client.forward_messages(
-            entity,  # to which entity you are forwarding the messages
-            messages  # the messages (or message) to forward
-        )
+    # If you have ``Message`` objects
+    client.forward_messages(
+        entity,  # to which entity you are forwarding the messages
+        messages  # the messages (or message) to forward
+    )
 
-        # You can also do it manually if you prefer
-        from telethon.tl.functions.messages import ForwardMessagesRequest
+    # You can also do it manually if you prefer
+    from telethon.tl.functions.messages import ForwardMessagesRequest
 
-        messages = foo()  # retrieve a few messages (or even one, in a list)
-        from_entity = bar()
-        to_entity = baz()
+    messages = foo()  # retrieve a few messages (or even one, in a list)
+    from_entity = bar()
+    to_entity = baz()
 
-        await client(ForwardMessagesRequest(
-            from_peer=from_entity,  # who sent these messages?
-            id=[msg.id for msg in messages],  # which are the messages?
-            to_peer=to_entity  # who are we forwarding them to?
-        ))
+    client(ForwardMessagesRequest(
+        from_peer=from_entity,  # who sent these messages?
+        id=[msg.id for msg in messages],  # which are the messages?
+        to_peer=to_entity  # who are we forwarding them to?
+    ))
 
 The named arguments are there for clarity, although they're not needed because
 they appear in order. You can obviously just wrap a single message on the list
@@ -72,7 +71,7 @@ into issues_. A valid example would be:
     from telethon.tl.types import InputMessagesFilterEmpty
 
     filter = InputMessagesFilterEmpty()
-    result = loop.run_until_complete(client(SearchRequest(
+    result = client(SearchRequest(
         peer=peer,      # On which chat/conversation
         q='query',      # What to search for
         filter=filter,  # Filter to use (maybe filter for media)
@@ -85,7 +84,7 @@ into issues_. A valid example would be:
         min_id=0,       # Minimum message ID
         from_id=None,   # Who must have sent the message (peer)
         hash=0          # Special number to return nothing on no-change
-    )))
+    ))
 
 It's important to note that the optional parameter ``from_id`` could have
 been omitted (defaulting to ``None``). Changing it to :tl:`InputUserEmpty`, as one
@@ -116,25 +115,24 @@ send yourself the very first sticker you have:
 
 .. code-block:: python
 
-    async def main():
-        # Get all the sticker sets this user has
-        from telethon.tl.functions.messages import GetAllStickersRequest
-        sticker_sets = await client(GetAllStickersRequest(0))
+    # Get all the sticker sets this user has
+    from telethon.tl.functions.messages import GetAllStickersRequest
+    sticker_sets = client(GetAllStickersRequest(0))
 
-        # Choose a sticker set
-        from telethon.tl.functions.messages import GetStickerSetRequest
-        from telethon.tl.types import InputStickerSetID
-        sticker_set = sticker_sets.sets[0]
+    # Choose a sticker set
+    from telethon.tl.functions.messages import GetStickerSetRequest
+    from telethon.tl.types import InputStickerSetID
+    sticker_set = sticker_sets.sets[0]
 
-        # Get the stickers for this sticker set
-        stickers = await client(GetStickerSetRequest(
-            stickerset=InputStickerSetID(
-                id=sticker_set.id, access_hash=sticker_set.access_hash
-            )
-        ))
+    # Get the stickers for this sticker set
+    stickers = client(GetStickerSetRequest(
+        stickerset=InputStickerSetID(
+            id=sticker_set.id, access_hash=sticker_set.access_hash
+        )
+    ))
 
-        # Stickers are nothing more than files, so send that
-        await client.send_file('me', stickers.documents[0])
+    # Stickers are nothing more than files, so send that
+    client.send_file('me', stickers.documents[0])
 
 
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215

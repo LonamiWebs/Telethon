@@ -25,11 +25,11 @@ to, you can make use of the :tl:`JoinChannelRequest` to join such channel:
 .. code-block:: python
 
     from telethon.tl.functions.channels import JoinChannelRequest
-    loop.run_until_complete(client(JoinChannelRequest(channel)))
+    client(JoinChannelRequest(channel))
 
     # In the same way, you can also leave such channel
     from telethon.tl.functions.channels import LeaveChannelRequest
-    loop.run_until_complete(client(LeaveChannelRequest(input_channel)))
+    client(LeaveChannelRequest(input_channel))
 
 
 For more on channels, check the `channels namespace`__.
@@ -51,9 +51,7 @@ example, is the ``hash`` of the chat or channel. Now you can use
 .. code-block:: python
 
     from telethon.tl.functions.messages import ImportChatInviteRequest
-    updates = loop.run_until_complete(
-        client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
-    )
+    updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
 Adding someone else to such chat or channel
@@ -70,19 +68,19 @@ use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
 
     # Note that ``user_to_add`` is NOT the name of the parameter.
     # It's the user you want to add (``user_id=user_to_add``).
-    loop.run_until_complete(client(AddChatUserRequest(
+    client(AddChatUserRequest(
         chat_id,
         user_to_add,
         fwd_limit=10  # Allow the user to see the 10 last messages
-    )))
+    ))
 
     # For channels (which includes megagroups)
     from telethon.tl.functions.channels import InviteToChannelRequest
 
-    loop.run_until_complete(client(InviteToChannelRequest(
+    client(InviteToChannelRequest(
         channel,
         [users_to_add]
-    )))
+    ))
 
 
 Checking a link without joining
@@ -108,7 +106,7 @@ Here is the easy way to do it:
 
 .. code-block:: python
 
-    participants = loop.run_until_complete(client.get_participants(group))
+    participants = client.get_participants(group)
 
 Now we will show how the method works internally.
 
@@ -133,9 +131,9 @@ a fixed limit:
     all_participants = []
 
     while True:
-        participants = loop.run_until_complete(client(GetParticipantsRequest(
+        participants = client(GetParticipantsRequest(
             channel, ChannelParticipantsSearch(''), offset, limit, hash=0
-        )))
+        ))
         if not participants.users:
             break
         all_participants.extend(participants.users)
@@ -202,7 +200,7 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
     #     )
 
     # Once you have a ChannelAdminRights, invoke it
-    loop.run_until_complete(client(EditAdminRequest(channel, user, rights)))
+    client(EditAdminRequest(channel, user, rights))
 
     # User will now be able to change group info, delete other people's
     # messages and pin messages.
@@ -261,7 +259,7 @@ banned rights of an user through :tl:`EditBannedRequest` and its parameter
         embed_links=True
     )
 
-    loop.run_until_complete(client(EditBannedRequest(channel, user, rights)))
+    client(EditBannedRequest(channel, user, rights))
 
 
 Kicking a member
@@ -276,12 +274,12 @@ is enough:
     from telethon.tl.functions.channels import EditBannedRequest
     from telethon.tl.types import ChannelBannedRights
 
-    loop.run_until_complete(client(EditBannedRequest(
+    client(EditBannedRequest(
         channel, user, ChannelBannedRights(
             until_date=None,
             view_messages=True
         )
-    )))
+    ))
 
 
 __ https://github.com/Kyle2142
@@ -302,11 +300,11 @@ use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
     # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
     # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
-    loop.run_until_complete(client(GetMessagesViewsRequest(
+    client(GetMessagesViewsRequest(
         peer=channel,
         id=msg_ids,
         increment=True
-    )))
+    ))
 
 
 Note that you can only do this **once or twice a day** per account,

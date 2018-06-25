@@ -42,32 +42,31 @@ you're able to just do this:
 
 .. code-block:: python
 
-    async def main():
-        # Dialogs are the "conversations you have open".
-        # This method returns a list of Dialog, which
-        # has the .entity attribute and other information.
-        dialogs = await client.get_dialogs()
+    # Dialogs are the "conversations you have open".
+    # This method returns a list of Dialog, which
+    # has the .entity attribute and other information.
+    dialogs = client.get_dialogs()
 
-        # All of these work and do the same.
-        lonami = await client.get_entity('lonami')
-        lonami = await client.get_entity('t.me/lonami')
-        lonami = await client.get_entity('https://telegram.dog/lonami')
+    # All of these work and do the same.
+    lonami = client.get_entity('lonami')
+    lonami = client.get_entity('t.me/lonami')
+    lonami = client.get_entity('https://telegram.dog/lonami')
 
-        # Other kind of entities.
-        channel = await client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
-        contact = await client.get_entity('+34xxxxxxxxx')
-        friend  = await client.get_entity(friend_id)
+    # Other kind of entities.
+    channel = client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
+    contact = client.get_entity('+34xxxxxxxxx')
+    friend  = client.get_entity(friend_id)
 
-        # Getting entities through their ID (User, Chat or Channel)
-        entity = await client.get_entity(some_id)
+    # Getting entities through their ID (User, Chat or Channel)
+    entity = client.get_entity(some_id)
 
-        # You can be more explicit about the type for said ID by wrapping
-        # it inside a Peer instance. This is recommended but not necessary.
-        from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+    # You can be more explicit about the type for said ID by wrapping
+    # it inside a Peer instance. This is recommended but not necessary.
+    from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 
-        my_user    = await client.get_entity(PeerUser(some_id))
-        my_chat    = await client.get_entity(PeerChat(some_id))
-        my_channel = await client.get_entity(PeerChannel(some_id))
+    my_user    = client.get_entity(PeerUser(some_id))
+    my_chat    = client.get_entity(PeerChat(some_id))
+    my_channel = client.get_entity(PeerChannel(some_id))
 
 
 All methods in the :ref:`telegram-client` call `.get_input_entity()
@@ -137,8 +136,7 @@ wherever needed, so you can even do things like:
 
 .. code-block:: python
 
-    async def main():
-        await client(SendMessageRequest('username', 'hello'))
+    client(SendMessageRequest('username', 'hello'))
 
 The library will call the ``.resolve()`` method of the request, which will
 resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if

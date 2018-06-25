@@ -15,22 +15,25 @@ or use the menu on the left. Remember to read the :ref:`changelog`
 when you upgrade!
 
 .. important::
-   If you're new here, you want to read :ref:`getting-started`. If you're
-   looking for the method reference, you should check :ref:`telethon-client`.
+    If you're new here, you want to read :ref:`getting-started`. If you're
+    looking for the method reference, you should check :ref:`telethon-client`.
 
-   The mentioned :ref:`telethon-client` is an important section and it
-   contains the friendly methods that **you should use** most of the time.
+    The mentioned :ref:`telethon-client` is an important section and it
+    contains the friendly methods that **you should use** most of the time.
 
 
 .. note::
-   The library uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
-   by default, but you if you don't know how to use ``asyncio`` you can use
-   `a simpler version <https://github.com/LonamiWebs/Telethon/tree/sync>`_
-   (select the "sync" version in ``readthedocs``' bottom left corner).
+    The library uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
+    under the hood, but you don't need to know anything about it unless you're
+    going to work with updates! If you're an user of Telethon pre-1.0 and you
+    aren't ready to convert your event handlers into ``async``, you can use
+    `a simpler version <https://github.com/LonamiWebs/Telethon/tree/sync>`_
+    (select the "sync" version in ``readthedocs``' bottom left corner).
 
-   However, **you are encouraged to use asyncio**, it will make your scripts
-   faster and more powerful. :ref:`asyncio-crash-course` will teach you why
-   ``asyncio`` is good and how to use it.
+    If you used Telethon pre-1.0 but your scripts don't use updates or threads,
+    running ``import telethon.sync`` should make them Just Work. Otherwise,
+    we have :ref:`asyncio-magic` to teach you why ``asyncio`` is good and
+    how to use it.
 
 
 What is this?
@@ -50,10 +53,10 @@ heavy job for you, so you can focus on developing an application.
 
    extra/basic/getting-started
    extra/basic/installation
-   extra/basic/asyncio-crash-course
    extra/basic/creating-a-client
    extra/basic/telegram-client
    extra/basic/entities
+   extra/basic/asyncio-magic
    extra/basic/working-with-updates
 
 

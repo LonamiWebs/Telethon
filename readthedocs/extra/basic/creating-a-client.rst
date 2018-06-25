@@ -26,15 +26,7 @@ one is very simple:
 
 .. code-block:: python
 
-    import asyncio
-    loop = asyncio.get_event_loop()
-
-    # Rename loop.run_until_complete(...) as rc(...), we will use it a lot.
-    # This basically lets us run the event loop (necessary in asyncio) to
-    # execute all the requests we need.
-    rc = loop.run_until_complete
-
-    from telethon import TelegramClient
+    from telethon import TelegramClient, sync
 
     # Use your own values here
     api_id = 12345
@@ -62,7 +54,7 @@ your disk. This is by default a database file using Python's ``sqlite3``.
 
     .. code-block:: python
 
-        rc(client.start())
+        client.start()
 
     This is explained after going through the manual process.
 
@@ -72,14 +64,14 @@ Doing so is very easy:
 
 .. code-block:: python
 
-    rc(client.connect())  # Must return True, otherwise, try again
+    client.connect()
 
 You may or may not be authorized yet. You must be authorized
 before you're able to send any request:
 
 .. code-block:: python
 
-    rc(client.is_user_authorized())  # Returns True if you can send requests
+    client.is_user_authorized()  # Returns True if you can send requests
 
 If you're not authorized, you need to `.sign_in
 <telethon.client.auth.AuthMethods.sign_in>`:
@@ -87,8 +79,8 @@ If you're not authorized, you need to `.sign_in
 .. code-block:: python
 
     phone_number = '+34600000000'
-    rc(client.send_code_request(phone_number))
-    myself = rc(client.sign_in(phone_number, input('Enter code: ')))
+    client.send_code_request(phone_number)
+    myself = client.sign_in(phone_number, input('Enter code: '))
     # If .sign_in raises PhoneNumberUnoccupiedError, use .sign_up instead
     # If .sign_in raises SessionPasswordNeeded error, call .sign_in(password=...)
     # You can import both exceptions from telethon.errors.
@@ -112,13 +104,10 @@ As a full example:
 
     client = TelegramClient('anon', api_id, api_hash)
 
-    async def main():
-        assert await client.connect()
-        if not await client.is_user_authorized():
-            await client.send_code_request(phone_number)
-            me = await client.sign_in(phone_number, input('Enter code: '))
-
-    loop.run_until_complete(main())
+    client.connect()
+    if not client.is_user_authorized():
+        client.send_code_request(phone_number)
+        me = client.sign_in(phone_number, input('Enter code: '))
 
 
 All of this, however, can be done through a call to `.start()
@@ -127,7 +116,7 @@ All of this, however, can be done through a call to `.start()
 .. code-block:: python
 
     client = TelegramClient('anon', api_id, api_hash)
-    loop.run_until_complete(client.start())
+    client.start()
 
 
 The code shown is just what `.start()
@@ -181,12 +170,11 @@ again with a ``password=``:
     import getpass
     from telethon.errors import SessionPasswordNeededError
 
-    async def main():
-        await client.sign_in(phone)
-        try:
-            await client.sign_in(code=input('Enter code: '))
-        except SessionPasswordNeededError:
-            await client.sign_in(password=getpass.getpass())
+    client.sign_in(phone)
+    try:
+        client.sign_in(code=input('Enter code: '))
+    except SessionPasswordNeededError:
+        client.sign_in(password=getpass.getpass())
 
 
 The mentioned `.start()
@@ -209,33 +197,32 @@ See the examples below:
 
     from telethon.errors import EmailUnconfirmedError
 
-    async def main():
-        # Sets 2FA password for first time:
-        await client.edit_2fa(new_password='supersecurepassword')
+    # Sets 2FA password for first time:
+    client.edit_2fa(new_password='supersecurepassword')
 
-        # Changes password:
-        await client.edit_2fa(current_password='supersecurepassword',
-                              new_password='changedmymind')
+    # Changes password:
+    client.edit_2fa(current_password='supersecurepassword',
+                          new_password='changedmymind')
 
-        # Clears current password (i.e. removes 2FA):
-        await client.edit_2fa(current_password='changedmymind', new_password=None)
+    # Clears current password (i.e. removes 2FA):
+    client.edit_2fa(current_password='changedmymind', new_password=None)
 
-        # Sets new password with recovery email:
-        try:
-            await client.edit_2fa(new_password='memes and dreams',
-                                  email='JohnSmith@example.com')
-            # Raises error (you need to check your email to complete 2FA setup.)
-        except EmailUnconfirmedError:
-            # You can put email checking code here if desired.
-            pass
+    # Sets new password with recovery email:
+    try:
+        client.edit_2fa(new_password='memes and dreams',
+                        email='JohnSmith@example.com')
+        # Raises error (you need to check your email to complete 2FA setup.)
+    except EmailUnconfirmedError:
+        # You can put email checking code here if desired.
+        pass
 
-        # Also take note that unless you remove 2FA or explicitly
-        # give email parameter again it will keep the last used setting
+    # Also take note that unless you remove 2FA or explicitly
+    # give email parameter again it will keep the last used setting
 
-        # Set hint after already setting password:
-        await client.edit_2fa(current_password='memes and dreams',
-                              new_password='memes and dreams',
-                              hint='It keeps you alive')
+    # Set hint after already setting password:
+    client.edit_2fa(current_password='memes and dreams',
+                    new_password='memes and dreams',
+                    hint='It keeps you alive')
 
 __ https://github.com/Anorov/PySocks#installation
 __ https://github.com/Anorov/PySocks#usage-1

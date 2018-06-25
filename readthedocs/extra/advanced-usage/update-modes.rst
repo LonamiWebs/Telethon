@@ -38,7 +38,8 @@ so the code above and the following are equivalent:
     async def main():
         await client.disconnected
 
-    asyncio.get_event_loop().run_until_complete(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
 
 
 You could also run `client.disconnected
@@ -48,3 +49,17 @@ until it completed.
 But if you don't want to ``await``, then you should know what you want
 to be doing instead! What matters is that you shouldn't let your script
 die. If you don't care about updates, you don't need any of this.
+
+Notice that unlike `client.disconnected
+<telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>`,
+`client.run_until_disconnected
+<telethon.client.updates.UpdateMethods.run_until_disconnected>` will
+handle ``KeyboardInterrupt`` with you. This method is special and can
+also be ran while the loop is running, so you can do this:
+
+.. code-block:: python
+
+    async def main():
+        await client.run_until_disconnected()
+
+    loop.run_until_complete(main())
