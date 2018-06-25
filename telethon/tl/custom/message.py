@@ -675,7 +675,7 @@ class Message:
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
 
-        if not await self.buttons:
+        if not await self.get_buttons():
             return  # Accessing the property sets self._buttons[_flat]
 
         if text is not None:

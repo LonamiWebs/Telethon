@@ -171,7 +171,7 @@ class ChatAction(EventBuilder):
             ``entity`` already set.
             """
             return await self._client.send_message(
-                await self.input_chat, *args, **kwargs)
+                await self.get_input_chat(), *args, **kwargs)
 
         async def reply(self, *args, **kwargs):
             """
@@ -186,7 +186,7 @@ class ChatAction(EventBuilder):
 
             kwargs['reply_to'] = self.action_message.id
             return await self._client.send_message(
-                await self.input_chat, *args, **kwargs)
+                await self.get_input_chat(), *args, **kwargs)
 
         async def delete(self, *args, **kwargs):
             """
@@ -202,7 +202,9 @@ class ChatAction(EventBuilder):
                 return
 
             return await self._client.delete_messages(
-                await self.input_chat, [self.action_message], *args, **kwargs)
+                await self.get_input_chat(), [self.action_message],
+                *args, **kwargs
+            )
 
         async def get_pinned_message(self):
             """
@@ -212,7 +214,8 @@ class ChatAction(EventBuilder):
             if self._pinned_message == 0:
                 return None
 
-            if isinstance(self._pinned_message, int) and await self.input_chat:
+            if isinstance(self._pinned_message, int)\
+                    and await self.get_input_chat():
                 r = await self._client(functions.channels.GetMessagesRequest(
                     self._input_chat, [self._pinned_message]
                 ))
