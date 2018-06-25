@@ -42,5 +42,8 @@ class MTProtoPlainSender:
             assert reader.read_long() == 0  # auth_key_id
             assert reader.read_long() > msg_id  # msg_id
             assert reader.read_int()  # length
-            # No need to read "length" bytes first, just read the object
+
+            # We could read length bytes and use those in a new reader to read
+            # the next TLObject without including the padding, but since the
+            # reader isn't used for anything else after this, it's unnecessary.
             return reader.tgread_object()

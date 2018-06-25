@@ -121,6 +121,10 @@ class MTProtoState:
         remote_msg_id = reader.read_long()
         remote_sequence = reader.read_int()
         reader.read_int()  # msg_len for the inner object, padding ignored
+
+        # We could read msg_len bytes and use those in a new reader to read
+        # the next TLObject without including the padding, but since the
+        # reader isn't used for anything else after this, it's unnecessary.
         obj = reader.tgread_object()
 
         return TLMessage(remote_msg_id, remote_sequence, obj)

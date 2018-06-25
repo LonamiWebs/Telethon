@@ -36,10 +36,7 @@ class MessageContainer(TLObject):
             seq_no = reader.read_int()
             length = reader.read_int()
             before = reader.tell_position()
-            obj = reader.tgread_object()
+            obj = reader.tgread_object()  # May over-read e.g. RpcResult
+            reader.set_position(before + length)
             messages.append(TLMessage(msg_id, seq_no, obj))
-            if reader.tell_position() != before + length:
-                reader.set_position(before)
-                __log__.warning('Data left after TLObject {}: {!r}'
-                                .format(obj, reader.read(length)))
         return MessageContainer(messages)

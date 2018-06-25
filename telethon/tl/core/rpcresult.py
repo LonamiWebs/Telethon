@@ -21,6 +21,9 @@ class RpcResult(TLObject):
             return RpcResult(msg_id, GzipPacked.from_reader(reader).data, None)
 
         reader.seek(-4)
+        # This reader.read() will read more than necessary, but it's okay.
+        # We could make use of MessageContainer's length here, but since
+        # it's not necessary we don't need to care about it.
         return RpcResult(msg_id, reader.read(), None)
 
     def to_dict(self):
