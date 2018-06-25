@@ -1,6 +1,7 @@
 from .. import types
 from ...utils import get_input_peer, get_peer_id, get_inner_text
 from .messagebutton import MessageButton
+from .forward import Forward
 
 
 class Message:
@@ -52,14 +53,11 @@ class Message:
         if not self._input_chat and self._chat:
             self._input_chat = get_input_peer(self._chat)
 
-        self._fwd_from_entity = None
         if getattr(self.original_message, 'fwd_from', None):
-            fwd = self.original_message.fwd_from
-            if fwd.from_id:
-                self._fwd_from_entity = entities.get(fwd.from_id)
-            elif fwd.channel_id:
-                self._fwd_from_entity = entities.get(get_peer_id(
-                    types.PeerChannel(fwd.channel_id)))
+            self._forward = Forward(
+                self._client, self.original_message.fwd_from, entities)
+        else:
+            self._forward = None
 
     def __new__(cls, client, original, entities, input_chat):
         if isinstance(original, types.Message):
@@ -324,6 +322,14 @@ class Message:
     def is_reply(self):
         """True if the message is a reply to some other or not."""
         return bool(self.original_message.reply_to_msg_id)
+
+    @property
+    def forward(self):
+        """
+        Returns `telethon.tl.custom.forward.Forward` if the message
+        has been forwarded from somewhere else.
+        """
+        return self._forward
 
     def _set_buttons(self, sender, chat):
         """

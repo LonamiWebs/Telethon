@@ -37,3 +37,11 @@ telethon\.tl\.custom\.messagebutton module
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.tl\.custom\.forward module
+------------------------------------
+
+.. automodule:: telethon.tl.custom.forward
+    :members:
+    :undoc-members:
+    :show-inheritance:
