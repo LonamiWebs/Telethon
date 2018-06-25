@@ -14,7 +14,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
     # region Public methods
 
-    async def start(
+    def start(
             self,
             phone=lambda: input('Please enter your phone: '),
             password=lambda: getpass.getpass('Please enter your password: '),
@@ -36,6 +36,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
             Please enter the code you received: 12345
             Please enter your password: *******
             (You are now logged in)
+
+        If the event loop is already running, this method returns a
+        coroutine that you should await on your own code; otherwise
+        the loop is ran until said coroutine completes.
 
         Args:
             phone (`str` | `int` | `callable`):
@@ -74,7 +78,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
             This `TelegramClient`, so initialization
             can be chained with ``.start()``.
         """
-
         if code_callback is None:
             def code_callback():
                 return input('Please enter the code you received: ')
@@ -91,6 +94,24 @@ class AuthMethods(MessageParseMethods, UserMethods):
             raise ValueError('Both a phone and a bot token provided, '
                              'must only provide one of either')
 
+        coro = self._start(
+            phone=phone,
+            password=password,
+            bot_token=bot_token,
+            force_sms=force_sms,
+            code_callback=code_callback,
+            first_name=first_name,
+            last_name=last_name,
+            max_attempts=max_attempts
+        )
+        return (
+            coro if self.loop.is_running()
+            else self.loop.run_until_complete(coro)
+        )
+
+    async def _start(
+            self, phone, password, bot_token, force_sms,
+            code_callback, first_name, last_name, max_attempts):
         if not self.is_connected():
             await self.connect()
 
