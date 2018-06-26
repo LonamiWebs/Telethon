@@ -604,16 +604,12 @@ class Message:
         if not self.original_message.entities:
             return []
 
-        if cls and self.original_message.entities:
-            texts = get_inner_text(
-                self.original_message.message,
-                [c for c in self.original_message.entities
-                 if isinstance(c, cls)]
-            )
-        else:
-            texts = get_inner_text(self.original_message.message,
-                                   self.original_message.entities)
-        return list(zip(self.original_message.entities, texts))
+        ent = self.original_message.entities
+        if cls and ent:
+            ent = [c for c in ent if isinstance(c, cls)]
+
+        texts = get_inner_text(self.original_message.message, ent)
+        return list(zip(ent, texts))
 
     async def click(self, i=None, j=None, *, text=None, filter=None):
         """
