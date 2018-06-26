@@ -4,7 +4,7 @@ import logging
 import platform
 import sys
 import time
-import warnings
+import inspect
 from datetime import timedelta, datetime
 
 from .. import version
@@ -302,7 +302,9 @@ class TelegramBaseClient(abc.ABC):
         # able to close the pending tasks properly, and letting the script
         # complete without calling disconnect causes the script to trigger
         # 100% CPU load. Call disconnect to make sure it doesn't happen.
-        if self._loop.is_running():
+        if not inspect.iscoroutinefunction(self.disconnect):
+            self.disconnect()
+        elif self._loop.is_running():
             self._loop.create_task(self.disconnect())
         else:
             self._loop.run_until_complete(self.disconnect())
