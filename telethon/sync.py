@@ -18,7 +18,7 @@ from .client.telegramclient import TelegramClient
 from .tl.custom import Draft, Dialog, MessageButton, Forward, Message
 
 
-def syncify(t, method_name):
+def _syncify(t, method_name):
     method = getattr(t, method_name)
 
     @functools.wraps(method)
@@ -32,9 +32,17 @@ def syncify(t, method_name):
     setattr(t, method_name, syncified)
 
 
-for t in [TelegramClient,
-          Draft, Dialog, MessageButton, Forward, Message]:
-    for method_name in dir(t):
-        if not method_name.startswith('_') or method_name == '__call__':
-            if inspect.iscoroutinefunction(getattr(t, method_name)):
-                syncify(t, method_name)
+def syncify(*types):
+    """
+    Converts all the methods in the given types (class definitions)
+    into synchronous, which return either the coroutine or the result
+    based on whether ``asyncio's`` event loop is running.
+    """
+    for t in types:
+        for method_name in dir(t):
+            if not method_name.startswith('_') or method_name == '__call__':
+                if inspect.iscoroutinefunction(getattr(t, method_name)):
+                    _syncify(t, method_name)
+
+
+syncify(TelegramClient, Draft, Dialog, MessageButton, Forward, Message)
