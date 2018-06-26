@@ -291,11 +291,14 @@ class TelegramBaseClient(abc.ABC):
         """
         Disconnects from Telegram.
         """
-        await self._sender.disconnect()
+        # All properties may be ``None`` if `__init__` fails, and this
+        # method will be called from `__del__` which would crash then.
+        if self._sender:
+            await self._sender.disconnect()
         if self._updates_handle:
             await self._updates_handle
-
-        self.session.close()
+        if self.session:
+            self.session.close()
 
     def __del__(self):
         # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
