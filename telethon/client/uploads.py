@@ -152,7 +152,11 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 await self._parse_message_text(caption, parse_mode)
 
         file_handle, media = await self._file_to_media(
-            file, allow_cache=allow_cache)
+            file, force_document=force_document,
+            progress_callback=progress_callback,
+            attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
+            voice_note=voice_note, video_note=video_note
+        )
 
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
