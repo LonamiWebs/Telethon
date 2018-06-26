@@ -291,14 +291,23 @@ class TelegramBaseClient(abc.ABC):
         """
         Disconnects from Telegram.
         """
+        await self._disconnect()
+        if getattr(self, 'session', None):
+            self.session.close()
+
+    async def _disconnect(self):
+        """
+        Disconnect only, without closing the session. Used in reconnections
+        to different data centers, where we don't want to close the session
+        file; user disconnects however should close it since it means that
+        their job with the client is complete and we should clean it up all.
+        """
         # All properties may be ``None`` if `__init__` fails, and this
         # method will be called from `__del__` which would crash then.
         if getattr(self, '_sender', None):
             await self._sender.disconnect()
         if getattr(self, '_updates_handle', None):
             await self._updates_handle
-        if getattr(self, 'session', None):
-            self.session.close()
 
     def __del__(self):
         # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
@@ -324,7 +333,7 @@ class TelegramBaseClient(abc.ABC):
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = self._sender.state.auth_key = None
         self.session.save()
-        await self.disconnect()
+        await self._disconnect()
         return await self.connect()
 
     # endregion
