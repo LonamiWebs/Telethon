@@ -503,22 +503,6 @@ class Message:
 
         return self._reply_message
 
-    async def get_fwd_sender(self):
-        """
-        If the :tl:`Message` is a forwarded message, returns the :tl:`User`
-        or :tl:`Channel` who originally sent the message, or ``None``.
-        """
-        if self._fwd_from_entity is None:
-            if getattr(self.original_message, 'fwd_from', None):
-                fwd = self.original_message.fwd_from
-                if fwd.from_id:
-                    self._fwd_from_entity =\
-                        await self._client.get_entity(fwd.from_id)
-                elif fwd.channel_id:
-                    self._fwd_from_entity = await self._client.get_entity(
-                        get_peer_id(types.PeerChannel(fwd.channel_id)))
-        return self._fwd_from_entity
-
     async def respond(self, *args, **kwargs):
         """
         Responds to the message (not as a reply). Shorthand for
