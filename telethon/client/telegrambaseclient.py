@@ -297,6 +297,16 @@ class TelegramBaseClient(abc.ABC):
 
         self.session.close()
 
+    def __del__(self):
+        # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
+        # able to close the pending tasks properly, and letting the script
+        # complete without calling disconnect causes the script to trigger
+        # 100% CPU load. Call disconnect to make sure it doesn't happen.
+        if self._loop.is_running():
+            self._loop.create_task(self.disconnect())
+        else:
+            self._loop.run_until_complete(self.disconnect())
+
     async def _switch_dc(self, new_dc):
         """
         Permanently switches the current connection to the new data center.
