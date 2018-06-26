@@ -292,6 +292,9 @@ class TelegramBaseClient(abc.ABC):
         Disconnects from Telegram.
         """
         await self._sender.disconnect()
+        if self._updates_handle:
+            await self._updates_handle
+
         self.session.close()
 
     async def _switch_dc(self, new_dc):
@@ -410,11 +413,10 @@ class TelegramBaseClient(abc.ABC):
         """
         raise NotImplementedError
 
-    # Let people use client.invoke(SomeRequest()) instead client(...)
     async def invoke(self, *args, **kwargs):
         warnings.warn('client.invoke(...) is deprecated, '
                       'use client(...) instead')
-        return await self(*args, **kwargs)
+        self(*args, **kwargs)
 
     @abc.abstractmethod
     def _handle_update(self, update):
