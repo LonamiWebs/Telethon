@@ -29,10 +29,10 @@ async def do_authentication(sender):
     # Step 1 sending: PQ Request, endianness doesn't matter since it's random
     nonce = int.from_bytes(os.urandom(16), 'big', signed=True)
     res_pq = await sender.send(ReqPqMultiRequest(nonce))
-    assert isinstance(res_pq, ResPQ)
+    assert isinstance(res_pq, ResPQ), 'Step 1 answer was %s' % res_pq
 
     if res_pq.nonce != nonce:
-        raise SecurityError('Invalid nonce from server')
+        raise SecurityError('Step 1 invalid nonce from server')
 
     pq = get_int(res_pq.pq)
 
@@ -58,7 +58,7 @@ async def do_authentication(sender):
 
     if cipher_text is None:
         raise SecurityError(
-            'Could not find a valid key for fingerprints: {}'
+            'Step 2 could not find a valid key for fingerprints: {}'
             .format(', '.join(
                 [str(f) for f in res_pq.server_public_key_fingerprints])
             )
@@ -72,13 +72,15 @@ async def do_authentication(sender):
         encrypted_data=cipher_text
     ))
 
-    assert isinstance(server_dh_params, (ServerDHParamsOk, ServerDHParamsFail))
+    assert isinstance(
+        server_dh_params, (ServerDHParamsOk, ServerDHParamsFail)),\
+        'Step 2.1 answer was %s' % server_dh_params
 
     if server_dh_params.nonce != res_pq.nonce:
-        raise SecurityError('Invalid nonce from server')
+        raise SecurityError('Step 2 invalid nonce from server')
 
     if server_dh_params.server_nonce != res_pq.server_nonce:
-        raise SecurityError('Invalid server nonce from server')
+        raise SecurityError('Step 2 invalid server nonce from server')
 
     if isinstance(server_dh_params, ServerDHParamsFail):
         nnh = int.from_bytes(
@@ -86,9 +88,10 @@ async def do_authentication(sender):
             'little', signed=True
         )
         if server_dh_params.new_nonce_hash != nnh:
-            raise SecurityError('Invalid DH fail nonce from server')
+            raise SecurityError('Step 2 invalid DH fail nonce from server')
 
-    assert isinstance(server_dh_params, ServerDHParamsOk)
+    assert isinstance(server_dh_params, ServerDHParamsOk),\
+        'Step 2.2 answer was %s' % server_dh_params
 
     # Step 3 sending: Complete DH Exchange
     key, iv = utils.generate_key_data_from_nonce(
@@ -96,7 +99,7 @@ async def do_authentication(sender):
     )
     if len(server_dh_params.encrypted_answer) % 16 != 0:
         # See PR#453
-        raise SecurityError('AES block size mismatch')
+        raise SecurityError('Step 3 AES block size mismatch')
 
     plain_text_answer = AES.decrypt_ige(
         server_dh_params.encrypted_answer, key, iv
@@ -105,13 +108,14 @@ async def do_authentication(sender):
     with BinaryReader(plain_text_answer) as reader:
         reader.read(20)  # hash sum
         server_dh_inner = reader.tgread_object()
-        assert isinstance(server_dh_inner, ServerDHInnerData)
+        assert isinstance(server_dh_inner, ServerDHInnerData),\
+            'Step 3 answer was %s' % server_dh_inner
 
     if server_dh_inner.nonce != res_pq.nonce:
-        raise SecurityError('Invalid nonce in encrypted answer')
+        raise SecurityError('Step 3 Invalid nonce in encrypted answer')
 
     if server_dh_inner.server_nonce != res_pq.server_nonce:
-        raise SecurityError('Invalid server nonce in encrypted answer')
+        raise SecurityError('Step 3 Invalid server nonce in encrypted answer')
 
     dh_prime = get_int(server_dh_inner.dh_prime, signed=False)
     g_a = get_int(server_dh_inner.g_a, signed=False)
@@ -142,13 +146,14 @@ async def do_authentication(sender):
     ))
 
     nonce_types = (DhGenOk, DhGenRetry, DhGenFail)
-    assert isinstance(dh_gen, nonce_types)
+    assert isinstance(dh_gen, nonce_types), 'Step 3.1 answer was %s' % dh_gen
     name = dh_gen.__class__.__name__
     if dh_gen.nonce != res_pq.nonce:
-        raise SecurityError('Invalid {} nonce from server'.format(name))
+        raise SecurityError('Step 3 invalid {} nonce from server'.format(name))
 
     if dh_gen.server_nonce != res_pq.server_nonce:
-        raise SecurityError('Invalid {} server nonce from server'.format(name))
+        raise SecurityError(
+            'Step 3 invalid {} server nonce from server'.format(name))
 
     auth_key = AuthKey(rsa.get_byte_array(gab))
     nonce_number = 1 + nonce_types.index(type(dh_gen))
@@ -156,9 +161,9 @@ async def do_authentication(sender):
 
     dh_hash = getattr(dh_gen, 'new_nonce_hash{}'.format(nonce_number))
     if dh_hash != new_nonce_hash:
-        raise SecurityError('Invalid new nonce hash')
+        raise SecurityError('Step 3 invalid new nonce hash')
 
-    assert isinstance(dh_gen, DhGenOk)
+    assert isinstance(dh_gen, DhGenOk), 'Step 3.2 answer was %s' % dh_gen
     return auth_key, time_offset
 
 
