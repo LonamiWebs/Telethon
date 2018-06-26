@@ -293,11 +293,11 @@ class TelegramBaseClient(abc.ABC):
         """
         # All properties may be ``None`` if `__init__` fails, and this
         # method will be called from `__del__` which would crash then.
-        if self._sender:
+        if getattr(self, '_sender', None):
             await self._sender.disconnect()
-        if self._updates_handle:
+        if getattr(self, '_updates_handle', None):
             await self._updates_handle
-        if self.session:
+        if getattr(self, 'session', None):
             self.session.close()
 
     def __del__(self):
