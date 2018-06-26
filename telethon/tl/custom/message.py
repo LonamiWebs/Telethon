@@ -617,19 +617,21 @@ class Message:
                 >>> for _, inner_text in m.get_entities_text(MessageEntityCode):
                 >>>     print(inner_text)
         """
+        entities_list = self.original_message.entities
+        
         if not self.original_message.entities:
             return []
 
         if cls and self.original_message.entities:
+            entities_list = [c for c in self.original_message.entities if isinstance(c, cls)]
             texts = get_inner_text(
                 self.original_message.message,
-                [c for c in self.original_message.entities
-                 if isinstance(c, cls)]
+                entities_list
             )
         else:
-            texts = get_inner_text(self.original_message.message,
+            texts = get_inner_text(entities_list,
                                    self.original_message.entities)
-        return list(zip(self.original_message.entities, texts))
+        return list(zip(entities_list, texts))
 
     async def click(self, i=None, j=None, *, text=None, filter=None):
         """
