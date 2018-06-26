@@ -32,11 +32,12 @@ class UpdateMethods(UserMethods):
         If the loop is already running, this method returns a coroutine
         that you should await on your own code.
         """
-        coro = self._run_until_disconnected()
-        return (
-            coro if self.loop.is_running()
-            else self.loop.run_until_complete(coro)
-        )
+        if self.loop.is_running():
+            return self._run_until_disconnected()
+        try:
+            return self.loop.run_until_complete(self.disconnected)
+        except KeyboardInterrupt:
+            self.loop.run_until_complete(self.disconnect())
 
     def on(self, event):
         """
