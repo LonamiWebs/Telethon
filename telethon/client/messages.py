@@ -271,13 +271,6 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         return msgs
 
-    async def get_message_history(self, *args, **kwargs):
-        """Deprecated, see :meth:`get_messages`."""
-        warnings.warn(
-            'get_message_history is deprecated, use get_messages instead'
-        )
-        return await self.get_messages(*args, **kwargs)
-
     # endregion
 
     # region Message sending/editing/deleting

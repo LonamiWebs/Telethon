@@ -163,13 +163,6 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
         return msg
 
-    async def send_voice_note(self, *args, **kwargs):
-        """Deprecated, see :meth:`send_file`."""
-        warnings.warn('send_voice_note is deprecated, use '
-                      'send_file(..., voice_note=True) instead')
-        kwargs['is_voice_note'] = True
-        return await self.send_file(*args, **kwargs)
-
     async def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
                     parse_mode=utils.Default):

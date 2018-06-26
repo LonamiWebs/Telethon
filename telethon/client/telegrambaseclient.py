@@ -423,11 +423,6 @@ class TelegramBaseClient(abc.ABC):
         """
         raise NotImplementedError
 
-    async def invoke(self, *args, **kwargs):
-        warnings.warn('client.invoke(...) is deprecated, '
-                      'use client(...) instead')
-        self(*args, **kwargs)
-
     @abc.abstractmethod
     def _handle_update(self, update):
         raise NotImplementedError

@@ -114,22 +114,6 @@ class UpdateMethods(UserMethods):
         """
         return [(callback, event) for event, callback in self._event_builders]
 
-    def add_update_handler(self, handler):
-        """Deprecated, see :meth:`add_event_handler`."""
-        warnings.warn(
-            'add_update_handler is deprecated, use the @client.on syntax '
-            'or add_event_handler(callback, events.Raw) instead (see '
-            'https://telethon.rtfd.io/en/latest/extra/basic/working-'
-            'with-updates.html)'
-        )
-        return self.add_event_handler(handler, events.Raw)
-
-    def remove_update_handler(self, handler):
-        return self.remove_event_handler(handler)
-
-    def list_update_handlers(self):
-        return [callback for callback, _ in self.list_event_handlers()]
-
     async def catch_up(self):
         state = self.session.get_update_state(0)
         if not state or not state.pts:

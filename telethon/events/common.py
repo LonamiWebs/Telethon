@@ -1,10 +1,8 @@
 import abc
-import itertools
 import warnings
 
 from .. import utils
-from ..errors import RPCError
-from ..tl import TLObject, types, functions
+from ..tl import TLObject, types
 
 
 async def _into_id_set(client, chats):
