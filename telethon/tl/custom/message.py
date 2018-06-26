@@ -625,7 +625,7 @@ class Message:
             ent = [c for c in ent if isinstance(c, cls)]
 
         texts = get_inner_text(self.original_message.message, ent)
-        return list(zip(entities_list, texts))
+        return list(zip(ent, texts))
 
     async def click(self, i=None, j=None, *, text=None, filter=None):
         """
