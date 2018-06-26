@@ -3,18 +3,13 @@ from abc import ABC, abstractmethod
 
 class Session(ABC):
     def __init__(self):
-        # Session IDs can be random on every connection
-        self._report_errors = True
-        self._flood_sleep_threshold = 60
+        pass
 
     def clone(self, to_instance=None):
         """
         Creates a clone of this session file.
         """
-        cloned = to_instance or self.__class__()
-        cloned._report_errors = self.report_errors
-        cloned._flood_sleep_threshold = self.flood_sleep_threshold
-        return cloned
+        return to_instance or self.__class__()
 
     @abstractmethod
     def set_dc(self, dc_id, server_address, port):
@@ -145,34 +140,3 @@ class Session(ABC):
         ``id`` and ``access_hash`` in that order.
         """
         raise NotImplementedError
-
-    @property
-    def report_errors(self):
-        """
-        Whether RPC errors should be reported
-        to https://rpc.pwrtelegram.xyz or not.
-        """
-        return self._report_errors
-
-    @report_errors.setter
-    def report_errors(self, value):
-        """
-        Sets the boolean value that indicates whether RPC errors
-        should be reported to https://rpc.pwrtelegram.xyz or not.
-        """
-        self._report_errors = value
-
-    @property
-    def flood_sleep_threshold(self):
-        """
-        Threshold below which the library should automatically sleep
-        whenever a FloodWaitError occurs to prevent it from raising.
-        """
-        return self._flood_sleep_threshold
-
-    @flood_sleep_threshold.setter
-    def flood_sleep_threshold(self, value):
-        """
-        Sets the new time threshold (integer, float or timedelta).
-        """
-        self._flood_sleep_threshold = value

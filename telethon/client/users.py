@@ -37,7 +37,7 @@ class UserMethods(TelegramBaseClient):
                 __log__.warning('Telegram is having internal issues %s: %s',
                                 e.__class__.__name__, e)
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
-                if e.seconds <= self.session.flood_sleep_threshold:
+                if e.seconds <= self.flood_sleep_threshold:
                     __log__.info('Sleeping for %ds on flood wait', e.seconds)
                     await asyncio.sleep(e.seconds, loop=self._loop)
                 else:

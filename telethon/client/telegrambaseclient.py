@@ -77,8 +77,7 @@ class TelegramBaseClient(abc.ABC):
             when Telegram is having internal issues (due to either
             ``errors.ServerError`` or ``errors.RpcCallFailError``),
             when there is a ``errors.FloodWaitError`` less than
-            ``session.flood_sleep_threshold``, or when there's a
-            migrate error.
+            `flood_sleep_threshold`, or when there's a migrate error.
 
             May set to a false-y value (``0`` or ``None``) for infinite
             retries, but this is not recommended, since some requests can
@@ -95,9 +94,13 @@ class TelegramBaseClient(abc.ABC):
             Whether reconnection should be retried `connection_retries`
             times automatically if Telegram disconnects us or not.
 
-        report_errors (`bool`, optional):
-            Whether to report RPC errors or not. Defaults to ``True``,
-            see :ref:`api-status` for more information.
+        flood_sleep_threshold (`int` | `float`, optional):
+            The threshold below which the library should automatically
+            sleep on flood wait errors (inclusive). For instance, if a
+            ``FloodWaitError`` for 17s occurs and `flood_sleep_threshold`
+            is 20s, the library will ``sleep`` automatically. If the error
+            was for 21s, it would ``raise FloodWaitError`` instead. Values
+            larger than a day (like ``float('inf')``) will be changed to a day.
 
         device_model (`str`, optional):
             "Device model" to be sent when creating the initial connection.
@@ -138,7 +141,7 @@ class TelegramBaseClient(abc.ABC):
                  request_retries=5,
                  connection_retries=5,
                  auto_reconnect=True,
-                 report_errors=True,
+                 flood_sleep_threshold=60,
                  device_model=None,
                  system_version=None,
                  app_version=None,
@@ -170,7 +173,7 @@ class TelegramBaseClient(abc.ABC):
                 DEFAULT_PORT
             )
 
-        session.report_errors = report_errors
+        self.flood_sleep_threshold = flood_sleep_threshold
         self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
