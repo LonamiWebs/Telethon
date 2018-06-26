@@ -271,7 +271,7 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
-        had_auth = self.session.auth_key is not None
+        old_auth = self.session.auth_key
         await self._sender.connect(
             self.session.server_address, self.session.port)
 
@@ -280,7 +280,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._updates_handle = self._loop.create_task(self._update_loop())
 
-        if not had_auth:
+        if old_auth != self._sender.state.auth_key:
             self.session.auth_key = self._sender.state.auth_key
             self.session.save()
 

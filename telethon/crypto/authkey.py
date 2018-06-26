@@ -38,3 +38,6 @@ class AuthKey:
 
         # Calculates the message key from the given data
         return int.from_bytes(sha1(data).digest()[4:20], 'little', signed=True)
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and other.key == self.key
