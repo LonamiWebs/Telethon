@@ -1,8 +1,7 @@
 import getpass
 import hashlib
-import sys
-
 import os
+import sys
 
 from .messageparse import MessageParseMethods
 from .users import UserMethods
@@ -457,5 +456,21 @@ class AuthMethods(MessageParseMethods, UserMethods):
                     hint=hint
                 )
             ))
+
+    # endregion
+
+    # region with blocks
+
+    def __enter__(self):
+        return self.start()
+
+    async def __aenter__(self):
+        return await self.start()
+
+    def __exit__(self, *args):
+        self.disconnect()
+
+    async def __aexit__(self, *args):
+        await self.disconnect()
 
     # endregion
