@@ -3,7 +3,7 @@ import io
 import logging
 import os
 import pathlib
-import warnings
+import re
 from io import BytesIO
 from mimetypes import guess_type
 
@@ -371,14 +371,26 @@ class UploadMethods(MessageParseMethods, UserMethods):
             except TypeError:
                 return None, None  # Can't turn whatever was given into media
 
+        media = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        file_handle = await self.upload_file(
-            file, progress_callback=progress_callback,
-            use_cache=use_cache if allow_cache else None
-        )
+        if isinstance(file, str) and re.match('https?://', file):
+            file_handle = None
+            if as_image:
+                media = types.InputMediaPhotoExternal(file)
+            elif not force_document and utils.is_gif(file):
+                media = types.InputMediaGifExternal(file, '')
+            else:
+                media = types.InputMediaDocumentExternal(file)
+        else:
+            file_handle = await self.upload_file(
+                file, progress_callback=progress_callback,
+                use_cache=use_cache if allow_cache else None
+            )
 
-        if isinstance(file_handle, use_cache):
+        if media:
+            pass  # Already have media, don't check the rest
+        elif isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
                 media = types.InputMediaPhoto(file_handle)

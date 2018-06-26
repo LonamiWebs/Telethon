@@ -510,6 +510,13 @@ def is_image(file):
     return re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
 
 
+def is_gif(file):
+    """
+    Returns ``True`` if the file extension looks like a gif file to Telegram.
+    """
+    return re.match(r'\.gif', _get_extension(file), re.IGNORECASE)
+
+
 def is_audio(file):
     """Returns ``True`` if the file extension looks like an audio file."""
     file = 'a' + _get_extension(file)
