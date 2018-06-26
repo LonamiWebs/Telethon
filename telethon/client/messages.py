@@ -129,6 +129,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             if offset_id - min_id <= 1:
                 return
 
+        from_id = None
         limit = float('inf') if limit is None else int(limit)
         if search is not None or filter or from_user:
             if filter is None:
@@ -150,6 +151,13 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                     if from_user else None
                 )
             )
+            if isinstance(entity, types.InputPeerUser):
+                # Telegram completely ignores `from_id` in private
+                # chats, so we need to do this check client-side.
+                if isinstance(request.from_id, types.InputPeerSelf):
+                    from_id = (await self.get_me(input_peer=True)).user_id
+                else:
+                    from_id = request.from_id
         else:
             request = functions.messages.GetHistoryRequest(
                 peer=entity,
@@ -194,8 +202,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 if message.id <= min_id:
                     return
 
-                if isinstance(message, types.MessageEmpty)\
-                        or message.id >= last_id:
+                if (isinstance(message, types.MessageEmpty)
+                    or message.id >= last_id
+                        or (from_id and message.from_id != from_id)):
                     continue
 
                 # There has been reports that on bad connections this method
