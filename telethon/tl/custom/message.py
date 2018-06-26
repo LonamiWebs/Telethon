@@ -623,7 +623,8 @@ class Message:
             return []
 
         if cls and self.original_message.entities:
-            entities_list = [c for c in self.original_message.entities if isinstance(c, cls)]
+            entities_list = [c for c in self.original_message.entities 
+                             if isinstance(c, cls)]
             texts = get_inner_text(
                 self.original_message.message,
                 entities_list
