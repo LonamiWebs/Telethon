@@ -41,7 +41,8 @@ class MTProtoSender:
     key exists yet.
     """
     def __init__(self, state, connection, loop, *,
-                 retries=5, auto_reconnect=True, update_callback=None):
+                 retries=5, auto_reconnect=True, update_callback=None,
+                 auth_key_callback=None):
         self.state = state
         self._connection = connection
         self._loop = loop
@@ -50,6 +51,7 @@ class MTProtoSender:
         self._retries = retries
         self._auto_reconnect = auto_reconnect
         self._update_callback = update_callback
+        self._auth_key_callback = auth_key_callback
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -255,6 +257,10 @@ class MTProtoSender:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
                     self.state.auth_key, self.state.time_offset =\
                         await authenticator.do_authentication(plain)
+
+                    if self._auth_key_callback:
+                        self._auth_key_callback(self.state.auth_key)
+
                     break
                 except (SecurityError, AssertionError) as e:
                     __log__.warning('Attempt {} at new auth_key failed: {}'

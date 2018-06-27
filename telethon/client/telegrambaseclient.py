@@ -208,7 +208,8 @@ class TelegramBaseClient(abc.ABC):
             state, connection, self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
-            update_callback=self._handle_update
+            update_callback=self._handle_update,
+            auth_key_callback=self._auth_key_callback
         )
 
         # Cache :tl:`ExportedAuthorization` as ``dc_id: MTProtoState``
@@ -271,7 +272,6 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
-        old_auth = self.session.auth_key
         await self._sender.connect(
             self.session.server_address, self.session.port)
 
@@ -279,10 +279,6 @@ class TelegramBaseClient(abc.ABC):
             functions.help.GetConfigRequest()))
 
         self._updates_handle = self._loop.create_task(self._update_loop())
-
-        if old_auth != self._sender.state.auth_key:
-            self.session.auth_key = self._sender.state.auth_key
-            self.session.save()
 
     def is_connected(self):
         """
@@ -338,6 +334,15 @@ class TelegramBaseClient(abc.ABC):
         self.session.save()
         await self._disconnect()
         return await self.connect()
+
+    def _auth_key_callback(self, auth_key):
+        """
+        Callback from the sender whenever it needed to generate a
+        new authorization key. This means we are not authorized.
+        """
+        self._authorized = None
+        self.session.auth_key = auth_key
+        self.session.save()
 
     # endregion
 
