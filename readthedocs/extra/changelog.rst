@@ -14,8 +14,32 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Bug Fixes (v1.0.1)
+==================
+
+*Published at 2018/06/27*
+
+And as usual, every major release has a few bugs that make the library
+unusable! This quick update should fix those, namely:
+
+Bug fixes
+~~~~~~~~~
+
+- `client.start() <telethon.client.auth.AuthMethods.start>` was completely
+  broken due to a last-time change requiring named arguments everywhere.
+- Since the rewrite, if your system clock was wrong, the connection would
+  get stuck in an infinite "bad message" loop of responses from Telegram.
+- Accessing the buttons of a custom message wouldn't work in channels,
+  which lead to fix a completely different bug regarding starting bots.
+- Disconnecting could complain if the magic ``telethon.sync`` was imported.
+- Successful automatic reconnections now ask Telegram to send updates to us
+  once again as soon as the library is ready to listen for them.
+
+
 Synchronous magic (v1.0)
 ========================
+
+*Published at 2018/06/27*
 
 .. important::
 
@@ -107,7 +131,7 @@ Additions
 
   .. code-block:: python
 
-      with TelegramClient(name, api_id, api_hash).star(bot_token=token) as bot:
+      with TelegramClient(name, api_id, api_hash).start(bot_token=token) as bot:
           bot.send_message(chat, 'Hello!')
 
 
