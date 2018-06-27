@@ -22,7 +22,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
     @async_generator
     async def iter_messages(
-            self, entity, limit=None, offset_date=None, offset_id=0,
+            self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
             from_user=None, batch_size=100, wait_time=None, ids=None,
             _total=None):
@@ -285,7 +285,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
     # region Message sending/editing/deleting
 
     async def send_message(
-            self, entity, message='', reply_to=None,
+            self, entity, message='', *, reply_to=None,
             parse_mode=utils.Default, link_preview=True, file=None,
             force_document=False, clear_draft=False):
         """
@@ -403,7 +403,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    async def forward_messages(self, entity, messages, from_peer=None):
+    async def forward_messages(self, entity, messages, *, from_peer=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -469,8 +469,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         return result[0] if single else result
 
     async def edit_message(
-            self, entity, message=None, text=None, parse_mode=utils.Default,
-            link_preview=True, file=None):
+            self, entity, message=None, text=None,
+            *, parse_mode=utils.Default, link_preview=True, file=None):
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -542,7 +542,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         self._cache_media(msg, file, file_handle)
         return msg
 
-    async def delete_messages(self, entity, message_ids, revoke=True):
+    async def delete_messages(self, entity, message_ids, *, revoke=True):
         """
         Deletes a message from a chat, optionally "for everyone".
 
@@ -586,8 +586,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
     # region Miscellaneous
 
-    async def send_read_acknowledge(self, entity, message=None, max_id=None,
-                                    clear_mentions=False):
+    async def send_read_acknowledge(
+            self, entity, message=None, *, max_id=None, clear_mentions=False):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").

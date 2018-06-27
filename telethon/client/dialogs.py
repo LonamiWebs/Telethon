@@ -14,7 +14,7 @@ class DialogMethods(UserMethods):
 
     @async_generator
     async def iter_dialogs(
-            self, limit=None, offset_date=None, offset_id=0,
+            self, limit=None, *, offset_date=None, offset_id=0,
             offset_peer=types.InputPeerEmpty(), ignore_migrated=False,
             _total=None):
         """

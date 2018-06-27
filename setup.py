@@ -183,7 +183,7 @@ def main():
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
-            name='Telethon-aio',
+            name='Telethon',
             version=version,
             description="Full-featured Telegram client library for Python 3",
             long_description=long_description,
@@ -206,7 +206,7 @@ def main():
                 #   3 - Alpha
                 #   4 - Beta
                 #   5 - Production/Stable
-                'Development Status :: 3 - Alpha',
+                'Development Status :: 5 - Production/Stable',
 
                 'Intended Audience :: Developers',
                 'Topic :: Communications :: Chat',

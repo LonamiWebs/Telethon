@@ -16,7 +16,7 @@ class DownloadMethods(UserMethods):
     # region Public methods
 
     async def download_profile_photo(
-            self, entity, file=None, download_big=True):
+            self, entity, file=None, *, download_big=True):
         """
         Downloads the profile photo of the given entity (user/chat/channel).
 
@@ -91,7 +91,8 @@ class DownloadMethods(UserMethods):
                 # Until there's a report for chats, no need to.
                 return None
 
-    async def download_media(self, message, file=None, progress_callback=None):
+    async def download_media(self, message, file=None,
+                             *, progress_callback=None):
         """
         Downloads the given media, or the media from a specified Message.
 
@@ -141,7 +142,7 @@ class DownloadMethods(UserMethods):
             )
 
     async def download_file(
-            self, input_location, file=None, part_size_kb=None,
+            self, input_location, file=None, *, part_size_kb=None,
             file_size=None, progress_callback=None):
         """
         Downloads the given input location to a file.

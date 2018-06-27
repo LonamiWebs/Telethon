@@ -13,7 +13,7 @@ class ChatMethods(UserMethods):
 
     @async_generator
     async def iter_participants(
-            self, entity, limit=None, search='',
+            self, entity, limit=None, *, search='',
             filter=None, aggressive=False, _total=None):
         """
         Iterator over the participants belonging to the specified chat.

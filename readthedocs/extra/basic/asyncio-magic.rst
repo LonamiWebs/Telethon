@@ -13,9 +13,9 @@ Magic with asyncio
 
         import telethon.sync
 
-    At the beginning of your main script and you will be good. If you
-    do use updates or events, keep reading, or use `a simpler version
-    <https://github.com/LonamiWebs/Telethon/tree/sync>`_ (discouraged).
+    At the beginning of your main script and you will be good. If you do use
+    updates or events, keep reading, or install the latest version using
+    threads and Python 3.4 support with ``pip install telethon==0.19.1.6``.
 
     You might also want to check the :ref:`changelog`.
 
@@ -120,7 +120,7 @@ way, since your event handlers will be ``async def`` too.
 
     There are two exceptions. Both `client.run_until_disconnected()
     <telethon.client.updates.UpdateMethods.run_until_disconnected>` and
-    `client.start() <telethon.client.updates.UpdateMethods.start>` work in
+    `client.start() <telethon.client.auth.AuthMethods.start>` work in
     and outside of ``async def`` for convenience without importing the
     magic module. The rest of methods remain ``async`` unless you import it.
 

@@ -14,6 +14,131 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Synchronous magic (v1.0)
+========================
+
+.. important::
+
+    If you come from Telethon pre-1.0 you **really** want to read
+    :ref:`asyncio-magic` to port your scripts to the new version.
+
+    If you're not ready for this, you can ``pip install telethon==0.19.1.6``.
+    It's the latest version of the library using threads for Python 3.4+.
+
+    If you're interested in maintaining a Telethon version that supports
+    Python 3.4 and uses threads, please open an issue and let me know.
+
+The library has been around for well over a year. A lot of improvements have
+been made, a lot of user complaints have been fixed, and a lot of user desires
+have been implemented. It's time to consider the public API as stable, and
+remove some of the old methods that were around until now for compatibility
+reasons. But there's one more surprise!
+
+There is a new magic ``telethon.sync`` module to let you use **all** the
+methods in the :ref:`TelegramClient <telethon-client>` (and the types returned
+from its functions) in a synchronous way, while using ``asyncio`` behind
+the scenes! This means you're now able to do both of the following:
+
+.. code-block:: python
+
+    import asyncio
+
+    async def main():
+      await client.send_message('me', 'Hello!')
+
+    asyncio.get_event_loop().run_until_complete(main())
+
+    # ...can be rewritten as:
+
+    from telethon import sync
+    client.send_message('me', 'Hello!')
+
+Both ways can coexist (you need to ``await`` if the loop is running).
+
+You can also use the magic ``sync`` module in your own classes, and call
+``sync.syncify(cls)`` to convert all their ``async def`` into magic variants.
+
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+- ``message.get_fwd_sender`` is now in `message.forward
+  <telethon.tl.custom.message.Message.forward>`.
+- ``client.add_update_handler`` is now `client.add_event_handler
+  <telethon.client.updates.UpdateMethods.add_event_handler>`
+- ``client.remove_update_handler`` is now `client.remove_event_handler
+  <telethon.client.updates.UpdateMethods.remove_event_handler>`
+- ``client.list_update_handlers`` is now `client.list_event_handlers
+  <telethon.client.updates.UpdateMethods.list_event_handlers>`
+- ``client.get_message_history`` is now `client.get_messages
+  <telethon.client.messages.MessageMethods.get_messages>`
+- ``client.send_voice_note`` is now `client.send_file
+  <telethon.client.uploads.UploadMethods.send_file>` with ``is_voice=True``.
+- ``client.invoke()`` is now ``client(...)``.
+- ``report_errors`` has been removed since it's currently not used,
+  and ``flood_sleep_threshold`` is now part of the client.
+- Methods with a lot of arguments can no longer be used without specifying
+  their argument. Instead you need to use named arguments. This improves
+  readability and not needing to learn the order of the arguments, which
+  can also change.
+
+
+Additions
+~~~~~~~~~
+
+- `client.send_file <telethon.client.uploads.UploadMethods.send_file>` now
+  accepts external ``http://`` and ``https://`` URLs.
+- You can use the :ref:`TelegramClient <telethon-client>` inside of ``with``
+  blocks, which will `client.start() <telethon.client.auth.AuthMethods.start>`
+  and `disconnect() <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
+  the client for you:
+
+  .. code-block:: python
+
+      from telethon import TelegramClient, sync
+
+      with TelegramClient(name, api_id, api_hash) as client:
+          client.send_message('me', 'Hello!')
+
+  Convenience at its maximum! You can even chain the `.start()
+  <telethon.client.auth.AuthMethods.start>` method since
+  it returns the instance of the client:
+
+  .. code-block:: python
+
+      with TelegramClient(name, api_id, api_hash).star(bot_token=token) as bot:
+          bot.send_message(chat, 'Hello!')
+
+
+Bug fixes
+~~~~~~~~~
+
+- There were some ``@property async def`` left, and some ``await property``.
+- "User joined" event was being treated as "User was invited".
+- SQLite's cursor should not be closed properly after usage.
+- ``await`` the updates task upon disconnection.
+- Some bug in Python 3.5.2's ``asyncio`` causing 100% CPU load if you
+  forgot to call `client.disconnect()
+  <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`.
+  The method is called for you on object destruction, but you still should
+  disconnect manually or use a ``with`` block.
+- Some fixes regarding disconnecting on client deletion and properly
+  saving the authorization key.
+- Passing a class to `message.get_entities_text
+  <telethon.tl.custom.message.Message.get_entities_text>` now works properly.
+- Iterating messages from a specific user in private messages now works.
+
+Enhancements
+~~~~~~~~~~~~
+
+- Both `client.start() <telethon.client.auth.AuthMethods.start>` and
+  `client.run_until_disconnected()
+  <telethon.client.updates.UpdateMethods.run_until_disconnected>` can
+  be ran in both a synchronous way (without starting the loop manually)
+  or from an ``async def`` where they need to have an ``await``.
+
+
 Core Rewrite in asyncio (v1.0-rc1)
 ==================================
 

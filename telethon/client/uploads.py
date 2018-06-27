@@ -27,7 +27,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
     # region Public methods
 
     async def send_file(
-            self, entity, file, caption='', force_document=False,
+            self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=utils.Default,
             voice_note=False, video_note=False, **kwargs):
@@ -221,7 +221,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
         ]
 
     async def upload_file(
-            self, file, part_size_kb=None, file_name=None, use_cache=None,
+            self, file, *, part_size_kb=None, file_name=None, use_cache=None,
             progress_callback=None):
         """
         Uploads the specified file and returns a handle (an instance of

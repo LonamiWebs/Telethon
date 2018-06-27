@@ -82,7 +82,7 @@ class UserUpdate(EventBuilder):
             contact (`bool`):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
-        def __init__(self, user_id, status=None, typing=None):
+        def __init__(self, user_id, *, status=None, typing=None):
             super().__init__(types.PeerUser(user_id))
 
             self.online = None if status is None else \

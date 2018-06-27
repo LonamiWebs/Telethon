@@ -26,7 +26,7 @@ Installing
 
 .. code:: sh
 
-  pip3 install telethon-aio
+  pip3 install telethon
 
 
 Creating a client

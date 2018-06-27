@@ -17,6 +17,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             self,
             phone=lambda: input('Please enter your phone: '),
             password=lambda: getpass.getpass('Please enter your password: '),
+            *,
             bot_token=None, force_sms=False, code_callback=None,
             first_name='New User', last_name='', max_attempts=3):
         """
@@ -193,7 +194,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return self
 
     async def sign_in(
-            self, phone=None, code=None, password=None,
+            self, phone=None, *, code=None, password=None,
             bot_token=None, phone_code_hash=None):
         """
         Starts or completes the sign in process with the given phone number
@@ -325,7 +326,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._authorized = True
         return result.user
 
-    async def send_code_request(self, phone, force_sms=False):
+    async def send_code_request(self, phone, *, force_sms=False):
         """
         Sends a code request to the specified phone number.
 
@@ -382,8 +383,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return True
 
     async def edit_2fa(
-            self, current_password=None, new_password=None, hint='',
-            email=None):
+            self, current_password=None, new_password=None,
+            *, hint='', email=None):
         """
         Changes the 2FA settings of the logged in user, according to the
         passed parameters. Take note of the parameter explanations.
