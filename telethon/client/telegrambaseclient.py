@@ -309,6 +309,9 @@ class TelegramBaseClient(abc.ABC):
             await self._updates_handle
 
     def __del__(self):
+        if not self.is_connected() or self.loop.is_closed():
+            return
+
         # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
         # able to close the pending tasks properly, and letting the script
         # complete without calling disconnect causes the script to trigger
