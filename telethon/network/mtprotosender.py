@@ -597,11 +597,24 @@ class MTProtoSender:
             error_code:int = BadMsgNotification;
         """
         bad_msg = message.obj
+        msg = self._pending_messages.get(bad_msg.bad_msg_id)
+
         __log__.debug('Handling bad msg for message %d', bad_msg.bad_msg_id)
         if bad_msg.error_code in (16, 17):
             # Sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
-            self.state.update_time_offset(correct_msg_id=message.msg_id)
+            to = self.state.update_time_offset(correct_msg_id=message.msg_id)
+            __log__.info('System clock is wrong, set time offset to %ds', to)
+
+            # Correct the msg_id *of the message to resend*, not all.
+            #
+            # If we correct them all, new "bad message" would not find
+            # the old invalid IDs, causing all awaits to never finish.
+            if msg:
+                del self._pending_messages[msg.msg_id]
+                self.state.update_message_id(msg)
+                self._pending_messages[msg.msg_id] = msg
+
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
@@ -610,16 +623,15 @@ class MTProtoSender:
             # msg_seqno too high never seems to happen but just in case
             self.state._sequence -= 16
         else:
-            msg = self._pending_messages.pop(bad_msg.bad_msg_id, None)
             if msg:
+                del self._pending_messages[msg.msg_id]
                 msg.future.set_exception(BadMessageError(bad_msg.error_code))
             return
 
         # Messages are to be re-sent once we've corrected the issue
-        try:
-            self._send_queue.put_nowait(
-                self._pending_messages[bad_msg.bad_msg_id])
-        except KeyError:
+        if msg:
+            self._send_queue.put_nowait(msg)
+        else:
             # May be MsgsAck, those are not saved in pending messages
             __log__.info('Message %d not resent due to bad msg',
                          bad_msg.bad_msg_id)

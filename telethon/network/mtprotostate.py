@@ -49,6 +49,13 @@ class MTProtoState:
             after_id=after.msg_id if after else None
         )
 
+    def update_message_id(self, message):
+        """
+        Updates the message ID to a new one,
+        used when the time offset changed.
+        """
+        message.msg_id = self._get_new_msg_id()
+
     @staticmethod
     def _calc_key(auth_key, msg_key, client):
         """
@@ -153,6 +160,7 @@ class MTProtoState:
         correct = correct_msg_id >> 32
         self.time_offset = correct - now
         self._last_msg_id = 0
+        return self.time_offset
 
     def _get_seq_no(self, content_related):
         """
