@@ -11,7 +11,7 @@
 
             // setTheme(<link />, 'light' / 'dark')
             function setTheme(theme) {
-                document.cookie = 'css=' + theme + '; path=/';
+                localStorage.setItem('theme', theme);
                 return style.href = 'css/docs.' + theme + '.css';
             }
 
@@ -24,9 +24,7 @@
                 });
             }
 
-            setTheme(document.cookie
-                .split(';')[0]
-                .split('=')[1] || 'light');
+            setTheme(localStorage.getItem('theme') || 'light');
 
             document.addEventListener('DOMContentLoaded', function () {
                 setThemeOnClick('light', document.getElementById('themeLight'));

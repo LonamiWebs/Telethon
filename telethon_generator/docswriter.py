@@ -45,7 +45,7 @@ class DocsWriter:
     <link id="style" href="{rel_css}/docs.{def_css}.css" rel="stylesheet">
     <script>
     document.getElementById("style").href = "{rel_css}/docs."
-        + (document.cookie.split(";")[0].split("=")[1] || "{def_css}")
+        + (localStorage.getItem("theme") || "{def_css}")
         + ".css";
     </script>
     <link href="https://fonts.googleapis.com/css?family=Nunito|Source+Code+Pro"
