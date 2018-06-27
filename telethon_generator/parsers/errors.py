@@ -28,6 +28,7 @@ KNOWN_CODES = {
 CAPTURE_NAMES = {
     'FloodWaitError': 'seconds',
     'FloodTestPhoneWaitError': 'seconds',
+    'TakeoutInitDelayError': 'seconds',
     'FileMigrateError': 'new_dc',
     'NetworkMigrateError': 'new_dc',
     'PhoneMigrateError': 'new_dc',
@@ -97,7 +98,7 @@ def parse_errors(json_file, descriptions_file):
     # PWRTelegram's API doesn't return all errors, which we do need here.
     # Add some special known-cases manually first.
     errors[420].update((
-        'FLOOD_WAIT_X', 'FLOOD_TEST_PHONE_WAIT_X'
+        'FLOOD_WAIT_X', 'FLOOD_TEST_PHONE_WAIT_X', 'TAKEOUT_INIT_DELAY_X'
     ))
     errors[401].update((
         'AUTH_KEY_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'
