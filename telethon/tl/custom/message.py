@@ -146,6 +146,7 @@ class Message:
         if isinstance(self.original_message, types.MessageService):
             return self.original_message.action
 
+    # TODO Make a property for via_bot and via_input_bot, as well as get_*
     async def _reload_message(self):
         """
         Re-fetches this message to reload the sender and chat entities,
@@ -331,18 +332,37 @@ class Message:
         """
         return self._forward
 
-    def _set_buttons(self, sender, chat):
+    def _set_buttons(self, chat, bot):
         """
         Helper methods to set the buttons given the input sender and chat.
         """
         if isinstance(self.original_message.reply_markup, (
                 types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
             self._buttons = [[
-                MessageButton(self._client, button, sender, chat,
+                MessageButton(self._client, button, chat, bot,
                               self.original_message.id)
                 for button in row.buttons
             ] for row in self.original_message.reply_markup.rows]
             self._buttons_flat = [x for row in self._buttons for x in row]
+
+    def _needed_markup_bot(self):
+        """
+        Returns the input peer of the bot that's needed for the reply markup.
+
+        This is necessary for :tl:`KeyboardButtonSwitchInline` since we need
+        to know what bot we want to start. Raises ``ValueError`` if the bot
+        cannot be found but is needed. Returns ``None`` if it's not needed.
+        """
+        for row in self.original_message.reply_markup.rows:
+            for button in row.buttons:
+                if isinstance(button, types.KeyboardButtonSwitchInline):
+                    if button.same_peer:
+                        bot = self.input_sender
+                        if not bot:
+                            raise ValueError('No input sender')
+                    else:
+                        return self._client.session.get_input_entity(
+                            self.original_message.via_bot_id)
 
     @property
     def buttons(self):
@@ -350,9 +370,18 @@ class Message:
         Returns a matrix (list of lists) containing all buttons of the message
         as `telethon.tl.custom.messagebutton.MessageButton` instances.
         """
+        if not isinstance(self.original_message, types.Message):
+            return  # MessageService and MessageEmpty have no markup
+
         if self._buttons is None and self.original_message.reply_markup:
-            if self.input_sender and self.input_chat:
-                self._set_buttons(self._input_sender, self._input_chat)
+            if not self.input_chat:
+                return
+            try:
+                bot = self._needed_markup_bot()
+            except ValueError:
+                return
+            else:
+                self._set_buttons(self._input_chat, bot)
 
         return self._buttons
 
@@ -361,11 +390,18 @@ class Message:
         Returns `buttons`, but will make an API call to find the
         input chat (needed for the buttons) unless it's already cached.
         """
-        if not self.buttons:
-            sender = await self.get_input_sender()
+        if not self.buttons and isinstance(
+                self.original_message, types.Message):
             chat = await self.get_input_chat()
-            if sender and chat:
-                self._set_buttons(sender, chat)
+            if not chat:
+                return
+            try:
+                bot = self._needed_markup_bot()
+            except ValueError:
+                await self._reload_message()
+                bot = self._needed_markup_bot()  # TODO use via_input_bot
+
+            self._set_buttons(chat, bot)
 
         return self._buttons
 

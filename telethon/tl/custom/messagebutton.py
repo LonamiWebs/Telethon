@@ -14,9 +14,9 @@ class MessageButton:
         button (:tl:`KeyboardButton`):
             The original :tl:`KeyboardButton` object.
     """
-    def __init__(self, client, original, from_user, chat, msg_id):
+    def __init__(self, client, original, chat, bot, msg_id):
         self.button = original
-        self._from = from_user
+        self._bot = bot
         self._chat = chat
         self._msg_id = msg_id
         self._client = client
@@ -82,7 +82,7 @@ class MessageButton:
                 return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
             return await self._client(functions.messages.StartBotRequest(
-                bot=self._from, peer=self._chat, start_param=self.button.query
+                bot=self._bot, peer=self._chat, start_param=self.button.query
             ))
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)
