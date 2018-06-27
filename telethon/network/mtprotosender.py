@@ -304,6 +304,9 @@ class MTProtoSender:
         for retry in range(1, retries + 1):
             try:
                 await self._connect()
+                for m in self._pending_messages.values():
+                    self._send_queue.put_nowait(m)
+
                 break
             except ConnectionError:
                 __log__.info('Failed reconnection retry %d/%d', retry, retries)
