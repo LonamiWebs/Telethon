@@ -1,12 +1,12 @@
 import asyncio
+import inspect
 import itertools
 import logging
 import random
 import time
-import warnings
 
 from .users import UserMethods
-from .. import events, utils
+from .. import events, utils, errors
 from ..tl import types, functions
 
 __log__ = logging.getLogger(__name__)
@@ -264,5 +264,15 @@ class UpdateMethods(UserMethods):
                 except:
                     __log__.exception('Unhandled exception on {}'
                                       .format(callback.__name__))
+
+    async def _handle_auto_reconnect(self):
+        # Upon reconnection, we want to send getState
+        # for Telegram to keep sending us updates.
+        try:
+            __log__.info('Asking for the current state after reconnect...')
+            state = await self(functions.updates.GetStateRequest())
+            __log__.info('Got new state! %s', state)
+        except errors.RPCError as e:
+            __log__.info('Failed to get current state: %r', e)
 
     # endregion

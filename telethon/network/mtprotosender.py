@@ -42,7 +42,7 @@ class MTProtoSender:
     """
     def __init__(self, state, connection, loop, *,
                  retries=5, auto_reconnect=True, update_callback=None,
-                 auth_key_callback=None):
+                 auth_key_callback=None, auto_reconnect_callback=None):
         self.state = state
         self._connection = connection
         self._loop = loop
@@ -52,6 +52,7 @@ class MTProtoSender:
         self._auto_reconnect = auto_reconnect
         self._update_callback = update_callback
         self._auth_key_callback = auth_key_callback
+        self._auto_reconnect_callback = auto_reconnect_callback
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -306,6 +307,9 @@ class MTProtoSender:
                 await self._connect()
                 for m in self._pending_messages.values():
                     self._send_queue.put_nowait(m)
+
+                if self._auto_reconnect_callback:
+                    self._loop.create_task(self._auto_reconnect_callback())
 
                 break
             except ConnectionError:

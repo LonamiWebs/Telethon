@@ -1,10 +1,10 @@
 import abc
 import asyncio
+import inspect
 import logging
 import platform
 import sys
 import time
-import inspect
 from datetime import timedelta, datetime
 
 from .. import version
@@ -209,7 +209,8 @@ class TelegramBaseClient(abc.ABC):
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update,
-            auth_key_callback=self._auth_key_callback
+            auth_key_callback=self._auth_key_callback,
+            auto_reconnect_callback=self._handle_auto_reconnect
         )
 
         # Cache :tl:`ExportedAuthorization` as ``dc_id: MTProtoState``
@@ -454,6 +455,10 @@ class TelegramBaseClient(abc.ABC):
 
     @abc.abstractmethod
     def _update_loop(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def _handle_auto_reconnect(self):
         raise NotImplementedError
 
     # endregion
