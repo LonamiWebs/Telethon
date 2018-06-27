@@ -139,7 +139,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                         code_callback(), first_name, last_name)
                 else:
                     # Raises SessionPasswordNeededError if 2FA enabled
-                    me = await self.sign_in(phone, code_callback())
+                    me = await self.sign_in(phone, code=code_callback())
                 break
             except errors.SessionPasswordNeededError:
                 two_step_detected = True
