@@ -10,7 +10,6 @@ This script assumes that you have certain files on the working directory,
 such as "xfiles.m4a" or "anytime.png" for some of the automated replies.
 """
 import re
-import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
 from os import environ
@@ -77,8 +76,6 @@ async def my_handler(event: events.NewMessage.Event):
             await event.edit(event.text.replace('.shrug', r'¯\_(ツ)_/¯'))
 
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(client.start(phone=environ.get('TG_PHONE')))
+with client.start():
     print('(Press Ctrl+C to stop this)')
     client.run_until_disconnected()
