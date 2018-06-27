@@ -14,11 +14,13 @@ import asyncio
 import functools
 import inspect
 
+from async_generator import isasyncgenfunction
+
 from .client.telegramclient import TelegramClient
 from .tl.custom import Draft, Dialog, MessageButton, Forward, Message
 
 
-def _syncify(t, method_name):
+def _syncify_coro(t, method_name):
     method = getattr(t, method_name)
 
     @functools.wraps(method)
@@ -27,6 +29,35 @@ def _syncify(t, method_name):
         return (
             coro if asyncio.get_event_loop().is_running()
             else asyncio.get_event_loop().run_until_complete(coro)
+        )
+
+    setattr(t, method_name, syncified)
+
+
+class _SyncGen:
+    def __init__(self, loop, gen):
+        self.loop = loop
+        self.gen = gen
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return self.loop.run_until_complete(self.gen.__anext__())
+        except StopAsyncIteration:
+            raise StopIteration from None
+
+
+def _syncify_gen(t, method_name):
+    method = getattr(t, method_name)
+
+    @functools.wraps(method)
+    def syncified(*args, **kwargs):
+        coro = method(*args, **kwargs)
+        return (
+            coro if asyncio.get_event_loop().is_running()
+            else _SyncGen(asyncio.get_event_loop(), coro)
         )
 
     setattr(t, method_name, syncified)
@@ -42,7 +73,9 @@ def syncify(*types):
         for method_name in dir(t):
             if not method_name.startswith('_') or method_name == '__call__':
                 if inspect.iscoroutinefunction(getattr(t, method_name)):
-                    _syncify(t, method_name)
+                    _syncify_coro(t, method_name)
+                elif isasyncgenfunction(getattr(t, method_name)):
+                    _syncify_gen(t, method_name)
 
 
 syncify(TelegramClient, Draft, Dialog, MessageButton, Forward, Message)
