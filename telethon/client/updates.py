@@ -37,7 +37,12 @@ class UpdateMethods(UserMethods):
         try:
             return self.loop.run_until_complete(self.disconnected)
         except KeyboardInterrupt:
-            self.loop.run_until_complete(self.disconnect())
+            # Importing the magic sync module turns disconnect into sync.
+            # TODO Maybe disconnect() should not need the magic module...
+            if inspect.iscoroutinefunction(self.disconnect):
+                self.loop.run_until_complete(self.disconnect())
+            else:
+                self.disconnect()
 
     def on(self, event):
         """
