@@ -287,7 +287,8 @@ class TelegramBaseClient(abc.ABC):
         """
         Returns ``True`` if the user has connected.
         """
-        return self._sender.is_connected()
+        sender = getattr(self, '_sender', None)
+        return sender and sender.is_connected()
 
     async def disconnect(self):
         """
