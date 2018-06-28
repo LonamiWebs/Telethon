@@ -410,7 +410,10 @@ class Message:
         """
         Returns the total button count.
         """
-        if self._buttons_count is not None and isinstance(
+        if not isinstance(self.original_message, types.Message):
+            return 0
+
+        if self._buttons_count is None and isinstance(
                 self.original_message.reply_markup, (
                         types.ReplyInlineMarkup, types.ReplyKeyboardMarkup
                 )):
