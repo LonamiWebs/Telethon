@@ -1,7 +1,7 @@
 import asyncio
 import itertools
 import logging
-import warnings
+import time
 from collections import UserList
 
 from async_generator import async_generator, yield_
@@ -188,7 +188,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         last_id = float('inf')
         batch_size = min(max(batch_size, 1), 100)
         while have < limit:
-            start = asyncio.get_event_loop().time()
+            start = time.time()
             # Telegram has a hard limit of 100
             request.limit = min(limit - have, batch_size)
             r = self(request)
@@ -242,9 +242,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 else:
                     request.max_date = last_message.date
 
-            now = asyncio.get_event_loop().time()
             asyncio.sleep(
-                max(wait_time - (now - start), 0), loop=self._loop)
+                max(wait_time - (time.time() - start), 0), loop=self._loop)
 
     def get_messages(self, *args, **kwargs):
         """
