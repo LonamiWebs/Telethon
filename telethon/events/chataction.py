@@ -166,16 +166,16 @@ class ChatAction(EventBuilder):
                 self.action_message = custom.Message(
                     client, self.action_message, self._entities, None)
 
-        async def respond(self, *args, **kwargs):
+        def respond(self, *args, **kwargs):
             """
             Responds to the chat action message (not as a reply). Shorthand for
             `telethon.telegram_client.TelegramClient.send_message` with
             ``entity`` already set.
             """
-            return await self._client.send_message(
-                await self.get_input_chat(), *args, **kwargs)
+            return self._client.send_message(
+                self.get_input_chat(), *args, **kwargs)
 
-        async def reply(self, *args, **kwargs):
+        def reply(self, *args, **kwargs):
             """
             Replies to the chat action message (as a reply). Shorthand for
             `telethon.telegram_client.TelegramClient.send_message` with
@@ -184,13 +184,13 @@ class ChatAction(EventBuilder):
             Has the same effect as `respond` if there is no message.
             """
             if not self.action_message:
-                return await self.respond(*args, **kwargs)
+                return self.respond(*args, **kwargs)
 
             kwargs['reply_to'] = self.action_message.id
-            return await self._client.send_message(
-                await self.get_input_chat(), *args, **kwargs)
+            return self._client.send_message(
+                self.get_input_chat(), *args, **kwargs)
 
-        async def delete(self, *args, **kwargs):
+        def delete(self, *args, **kwargs):
             """
             Deletes the chat action message. You're responsible for checking
             whether you have the permission to do so, or to except the error
@@ -203,12 +203,12 @@ class ChatAction(EventBuilder):
             if not self.action_message:
                 return
 
-            return await self._client.delete_messages(
-                await self.get_input_chat(), [self.action_message],
+            return self._client.delete_messages(
+                self.get_input_chat(), [self.action_message],
                 *args, **kwargs
             )
 
-        async def get_pinned_message(self):
+        def get_pinned_message(self):
             """
             If ``new_pin`` is ``True``, this returns the
             `telethon.tl.custom.message.Message` object that was pinned.
@@ -217,8 +217,8 @@ class ChatAction(EventBuilder):
                 return None
 
             if isinstance(self._pinned_message, int)\
-                    and await self.get_input_chat():
-                r = await self._client(functions.channels.GetMessagesRequest(
+                    and self.get_input_chat():
+                r = self._client(functions.channels.GetMessagesRequest(
                     self._input_chat, [self._pinned_message]
                 ))
                 try:
@@ -245,12 +245,12 @@ class ChatAction(EventBuilder):
 
             return self._added_by
 
-        async def get_added_by(self):
+        def get_added_by(self):
             """
             Returns `added_by` but will make an API call if necessary.
             """
             if not self.added_by and self._added_by:
-                self._added_by = await self._client.get_entity(self._added_by)
+                self._added_by = self._client.get_entity(self._added_by)
 
             return self._added_by
 
@@ -266,12 +266,12 @@ class ChatAction(EventBuilder):
 
             return self._kicked_by
 
-        async def get_kicked_by(self):
+        def get_kicked_by(self):
             """
             Returns `kicked_by` but will make an API call if necessary.
             """
             if not self.kicked_by and self._kicked_by:
-                self._kicked_by = await self._client.get_entity(self._kicked_by)
+                self._kicked_by = self._client.get_entity(self._kicked_by)
 
             return self._kicked_by
 
@@ -286,11 +286,11 @@ class ChatAction(EventBuilder):
             if self.users:
                 return self._users[0]
 
-        async def get_user(self):
+        def get_user(self):
             """
             Returns `user` but will make an API call if necessary.
             """
-            if self.users or await self.get_users():
+            if self.users or self.get_users():
                 return self._users[0]
 
         def input_user(self):
@@ -300,11 +300,11 @@ class ChatAction(EventBuilder):
             if self.input_users:
                 return self._input_users[0]
 
-        async def get_input_user(self):
+        def get_input_user(self):
             """
             Returns `input_user` but will make an API call if necessary.
             """
-            if self.input_users or await self.get_input_users():
+            if self.input_users or self.get_input_users():
                 return self._input_users[0]
 
         @property
@@ -335,7 +335,7 @@ class ChatAction(EventBuilder):
 
             return self._users
 
-        async def get_users(self):
+        def get_users(self):
             """
             Returns `users` but will make an API call if necessary.
             """
@@ -352,7 +352,7 @@ class ChatAction(EventBuilder):
                         missing.append(peer)
 
                 try:
-                    missing = await self._client.get_entity(missing)
+                    missing = self._client.get_entity(missing)
                 except (TypeError, ValueError):
                     missing = []
 
@@ -376,7 +376,7 @@ class ChatAction(EventBuilder):
                         pass
             return self._input_users or []
 
-        async def get_input_users(self):
+        def get_input_users(self):
             """
             Returns `input_users` but will make an API call if necessary.
             """

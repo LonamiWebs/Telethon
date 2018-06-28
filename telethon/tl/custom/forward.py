@@ -43,14 +43,14 @@ class Forward:
         """
         return self._sender
 
-    async def get_sender(self):
+    def get_sender(self):
         """
         Returns `sender` but will make an API if necessary.
         """
         if not self.sender and self.original_fwd.from_id:
             try:
-                self._sender = await self._client.get_entity(
-                    await self.get_input_sender())
+                self._sender = self._client.get_entity(
+                    self.get_input_sender())
             except ValueError:
                 # TODO We could reload the message
                 pass
@@ -71,7 +71,7 @@ class Forward:
 
         return self._input_sender
 
-    async def get_input_sender(self):
+    def get_input_sender(self):
         """
         Returns `input_sender` but will make an API call if necessary.
         """
@@ -87,14 +87,14 @@ class Forward:
         """
         return self._chat
 
-    async def get_chat(self):
+    def get_chat(self):
         """
         Returns `chat` but will make an API if necessary.
         """
         if not self.chat and self.original_fwd.channel_id:
             try:
-                self._chat = await self._client.get_entity(
-                    await self.get_input_chat())
+                self._chat = self._client.get_entity(
+                    self.get_input_chat())
             except ValueError:
                 # TODO We could reload the message
                 pass
@@ -115,7 +115,7 @@ class Forward:
 
         return self._input_chat
 
-    async def get_input_chat(self):
+    def get_input_chat(self):
         """
         Returns `input_chat` but will make an API call if necessary.
         """

@@ -26,7 +26,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
     # region Public methods
 
-    async def send_file(
+    def send_file(
             self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=utils.Default,
@@ -122,7 +122,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
             result = []
             while images:
-                result += await self._send_album(
+                result += self._send_album(
                     entity, images[:10], caption=caption,
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode
@@ -130,7 +130,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 images = images[10:]
 
             for x in documents:
-                result.append(await self.send_file(
+                result.append(self.send_file(
                     entity, x, allow_cache=allow_cache,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
@@ -140,7 +140,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
             return result
 
-        entity = await self.get_input_entity(entity)
+        entity = self.get_input_entity(entity)
         reply_to = utils.get_message_id(reply_to)
 
         # Not document since it's subject to change.
@@ -149,9 +149,9 @@ class UploadMethods(MessageParseMethods, UserMethods):
             msg_entities = kwargs['entities']
         else:
             caption, msg_entities =\
-                await self._parse_message_text(caption, parse_mode)
+                self._parse_message_text(caption, parse_mode)
 
-        file_handle, media = await self._file_to_media(
+        file_handle, media = self._file_to_media(
             file, force_document=force_document,
             progress_callback=progress_callback,
             attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
@@ -162,12 +162,12 @@ class UploadMethods(MessageParseMethods, UserMethods):
             entity, media, reply_to_msg_id=reply_to, message=caption,
             entities=msg_entities
         )
-        msg = self._get_response_message(request, await self(request), entity)
+        msg = self._get_response_message(request, self(request), entity)
         self._cache_media(msg, file, file_handle, force_document=force_document)
 
         return msg
 
-    async def _send_album(self, entity, files, caption='',
+    def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
                     parse_mode=utils.Default):
         """Specialized version of .send_file for albums"""
@@ -180,13 +180,13 @@ class UploadMethods(MessageParseMethods, UserMethods):
         # In theory documents can be sent inside the albums but they appear
         # as different messages (not inside the album), and the logic to set
         # the attributes/avoid cache is already written in .send_file().
-        entity = await self.get_input_entity(entity)
+        entity = self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
 
         captions = []
         for c in reversed(caption):  # Pop from the end (so reverse)
-            captions.append(await self._parse_message_text(c or '', parse_mode))
+            captions.append(self._parse_message_text(c or '', parse_mode))
 
         reply_to = utils.get_message_id(reply_to)
 
@@ -194,9 +194,9 @@ class UploadMethods(MessageParseMethods, UserMethods):
         media = []
         for file in files:
             # fh will either be InputPhoto or a modified InputFile
-            fh = await self.upload_file(file, use_cache=types.InputPhoto)
+            fh = self.upload_file(file, use_cache=types.InputPhoto)
             if not isinstance(fh, types.InputPhoto):
-                r = await self(functions.messages.UploadMediaRequest(
+                r = self(functions.messages.UploadMediaRequest(
                     entity, media=types.InputMediaUploadedPhoto(fh)
                 ))
                 input_photo = utils.get_input_photo(r.photo)
@@ -211,7 +211,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
                                           entities=msg_entities))
 
         # Now we can construct the multi-media request
-        result = await self(functions.messages.SendMultiMediaRequest(
+        result = self(functions.messages.SendMultiMediaRequest(
             entity, reply_to_msg_id=reply_to, multi_media=media
         ))
         return [
@@ -220,7 +220,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
             if isinstance(update, types.UpdateMessageID)
         ]
 
-    async def upload_file(
+    def upload_file(
             self, file, *, part_size_kb=None, file_name=None, use_cache=None,
             progress_callback=None):
         """
@@ -337,7 +337,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
                     request = functions.upload.SaveFilePartRequest(
                         file_id, part_index, part)
 
-                result = await self(request)
+                result = self(request)
                 if result:
                     __log__.debug('Uploaded %d/%d', part_index + 1,
                                   part_count)
@@ -356,7 +356,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
     # endregion
 
-    async def _file_to_media(
+    def _file_to_media(
             self, file, force_document=False,
             progress_callback=None, attributes=None, thumb=None,
             allow_cache=True, voice_note=False, video_note=False):
@@ -387,7 +387,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
             else:
                 media = types.InputMediaDocumentExternal(file)
         else:
-            file_handle = await self.upload_file(
+            file_handle = self.upload_file(
                 file, progress_callback=progress_callback,
                 use_cache=use_cache if allow_cache else None
             )
@@ -476,7 +476,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
             input_kw = {}
             if thumb:
-                input_kw['thumb'] = await self.upload_file(thumb)
+                input_kw['thumb'] = self.upload_file(thumb)
 
             media = types.InputMediaUploadedDocument(
                 file=file_handle,

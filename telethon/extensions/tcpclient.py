@@ -71,7 +71,7 @@ class TcpClient:
         s.setblocking(False)
         return s
 
-    async def connect(self, ip, port):
+    def connect(self, ip, port):
         """
         Tries connecting to IP:port unless an OSError is raised.
 
@@ -88,7 +88,7 @@ class TcpClient:
             if self._socket is None:
                 self._socket = self._create_socket(mode, self.proxy)
 
-            await asyncio.wait_for(
+            asyncio.wait_for(
                 self._loop.sock_connect(self._socket, address),
                 timeout=self.timeout,
                 loop=self._loop
@@ -122,12 +122,12 @@ class TcpClient:
             if fd:
                 self._loop.remove_reader(fd)
 
-    async def _wait_timeout_or_close(self, coro):
+    def _wait_timeout_or_close(self, coro):
         """
         Waits for the given coroutine to complete unless
         the socket is closed or `self.timeout` expires.
         """
-        done, running = await asyncio.wait(
+        done, running = asyncio.wait(
             [coro, self._closed.wait()],
             timeout=self.timeout,
             return_when=asyncio.FIRST_COMPLETED,
@@ -141,7 +141,7 @@ class TcpClient:
             raise asyncio.TimeoutError()
         return done.pop().result()
 
-    async def write(self, data):
+    def write(self, data):
         """
         Writes (sends) the specified bytes to the connected peer.
         :param data: the data to send.
@@ -150,14 +150,14 @@ class TcpClient:
             raise ConnectionResetError('Not connected')
 
         try:
-            await self._wait_timeout_or_close(self.sock_sendall(data))
+            self._wait_timeout_or_close(self.sock_sendall(data))
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
                 raise ConnectionResetError() from e
             else:
                 raise
 
-    async def read(self, size):
+    def read(self, size):
         """
         Reads (receives) a whole block of size bytes from the connected peer.
 
@@ -171,7 +171,7 @@ class TcpClient:
             bytes_left = size
             while bytes_left != 0:
                 try:
-                    partial = await self._wait_timeout_or_close(
+                    partial = self._wait_timeout_or_close(
                         self.sock_recv(bytes_left)
                     )
                 except asyncio.TimeoutError:

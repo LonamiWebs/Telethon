@@ -12,11 +12,11 @@ _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
 
 class UserMethods(TelegramBaseClient):
-    async def __call__(self, request, ordered=False):
+    def __call__(self, request, ordered=False):
         for r in (request if utils.is_list_like(request) else (request,)):
             if not isinstance(r, TLRequest):
                 raise _NOT_A_REQUEST
-            await r.resolve(self, utils)
+            r.resolve(self, utils)
 
         self._last_request = time.time()
         for _ in range(self._request_retries):
@@ -25,12 +25,12 @@ class UserMethods(TelegramBaseClient):
                 if isinstance(future, list):
                     results = []
                     for f in future:
-                        result = await f
+                        result = f
                         self.session.process_entities(result)
                         results.append(result)
                     return results
                 else:
-                    result = await future
+                    result = future
                     self.session.process_entities(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError) as e:
@@ -39,7 +39,7 @@ class UserMethods(TelegramBaseClient):
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
                 if e.seconds <= self.flood_sleep_threshold:
                     __log__.info('Sleeping for %ds on flood wait', e.seconds)
-                    await asyncio.sleep(e.seconds, loop=self._loop)
+                    asyncio.sleep(e.seconds, loop=self._loop)
                 else:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
@@ -48,15 +48,15 @@ class UserMethods(TelegramBaseClient):
                 should_raise = isinstance(e, (
                     errors.PhoneMigrateError,  errors.NetworkMigrateError
                 ))
-                if should_raise and await self.is_user_authorized():
+                if should_raise and self.is_user_authorized():
                     raise
-                await self._switch_dc(e.new_dc)
+                self._switch_dc(e.new_dc)
 
         raise ValueError('Number of retries reached 0')
 
     # region Public methods
 
-    async def get_me(self, input_peer=False):
+    def get_me(self, input_peer=False):
         """
         Gets "me" (the self user) which is currently authenticated,
         or None if the request fails (hence, not authenticated).
@@ -74,7 +74,7 @@ class UserMethods(TelegramBaseClient):
             return self._self_input_peer
 
         try:
-            me = (await self(
+            me = (self(
                 functions.users.GetUsersRequest([types.InputUserSelf()])))[0]
 
             if not self._self_input_peer:
@@ -86,7 +86,7 @@ class UserMethods(TelegramBaseClient):
         except errors.UnauthorizedError:
             return None
 
-    async def is_user_authorized(self):
+    def is_user_authorized(self):
         """
         Returns ``True`` if the user is authorized.
         """
@@ -94,12 +94,12 @@ class UserMethods(TelegramBaseClient):
             return True
 
         try:
-            self._state = await self(functions.updates.GetStateRequest())
+            self._state = self(functions.updates.GetStateRequest())
             return True
         except errors.RPCError:
             return False
 
-    async def get_entity(self, entity):
+    def get_entity(self, entity):
         """
         Turns the given entity into a valid Telegram :tl:`User`, :tl:`Chat`
         or :tl:`Channel`. You can also pass a list or iterable of entities,
@@ -144,7 +144,7 @@ class UserMethods(TelegramBaseClient):
             if isinstance(x, str):
                 inputs.append(x)
             else:
-                inputs.append(await self.get_input_entity(x))
+                inputs.append(self.get_input_entity(x))
 
         users = [x for x in inputs
                  if isinstance(x, (types.InputPeerUser, types.InputPeerSelf))]
@@ -157,13 +157,13 @@ class UserMethods(TelegramBaseClient):
             tmp = []
             while users:
                 curr, users = users[:200], users[200:]
-                tmp.extend(await self(functions.users.GetUsersRequest(curr)))
+                tmp.extend(self(functions.users.GetUsersRequest(curr)))
             users = tmp
         if chats:  # TODO Handle chats slice?
-            chats = (await self(
+            chats = (self(
                 functions.messages.GetChatsRequest(chats))).chats
         if channels:
-            channels = (await self(
+            channels = (self(
                 functions.channels.GetChannelsRequest(channels))).chats
 
         # Merge users, chats and channels into a single dictionary
@@ -179,7 +179,7 @@ class UserMethods(TelegramBaseClient):
         result = []
         for x in inputs:
             if isinstance(x, str):
-                result.append(await self._get_entity_from_string(x))
+                result.append(self._get_entity_from_string(x))
             elif not isinstance(x, types.InputPeerSelf):
                 result.append(id_entity[utils.get_peer_id(x)])
             else:
@@ -190,7 +190,7 @@ class UserMethods(TelegramBaseClient):
 
         return result[0] if single else result
 
-    async def get_input_entity(self, peer):
+    def get_input_entity(self, peer):
         """
         Turns the given peer into its input entity version. Most requests
         use this kind of :tl:`InputPeer`, so this is the most suitable call
@@ -260,7 +260,7 @@ class UserMethods(TelegramBaseClient):
 
         if isinstance(peer, str):
             return utils.get_input_peer(
-                await self._get_entity_from_string(peer))
+                self._get_entity_from_string(peer))
 
         if not isinstance(peer, int) and (not isinstance(peer, TLObject)
                                           or peer.SUBCLASS_OF_ID != 0x2d45687):
@@ -280,7 +280,7 @@ class UserMethods(TelegramBaseClient):
 
     # region Private methods
 
-    async def _get_entity_from_string(self, string):
+    def _get_entity_from_string(self, string):
         """
         Gets a full entity from the given string, which may be a phone or
         an username, and processes all the found entities on the session.
@@ -294,14 +294,14 @@ class UserMethods(TelegramBaseClient):
         """
         phone = utils.parse_phone(string)
         if phone:
-            for user in (await self(
+            for user in (self(
                     functions.contacts.GetContactsRequest(0))).users:
                 if user.phone == phone:
                     return user
         else:
             username, is_join_chat = utils.parse_username(string)
             if is_join_chat:
-                invite = await self(
+                invite = self(
                     functions.messages.CheckChatInviteRequest(username))
 
                 if isinstance(invite, types.ChatInvite):
@@ -313,10 +313,10 @@ class UserMethods(TelegramBaseClient):
                     return invite.chat
             elif username:
                 if username in ('me', 'self'):
-                    return await self.get_me()
+                    return self.get_me()
 
                 try:
-                    result = await self(
+                    result = self(
                         functions.contacts.ResolveUsernameRequest(username))
                 except errors.UsernameNotOccupiedError as e:
                     raise ValueError('No user has "{}" as username'
@@ -328,7 +328,7 @@ class UserMethods(TelegramBaseClient):
                         return entity
             try:
                 # Nobody with this username, maybe it's an exact name/title
-                return await self.get_entity(
+                return self.get_entity(
                     self.session.get_input_entity(string))
             except ValueError:
                 pass

@@ -5,7 +5,7 @@ from .. import utils
 from ..tl import TLObject, types
 
 
-async def _into_id_set(client, chats):
+def _into_id_set(client, chats):
     """Helper util to turn the input chat or chats into a set of IDs."""
     if chats is None:
         return None
@@ -28,9 +28,9 @@ async def _into_id_set(client, chats):
             # 0x2d45687 == crc32(b'Peer')
             result.add(utils.get_peer_id(chat))
         else:
-            chat = await client.get_input_entity(chat)
+            chat = client.get_input_entity(chat)
             if isinstance(chat, types.InputPeerSelf):
-                chat = await client.get_me(input_peer=True)
+                chat = client.get_me(input_peer=True)
             result.add(utils.get_peer_id(chat))
 
     return result
@@ -60,10 +60,10 @@ class EventBuilder(abc.ABC):
     def build(self, update):
         """Builds an event for the given update if possible, or returns None"""
 
-    async def resolve(self, client):
+    def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
-        self.chats = await _into_id_set(client, self.chats)
-        self._self_id = (await client.get_me(input_peer=True)).user_id
+        self.chats = _into_id_set(client, self.chats)
+        self._self_id = (client.get_me(input_peer=True)).user_id
 
     def _filter_event(self, event):
         """
@@ -130,7 +130,7 @@ class EventCommon(abc.ABC):
 
         return self._input_chat
 
-    async def get_input_chat(self):
+    def get_input_chat(self):
         """
         Returns `input_chat`, but will make an API call to find the
         input chat unless it's already cached.
@@ -138,13 +138,13 @@ class EventCommon(abc.ABC):
         if self.input_chat is None and self._chat_peer is not None:
             ch = isinstance(self._chat_peer, types.PeerChannel)
             if not ch and self._message_id is not None:
-                msg = await self._client.get_messages(
+                msg = self._client.get_messages(
                     None, ids=self._message_id)
                 self._chat = msg._chat
                 self._input_chat = msg._input_chat
             else:
                 target = utils.get_peer_id(self._chat_peer)
-                async for d in self._client.iter_dialogs(100):
+                for d in self._client.iter_dialogs(100):
                     if d.id == target:
                         self._chat = d.entity
                         self._input_chat = d.input_entity
@@ -179,15 +179,15 @@ class EventCommon(abc.ABC):
 
         return self._chat
 
-    async def get_chat(self):
+    def get_chat(self):
         """
         Returns `chat`, but will make an API call to find the
         chat unless it's already cached.
         """
-        if self.chat is None and await self.get_input_chat():
+        if self.chat is None and self.get_input_chat():
             try:
                 self._chat =\
-                    await self._client.get_entity(self._input_chat)
+                    self._client.get_entity(self._input_chat)
             except ValueError:
                 pass
         return self._chat

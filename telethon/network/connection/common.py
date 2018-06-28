@@ -33,7 +33,7 @@ class Connection(abc.ABC):
         self._timeout = timeout
 
     @abc.abstractmethod
-    async def connect(self, ip, port):
+    def connect(self, ip, port):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -51,7 +51,7 @@ class Connection(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def close(self):
+    def close(self):
         """Closes the connection."""
         raise NotImplementedError
 
@@ -64,11 +64,11 @@ class Connection(abc.ABC):
         )
 
     @abc.abstractmethod
-    async def recv(self):
+    def recv(self):
         """Receives and unpacks a message"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def send(self, message):
+    def send(self, message):
         """Encapsulates and sends the given message"""
         raise NotImplementedError

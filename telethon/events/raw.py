@@ -22,7 +22,7 @@ class Raw(EventBuilder):
             assert all(isinstance(x, type) for x in types)
             self.types = tuple(types)
 
-    async def resolve(self, client):
+    def resolve(self, client):
         pass
 
     def build(self, update):

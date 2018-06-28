@@ -30,7 +30,7 @@ class CdnDecrypter:
         self.cdn_file_hashes = cdn_file_hashes
 
     @staticmethod
-    async def prepare_decrypter(client, cdn_client, cdn_redirect):
+    def prepare_decrypter(client, cdn_client, cdn_redirect):
         """
         Prepares a new CDN decrypter.
 
@@ -52,14 +52,14 @@ class CdnDecrypter:
             cdn_aes, cdn_redirect.cdn_file_hashes
         )
 
-        cdn_file = await cdn_client(GetCdnFileRequest(
+        cdn_file = cdn_client(GetCdnFileRequest(
             file_token=cdn_redirect.file_token,
             offset=cdn_redirect.cdn_file_hashes[0].offset,
             limit=cdn_redirect.cdn_file_hashes[0].limit
         ))
         if isinstance(cdn_file, CdnFileReuploadNeeded):
             # We need to use the original client here
-            await client(ReuploadCdnFileRequest(
+            client(ReuploadCdnFileRequest(
                 file_token=cdn_redirect.file_token,
                 request_token=cdn_file.request_token
             ))

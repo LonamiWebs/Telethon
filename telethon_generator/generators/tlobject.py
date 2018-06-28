@@ -15,13 +15,13 @@ AUTO_GEN_NOTICE = \
 
 AUTO_CASTS = {
     'InputPeer':
-        'utils.get_input_peer(await client.get_input_entity({}))',
+        'utils.get_input_peer(client.get_input_entity({}))',
     'InputChannel':
-        'utils.get_input_channel(await client.get_input_entity({}))',
+        'utils.get_input_channel(client.get_input_entity({}))',
     'InputUser':
-        'utils.get_input_user(await client.get_input_entity({}))',
+        'utils.get_input_user(client.get_input_entity({}))',
     'InputDialogPeer':
-        'utils.get_input_dialog(await client.get_input_entity({}))',
+        'utils.get_input_dialog(client.get_input_entity({}))',
 
     'InputMedia': 'utils.get_input_media({})',
     'InputPhoto': 'utils.get_input_photo({})',
@@ -233,7 +233,7 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 
 def _write_resolve(tlobject, builder):
     if any(arg.type in AUTO_CASTS for arg in tlobject.real_args):
-        builder.writeln('async def resolve(self, client, utils):')
+        builder.writeln('def resolve(self, client, utils):')
         for arg in tlobject.real_args:
             ac = AUTO_CASTS.get(arg.type, None)
             if not ac:

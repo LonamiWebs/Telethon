@@ -269,14 +269,14 @@ class TelegramBaseClient(abc.ABC):
 
     # region Connecting
 
-    async def connect(self):
+    def connect(self):
         """
         Connects to Telegram.
         """
-        await self._sender.connect(
+        self._sender.connect(
             self.session.server_address, self.session.port)
 
-        await self._sender.send(self._init_with(
+        self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
 
         self._updates_handle = self._loop.create_task(self._update_loop())
@@ -287,15 +287,15 @@ class TelegramBaseClient(abc.ABC):
         """
         return self._sender.is_connected()
 
-    async def disconnect(self):
+    def disconnect(self):
         """
         Disconnects from Telegram.
         """
-        await self._disconnect()
+        self._disconnect()
         if getattr(self, 'session', None):
             self.session.close()
 
-    async def _disconnect(self):
+    def _disconnect(self):
         """
         Disconnect only, without closing the session. Used in reconnections
         to different data centers, where we don't want to close the session
@@ -305,9 +305,9 @@ class TelegramBaseClient(abc.ABC):
         # All properties may be ``None`` if `__init__` fails, and this
         # method will be called from `__del__` which would crash then.
         if getattr(self, '_sender', None):
-            await self._sender.disconnect()
+            self._sender.disconnect()
         if getattr(self, '_updates_handle', None):
-            await self._updates_handle
+            self._updates_handle
 
     def __del__(self):
         if not self.is_connected() or self.loop.is_closed():
@@ -324,20 +324,20 @@ class TelegramBaseClient(abc.ABC):
         else:
             self._loop.run_until_complete(self.disconnect())
 
-    async def _switch_dc(self, new_dc):
+    def _switch_dc(self, new_dc):
         """
         Permanently switches the current connection to the new data center.
         """
         __log__.info('Reconnecting to new data center %s', new_dc)
-        dc = await self._get_dc(new_dc)
+        dc = self._get_dc(new_dc)
 
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = self._sender.state.auth_key = None
         self.session.save()
-        await self._disconnect()
-        return await self.connect()
+        self._disconnect()
+        return self.connect()
 
     def _auth_key_callback(self, auth_key):
         """
@@ -352,14 +352,14 @@ class TelegramBaseClient(abc.ABC):
 
     # region Working with different connections/Data Centers
 
-    async def _get_dc(self, dc_id, cdn=False):
+    def _get_dc(self, dc_id, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         cls = self.__class__
         if not cls._config:
-            cls._config = await self(functions.help.GetConfigRequest())
+            cls._config = self(functions.help.GetConfigRequest())
 
         if cdn and not self._cdn_config:
-            cls._cdn_config = await self(functions.help.GetCdnConfigRequest())
+            cls._cdn_config = self(functions.help.GetCdnConfigRequest())
             for pk in cls._cdn_config.public_keys:
                 rsa.add_key(pk.public_key)
 
@@ -369,7 +369,7 @@ class TelegramBaseClient(abc.ABC):
             and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
         )
 
-    async def _get_exported_sender(self, dc_id):
+    def _get_exported_sender(self, dc_id):
         """
         Returns a cached `MTProtoSender` for the given `dc_id`, or creates
         a new one if it doesn't exist yet, and imports a freshly exported
@@ -378,32 +378,32 @@ class TelegramBaseClient(abc.ABC):
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization
         auth = self._exported_auths.get(dc_id)
-        dc = await self._get_dc(dc_id)
+        dc = self._get_dc(dc_id)
         state = MTProtoState(auth)
         # Can't reuse self._sender._connection as it has its own seqno.
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
         sender = MTProtoSender(state, self._connection.clone(), self._loop)
-        await sender.connect(dc.ip_address, dc.port)
+        sender.connect(dc.ip_address, dc.port)
         if not auth:
             __log__.info('Exporting authorization for data center %s', dc)
-            auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
+            auth = self(functions.auth.ExportAuthorizationRequest(dc_id))
             req = self._init_with(functions.auth.ImportAuthorizationRequest(
                 id=auth.id, bytes=auth.bytes
             ))
-            await sender.send(req)
+            sender.send(req)
             self._exported_auths[dc_id] = sender.state.auth_key
 
         return sender
 
-    async def _get_cdn_client(self, cdn_redirect):
+    def _get_cdn_client(self, cdn_redirect):
         """Similar to ._get_exported_client, but for CDNs"""
         # TODO Implement
         raise NotImplementedError
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
-            dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
+            dc = self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
@@ -458,7 +458,7 @@ class TelegramBaseClient(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def _handle_auto_reconnect(self):
+    def _handle_auto_reconnect(self):
         raise NotImplementedError
 
     # endregion

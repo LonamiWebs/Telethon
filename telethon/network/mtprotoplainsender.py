@@ -23,17 +23,17 @@ class MTProtoPlainSender:
         self._state = MTProtoState(auth_key=None)
         self._connection = connection
 
-    async def send(self, request):
+    def send(self, request):
         """
         Sends and receives the result for the given request.
         """
         body = bytes(request)
         msg_id = self._state._get_new_msg_id()
-        await self._connection.send(
+        self._connection.send(
             struct.pack('<QQi', 0, msg_id, len(body)) + body
         )
 
-        body = await self._connection.recv()
+        body = self._connection.recv()
         if body == b'l\xfe\xff\xff':  # -404 little endian signed
             # Broken authorization, must reset the auth key
             raise BrokenAuthKeyError()

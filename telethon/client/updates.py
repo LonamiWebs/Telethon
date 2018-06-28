@@ -16,11 +16,11 @@ class UpdateMethods(UserMethods):
 
     # region Public methods
 
-    async def _run_until_disconnected(self):
+    def _run_until_disconnected(self):
         try:
-            await self.disconnected
+            self.disconnected
         except KeyboardInterrupt:
-            await self.disconnect()
+            self.disconnect()
 
     def run_until_disconnected(self):
         """
@@ -30,7 +30,7 @@ class UpdateMethods(UserMethods):
         to ``except`` it on your own code.
 
         If the loop is already running, this method returns a coroutine
-        that you should await on your own code.
+        that you should on your own code.
         """
         if self.loop.is_running():
             return self._run_until_disconnected()
@@ -52,7 +52,7 @@ class UpdateMethods(UserMethods):
         >>> client = TelegramClient(...)
         >>>
         >>> @client.on(events.NewMessage)
-        ... async def handler(event):
+        ... def handler(event):
         ...     ...
         ...
         >>>
@@ -120,7 +120,7 @@ class UpdateMethods(UserMethods):
         """
         return [(callback, event) for event, callback in self._event_builders]
 
-    async def catch_up(self):
+    def catch_up(self):
         state = self.session.get_update_state(0)
         if not state or not state.pts:
             return
@@ -128,7 +128,7 @@ class UpdateMethods(UserMethods):
         self.session.catching_up = True
         try:
             while True:
-                d = await self(functions.updates.GetDifferenceRequest(
+                d = self(functions.updates.GetDifferenceRequest(
                     state.pts, state.date, state.qts))
                 if isinstance(d, types.updates.DifferenceEmpty):
                     state.date = d.date
@@ -193,12 +193,12 @@ class UpdateMethods(UserMethods):
 
         # TODO make use of need_diff
 
-    async def _update_loop(self):
+    def _update_loop(self):
         # Pings' ID don't really need to be secure, just "random"
         rnd = lambda: random.randrange(-2**63, 2**63)
         while self.is_connected():
             try:
-                await asyncio.wait_for(
+                asyncio.wait_for(
                     self.disconnected, timeout=60, loop=self._loop
                 )
                 continue  # We actually just want to act upon timeout
@@ -223,22 +223,22 @@ class UpdateMethods(UserMethods):
             #
             # TODO Call getDifference instead since it's more relevant
             if time.time() - self._last_request > 30 * 60:
-                if not await self.is_user_authorized():
+                if not self.is_user_authorized():
                     # What can be the user doing for so
                     # long without being logged in...?
                     continue
 
-                await self(functions.updates.GetStateRequest())
+                self(functions.updates.GetStateRequest())
 
-    async def _dispatch_update(self, update):
+    def _dispatch_update(self, update):
         if self._events_pending_resolve:
             if self._event_resolve_lock.locked():
-                async with self._event_resolve_lock:
+                with self._event_resolve_lock:
                     pass
             else:
-                async with self._event_resolve_lock:
+                with self._event_resolve_lock:
                     for event in self._events_pending_resolve:
-                        await event.resolve(self)
+                        event.resolve(self)
 
             self._events_pending_resolve.clear()
 
@@ -252,7 +252,7 @@ class UpdateMethods(UserMethods):
 
                 event.original_update = update
                 try:
-                    await callback(event)
+                    callback(event)
                 except events.StopPropagation:
                     __log__.debug(
                         "Event handler '{}' stopped chain of "
@@ -265,12 +265,12 @@ class UpdateMethods(UserMethods):
                     __log__.exception('Unhandled exception on {}'
                                       .format(callback.__name__))
 
-    async def _handle_auto_reconnect(self):
+    def _handle_auto_reconnect(self):
         # Upon reconnection, we want to send getState
         # for Telegram to keep sending us updates.
         try:
             __log__.info('Asking for the current state after reconnect...')
-            state = await self(functions.updates.GetStateRequest())
+            state = self(functions.updates.GetStateRequest())
             __log__.info('Got new state! %s', state)
         except errors.RPCError as e:
             __log__.info('Failed to get current state: %r', e)

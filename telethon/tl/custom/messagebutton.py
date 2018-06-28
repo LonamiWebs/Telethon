@@ -52,7 +52,7 @@ class MessageButton:
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
-    async def click(self):
+    def click(self):
         """
         Emulates the behaviour of clicking this button.
 
@@ -70,18 +70,18 @@ class MessageButton:
         be passed to ``webbrowser.open`` and return ``True`` on success.
         """
         if isinstance(self.button, types.KeyboardButton):
-            return await self._client.send_message(
+            return self._client.send_message(
                 self._chat, self.button.text, reply_to=self._msg_id)
         elif isinstance(self.button, types.KeyboardButtonCallback):
             req = functions.messages.GetBotCallbackAnswerRequest(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data
             )
             try:
-                return await self._client(req)
+                return self._client(req)
             except BotTimeout:
                 return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
-            return await self._client(functions.messages.StartBotRequest(
+            return self._client(functions.messages.StartBotRequest(
                 bot=self._bot, peer=self._chat, start_param=self.button.query
             ))
         elif isinstance(self.button, types.KeyboardButtonUrl):

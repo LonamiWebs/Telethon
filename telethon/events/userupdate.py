@@ -152,18 +152,18 @@ class UserUpdate(EventBuilder):
             """Alias for `chat` (conversation)."""
             return self.chat
 
-        async def get_user(self):
+        def get_user(self):
             """Alias for `get_chat` (conversation)."""
-            return await self.get_chat()
+            return self.get_chat()
 
         @property
         def input_user(self):
             """Alias for `input_chat`."""
             return self.input_chat
 
-        async def get_input_user(self):
+        def get_input_user(self):
             """Alias for `get_input_chat`."""
-            return await self.get_input_chat()
+            return self.get_input_chat()
 
         @property
         def user_id(self):

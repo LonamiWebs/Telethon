@@ -88,7 +88,7 @@ class MessageRead(EventBuilder):
             """
             return self._message_ids
 
-        async def get_messages(self):
+        def get_messages(self):
             """
             Returns the list of `telethon.tl.custom.message.Message`
             **which contents'** were read.
@@ -97,11 +97,11 @@ class MessageRead(EventBuilder):
             was read instead checking if it's in here.
             """
             if self._messages is None:
-                chat = await self.get_input_chat()
+                chat = self.get_input_chat()
                 if not chat:
                     self._messages = []
                 else:
-                    self._messages = await self._client.get_messages(
+                    self._messages = self._client.get_messages(
                         chat, ids=self._message_ids)
 
             return self._messages

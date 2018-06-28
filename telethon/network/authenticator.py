@@ -19,7 +19,7 @@ from ..tl.functions import (
 )
 
 
-async def do_authentication(sender):
+def do_authentication(sender):
     """
     Executes the authentication process with the Telegram servers.
 
@@ -28,7 +28,7 @@ async def do_authentication(sender):
     """
     # Step 1 sending: PQ Request, endianness doesn't matter since it's random
     nonce = int.from_bytes(os.urandom(16), 'big', signed=True)
-    res_pq = await sender.send(ReqPqMultiRequest(nonce))
+    res_pq = sender.send(ReqPqMultiRequest(nonce))
     assert isinstance(res_pq, ResPQ), 'Step 1 answer was %s' % res_pq
 
     if res_pq.nonce != nonce:
@@ -64,7 +64,7 @@ async def do_authentication(sender):
             )
         )
 
-    server_dh_params = await sender.send(ReqDHParamsRequest(
+    server_dh_params = sender.send(ReqDHParamsRequest(
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         p=p, q=q,
@@ -139,7 +139,7 @@ async def do_authentication(sender):
     client_dh_encrypted = AES.encrypt_ige(client_dh_inner_hashed, key, iv)
 
     # Prepare Set client DH params
-    dh_gen = await sender.send(SetClientDHParamsRequest(
+    dh_gen = sender.send(SetClientDHParamsRequest(
         nonce=res_pq.nonce,
         server_nonce=res_pq.server_nonce,
         encrypted_data=client_dh_encrypted,

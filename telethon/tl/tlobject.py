@@ -162,5 +162,5 @@ class TLRequest(TLObject):
     def read_result(reader):
         return reader.tgread_object()
 
-    async def resolve(self, client, utils):
+    def resolve(self, client, utils):
         pass

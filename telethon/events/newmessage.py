@@ -71,9 +71,9 @@ class NewMessage(EventBuilder):
             self.from_users, self.forwards, self.from_users
         ))
 
-    async def resolve(self, client):
-        await super().resolve(client)
-        self.from_users = await _into_id_set(client, self.from_users)
+    def resolve(self, client):
+        super().resolve(client)
+        self.from_users = _into_id_set(client, self.from_users)
 
     def build(self, update):
         if isinstance(update,
@@ -179,7 +179,7 @@ class NewMessage(EventBuilder):
                 >>> client = TelegramClient(...)
                 >>>
                 >>> @client.on(events.NewMessage(pattern=r'hi (\\w+)!'))
-                ... async def handler(event):
+                ... def handler(event):
                 ...     # In this case, the result is a ``Match`` object
                 ...     # since the ``str`` pattern was converted into
                 ...     # the ``re.compile(pattern).match`` function.

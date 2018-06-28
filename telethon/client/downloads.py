@@ -15,7 +15,7 @@ class DownloadMethods(UserMethods):
 
     # region Public methods
 
-    async def download_profile_photo(
+    def download_profile_photo(
             self, entity, file=None, *, download_big=True):
         """
         Downloads the profile photo of the given entity (user/chat/channel).
@@ -41,7 +41,7 @@ class DownloadMethods(UserMethods):
         # ('InputPeer', 'InputUser', 'InputChannel')
         INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
         if not isinstance(entity, TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
-            entity = await self.get_entity(entity)
+            entity = self.get_entity(entity)
 
         possible_names = []
         if entity.SUBCLASS_OF_ID not in ENTITIES:
@@ -53,7 +53,7 @@ class DownloadMethods(UserMethods):
                 if not hasattr(entity, 'chat_photo'):
                     return None
 
-                return await self._download_photo(
+                return self._download_photo(
                     entity.chat_photo, file, date=None, progress_callback=None)
 
             for attr in ('username', 'first_name', 'title'):
@@ -75,15 +75,15 @@ class DownloadMethods(UserMethods):
         )
 
         try:
-            await self.download_file(loc, file)
+            self.download_file(loc, file)
             return file
         except errors.LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
             # The fix seems to be using the full channel chat photo.
-            ie = await self.get_input_entity(entity)
+            ie = self.get_input_entity(entity)
             if isinstance(ie, types.InputPeerChannel):
-                full = await self(functions.channels.GetFullChannelRequest(ie))
-                return await self._download_photo(
+                full = self(functions.channels.GetFullChannelRequest(ie))
+                return self._download_photo(
                     full.full_chat.chat_photo, file,
                     date=None, progress_callback=None
                 )
@@ -91,7 +91,7 @@ class DownloadMethods(UserMethods):
                 # Until there's a report for chats, no need to.
                 return None
 
-    async def download_media(self, message, file=None,
+    def download_media(self, message, file=None,
                              *, progress_callback=None):
         """
         Downloads the given media, or the media from a specified Message.
@@ -129,11 +129,11 @@ class DownloadMethods(UserMethods):
 
         if isinstance(media, (types.MessageMediaPhoto, types.Photo,
                               types.PhotoSize, types.PhotoCachedSize)):
-            return await self._download_photo(
+            return self._download_photo(
                 media, file, date, progress_callback
             )
         elif isinstance(media, (types.MessageMediaDocument, types.Document)):
-            return await self._download_document(
+            return self._download_document(
                 media, file, date, progress_callback
             )
         elif isinstance(media, types.MessageMediaContact):
@@ -141,7 +141,7 @@ class DownloadMethods(UserMethods):
                 media, file
             )
 
-    async def download_file(
+    def download_file(
             self, input_location, file=None, *, part_size_kb=None,
             file_size=None, progress_callback=None):
         """
@@ -209,7 +209,7 @@ class DownloadMethods(UserMethods):
             offset = 0
             while True:
                 try:
-                    result = await sender.send(functions.upload.GetFileRequest(
+                    result = sender.send(functions.upload.GetFileRequest(
                         input_location, offset, part_size
                     ))
                     if isinstance(result, types.upload.FileCdnRedirect):
@@ -217,7 +217,7 @@ class DownloadMethods(UserMethods):
                         raise NotImplementedError
                 except errors.FileMigrateError as e:
                     __log__.info('File lives in another DC')
-                    sender = await self._get_exported_sender(e.new_dc)
+                    sender = self._get_exported_sender(e.new_dc)
                     continue
 
                 offset += part_size
@@ -234,7 +234,7 @@ class DownloadMethods(UserMethods):
                     progress_callback(f.tell(), file_size)
         finally:
             if sender != self._sender:
-                await sender.disconnect()
+                sender.disconnect()
             if isinstance(file, str) or in_memory:
                 f.close()
 
@@ -242,7 +242,7 @@ class DownloadMethods(UserMethods):
 
     # region Private methods
 
-    async def _download_photo(self, photo, file, date, progress_callback):
+    def _download_photo(self, photo, file, date, progress_callback):
         """Specialized version of .download_media() for photos"""
         # Determine the photo and its largest size
         if isinstance(photo, types.MessageMediaPhoto):
@@ -272,12 +272,12 @@ class DownloadMethods(UserMethods):
                     f.close()
             return file
 
-        await self.download_file(
+        self.download_file(
             photo.location, file, file_size=photo.size,
             progress_callback=progress_callback)
         return file
 
-    async def _download_document(
+    def _download_document(
             self, document, file, date, progress_callback):
         """Specialized version of .download_media() for documents."""
         if isinstance(document, types.MessageMediaDocument):
@@ -311,7 +311,7 @@ class DownloadMethods(UserMethods):
             date=date, possible_names=possible_names
         )
 
-        await self.download_file(
+        self.download_file(
             document, file, file_size=file_size,
             progress_callback=progress_callback)
         return file

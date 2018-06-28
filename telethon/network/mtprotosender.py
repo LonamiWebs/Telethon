@@ -110,7 +110,7 @@ class MTProtoSender:
 
     # Public API
 
-    async def connect(self, ip, port):
+    def connect(self, ip, port):
         """
         Connects to the specified ``ip:port``, and generates a new
         authorization key for the `MTProtoSender.session` if it does
@@ -123,12 +123,12 @@ class MTProtoSender:
         self._ip = ip
         self._port = port
         self._user_connected = True
-        await self._connect()
+        self._connect()
 
     def is_connected(self):
         return self._user_connected
 
-    async def disconnect(self):
+    def disconnect(self):
         """
         Cleanly disconnects the instance from the network, cancels
         all pending requests, and closes the send and receive loops.
@@ -137,14 +137,14 @@ class MTProtoSender:
             __log__.info('User is already disconnected!')
             return
 
-        await self._disconnect()
+        self._disconnect()
 
-    async def _disconnect(self, error=None):
+    def _disconnect(self, error=None):
         __log__.info('Disconnecting from {}...'.format(self._ip))
         self._user_connected = False
         try:
             __log__.debug('Closing current connection...')
-            await self._connection.close()
+            self._connection.close()
         finally:
             __log__.debug('Cancelling {} pending message(s)...'
                           .format(len(self._pending_messages)))
@@ -183,11 +183,11 @@ class MTProtoSender:
 
         .. code-block:: python
 
-            async def method():
+            def method():
                 # Sending (enqueued for the send loop)
                 future = sender.send(request)
                 # Receiving (waits for the receive loop to read the result)
-                result = await future
+                result = future
 
         Designed like this because Telegram may send the response at
         any point, and it can send other items while one waits for it.
@@ -196,7 +196,7 @@ class MTProtoSender:
         would otherwise work.
 
         Since the receiving part is "built in" the future, it's
-        impossible to await receive a result that was never sent.
+        impossible to receive a result that was never sent.
         """
         if not self._user_connected:
             raise ConnectionError('Cannot send requests while disconnected')
@@ -230,7 +230,7 @@ class MTProtoSender:
 
     # Private methods
 
-    async def _connect(self):
+    def _connect(self):
         """
         Performs the actual connection, retrying, generating the
         authorization key if necessary, and starting the send and
@@ -240,7 +240,7 @@ class MTProtoSender:
         for retry in range(1, self._retries + 1):
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
-                await self._connection.connect(self._ip, self._port)
+                self._connection.connect(self._ip, self._port)
             except (asyncio.TimeoutError, OSError) as e:
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
@@ -257,7 +257,7 @@ class MTProtoSender:
                 try:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
                     self.state.auth_key, self.state.time_offset =\
-                        await authenticator.do_authentication(plain)
+                        authenticator.do_authentication(plain)
 
                     if self._auth_key_callback:
                         self._auth_key_callback(self.state.auth_key)
@@ -269,7 +269,7 @@ class MTProtoSender:
             else:
                 e = ConnectionError('auth_key generation failed {} times'
                                     .format(self._retries))
-                await self._disconnect(error=e)
+                self._disconnect(error=e)
                 raise e
 
         __log__.debug('Starting send loop')
@@ -283,7 +283,7 @@ class MTProtoSender:
             self._disconnected = asyncio.Future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
-    async def _reconnect(self):
+    def _reconnect(self):
         """
         Cleanly disconnects and then reconnects.
         """
@@ -291,20 +291,20 @@ class MTProtoSender:
         self._send_queue.put_nowait(_reconnect_sentinel)
 
         __log__.debug('Awaiting for the send loop before reconnecting...')
-        await self._send_loop_handle
+        self._send_loop_handle
 
         __log__.debug('Awaiting for the receive loop before reconnecting...')
-        await self._recv_loop_handle
+        self._recv_loop_handle
 
         __log__.debug('Closing current connection...')
-        await self._connection.close()
+        self._connection.close()
 
         self._reconnecting = False
 
         retries = self._retries if self._auto_reconnect else 0
         for retry in range(1, retries + 1):
             try:
-                await self._connect()
+                self._connect()
                 for m in self._pending_messages.values():
                     self._send_queue.put_nowait(m)
 
@@ -316,7 +316,7 @@ class MTProtoSender:
                 __log__.info('Failed reconnection retry %d/%d', retry, retries)
         else:
             __log__.error('Failed to reconnect automatically.')
-            await self._disconnect(error=ConnectionError())
+            self._disconnect(error=ConnectionError())
 
     def _start_reconnect(self):
         """Starts a reconnection in the background."""
@@ -342,7 +342,7 @@ class MTProtoSender:
 
     # Loops
 
-    async def _send_loop(self):
+    def _send_loop(self):
         """
         This loop is responsible for popping items off the send
         queue, encrypting them, and sending them over the network.
@@ -357,7 +357,7 @@ class MTProtoSender:
                 self._send_queue.put_nowait(self._last_ack)
                 self._pending_ack.clear()
 
-            messages = await self._send_queue.get()
+            messages = self._send_queue.get()
             if messages == _reconnect_sentinel:
                 if self._reconnecting:
                     break
@@ -381,7 +381,7 @@ class MTProtoSender:
             while not any(m.future.cancelled() for m in messages):
                 try:
                     __log__.debug('Sending {} bytes...'.format(len(body)))
-                    await self._connection.send(body)
+                    self._connection.send(body)
                     break
                 except asyncio.TimeoutError:
                     continue
@@ -394,7 +394,7 @@ class MTProtoSender:
                         __log__.warning('OSError while sending %s', e)
                     else:
                         __log__.exception('Unhandled exception while receiving')
-                        await asyncio.sleep(1)
+                        asyncio.sleep(1)
 
                     self._start_reconnect()
                     break
@@ -411,7 +411,7 @@ class MTProtoSender:
             __log__.debug('Outgoing messages {} sent!'
                           .format(', '.join(str(m.msg_id) for m in messages)))
 
-    async def _recv_loop(self):
+    def _recv_loop(self):
         """
         This loop is responsible for reading all incoming responses
         from the network, decrypting and handling or dispatching them.
@@ -421,7 +421,7 @@ class MTProtoSender:
         while self._user_connected and not self._reconnecting:
             try:
                 __log__.debug('Receiving items from the network...')
-                body = await self._connection.recv()
+                body = self._connection.recv()
             except asyncio.TimeoutError:
                 continue
             except asyncio.CancelledError:
@@ -433,7 +433,7 @@ class MTProtoSender:
                     __log__.warning('OSError while receiving %s', e)
                 else:
                     __log__.exception('Unhandled exception while receiving')
-                    await asyncio.sleep(1)
+                    asyncio.sleep(1)
 
                 self._start_reconnect()
                 break
@@ -469,20 +469,20 @@ class MTProtoSender:
                 continue
             except:
                 __log__.exception('Unhandled exception while unpacking')
-                await asyncio.sleep(1)
+                asyncio.sleep(1)
             else:
                 try:
-                    await self._process_message(message)
+                    self._process_message(message)
                 except asyncio.CancelledError:
                     return
                 except:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
-                    await asyncio.sleep(1)
+                    asyncio.sleep(1)
 
     # Response Handlers
 
-    async def _process_message(self, message):
+    def _process_message(self, message):
         """
         Adds the given message to the list of messages that must be
         acknowledged and dispatches control to different ``_handle_*``
@@ -491,9 +491,9 @@ class MTProtoSender:
         self._pending_ack.add(message.msg_id)
         handler = self._handlers.get(message.obj.CONSTRUCTOR_ID,
                                      self._handle_update)
-        await handler(message)
+        handler(message)
 
-    async def _handle_rpc_result(self, message):
+    def _handle_rpc_result(self, message):
         """
         Handles the result for Remote Procedure Calls:
 
@@ -529,7 +529,7 @@ class MTProtoSender:
             __log__.info('Received response without parent request: {}'
                          .format(rpc_result.body))
 
-    async def _handle_container(self, message):
+    def _handle_container(self, message):
         """
         Processes the inner messages of a container with many of them:
 
@@ -537,9 +537,9 @@ class MTProtoSender:
         """
         __log__.debug('Handling container')
         for inner_message in message.obj.messages:
-            await self._process_message(inner_message)
+            self._process_message(inner_message)
 
-    async def _handle_gzip_packed(self, message):
+    def _handle_gzip_packed(self, message):
         """
         Unpacks the data from a gzipped object and processes it:
 
@@ -548,15 +548,15 @@ class MTProtoSender:
         __log__.debug('Handling gzipped data')
         with BinaryReader(message.obj.data) as reader:
             message.obj = reader.tgread_object()
-            await self._process_message(message)
+            self._process_message(message)
 
-    async def _handle_update(self, message):
+    def _handle_update(self, message):
         __log__.debug('Handling update {}'
                       .format(message.obj.__class__.__name__))
         if self._update_callback:
             self._update_callback(message.obj)
 
-    async def _handle_pong(self, message):
+    def _handle_pong(self, message):
         """
         Handles pong results, which don't come inside a ``rpc_result``
         but are still sent through a request:
@@ -569,7 +569,7 @@ class MTProtoSender:
         if message:
             message.future.set_result(pong)
 
-    async def _handle_bad_server_salt(self, message):
+    def _handle_bad_server_salt(self, message):
         """
         Corrects the currently used server salt to use the right value
         before enqueuing the rejected message to be re-sent:
@@ -592,7 +592,7 @@ class MTProtoSender:
             __log__.info('Message %d not resent due to bad salt',
                          bad_salt.bad_msg_id)
 
-    async def _handle_bad_notification(self, message):
+    def _handle_bad_notification(self, message):
         """
         Adjusts the current state to be correct based on the
         received bad message notification whenever possible:
@@ -640,7 +640,7 @@ class MTProtoSender:
             __log__.info('Message %d not resent due to bad msg',
                          bad_msg.bad_msg_id)
 
-    async def _handle_detailed_info(self, message):
+    def _handle_detailed_info(self, message):
         """
         Updates the current status with the received detailed information:
 
@@ -652,7 +652,7 @@ class MTProtoSender:
         __log__.debug('Handling detailed info for message %d', msg_id)
         self._pending_ack.add(msg_id)
 
-    async def _handle_new_detailed_info(self, message):
+    def _handle_new_detailed_info(self, message):
         """
         Updates the current status with the received detailed information:
 
@@ -664,7 +664,7 @@ class MTProtoSender:
         __log__.debug('Handling new detailed info for message %d', msg_id)
         self._pending_ack.add(msg_id)
 
-    async def _handle_new_session_created(self, message):
+    def _handle_new_session_created(self, message):
         """
         Updates the current status with the received session information:
 
@@ -675,7 +675,7 @@ class MTProtoSender:
         __log__.debug('Handling new session created')
         self.state.salt = message.obj.server_salt
 
-    async def _handle_ack(self, message):
+    def _handle_ack(self, message):
         """
         Handles a server acknowledge about our messages. Normally
         these can be ignored except in the case of ``auth.logOut``:
@@ -701,7 +701,7 @@ class MTProtoSender:
                 del self._pending_messages[msg_id]
                 msg.future.set_result(True)
 
-    async def _handle_future_salts(self, message):
+    def _handle_future_salts(self, message):
         """
         Handles future salt results, which don't come inside a
         ``rpc_result`` but are still sent through a request:
@@ -716,7 +716,7 @@ class MTProtoSender:
         if msg:
             msg.future.set_result(message.obj)
 
-    async def _handle_state_forgotten(self, message):
+    def _handle_state_forgotten(self, message):
         """
         Handles both :tl:`MsgsStateReq` and :tl:`MsgResendReq` by
         enqueuing a :tl:`MsgsStateInfo` to be sent at a later point.
@@ -724,7 +724,7 @@ class MTProtoSender:
         self.send(MsgsStateInfo(req_msg_id=message.msg_id,
                                 info=chr(1) * len(message.obj.msg_ids)))
 
-    async def _handle_msg_all(self, message):
+    def _handle_msg_all(self, message):
         """
         Handles :tl:`MsgsAllInfo` by doing nothing (yet).
         """
@@ -741,8 +741,8 @@ class _ContainerQueue(asyncio.Queue):
     ``asyncio.Queue`` when needed for testing purposes, and
     a list won't be returned in said case.
     """
-    async def get(self):
-        result = await super().get()
+    def get(self):
+        result = super().get()
         if self.empty() or result == _reconnect_sentinel or\
                 isinstance(result.obj, MessageContainer):
             return result

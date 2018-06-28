@@ -38,7 +38,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             (You are now logged in)
 
         If the event loop is already running, this method returns a
-        coroutine that you should await on your own code; otherwise
+        coroutine that you should on your own code; otherwise
         the loop is ran until said coroutine completes.
 
         Args:
@@ -109,17 +109,17 @@ class AuthMethods(MessageParseMethods, UserMethods):
             else self.loop.run_until_complete(coro)
         )
 
-    async def _start(
+    def _start(
             self, phone, password, bot_token, force_sms,
             code_callback, first_name, last_name, max_attempts):
         if not self.is_connected():
-            await self.connect()
+            self.connect()
 
-        if await self.is_user_authorized():
+        if self.is_user_authorized():
             return self
 
         if bot_token:
-            await self.sign_in(bot_token=bot_token)
+            self.sign_in(bot_token=bot_token)
             return self
 
         # Turn the callable into a valid phone number
@@ -130,16 +130,16 @@ class AuthMethods(MessageParseMethods, UserMethods):
         attempts = 0
         two_step_detected = False
 
-        sent_code = await self.send_code_request(phone, force_sms=force_sms)
+        sent_code = self.send_code_request(phone, force_sms=force_sms)
         sign_up = not sent_code.phone_registered
         while attempts < max_attempts:
             try:
                 if sign_up:
-                    me = await self.sign_up(
+                    me = self.sign_up(
                         code_callback(), first_name, last_name)
                 else:
                     # Raises SessionPasswordNeededError if 2FA enabled
-                    me = await self.sign_in(phone, code=code_callback())
+                    me = self.sign_in(phone, code=code_callback())
                 break
             except errors.SessionPasswordNeededError:
                 two_step_detected = True
@@ -171,7 +171,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             if callable(password):
                 for _ in range(max_attempts):
                     try:
-                        me = await self.sign_in(
+                        me = self.sign_in(
                             phone=phone, password=password())
                         break
                     except errors.PasswordHashInvalidError:
@@ -180,7 +180,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 else:
                     raise errors.PasswordHashInvalidError()
             else:
-                me = await self.sign_in(phone=phone, password=password)
+                me = self.sign_in(phone=phone, password=password)
 
         # We won't reach here if any step failed (exit by exception)
         signed, name = 'Signed in successfully as', utils.get_display_name(me)
@@ -193,7 +193,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return self
 
-    async def sign_in(
+    def sign_in(
             self, phone=None, *, code=None, password=None,
             bot_token=None, phone_code_hash=None):
         """
@@ -228,12 +228,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
             The signed in user, or the information about
             :meth:`send_code_request`.
         """
-        me = await self.get_me()
+        me = self.get_me()
         if me:
             return me
 
         if phone and not code and not password:
-            return await self.send_code_request(phone)
+            return self.send_code_request(phone)
         elif code:
             phone = utils.parse_phone(phone) or self._phone
             phone_code_hash = \
@@ -248,16 +248,16 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-            result = await self(functions.auth.SignInRequest(
+            result = self(functions.auth.SignInRequest(
                 phone, phone_code_hash, str(code)))
         elif password:
-            salt = (await self(
+            salt = (self(
                 functions.account.GetPasswordRequest())).current_salt
-            result = await self(functions.auth.CheckPasswordRequest(
+            result = self(functions.auth.CheckPasswordRequest(
                 helpers.get_password_hash(password, salt)
             ))
         elif bot_token:
-            result = await self(functions.auth.ImportBotAuthorizationRequest(
+            result = self(functions.auth.ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
                 api_id=self.api_id, api_hash=self.api_hash
             ))
@@ -273,7 +273,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._authorized = True
         return result.user
 
-    async def sign_up(self, code, first_name, last_name=''):
+    def sign_up(self, code, first_name, last_name=''):
         """
         Signs up to Telegram if you don't have an account yet.
         You must call .send_code_request(phone) first.
@@ -296,7 +296,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         Returns:
             The new created :tl:`User`.
         """
-        me = await self.get_me()
+        me = self.get_me()
         if me:
             return me
 
@@ -308,7 +308,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             sys.stderr.write("{}\n".format(t))
             sys.stderr.flush()
 
-        result = await self(functions.auth.SignUpRequest(
+        result = self(functions.auth.SignUpRequest(
             phone_number=self._phone,
             phone_code_hash=self._phone_code_hash.get(self._phone, ''),
             phone_code=str(code),
@@ -317,7 +317,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         ))
 
         if self._tos:
-            await self(
+            self(
                 functions.help.AcceptTermsOfServiceRequest(self._tos.id))
 
         self._self_input_peer = utils.get_input_peer(
@@ -326,7 +326,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._authorized = True
         return result.user
 
-    async def send_code_request(self, phone, *, force_sms=False):
+    def send_code_request(self, phone, *, force_sms=False):
         """
         Sends a code request to the specified phone number.
 
@@ -345,7 +345,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         if not phone_hash:
             try:
-                result = await self(functions.auth.SendCodeRequest(
+                result = self(functions.auth.SendCodeRequest(
                     phone, self.api_id, self.api_hash))
             except errors.AuthRestartError:
                 return self.send_code_request(phone, force_sms=force_sms)
@@ -358,14 +358,14 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._phone = phone
 
         if force_sms:
-            result = await self(
+            result = self(
                 functions.auth.ResendCodeRequest(phone, phone_hash))
 
             self._phone_code_hash[phone] = result.phone_code_hash
 
         return result
 
-    async def log_out(self):
+    def log_out(self):
         """
         Logs out Telegram and deletes the current ``*.session`` file.
 
@@ -373,16 +373,16 @@ class AuthMethods(MessageParseMethods, UserMethods):
             ``True`` if the operation was successful.
         """
         try:
-            await self(functions.auth.LogOutRequest())
+            self(functions.auth.LogOutRequest())
         except errors.RPCError:
             return False
 
-        await self.disconnect()
+        self.disconnect()
         self.session.delete()
         self._authorized = False
         return True
 
-    async def edit_2fa(
+    def edit_2fa(
             self, current_password=None, new_password=None,
             *, hint='', email=None):
         """
@@ -418,7 +418,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         if new_password is None and current_password is None:
             return False
 
-        pass_result = await self(functions.account.GetPasswordRequest())
+        pass_result = self(functions.account.GetPasswordRequest())
         if isinstance(
                 pass_result, types.account.NoPassword) and current_password:
             current_password = None
@@ -445,11 +445,11 @@ class AuthMethods(MessageParseMethods, UserMethods):
             )
             if email:  # If enabling 2FA or changing email
                 new_settings.email = email  # TG counts empty string as None
-            return await self(functions.account.UpdatePasswordSettingsRequest(
+            return self(functions.account.UpdatePasswordSettingsRequest(
                 current_password_hash, new_settings=new_settings
             ))
         else:  # Removing existing password
-            return await self(functions.account.UpdatePasswordSettingsRequest(
+            return self(functions.account.UpdatePasswordSettingsRequest(
                 current_password_hash,
                 new_settings=types.account.PasswordInputSettings(
                     new_salt=bytes(),
@@ -465,13 +465,13 @@ class AuthMethods(MessageParseMethods, UserMethods):
     def __enter__(self):
         return self.start()
 
-    async def __aenter__(self):
-        return await self.start()
+    def __aenter__(self):
+        return self.start()
 
     def __exit__(self, *args):
         self.disconnect()
 
-    async def __aexit__(self, *args):
-        await self.disconnect()
+    def __aexit__(self, *args):
+        self.disconnect()
 
     # endregion

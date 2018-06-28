@@ -13,7 +13,7 @@ class DialogMethods(UserMethods):
     # region Public methods
 
     @async_generator
-    async def iter_dialogs(
+    def iter_dialogs(
             self, limit=None, *, offset_date=None, offset_id=0,
             offset_peer=types.InputPeerEmpty(), ignore_migrated=False,
             _total=None):
@@ -56,7 +56,7 @@ class DialogMethods(UserMethods):
             if not _total:
                 return
             # Special case, get a single dialog and determine count
-            dialogs = await self(functions.messages.GetDialogsRequest(
+            dialogs = self(functions.messages.GetDialogsRequest(
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
@@ -74,7 +74,7 @@ class DialogMethods(UserMethods):
         )
         while len(seen) < limit:
             req.limit = min(limit - len(seen), 100)
-            r = await self(req)
+            r = self(req)
 
             if _total:
                 _total[0] = getattr(r, 'count', len(r.dialogs))
@@ -97,7 +97,7 @@ class DialogMethods(UserMethods):
 
                     if not ignore_migrated or getattr(
                             cd.entity, 'migrated_to', None) is None:
-                        await yield_(cd)
+                        yield_(cd)
 
             if len(r.dialogs) < req.limit\
                     or not isinstance(r, types.messages.DialogsSlice):
@@ -116,7 +116,7 @@ class DialogMethods(UserMethods):
             req.offset_id = r.messages[-1].id
             req.exclude_pinned = True
 
-    async def get_dialogs(self, *args, **kwargs):
+    def get_dialogs(self, *args, **kwargs):
         """
         Same as :meth:`iter_dialogs`, but returns a list instead
         with an additional ``.total`` attribute on the list.
@@ -124,13 +124,13 @@ class DialogMethods(UserMethods):
         total = [0]
         kwargs['_total'] = total
         dialogs = UserList()
-        async for x in self.iter_dialogs(*args, **kwargs):
+        for x in self.iter_dialogs(*args, **kwargs):
             dialogs.append(x)
         dialogs.total = total[0]
         return dialogs
 
     @async_generator
-    async def iter_drafts(self):
+    def iter_drafts(self):
         """
         Iterator over all open draft messages.
 
@@ -139,16 +139,16 @@ class DialogMethods(UserMethods):
         to change the message or `telethon.tl.custom.draft.Draft.delete`
         among other things.
         """
-        r = await self(functions.messages.GetAllDraftsRequest())
+        r = self(functions.messages.GetAllDraftsRequest())
         for update in r.updates:
-            await yield_(custom.Draft._from_update(self, update))
+            yield_(custom.Draft._from_update(self, update))
 
-    async def get_drafts(self):
+    def get_drafts(self):
         """
         Same as :meth:`iter_drafts`, but returns a list instead.
         """
         result = []
-        async for x in self.iter_drafts():
+        for x in self.iter_drafts():
             result.append(x)
         return result
 

@@ -21,7 +21,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
     # region Message retrieval
 
     @async_generator
-    async def iter_messages(
+    def iter_messages(
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
             from_user=None, batch_size=100, wait_time=None, ids=None,
@@ -110,13 +110,13 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         # It's possible to get messages by ID without their entity, so only
         # fetch the input version if we're not using IDs or if it was given.
         if not ids or entity:
-            entity = await self.get_input_entity(entity)
+            entity = self.get_input_entity(entity)
 
         if ids:
             if not utils.is_list_like(ids):
                 ids = (ids,)
-            async for x in self._iter_ids(entity, ids, total=_total):
-                await yield_(x)
+            for x in self._iter_ids(entity, ids, total=_total):
+                yield_(x)
             return
 
         # Telegram doesn't like min_id/max_id. If these IDs are low enough
@@ -147,7 +147,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 min_id=0,
                 hash=0,
                 from_id=(
-                    await self.get_input_entity(from_user)
+                    self.get_input_entity(from_user)
                     if from_user else None
                 )
             )
@@ -155,7 +155,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 # Telegram completely ignores `from_id` in private
                 # chats, so we need to do this check client-side.
                 if isinstance(request.from_id, types.InputPeerSelf):
-                    from_id = (await self.get_me(input_peer=True)).user_id
+                    from_id = (self.get_me(input_peer=True)).user_id
                 else:
                     from_id = request.from_id
         else:
@@ -174,7 +174,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             if not _total:
                 return
             # No messages, but we still need to know the total message count
-            result = await self(request)
+            result = self(request)
             if isinstance(result, types.messages.MessagesNotModified):
                 _total[0] = result.count
             else:
@@ -191,7 +191,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             start = asyncio.get_event_loop().time()
             # Telegram has a hard limit of 100
             request.limit = min(limit - have, batch_size)
-            r = await self(request)
+            r = self(request)
             if _total:
                 _total[0] = getattr(r, 'count', len(r.messages))
 
@@ -213,7 +213,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 # IDs are returned in descending order.
                 last_id = message.id
 
-                await yield_(custom.Message(self, message, entities, entity))
+                yield_(custom.Message(self, message, entities, entity))
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -243,10 +243,10 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                     request.max_date = last_message.date
 
             now = asyncio.get_event_loop().time()
-            await asyncio.sleep(
+            asyncio.sleep(
                 max(wait_time - (now - start), 0), loop=self._loop)
 
-    async def get_messages(self, *args, **kwargs):
+    def get_messages(self, *args, **kwargs):
         """
         Same as :meth:`iter_messages`, but returns a list instead
         with an additional ``.total`` attribute on the list.
@@ -272,7 +272,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 kwargs['limit'] = 1
 
         msgs = UserList()
-        async for x in self.iter_messages(*args, **kwargs):
+        for x in self.iter_messages(*args, **kwargs):
             msgs.append(x)
         msgs.total = total[0]
         if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
@@ -284,7 +284,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
     # region Message sending/editing/deleting
 
-    async def send_message(
+    def send_message(
             self, entity, message='', *, reply_to=None,
             parse_mode=utils.Default, link_preview=True, file=None,
             force_document=False, clear_draft=False):
@@ -340,7 +340,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             The sent `telethon.tl.custom.message.Message`.
         """
         if file is not None:
-            return await self.send_file(
+            return self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
                 parse_mode=parse_mode, force_document=force_document
             )
@@ -349,11 +349,11 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 'The message cannot be empty unless a file is provided'
             )
 
-        entity = await self.get_input_entity(entity)
+        entity = self.get_input_entity(entity)
         if isinstance(message, types.Message):
             if (message.media and not isinstance(
                     message.media, types.MessageMediaWebPage)):
-                return await self.send_file(
+                return self.send_file(
                     entity, message.media, caption=message.message,
                     entities=message.entities
                 )
@@ -377,7 +377,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             )
             message = message.message
         else:
-            message, msg_ent = await self._parse_message_text(message,
+            message, msg_ent = self._parse_message_text(message,
                                                               parse_mode)
             request = functions.messages.SendMessageRequest(
                 peer=entity,
@@ -388,7 +388,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 clear_draft=clear_draft
             )
 
-        result = await self(request)
+        result = self(request)
         if isinstance(result, types.UpdateShortSentMessage):
             to_id, cls = utils.resolve_id(utils.get_peer_id(entity))
             return custom.Message(self, types.Message(
@@ -403,7 +403,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    async def forward_messages(self, entity, messages, *, from_peer=None):
+    def forward_messages(self, entity, messages, *, from_peer=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -448,7 +448,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             id=[m if isinstance(m, int) else m.id for m in messages],
             to_peer=entity
         )
-        result = await self(req)
+        result = self(req)
         if isinstance(result, (types.Updates, types.UpdatesCombined)):
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(result.users, result.chats)}
@@ -468,7 +468,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
 
-    async def edit_message(
+    def edit_message(
             self, entity, message=None, text=None,
             *, parse_mode=utils.Default, link_preview=True, file=None):
         """
@@ -527,9 +527,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             message = entity
             entity = entity.to_id
 
-        entity = await self.get_input_entity(entity)
-        text, msg_entities = await self._parse_message_text(text, parse_mode)
-        file_handle, media = await self._file_to_media(file)
+        entity = self.get_input_entity(entity)
+        text, msg_entities = self._parse_message_text(text, parse_mode)
+        file_handle, media = self._file_to_media(file)
         request = functions.messages.EditMessageRequest(
             peer=entity,
             id=utils.get_message_id(message),
@@ -538,11 +538,11 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             entities=msg_entities,
             media=media
         )
-        msg = self._get_response_message(request, await self(request), entity)
+        msg = self._get_response_message(request, self(request), entity)
         self._cache_media(msg, file, file_handle)
         return msg
 
-    async def delete_messages(self, entity, message_ids, *, revoke=True):
+    def delete_messages(self, entity, message_ids, *, revoke=True):
         """
         Deletes a message from a chat, optionally "for everyone".
 
@@ -574,19 +574,19 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             else int(m) for m in message_ids
         )
 
-        entity = await self.get_input_entity(entity) if entity else None
+        entity = self.get_input_entity(entity) if entity else None
         if isinstance(entity, types.InputPeerChannel):
-            return await self([functions.channels.DeleteMessagesRequest(
+            return self([functions.channels.DeleteMessagesRequest(
                          entity, list(c)) for c in utils.chunks(message_ids)])
         else:
-            return await self([functions.messages.DeleteMessagesRequest(
+            return self([functions.messages.DeleteMessagesRequest(
                          list(c), revoke) for c in utils.chunks(message_ids)])
 
     # endregion
 
     # region Miscellaneous
 
-    async def send_read_acknowledge(
+    def send_read_acknowledge(
             self, entity, message=None, *, max_id=None, clear_mentions=False):
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
@@ -623,18 +623,18 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 raise ValueError(
                     'Either a message list or a max_id must be provided.')
 
-        entity = await self.get_input_entity(entity)
+        entity = self.get_input_entity(entity)
         if clear_mentions:
-            await self(functions.messages.ReadMentionsRequest(entity))
+            self(functions.messages.ReadMentionsRequest(entity))
             if max_id is None:
                 return True
 
         if max_id is not None:
             if isinstance(entity, types.InputPeerChannel):
-                return await self(functions.channels.ReadHistoryRequest(
+                return self(functions.channels.ReadHistoryRequest(
                     entity, max_id=max_id))
             else:
-                return await self(functions.messages.ReadHistoryRequest(
+                return self(functions.messages.ReadHistoryRequest(
                     entity, max_id=max_id))
 
         return False
@@ -646,7 +646,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
     # region Private methods
 
     @async_generator
-    async def _iter_ids(self, entity, ids, total):
+    def _iter_ids(self, entity, ids, total):
         """
         Special case for `iter_messages` when it should only fetch some IDs.
         """
@@ -655,15 +655,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         from_id = None  # By default, no need to validate from_id
         if isinstance(entity, types.InputPeerChannel):
-            r = await self(functions.channels.GetMessagesRequest(entity, ids))
+            r = self(functions.channels.GetMessagesRequest(entity, ids))
         else:
-            r = await self(functions.messages.GetMessagesRequest(ids))
+            r = self(functions.messages.GetMessagesRequest(ids))
             if entity:
                 from_id = utils.get_peer_id(entity)
 
         if isinstance(r, types.messages.MessagesNotModified):
             for _ in ids:
-                await yield_(None)
+                yield_(None)
             return
 
         entities = {utils.get_peer_id(x): x
@@ -678,8 +678,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         for message in r.messages:
             if isinstance(message, types.MessageEmpty) or (
                     from_id and utils.get_peer_id(message.to_id) != from_id):
-                await yield_(None)
+                yield_(None)
             else:
-                await yield_(custom.Message(self, message, entities, entity))
+                yield_(custom.Message(self, message, entities, entity))
 
     # endregion

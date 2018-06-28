@@ -12,7 +12,7 @@ class ChatMethods(UserMethods):
     # region Public methods
 
     @async_generator
-    async def iter_participants(
+    def iter_participants(
             self, entity, limit=None, *, search='',
             filter=None, aggressive=False, _total=None):
         """
@@ -61,7 +61,7 @@ class ChatMethods(UserMethods):
             else:
                 filter = filter()
 
-        entity = await self.get_input_entity(entity)
+        entity = self.get_input_entity(entity)
         if search and (filter
                        or not isinstance(entity, types.InputPeerChannel)):
             # We need to 'search' ourselves unless we have a PeerChannel
@@ -77,7 +77,7 @@ class ChatMethods(UserMethods):
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, types.InputPeerChannel):
             if _total or (aggressive and not filter):
-                total = (await self(functions.channels.GetFullChannelRequest(
+                total = (self(functions.channels.GetFullChannelRequest(
                     entity
                 ))).full_chat.participants_count
                 if _total:
@@ -117,7 +117,7 @@ class ChatMethods(UserMethods):
                 if requests[0].offset > limit:
                     break
 
-                results = await self(requests)
+                results = self(requests)
                 for i in reversed(range(len(requests))):
                     participants = results[i]
                     if not participants.users:
@@ -133,12 +133,12 @@ class ChatMethods(UserMethods):
                             seen.add(participant.user_id)
                             user = users[participant.user_id]
                             user.participant = participant
-                            await yield_(user)
+                            yield_(user)
                             if len(seen) >= limit:
                                 return
 
         elif isinstance(entity, types.InputPeerChat):
-            full = await self(
+            full = self(
                 functions.messages.GetFullChatRequest(entity.chat_id))
             if not isinstance(
                     full.full_chat.participants, types.ChatParticipants):
@@ -161,17 +161,17 @@ class ChatMethods(UserMethods):
                 else:
                     user = users[participant.user_id]
                     user.participant = participant
-                    await yield_(user)
+                    yield_(user)
         else:
             if _total:
                 _total[0] = 1
             if limit != 0:
-                user = await self.get_entity(entity)
+                user = self.get_entity(entity)
                 if filter_entity(user):
                     user.participant = None
-                    await yield_(user)
+                    yield_(user)
 
-    async def get_participants(self, *args, **kwargs):
+    def get_participants(self, *args, **kwargs):
         """
         Same as :meth:`iter_participants`, but returns a list instead
         with an additional ``.total`` attribute on the list.
@@ -179,7 +179,7 @@ class ChatMethods(UserMethods):
         total = [0]
         kwargs['_total'] = total
         participants = UserList()
-        async for x in self.iter_participants(*args, **kwargs):
+        for x in self.iter_participants(*args, **kwargs):
             participants.append(x)
         participants.total = total[0]
         return participants
