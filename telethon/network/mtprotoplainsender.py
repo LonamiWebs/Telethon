@@ -39,10 +39,15 @@ class MTProtoPlainSender:
             raise BrokenAuthKeyError()
 
         with BinaryReader(body) as reader:
-            assert reader.read_long() == 0  # auth_key_id
-            assert reader.read_long() > msg_id  # msg_id
-            assert reader.read_int()  # length
+            assert reader.read_long() == 0, 'Bad auth_key_id'  # auth_key_id
 
+            assert reader.read_long() != 0,  'Bad msg_id'  # msg_id
+            # ^ We should make sure that the read ``msg_id`` is greater
+            # than our own ``msg_id``. However, under some circumstances
+            # (bad system clock/working behind proxies) this seems to not
+            # be the case, which would cause endless assertion errors.
+
+            assert reader.read_int() > 0,  'Bad length'  # length
             # We could read length bytes and use those in a new reader to read
             # the next TLObject without including the padding, but since the
             # reader isn't used for anything else after this, it's unnecessary.
