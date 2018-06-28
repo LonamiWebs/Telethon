@@ -242,8 +242,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 else:
                     request.max_date = last_message.date
 
-            asyncio.sleep(
-                max(wait_time - (time.time() - start), 0), loop=self._loop)
+            time.sleep(
+                max(wait_time - (time.time() - start), 0))
 
     def get_messages(self, *args, **kwargs):
         """

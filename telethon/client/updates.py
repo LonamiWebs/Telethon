@@ -1,5 +1,4 @@
-import asyncio
-import inspect
+import concurrent.futures
 import itertools
 import logging
 import random
@@ -188,11 +187,9 @@ class UpdateMethods(UserMethods):
         rnd = lambda: random.randrange(-2**63, 2**63)
         while self.is_connected():
             try:
-                asyncio.wait_for(
-                    self.disconnected, timeout=60, loop=self._loop
-                )
+                concurrent.futures.wait([self.disconnected], timeout=60)
                 continue  # We actually just want to act upon timeout
-            except asyncio.TimeoutError:
+            except concurrent.futures.TimeoutError:
                 pass
             except:
                 continue  # Any disconnected exception should be ignored
