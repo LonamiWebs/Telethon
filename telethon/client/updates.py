@@ -6,7 +6,7 @@ import random
 import time
 
 from .users import UserMethods
-from .. import events, utils, errors
+from .. import syncio, events, utils, errors
 from ..tl import types, functions
 
 __log__ = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class UpdateMethods(UserMethods):
 
     def _run_until_disconnected(self):
         try:
-            self.disconnected
+            self.disconnected.result()
         except KeyboardInterrupt:
             self.disconnect()
 
@@ -32,17 +32,7 @@ class UpdateMethods(UserMethods):
         If the loop is already running, this method returns a coroutine
         that you should on your own code.
         """
-        if self.loop.is_running():
-            return self._run_until_disconnected()
-        try:
-            return self.loop.run_until_complete(self.disconnected)
-        except KeyboardInterrupt:
-            # Importing the magic sync module turns disconnect into sync.
-            # TODO Maybe disconnect() should not need the magic module...
-            if inspect.iscoroutinefunction(self.disconnect):
-                self.loop.run_until_complete(self.disconnect())
-            else:
-                self.disconnect()
+        return self._run_until_disconnected()
 
     def on(self, event):
         """
@@ -179,7 +169,7 @@ class UpdateMethods(UserMethods):
             self._handle_update(update.update)
         else:
             update._entities = getattr(update, '_entities', {})
-            self._loop.create_task(self._dispatch_update(update))
+            syncio.create_task(self._dispatch_update, update)
 
         need_diff = False
         if hasattr(update, 'pts'):
