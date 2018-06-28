@@ -202,6 +202,7 @@ class DownloadMethods(UserMethods):
 
         # The used sender will change if ``FileMigrateError`` occurs
         sender = self._sender
+        exported = False
         input_location = utils.get_input_location(input_location)
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
@@ -217,7 +218,8 @@ class DownloadMethods(UserMethods):
                         raise NotImplementedError
                 except errors.FileMigrateError as e:
                     __log__.info('File lives in another DC')
-                    sender = await self._get_exported_sender(e.new_dc)
+                    sender = await self._borrow_exported_sender(e.new_dc)
+                    exported = True
                     continue
 
                 offset += part_size
@@ -233,7 +235,9 @@ class DownloadMethods(UserMethods):
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
         finally:
-            if sender != self._sender:
+            if exported:
+                await self._return_exported_sender(sender)
+            elif sender != self._sender:
                 await sender.disconnect()
             if isinstance(file, str) or in_memory:
                 f.close()
