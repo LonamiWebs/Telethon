@@ -25,7 +25,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
             from_user=None, batch_size=100, wait_time=None, ids=None,
-            _total=None):
+            reverse=False, _total=None):
         """
         Iterator over the message history for the specified entity.
 
@@ -94,6 +94,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 will appear in its place, so that zipping the list of IDs
                 with the messages can match one-to-one.
 
+            reverse (`bool`, optional):
+                If set to ``True``, the messages will be returned in reverse
+                order (from oldest to newest, instead of the default newest
+                to oldest). This also means that the meaning of `offset_id`
+                and `offset_date` parameters is reversed, although they will
+                still be exclusive. `min_id` becomes equivalent to `offset_id`
+                instead of being `max_id` as well since messages are returned
+                in ascending order.
+
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
@@ -115,6 +124,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         if ids:
             if not utils.is_list_like(ids):
                 ids = (ids,)
+            if reverse:
+                ids = list(reversed(ids))
             async for x in self._iter_ids(entity, ids, total=_total):
                 await yield_(x)
             return
@@ -124,10 +135,26 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         #
         # We can emulate their behaviour locally by setting offset = max_id
         # and simply stopping once we hit a message with ID <= min_id.
-        offset_id = max(offset_id, max_id)
-        if offset_id and min_id:
-            if offset_id - min_id <= 1:
-                return
+        if reverse:
+            offset_id = max(offset_id, min_id)
+            if offset_id and max_id:
+                if max_id - offset_id <= 1:
+                    print('suck lol')
+                    return
+
+            if not max_id:
+                max_id = float('inf')
+        else:
+            offset_id = max(offset_id, max_id)
+            if offset_id and min_id:
+                if offset_id - min_id <= 1:
+                    return
+
+        if reverse:
+            if offset_id:
+                offset_id += 1
+            else:
+                offset_id = 1
 
         from_id = None
         limit = float('inf') if limit is None else int(limit)
@@ -142,7 +169,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 max_date=offset_date,
                 offset_id=offset_id,
                 add_offset=add_offset,
-                limit=1,
+                limit=0,  # Search actually returns 0 items if we ask it to
                 max_id=0,
                 min_id=0,
                 hash=0,
@@ -185,12 +212,24 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             wait_time = 1 if limit > 3000 else 0
 
         have = 0
-        last_id = float('inf')
-        batch_size = min(max(batch_size, 1), 100)
+        last_id = 0 if reverse else float('inf')
+
+        # Telegram has a hard limit of 100.
+        # We don't need to fetch 100 if the limit is less.
+        batch_size = min(max(batch_size, 1), min(100, limit))
+
+        # Use a negative offset to work around reversing the results
+        if reverse:
+            request.add_offset -= batch_size
+
         while have < limit:
             start = time.time()
-            # Telegram has a hard limit of 100
+
             request.limit = min(limit - have, batch_size)
+            if reverse and request.limit != batch_size:
+                # Last batch needs special care if we're on reverse
+                request.add_offset += batch_size - request.limit + 1
+
             r = await self(request)
             if _total:
                 _total[0] = getattr(r, 'count', len(r.messages))
@@ -198,19 +237,23 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
 
-            for message in r.messages:
-                if message.id <= min_id:
-                    return
-
+            messages = reversed(r.messages) if reverse else r.messages
+            for message in messages:
                 if (isinstance(message, types.MessageEmpty)
-                    or message.id >= last_id
-                        or (from_id and message.from_id != from_id)):
+                        or from_id and message.from_id != from_id):
                     continue
+
+                if reverse:
+                    if message.id <= last_id or message.id >= max_id:
+                        return
+                else:
+                    if message.id >= last_id or message.id <= min_id:
+                        return
 
                 # There has been reports that on bad connections this method
                 # was returning duplicated IDs sometimes. Using ``last_id``
                 # is an attempt to avoid these duplicates, since the message
-                # IDs are returned in descending order.
+                # IDs are returned in descending order (or asc if reverse).
                 last_id = message.id
 
                 await yield_(custom.Message(self, message, entities, entity))
@@ -219,11 +262,11 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             if len(r.messages) < request.limit:
                 break
 
-            request.offset_id = r.messages[-1].id
             # Find the first message that's not empty (in some rare cases
             # it can happen that the last message is :tl:`MessageEmpty`)
             last_message = None
-            for m in reversed(r.messages):
+            messages = r.messages if reverse else reversed(r.messages)
+            for m in messages:
                 if not isinstance(m, types.MessageEmpty):
                     last_message = m
                     break
@@ -237,10 +280,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 # should just give up since there won't be any new Message.
                 break
             else:
+                request.offset_id = last_message.id
                 if isinstance(request, functions.messages.GetHistoryRequest):
                     request.offset_date = last_message.date
                 else:
                     request.max_date = last_message.date
+
+                if reverse:
+                    # We want to skip the one we already have
+                    request.add_offset -= 1
 
             await asyncio.sleep(
                 max(wait_time - (time.time() - start), 0), loop=self._loop)
