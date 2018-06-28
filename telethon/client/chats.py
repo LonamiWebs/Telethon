@@ -1,7 +1,5 @@
 from collections import UserList
 
-from async_generator import async_generator, yield_
-
 from .users import UserMethods
 from .. import utils
 from ..tl import types, functions
@@ -11,7 +9,6 @@ class ChatMethods(UserMethods):
 
     # region Public methods
 
-    @async_generator
     def iter_participants(
             self, entity, limit=None, *, search='',
             filter=None, aggressive=False, _total=None):
@@ -133,7 +130,7 @@ class ChatMethods(UserMethods):
                             seen.add(participant.user_id)
                             user = users[participant.user_id]
                             user.participant = participant
-                            yield_(user)
+                            yield (user)
                             if len(seen) >= limit:
                                 return
 
@@ -161,7 +158,7 @@ class ChatMethods(UserMethods):
                 else:
                     user = users[participant.user_id]
                     user.participant = participant
-                    yield_(user)
+                    yield (user)
         else:
             if _total:
                 _total[0] = 1
@@ -169,7 +166,7 @@ class ChatMethods(UserMethods):
                 user = self.get_entity(entity)
                 if filter_entity(user):
                     user.participant = None
-                    yield_(user)
+                    yield (user)
 
     def get_participants(self, *args, **kwargs):
         """

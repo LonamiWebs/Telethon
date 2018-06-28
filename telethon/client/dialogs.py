@@ -1,8 +1,6 @@
 import itertools
 from collections import UserList
 
-from async_generator import async_generator, yield_
-
 from .users import UserMethods
 from .. import utils
 from ..tl import types, functions, custom
@@ -12,7 +10,6 @@ class DialogMethods(UserMethods):
 
     # region Public methods
 
-    @async_generator
     def iter_dialogs(
             self, limit=None, *, offset_date=None, offset_id=0,
             offset_peer=types.InputPeerEmpty(), ignore_migrated=False,
@@ -97,7 +94,7 @@ class DialogMethods(UserMethods):
 
                     if not ignore_migrated or getattr(
                             cd.entity, 'migrated_to', None) is None:
-                        yield_(cd)
+                        yield (cd)
 
             if len(r.dialogs) < req.limit\
                     or not isinstance(r, types.messages.DialogsSlice):
@@ -129,7 +126,6 @@ class DialogMethods(UserMethods):
         dialogs.total = total[0]
         return dialogs
 
-    @async_generator
     def iter_drafts(self):
         """
         Iterator over all open draft messages.
@@ -141,7 +137,7 @@ class DialogMethods(UserMethods):
         """
         r = self(functions.messages.GetAllDraftsRequest())
         for update in r.updates:
-            yield_(custom.Draft._from_update(self, update))
+            yield (custom.Draft._from_update(self, update))
 
     def get_drafts(self):
         """
