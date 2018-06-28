@@ -25,12 +25,12 @@ class UserMethods(TelegramBaseClient):
                 if isinstance(future, list):
                     results = []
                     for f in future:
-                        result = f
+                        result = f.result()
                         self.session.process_entities(result)
                         results.append(result)
                     return results
                 else:
-                    result = future
+                    result = future.result()
                     self.session.process_entities(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError) as e:
@@ -198,17 +198,14 @@ class UserMethods(TelegramBaseClient):
         its job** and don't worry about getting the input entity first, but
         if you're going to use an entity often, consider making the call:
 
-        >>> import asyncio
-        >>> rc = asyncio.get_event_loop().run_until_complete
-        >>>
         >>> from telethon import TelegramClient
         >>> client = TelegramClient(...)
         >>> # If you're going to use "username" often in your code
         >>> # (make a lot of calls), consider getting its input entity
         >>> # once, and then using the "user" everywhere instead.
-        >>> user = rc(client.get_input_entity('username'))
+        >>> user = client.get_input_entity('username')
         >>> # The same applies to IDs, chats or channels.
-        >>> chat = rc(client.get_input_entity(-123456789))
+        >>> chat = client.get_input_entity(-123456789)
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
             If an username is given, **the library will use the cache**. This

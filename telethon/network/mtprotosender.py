@@ -1,8 +1,11 @@
-import asyncio
+import concurrent.futures
 import logging
+import queue
+import socket
+import time
 
 from . import MTProtoPlainSender, authenticator
-from .. import utils
+from .. import syncio, utils
 from ..errors import (
     BadMessageError, TypeNotFoundError, BrokenAuthKeyError, SecurityError,
     rpc_message_to_error
@@ -40,12 +43,11 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, state, connection, loop, *,
+    def __init__(self, state, connection, *,
                  retries=5, auto_reconnect=True, update_callback=None,
                  auth_key_callback=None, auto_reconnect_callback=None):
         self.state = state
         self._connection = connection
-        self._loop = loop
         self._ip = None
         self._port = None
         self._retries = retries
@@ -160,11 +162,11 @@ class MTProtoSender:
 
             if self._send_loop_handle:
                 __log__.debug('Cancelling the send loop...')
-                self._send_loop_handle.cancel()
+                self._send_loop_handle.join()
 
             if self._recv_loop_handle:
                 __log__.debug('Cancelling the receive loop...')
-                self._recv_loop_handle.cancel()
+                self._recv_loop_handle.join()
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
         if self._disconnected:
@@ -224,7 +226,7 @@ class MTProtoSender:
         ends, either by user action or in the background.
         """
         if self._disconnected is not None:
-            return asyncio.shield(self._disconnected, loop=self._loop)
+            return self._disconnected
         else:
             raise ConnectionError('Sender was never connected')
 
@@ -241,7 +243,7 @@ class MTProtoSender:
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
                 self._connection.connect(self._ip, self._port)
-            except (asyncio.TimeoutError, OSError) as e:
+            except (socket.timeout, OSError) as e:
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
             else:
@@ -273,14 +275,14 @@ class MTProtoSender:
                 raise e
 
         __log__.debug('Starting send loop')
-        self._send_loop_handle = self._loop.create_task(self._send_loop())
+        self._send_loop_handle = syncio.create_task(self._send_loop)
 
         __log__.debug('Starting receive loop')
-        self._recv_loop_handle = self._loop.create_task(self._recv_loop())
+        self._recv_loop_handle = syncio.create_task(self._recv_loop)
 
         # First connection or manual reconnection after a failure
         if self._disconnected is None or self._disconnected.done():
-            self._disconnected = asyncio.Future()
+            self._disconnected = concurrent.futures.Future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     def _reconnect(self):
@@ -291,10 +293,10 @@ class MTProtoSender:
         self._send_queue.put_nowait(_reconnect_sentinel)
 
         __log__.debug('Awaiting for the send loop before reconnecting...')
-        self._send_loop_handle
+        self._send_loop_handle.join()
 
         __log__.debug('Awaiting for the receive loop before reconnecting...')
-        self._recv_loop_handle
+        self._recv_loop_handle.join()
 
         __log__.debug('Closing current connection...')
         self._connection.close()
@@ -309,7 +311,7 @@ class MTProtoSender:
                     self._send_queue.put_nowait(m)
 
                 if self._auto_reconnect_callback:
-                    self._loop.create_task(self._auto_reconnect_callback())
+                    syncio.create_task(self._auto_reconnect_callback)
 
                 break
             except ConnectionError:
@@ -321,7 +323,7 @@ class MTProtoSender:
     def _start_reconnect(self):
         """Starts a reconnection in the background."""
         if self._user_connected:
-            self._loop.create_task(self._reconnect())
+            syncio.create_task(self._reconnect)
 
     def _clean_containers(self, msg_ids):
         """
@@ -357,7 +359,11 @@ class MTProtoSender:
                 self._send_queue.put_nowait(self._last_ack)
                 self._pending_ack.clear()
 
-            messages = self._send_queue.get()
+            try:
+                messages = self._send_queue.get(timeout=1)
+            except queue.Empty:
+                continue
+
             if messages == _reconnect_sentinel:
                 if self._reconnecting:
                     break
@@ -383,9 +389,9 @@ class MTProtoSender:
                     __log__.debug('Sending {} bytes...'.format(len(body)))
                     self._connection.send(body)
                     break
-                except asyncio.TimeoutError:
+                except socket.timeout:
                     continue
-                except asyncio.CancelledError:
+                except concurrent.futures.CancelledError:
                     return
                 except Exception as e:
                     if isinstance(e, ConnectionError):
@@ -394,7 +400,7 @@ class MTProtoSender:
                         __log__.warning('OSError while sending %s', e)
                     else:
                         __log__.exception('Unhandled exception while receiving')
-                        asyncio.sleep(1)
+                        time.sleep(1)
 
                     self._start_reconnect()
                     break
@@ -422,9 +428,9 @@ class MTProtoSender:
             try:
                 __log__.debug('Receiving items from the network...')
                 body = self._connection.recv()
-            except asyncio.TimeoutError:
+            except socket.timeout:
                 continue
-            except asyncio.CancelledError:
+            except concurrent.futures.CancelledError:
                 return
             except Exception as e:
                 if isinstance(e, ConnectionError):
@@ -433,7 +439,7 @@ class MTProtoSender:
                     __log__.warning('OSError while receiving %s', e)
                 else:
                     __log__.exception('Unhandled exception while receiving')
-                    asyncio.sleep(1)
+                    time.sleep(1)
 
                 self._start_reconnect()
                 break
@@ -469,16 +475,16 @@ class MTProtoSender:
                 continue
             except:
                 __log__.exception('Unhandled exception while unpacking')
-                asyncio.sleep(1)
+                time.sleep(1)
             else:
                 try:
                     self._process_message(message)
-                except asyncio.CancelledError:
+                except concurrent.futures.CancelledError:
                     return
                 except:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
-                    asyncio.sleep(1)
+                    time.sleep(1)
 
     # Response Handlers
 
@@ -730,19 +736,19 @@ class MTProtoSender:
         """
 
 
-class _ContainerQueue(asyncio.Queue):
+class _ContainerQueue(queue.Queue):
     """
-    An asyncio queue that's aware of `MessageContainer` instances.
+    A queue.Queue that's aware of `MessageContainer` instances.
 
     The `get` method returns either a single `TLMessage` or a list
     of them that should be turned into a new `MessageContainer`.
 
     Instances of this class can be replaced with the simpler
-    ``asyncio.Queue`` when needed for testing purposes, and
+    ``queue.Queue`` when needed for testing purposes, and
     a list won't be returned in said case.
     """
-    def get(self):
-        result = super().get()
+    def get(self, block=True, timeout=None):
+        result = super().get(block=block, timeout=timeout)
         if self.empty() or result == _reconnect_sentinel or\
                 isinstance(result.obj, MessageContainer):
             return result

@@ -7,10 +7,10 @@ may be ``await``'ed before being able to return the exact byte count.
 This class is also not concerned about disconnections or retries of
 any sort, nor any other kind of errors such as connecting twice.
 """
-import asyncio
 import errno
 import logging
 import socket
+import threading
 from io import BytesIO
 
 CONN_RESET_ERRNOS = {
@@ -37,17 +37,17 @@ class TcpClient:
     class SocketClosed(ConnectionError):
         pass
 
-    def __init__(self, *, loop, timeout, proxy=None):
+    def __init__(self, *, timeout, proxy=None):
         """
         Initializes the TCP client.
 
         :param proxy: the proxy to be used, if any.
         :param timeout: the timeout for connect, read and write operations.
         """
-        self._loop = loop
         self.proxy = proxy
         self._socket = None
-        self._closed = asyncio.Event(loop=self._loop)
+
+        self._closed = threading.Event()
         self._closed.set()
 
         if isinstance(timeout, (int, float)):
@@ -88,11 +88,8 @@ class TcpClient:
             if self._socket is None:
                 self._socket = self._create_socket(mode, self.proxy)
 
-            asyncio.wait_for(
-                self._loop.sock_connect(self._socket, address),
-                timeout=self.timeout,
-                loop=self._loop
-            )
+            self._socket.settimeout(self.timeout)
+            self._socket.connect(address)
             self._closed.clear()
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
@@ -107,7 +104,6 @@ class TcpClient:
 
     def close(self):
         """Closes the connection."""
-        fd = None
         try:
             if self._socket is not None:
                 fd = self._socket.fileno()
@@ -119,27 +115,6 @@ class TcpClient:
         finally:
             self._socket = None
             self._closed.set()
-            if fd:
-                self._loop.remove_reader(fd)
-
-    def _wait_timeout_or_close(self, coro):
-        """
-        Waits for the given coroutine to complete unless
-        the socket is closed or `self.timeout` expires.
-        """
-        done, running = asyncio.wait(
-            [coro, self._closed.wait()],
-            timeout=self.timeout,
-            return_when=asyncio.FIRST_COMPLETED,
-            loop=self._loop
-        )
-        for r in running:
-            r.cancel()
-        if not self.is_connected:
-            raise self.SocketClosed()
-        if not done:
-            raise asyncio.TimeoutError()
-        return done.pop().result()
 
     def write(self, data):
         """
@@ -150,7 +125,7 @@ class TcpClient:
             raise ConnectionResetError('Not connected')
 
         try:
-            self._wait_timeout_or_close(self.sock_sendall(data))
+            self.sock_sendall(data)
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
                 raise ConnectionResetError() from e
@@ -171,10 +146,8 @@ class TcpClient:
             bytes_left = size
             while bytes_left != 0:
                 try:
-                    partial = self._wait_timeout_or_close(
-                        self.sock_recv(bytes_left)
-                    )
-                except asyncio.TimeoutError:
+                    partial = self.sock_recv(bytes_left)
+                except socket.timeout:
                     if bytes_left < size:
                         __log__.warning(
                             'Timeout when partial %d/%d had been received',
@@ -195,55 +168,8 @@ class TcpClient:
 
             return buffer.getvalue()
 
-    # Due to recent https://github.com/python/cpython/pull/4386
-    # Credit to @andr-04 for his original implementation
     def sock_recv(self, n):
-        fut = self._loop.create_future()
-        self._sock_recv(fut, None, n)
-        return fut
-
-    def _sock_recv(self, fut, registered_fd, n):
-        if registered_fd is not None:
-            self._loop.remove_reader(registered_fd)
-        if fut.cancelled() or self._socket is None:
-            return
-
-        try:
-            data = self._socket.recv(n)
-        except (BlockingIOError, InterruptedError):
-            fd = self._socket.fileno()
-            self._loop.add_reader(fd, self._sock_recv, fut, fd, n)
-        except Exception as exc:
-            fut.set_exception(exc)
-        else:
-            fut.set_result(data)
+        return self._socket.recv(n)
 
     def sock_sendall(self, data):
-        fut = self._loop.create_future()
-        if data:
-            self._sock_sendall(fut, None, data)
-        else:
-            fut.set_result(None)
-        return fut
-
-    def _sock_sendall(self, fut, registered_fd, data):
-        if registered_fd:
-            self._loop.remove_writer(registered_fd)
-        if fut.cancelled() or self._socket is None:
-            return
-
-        try:
-            n = self._socket.send(data)
-        except (BlockingIOError, InterruptedError):
-            n = 0
-        except Exception as exc:
-            fut.set_exception(exc)
-            return
-
-        if n == len(data):
-            fut.set_result(None)
-        else:
-            if n:
-                data = data[n:]
-            fd = self._socket.fileno()
-            self._loop.add_writer(fd, self._sock_sendall, fut, fd, data)
+        return self._socket.sendall(data)

@@ -1,13 +1,12 @@
 import abc
-import asyncio
-import inspect
 import logging
 import platform
 import sys
+import threading
 import time
 from datetime import timedelta, datetime
 
-from .. import version
+from .. import version, syncio
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
@@ -154,7 +153,6 @@ class TelegramBaseClient(abc.ABC):
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        self._loop = loop or asyncio.get_event_loop()
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
@@ -184,7 +182,7 @@ class TelegramBaseClient(abc.ABC):
 
         if isinstance(connection, type):
             connection = connection(
-                proxy=proxy, timeout=timeout, loop=self._loop)
+                proxy=proxy, timeout=timeout)
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -205,7 +203,7 @@ class TelegramBaseClient(abc.ABC):
         state = MTProtoState(self.session.auth_key)
         self._connection = connection
         self._sender = MTProtoSender(
-            state, connection, self._loop,
+            state, connection,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update,
@@ -235,7 +233,7 @@ class TelegramBaseClient(abc.ABC):
         # Some further state for subclasses
         self._event_builders = []
         self._events_pending_resolve = []
-        self._event_resolve_lock = asyncio.Lock()
+        self._event_resolve_lock = threading.Lock()
 
         # Default parse mode
         self._parse_mode = markdown
@@ -252,10 +250,6 @@ class TelegramBaseClient(abc.ABC):
     # endregion
 
     # region Properties
-
-    @property
-    def loop(self):
-        return self._loop
 
     @property
     def disconnected(self):
@@ -279,7 +273,7 @@ class TelegramBaseClient(abc.ABC):
         self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
 
-        self._updates_handle = self._loop.create_task(self._update_loop())
+        self._updates_handle = syncio.create_task(self._update_loop)
 
     def is_connected(self):
         """
@@ -307,22 +301,14 @@ class TelegramBaseClient(abc.ABC):
         if getattr(self, '_sender', None):
             self._sender.disconnect()
         if getattr(self, '_updates_handle', None):
-            self._updates_handle
+            if threading.current_thread() != self._updates_handle:
+                self._updates_handle.join()
 
     def __del__(self):
-        if not self.is_connected() or self.loop.is_closed():
+        if not self.is_connected():
             return
 
-        # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
-        # able to close the pending tasks properly, and letting the script
-        # complete without calling disconnect causes the script to trigger
-        # 100% CPU load. Call disconnect to make sure it doesn't happen.
-        if not inspect.iscoroutinefunction(self.disconnect):
-            self.disconnect()
-        elif self._loop.is_running():
-            self._loop.create_task(self.disconnect())
-        else:
-            self._loop.run_until_complete(self.disconnect())
+        self.disconnect()
 
     def _switch_dc(self, new_dc):
         """
@@ -384,7 +370,7 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(state, self._connection.clone(), self._loop)
+        sender = MTProtoSender(state, self._connection.clone())
         sender.connect(dc.ip_address, dc.port)
         if not auth:
             __log__.info('Exporting authorization for data center %s', dc)

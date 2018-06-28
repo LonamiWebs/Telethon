@@ -1,4 +1,4 @@
-import asyncio
+import concurrent.futures
 import struct
 
 from .gzippacked import GzipPacked
@@ -26,7 +26,7 @@ class TLMessage(TLObject):
         self.seq_no = seq_no
         self.obj = obj
         self.container_msg_id = None
-        self.future = asyncio.Future()
+        self.future = concurrent.futures.Future()
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can

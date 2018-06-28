@@ -105,8 +105,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             max_attempts=max_attempts
         )
         return (
-            coro if self.loop.is_running()
-            else self.loop.run_until_complete(coro)
+            coro
         )
 
     def _start(

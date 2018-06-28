@@ -20,15 +20,13 @@ class Connection(abc.ABC):
     Subclasses should implement the actual protocol
     being used when encoding/decoding messages.
     """
-    def __init__(self, *, loop, timeout, proxy=None):
+    def __init__(self, *, timeout, proxy=None):
         """
         Initializes a new connection.
 
-        :param loop: the event loop to be used.
         :param timeout: timeout to be used for all operations.
         :param proxy: whether to use a proxy or not.
         """
-        self._loop = loop
         self._proxy = proxy
         self._timeout = timeout
 
@@ -58,7 +56,6 @@ class Connection(abc.ABC):
     def clone(self):
         """Creates a copy of this Connection."""
         return self.__class__(
-            loop=self._loop,
             proxy=self._proxy,
             timeout=self._timeout
         )
