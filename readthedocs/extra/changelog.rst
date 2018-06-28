@@ -87,6 +87,8 @@ Breaking Changes
 
 - ``message.get_fwd_sender`` is now in `message.forward
   <telethon.tl.custom.message.Message.forward>`.
+- ``client.idle`` is now `client.run_until_disconnected()
+  <telethon.client.updates.UpdateMethods.run_until_disconnected>`
 - ``client.add_update_handler`` is now `client.add_event_handler
   <telethon.client.updates.UpdateMethods.add_event_handler>`
 - ``client.remove_update_handler`` is now `client.remove_event_handler
