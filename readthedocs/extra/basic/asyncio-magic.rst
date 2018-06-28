@@ -13,9 +13,10 @@ Magic with asyncio
 
         import telethon.sync
 
-    At the beginning of your main script and you will be good. If you do use
-    updates or events, keep reading, or install the latest version using
-    threads and Python 3.4 support with ``pip install telethon==0.19.1.6``.
+    At the beginning of your main script and you will be good. If you **do**
+    use updates or events, keep reading, or ``pip install telethon-sync``, a
+    branch that mimics the ``asyncio`` code with threads and should work
+    under Python 3.4.
 
     You might also want to check the :ref:`changelog`.
 
