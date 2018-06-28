@@ -14,6 +14,14 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Bug Fixes (v1.0.2)
+==================
+
+*Published at 2018/06/28*
+
+Updated some asserts and parallel downloads, as well as some fixes for sync.
+
+
 Bug Fixes (v1.0.1)
 ==================
 
