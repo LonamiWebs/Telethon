@@ -94,6 +94,17 @@ class TelegramBaseClient(abc.ABC):
             Whether reconnection should be retried `connection_retries`
             times automatically if Telegram disconnects us or not.
 
+        sequential_updates (`bool`, optional):
+            By default every incoming update will create a new task, so
+            you can handle several updates in parallel. Some scripts need
+            the order in which updates are processed to be sequential, and
+            this setting allows them to do so.
+
+            If set to ``True``, incoming updates will be put in a queue
+            and processed sequentially. This means your event handlers
+            should *not* perform long-running operations since new
+            updates are put inside of an unbounded queue.
+
         flood_sleep_threshold (`int` | `float`, optional):
             The threshold below which the library should automatically
             sleep on flood wait errors (inclusive). For instance, if a
@@ -141,6 +152,7 @@ class TelegramBaseClient(abc.ABC):
                  request_retries=5,
                  connection_retries=5,
                  auto_reconnect=True,
+                 sequential_updates=False,
                  flood_sleep_threshold=60,
                  device_model=None,
                  system_version=None,
@@ -229,6 +241,13 @@ class TelegramBaseClient(abc.ABC):
         self._updates_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
+
+        if sequential_updates:
+            self._updates_queue = asyncio.Queue()
+            self._dispatching_updates_queue = asyncio.Event()
+        else:
+            self._updates_queue = None
+            self._dispatching_updates_queue = None
 
         # Start with invalid state (-1) so we can have somewhere to store
         # the state, but also be able to determine if we are authorized.

@@ -179,7 +179,13 @@ class UpdateMethods(UserMethods):
             self._handle_update(update.update)
         else:
             update._entities = getattr(update, '_entities', {})
-            self._loop.create_task(self._dispatch_update(update))
+            if self._updates_queue is None:
+                self._loop.create_task(self._dispatch_update(update))
+            else:
+                self._updates_queue.put_nowait(update)
+                if not self._dispatching_updates_queue.is_set():
+                    self._dispatching_updates_queue.set()
+                    self._loop.create_task(self._dispatch_queue_updates())
 
         need_diff = False
         if hasattr(update, 'pts'):
@@ -229,6 +235,12 @@ class UpdateMethods(UserMethods):
                     continue
 
                 await self(functions.updates.GetStateRequest())
+
+    async def _dispatch_queue_updates(self):
+        while not self._updates_queue.empty():
+            await self._dispatch_update(self._updates_queue.get_nowait())
+
+        self._dispatching_updates_queue.clear()
 
     async def _dispatch_update(self, update):
         if self._events_pending_resolve:
