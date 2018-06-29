@@ -5,14 +5,11 @@ since they seem to count as two characters and it's a bit strange.
 """
 import re
 
+from ..helpers import add_surrogate, del_surrogate
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityTextUrl
-)
-from ..utils import (
-    add_surrogate as _add_surrogate,
-    del_surrogate as _del_surrogate
 )
 
 DEFAULT_DELIMITERS = {
@@ -57,7 +54,7 @@ def parse(message, delimiters=None, url_re=None):
 
     # Work on byte level with the utf-16le encoding to get the offsets right.
     # The offset will just be half the index we're at.
-    message = _add_surrogate(message)
+    message = add_surrogate(message)
     while i < len(message):
         if url_re and current is None:
             # If we're not inside a previous match since Telegram doesn't allow
@@ -73,7 +70,7 @@ def parse(message, delimiters=None, url_re=None):
 
                 result.append(MessageEntityTextUrl(
                     offset=url_match.start(), length=len(url_match.group(1)),
-                    url=_del_surrogate(url_match.group(2))
+                    url=del_surrogate(url_match.group(2))
                 ))
                 i += len(url_match.group(1))
                 # Next loop iteration, don't check delimiters, since
@@ -128,7 +125,7 @@ def parse(message, delimiters=None, url_re=None):
             + message[current.offset:]
         )
 
-    return _del_surrogate(message), result
+    return del_surrogate(message), result
 
 
 def unparse(text, entities, delimiters=None, url_fmt=None):
@@ -156,7 +153,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     else:
         entities = tuple(sorted(entities, key=lambda e: e.offset, reverse=True))
 
-    text = _add_surrogate(text)
+    text = add_surrogate(text)
     delimiters = {v: k for k, v in delimiters.items()}
     for entity in entities:
         s = entity.offset
@@ -167,8 +164,8 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
         elif isinstance(entity, MessageEntityTextUrl) and url_fmt:
             text = (
                 text[:s] +
-                _add_surrogate(url_fmt.format(text[s:e], entity.url)) +
+                add_surrogate(url_fmt.format(text[s:e], entity.url)) +
                 text[e:]
             )
 
-    return _del_surrogate(text)
+    return del_surrogate(text)
