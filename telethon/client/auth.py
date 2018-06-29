@@ -193,7 +193,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return self
 
     def sign_in(
-            self, phone=None, *, code=None, password=None,
+            self, phone=None, code=None, *, password=None,
             bot_token=None, phone_code_hash=None):
         """
         Starts or completes the sign in process with the given phone number
