@@ -16,7 +16,7 @@ WHITELISTED_MISMATCHING_IDS = {
     # 0 represents any layer
     0: {'ipPortSecret', 'accessPointRule', 'help.configSimple'}
 }
-for i in range(77, 82):
+for i in range(77, 83):
     WHITELISTED_MISMATCHING_IDS[i] = {'channel'}
 
 

@@ -360,7 +360,8 @@ def get_input_media(media, is_photo=False):
         return InputMediaContact(
             phone_number=media.phone_number,
             first_name=media.first_name,
-            last_name=media.last_name
+            last_name=media.last_name,
+            vcard=''
         )
 
     if isinstance(media, MessageMediaGeo):
