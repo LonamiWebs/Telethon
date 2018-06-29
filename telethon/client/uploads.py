@@ -414,32 +414,30 @@ class UploadMethods(MessageParseMethods, UserMethods):
                             os.path.basename(file))
                 }
                 if utils.is_audio(file) and hachoir:
-                    m = hachoir.metadata.extractMetadata(
-                        hachoir.parser.createParser(file)
-                    )
-                    attr_dict[types.DocumentAttributeAudio] = \
-                        types.DocumentAttributeAudio(
-                            voice=voice_note,
-                            title=m.get('title') if m.has(
-                                'title') else None,
-                            performer=m.get('author') if m.has(
-                                'author') else None,
-                            duration=int(m.get('duration').seconds
-                                         if m.has('duration') else 0)
-                        )
+                    with hachoir.parser.createParser(file) as parser:
+                        m = hachoir.metadata.extractMetadata(parser)
+                        attr_dict[types.DocumentAttributeAudio] = \
+                            types.DocumentAttributeAudio(
+                                voice=voice_note,
+                                title=m.get('title') if m.has(
+                                    'title') else None,
+                                performer=m.get('author') if m.has(
+                                    'author') else None,
+                                duration=int(m.get('duration').seconds
+                                             if m.has('duration') else 0)
+                            )
 
                 if not force_document and utils.is_video(file):
                     if hachoir:
-                        m = hachoir.metadata.extractMetadata(
-                            hachoir.parser.createParser(file)
-                        )
-                        doc = types.DocumentAttributeVideo(
-                            round_message=video_note,
-                            w=m.get('width') if m.has('width') else 0,
-                            h=m.get('height') if m.has('height') else 0,
-                            duration=int(m.get('duration').seconds
-                                         if m.has('duration') else 0)
-                        )
+                        with hachoir.parser.createParser(file) as parser:
+                            m = hachoir.metadata.extractMetadata(parser)
+                            doc = types.DocumentAttributeVideo(
+                                round_message=video_note,
+                                w=m.get('width') if m.has('width') else 0,
+                                h=m.get('height') if m.has('height') else 0,
+                                duration=int(m.get('duration').seconds
+                                             if m.has('duration') else 0)
+                            )
                     else:
                         doc = types.DocumentAttributeVideo(
                             0, 1, 1, round_message=video_note)
