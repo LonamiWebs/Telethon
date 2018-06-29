@@ -93,15 +93,13 @@ class TelegramBaseClient(abc.ABC):
             times automatically if Telegram disconnects us or not.
 
         sequential_updates (`bool`, optional):
-            By default every incoming update will create a new task, so
-            you can handle several updates in parallel. Some scripts need
-            the order in which updates are processed to be sequential, and
-            this setting allows them to do so.
+            By default every incoming update will be processed under the
+            same thread (which means they're processed in a sequential
+            order).
 
-            If set to ``True``, incoming updates will be put in a queue
-            and processed sequentially. This means your event handlers
-            should *not* perform long-running operations since new
-            updates are put inside of an unbounded queue.
+            You can disable this behaviour by setting it to ``False``
+            which will create a new thread per update. This gives more
+            concurrency.
 
         flood_sleep_threshold (`int` | `float`, optional):
             The threshold below which the library should automatically
@@ -150,14 +148,13 @@ class TelegramBaseClient(abc.ABC):
                  request_retries=5,
                  connection_retries=5,
                  auto_reconnect=True,
-                 sequential_updates=False,
+                 sequential_updates=True,
                  flood_sleep_threshold=60,
                  device_model=None,
                  system_version=None,
                  app_version=None,
                  lang_code='en',
-                 system_lang_code='en',
-                 loop=None):
+                 system_lang_code='en'):
         if not api_id or not api_hash:
             raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
