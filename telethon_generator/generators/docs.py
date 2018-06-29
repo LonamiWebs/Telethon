@@ -68,7 +68,7 @@ def _get_relative_path(destination, relative_to, folder=False):
 
 def _find_title(html_file):
     """Finds the <title> for the given HTML file, or (Unknown)."""
-    with open(html_file) as fp:
+    with open(html_file, 'r') as fp:
         for line in fp:
             if '<title>' in line:
                 # + 7 to skip len('<title>')
@@ -221,7 +221,7 @@ def _get_description(arg):
 
 def _copy_replace(src, dst, replacements):
     """Copies the src file into dst applying the replacements dict"""
-    with open(src) as infile, open(dst, 'w') as outfile:
+    with open(src, 'r') as infile, open(dst, 'w') as outfile:
         outfile.write(re.sub(
             '|'.join(re.escape(k) for k in replacements),
             lambda m: str(replacements[m.group(0)]),

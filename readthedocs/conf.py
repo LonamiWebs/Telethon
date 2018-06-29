@@ -68,7 +68,7 @@ author = 'Lonami'
 # built documents.
 #
 # The short X.Y version.
-with open(os.path.join(root, 'telethon', 'version.py')) as f:
+with open(os.path.join(root, 'telethon', 'version.py'), 'r') as f:
     version = re.search(r"^__version__\s+=\s+'(.*)'$",
                         f.read(), flags=re.MULTILINE).group(1)
 

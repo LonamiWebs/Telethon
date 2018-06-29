@@ -278,7 +278,7 @@ def parse_tl(file_path, layer, invalid_bot_methods=None):
     if invalid_bot_methods is None:
         invalid_bot_methods = set()
 
-    with open(file_path, encoding='utf-8') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         is_function = False
         for line in file:
             comment_index = line.find('//')
@@ -307,7 +307,7 @@ def parse_tl(file_path, layer, invalid_bot_methods=None):
 def find_layer(file_path):
     """Finds the layer used on the specified scheme.tl file."""
     layer_regex = re.compile(r'^//\s*LAYER\s*(\d+)$')
-    with open(file_path, encoding='utf-8') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         for line in file:
             match = layer_regex.match(line)
             if match:
