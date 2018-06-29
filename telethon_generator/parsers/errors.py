@@ -90,7 +90,7 @@ def parse_errors(json_file, descriptions_file):
 
     The method yields `Error` instances as a result.
     """
-    with open(json_file, encoding='utf-8') as f:
+    with open(json_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     errors = defaultdict(set)
@@ -124,7 +124,7 @@ def parse_errors(json_file, descriptions_file):
     # Prefer the descriptions that are related with Telethon way of coding
     # to those that PWRTelegram's API provides.
     telethon_descriptions = {}
-    with open(descriptions_file, encoding='utf-8') as f:
+    with open(descriptions_file, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith('#'):

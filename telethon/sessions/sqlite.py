@@ -119,7 +119,7 @@ class SQLiteSession(MemorySession):
     def _check_migrate_json(self):
         if file_exists(self.filename):
             try:
-                with open(self.filename, encoding='utf-8') as f:
+                with open(self.filename, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 self.delete()  # Delete JSON file to create database
 

@@ -60,7 +60,8 @@ def generate(which):
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
-    with open(INVALID_BM_IN) as f:
+    # Older Python versions open the file as bytes instead (3.4.2)
+    with open(INVALID_BM_IN, 'r') as f:
         invalid_bot_methods = set(json.load(f))
 
     layer = find_layer(TLOBJECT_IN_TL)
@@ -176,10 +177,10 @@ def main():
             generate(['tl', 'errors'])
 
         # Get the long description from the README file
-        with open('README.rst', encoding='utf-8') as f:
+        with open('README.rst', 'r', encoding='utf-8') as f:
             long_description = f.read()
 
-        with open('telethon/version.py', encoding='utf-8') as f:
+        with open('telethon/version.py', 'r', encoding='utf-8') as f:
             version = re.search(r"^__version__\s*=\s*'(.*)'.*$",
                                 f.read(), flags=re.MULTILINE).group(1)
         setup(
