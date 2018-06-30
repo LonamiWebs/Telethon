@@ -119,7 +119,7 @@ class TcpClient:
         finally:
             self._socket = None
             self._closed.set()
-            if fd:
+            if fd and fd != -1:
                 self._loop.remove_reader(fd)
 
     async def _wait_timeout_or_close(self, coro):
