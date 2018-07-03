@@ -37,8 +37,7 @@ class Message:
         self._sender = entities.get(self.original_message.from_id)
         if self._sender:
             self._input_sender = get_input_peer(self._sender)
-            if (isinstance(self._input_sender, types.InputPeerUser)
-                    and not self._input_sender.access_hash):
+            if not getattr(self._input_sender, 'access_hash', None):
                 self._input_sender = None
         else:
             self._input_sender = None
@@ -55,7 +54,7 @@ class Message:
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
             self._input_chat = get_input_peer(self._chat)
-            if not self._input_chat.access_hash:
+            if not getattr(self._input_sender, 'access_hash', None):
                 # Telegram may omit the hash in updates -> invalid peer
                 self._input_chat = None
 
