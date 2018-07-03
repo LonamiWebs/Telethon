@@ -431,15 +431,26 @@ class Message:
         return self._buttons_count or 0
 
     @property
+    def media(self):
+        """
+        Returns the media of the message.
+        """
+        if isinstance(self.original_message, types.Message):
+            return self.original_message.media
+        elif isinstance(self.original_message, types.MessageService):
+            action = self.original_message.action
+            if isinstance(action, types.MessageActionChatEditPhoto):
+                return types.MessageMediaPhoto(action.photo)
+
+    @property
     def photo(self):
         """
         If the message media is a photo,
         this returns the :tl:`Photo` object.
         """
-        if isinstance(self.original_message.media, types.MessageMediaPhoto):
-            photo = self.original_message.media.photo
-            if isinstance(photo, types.Photo):
-                return photo
+        if isinstance(self.media, types.MessageMediaPhoto):
+            if isinstance(self.media.photo, types.Photo):
+                return self.media.photo
 
     @property
     def document(self):
@@ -447,10 +458,9 @@ class Message:
         If the message media is a document,
         this returns the :tl:`Document` object.
         """
-        if isinstance(self.original_message.media, types.MessageMediaDocument):
-            doc = self.original_message.media.document
-            if isinstance(doc, types.Document):
-                return doc
+        if isinstance(self.media, types.MessageMediaDocument):
+            if isinstance(self.media.document, types.Document):
+                return self.media.document
 
     def _document_by_attribute(self, kind, condition=None):
         """
