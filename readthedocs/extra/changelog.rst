@@ -14,6 +14,41 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Iterate Messages in Reverse (v1.0.3)
+====================================
+
+*Published at 2018/07/04*
+
++-----------------------+
+| Scheme layer used: 82 |
++-----------------------+
+
+Mostly bug fixes, but now there is a new parameter on `client.iter_messages
+<telethon.client.messages.MessageMethods.iter_messages>` to support reversing
+the order in which messages are returned.
+
+Additions
+~~~~~~~~~
+
+- The mentioned ``reverse`` parameter when iterating over messages.
+- A new ``sequential_updates`` parameter when creating the client
+  for updates to be processed sequentially. This is useful when you
+  need to make sure that all updates are processed in order, such
+  as a script that only forwards incoming messages somewhere else.
+
+Bug fixes
+~~~~~~~~~
+
+- Count was always ``None`` for `message.button_count
+  <telethon.tl.custom.message.Message.button_count>`.
+- Some fixes when disconnecting upon dropping the client.
+- Support for Python 3.4 in the sync version, and fix media download.
+- Some issues with events when accessing the input chat or their media.
+- Hachoir wouldn't automatically close the file after reading its metadata.
+- Signing in required a named ``code=`` parameter, but usage
+  without a name was really widespread so it has been reverted.
+
+
 Bug Fixes (v1.0.2)
 ==================
 
@@ -110,6 +145,8 @@ Breaking Changes
 - ``client.invoke()`` is now ``client(...)``.
 - ``report_errors`` has been removed since it's currently not used,
   and ``flood_sleep_threshold`` is now part of the client.
+- The ``update_workers`` and ``spawn_read_thread`` arguments are gone.
+  Simply remove them from your code when you create the client.
 - Methods with a lot of arguments can no longer be used without specifying
   their argument. Instead you need to use named arguments. This improves
   readability and not needing to learn the order of the arguments, which
