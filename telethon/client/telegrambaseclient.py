@@ -393,7 +393,7 @@ class TelegramBaseClient(abc.ABC):
         req = self._init_with(functions.auth.ImportAuthorizationRequest(
             id=auth.id, bytes=auth.bytes
         ))
-        sender.send(req)
+        sender.send(req).result()
         return sender
 
     def _borrow_exported_sender(self, dc_id):
