@@ -57,7 +57,8 @@ class DialogMethods(UserMethods):
                 offset_date=offset_date,
                 offset_id=offset_id,
                 offset_peer=offset_peer,
-                limit=1
+                limit=1,
+                hash=0
             ))
             _total[0] = getattr(dialogs, 'count', len(dialogs.dialogs))
             return
@@ -67,7 +68,8 @@ class DialogMethods(UserMethods):
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
-            limit=0
+            limit=0,
+            hash=0
         )
         while len(seen) < limit:
             req.limit = min(limit - len(seen), 100)
