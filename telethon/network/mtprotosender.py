@@ -755,12 +755,29 @@ class _ContainerQueue(queue.Queue):
 
         result = [result]
         while not self.empty():
-            item = self.get_nowait()
-            if item == _reconnect_sentinel or\
-                    isinstance(item.obj, MessageContainer):
-                self.put_nowait(item)
-                break
-            else:
-                result.append(item)
+            # TODO Is this a bug in Python? For some reason get_nowait()
+            # sometimes returns a *list* even when one was *never* put.
+            #
+            # This can be seen by overriding `_put` to track if a list
+            # is ever inserted. The issue occurs when getting invoking
+            # many requests at once (thus a lot of messages are put
+            # really fast). With `_put` override it can be seen that
+            # no `list` is ever inserted but `get_nowait` may return it.
+            #
+            # If we use `self.queue.popleft()` it doesn't seem to occur
+            # which is the method that gets ultimately used.
+            #
+            # To work around that issue, always convert the result to
+            # a list, so if it's a list, we don't need to do anything.
+            items = self.get_nowait()
+            if not isinstance(items, list):
+                items = [items]
+            for item in items:
+                if item == _reconnect_sentinel or\
+                        isinstance(item.obj, MessageContainer):
+                    self.put_nowait(item)
+                    break
+                else:
+                    result.append(item)
 
         return result
