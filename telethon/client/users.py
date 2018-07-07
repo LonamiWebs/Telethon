@@ -337,4 +337,18 @@ class UserMethods(TelegramBaseClient):
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
+    async def _get_input_notify(self, notify):
+        """
+        Returns a :tl:`InputNotifyPeer`. This is a bit tricky because
+        it may or not need access to the client to convert what's given
+        into an input entity.
+        """
+        try:
+            if notify.SUBCLASS_OF_ID == 0x58981615:
+                if isinstance(notify, types.InputNotifyPeer):
+                    notify.peer = await self.get_input_entity(notify.peer)
+                return notify
+        except AttributeError:
+            return types.InputNotifyPeer(await self.get_input_entity(notify))
+
     # endregion

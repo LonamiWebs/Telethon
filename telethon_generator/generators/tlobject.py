@@ -23,6 +23,7 @@ AUTO_CASTS = {
     'InputDialogPeer':
         'utils.get_input_dialog(await client.get_input_entity({}))',
 
+    'InputNotifyPeer': 'await client._get_input_notify({})',
     'InputMedia': 'utils.get_input_media({})',
     'InputPhoto': 'utils.get_input_photo({})',
     'InputMessage': 'utils.get_input_message({})'
