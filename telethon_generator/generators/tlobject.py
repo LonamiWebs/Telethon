@@ -29,6 +29,10 @@ AUTO_CASTS = {
     'InputMessage': 'utils.get_input_message({})'
 }
 
+NAMED_AUTO_CASTS = {
+    ('chat_id', 'int'): 'await client.get_peer_id({})'
+}
+
 BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
               'int256', 'double', 'Bool', 'true', 'date')
 
@@ -233,13 +237,18 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 
 
 def _write_resolve(tlobject, builder):
-    if tlobject.is_function and\
-            any(arg.type in AUTO_CASTS for arg in tlobject.real_args):
+    if tlobject.is_function and any(
+            (arg.type in AUTO_CASTS
+             or (arg.name, arg.type in NAMED_AUTO_CASTS))
+            for arg in tlobject.real_args
+    ):
         builder.writeln('async def resolve(self, client, utils):')
         for arg in tlobject.real_args:
-            ac = AUTO_CASTS.get(arg.type, None)
+            ac = AUTO_CASTS.get(arg.type)
             if not ac:
-                continue
+                ac = NAMED_AUTO_CASTS.get((arg.name, arg.type))
+                if not ac:
+                    continue
 
             if arg.is_flag:
                 builder.writeln('if self.{}:', arg.name)
