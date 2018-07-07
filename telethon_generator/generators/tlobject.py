@@ -30,7 +30,7 @@ AUTO_CASTS = {
 }
 
 NAMED_AUTO_CASTS = {
-    ('chat_id', 'int'): 'await client.get_peer_id({})'
+    ('chat_id', 'int'): 'await client.get_peer_id({}, add_mark=False)'
 }
 
 BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
