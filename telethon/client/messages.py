@@ -407,10 +407,17 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
             if reply_to is not None:
                 reply_id = utils.get_message_id(reply_to)
-            elif utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
-                reply_id = message.reply_to_msg_id
             else:
-                reply_id = None
+                if isinstance(entity, types.InputPeerSelf):
+                    eid = utils.get_peer_id(await self.get_me(input_peer=True))
+                else:
+                    eid = utils.get_peer_id(entity)
+
+                if eid == utils.get_peer_id(message.to_id):
+                    reply_id = message.reply_to_msg_id
+                else:
+                    reply_id = None
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
