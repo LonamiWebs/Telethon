@@ -1,5 +1,6 @@
 import getpass
 import hashlib
+import inspect
 import os
 import sys
 
@@ -469,7 +470,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return await self.start()
 
     def __exit__(self, *args):
-        self.disconnect()
+        if self._loop.is_running():
+            self._loop.create_task(self.disconnect())
+        elif inspect.iscoroutinefunction(self.disconnect):
+            self._loop.run_until_complete(self.disconnect())
+        else:
+            self.disconnect()
 
     async def __aexit__(self, *args):
         await self.disconnect()
