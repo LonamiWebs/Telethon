@@ -239,7 +239,7 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 def _write_resolve(tlobject, builder):
     if tlobject.is_function and any(
             (arg.type in AUTO_CASTS
-             or (arg.name, arg.type in NAMED_AUTO_CASTS))
+             or ((arg.name, arg.type) in NAMED_AUTO_CASTS))
             for arg in tlobject.real_args
     ):
         builder.writeln('async def resolve(self, client, utils):')
