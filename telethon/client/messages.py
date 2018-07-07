@@ -450,7 +450,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    async def forward_messages(self, entity, messages, *, from_peer=None):
+    async def forward_messages(self, entity, messages, from_peer=None):
         """
         Forwards the given message(s) to the specified entity.
 
