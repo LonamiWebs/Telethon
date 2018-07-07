@@ -10,6 +10,11 @@ __log__ = logging.getLogger(__name__)
 class MessageContainer(TLObject):
     CONSTRUCTOR_ID = 0x73f1f8dc
 
+    # Maximum size in bytes for the inner payload of the container.
+    # Telegram will close the connection if the payload is bigger.
+    # The overhead of the container itself is subtracted.
+    MAXIMUM_SIZE = 1044456 - 8
+
     def __init__(self, messages):
         self.messages = messages
 

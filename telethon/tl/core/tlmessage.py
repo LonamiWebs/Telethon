@@ -82,3 +82,6 @@ class TLMessage(TLObject):
             raise TypeError('Incoming messages should not be bytes()-ed')
 
         return self._body
+
+    def size(self):
+        return len(self._body)

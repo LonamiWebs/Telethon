@@ -749,14 +749,17 @@ class _ContainerQueue(asyncio.Queue):
                 isinstance(result.obj, MessageContainer):
             return result
 
+        size = result.size()
         result = [result]
         while not self.empty():
             item = self.get_nowait()
-            if item == _reconnect_sentinel or\
-                    isinstance(item.obj, MessageContainer):
+            if (item == _reconnect_sentinel or
+                isinstance(item.obj, MessageContainer)
+                    or size + item.size() > MessageContainer.MAXIMUM_SIZE):
                 self.put_nowait(item)
                 break
             else:
+                size += item.size()
                 result.append(item)
 
         return result
