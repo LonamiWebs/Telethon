@@ -46,7 +46,8 @@ class MTProtoState:
             msg_id=self._get_new_msg_id(),
             seq_no=self._get_seq_no(isinstance(obj, TLRequest)),
             obj=obj,
-            after_id=after.msg_id if after else None
+            after_id=after.msg_id if after else None,
+            out=True  # Pre-convert the request into bytes
         )
 
     def update_message_id(self, message):
