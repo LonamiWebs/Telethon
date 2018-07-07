@@ -276,6 +276,32 @@ class UserMethods(TelegramBaseClient):
             .format(peer)
         )
 
+    async def get_peer_id(self, peer, add_mark=True):
+        """
+        Gets the ID for the given peer, which may be anything entity-like.
+
+        This method needs to be ``async`` because `peer` supports usernames,
+        invite-links, phone numbers, etc.
+
+        If ``add_mark is False``, then a positive ID will be returned
+        instead. By default, bot-API style IDs (signed) are returned.
+        """
+        if isinstance(peer, int):
+            return utils.get_peer_id(peer, add_mark=add_mark)
+
+        try:
+            if peer.SUBCLASS_OF_ID in (0x2d45687, 0xc91c90b6):
+                # 0x2d45687, 0xc91c90b6 == crc32(b'Peer') and b'InputPeer'
+                return utils.get_peer_id(peer)
+        except AttributeError:
+            pass
+
+        peer = await self.get_input_entity(peer)
+        if isinstance(peer, types.InputPeerSelf):
+            peer = await self.get_me(input_peer=True)
+
+        return utils.get_peer_id(peer, add_mark=add_mark)
+
     # endregion
 
     # region Private methods
