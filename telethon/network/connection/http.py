@@ -2,6 +2,17 @@ from .tcpfull import ConnectionTcpFull
 
 
 class ConnectionHttp(ConnectionTcpFull):
+    def __init__(self, *, loop, timeout, proxy=None):
+        super().__init__(loop=loop, timeout=timeout, proxy=proxy)
+        self._host = None
+
+    async def connect(self, ip, port):
+        if port != 80:
+            port = 80  # HTTP without TLS needs port 80
+
+        self._host = '{}:{}'.format(ip, port)
+        return await super().connect(ip, port)
+
     async def recv(self):
         while True:
             line = await self._read_line()
@@ -20,10 +31,10 @@ class ConnectionHttp(ConnectionTcpFull):
     async def send(self, message):
         await self.write(
             'POST /api HTTP/1.1\r\n'
-            'Host: 149.154.167.91:80\r\n'
+            'Host: {}\r\n'
             'Content-Type: application/x-www-form-urlencoded\r\n'
             'Connection: keep-alive\r\n'
             'Keep-Alive: timeout=100000, max=10000000\r\n'
-            'Content-Length: {}\r\n\r\n'.format(len(message))
+            'Content-Length: {}\r\n\r\n'.format(self._host, len(message))
             .encode('ascii') + message
         )
