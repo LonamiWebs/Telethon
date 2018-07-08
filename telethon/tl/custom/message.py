@@ -604,7 +604,7 @@ class Message:
         if not self.original_message.out:
             if not isinstance(self.original_message.to_id, types.PeerUser):
                 return None
-            me = self._client.get_me(input_peer=True)
+            me = await self._client.get_me(input_peer=True)
             if self.original_message.to_id.user_id != me.user_id:
                 return None
 
