@@ -11,6 +11,7 @@ import asyncio
 import errno
 import logging
 import socket
+import ssl
 from io import BytesIO
 
 CONN_RESET_ERRNOS = {
@@ -28,6 +29,7 @@ try:
 except ImportError:
     socks = None
 
+SSL_PORT = 443
 __log__ = logging.getLogger(__name__)
 
 
@@ -37,15 +39,18 @@ class TcpClient:
     class SocketClosed(ConnectionError):
         pass
 
-    def __init__(self, *, loop, timeout, proxy=None):
+    def __init__(self, *, loop, timeout, ssl=None, proxy=None):
         """
         Initializes the TCP client.
 
         :param proxy: the proxy to be used, if any.
         :param timeout: the timeout for connect, read and write operations.
+        :param ssl: ssl.wrap_socket keyword arguments to use when connecting
+                    if port == SSL_PORT, or do nothing if not present.
         """
         self._loop = loop
         self.proxy = proxy
+        self.ssl = ssl
         self._socket = None
         self._closed = asyncio.Event(loop=self._loop)
         self._closed.set()
@@ -87,6 +92,8 @@ class TcpClient:
         try:
             if self._socket is None:
                 self._socket = self._create_socket(mode, self.proxy)
+                if self.ssl and port == SSL_PORT:
+                    self._socket = ssl.wrap_socket(self._socket, **self.ssl)
 
             await asyncio.wait_for(
                 self._loop.sock_connect(self._socket, address),
