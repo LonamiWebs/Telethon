@@ -1,17 +1,49 @@
-from .tcpfull import ConnectionTcpFull
+import errno
+import ssl
+
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
 
 
-class ConnectionHttp(ConnectionTcpFull):
+from .common import Connection
+from ...extensions import TcpClient
+
+
+class ConnectionHttp(Connection):
     def __init__(self, *, loop, timeout, proxy=None):
+        if aiohttp is None:
+            raise RuntimeError('HTTP(S) mode requires the aiohttp '
+                               'package, which is not installed')
+
         super().__init__(loop=loop, timeout=timeout, proxy=proxy)
+        self.conn = TcpClient(
+            timeout=self._timeout, loop=self._loop, proxy=self._proxy,
+            ssl=dict(ssl_version=ssl.PROTOCOL_SSLv23, ciphers='ADH-AES256-SHA')
+        )
+        self.read = self.conn.read
+        self.write = self.conn.write
         self._host = None
 
     async def connect(self, ip, port):
-        if port != 80:
-            port = 80  # HTTP without TLS needs port 80
-
         self._host = '{}:{}'.format(ip, port)
-        return await super().connect(ip, port)
+        try:
+            await self.conn.connect(ip, port)
+        except OSError as e:
+            if e.errno == errno.EISCONN:
+                return  # Already connected, no need to re-set everything up
+            else:
+                raise
+
+    def get_timeout(self):
+        return self.conn.timeout
+
+    def is_connected(self):
+        return self.conn.is_connected
+
+    async def close(self):
+        self.conn.close()
 
     async def recv(self):
         while True:
