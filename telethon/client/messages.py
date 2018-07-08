@@ -139,7 +139,6 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             offset_id = max(offset_id, min_id)
             if offset_id and max_id:
                 if max_id - offset_id <= 1:
-                    print('suck lol')
                     return
 
             if not max_id:
