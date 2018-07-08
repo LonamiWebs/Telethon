@@ -1,22 +1,12 @@
 import errno
 import ssl
 
-try:
-    import aiohttp
-except ImportError:
-    aiohttp = None
-
-
 from .common import Connection
 from ...extensions import TcpClient
 
 
 class ConnectionHttp(Connection):
     def __init__(self, *, loop, timeout, proxy=None):
-        if aiohttp is None:
-            raise RuntimeError('HTTP(S) mode requires the aiohttp '
-                               'package, which is not installed')
-
         super().__init__(loop=loop, timeout=timeout, proxy=proxy)
         self.conn = TcpClient(
             timeout=self._timeout, loop=self._loop, proxy=self._proxy,
