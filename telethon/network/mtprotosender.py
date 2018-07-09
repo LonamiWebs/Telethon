@@ -386,6 +386,7 @@ class MTProtoSender:
                 except asyncio.TimeoutError:
                     continue
                 except asyncio.CancelledError:
+                    await self.disconnect()
                     return
                 except Exception as e:
                     if isinstance(e, ConnectionError):
@@ -425,6 +426,7 @@ class MTProtoSender:
             except asyncio.TimeoutError:
                 continue
             except asyncio.CancelledError:
+                await self.disconnect()
                 return
             except Exception as e:
                 if isinstance(e, ConnectionError):
@@ -467,15 +469,19 @@ class MTProtoSender:
                 __log__.info('Server replied with an unknown type {:08x}: {!r}'
                              .format(e.invalid_constructor_id, e.remaining))
                 continue
-            except:
-                __log__.exception('Unhandled exception while unpacking')
+            except asyncio.CancelledError:
+                await self.disconnect()
+                return
+            except Exception as e:
+                __log__.exception('Unhandled exception while unpacking %s',e)
                 await asyncio.sleep(1)
             else:
                 try:
                     await self._process_message(message)
                 except asyncio.CancelledError:
+                    await self.disconnect()
                     return
-                except:
+                except Exception as e:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
                     await asyncio.sleep(1)

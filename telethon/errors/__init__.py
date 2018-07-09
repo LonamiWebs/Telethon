@@ -36,7 +36,7 @@ def report_error(code, message, report_method):
         )
         url.read()
         url.close()
-    except:
+    except Exception as e:
         "We really don't want to crash when just reporting an error"
 
 
