@@ -14,6 +14,58 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+New HTTP(S) Connection Mode (v1.0.4)
+====================================
+
+*Published at 2018/07/09*
+
+This release implements the HTTP connection mode to the library, which
+means certain proxies that only allow HTTP connections should now work
+properly. You can use it doing the following, like any other mode:
+
+.. code-block:: python
+
+    from telethon import TelegramClient, sync
+    from telethon.network import ConnectionHttp
+
+    client = TelegramClient(..., connection=ConnectionHttp)
+    with client:
+        client.send_message('me', 'Hi!')
+
+
+Additions
+~~~~~~~~~
+
+- ``add_mark=`` is now back on ``utils.get_input_peer`` and also on
+  `client.get_input_entity <telethon.client.users.UserMethods.get_input_entity>`.
+- New `client.get_peer_id <telethon.client.users.UserMethods.get_peer_id>`
+  convenience for ``utils.get_peer_id(await client.get_input_entity(peer))``.
+
+
+Bug fixes
+~~~~~~~~~
+
+- If several `TLMessage` in a `MessageContainer` exceeds 1MB, it will no
+  longer be automatically turned into one. This basically means that e.g.
+  uploading 10 file parts at once will work properly again.
+- Documentation fixes and some missing ``await``.
+- Revert named argument for `client.forward_messages
+  <telethon.client.messages.MessageMethods.forward_messages>`
+
+Enhancements
+~~~~~~~~~~~~
+
+- New auto-casts to :tl:`InputNotifyPeer` and ``chat_id``.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- Outgoing `TLMessage` are now pre-packed so if there's an error when
+  serializing the raw requests, the library will no longer swallow it.
+  This also means re-sending packets doesn't need to re-pack their bytes.
+
+
+
 Iterate Messages in Reverse (v1.0.3)
 ====================================
 
