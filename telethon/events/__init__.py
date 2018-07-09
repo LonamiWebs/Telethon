@@ -18,13 +18,13 @@ class StopPropagation(Exception):
         >>> client = TelegramClient(...)
         >>>
         >>> @client.on(events.NewMessage)
-        ... async def delete(event):
-        ...     await event.delete()
+        ... def delete(event):
+        ...     event.delete()
         ...     # No other event handler will have a chance to handle this event
         ...     raise StopPropagation
         ...
         >>> @client.on(events.NewMessage)
-        ... async def _(event):
+        ... def _(event):
         ...     # Will never be reached, because it is the second handler
         ...     pass
     """
