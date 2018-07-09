@@ -136,7 +136,6 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             offset_id = max(offset_id, min_id)
             if offset_id and max_id:
                 if max_id - offset_id <= 1:
-                    print('suck lol')
                     return
 
             if not max_id:
@@ -404,10 +403,17 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
             if reply_to is not None:
                 reply_id = utils.get_message_id(reply_to)
-            elif utils.get_peer_id(entity) == utils.get_peer_id(message.to_id):
-                reply_id = message.reply_to_msg_id
             else:
-                reply_id = None
+                if isinstance(entity, types.InputPeerSelf):
+                    eid = utils.get_peer_id(self.get_me(input_peer=True))
+                else:
+                    eid = utils.get_peer_id(entity)
+
+                if eid == utils.get_peer_id(message.to_id):
+                    reply_id = message.reply_to_msg_id
+                else:
+                    reply_id = None
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
@@ -447,7 +453,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    def forward_messages(self, entity, messages, *, from_peer=None):
+    def forward_messages(self, entity, messages, from_peer=None):
         """
         Forwards the given message(s) to the specified entity.
 

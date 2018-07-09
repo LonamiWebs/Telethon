@@ -575,17 +575,6 @@ def parse_username(username):
         return None, False
 
 
-def _fix_peer_id(peer_id):
-    """
-    Fixes the peer ID for chats and channels, in case the users
-    mix marking the ID with the :tl:`Peer` constructors.
-    """
-    peer_id = abs(peer_id)
-    if str(peer_id).startswith('100'):
-        peer_id = str(peer_id)[3:]
-    return int(peer_id)
-
-
 def get_inner_text(text, entities):
     """
     Gets the inner text that's surrounded by the given entities.
@@ -605,7 +594,7 @@ def get_inner_text(text, entities):
     return result
 
 
-def get_peer_id(peer):
+def get_peer_id(peer, add_mark=True):
     """
     Finds the ID of the given peer, and converts it to the "bot api" format
     so it the peer can be identified back. User ID is left unmodified,
@@ -616,7 +605,7 @@ def get_peer_id(peer):
     """
     # First we assert it's a Peer TLObject, or early return for integers
     if isinstance(peer, int):
-        return peer
+        return peer if add_mark else resolve_id(peer)[0]
 
     try:
         if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
@@ -634,9 +623,9 @@ def get_peer_id(peer):
     elif isinstance(peer, (PeerChat, InputPeerChat)):
         # Check in case the user mixed things up to avoid blowing up
         if not (0 < peer.chat_id <= 0x7fffffff):
-            peer.chat_id = _fix_peer_id(peer.chat_id)
+            peer.chat_id = resolve_id(peer.chat_id)[0]
 
-        return -peer.chat_id
+        return -peer.chat_id if add_mark else peer.chat_id
     elif isinstance(peer, (PeerChannel, InputPeerChannel, ChannelFull)):
         if isinstance(peer, ChannelFull):
             # Special case: .get_input_peer can't return InputChannel from
@@ -647,15 +636,18 @@ def get_peer_id(peer):
 
         # Check in case the user mixed things up to avoid blowing up
         if not (0 < i <= 0x7fffffff):
-            i = _fix_peer_id(i)
+            i = resolve_id(i)[0]
             if isinstance(peer, ChannelFull):
                 peer.id = i
             else:
                 peer.channel_id = i
 
-        # Concat -100 through math tricks, .to_supergroup() on Madeline
-        # IDs will be strictly positive -> log works
-        return -(i + pow(10, math.floor(math.log10(i) + 3)))
+        if add_mark:
+            # Concat -100 through math tricks, .to_supergroup() on
+            # Madeline IDs will be strictly positive -> log works.
+            return -(i + pow(10, math.floor(math.log10(i) + 3)))
+        else:
+            return i
 
     _raise_cast_fail(peer, 'int')
 

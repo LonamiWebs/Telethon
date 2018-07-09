@@ -273,6 +273,32 @@ class UserMethods(TelegramBaseClient):
             .format(peer)
         )
 
+    def get_peer_id(self, peer, add_mark=True):
+        """
+        Gets the ID for the given peer, which may be anything entity-like.
+
+        This method needs to be ``async`` because `peer` supports usernames,
+        invite-links, phone numbers, etc.
+
+        If ``add_mark is False``, then a positive ID will be returned
+        instead. By default, bot-API style IDs (signed) are returned.
+        """
+        if isinstance(peer, int):
+            return utils.get_peer_id(peer, add_mark=add_mark)
+
+        try:
+            if peer.SUBCLASS_OF_ID in (0x2d45687, 0xc91c90b6):
+                # 0x2d45687, 0xc91c90b6 == crc32(b'Peer') and b'InputPeer'
+                return utils.get_peer_id(peer)
+        except AttributeError:
+            pass
+
+        peer = self.get_input_entity(peer)
+        if isinstance(peer, types.InputPeerSelf):
+            peer = self.get_me(input_peer=True)
+
+        return utils.get_peer_id(peer, add_mark=add_mark)
+
     # endregion
 
     # region Private methods
@@ -333,5 +359,19 @@ class UserMethods(TelegramBaseClient):
         raise ValueError(
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
+
+    def _get_input_notify(self, notify):
+        """
+        Returns a :tl:`InputNotifyPeer`. This is a bit tricky because
+        it may or not need access to the client to convert what's given
+        into an input entity.
+        """
+        try:
+            if notify.SUBCLASS_OF_ID == 0x58981615:
+                if isinstance(notify, types.InputNotifyPeer):
+                    notify.peer = self.get_input_entity(notify.peer)
+                return notify
+        except AttributeError:
+            return types.InputNotifyPeer(self.get_input_entity(notify))
 
     # endregion

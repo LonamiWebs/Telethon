@@ -513,7 +513,6 @@ class MTProtoSender:
                       rpc_result.req_msg_id)
 
         if rpc_result.error:
-            # TODO Report errors if possible/enabled
             error = rpc_message_to_error(rpc_result.error)
             self._send_queue.put_nowait(self.state.create_message(
                 MsgsAck([message.msg_id])
@@ -523,10 +522,13 @@ class MTProtoSender:
                 message.future.set_exception(error)
             return
         elif message:
+            # TODO Would be nice to avoid accessing a per-obj read_result
+            # Instead have a variable that indicated how the result should
+            # be read (an enum) and dispatch to read the result, mostly
+            # always it's just a normal TLObject.
             with BinaryReader(rpc_result.body) as reader:
                 result = message.obj.read_result(reader)
 
-            # TODO Process entities
             if not message.future.cancelled():
                 message.future.set_result(result)
             return
@@ -753,6 +755,7 @@ class _ContainerQueue(queue.Queue):
                 isinstance(result.obj, MessageContainer):
             return result
 
+        size = result.size()
         result = [result]
         while not self.empty():
             # TODO Is this a bug in Python? For some reason get_nowait()
@@ -773,11 +776,13 @@ class _ContainerQueue(queue.Queue):
             if not isinstance(items, list):
                 items = [items]
             for item in items:
-                if item == _reconnect_sentinel or\
-                        isinstance(item.obj, MessageContainer):
+                if (item == _reconnect_sentinel or
+                    isinstance(item.obj, MessageContainer)
+                        or size + item.size() > MessageContainer.MAXIMUM_SIZE):
                     self.put_nowait(item)
-                    break
+                    return result  # break 2 levels
                 else:
+                    size += item.size()
                     result.append(item)
 
         return result

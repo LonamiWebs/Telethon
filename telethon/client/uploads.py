@@ -72,7 +72,8 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 :tl:`DocumentAttributeFilename` and so on.
 
             thumb (`str` | `bytes` | `file`, optional):
-                Optional thumbnail (for videos).
+                Optional JPEG thumbnail (for documents). **Telegram will
+                ignore this parameter** unless you pass a ``.jpg`` file!
 
             allow_cache (`bool`, optional):
                 Whether to allow using the cached version stored in the
