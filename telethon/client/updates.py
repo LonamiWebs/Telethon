@@ -210,7 +210,10 @@ class UpdateMethods(UserMethods):
                 continue  # We actually just want to act upon timeout
             except asyncio.TimeoutError:
                 pass
-            except:
+            except asyncio.CancelledError:
+                await self.disconnect()
+                return
+            except Exception as e:
                 continue  # Any disconnected exception should be ignored
 
             # We also don't really care about their result.
@@ -273,7 +276,7 @@ class UpdateMethods(UserMethods):
                                     type(event).__name__)
                     )
                     break
-                except:
+                except Exception:
                     __log__.exception('Unhandled exception on {}'
                                       .format(callback.__name__))
 
