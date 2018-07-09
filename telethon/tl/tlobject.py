@@ -1,5 +1,5 @@
 import struct
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 
 class TLObject:
@@ -125,6 +125,9 @@ class TLObject:
             dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
         elif isinstance(dt, float):
             dt = int(dt)
+        elif isinstance(dt, timedelta):
+            # Timezones are tricky. datetime.now() + ... timestamp() works
+            dt = int((datetime.now() + dt).timestamp())
 
         if isinstance(dt, int):
             return struct.pack('<I', dt)
