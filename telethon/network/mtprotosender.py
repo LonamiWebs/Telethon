@@ -775,11 +775,16 @@ class _ContainerQueue(queue.Queue):
             items = self.get_nowait()
             if not isinstance(items, list):
                 items = [items]
+
+            items = iter(items)
             for item in items:
                 if (item == _reconnect_sentinel or
                     isinstance(item.obj, MessageContainer)
                         or size + item.size() > MessageContainer.MAXIMUM_SIZE):
                     self.put_nowait(item)
+                    for item in items:
+                        self.put_nowait(item)
+
                     return result  # break 2 levels
                 else:
                     size += item.size()
