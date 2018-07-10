@@ -538,7 +538,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def edit_message(
             self, entity, message=None, text=None,
-            *, parse_mode=utils.Default, link_preview=True, file=None):
+            *, parse_mode=utils.Default, link_preview=True, file=None,
+            buttons=None):
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -568,6 +569,13 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             file (`str` | `bytes` | `file` | `media`, optional):
                 The file object that should replace the existing media
                 in the message.
+
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
 
         Examples:
 
@@ -604,7 +612,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             message=text,
             no_webpage=not link_preview,
             entities=msg_entities,
-            media=media
+            media=media,
+            reply_markup=self._build_reply_markup(buttons)
         )
         msg = self._get_response_message(request, await self(request), entity)
         self._cache_media(msg, file, file_handle)
