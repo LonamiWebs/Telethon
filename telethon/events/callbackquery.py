@@ -1,3 +1,5 @@
+import re
+
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
 from ..tl import types, functions
@@ -8,15 +10,64 @@ from ..tl.custom.sendergetter import SenderGetter
 class CallbackQuery(EventBuilder):
     """
     Represents a callback query event (when an inline button is clicked).
+
+    Note that the `chats` parameter will **not** work with normal
+    IDs or peers if the clicked inline button comes from a "via bot"
+    message. The `chats` parameter also supports checking against the
+    `chat_instance` which should be used for inline callbacks.
+
+    Args:
+        data (`bytes` | `str` | `callable`, optional):
+            If set, the inline button payload data must match this data.
+            A UTF-8 string can also be given, a regex or a callable. For
+            instance, to check against ``'data_1'`` and ``'data_2'`` you
+            can use ``re.compile(b'data_')``.
     """
+    def __init__(self, chats=None, *, blacklist_chats=False, data=None):
+        super().__init__(chats=chats, blacklist_chats=blacklist_chats)
+
+        if isinstance(data, bytes):
+            self.data = data
+        elif isinstance(data, str):
+            self.data = data.encode('utf-8')
+        elif not data or callable(data):
+            self.data = data
+        elif hasattr(data, 'match') and callable(data.match):
+            if not isinstance(getattr(data, 'pattern', b''), bytes):
+                data = re.compile(data.pattern.encode('utf-8'), data.flags)
+
+            self.data = data.match
+        else:
+            raise TypeError('Invalid data type given')
+
     def build(self, update):
-        if isinstance(update, types.UpdateBotCallbackQuery):
+        if isinstance(update, (types.UpdateBotCallbackQuery,
+                               types.UpdateInlineBotCallbackQuery)):
             event = CallbackQuery.Event(update)
         else:
             return
 
         event._entities = update._entities
         return self._filter_event(event)
+
+    def _filter_event(self, event):
+        if self.chats is not None:
+            inside = event.query.chat_instance in self.chats
+            if event.chat_id:
+                inside |= event.chat_id in self.chats
+
+            if inside == self.blacklist_chats:
+                return None
+
+        if self.data:
+            if callable(self.data):
+                event.data_match = self.data(event.query.data)
+                if not event.data_match:
+                    return None
+            elif event.query.data != self.data:
+                return None
+
+        return event
 
     class Event(EventCommon, SenderGetter):
         """
@@ -25,10 +76,17 @@ class CallbackQuery(EventBuilder):
         Members:
             query (:tl:`UpdateBotCallbackQuery`):
                 The original :tl:`UpdateBotCallbackQuery`.
+
+            data_match (`obj`, optional):
+                The object returned by the ``data=`` parameter
+                when creating the event builder, if any. Similar
+                to ``pattern_match`` for the new message event.
         """
         def __init__(self, query):
-            super().__init__(chat_peer=query.peer, msg_id=query.msg_id)
+            super().__init__(chat_peer=getattr(query, 'peer', None),
+                             msg_id=query.msg_id)
             self.query = query
+            self.data_match = None
             self._sender_id = query.user_id
             self._input_sender = None
             self._sender = None
@@ -56,6 +114,14 @@ class CallbackQuery(EventBuilder):
             Returns the data payload from the original inline button.
             """
             return self.query.data
+
+        @property
+        def chat_instance(self):
+            """
+            Unique identifier for the chat where the callback occurred.
+            Useful for high scores in games.
+            """
+            return self.query.chat_instance
 
         async def get_message(self):
             """
