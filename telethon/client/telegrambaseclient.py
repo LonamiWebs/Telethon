@@ -288,7 +288,7 @@ class TelegramBaseClient(abc.ABC):
             self.session.server_address, self.session.port)
 
         self._sender.send(self._init_with(
-            functions.help.GetConfigRequest()))
+            functions.help.GetConfigRequest())).result()
 
         self._updates_handle = syncio.create_task(self._update_loop)
 
