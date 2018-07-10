@@ -77,6 +77,7 @@ heavy job for you, so you can focus on developing an application.
    :maxdepth: 2
    :caption: Examples
 
+   extra/examples/telegram-client
    extra/examples/working-with-messages
    extra/examples/chats-and-channels
    extra/examples/users
