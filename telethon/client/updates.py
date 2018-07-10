@@ -188,7 +188,7 @@ class UpdateMethods(UserMethods):
                     self._loop.create_task(self._dispatch_queue_updates())
 
         need_diff = False
-        if hasattr(update, 'pts'):
+        if hasattr(update, 'pts') and update.pts is not None:
             if self._state.pts and (update.pts - self._state.pts) > 1:
                 need_diff = True
             self._state.pts = update.pts
