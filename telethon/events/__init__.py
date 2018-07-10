@@ -5,6 +5,7 @@ from .messageedited import MessageEdited
 from .messageread import MessageRead
 from .newmessage import NewMessage
 from .userupdate import UserUpdate
+from .callbackquery import CallbackQuery
 
 
 class StopPropagation(Exception):
