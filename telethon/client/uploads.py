@@ -9,6 +9,7 @@ from mimetypes import guess_type
 
 from .messageparse import MessageParseMethods
 from .users import UserMethods
+from .buttons import ButtonMethods
 from .. import utils, helpers
 from ..tl import types, functions, custom
 
@@ -22,7 +23,7 @@ except ImportError:
 __log__ = logging.getLogger(__name__)
 
 
-class UploadMethods(MessageParseMethods, UserMethods):
+class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     # region Public methods
 
@@ -30,7 +31,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
             self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=utils.Default,
-            voice_note=False, video_note=False, **kwargs):
+            voice_note=False, video_note=False, buttons=None, **kwargs):
         """
         Sends a file to the specified entity.
 
@@ -98,6 +99,13 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 Set `allow_cache` to ``False`` if you sent the same file
                 without this setting before for it to work.
 
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
+
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
             it will be used to determine metadata from audio and video files.
@@ -136,7 +144,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
-                    video_note=video_note, **kwargs
+                    video_note=video_note, buttons=buttons, **kwargs
                 ))
 
             return result
@@ -159,9 +167,10 @@ class UploadMethods(MessageParseMethods, UserMethods):
             voice_note=voice_note, video_note=video_note
         )
 
+        markup = self._build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
-            entities=msg_entities
+            entities=msg_entities, reply_markup=markup
         )
         msg = self._get_response_message(request, await self(request), entity)
         self._cache_media(msg, file, file_handle, force_document=force_document)

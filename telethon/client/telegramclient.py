@@ -7,7 +7,7 @@ from . import (
 
 class TelegramClient(
     AuthMethods, DownloadMethods, DialogMethods, ChatMethods,
-    MessageMethods, ButtonMethods, UpdateMethods, UploadMethods,
+    MessageMethods, UploadMethods, ButtonMethods, UpdateMethods,
     MessageParseMethods, UserMethods
 ):
     pass

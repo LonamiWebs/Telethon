@@ -15,7 +15,7 @@ from ..tl import types, functions, custom
 __log__ = logging.getLogger(__name__)
 
 
-class MessageMethods(ButtonMethods, UploadMethods, MessageParseMethods):
+class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     # region Public methods
 
@@ -396,7 +396,8 @@ class MessageMethods(ButtonMethods, UploadMethods, MessageParseMethods):
         if file is not None:
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
-                parse_mode=parse_mode, force_document=force_document
+                parse_mode=parse_mode, force_document=force_document,
+                buttons=buttons
             )
         elif not message:
             raise ValueError(
