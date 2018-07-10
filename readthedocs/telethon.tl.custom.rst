@@ -45,3 +45,11 @@ telethon\.tl\.custom\.forward module
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.tl\.custom\.button module
+-----------------------------------
+
+.. automodule:: telethon.tl.custom.button
+    :members:
+    :undoc-members:
+    :show-inheritance:

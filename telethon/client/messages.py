@@ -8,13 +8,14 @@ from async_generator import async_generator, yield_
 
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
+from .buttons import ButtonMethods
 from .. import utils
 from ..tl import types, functions, custom
 
 __log__ = logging.getLogger(__name__)
 
 
-class MessageMethods(UploadMethods, MessageParseMethods):
+class MessageMethods(ButtonMethods, UploadMethods, MessageParseMethods):
 
     # region Public methods
 
@@ -333,7 +334,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
     async def send_message(
             self, entity, message='', *, reply_to=None,
             parse_mode=utils.Default, link_preview=True, file=None,
-            force_document=False, clear_draft=False):
+            force_document=False, clear_draft=False, buttons=None):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -382,8 +383,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 Whether the existing draft should be cleared or not.
                 Has no effect when sending a file.
 
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
+
         Returns:
-            The sent `telethon.tl.custom.message.Message`.
+            The sent `custom.Message <telethon.tl.custom.message.Message>`.
         """
         if file is not None:
             return await self.send_file(
@@ -417,12 +425,17 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 else:
                     reply_id = None
 
+            if buttons is None:
+                markup = message.reply_markup
+            else:
+                markup = self._build_reply_markup(buttons)
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
                 silent=message.silent,
                 reply_to_msg_id=reply_id,
-                reply_markup=message.reply_markup,
+                reply_markup=markup,
                 entities=message.entities,
                 clear_draft=clear_draft,
                 no_webpage=not isinstance(
@@ -438,7 +451,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 entities=msg_ent,
                 no_webpage=not link_preview,
                 reply_to_msg_id=utils.get_message_id(reply_to),
-                clear_draft=clear_draft
+                clear_draft=clear_draft,
+                reply_markup=self._build_reply_markup(buttons)
             )
 
         result = await self(request)
