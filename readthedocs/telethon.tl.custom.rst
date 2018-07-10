@@ -53,3 +53,19 @@ telethon\.tl\.custom\.button module
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.tl\.custom\.chatgetter module
+---------------------------------------
+
+.. automodule:: telethon.tl.custom.chatgetter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+telethon\.tl\.custom\.sendergetter module
+-----------------------------------------
+
+.. automodule:: telethon.tl.custom.sendergetter
+    :members:
+    :undoc-members:
+    :show-inheritance:

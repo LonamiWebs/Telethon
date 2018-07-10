@@ -1,14 +1,21 @@
 from .. import types
-from ...utils import get_input_peer, get_peer_id, get_inner_text
+from ...utils import get_input_peer, get_inner_text
+from .chatgetter import ChatGetter
+from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
 
 
-class Message:
+class Message(ChatGetter, SenderGetter):
     """
     Custom class that encapsulates a message providing an abstraction to
     easily access some commonly needed features (such as the markdown text
     or the text for a given message entity).
+
+    Remember that this class implements `ChatGetter
+    <telethon.tl.custom.chatgetter.ChatGetter>` and `SenderGetter
+    <telethon.tl.custom.sendergetter.SenderGetter>` which means you
+    have access to all their sender and chat properties and methods.
 
     Attributes:
 
@@ -34,7 +41,8 @@ class Message:
         self._buttons_flat = None
         self._buttons_count = None
 
-        self._sender = entities.get(self.original_message.from_id)
+        self._sender_id = self.original_message.from_id
+        self._sender = entities.get(self._sender_id)
         if self._sender:
             self._input_sender = get_input_peer(self._sender)
             if not getattr(self._input_sender, 'access_hash', None):
@@ -46,10 +54,11 @@ class Message:
         # was sent, not *to which ID* it was sent.
         if not self.original_message.out \
                 and isinstance(self.original_message.to_id, types.PeerUser):
-            self._chat_peer = types.PeerUser(self.original_message.from_id)
+            self._chat_peer = types.PeerUser(self._sender_id)
         else:
             self._chat_peer = self.original_message.to_id
 
+        self._broadcast = bool(self.original_message.post)
         self._chat = entities.get(self.chat_id)
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
@@ -171,158 +180,8 @@ class Message:
         self._chat = msg._chat
         self._input_chat = msg._input_chat
 
-    @property
-    def sender(self):
-        """
-        Returns the :tl:`User` that sent this message. It may be ``None``
-        if the message has no sender or if Telegram didn't send the sender
-        inside message events.
-
-        If you're using `telethon.events`, use `get_sender` instead.
-        """
-        return self._sender
-
-    async def get_sender(self):
-        """
-        Returns `sender`, but will make an API call to find the
-        sender unless it's already cached.
-        """
-        if self._sender is None and await self.get_input_sender():
-            try:
-                self._sender =\
-                    await self._client.get_entity(self._input_sender)
-            except ValueError:
-                await self._reload_message()
-        return self._sender
-
-    @property
-    def chat(self):
-        """
-        Returns the :tl:`User`, :tl:`Chat` or :tl:`Channel` where this message
-        was sent. It may be ``None`` if Telegram didn't send the chat inside
-        message events.
-
-        If you're using `telethon.events`, use `get_chat` instead.
-        """
-        return self._chat
-
-    async def get_chat(self):
-        """
-        Returns `chat`, but will make an API call to find the
-        chat unless it's already cached.
-        """
-        if self._chat is None and await self.get_input_chat():
-            try:
-                self._chat =\
-                    await self._client.get_entity(self._input_chat)
-            except ValueError:
-                await self._reload_message()
-        return self._chat
-
-    @property
-    def input_sender(self):
-        """
-        This (:tl:`InputPeer`) is the input version of the user who
-        sent the message. Similarly to `input_chat`, this doesn't have
-        things like username or similar, but still useful in some cases.
-
-        Note that this might not be available if the library can't
-        find the input chat, or if the message a broadcast on a channel.
-        """
-        if self._input_sender is None:
-            if self.is_channel and not self.is_group:
-                return None
-            try:
-                self._input_sender = self._client.session\
-                    .get_input_entity(self.original_message.from_id)
-            except ValueError:
-                pass
-        return self._input_sender
-
-    async def get_input_sender(self):
-        """
-        Returns `input_sender`, but will make an API call to find the
-        input sender unless it's already cached.
-        """
-        if self.input_sender is None\
-                and not self.is_channel and not self.is_group:
-            await self._reload_message()
-        return self._input_sender
-
-    @property
-    def input_chat(self):
-        """
-        This (:tl:`InputPeer`) is the input version of the chat where the
-        message was sent. Similarly to `input_sender`, this doesn't have
-        things like username or similar, but still useful in some cases.
-
-        Note that this might not be available if the library doesn't know
-        where the message came from.
-        """
-        if self._input_chat is None:
-            try:
-                self._input_chat =\
-                    self._client.session.get_input_entity(self._chat_peer)
-            except ValueError:
-                pass
-
-        return self._input_chat
-
-    async def get_input_chat(self):
-        """
-        Returns `input_chat`, but will make an API call to find the
-        input chat unless it's already cached.
-        """
-        if self.input_chat is None:
-            # There's a chance that the chat is a recent new dialog.
-            # The input chat cannot rely on ._reload_message() because
-            # said method may need the input chat.
-            target = self.chat_id
-            async for d in self._client.iter_dialogs(100):
-                if d.id == target:
-                    self._chat = d.entity
-                    self._input_chat = d.input_entity
-                    break
-
-        return self._input_chat
-
-    @property
-    def sender_id(self):
-        """
-        Returns the marked sender integer ID, if present.
-        """
-        return self.original_message.from_id
-
-    @property
-    def chat_id(self):
-        """
-        Returns the marked chat integer ID. Note that this value **will
-        be different** from `to_id` for incoming private messages, since
-        the chat *to* which the messages go is to your own person, but
-        the *chat* itself is with the one who sent the message.
-
-        TL;DR; this gets the ID that you expect.
-        """
-        return get_peer_id(self._chat_peer)
-
-    @property
-    def is_private(self):
-        """True if the message was sent as a private message."""
-        return isinstance(self.original_message.to_id, types.PeerUser)
-
-    @property
-    def is_group(self):
-        """True if the message was sent on a group or megagroup."""
-        return (
-            isinstance(self.original_message.to_id, (types.PeerChat,
-                                                     types.PeerChannel))
-            and not self.original_message.post
-        )
-
-    @property
-    def is_channel(self):
-        """True if the message was sent on a megagroup or channel."""
-        return isinstance(self.original_message.to_id, types.PeerChannel)
+    async def _refetch_sender(self):
+        await self._reload_message()
 
     @property
     def is_reply(self):
@@ -602,10 +461,10 @@ class Message:
         if self.original_message.fwd_from:
             return None
         if not self.original_message.out:
-            if not isinstance(self.original_message.to_id, types.PeerUser):
+            if not isinstance(self._chat_peer, types.PeerUser):
                 return None
             me = await self._client.get_me(input_peer=True)
-            if self.original_message.to_id.user_id != me.user_id:
+            if self._chat_peer.user_id != me.user_id:
                 return None
 
         return await self._client.edit_message(

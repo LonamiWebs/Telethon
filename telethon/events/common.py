@@ -3,6 +3,7 @@ import warnings
 
 from .. import utils
 from ..tl import TLObject, types
+from ..tl.custom.chatgetter import ChatGetter
 
 
 async def _into_id_set(client, chats):
@@ -79,13 +80,16 @@ class EventBuilder(abc.ABC):
         return event
 
 
-class EventCommon(abc.ABC):
+class EventCommon(ChatGetter, abc.ABC):
     """
     Intermediate class with common things to all events.
 
-    All events (except `Raw`) have ``is_private``, ``is_group``
-    and ``is_channel`` boolean properties, as well as an
-    ``original_update`` field containing the original :tl:`Update`.
+    Remember that this class implements `ChatGetter
+    <telethon.tl.custom.chatgetter.ChatGetter>` which
+    means you have access to all chat properties and methods.
+
+    In addition, you can access the `original_update`
+    field which contains the original :tl:`Update`.
     """
     _event_name = 'Event'
 
@@ -96,64 +100,27 @@ class EventCommon(abc.ABC):
         self._message_id = msg_id
         self._input_chat = None
         self._chat = None
+        self._broadcast = broadcast
         self.original_update = None
-
-        self.is_private = isinstance(chat_peer, types.PeerUser)
-        self.is_group = (
-            isinstance(chat_peer, (types.PeerChat, types.PeerChannel))
-            and not broadcast
-        )
-        self.is_channel = isinstance(chat_peer, types.PeerChannel)
 
     def _set_client(self, client):
         """
         Setter so subclasses can act accordingly when the client is set.
         """
         self._client = client
+        self._chat = self._entities.get(self.chat_id)
+        if not self._chat:
+            return
 
-    @property
-    def input_chat(self):
-        """
-        This (:tl:`InputPeer`) is the input version of the chat where the
-        event occurred. This doesn't have things like username or similar,
-        but is still useful in some cases.
-
-        Note that this might not be available if the library doesn't have
-        enough information available.
-        """
-        if self._input_chat is None and self._chat_peer is not None:
+        self._input_chat = utils.get_input_peer(self._chat)
+        if not getattr(self._input_chat, 'access_hash', True):
+            # getattr with True to handle the InputPeerSelf() case
             try:
-                self._input_chat =\
-                    self._client.session.get_input_entity(self._chat_peer)
+                self._input_chat = self._client.session.get_input_entity(
+                    self._chat_peer
+                )
             except ValueError:
-                pass
-
-        return self._input_chat
-
-    async def get_input_chat(self):
-        """
-        Returns `input_chat`, but will make an API call to find the
-        input chat unless it's already cached.
-        """
-        if self.input_chat is None and self._chat_peer is not None:
-            ch = isinstance(self._chat_peer, types.PeerChannel)
-            if not ch and self._message_id is not None:
-                msg = await self._client.get_messages(
-                    None, ids=self._message_id)
-                self._chat = msg._chat
-                self._input_chat = msg._input_chat
-            else:
-                target = utils.get_peer_id(self._chat_peer)
-                async for d in self._client.iter_dialogs(100):
-                    if d.id == target:
-                        self._chat = d.entity
-                        self._input_chat = d.input_entity
-                        # TODO Don't break, exhaust the iterator, otherwise
-                        # async_generator raises RuntimeError: partially-
-                        # exhausted async_generator 'xyz' garbage collected
-                        # break
-
-        return self._input_chat
+                self._input_chat = None
 
     @property
     def client(self):
@@ -161,44 +128,6 @@ class EventCommon(abc.ABC):
         The `telethon.TelegramClient` that created this event.
         """
         return self._client
-
-    @property
-    def chat(self):
-        """
-        The :tl:`User`, :tl:`Chat` or :tl:`Channel` on which
-        the event occurred. This property may make an API call the first time
-        to get the most up to date version of the chat (mostly when the event
-        doesn't belong to a channel), so keep that in mind. You should use
-        `get_chat` instead, unless you want to avoid an API call.
-        """
-        if not self.input_chat:
-            return None
-
-        if self._chat is None:
-            self._chat = self._entities.get(utils.get_peer_id(self._chat_peer))
-
-        return self._chat
-
-    async def get_chat(self):
-        """
-        Returns `chat`, but will make an API call to find the
-        chat unless it's already cached.
-        """
-        if self.chat is None and await self.get_input_chat():
-            try:
-                self._chat =\
-                    await self._client.get_entity(self._input_chat)
-            except ValueError:
-                pass
-        return self._chat
-
-    @property
-    def chat_id(self):
-        """
-        Returns the marked integer ID of the chat, if any.
-        """
-        if self._chat_peer:
-            return utils.get_peer_id(self._chat_peer)
 
     def __str__(self):
         return TLObject.pretty_format(self.to_dict())

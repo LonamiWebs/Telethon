@@ -18,6 +18,8 @@ from async_generator import isasyncgenfunction
 
 from .client.telegramclient import TelegramClient
 from .tl.custom import Draft, Dialog, MessageButton, Forward, Message
+from .tl.custom.chatgetter import ChatGetter
+from .tl.custom.sendergetter import SenderGetter
 
 
 def _syncify_coro(t, method_name):
@@ -78,4 +80,5 @@ def syncify(*types):
                     _syncify_gen(t, method_name)
 
 
-syncify(TelegramClient, Draft, Dialog, MessageButton, Forward, Message)
+syncify(TelegramClient, Draft, Dialog, MessageButton,
+        ChatGetter, SenderGetter, Forward, Message)
