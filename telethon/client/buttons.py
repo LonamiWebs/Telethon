@@ -1,6 +1,6 @@
 from .updates import UpdateMethods
 from ..tl import types, custom
-from .. import utils
+from .. import utils, events
 
 
 class ButtonMethods(UpdateMethods):
@@ -30,7 +30,12 @@ class ButtonMethods(UpdateMethods):
                 is_inline |= inline
                 is_normal |= not inline
                 if isinstance(button, custom.Button):
-                    # TODO actually register callbacks
+                    if button.callback:
+                        self.add_event_handler(
+                            button.callback,
+                            events.CallbackQuery(data=button.data)
+                        )
+
                     button = button.button
 
                 if button.SUBCLASS_OF_ID == 0xbad74a3:

@@ -29,6 +29,11 @@ class Button:
         self.callback = callback
         self.is_inline = self._is_inline(button)
 
+    @property
+    def data(self):
+        if isinstance(self.button, types.KeyboardButtonCallback):
+            return self.button.data
+
     @classmethod
     def _is_inline(cls, button):
         """
