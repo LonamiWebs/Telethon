@@ -334,7 +334,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     async def send_message(
             self, entity, message='', *, reply_to=None,
             parse_mode=utils.Default, link_preview=True, file=None,
-            force_document=False, clear_draft=False, buttons=None):
+            force_document=False, clear_draft=False, buttons=None,
+            silent=None):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -390,6 +391,11 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
 
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
+
         Returns:
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
         """
@@ -431,10 +437,13 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             else:
                 markup = self._build_reply_markup(buttons)
 
+            if silent is None:
+                silent = message.silent
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
-                silent=message.silent,
+                silent=silent,
                 reply_to_msg_id=reply_id,
                 reply_markup=markup,
                 entities=message.entities,
@@ -453,6 +462,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 no_webpage=not link_preview,
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
+                silent=silent,
                 reply_markup=self._build_reply_markup(buttons)
             )
 
@@ -471,7 +481,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    async def forward_messages(self, entity, messages, from_peer=None):
+    async def forward_messages(self, entity, messages, from_peer=None,
+                               *, silent=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -486,6 +497,11 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 If the given messages are integer IDs and not instances
                 of the ``Message`` class, this *must* be specified in
                 order for the forward to work.
+
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
 
         Returns:
             The list of forwarded `telethon.tl.custom.message.Message`,
@@ -514,7 +530,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         req = functions.messages.ForwardMessagesRequest(
             from_peer=from_peer,
             id=[m if isinstance(m, int) else m.id for m in messages],
-            to_peer=entity
+            to_peer=entity,
+            silent=silent
         )
         result = await self(req)
         if isinstance(result, (types.Updates, types.UpdatesCombined)):

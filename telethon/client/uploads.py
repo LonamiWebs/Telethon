@@ -31,7 +31,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=utils.Default,
-            voice_note=False, video_note=False, buttons=None, **kwargs):
+            voice_note=False, video_note=False, buttons=None, silent=None,
+            **kwargs):
         """
         Sends a file to the specified entity.
 
@@ -106,6 +107,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
 
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
+
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
             it will be used to determine metadata from audio and video files.
@@ -134,7 +140,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 result += await self._send_album(
                     entity, images[:10], caption=caption,
                     progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode
+                    parse_mode=parse_mode, silent=silent
                 )
                 images = images[10:]
 
@@ -144,7 +150,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
-                    video_note=video_note, buttons=buttons, **kwargs
+                    video_note=video_note, buttons=buttons, silent=silent,
+                    **kwargs
                 ))
 
             return result
@@ -170,7 +177,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         markup = self._build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
-            entities=msg_entities, reply_markup=markup
+            entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, await self(request), entity)
         self._cache_media(msg, file, file_handle, force_document=force_document)
@@ -179,7 +186,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     async def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
-                    parse_mode=utils.Default):
+                    parse_mode=utils.Default, silent=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -222,7 +229,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         # Now we can construct the multi-media request
         result = await self(functions.messages.SendMultiMediaRequest(
-            entity, reply_to_msg_id=reply_to, multi_media=media
+            entity, reply_to_msg_id=reply_to, multi_media=media, silent=silent
         ))
         return [
             self._get_response_message(update.id, result, entity)
