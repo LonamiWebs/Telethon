@@ -52,21 +52,25 @@ class EventBuilder(abc.ABC):
             will be handled *except* those specified in ``chats``
             which will be ignored if ``blacklist_chats=True``.
     """
+    self_id = None
+
     def __init__(self, chats=None, blacklist_chats=False):
         self.chats = chats
         self.blacklist_chats = blacklist_chats
         self._self_id = None
 
+    @staticmethod
     @abc.abstractmethod
-    def build(self, update):
+    def build(update):
         """Builds an event for the given update if possible, or returns None"""
 
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
         self.chats = await _into_id_set(client, self.chats)
-        self._self_id = (await client.get_me(input_peer=True)).user_id
+        if not EventBuilder.self_id:
+            EventBuilder.self_id = await client.get_peer_id('me')
 
-    def _filter_event(self, event):
+    def filter(self, event):
         """
         If the ID of ``event._chat_peer`` isn't in the chats set (or it is
         but the set is a blacklist) returns ``None``, otherwise the event.

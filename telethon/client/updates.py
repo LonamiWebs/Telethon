@@ -90,6 +90,7 @@ class UpdateMethods(UserMethods):
             event = events.Raw()
 
         self._events_pending_resolve.append(event)
+        self._event_builders_count[type(event)] += 1
         self._event_builders.append((event, callback))
 
     def remove_event_handler(self, callback, event=None):
@@ -108,6 +109,11 @@ class UpdateMethods(UserMethods):
             i -= 1
             ev, cb = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
+                type_ev = type(ev)
+                self._event_builders_count[type_ev] -= 1
+                if not self._event_builders_count[type_ev]:
+                    del self._event_builders_count[type_ev]
+
                 del self._event_builders[i]
                 found += 1
 
@@ -257,28 +263,36 @@ class UpdateMethods(UserMethods):
 
             self._events_pending_resolve.clear()
 
-        for builder, callback in self._event_builders:
-            event = builder.build(update)
-            if event:
-                if hasattr(event, '_set_client'):
-                    event._set_client(self)
-                else:
-                    event._client = self
+        # TODO We can improve this further
+        # If we had a way to get all event builders for
+        # a type instead looping over them all always.
+        built = {builder: builder.build(update)
+                 for builder in self._event_builders_count}
 
-                event.original_update = update
-                try:
-                    await callback(event)
-                except events.StopPropagation:
-                    __log__.debug(
-                        "Event handler '{}' stopped chain of "
-                        "propagation for event {}."
-                            .format(callback.__name__,
-                                    type(event).__name__)
-                    )
-                    break
-                except Exception:
-                    __log__.exception('Unhandled exception on {}'
-                                      .format(callback.__name__))
+        for builder, callback in self._event_builders:
+            event = built[type(builder)]
+            if not event or not builder.filter(event):
+                continue
+
+            if hasattr(event, '_set_client'):
+                event._set_client(self)
+            else:
+                event._client = self
+
+            event.original_update = update
+            try:
+                await callback(event)
+            except events.StopPropagation:
+                __log__.debug(
+                    "Event handler '{}' stopped chain of "
+                    "propagation for event {}."
+                        .format(callback.__name__,
+                                type(event).__name__)
+                )
+                break
+            except Exception:
+                __log__.exception('Unhandled exception on {}'
+                                  .format(callback.__name__))
 
     async def _handle_auto_reconnect(self):
         # Upon reconnection, we want to send getState

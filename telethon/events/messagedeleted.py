@@ -7,7 +7,8 @@ class MessageDeleted(EventBuilder):
     """
     Event fired when one or more messages are deleted.
     """
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update, types.UpdateDeleteMessages):
             event = MessageDeleted.Event(
                 deleted_ids=update.messages,
@@ -22,7 +23,7 @@ class MessageDeleted(EventBuilder):
             return
 
         event._entities = update._entities
-        return self._filter_event(event)
+        return event
 
     class Event(EventCommon):
         def __init__(self, deleted_ids, peer):

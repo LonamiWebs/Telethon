@@ -18,7 +18,8 @@ class MessageRead(EventBuilder):
         super().__init__(chats, blacklist_chats)
         self.inbox = inbox
 
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update, types.UpdateReadHistoryInbox):
             event = MessageRead.Event(update.peer, update.max_id, False)
         elif isinstance(update, types.UpdateReadHistoryOutbox):
@@ -39,11 +40,14 @@ class MessageRead(EventBuilder):
         else:
             return
 
+        event._entities = update._entities
+        return event
+
+    def filter(self, event):
         if self.inbox == event.outbox:
             return
 
-        event._entities = update._entities
-        return self._filter_event(event)
+        return super().filter(event)
 
     class Event(EventCommon):
         """

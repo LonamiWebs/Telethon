@@ -75,7 +75,8 @@ class NewMessage(EventBuilder):
         await super().resolve(client)
         self.from_users = await _into_id_set(client, self.from_users)
 
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if not isinstance(update.message, types.Message):
@@ -91,9 +92,9 @@ class NewMessage(EventBuilder):
                 # Note that to_id/from_id complement each other in private
                 # messages, depending on whether the message was outgoing.
                 to_id=types.PeerUser(
-                    update.user_id if update.out else self._self_id
+                    update.user_id if update.out else EventBuilder.self_id
                 ),
-                from_id=self._self_id if update.out else update.user_id,
+                from_id=EventBuilder.self_id if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -120,8 +121,6 @@ class NewMessage(EventBuilder):
         else:
             return
 
-        event._entities = update._entities
-
         # Make messages sent to ourselves outgoing unless they're forwarded.
         # This makes it consistent with official client's appearance.
         ori = event.message
@@ -129,9 +128,10 @@ class NewMessage(EventBuilder):
             if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
                 event.message.out = True
 
-        return self._message_filter_event(event)
+        event._entities = update._entities
+        return event
 
-    def _message_filter_event(self, event):
+    def filter(self, event):
         if self._no_check:
             return event
 
@@ -153,7 +153,7 @@ class NewMessage(EventBuilder):
                 return
             event.pattern_match = match
 
-        return self._filter_event(event)
+        return super().filter(event)
 
     class Event(EventCommon):
         """

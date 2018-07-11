@@ -9,7 +9,8 @@ class UserUpdate(EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
     """
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update, types.UpdateUserStatus):
             event = UserUpdate.Event(update.user_id,
                                      status=update.status)
@@ -17,7 +18,7 @@ class UserUpdate(EventBuilder):
             return
 
         event._entities = update._entities
-        return self._filter_event(event)
+        return event
 
     class Event(EventCommon):
         """
