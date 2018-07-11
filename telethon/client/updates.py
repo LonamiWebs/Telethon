@@ -90,6 +90,7 @@ class UpdateMethods(UserMethods):
             event = events.Raw()
 
         self._events_pending_resolve.append(event)
+        self._event_builders_count[type(event)] += 1
         self._event_builders.append((event, callback))
 
     def remove_event_handler(self, callback, event=None):
@@ -108,6 +109,11 @@ class UpdateMethods(UserMethods):
             i -= 1
             ev, cb = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
+                type_ev = type(ev)
+                self._event_builders_count[type_ev] -= 1
+                if not self._event_builders_count[type_ev]:
+                    del self._event_builders_count[type_ev]
+
                 del self._event_builders[i]
                 found += 1
 
