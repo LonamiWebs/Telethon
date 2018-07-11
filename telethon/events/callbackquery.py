@@ -40,7 +40,8 @@ class CallbackQuery(EventBuilder):
         else:
             raise TypeError('Invalid data type given')
 
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update, (types.UpdateBotCallbackQuery,
                                types.UpdateInlineBotCallbackQuery)):
             event = CallbackQuery.Event(update)
@@ -48,9 +49,9 @@ class CallbackQuery(EventBuilder):
             return
 
         event._entities = update._entities
-        return self._filter_event(event)
+        return event
 
-    def _filter_event(self, event):
+    def filter(self, event):
         if self.chats is not None:
             inside = event.query.chat_instance in self.chats
             if event.chat_id:

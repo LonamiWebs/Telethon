@@ -8,7 +8,8 @@ class ChatAction(EventBuilder):
     """
     Represents an action in a chat (such as user joined, left, or new pin).
     """
-    def build(self, update):
+    @staticmethod
+    def build(update):
         if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
             # Telegram does not always send
             # UpdateChannelPinnedMessage for new pins
@@ -78,7 +79,7 @@ class ChatAction(EventBuilder):
             return
 
         event._entities = update._entities
-        return self._filter_event(event)
+        return event
 
     class Event(EventCommon):
         """

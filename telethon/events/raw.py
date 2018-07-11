@@ -25,6 +25,10 @@ class Raw(EventBuilder):
     async def resolve(self, client):
         pass
 
-    def build(self, update):
-        if not self.types or isinstance(update, self.types):
-            return update
+    @staticmethod
+    def build(update):
+        return update
+
+    def filter(self, event):
+        if not self.types or isinstance(event, self.types):
+            return event
