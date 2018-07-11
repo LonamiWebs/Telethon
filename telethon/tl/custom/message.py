@@ -396,7 +396,7 @@ class Message(ChatGetter, SenderGetter):
         *not* considered outgoing, just like official clients
         display them.
         """
-        return self.original_message.out
+        return self.__dict__['out']
 
     async def get_reply_message(self):
         """
