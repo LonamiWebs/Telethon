@@ -24,10 +24,6 @@ class TLObject:
                 return '[{}]'.format(
                     ', '.join(TLObject.pretty_format(x) for x in obj)
                 )
-            elif isinstance(obj, datetime):
-                return 'datetime.utcfromtimestamp({})'.format(
-                    int(obj.timestamp())
-                )
             else:
                 return repr(obj)
         else:
