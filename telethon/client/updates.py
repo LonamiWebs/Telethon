@@ -181,7 +181,7 @@ class UpdateMethods(UserMethods):
             for u in update.updates:
                 u._entities = entities
                 self._handle_update(u)
-        if isinstance(update, types.UpdateShort):
+        elif isinstance(update, types.UpdateShort):
             self._handle_update(update.update)
         else:
             update._entities = getattr(update, '_entities', {})
