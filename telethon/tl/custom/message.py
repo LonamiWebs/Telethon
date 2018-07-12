@@ -1,4 +1,5 @@
-from .. import types
+from .. import types, functions
+from ...errors import BotTimeout
 from ...utils import get_input_peer, get_inner_text
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
@@ -524,7 +525,8 @@ class Message(ChatGetter, SenderGetter):
         texts = get_inner_text(self.original_message.message, ent)
         return list(zip(ent, texts))
 
-    async def click(self, i=None, j=None, *, text=None, filter=None):
+    async def click(self, i=None, j=None,
+                    *, text=None, filter=None, data=None):
         """
         Calls `telethon.tl.custom.messagebutton.MessageButton.click`
         for the specified button.
@@ -564,7 +566,29 @@ class Message(ChatGetter, SenderGetter):
                 Clicks the first button for which the callable
                 returns ``True``. The callable should accept a single
                 `telethon.tl.custom.messagebutton.MessageButton` argument.
+
+            data (`bytes`):
+                This argument overrides the rest and will not search any
+                buttons. Instead, it will directly send the request to
+                behave as if it clicked a button with said data. Note
+                that if the message does not have this data, it will
+                ``raise DataInvalidError``.
         """
+        if data:
+            if not await self.get_input_chat():
+                return None
+
+            try:
+                return await self._client(
+                    functions.messages.GetBotCallbackAnswerRequest(
+                        peer=self._input_chat,
+                        msg_id=self.original_message.id,
+                        data=data
+                    )
+                )
+            except BotTimeout:
+                return None
+
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
 
