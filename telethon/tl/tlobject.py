@@ -65,11 +65,6 @@ class TLObject:
                 result.append('\t' * indent)
                 result.append(']')
 
-            elif isinstance(obj, datetime):
-                result.append('datetime.utcfromtimestamp(')
-                result.append(repr(int(obj.timestamp())))
-                result.append(')')
-
             else:
                 result.append(repr(obj))
 

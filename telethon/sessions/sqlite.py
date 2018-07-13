@@ -211,7 +211,8 @@ class SQLiteSession(MemorySession):
                             'where id = ?', entity_id)
         if row:
             pts, qts, date, seq = row
-            date = datetime.datetime.utcfromtimestamp(date)
+            date = datetime.datetime.fromtimestamp(
+                date, tz=datetime.timezone.utc)
             return types.updates.State(pts, qts, date, seq, unread_count=0)
 
     def set_update_state(self, entity_id, state):
