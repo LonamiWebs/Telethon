@@ -180,7 +180,7 @@ async def handler(event):
         reply_to=event.reply_to_msg_id
     )
 
-    # We have two @client.on, both could fire, stop stop that
+    # We have two @client.on, both could fire, stop that
     raise events.StopPropagation
 
 
