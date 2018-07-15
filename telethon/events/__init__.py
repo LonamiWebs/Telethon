@@ -6,6 +6,7 @@ from .messageread import MessageRead
 from .newmessage import NewMessage
 from .userupdate import UserUpdate
 from .callbackquery import CallbackQuery
+from .inlinequery import InlineQuery
 
 
 class StopPropagation(Exception):

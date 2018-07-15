@@ -43,8 +43,8 @@ class EventBuilder(abc.ABC):
 
     Args:
         chats (`entity`, optional):
-            May be one or more entities (username/peer/etc.). By default,
-            only matching chats will be handled.
+            May be one or more entities (username/peer/etc.), preferably IDs.
+            By default, only matching chats will be handled.
 
         blacklist_chats (`bool`, optional):
             Whether to treat the chats as a blacklist instead of

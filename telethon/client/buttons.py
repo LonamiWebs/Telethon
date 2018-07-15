@@ -4,7 +4,7 @@ from .. import utils, events
 
 
 class ButtonMethods(UpdateMethods):
-    def _build_reply_markup(self, buttons):
+    def _build_reply_markup(self, buttons, inline_only=False):
         if buttons is None:
             return None
 
@@ -45,7 +45,9 @@ class ButtonMethods(UpdateMethods):
             if current:
                 rows.append(types.KeyboardButtonRow(current))
 
-        if is_inline == is_normal and is_normal:
+        if inline_only and is_normal:
+            raise ValueError('You cannot use non-inline buttons here')
+        elif is_inline == is_normal and is_normal:
             raise ValueError('You cannot mix inline with normal buttons')
         elif is_inline:
             return types.ReplyInlineMarkup(rows)

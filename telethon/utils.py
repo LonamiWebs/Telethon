@@ -29,9 +29,17 @@ from .tl.types import (
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
     InputMediaUploadedPhoto, DocumentAttributeFilename, photos,
     TopPeer, InputNotifyPeer, InputMessageID, InputFileLocation,
-    InputDocumentFileLocation, PhotoSizeEmpty, InputDialogPeer
+    InputDocumentFileLocation, PhotoSizeEmpty, InputDialogPeer,
+    DocumentAttributeAudio, DocumentAttributeVideo
 )
 from .tl.types.contacts import ResolvedPeer
+
+try:
+    import hachoir
+    import hachoir.metadata
+    import hachoir.parser
+except ImportError:
+    hachoir = None
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
@@ -422,6 +430,77 @@ def get_message_id(message):
         pass
 
     raise TypeError('Invalid message type: {}'.format(type(message)))
+
+
+def get_attributes(file, *, attributes=None, mime_type=None,
+                   force_document=False, voice_note=False, video_note=False):
+    """
+    Get a list of attributes for the given file and
+    the mime type as a tuple ([attribute], mime_type).
+    """
+    if isinstance(file, str):
+        # Determine mime-type and attributes
+        # Take the first element by using [0] since it returns a tuple
+        if mime_type is None:
+            mime_type = mimetypes.guess_type(file)[0]
+
+        attr_dict = {DocumentAttributeFilename:
+            DocumentAttributeFilename(os.path.basename(file))}
+
+        if is_audio(file) and hachoir is not None:
+            with hachoir.parser.createParser(file) as parser:
+                m = hachoir.metadata.extractMetadata(parser)
+                attr_dict[DocumentAttributeAudio] = \
+                    DocumentAttributeAudio(
+                        voice=voice_note,
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('author') if m.has('author') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+
+        if not force_document and is_video(file):
+            if hachoir:
+                with hachoir.parser.createParser(file) as parser:
+                    m = hachoir.metadata.extractMetadata(parser)
+                    doc = DocumentAttributeVideo(
+                        round_message=video_note,
+                        w=m.get('width') if m.has('width') else 0,
+                        h=m.get('height') if m.has('height') else 0,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+            else:
+                doc = DocumentAttributeVideo(
+                    0, 1, 1, round_message=video_note)
+
+            attr_dict[DocumentAttributeVideo] = doc
+    else:
+        attr_dict = {DocumentAttributeFilename:
+            DocumentAttributeFilename(
+                os.path.basename(getattr(file, 'name', None) or 'unnamed'))}
+
+    if voice_note:
+        if DocumentAttributeAudio in attr_dict:
+            attr_dict[DocumentAttributeAudio].voice = True
+        else:
+            attr_dict[DocumentAttributeAudio] = \
+                DocumentAttributeAudio(0, voice=True)
+
+    # Now override the attributes if any. As we have a dict of
+    # {cls: instance}, we can override any class with the list
+    # of attributes provided by the user easily.
+    if attributes:
+        for a in attributes:
+            attr_dict[type(a)] = a
+
+    # Ensure we have a mime type, any; but it cannot be None
+    # 'The "octet-stream" subtype is used to indicate that a body
+    # contains arbitrary binary data.'
+    if not mime_type:
+        mime_type = 'application/octet-stream'
+
+    return list(attr_dict.values()), mime_type
 
 
 def sanitize_parse_mode(mode):

@@ -13,13 +13,6 @@ from .buttons import ButtonMethods
 from .. import utils, helpers
 from ..tl import types, functions, custom
 
-try:
-    import hachoir
-    import hachoir.metadata
-    import hachoir.parser
-except ImportError:
-    hachoir = None
-
 __log__ = logging.getLogger(__name__)
 
 
@@ -224,8 +217,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 caption, msg_entities = captions.pop()
             else:
                 caption, msg_entities = '', None
-            media.append(types.InputSingleMedia(types.InputMediaPhoto(fh), message=caption,
-                                          entities=msg_entities))
+            media.append(types.InputSingleMedia(
+                types.InputMediaPhoto(fh),
+                message=caption,
+                entities=msg_entities
+            ))
 
         # Now we can construct the multi-media request
         result = await self(functions.messages.SendMultiMediaRequest(
@@ -420,74 +416,13 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         elif as_image:
             media = types.InputMediaUploadedPhoto(file_handle)
         else:
-            mime_type = None
-            if isinstance(file, str):
-                # Determine mime-type and attributes
-                # Take the first element by using [0] since it returns a tuple
-                mime_type = guess_type(file)[0]
-                attr_dict = {
-                    types.DocumentAttributeFilename:
-                        types.DocumentAttributeFilename(
-                            os.path.basename(file))
-                }
-                if utils.is_audio(file) and hachoir:
-                    with hachoir.parser.createParser(file) as parser:
-                        m = hachoir.metadata.extractMetadata(parser)
-                        attr_dict[types.DocumentAttributeAudio] = \
-                            types.DocumentAttributeAudio(
-                                voice=voice_note,
-                                title=m.get('title') if m.has(
-                                    'title') else None,
-                                performer=m.get('author') if m.has(
-                                    'author') else None,
-                                duration=int(m.get('duration').seconds
-                                             if m.has('duration') else 0)
-                            )
-
-                if not force_document and utils.is_video(file):
-                    if hachoir:
-                        with hachoir.parser.createParser(file) as parser:
-                            m = hachoir.metadata.extractMetadata(parser)
-                            doc = types.DocumentAttributeVideo(
-                                round_message=video_note,
-                                w=m.get('width') if m.has('width') else 0,
-                                h=m.get('height') if m.has('height') else 0,
-                                duration=int(m.get('duration').seconds
-                                             if m.has('duration') else 0)
-                            )
-                    else:
-                        doc = types.DocumentAttributeVideo(
-                            0, 1, 1, round_message=video_note)
-
-                    attr_dict[types.DocumentAttributeVideo] = doc
-            else:
-                attr_dict = {
-                    types.DocumentAttributeFilename:
-                        types.DocumentAttributeFilename(
-                            os.path.basename(
-                                getattr(file, 'name',
-                                        None) or 'unnamed'))
-                }
-
-            if voice_note:
-                if types.DocumentAttributeAudio in attr_dict:
-                    attr_dict[types.DocumentAttributeAudio].voice = True
-                else:
-                    attr_dict[types.DocumentAttributeAudio] = \
-                        types.DocumentAttributeAudio(0, voice=True)
-
-            # Now override the attributes if any. As we have a dict of
-            # {cls: instance}, we can override any class with the list
-            # of attributes provided by the user easily.
-            if attributes:
-                for a in attributes:
-                    attr_dict[type(a)] = a
-
-            # Ensure we have a mime type, any; but it cannot be None
-            # 'The "octet-stream" subtype is used to indicate that a body
-            # contains arbitrary binary data.'
-            if not mime_type:
-                mime_type = 'application/octet-stream'
+            attributes, mime_type = utils.get_attributes(
+                file,
+                attributes=attributes,
+                force_document=force_document,
+                voice_note=voice_note,
+                video_note=video_note
+            )
 
             input_kw = {}
             if thumb:
@@ -496,7 +431,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             media = types.InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
-                attributes=list(attr_dict.values()),
+                attributes=attributes,
                 **input_kw
             )
         return file_handle, media
