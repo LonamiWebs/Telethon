@@ -18,25 +18,25 @@ class MessageRead(EventBuilder):
         super().__init__(chats, blacklist_chats)
         self.inbox = inbox
 
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, types.UpdateReadHistoryInbox):
-            event = MessageRead.Event(update.peer, update.max_id, False)
+            event = cls.Event(update.peer, update.max_id, False)
         elif isinstance(update, types.UpdateReadHistoryOutbox):
-            event = MessageRead.Event(update.peer, update.max_id, True)
+            event = cls.Event(update.peer, update.max_id, True)
         elif isinstance(update, types.UpdateReadChannelInbox):
-            event = MessageRead.Event(types.PeerChannel(update.channel_id),
+            event = cls.Event(types.PeerChannel(update.channel_id),
                                       update.max_id, False)
         elif isinstance(update, types.UpdateReadChannelOutbox):
-            event = MessageRead.Event(types.PeerChannel(update.channel_id),
-                                      update.max_id, True)
+            event = cls.Event(types.PeerChannel(update.channel_id),
+                              update.max_id, True)
         elif isinstance(update, types.UpdateReadMessagesContents):
-            event = MessageRead.Event(message_ids=update.messages,
-                                      contents=True)
+            event = cls.Event(message_ids=update.messages,
+                              contents=True)
         elif isinstance(update, types.UpdateChannelReadMessagesContents):
-            event = MessageRead.Event(types.PeerChannel(update.channel_id),
-                                      message_ids=update.messages,
-                                      contents=True)
+            event = cls.Event(types.PeerChannel(update.channel_id),
+                              message_ids=update.messages,
+                              contents=True)
         else:
             return
 

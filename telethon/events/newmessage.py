@@ -75,15 +75,15 @@ class NewMessage(EventBuilder):
         await super().resolve(client)
         self.from_users = await _into_id_set(client, self.from_users)
 
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if not isinstance(update.message, types.Message):
                 return  # We don't care about MessageService's here
-            event = NewMessage.Event(update.message)
+            event = cls.Event(update.message)
         elif isinstance(update, types.UpdateShortMessage):
-            event = NewMessage.Event(types.Message(
+            event = cls.Event(types.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
@@ -92,9 +92,9 @@ class NewMessage(EventBuilder):
                 # Note that to_id/from_id complement each other in private
                 # messages, depending on whether the message was outgoing.
                 to_id=types.PeerUser(
-                    update.user_id if update.out else EventBuilder.self_id
+                    update.user_id if update.out else cls.self_id
                 ),
-                from_id=EventBuilder.self_id if update.out else update.user_id,
+                from_id=cls.self_id if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -103,7 +103,7 @@ class NewMessage(EventBuilder):
                 entities=update.entities
             ))
         elif isinstance(update, types.UpdateShortChatMessage):
-            event = NewMessage.Event(types.Message(
+            event = cls.Event(types.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,

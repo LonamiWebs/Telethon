@@ -7,15 +7,15 @@ class MessageDeleted(EventBuilder):
     """
     Event fired when one or more messages are deleted.
     """
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, types.UpdateDeleteMessages):
-            event = MessageDeleted.Event(
+            event = cls.Event(
                 deleted_ids=update.messages,
                 peer=None
             )
         elif isinstance(update, types.UpdateDeleteChannelMessages):
-            event = MessageDeleted.Event(
+            event = cls.Event(
                 deleted_ids=update.messages,
                 peer=types.PeerChannel(update.channel_id)
             )

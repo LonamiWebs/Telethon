@@ -8,24 +8,24 @@ class ChatAction(EventBuilder):
     """
     Represents an action in a chat (such as user joined, left, or new pin).
     """
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
             # Telegram does not always send
             # UpdateChannelPinnedMessage for new pins
             # but always for unpin, with update.id = 0
-            event = ChatAction.Event(types.PeerChannel(update.channel_id),
-                                     unpin=True)
+            event = cls.Event(types.PeerChannel(update.channel_id),
+                              unpin=True)
 
         elif isinstance(update, types.UpdateChatParticipantAdd):
-            event = ChatAction.Event(types.PeerChat(update.chat_id),
-                                     added_by=update.inviter_id or True,
-                                     users=update.user_id)
+            event = cls.Event(types.PeerChat(update.chat_id),
+                              added_by=update.inviter_id or True,
+                              users=update.user_id)
 
         elif isinstance(update, types.UpdateChatParticipantDelete):
-            event = ChatAction.Event(types.PeerChat(update.chat_id),
-                                     kicked_by=True,
-                                     users=update.user_id)
+            event = cls.Event(types.PeerChat(update.chat_id),
+                              kicked_by=True,
+                              users=update.user_id)
 
         elif (isinstance(update, (
                 types.UpdateNewMessage, types.UpdateNewChannelMessage))
@@ -33,46 +33,46 @@ class ChatAction(EventBuilder):
             msg = update.message
             action = update.message.action
             if isinstance(action, types.MessageActionChatJoinedByLink):
-                event = ChatAction.Event(msg,
-                                         added_by=True,
-                                         users=msg.from_id)
+                event = cls.Event(msg,
+                                  added_by=True,
+                                  users=msg.from_id)
             elif isinstance(action, types.MessageActionChatAddUser):
                 # If an user adds itself, it means they joined
                 added_by = ([msg.from_id] == action.users) or msg.from_id
-                event = ChatAction.Event(msg,
-                                         added_by=added_by,
-                                         users=action.users)
+                event = cls.Event(msg,
+                                  added_by=added_by,
+                                  users=action.users)
             elif isinstance(action, types.MessageActionChatDeleteUser):
-                event = ChatAction.Event(msg,
-                                         kicked_by=msg.from_id or True,
-                                         users=action.user_id)
+                event = cls.Event(msg,
+                                  kicked_by=msg.from_id or True,
+                                  users=action.user_id)
             elif isinstance(action, types.MessageActionChatCreate):
-                event = ChatAction.Event(msg,
-                                         users=action.users,
-                                         created=True,
-                                         new_title=action.title)
+                event = cls.Event(msg,
+                                  users=action.users,
+                                  created=True,
+                                  new_title=action.title)
             elif isinstance(action, types.MessageActionChannelCreate):
-                event = ChatAction.Event(msg,
-                                         created=True,
-                                         users=msg.from_id,
-                                         new_title=action.title)
+                event = cls.Event(msg,
+                                  created=True,
+                                  users=msg.from_id,
+                                  new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditTitle):
-                event = ChatAction.Event(msg,
-                                         users=msg.from_id,
-                                         new_title=action.title)
+                event = cls.Event(msg,
+                                  users=msg.from_id,
+                                  new_title=action.title)
             elif isinstance(action, types.MessageActionChatEditPhoto):
-                event = ChatAction.Event(msg,
-                                         users=msg.from_id,
-                                         new_photo=action.photo)
+                event = cls.Event(msg,
+                                  users=msg.from_id,
+                                  new_photo=action.photo)
             elif isinstance(action, types.MessageActionChatDeletePhoto):
-                event = ChatAction.Event(msg,
-                                         users=msg.from_id,
-                                         new_photo=True)
+                event = cls.Event(msg,
+                                  users=msg.from_id,
+                                  new_photo=True)
             elif isinstance(action, types.MessageActionPinMessage):
                 # Telegram always sends this service message for new pins
-                event = ChatAction.Event(msg,
-                                         users=msg.from_id,
-                                         new_pin=msg.reply_to_msg_id)
+                event = cls.Event(msg,
+                                  users=msg.from_id,
+                                  new_pin=msg.reply_to_msg_id)
             else:
                 return
         else:

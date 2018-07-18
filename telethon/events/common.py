@@ -59,9 +59,9 @@ class EventBuilder(abc.ABC):
         self.blacklist_chats = blacklist_chats
         self._self_id = None
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    def build(update):
+    def build(cls, update):
         """Builds an event for the given update if possible, or returns None"""
 
     async def resolve(self, client):

@@ -9,11 +9,11 @@ class UserUpdate(EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
     """
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, types.UpdateUserStatus):
-            event = UserUpdate.Event(update.user_id,
-                                     status=update.status)
+            event = cls.Event(update.user_id,
+                              status=update.status)
         else:
             return
 

@@ -40,11 +40,11 @@ class CallbackQuery(EventBuilder):
         else:
             raise TypeError('Invalid data type given')
 
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, (types.UpdateBotCallbackQuery,
                                types.UpdateInlineBotCallbackQuery)):
-            event = CallbackQuery.Event(update)
+            event = cls.Event(update)
         else:
             return
 

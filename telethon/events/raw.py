@@ -25,8 +25,8 @@ class Raw(EventBuilder):
     async def resolve(self, client):
         pass
 
-    @staticmethod
-    def build(update):
+    @classmethod
+    def build(cls, update):
         return update
 
     def filter(self, event):
