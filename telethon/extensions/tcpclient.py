@@ -102,7 +102,12 @@ class TcpClient:
                 loop=self._loop
             )
             if wrap_ssl:
-                self._socket = ssl.wrap_socket(self._socket, **self.ssl)
+                # Temporarily set the socket to blocking
+                # (timeout) until connection is established.
+                self._socket.settimeout(self.timeout)
+                self._socket = ssl.wrap_socket(
+                    self._socket, do_handshake_on_connect=True, **self.ssl)
+                self._socket.setblocking(False)
 
             self._closed.clear()
         except OSError as e:
