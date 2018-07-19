@@ -772,7 +772,10 @@ class _ContainerQueue(queue.Queue):
             #
             # To work around that issue, always convert the result to
             # a list, so if it's a list, we don't need to do anything.
-            items = self.get_nowait()
+            #
+            # Changed to .get(block=False) which is what
+            # .get_nowait() does to avoid infinite recursion.
+            items = super().get(block=False)
             if not isinstance(items, list):
                 items = [items]
 
