@@ -92,14 +92,18 @@ class TcpClient:
         try:
             if self._socket is None:
                 self._socket = self._create_socket(mode, self.proxy)
-                if self.ssl and port == SSL_PORT:
-                    self._socket = ssl.wrap_socket(self._socket, **self.ssl)
+                wrap_ssl = self.ssl and port == SSL_PORT
+            else:
+                wrap_ssl = False
 
             await asyncio.wait_for(
                 self._loop.sock_connect(self._socket, address),
                 timeout=self.timeout,
                 loop=self._loop
             )
+            if wrap_ssl:
+                self._socket = ssl.wrap_socket(self._socket, **self.ssl)
+
             self._closed.clear()
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:
