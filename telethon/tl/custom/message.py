@@ -95,24 +95,23 @@ class Message:
         The message text, formatted using the client's default parse mode.
         Will be ``None`` for :tl:`MessageService`.
         """
-        if self._text is None\
-                and isinstance(self.original_message, types.Message):
+        if self._text is None and 'message' in self.__dict__:
             if not self._client.parse_mode:
-                return self.original_message.message
+                return self.__dict__['message']
             self._text = self._client.parse_mode.unparse(
-                self.original_message.message, self.original_message.entities)
+                self.__dict__['message'], self.__dict__.get('entities'))
+
         return self._text
 
     @text.setter
     def text(self, value):
-        if isinstance(self.original_message, types.Message):
-            if self._client.parse_mode:
-                msg, ent = self._client.parse_mode.parse(value)
-            else:
-                msg, ent = value, []
-            self.original_message.message = msg
-            self.original_message.entities = ent
-            self._text = value
+        if self._client.parse_mode:
+            msg, ent = self._client.parse_mode.parse(value)
+        else:
+            msg, ent = value, []
+        self.__dict__['message'] = msg
+        self.__dict__['entities'] = ent
+        self._text = value
 
     @property
     def raw_text(self):
@@ -120,15 +119,13 @@ class Message:
         The raw message text, ignoring any formatting.
         Will be ``None`` for :tl:`MessageService`.
         """
-        if isinstance(self.original_message, types.Message):
-            return self.original_message.message
+        return self.__dict__.get('message')
 
     @raw_text.setter
     def raw_text(self, value):
-        if isinstance(self.original_message, types.Message):
-            self.original_message.message = value
-            self.original_message.entities = []
-            self._text = None
+        self.__dict__['message'] = value
+        self.__dict__['entities'] = []
+        self._text = None
 
     @property
     def message(self):
@@ -655,14 +652,14 @@ class Message:
                 >>> for _, inner_text in m.get_entities_text(MessageEntityCode):
                 >>>     print(inner_text)
         """
-        if not self.original_message.entities:
+        ent = self.__dict__.get('entities')
+        if not ent:
             return []
 
-        ent = self.original_message.entities
-        if cls and ent:
+        if cls:
             ent = [c for c in ent if isinstance(c, cls)]
 
-        texts = get_inner_text(self.original_message.message, ent)
+        texts = get_inner_text(self.__dict__.get('message'), ent)
         return list(zip(ent, texts))
 
     def click(self, i=None, j=None, *, text=None, filter=None):
