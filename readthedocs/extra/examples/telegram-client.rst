@@ -1,3 +1,6 @@
+.. _telegram-client-example:
+
+
 ========================
 Examples with the Client
 ========================

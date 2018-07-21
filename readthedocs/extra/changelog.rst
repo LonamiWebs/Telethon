@@ -14,6 +14,115 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Bot Friendly (v1.1)
+===================
+
+*Published at 2018/07/21*
+
+Two new event handlers to ease creating normal bots with the library,
+namely `events.InlineQuery <telethon.events.inlinequery.InlineQuery>`
+and `events.CallbackQuery <telethon.events.callbackquery.CallbackQuery>`
+for handling ``@InlineBot queries`` or reacting to a button click. For
+this second option, there is an even better way:
+
+.. code-block:: python
+
+    from telethon.tl.custom import Button
+
+    async def callback(event):
+        await event.edit('Thank you!')
+
+    bot.send_message(chat, 'Hello!',
+                     buttons=Button.inline('Click me', callback))
+
+
+You can directly pass the callback when creating the button.
+
+This is fine for small bots but it will add the callback every time
+you send a message, so you probably should do this instead once you
+are done testing:
+
+.. code-block:: python
+
+    markup = bot.build_reply_markup(Button.inline('Click me', callback))
+    bot.send_message(chat, 'Hello!', buttons=markup)
+
+
+And yes, you can create more complex button layouts with lists:
+
+.. code-block:: python
+
+    from telethon import events
+
+    global phone = ''
+
+    @bot.on(events.CallbackQuery)
+    async def handler(event):
+        global phone
+        if event.data == b'<':
+            phone = phone[:-1]
+        else:
+            phone += event.data.decode('utf-8')
+
+        await event.answer('Phone is now {}'.format(phone))
+
+    markup = bot.build_reply_markup([
+        [Button.inline('1'), Button.inline('2'), Button.inline('3')],
+        [Button.inline('4'), Button.inline('5'), Button.inline('6')],
+        [Button.inline('7'), Button.inline('8'), Button.inline('9')],
+        [Button.inline('+'), Button.inline('0'), Button.inline('<')],
+    ])
+    bot.send_message(chat, 'Enter a phone', buttons=markup)
+
+
+(Yes, there are better ways to do this). Now for the rest of things:
+
+
+Additions
+~~~~~~~~~
+
+- New `custom.Button <telethon.tl.custom.button.Button>` class
+  to help you create inline (or normal) reply keyboards. You
+  must sign in as a bot to use the ``buttons=`` parameters.
+- New events usable if you sign in as a bot: `events.InlineQuery
+  <telethon.events.inlinequery.InlineQuery>` and `events.CallbackQuery
+  <telethon.events.callbackquery.CallbackQuery>`.
+- New ``silent`` parameter when sending messages, usable in broadcast channels.
+- Documentation now has an entire section dedicate to how to use
+  the client's friendly methods at :ref:`telegram-client-example`.
+
+Bug fixes
+~~~~~~~~~
+
+- Empty ``except`` are no longer used which means
+  sending a keyboard interrupt should now work properly.
+- The ``pts`` of incoming updates could be ``None``.
+- UTC timezone information is properly set for read ``datetime``.
+- Some infinite recursion bugs in the custom message class.
+- :tl:`Updates` was being dispatched to raw handlers when it shouldn't.
+- Using proxies and HTTPS connection mode may now work properly.
+- Less flood waits when downloading media from different data centers,
+  and the library will now detect them even before sending requests.
+
+Enhancements
+~~~~~~~~~~~~
+
+- Interactive sign in now supports signing in with a bot token.
+- ``timedelta`` is now supported where a date is expected, which
+  means you can e.g. ban someone for ``timedelta(minutes=5)``.
+- Events are only built once and reused many times, which should
+  save quite a few CPU cycles if you have a lot of the same type.
+- You can now click inline buttons directly if you know their data.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+- When downloading media, the right sender is directly
+  used without previously triggering migrate errors.
+- Code reusing for getting the chat and the sender,
+  which easily enables this feature for new types.
+
+
 New HTTP(S) Connection Mode (v1.0.4)
 ====================================
 
