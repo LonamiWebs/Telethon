@@ -217,6 +217,7 @@ class DownloadMethods(UserMethods):
 
                 # TODO Figure out why the session may have the wrong DC ID
                 sender = self._sender
+                exported = False
         else:
             # The used sender will also change if ``FileMigrateError`` occurs
             sender = self._sender
