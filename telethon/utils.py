@@ -537,10 +537,15 @@ def sanitize_parse_mode(mode):
 
 
 def get_input_location(location):
-    """Similar to :meth:`get_input_peer`, but for input messages."""
+    """
+    Similar to :meth:`get_input_peer`, but for input messages.
+
+    Note that this returns a tuple ``(dc_id, location)``, the
+    ``dc_id`` being present if known.
+    """
     try:
         if location.SUBCLASS_OF_ID == 0x1523d462:
-            return location  # crc32(b'InputFileLocation'):
+            return None, location  # crc32(b'InputFileLocation'):
     except AttributeError:
         _raise_cast_fail(location, 'InputFileLocation')
 
@@ -553,8 +558,8 @@ def get_input_location(location):
         location = location.photo
 
     if isinstance(location, Document):
-        return InputDocumentFileLocation(
-            location.id, location.access_hash, location.version)
+        return (location.dc_id, InputDocumentFileLocation(
+            location.id, location.access_hash, location.version))
     elif isinstance(location, Photo):
         try:
             location = next(x for x in reversed(location.sizes)
@@ -563,8 +568,8 @@ def get_input_location(location):
             pass
 
     if isinstance(location, (FileLocation, FileLocationUnavailable)):
-        return InputFileLocation(
-            location.volume_id, location.local_id, location.secret)
+        return (getattr(location, 'dc_id', None), InputFileLocation(
+            location.volume_id, location.local_id, location.secret))
 
     _raise_cast_fail(location, 'InputFileLocation')
 

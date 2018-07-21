@@ -200,10 +200,13 @@ class DownloadMethods(UserMethods):
         else:
             f = file
 
-        # The used sender will change if ``FileMigrateError`` occurs
-        sender = self._sender
-        exported = False
-        input_location = utils.get_input_location(input_location)
+        dc_id, input_location = utils.get_input_location(input_location)
+        exported = dc_id and self.session.dc_id != dc_id
+        if exported:
+            sender = await self._borrow_exported_sender(dc_id)
+        else:
+            # The used sender will also change if ``FileMigrateError`` occurs
+            sender = self._sender
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:

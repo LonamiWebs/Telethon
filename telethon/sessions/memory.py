@@ -43,6 +43,10 @@ class MemorySession(Session):
         self._port = port
 
     @property
+    def dc_id(self):
+        return self._dc_id
+
+    @property
     def server_address(self):
         return self._server_address
 
