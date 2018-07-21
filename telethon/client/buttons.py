@@ -31,6 +31,9 @@ class ButtonMethods(UpdateMethods):
                 is_normal |= not inline
                 if isinstance(button, custom.Button):
                     if button.callback:
+                        self.remove_event_handler(
+                            button.callback, events.CallbackQuery)
+
                         self.add_event_handler(
                             button.callback,
                             events.CallbackQuery(data=button.data)
