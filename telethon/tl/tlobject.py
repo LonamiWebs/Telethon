@@ -3,6 +3,9 @@ from datetime import datetime, date, timedelta
 
 
 class TLObject:
+    CONSTRUCTOR_ID = None
+    SUBCLASS_OF_ID = None
+
     @staticmethod
     def pretty_format(obj, indent=None):
         """

@@ -226,6 +226,9 @@ class TelegramBaseClient(abc.ABC):
             auto_reconnect_callback=self._handle_auto_reconnect
         )
 
+        # Remember flood-waited requests to avoid making them again
+        self._flood_waited_requests = {}
+
         # Cache ``{dc_id: (n, MTProtoSender)}`` for all borrowed senders,
         # being ``n`` the amount of borrows a given sender has; once ``n``
         # reaches ``0`` it should be disconnected and removed.
