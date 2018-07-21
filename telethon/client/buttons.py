@@ -4,7 +4,18 @@ from .. import utils, events
 
 
 class ButtonMethods(UpdateMethods):
-    def _build_reply_markup(self, buttons, inline_only=False):
+    def build_reply_markup(self, buttons, inline_only=False):
+        """
+        Builds a :tl`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
+        the given buttons, or does nothing if either no buttons are
+        provided or the provided argument is already a reply markup.
+
+        This will add any event handlers defined in the
+        buttons and delete old ones not to call them twice,
+        so you should probably call this method manually for
+        serious bots instead re-adding handlers every time you
+        send a message. Magic can only go so far.
+        """
         if buttons is None:
             return None
 

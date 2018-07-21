@@ -253,7 +253,7 @@ class InlineBuilder:
         if sum(1 for x in (text, geo, contact, game) if x) != 1:
             raise ValueError('Can only use one of text, geo, contact or game')
 
-        markup = self._client._build_reply_markup(buttons, inline_only=True)
+        markup = self._client.build_reply_markup(buttons, inline_only=True)
         if text:
             text, msg_entities = await self._client._parse_message_text(
                 text, parse_mode

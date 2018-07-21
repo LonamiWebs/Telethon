@@ -435,7 +435,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             if buttons is None:
                 markup = message.reply_markup
             else:
-                markup = self._build_reply_markup(buttons)
+                markup = self.build_reply_markup(buttons)
 
             if silent is None:
                 silent = message.silent
@@ -463,7 +463,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
                 silent=silent,
-                reply_markup=self._build_reply_markup(buttons)
+                reply_markup=self.build_reply_markup(buttons)
             )
 
         result = await self(request)
@@ -630,7 +630,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             no_webpage=not link_preview,
             entities=msg_entities,
             media=media,
-            reply_markup=self._build_reply_markup(buttons)
+            reply_markup=self.build_reply_markup(buttons)
         )
         msg = self._get_response_message(request, await self(request), entity)
         self._cache_media(msg, file, file_handle)

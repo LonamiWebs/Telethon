@@ -167,7 +167,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             voice_note=voice_note, video_note=video_note
         )
 
-        markup = self._build_reply_markup(buttons)
+        markup = self.build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
             entities=msg_entities, reply_markup=markup, silent=silent
