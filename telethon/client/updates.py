@@ -283,16 +283,15 @@ class UpdateMethods(UserMethods):
             try:
                 await callback(event)
             except events.StopPropagation:
+                name = getattr(callback, '__name__', repr(callback))
                 __log__.debug(
-                    "Event handler '{}' stopped chain of "
-                    "propagation for event {}."
-                        .format(callback.__name__,
-                                type(event).__name__)
+                    'Event handler "%s" stopped chain of propagation '
+                    'for event %s.', name, type(event).__name__
                 )
                 break
             except Exception:
-                __log__.exception('Unhandled exception on {}'
-                                  .format(callback.__name__))
+                name = getattr(callback, '__name__', repr(callback))
+                __log__.exception('Unhandled exception on %s', name)
 
     async def _handle_auto_reconnect(self):
         # Upon reconnection, we want to send getState
