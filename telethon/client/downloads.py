@@ -203,7 +203,20 @@ class DownloadMethods(UserMethods):
         dc_id, input_location = utils.get_input_location(input_location)
         exported = dc_id and self.session.dc_id != dc_id
         if exported:
-            sender = await self._borrow_exported_sender(dc_id)
+            try:
+                sender = await self._borrow_exported_sender(dc_id)
+            except errors.DcIdInvalidError:
+                # Can't export a sender for the ID we are currently in
+                config = await self(functions.help.GetConfigRequest())
+                for option in config.dc_options:
+                    if option.ip_address == self.session.server_address:
+                        self.session.set_dc(
+                            option.id, option.ip_address, option.port)
+                        self.session.save()
+                        break
+
+                # TODO Figure out why the session may have the wrong DC ID
+                sender = self._sender
         else:
             # The used sender will also change if ``FileMigrateError`` occurs
             sender = self._sender
