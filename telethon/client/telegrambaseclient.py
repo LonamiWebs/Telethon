@@ -433,6 +433,9 @@ class TelegramBaseClient(abc.ABC):
             if not sender:
                 sender = await self._create_exported_sender(dc_id)
                 sender.dc_id = dc_id
+            elif not n:
+                dc = await self._get_dc(dc_id)
+                await sender.connect(dc.ip_address, dc.port)
 
             self._borrowed_senders[dc_id] = (n + 1, sender)
 
@@ -447,12 +450,10 @@ class TelegramBaseClient(abc.ABC):
             dc_id = sender.dc_id
             n, _ = self._borrowed_senders[dc_id]
             n -= 1
-            if n > 0:
-                self._borrowed_senders[dc_id] = (n, sender)
-            else:
+            self._borrowed_senders[dc_id] = (n, sender)
+            if not n:
                 __log__.info('Disconnecting borrowed sender for DC %d', dc_id)
                 await sender.disconnect()
-                del self._borrowed_senders[dc_id]
 
     async def _get_cdn_client(self, cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""
