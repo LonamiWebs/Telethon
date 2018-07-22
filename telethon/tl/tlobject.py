@@ -3,7 +3,7 @@ import struct
 from datetime import datetime, date, timedelta
 
 
-class TLObject(abc.ABC):
+class TLObject:
     CONSTRUCTOR_ID = None
     SUBCLASS_OF_ID = None
 
@@ -141,21 +141,18 @@ class TLObject(abc.ABC):
     def stringify(self):
         return TLObject.pretty_format(self, indent=0)
 
-    @abc.abstractmethod
     def to_dict(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
     def __bytes__(self):
         raise NotImplementedError
 
     @classmethod
-    @abc.abstractmethod
     def from_reader(cls, reader):
         raise NotImplementedError
 
 
-class TLRequest(abc.ABC, TLObject):
+class TLRequest(TLObject):
     """
     Represents a content-related `TLObject` (a request that can be sent).
     """

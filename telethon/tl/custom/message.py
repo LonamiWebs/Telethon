@@ -8,7 +8,7 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(abc.ABC, TLObject, ChatGetter, SenderGetter):
+class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.

@@ -7,12 +7,13 @@ import math
 import mimetypes
 import os
 import re
-import types
 from collections import UserList
 from mimetypes import guess_extension
+from types import GeneratorType
 
 from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate
+from .tl import types
 from .tl.types import (
     Channel, ChannelForbidden, Chat, ChatEmpty, ChatForbidden, ChatFull,
     ChatPhoto, InputPeerChannel, InputPeerChat, InputPeerUser, InputPeerEmpty,
@@ -23,7 +24,7 @@ from .tl.types import (
     MessageMediaUnsupported, MessageMediaVenue, InputMediaContact,
     InputMediaDocument, InputMediaEmpty, InputMediaGame,
     InputMediaGeoPoint, InputMediaPhoto, InputMediaVenue, InputDocument,
-    DocumentEmpty, InputDocumentEmpty, Message, GeoPoint, InputGeoPoint,
+    DocumentEmpty, InputDocumentEmpty, GeoPoint, InputGeoPoint,
     GeoPointEmpty, InputGeoPointEmpty, Photo, InputPhoto, PhotoEmpty,
     InputPhotoEmpty, FileLocation, ChatPhotoEmpty, UserProfilePhotoEmpty,
     FileLocationUnavailable, InputMediaUploadedDocument, ChannelFull,
@@ -256,7 +257,7 @@ def get_input_document(document):
     if isinstance(document, MessageMediaDocument):
         return get_input_document(document.document)
 
-    if isinstance(document, Message):
+    if isinstance(document, types.Message):
         return get_input_document(document.media)
 
     _raise_cast_fail(document, 'InputDocument')
@@ -299,7 +300,7 @@ def get_input_geo(geo):
     if isinstance(geo, MessageMediaGeo):
         return get_input_geo(geo.geo)
 
-    if isinstance(geo, Message):
+    if isinstance(geo, types.Message):
         return get_input_geo(geo.media)
 
     _raise_cast_fail(geo, 'InputGeoPoint')
@@ -390,7 +391,7 @@ def get_input_media(media, is_photo=False):
             ChatPhotoEmpty, UserProfilePhotoEmpty, FileLocationUnavailable)):
         return InputMediaEmpty()
 
-    if isinstance(media, Message):
+    if isinstance(media, types.Message):
         return get_input_media(media.media, is_photo=is_photo)
 
     _raise_cast_fail(media, 'InputMedia')
@@ -549,7 +550,7 @@ def get_input_location(location):
     except AttributeError:
         _raise_cast_fail(location, 'InputFileLocation')
 
-    if isinstance(location, Message):
+    if isinstance(location, types.Message):
         location = location.media
 
     if isinstance(location, MessageMediaDocument):
@@ -622,7 +623,7 @@ def is_list_like(obj):
     other things), so just support the commonly known list-like objects.
     """
     return isinstance(obj, (list, tuple, set, dict,
-                            UserList, types.GeneratorType))
+                            UserList, GeneratorType))
 
 
 def parse_phone(phone):
