@@ -8,9 +8,9 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
+class Message(abc.ABC, TLObject, ChatGetter, SenderGetter):
     """
-    This custom class aggregates both `MessageBase` and
+    This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
 
     Remember that this class implements `ChatGetter
@@ -61,7 +61,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
             messages.
 
         message (`str`):
-            The string text of the message for `MessageBase` instances,
+            The string text of the message for :tl:`Message` instances,
             which will be ``None`` for other types of messages.
 
         action (:tl:`MessageAction`):
@@ -270,7 +270,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
 
         Remember that you can access the ID of the message
         this one is replying to through `reply_to_msg_id`,
-        and the `MessageBase` object with `get_reply_message()`.
+        and the `Message` object with `get_reply_message()`.
         """
         return bool(self.reply_to_msg_id)
 
@@ -441,7 +441,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
 
     async def get_reply_message(self):
         """
-        The `MessageBase` that this message is replying to, or ``None``.
+        The `Message` that this message is replying to, or ``None``.
 
         The result will be cached after its first use.
         """
@@ -459,7 +459,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
     async def respond(self, *args, **kwargs):
         """
         Responds to the message (not as a reply). Shorthand for
-        `telethon.client.telegramclient.TelegramClient.send_message`
+        `telethon.client.messages.MessageMethods.send_message`
         with ``entity`` already set.
         """
         return await self._client.send_message(
@@ -468,7 +468,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
     async def reply(self, *args, **kwargs):
         """
         Replies to the message (as a reply). Shorthand for
-        `telethon.client.telegramclient.TelegramClient.send_message`
+        `telethon.client.messages.MessageMethods.send_message`
         with both ``entity`` and ``reply_to`` already set.
         """
         kwargs['reply_to'] = self.id
@@ -478,7 +478,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
     async def forward_to(self, *args, **kwargs):
         """
         Forwards the message. Shorthand for
-        `telethon.client.telegramclient.TelegramClient.forward_messages`
+        `telethon.client.messages.MessageMethods.forward_messages`
         with both ``messages`` and ``from_peer`` already set.
 
         If you need to forward more than one message at once, don't use
@@ -492,11 +492,11 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
     async def edit(self, *args, **kwargs):
         """
         Edits the message iff it's outgoing. Shorthand for
-        `telethon.client.telegramclient.TelegramClient.edit_message`
+        `telethon.client.messages.MessageMethods.edit_message`
         with both ``entity`` and ``message`` already set.
 
         Returns ``None`` if the message was incoming,
-        or the edited `MessageBase` otherwise.
+        or the edited `Message` otherwise.
         """
         if self.fwd_from or not self.out:
             return None  # We assume self.out was patched for our chat
@@ -511,7 +511,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
         Deletes the message. You're responsible for checking whether you
         have the permission to do so, or to except the error otherwise.
         Shorthand for
-        `telethon.client.telegramclient.TelegramClient.delete_messages` with
+        `telethon.client.messages.MessageMethods.delete_messages` with
         ``entity`` and ``message_ids`` already set.
 
         If you need to delete more than one message at once, don't use
@@ -526,7 +526,7 @@ class MessageBase(abc.ABC, TLObject, ChatGetter, SenderGetter):
     async def download_media(self, *args, **kwargs):
         """
         Downloads the media contained in the message, if any. Shorthand
-        for `telethon.client.telegramclient.TelegramClient.download_media`
+        for `telethon.client.downloads.DownloadMethods.download_media`
         with the ``message`` already set.
         """
         return await self._client.download_media(self, *args, **kwargs)
