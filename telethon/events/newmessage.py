@@ -204,8 +204,7 @@ class NewMessage(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            self.message = custom.Message(
-                client, self.message, self._entities, None)
+            self.message._finish_init(client, self._entities, None)
             self.__dict__['_init'] = True  # No new attributes can be set
 
         def __getattr__(self, item):

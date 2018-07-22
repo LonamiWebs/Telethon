@@ -80,10 +80,14 @@ class DialogMethods(UserMethods):
 
             if _total:
                 _total[0] = getattr(r, 'count', len(r.dialogs))
+
             entities = {utils.get_peer_id(x): x
                         for x in itertools.chain(r.users, r.chats)}
-            messages = {m.id: custom.Message(self, m, entities, None)
-                        for m in r.messages}
+
+            messages = {}
+            for m in r.messages:
+                m._finish_init(self, entities, None)
+                messages[m.id] = m
 
             # Happens when there are pinned dialogs
             if len(r.dialogs) > limit:

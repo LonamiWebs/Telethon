@@ -133,6 +133,7 @@ class MessageParseMethods(UserMethods):
                     break
 
         if found:
-            return custom.Message(self, found, entities, input_chat)
+            found._finish_init(self, entities, input_chat)
+            return found
 
     # endregion

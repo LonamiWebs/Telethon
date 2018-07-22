@@ -256,7 +256,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 # IDs are returned in descending order (or asc if reverse).
                 last_id = message.id
 
-                await yield_(custom.Message(self, message, entities, entity))
+                message._finish_init(self, entities, entity)
+                await yield_(message)
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -469,7 +470,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         result = await self(request)
         if isinstance(result, types.UpdateShortSentMessage):
             to_id, cls = utils.resolve_id(utils.get_peer_id(entity))
-            return custom.Message(self, types.Message(
+            message = types.Message(
                 id=result.id,
                 to_id=cls(to_id),
                 message=message,
@@ -477,7 +478,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 out=result.out,
                 media=result.media,
                 entities=result.entities
-            ), {}, input_chat=entity)
+            )
+            message._finish_init(self, {}, entity)
+            return message
 
         return self._get_response_message(request, result, entity)
 
@@ -547,8 +550,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 random_to_id[update.random_id] = update.id
             elif isinstance(update, (
                     types.UpdateNewMessage, types.UpdateNewChannelMessage)):
-                id_to_message[update.message.id] = custom.Message(
-                    self, update.message, entities, input_chat=entity)
+                update.message._finish_init(self, entities, entity)
+                id_to_message[update.message.id] = update.message
 
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
@@ -774,6 +777,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                     from_id and utils.get_peer_id(message.to_id) != from_id):
                 await yield_(None)
             else:
-                await yield_(custom.Message(self, message, entities, entity))
+                message._finish_init(self, entities, entity)
+                await yield_(message)
 
     # endregion
