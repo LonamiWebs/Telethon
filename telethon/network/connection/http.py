@@ -6,10 +6,10 @@ from ...extensions import TcpClient
 
 
 class ConnectionHttp(Connection):
-    def __init__(self, *, loop, timeout, proxy=None):
-        super().__init__(loop=loop, timeout=timeout, proxy=proxy)
+    def __init__(self, *, timeout, proxy=None):
+        super().__init__(timeout=timeout, proxy=proxy)
         self.conn = TcpClient(
-            timeout=self._timeout, loop=self._loop, proxy=self._proxy,
+            timeout=self._timeout, proxy=self._proxy,
             ssl=dict(ssl_version=ssl.PROTOCOL_SSLv23, ciphers='ADH-AES256-SHA')
         )
         self.read = self.conn.read
