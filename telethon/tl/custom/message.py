@@ -46,7 +46,7 @@ class Message(ChatGetter, SenderGetter):
         self._sender = entities.get(self._sender_id)
         if self._sender:
             self._input_sender = get_input_peer(self._sender)
-            if not getattr(self._input_sender, 'access_hash', None):
+            if not getattr(self._input_sender, 'access_hash', True):
                 self._input_sender = None
         else:
             self._input_sender = None
@@ -64,8 +64,10 @@ class Message(ChatGetter, SenderGetter):
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
             self._input_chat = get_input_peer(self._chat)
-            if not getattr(self._input_sender, 'access_hash', None):
+            if not getattr(self._input_chat, 'access_hash', True):
                 # Telegram may omit the hash in updates -> invalid peer
+                # However things like InputPeerSelf() or InputPeerChat(id)
+                # are still valid so default to getting "True" on not found
                 self._input_chat = None
 
         if getattr(self.original_message, 'fwd_from', None):
