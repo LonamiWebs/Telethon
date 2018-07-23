@@ -230,7 +230,8 @@ def get_input_document(document):
         _raise_cast_fail(document, 'InputDocument')
 
     if isinstance(document, types.Document):
-        return types.InputDocument(id=document.id, access_hash=document.access_hash)
+        return types.InputDocument(
+            id=document.id, access_hash=document.access_hash)
 
     if isinstance(document, types.DocumentEmpty):
         return types.InputDocumentEmpty()
@@ -680,7 +681,8 @@ def get_peer_id(peer, add_mark=True):
     try:
         if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
             if isinstance(peer, (
-                    types.ResolvedPeer, types.InputNotifyPeer, types.TopPeer)):
+                    types.contacts.ResolvedPeer, types.InputNotifyPeer,
+                    types.TopPeer)):
                 peer = peer.peer
             else:
                 # Not a Peer or an InputPeer, so first get its Input version
