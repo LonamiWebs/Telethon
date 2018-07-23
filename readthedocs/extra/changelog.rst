@@ -14,6 +14,29 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Better Custom Message(v1.1.1)
+=============================
+
+*Published at 2018/07/23*
+
+The `custom.Message <telethon.tl.custom.message.Message>` class has been
+rewritten in a cleaner way and overall feels less hacky in the library.
+This should perform better than the previous way in which it was patched.
+
+The release is primarily intended to test this big change, but also fixes
+**Python 3.5.2 compatibility** which was broken due to a trailing comma.
+
+
+Bug fixes
+~~~~~~~~~
+
+- Using ``functools.partial`` on event handlers broke updates
+  if they had uncaught exceptions.
+- A bug under some session files where the sender would export
+  authorization for the same data center, which is unsupported.
+- Some logical bugs in the custom message class.
+
+
 Bot Friendly (v1.1)
 ===================
 
