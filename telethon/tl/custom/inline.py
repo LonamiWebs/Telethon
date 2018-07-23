@@ -56,7 +56,7 @@ class InlineBuilder:
             self, title, description=None,
             *, url=None, thumb=None, content=None,
             id=None, text=None, parse_mode=utils.Default, link_preview=True,
-            geo=None, period=60, contact=None, game=False, buttons=None,
+            geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
         Creates new inline result of article type.
