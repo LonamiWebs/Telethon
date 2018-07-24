@@ -751,7 +751,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             total[0] = len(ids)
 
         from_id = None  # By default, no need to validate from_id
-        if isinstance(entity, types.InputPeerChannel):
+        if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
             r = await self(functions.channels.GetMessagesRequest(entity, ids))
         else:
             r = await self(functions.messages.GetMessagesRequest(ids))
