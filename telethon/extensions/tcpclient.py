@@ -67,6 +67,7 @@ class TcpClient:
         if proxy is None:
             s = socket.socket(mode, socket.SOCK_STREAM)
         else:
+            __log__.info('Connection will be made through proxy %s', proxy)
             import socks
             s = socks.socksocket(mode, socket.SOCK_STREAM)
             if isinstance(proxy, dict):
