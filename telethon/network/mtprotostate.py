@@ -157,10 +157,20 @@ class MTProtoState:
         Updates the time offset to the correct
         one given a known valid message ID.
         """
+        bad = self._get_new_msg_id()
+        old = self.time_offset
+
         now = int(time.time())
         correct = correct_msg_id >> 32
         self.time_offset = correct - now
-        self._last_msg_id = 0
+
+        if self.time_offset != old:
+            self._last_msg_id = 0
+            __log__.debug(
+                'Updated time offset (old offset %d, bad %d, good %d, new %d)',
+                old, bad, correct_msg_id, self.time_offset
+            )
+
         return self.time_offset
 
     def _get_seq_no(self, content_related):

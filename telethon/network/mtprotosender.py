@@ -611,7 +611,7 @@ class MTProtoSender:
         bad_msg = message.obj
         msg = self._pending_messages.get(bad_msg.bad_msg_id)
 
-        __log__.debug('Handling bad msg for message %d', bad_msg.bad_msg_id)
+        __log__.debug('Handling bad msg %s', bad_msg)
         if bad_msg.error_code in (16, 17):
             # Sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
