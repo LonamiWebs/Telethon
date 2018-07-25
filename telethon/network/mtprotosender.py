@@ -512,6 +512,12 @@ class MTProtoSender:
         __log__.debug('Handling RPC result for message %d',
                       rpc_result.req_msg_id)
 
+        if not message:
+            # TODO We should not get responses to things we never sent
+            __log__.info('Received response without parent request: {}'
+                         .format(rpc_result.body))
+            return
+
         if rpc_result.error:
             error = rpc_message_to_error(rpc_result.error)
             self._send_queue.put_nowait(self.state.create_message(
@@ -520,8 +526,7 @@ class MTProtoSender:
 
             if not message.future.cancelled():
                 message.future.set_exception(error)
-            return
-        elif message:
+        else:
             # TODO Would be nice to avoid accessing a per-obj read_result
             # Instead have a variable that indicated how the result should
             # be read (an enum) and dispatch to read the result, mostly
@@ -531,11 +536,6 @@ class MTProtoSender:
 
             if not message.future.cancelled():
                 message.future.set_result(result)
-            return
-        else:
-            # TODO We should not get responses to things we never sent
-            __log__.info('Received response without parent request: {}'
-                         .format(rpc_result.body))
 
     async def _handle_container(self, message):
         """
