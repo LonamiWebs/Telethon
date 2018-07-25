@@ -30,14 +30,14 @@ class UserMethods(TelegramBaseClient):
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
                     raise errors.FloodWaitError(capture=diff)
-
+        results = None
         request_index = 0
         self._last_request = time.time()
         for _ in range(self._request_retries):
             try:
                 future = self._sender.send(request, ordered=ordered)
                 if isinstance(future, list):
-                    results = []
+                    results = [] if not results else results
                     for f in future:
                         result = await f
                         self.session.process_entities(result)
@@ -53,10 +53,13 @@ class UserMethods(TelegramBaseClient):
                                 e.__class__.__name__, e)
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
                 if utils.is_list_like(request):
-                    request = request[request_index]
+                     constructor_id = request[request_index].CONSTRUCTOR_ID
+                     request = request[request_index:]
+                else:
+                     constructor_id = request.CONSTRUCTOR_ID
 
                 self._flood_waited_requests\
-                    [request.CONSTRUCTOR_ID] = time.time() + e.seconds
+                    [constructor_id] = time.time() + e.seconds
 
                 if e.seconds <= self.flood_sleep_threshold:
                     __log__.info('Sleeping for %ds on flood wait', e.seconds)
