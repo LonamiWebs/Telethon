@@ -5,9 +5,9 @@ import webbrowser
 
 class MessageButton:
     """
-    Custom class that encapsulates a message providing an abstraction to
-    easily access some commonly needed features (such as the markdown text
-    or the text for a given message entity).
+    Custom class that encapsulates a message button providing
+    an abstraction to easily access some commonly needed features
+    (such as clicking the button itself).
 
     Attributes:
 

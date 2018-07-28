@@ -274,7 +274,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         Returns:
             :tl:`InputFileBig` if the file size is larger than 10MB,
-            `telethon.tl.custom.input_sized_file.InputSizedFile`
+            `telethon.tl.custom.inputsizedfile.InputSizedFile`
             (subclass of :tl:`InputFile`) otherwise.
         """
         if isinstance(file, (types.InputFile, types.InputFileBig)):
