@@ -237,7 +237,7 @@ banned rights of an user through :tl:`EditBannedRequest` and its parameter
     # Note that it's "reversed". You must set to ``True`` the permissions
     # you want to REMOVE, and leave as ``None`` those you want to KEEP.
     rights = ChannelBannedRights(
-        until_date=datetime.now() + timedelta(days=7),
+        until_date=timedelta(days=7),
         view_messages=None,
         send_messages=None,
         send_media=True,
@@ -260,6 +260,13 @@ banned rights of an user through :tl:`EditBannedRequest` and its parameter
     )
 
     client(EditBannedRequest(channel, user, rights))
+
+
+You can also use a ``datetime`` object for ``until_date=``, or even a
+Unix timestamp. Note that if you ban someone for less than 30 seconds
+or for more than 366 days, Telegram will consider the ban to actually
+last forever. This is officially documented under
+https://core.telegram.org/bots/api#restrictchatmember.
 
 
 Kicking a member
