@@ -40,13 +40,12 @@ class NewMessage(EventBuilder):
     def __init__(self, chats=None, *, blacklist_chats=False,
                  incoming=None, outgoing=None,
                  from_users=None, forwards=None, pattern=None):
-        if incoming is not None and outgoing is None:
+        if incoming and outgoing:
+            incoming = outgoing = None  # Same as no filter
+        elif incoming is not None and outgoing is None:
             outgoing = not incoming
         elif outgoing is not None and incoming is None:
             incoming = not outgoing
-
-        if incoming and outgoing:
-            self.incoming = self.outgoing = None  # Same as no filter
         elif all(x is not None and not x for x in (incoming, outgoing)):
             raise ValueError("Don't create an event handler if you "
                              "don't want neither incoming or outgoing!")
