@@ -396,15 +396,12 @@ def get_input_message(message):
 
 
 def get_message_id(message):
-    """Sanitizes the 'reply_to' parameter a user may send"""
+    """Similar to :meth:`get_input_peer`, but for message IDs."""
     if message is None:
         return None
 
     if isinstance(message, int):
         return message
-
-    if hasattr(message, 'original_message'):
-        return message.original_message.id
 
     try:
         if message.SUBCLASS_OF_ID == 0x790009e3:
