@@ -37,6 +37,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             entity (`entity`):
                 The entity from whom to retrieve the message history.
 
+                It may be ``None`` to perform a global search, or
+                to get messages by their ID from no particular chat.
+                Note that some of the offsets will not work if this
+                is the case.
+
+                Note that if you want to perform a global search,
+                you **must** set a non-empty `search` string.
+
             limit (`int` | `None`, optional):
                 Number of messages to be retrieved. Due to limitations with
                 the API retrieving more than 3000 messages will take longer
@@ -104,6 +112,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 instead of being `max_id` as well since messages are returned
                 in ascending order.
 
+                You cannot use this if both `entity` and `ids` are ``None``.
+
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
@@ -117,9 +127,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
-        # It's possible to get messages by ID without their entity, so only
-        # fetch the input version if we're not using IDs or if it was given.
-        if not ids or entity:
+        # Note that entity being ``None`` is intended to get messages by
+        # ID under no specific chat, and also to request a global search.
+        if entity:
             entity = await self.get_input_entity(entity)
 
         if ids:
@@ -158,7 +168,19 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         from_id = None
         limit = float('inf') if limit is None else int(limit)
-        if search is not None or filter or from_user:
+        if not entity:
+            if reverse:
+                raise ValueError('Cannot reverse global search')
+
+            reverse = None
+            request = functions.messages.SearchGlobalRequest(
+                q=search or '',
+                offset_date=offset_date,
+                offset_peer=types.InputPeerEmpty(),
+                offset_id=offset_id,
+                limit=1
+            )
+        elif search is not None or filter or from_user:
             if filter is None:
                 filter = types.InputMessagesFilterEmpty()
             request = functions.messages.SearchRequest(
@@ -243,7 +265,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                         or from_id and message.from_id != from_id):
                     continue
 
-                if reverse:
+                if reverse is None:
+                    pass
+                elif reverse:
                     if message.id <= last_id or message.id >= max_id:
                         return
                 else:
@@ -282,12 +306,15 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 break
             else:
                 request.offset_id = last_message.id
-                if isinstance(request, functions.messages.GetHistoryRequest):
-                    request.offset_date = last_message.date
-                else:
+                if isinstance(request, functions.messages.SearchRequest):
                     request.max_date = last_message.date
+                else:
+                    # getHistory and searchGlobal call it offset_date
+                    request.offset_date = last_message.date
 
-                if reverse:
+                if isinstance(request, functions.messages.SearchGlobalRequest):
+                    request.offset_peer = last_message.input_chat
+                elif reverse:
                     # We want to skip the one we already have
                     request.add_offset -= 1
 
