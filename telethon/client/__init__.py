@@ -20,4 +20,5 @@ from .chats import ChatMethods
 from .dialogs import DialogMethods
 from .downloads import DownloadMethods
 from .auth import AuthMethods
+from .bots import BotMethods
 from .telegramclient import TelegramClient
