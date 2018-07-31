@@ -41,7 +41,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
                 Furthermore the file may be any media (a message, document,
                 photo or similar) so that it can be resent without the need
-                to download and re-upload it again.
+                to download and re-upload it again. Bot API ``file_id``
+                format is also supported.
 
                 If a list or similar is provided, the files in it will be
                 sent as an album in the order in which they appear, sliced
@@ -389,10 +390,15 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 return None, None  # Can't turn whatever was given into media
 
         media = None
+        file_handle = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        if isinstance(file, str) and re.match('https?://', file):
-            file_handle = None
+        if not isinstance(file, str):
+            file_handle = await self.upload_file(
+                file, progress_callback=progress_callback,
+                use_cache=use_cache if allow_cache else None
+            )
+        elif re.match('https?://', file):
             if as_image:
                 media = types.InputMediaPhotoExternal(file)
             elif not force_document and utils.is_gif(file):
@@ -400,10 +406,9 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             else:
                 media = types.InputMediaDocumentExternal(file)
         else:
-            file_handle = await self.upload_file(
-                file, progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
-            )
+            bot_file = utils.resolve_bot_file_id(file)
+            if bot_file:
+                media = utils.get_input_media(bot_file)
 
         if media:
             pass  # Already have media, don't check the rest
