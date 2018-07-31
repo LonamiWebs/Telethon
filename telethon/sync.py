@@ -17,7 +17,9 @@ import inspect
 from async_generator import isasyncgenfunction
 
 from .client.telegramclient import TelegramClient
-from .tl.custom import Draft, Dialog, MessageButton, Forward, Message
+from .tl.custom import (
+    Draft, Dialog, MessageButton, Forward, Message, InlineResult
+)
 from .tl.custom.chatgetter import ChatGetter
 from .tl.custom.sendergetter import SenderGetter
 
@@ -81,4 +83,4 @@ def syncify(*types):
 
 
 syncify(TelegramClient, Draft, Dialog, MessageButton,
-        ChatGetter, SenderGetter, Forward, Message)
+        ChatGetter, SenderGetter, Forward, Message, InlineResult)

@@ -54,6 +54,14 @@ telethon\.tl\.custom\.button module
     :undoc-members:
     :show-inheritance:
 
+telethon\.tl\.custom\.inlineresult module
+-----------------------------------------
+
+.. automodule:: telethon.tl.custom.inlineresult
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 telethon\.tl\.custom\.chatgetter module
 ---------------------------------------
 
