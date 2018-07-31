@@ -419,47 +419,41 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     Get a list of attributes for the given file and
     the mime type as a tuple ([attribute], mime_type).
     """
-    if isinstance(file, str):
-        # Determine mime-type and attributes
-        # Take the first element by using [0] since it returns a tuple
-        if mime_type is None:
-            mime_type = mimetypes.guess_type(file)[0]
+    name = file if isinstance(file, str) else getattr(file, 'name', 'unnamed')
+    if mime_type is None:
+        mime_type = mimetypes.guess_type(name)[0]
 
-        attr_dict = {types.DocumentAttributeFilename:
-            types.DocumentAttributeFilename(os.path.basename(file))}
+    attr_dict = {types.DocumentAttributeFilename:
+        types.DocumentAttributeFilename(os.path.basename(name))}
 
-        if is_audio(file) and hachoir is not None:
+    if is_audio(file) and hachoir is not None:
+        with hachoir.parser.createParser(file) as parser:
+            m = hachoir.metadata.extractMetadata(parser)
+            attr_dict[types.DocumentAttributeAudio] = \
+                types.DocumentAttributeAudio(
+                    voice=voice_note,
+                    title=m.get('title') if m.has('title') else None,
+                    performer=m.get('author') if m.has('author') else None,
+                    duration=int(m.get('duration').seconds
+                                 if m.has('duration') else 0)
+                )
+
+    if not force_document and is_video(file):
+        if hachoir:
             with hachoir.parser.createParser(file) as parser:
                 m = hachoir.metadata.extractMetadata(parser)
-                attr_dict[types.DocumentAttributeAudio] = \
-                    types.DocumentAttributeAudio(
-                        voice=voice_note,
-                        title=m.get('title') if m.has('title') else None,
-                        performer=m.get('author') if m.has('author') else None,
-                        duration=int(m.get('duration').seconds
-                                     if m.has('duration') else 0)
-                    )
-
-        if not force_document and is_video(file):
-            if hachoir:
-                with hachoir.parser.createParser(file) as parser:
-                    m = hachoir.metadata.extractMetadata(parser)
-                    doc = types.DocumentAttributeVideo(
-                        round_message=video_note,
-                        w=m.get('width') if m.has('width') else 0,
-                        h=m.get('height') if m.has('height') else 0,
-                        duration=int(m.get('duration').seconds
-                                     if m.has('duration') else 0)
-                    )
-            else:
                 doc = types.DocumentAttributeVideo(
-                    0, 1, 1, round_message=video_note)
+                    round_message=video_note,
+                    w=m.get('width') if m.has('width') else 0,
+                    h=m.get('height') if m.has('height') else 0,
+                    duration=int(m.get('duration').seconds
+                                 if m.has('duration') else 0)
+                )
+        else:
+            doc = types.DocumentAttributeVideo(
+                0, 1, 1, round_message=video_note)
 
-            attr_dict[types.DocumentAttributeVideo] = doc
-    else:
-        attr_dict = {types.DocumentAttributeFilename:
-            types.DocumentAttributeFilename(
-                os.path.basename(getattr(file, 'name', None) or 'unnamed'))}
+        attr_dict[types.DocumentAttributeVideo] = doc
 
     if voice_note:
         if types.DocumentAttributeAudio in attr_dict:
