@@ -2,11 +2,14 @@
 Utilities for working with the Telegram API itself (such as handy methods
 to convert between an entity like an User, Chat, etc. into its Input version)
 """
+import base64
+import binascii
 import itertools
 import math
 import mimetypes
 import os
 import re
+import struct
 from collections import UserList
 from mimetypes import guess_extension
 from types import GeneratorType
@@ -731,6 +734,102 @@ def resolve_id(marked_id):
         return int(m.group(1)), types.PeerChannel
 
     return -marked_id, types.PeerChat
+
+
+def _rle_decode(data):
+    """
+    Decodes run-length-encoded `data`.
+    """
+    new = b''
+    last = b''
+    for cur in data:
+        cur = bytes([cur])
+        if last == b'\0':
+            new += last * ord(cur)
+            last = b''
+        else:
+            new += last
+            last = cur
+
+    return new + last
+
+
+def resolve_bot_file_id(file_id):
+    """
+    Given a Bot API-style `file_id`, returns the media it represents.
+    If the `file_id` is not valid, ``None`` is returned instead.
+
+    Note that the `file_id` does not have information such as image
+    dimensions or file size, so these will be zero if present.
+
+    For thumbnails, the photo ID and hash will always be zero.
+    """
+    try:
+        data = file_id.encode('ascii')
+    except (UnicodeEncodeError, AttributeError):
+        return None
+
+    data.replace(b'-', b'+').replace(b'_', b'/') + b'=' * (len(data) % 4)
+    try:
+        data = base64.b64decode(data)
+    except binascii.Error:
+        return None
+
+    data = _rle_decode(data)
+    if data[-1] == b'\x02':
+        return None
+
+    data = data[:-1]
+    if len(data) == 24:
+        file_type, dc_id, media_id, access_hash = struct.unpack('<iiqq', data)
+        attributes = []
+        if file_type == 3 or file_type == 9:
+            attributes.append(types.DocumentAttributeAudio(
+                duration=0,
+                voice=file_type == 3
+            ))
+        elif file_type == 4 or file_type == 13:
+            attributes.append(types.DocumentAttributeVideo(
+                duration=0,
+                w=0,
+                h=0,
+                round_message=file_type == 13
+            ))
+        # elif file_type == 5:  # other, cannot know which
+        elif file_type == 8:
+            attributes.append(types.DocumentAttributeSticker(
+                alt='',
+                stickerset=types.InputStickerSetEmpty()
+            ))
+        elif file_type == 10:
+            attributes.append(types.DocumentAttributeAnimated())
+
+        print(file_type)
+        return types.Document(
+            id=media_id,
+            access_hash=access_hash,
+            date=None,
+            mime_type='',
+            size=0,
+            thumb=types.PhotoSizeEmpty('s'),
+            dc_id=dc_id,
+            version=0,
+            attributes=attributes
+        )
+    elif len(data) == 44:
+        (file_type, dc_id, media_id, access_hash,
+            volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
+
+        # Thumbnails (small) always have ID 0; otherwise size 'x'
+        photo_size = 's' if media_id or access_hash else 'x'
+        return types.Photo(id=media_id, access_hash=access_hash, sizes=[
+            types.PhotoSize(photo_size, location=types.FileLocation(
+                dc_id=dc_id,
+                volume_id=volume_id,
+                secret=secret,
+                local_id=local_id
+            ), w=0, h=0, size=0)
+        ], date=None)
 
 
 def get_appropriated_part_size(file_size):
