@@ -8,6 +8,12 @@ from .users import UserMethods
 from .. import utils, helpers, errors
 from ..tl import TLObject, types, functions
 
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
+
+
 __log__ = logging.getLogger(__name__)
 
 
@@ -139,6 +145,10 @@ class DownloadMethods(UserMethods):
         elif isinstance(media, types.MessageMediaContact):
             return self._download_contact(
                 media, file
+            )
+        elif isinstance(media, (types.WebDocument, types.WebDocumentNoProxy)):
+            return await self._download_web_document(
+                media, file, progress_callback
             )
 
     async def download_file(
@@ -298,19 +308,12 @@ class DownloadMethods(UserMethods):
             progress_callback=progress_callback)
         return file
 
-    async def _download_document(
-            self, document, file, date, progress_callback):
-        """Specialized version of .download_media() for documents."""
-        if isinstance(document, types.MessageMediaDocument):
-            document = document.document
-        if not isinstance(document, types.Document):
-            return
-
-        file_size = document.size
-
+    @staticmethod
+    def _get_kind_and_names(attributes):
+        """Gets kind and possible names for :tl:`DocumentAttribute`."""
         kind = 'document'
         possible_names = []
-        for attr in document.attributes:
+        for attr in attributes:
             if isinstance(attr, types.DocumentAttributeFilename):
                 possible_names.insert(0, attr.file_name)
 
@@ -327,13 +330,24 @@ class DownloadMethods(UserMethods):
                 elif attr.voice:
                     kind = 'voice'
 
+        return kind, possible_names
+
+    async def _download_document(
+            self, document, file, date, progress_callback):
+        """Specialized version of .download_media() for documents."""
+        if isinstance(document, types.MessageMediaDocument):
+            document = document.document
+        if not isinstance(document, types.Document):
+            return
+
+        kind, possible_names = self._get_kind_and_names(document.attributes)
         file = self._get_proper_filename(
             file, kind, utils.get_extension(document),
             date=date, possible_names=possible_names
         )
 
         await self.download_file(
-            document, file, file_size=file_size,
+            document, file, file_size=document.size,
             progress_callback=progress_callback)
         return file
 
@@ -372,6 +386,42 @@ class DownloadMethods(UserMethods):
                 f.close()
 
         return file
+
+    @classmethod
+    async def _download_web_document(cls, web, file, progress_callback):
+        """
+        Specialized version of .download_media() for web documents.
+        """
+        if not aiohttp:
+            raise ValueError(
+                'Cannot download web documents without the aiohttp '
+                'dependency install it (pip install aiohttp)'
+            )
+
+        # TODO Better way to get opened handles of files and auto-close
+        if isinstance(file, str):
+            kind, possible_names = cls._get_kind_and_names(web.attributes)
+            file = cls._get_proper_filename(
+                file, kind, utils.get_extension(web),
+                possible_names=possible_names
+            )
+            f = open(file, 'wb')
+        else:
+            f = file
+
+        try:
+            with aiohttp.ClientSession() as session:
+                # TODO Use progress_callback; get content length from response
+                # https://github.com/telegramdesktop/tdesktop/blob/c7e773dd9aeba94e2be48c032edc9a78bb50234e/Telegram/SourceFiles/ui/images.cpp#L1318-L1319
+                async with session.get(web.url) as response:
+                    while True:
+                        chunk = await response.content.read(128 * 1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+        finally:
+            if isinstance(file, str):
+                f.close()
 
     @staticmethod
     def _get_proper_filename(file, kind, extension,

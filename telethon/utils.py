@@ -92,7 +92,8 @@ def get_extension(media):
     # Documents will come with a mime type
     if isinstance(media, types.MessageMediaDocument):
         media = media.document
-    if isinstance(media, types.Document):
+    if isinstance(media, (
+            types.Document, types.WebDocument, types.WebDocumentNoProxy)):
         if media.mime_type == 'application/octet-stream':
             # Octet stream are just bytes, which have no default extension
             return ''
