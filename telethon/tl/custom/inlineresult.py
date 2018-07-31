@@ -77,7 +77,10 @@ class InlineResult:
 
     @property
     def photo(self):
-        # TODO Document - how to deal with web media vs. normal?
+        """
+        Returns either the :tl:`WebDocument` thumbnail for
+        normal results or the :tl:`Photo` for media results.
+        """
         if isinstance(self.result, types.BotInlineResult):
             return self.result.thumb
         elif isinstance(self.result, types.BotInlineMediaResult):
@@ -85,7 +88,10 @@ class InlineResult:
 
     @property
     def document(self):
-        # TODO Document - how to deal with web media vs. normal?
+        """
+        Returns either the :tl:`WebDocument` content for
+        normal results or the :tl:`Document` for media results.
+        """
         if isinstance(self.result, types.BotInlineResult):
             return self.result.content
         elif isinstance(self.result, types.BotInlineMediaResult):
@@ -122,14 +128,14 @@ class InlineResult:
         ))
         return self._client._get_response_message(req, await req, entity)
 
-    async def download_photo(self):
+    async def download_media(self, *args, **kwargs):
         """
-        Downloads the media in `photo` if any and returns the download path.
-        """
-        pass
+        Downloads the media in this result (if there is a document, the
+        document will be downloaded; otherwise, the photo will if present).
 
-    async def download_document(self):
+        This is a wrapper around `client.download_media
+        <telethon.client.downloads.DownloadMethods.download_media>`.
         """
-        Downloads the media in `document` if any and returns the download path.
-        """
-        pass
+        if self.document or self.photo:
+            return await self._client.download_media(
+                self.document or self.photo, *args, **kwargs)
