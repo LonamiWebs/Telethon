@@ -118,15 +118,16 @@ class InlineResult:
         """
         entity = await self._client.get_input_entity(entity)
         reply_id = None if reply_to is None else utils.get_message_id(reply_to)
-        req = self._client(functions.messages.SendInlineBotResultRequest(
+        req = functions.messages.SendInlineBotResultRequest(
             peer=entity,
             query_id=self._query_id,
             id=self.result.id,
             silent=silent,
             clear_draft=clear_draft,
             reply_to_msg_id=reply_id
-        ))
-        return self._client._get_response_message(req, await req, entity)
+        )
+        return self._client._get_response_message(
+            req, await self._client(req), entity)
 
     async def download_media(self, *args, **kwargs):
         """
