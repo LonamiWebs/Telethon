@@ -129,6 +129,9 @@ class DownloadMethods(UserMethods):
             date = datetime.datetime.now()
             media = message
 
+        if isinstance(media, str):
+            media = utils.resolve_bot_file_id(media)
+
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
