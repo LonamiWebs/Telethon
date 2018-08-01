@@ -6,13 +6,14 @@ from collections import UserList
 
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
+from .buttons import ButtonMethods
 from .. import utils
 from ..tl import types, functions, custom
 
 __log__ = logging.getLogger(__name__)
 
 
-class MessageMethods(UploadMethods, MessageParseMethods):
+class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     # region Public methods
 
@@ -32,6 +33,14 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         Args:
             entity (`entity`):
                 The entity from whom to retrieve the message history.
+
+                It may be ``None`` to perform a global search, or
+                to get messages by their ID from no particular chat.
+                Note that some of the offsets will not work if this
+                is the case.
+
+                Note that if you want to perform a global search,
+                you **must** set a non-empty `search` string.
 
             limit (`int` | `None`, optional):
                 Number of messages to be retrieved. Due to limitations with
@@ -100,6 +109,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 instead of being `max_id` as well since messages are returned
                 in ascending order.
 
+                You cannot use this if both `entity` and `ids` are ``None``.
+
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
 
@@ -113,9 +124,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
-        # It's possible to get messages by ID without their entity, so only
-        # fetch the input version if we're not using IDs or if it was given.
-        if not ids or entity:
+        # Note that entity being ``None`` is intended to get messages by
+        # ID under no specific chat, and also to request a global search.
+        if entity:
             entity = self.get_input_entity(entity)
 
         if ids:
@@ -154,7 +165,19 @@ class MessageMethods(UploadMethods, MessageParseMethods):
 
         from_id = None
         limit = float('inf') if limit is None else int(limit)
-        if search is not None or filter or from_user:
+        if not entity:
+            if reverse:
+                raise ValueError('Cannot reverse global search')
+
+            reverse = None
+            request = functions.messages.SearchGlobalRequest(
+                q=search or '',
+                offset_date=offset_date,
+                offset_peer=types.InputPeerEmpty(),
+                offset_id=offset_id,
+                limit=1
+            )
+        elif search is not None or filter or from_user:
             if filter is None:
                 filter = types.InputMessagesFilterEmpty()
             request = functions.messages.SearchRequest(
@@ -239,7 +262,9 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                         or from_id and message.from_id != from_id):
                     continue
 
-                if reverse:
+                if reverse is None:
+                    pass
+                elif reverse:
                     if message.id <= last_id or message.id >= max_id:
                         return
                 else:
@@ -252,7 +277,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 # IDs are returned in descending order (or asc if reverse).
                 last_id = message.id
 
-                yield (custom.Message(self, message, entities, entity))
+                message._finish_init(self, entities, entity)
+                yield (message)
                 have += 1
 
             if len(r.messages) < request.limit:
@@ -277,12 +303,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 break
             else:
                 request.offset_id = last_message.id
-                if isinstance(request, functions.messages.GetHistoryRequest):
-                    request.offset_date = last_message.date
-                else:
+                if isinstance(request, functions.messages.SearchRequest):
                     request.max_date = last_message.date
+                else:
+                    # getHistory and searchGlobal call it offset_date
+                    request.offset_date = last_message.date
 
-                if reverse:
+                if isinstance(request, functions.messages.SearchGlobalRequest):
+                    request.offset_peer = last_message.input_chat
+                elif reverse:
                     # We want to skip the one we already have
                     request.add_offset -= 1
 
@@ -330,7 +359,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
     def send_message(
             self, entity, message='', *, reply_to=None,
             parse_mode=utils.Default, link_preview=True, file=None,
-            force_document=False, clear_draft=False):
+            force_document=False, clear_draft=False, buttons=None,
+            silent=None):
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -379,13 +409,26 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 Whether the existing draft should be cleared or not.
                 Has no effect when sending a file.
 
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
+
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
+
         Returns:
-            The sent `telethon.tl.custom.message.Message`.
+            The sent `custom.Message <telethon.tl.custom.message.Message>`.
         """
         if file is not None:
             return self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
-                parse_mode=parse_mode, force_document=force_document
+                parse_mode=parse_mode, force_document=force_document,
+                buttons=buttons
             )
         elif not message:
             raise ValueError(
@@ -414,12 +457,20 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 else:
                     reply_id = None
 
+            if buttons is None:
+                markup = message.reply_markup
+            else:
+                markup = self.build_reply_markup(buttons)
+
+            if silent is None:
+                silent = message.silent
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
-                silent=message.silent,
+                silent=silent,
                 reply_to_msg_id=reply_id,
-                reply_markup=message.reply_markup,
+                reply_markup=markup,
                 entities=message.entities,
                 clear_draft=clear_draft,
                 no_webpage=not isinstance(
@@ -435,13 +486,15 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 entities=msg_ent,
                 no_webpage=not link_preview,
                 reply_to_msg_id=utils.get_message_id(reply_to),
-                clear_draft=clear_draft
+                clear_draft=clear_draft,
+                silent=silent,
+                reply_markup=self.build_reply_markup(buttons)
             )
 
         result = self(request)
         if isinstance(result, types.UpdateShortSentMessage):
             to_id, cls = utils.resolve_id(utils.get_peer_id(entity))
-            return custom.Message(self, types.Message(
+            message = types.Message(
                 id=result.id,
                 to_id=cls(to_id),
                 message=message,
@@ -449,11 +502,14 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 out=result.out,
                 media=result.media,
                 entities=result.entities
-            ), {}, input_chat=entity)
+            )
+            message._finish_init(self, {}, entity)
+            return message
 
         return self._get_response_message(request, result, entity)
 
-    def forward_messages(self, entity, messages, from_peer=None):
+    def forward_messages(self, entity, messages, from_peer=None,
+                         *, silent=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -468,6 +524,11 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 If the given messages are integer IDs and not instances
                 of the ``Message`` class, this *must* be specified in
                 order for the forward to work.
+
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
 
         Returns:
             The list of forwarded `telethon.tl.custom.message.Message`,
@@ -496,7 +557,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
         req = functions.messages.ForwardMessagesRequest(
             from_peer=from_peer,
             id=[m if isinstance(m, int) else m.id for m in messages],
-            to_peer=entity
+            to_peer=entity,
+            silent=silent
         )
         result = self(req)
         if isinstance(result, (types.Updates, types.UpdatesCombined)):
@@ -512,15 +574,16 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                 random_to_id[update.random_id] = update.id
             elif isinstance(update, (
                     types.UpdateNewMessage, types.UpdateNewChannelMessage)):
-                id_to_message[update.message.id] = custom.Message(
-                    self, update.message, entities, input_chat=entity)
+                update.message._finish_init(self, entities, entity)
+                id_to_message[update.message.id] = update.message
 
         result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
         return result[0] if single else result
 
     def edit_message(
             self, entity, message=None, text=None,
-            *, parse_mode=utils.Default, link_preview=True, file=None):
+            *, parse_mode=utils.Default, link_preview=True, file=None,
+            buttons=None):
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -550,6 +613,13 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             file (`str` | `bytes` | `file` | `media`, optional):
                 The file object that should replace the existing media
                 in the message.
+
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
 
         Examples:
 
@@ -586,7 +656,8 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             message=text,
             no_webpage=not link_preview,
             entities=msg_entities,
-            media=media
+            media=media,
+            reply_markup=self.build_reply_markup(buttons)
         )
         msg = self._get_response_message(request, self(request), entity)
         self._cache_media(msg, file, file_handle)
@@ -703,7 +774,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
             total[0] = len(ids)
 
         from_id = None  # By default, no need to validate from_id
-        if isinstance(entity, types.InputPeerChannel):
+        if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
             r = self(functions.channels.GetMessagesRequest(entity, ids))
         else:
             r = self(functions.messages.GetMessagesRequest(ids))
@@ -729,6 +800,7 @@ class MessageMethods(UploadMethods, MessageParseMethods):
                     from_id and utils.get_peer_id(message.to_id) != from_id):
                 yield (None)
             else:
-                yield (custom.Message(self, message, entities, entity))
+                message._finish_init(self, entities, entity)
+                yield (message)
 
     # endregion

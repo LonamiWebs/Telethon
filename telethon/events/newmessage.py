@@ -40,13 +40,12 @@ class NewMessage(EventBuilder):
     def __init__(self, chats=None, *, blacklist_chats=False,
                  incoming=None, outgoing=None,
                  from_users=None, forwards=None, pattern=None):
-        if incoming is not None and outgoing is None:
+        if incoming and outgoing:
+            incoming = outgoing = None  # Same as no filter
+        elif incoming is not None and outgoing is None:
             outgoing = not incoming
         elif outgoing is not None and incoming is None:
             incoming = not outgoing
-
-        if incoming and outgoing:
-            self.incoming = self.outgoing = None  # Same as no filter
         elif all(x is not None and not x for x in (incoming, outgoing)):
             raise ValueError("Don't create an event handler if you "
                              "don't want neither incoming or outgoing!")
@@ -75,14 +74,15 @@ class NewMessage(EventBuilder):
         super().resolve(client)
         self.from_users = _into_id_set(client, self.from_users)
 
-    def build(self, update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if not isinstance(update.message, types.Message):
                 return  # We don't care about MessageService's here
-            event = NewMessage.Event(update.message)
+            event = cls.Event(update.message)
         elif isinstance(update, types.UpdateShortMessage):
-            event = NewMessage.Event(types.Message(
+            event = cls.Event(types.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
@@ -91,9 +91,9 @@ class NewMessage(EventBuilder):
                 # Note that to_id/from_id complement each other in private
                 # messages, depending on whether the message was outgoing.
                 to_id=types.PeerUser(
-                    update.user_id if update.out else self._self_id
+                    update.user_id if update.out else cls.self_id
                 ),
-                from_id=self._self_id if update.out else update.user_id,
+                from_id=cls.self_id if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -102,7 +102,7 @@ class NewMessage(EventBuilder):
                 entities=update.entities
             ))
         elif isinstance(update, types.UpdateShortChatMessage):
-            event = NewMessage.Event(types.Message(
+            event = cls.Event(types.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
@@ -120,8 +120,6 @@ class NewMessage(EventBuilder):
         else:
             return
 
-        event._entities = update._entities
-
         # Make messages sent to ourselves outgoing unless they're forwarded.
         # This makes it consistent with official client's appearance.
         ori = event.message
@@ -129,9 +127,10 @@ class NewMessage(EventBuilder):
             if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
                 event.message.out = True
 
-        return self._message_filter_event(event)
+        event._entities = update._entities
+        return event
 
-    def _message_filter_event(self, event):
+    def filter(self, event):
         if self._no_check:
             return event
 
@@ -153,7 +152,7 @@ class NewMessage(EventBuilder):
                 return
             event.pattern_match = match
 
-        return self._filter_event(event)
+        return super().filter(event)
 
     class Event(EventCommon):
         """
@@ -204,8 +203,7 @@ class NewMessage(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            self.message = custom.Message(
-                client, self.message, self._entities, None)
+            self.message._finish_init(client, self._entities, None)
             self.__dict__['_init'] = True  # No new attributes can be set
 
         def __getattr__(self, item):

@@ -3,8 +3,13 @@ class RPCError(Exception):
     code = None
     message = None
 
+    def __init__(self, code, message):
+        super().__init__('RPCError {}: {}'.format(code, message))
+        self.code = code
+        self.message = message
+
     def __reduce__(self):
-        return type(self), ()
+        return type(self), (self.code, self.message)
 
 
 class InvalidDCError(RPCError):

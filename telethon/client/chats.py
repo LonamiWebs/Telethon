@@ -31,14 +31,14 @@ class ChatMethods(UserMethods):
                 This has no effect for normal chats or users.
 
             aggressive (`bool`, optional):
-                Aggressively looks for all participants in the chat in
-                order to get more than 10,000 members (a hard limit
-                imposed by Telegram). Note that this might take a long
-                time (over 5 minutes), but is able to return over 90,000
-                participants on groups with 100,000 members.
+                Aggressively looks for all participants in the chat.
 
-                This has no effect for groups or channels with less than
-                10,000 members, or if a ``filter`` is given.
+                This is useful for channels since 20 July 2018,
+                Telegram added a server-side limit where only the
+                first 200 members can be retrieved. With this flag
+                set, more than 200 will be often be retrieved.
+
+                This has no effect if a ``filter`` is given.
 
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
@@ -73,20 +73,16 @@ class ChatMethods(UserMethods):
 
         limit = float('inf') if limit is None else int(limit)
         if isinstance(entity, types.InputPeerChannel):
-            if _total or (aggressive and not filter):
-                total = (self(functions.channels.GetFullChannelRequest(
-                    entity
-                ))).full_chat.participants_count
-                if _total:
-                    _total[0] = total
-            else:
-                total = 0
+            if _total:
+                _total[0] = (self(
+                    functions.channels.GetFullChannelRequest(entity)
+                )).full_chat.participants_count
 
             if limit == 0:
                 return
 
             seen = set()
-            if total > 10000 and aggressive and not filter:
+            if aggressive and not filter:
                 requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
                     filter=types.ChannelParticipantsSearch(search + chr(x)),

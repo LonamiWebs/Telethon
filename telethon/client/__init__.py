@@ -13,10 +13,12 @@ from .telegrambaseclient import TelegramBaseClient
 from .users import UserMethods  # Required for everything
 from .messageparse import MessageParseMethods  # Required for messages
 from .uploads import UploadMethods  # Required for messages to send files
+from .updates import UpdateMethods  # Required for buttons (register callbacks)
+from .buttons import ButtonMethods  # Required for messages to use buttons
 from .messages import MessageMethods
 from .chats import ChatMethods
 from .dialogs import DialogMethods
 from .downloads import DownloadMethods
 from .auth import AuthMethods
-from .updates import UpdateMethods
+from .bots import BotMethods
 from .telegramclient import TelegramClient

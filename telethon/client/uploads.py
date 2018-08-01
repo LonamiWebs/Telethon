@@ -9,20 +9,14 @@ from mimetypes import guess_type
 
 from .messageparse import MessageParseMethods
 from .users import UserMethods
+from .buttons import ButtonMethods
 from .. import utils, helpers
 from ..tl import types, functions, custom
-
-try:
-    import hachoir
-    import hachoir.metadata
-    import hachoir.parser
-except ImportError:
-    hachoir = None
 
 __log__ = logging.getLogger(__name__)
 
 
-class UploadMethods(MessageParseMethods, UserMethods):
+class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     # region Public methods
 
@@ -30,7 +24,8 @@ class UploadMethods(MessageParseMethods, UserMethods):
             self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=utils.Default,
-            voice_note=False, video_note=False, **kwargs):
+            voice_note=False, video_note=False, buttons=None, silent=None,
+            **kwargs):
         """
         Sends a file to the specified entity.
 
@@ -46,7 +41,8 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
                 Furthermore the file may be any media (a message, document,
                 photo or similar) so that it can be resent without the need
-                to download and re-upload it again.
+                to download and re-upload it again. Bot API ``file_id``
+                format is also supported.
 
                 If a list or similar is provided, the files in it will be
                 sent as an album in the order in which they appear, sliced
@@ -98,6 +94,18 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 Set `allow_cache` to ``False`` if you sent the same file
                 without this setting before for it to work.
 
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
+            :tl:`KeyboardButton`):
+                The matrix (list of lists), row list or button to be shown
+                after sending the message. This parameter will only work if
+                you have signed in as a bot. You can also pass your own
+                :tl:`ReplyMarkup` here.
+
+            silent (`bool`, optional):
+                Whether the message should notify people in a broadcast
+                channel or not. Defaults to ``False``, which means it will
+                notify them. Set it to ``True`` to alter this behaviour.
+
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
             it will be used to determine metadata from audio and video files.
@@ -126,7 +134,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 result += self._send_album(
                     entity, images[:10], caption=caption,
                     progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode
+                    parse_mode=parse_mode, silent=silent
                 )
                 images = images[10:]
 
@@ -136,7 +144,8 @@ class UploadMethods(MessageParseMethods, UserMethods):
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
-                    video_note=video_note, **kwargs
+                    video_note=video_note, buttons=buttons, silent=silent,
+                    **kwargs
                 ))
 
             return result
@@ -159,9 +168,10 @@ class UploadMethods(MessageParseMethods, UserMethods):
             voice_note=voice_note, video_note=video_note
         )
 
+        markup = self.build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
-            entities=msg_entities
+            entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, self(request), entity)
         self._cache_media(msg, file, file_handle, force_document=force_document)
@@ -170,7 +180,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
     def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
-                    parse_mode=utils.Default):
+                    parse_mode=utils.Default, silent=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -208,12 +218,15 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 caption, msg_entities = captions.pop()
             else:
                 caption, msg_entities = '', None
-            media.append(types.InputSingleMedia(types.InputMediaPhoto(fh), message=caption,
-                                          entities=msg_entities))
+            media.append(types.InputSingleMedia(
+                types.InputMediaPhoto(fh),
+                message=caption,
+                entities=msg_entities
+            ))
 
         # Now we can construct the multi-media request
         result = self(functions.messages.SendMultiMediaRequest(
-            entity, reply_to_msg_id=reply_to, multi_media=media
+            entity, reply_to_msg_id=reply_to, multi_media=media, silent=silent
         ))
         return [
             self._get_response_message(update.id, result, entity)
@@ -262,7 +275,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
 
         Returns:
             :tl:`InputFileBig` if the file size is larger than 10MB,
-            `telethon.tl.custom.input_sized_file.InputSizedFile`
+            `telethon.tl.custom.inputsizedfile.InputSizedFile`
             (subclass of :tl:`InputFile`) otherwise.
         """
         if isinstance(file, (types.InputFile, types.InputFileBig)):
@@ -377,10 +390,15 @@ class UploadMethods(MessageParseMethods, UserMethods):
                 return None, None  # Can't turn whatever was given into media
 
         media = None
+        file_handle = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        if isinstance(file, str) and re.match('https?://', file):
-            file_handle = None
+        if not isinstance(file, str):
+            file_handle = self.upload_file(
+                file, progress_callback=progress_callback,
+                use_cache=use_cache if allow_cache else None
+            )
+        elif re.match('https?://', file):
             if as_image:
                 media = types.InputMediaPhotoExternal(file)
             elif not force_document and utils.is_gif(file):
@@ -388,10 +406,9 @@ class UploadMethods(MessageParseMethods, UserMethods):
             else:
                 media = types.InputMediaDocumentExternal(file)
         else:
-            file_handle = self.upload_file(
-                file, progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
-            )
+            bot_file = utils.resolve_bot_file_id(file)
+            if bot_file:
+                media = utils.get_input_media(bot_file)
 
         if media:
             pass  # Already have media, don't check the rest
@@ -404,74 +421,13 @@ class UploadMethods(MessageParseMethods, UserMethods):
         elif as_image:
             media = types.InputMediaUploadedPhoto(file_handle)
         else:
-            mime_type = None
-            if isinstance(file, str):
-                # Determine mime-type and attributes
-                # Take the first element by using [0] since it returns a tuple
-                mime_type = guess_type(file)[0]
-                attr_dict = {
-                    types.DocumentAttributeFilename:
-                        types.DocumentAttributeFilename(
-                            os.path.basename(file))
-                }
-                if utils.is_audio(file) and hachoir:
-                    with hachoir.parser.createParser(file) as parser:
-                        m = hachoir.metadata.extractMetadata(parser)
-                        attr_dict[types.DocumentAttributeAudio] = \
-                            types.DocumentAttributeAudio(
-                                voice=voice_note,
-                                title=m.get('title') if m.has(
-                                    'title') else None,
-                                performer=m.get('author') if m.has(
-                                    'author') else None,
-                                duration=int(m.get('duration').seconds
-                                             if m.has('duration') else 0)
-                            )
-
-                if not force_document and utils.is_video(file):
-                    if hachoir:
-                        with hachoir.parser.createParser(file) as parser:
-                            m = hachoir.metadata.extractMetadata(parser)
-                            doc = types.DocumentAttributeVideo(
-                                round_message=video_note,
-                                w=m.get('width') if m.has('width') else 0,
-                                h=m.get('height') if m.has('height') else 0,
-                                duration=int(m.get('duration').seconds
-                                             if m.has('duration') else 0)
-                            )
-                    else:
-                        doc = types.DocumentAttributeVideo(
-                            0, 1, 1, round_message=video_note)
-
-                    attr_dict[types.DocumentAttributeVideo] = doc
-            else:
-                attr_dict = {
-                    types.DocumentAttributeFilename:
-                        types.DocumentAttributeFilename(
-                            os.path.basename(
-                                getattr(file, 'name',
-                                        None) or 'unnamed'))
-                }
-
-            if voice_note:
-                if types.DocumentAttributeAudio in attr_dict:
-                    attr_dict[types.DocumentAttributeAudio].voice = True
-                else:
-                    attr_dict[types.DocumentAttributeAudio] = \
-                        types.DocumentAttributeAudio(0, voice=True)
-
-            # Now override the attributes if any. As we have a dict of
-            # {cls: instance}, we can override any class with the list
-            # of attributes provided by the user easily.
-            if attributes:
-                for a in attributes:
-                    attr_dict[type(a)] = a
-
-            # Ensure we have a mime type, any; but it cannot be None
-            # 'The "octet-stream" subtype is used to indicate that a body
-            # contains arbitrary binary data.'
-            if not mime_type:
-                mime_type = 'application/octet-stream'
+            attributes, mime_type = utils.get_attributes(
+                file,
+                attributes=attributes,
+                force_document=force_document,
+                voice_note=voice_note,
+                video_note=video_note
+            )
 
             input_kw = {}
             if thumb:
@@ -480,7 +436,7 @@ class UploadMethods(MessageParseMethods, UserMethods):
             media = types.InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
-                attributes=list(attr_dict.values()),
+                attributes=attributes,
                 **input_kw
             )
         return file_handle, media

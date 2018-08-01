@@ -392,6 +392,7 @@ class MTProtoSender:
                 except socket.timeout:
                     continue
                 except concurrent.futures.CancelledError:
+                    self.disconnect()
                     return
                 except Exception as e:
                     if isinstance(e, ConnectionError):
@@ -431,6 +432,7 @@ class MTProtoSender:
             except socket.timeout:
                 continue
             except concurrent.futures.CancelledError:
+                self.disconnect()
                 return
             except Exception as e:
                 if isinstance(e, ConnectionError):
@@ -473,15 +475,19 @@ class MTProtoSender:
                 __log__.info('Server replied with an unknown type {:08x}: {!r}'
                              .format(e.invalid_constructor_id, e.remaining))
                 continue
-            except:
-                __log__.exception('Unhandled exception while unpacking')
+            except concurrent.futures.CancelledError:
+                self.disconnect()
+                return
+            except Exception as e:
+                __log__.exception('Unhandled exception while unpacking %s',e)
                 time.sleep(1)
             else:
                 try:
                     self._process_message(message)
                 except concurrent.futures.CancelledError:
+                    self.disconnect()
                     return
-                except:
+                except Exception as e:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
                     time.sleep(1)
@@ -512,6 +518,12 @@ class MTProtoSender:
         __log__.debug('Handling RPC result for message %d',
                       rpc_result.req_msg_id)
 
+        if not message:
+            # TODO We should not get responses to things we never sent
+            __log__.info('Received response without parent request: {}'
+                         .format(rpc_result.body))
+            return
+
         if rpc_result.error:
             error = rpc_message_to_error(rpc_result.error)
             self._send_queue.put_nowait(self.state.create_message(
@@ -520,8 +532,7 @@ class MTProtoSender:
 
             if not message.future.cancelled():
                 message.future.set_exception(error)
-            return
-        elif message:
+        else:
             # TODO Would be nice to avoid accessing a per-obj read_result
             # Instead have a variable that indicated how the result should
             # be read (an enum) and dispatch to read the result, mostly
@@ -531,11 +542,6 @@ class MTProtoSender:
 
             if not message.future.cancelled():
                 message.future.set_result(result)
-            return
-        else:
-            # TODO We should not get responses to things we never sent
-            __log__.info('Received response without parent request: {}'
-                         .format(rpc_result.body))
 
     def _handle_container(self, message):
         """
@@ -611,7 +617,7 @@ class MTProtoSender:
         bad_msg = message.obj
         msg = self._pending_messages.get(bad_msg.bad_msg_id)
 
-        __log__.debug('Handling bad msg for message %d', bad_msg.bad_msg_id)
+        __log__.debug('Handling bad msg %s', bad_msg)
         if bad_msg.error_code in (16, 17):
             # Sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.

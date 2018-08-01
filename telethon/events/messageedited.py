@@ -8,15 +8,16 @@ class MessageEdited(NewMessage):
     """
     Event fired when a message has been edited.
     """
-    def build(self, update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
-            event = MessageEdited.Event(update.message)
+            event = cls.Event(update.message)
         else:
             return
 
         event._entities = update._entities
-        return self._message_filter_event(event)
+        return event
 
     class Event(NewMessage.Event):
         pass  # Required if we want a different name for it

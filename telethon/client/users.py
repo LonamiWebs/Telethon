@@ -18,6 +18,20 @@ class UserMethods(TelegramBaseClient):
                 raise _NOT_A_REQUEST
             r.resolve(self, utils)
 
+            # Avoid making the request if it's already in a flood wait
+            if r.CONSTRUCTOR_ID in self._flood_waited_requests:
+                due = self._flood_waited_requests[r.CONSTRUCTOR_ID]
+                diff = round(due - time.time())
+                if diff <= 3:  # Flood waits below 3 seconds are "ignored"
+                    self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
+                elif diff <= self.flood_sleep_threshold:
+                    __log__.info('Sleeping early for %ds on flood wait', diff)
+                    time.sleep(diff)
+                    self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
+                else:
+                    raise errors.FloodWaitError(capture=diff)
+
+        request_index = 0
         self._last_request = time.time()
         for _ in range(self._request_retries):
             try:
@@ -28,6 +42,7 @@ class UserMethods(TelegramBaseClient):
                         result = f.result()
                         self.session.process_entities(result)
                         results.append(result)
+                        request_index += 1
                     return results
                 else:
                     result = future.result()
@@ -37,6 +52,12 @@ class UserMethods(TelegramBaseClient):
                 __log__.warning('Telegram is having internal issues %s: %s',
                                 e.__class__.__name__, e)
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
+                if utils.is_list_like(request):
+                    request = request[request_index]
+
+                self._flood_waited_requests\
+                    [request.CONSTRUCTOR_ID] = time.time() + e.seconds
+
                 if e.seconds <= self.flood_sleep_threshold:
                     __log__.info('Sleeping for %ds on flood wait', e.seconds)
                     time.sleep(e.seconds)

@@ -1,13 +1,13 @@
 from . import (
-    UpdateMethods, AuthMethods, DownloadMethods, DialogMethods,
-    ChatMethods, MessageMethods, UploadMethods, MessageParseMethods,
-    UserMethods
+    AuthMethods, DownloadMethods, DialogMethods, ChatMethods, BotMethods,
+    MessageMethods, ButtonMethods, UpdateMethods, UploadMethods,
+    MessageParseMethods, UserMethods
 )
 
 
 class TelegramClient(
-    UpdateMethods, AuthMethods, DownloadMethods, DialogMethods,
-    ChatMethods, MessageMethods, UploadMethods, MessageParseMethods,
-    UserMethods
+    AuthMethods, DownloadMethods, DialogMethods, ChatMethods, BotMethods,
+    MessageMethods, UploadMethods, ButtonMethods, UpdateMethods,
+    MessageParseMethods, UserMethods
 ):
     pass

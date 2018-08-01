@@ -1,13 +1,29 @@
 """
-AES IGE implementation in Python. This module may use libssl if available.
+AES IGE implementation in Python.
+
+If available, cryptg will be used instead, otherwise
+if available, libssl will be used instead, otherwise
+the Python implementation will be used.
 """
 import os
 import pyaes
+import logging
+from . import libssl
+
+
+__log__ = logging.getLogger(__name__)
+
 
 try:
     import cryptg
+    __log__.info('cryptg detected, it will be used for encryption')
 except ImportError:
     cryptg = None
+    if libssl.encrypt_ige and libssl.decrypt_ige:
+        __log__.info('libssl detected, it will be used for encryption')
+    else:
+        __log__.info('cryptg module not installed and libssl not found, '
+                     'falling back to (slower) Python encryption')
 
 
 class AES:
@@ -23,6 +39,8 @@ class AES:
         """
         if cryptg:
             return cryptg.decrypt_ige(cipher_text, key, iv)
+        if libssl.decrypt_ige:
+            return libssl.decrypt_ige(cipher_text, key, iv)
 
         iv1 = iv[:len(iv) // 2]
         iv2 = iv[len(iv) // 2:]
@@ -56,13 +74,14 @@ class AES:
         Encrypts the given text in 16-bytes blocks by using the
         given key and 32-bytes initialization vector.
         """
-        # Add random padding iff it's not evenly divisible by 16 already
-        if len(plain_text) % 16 != 0:
-            padding_count = 16 - len(plain_text) % 16
-            plain_text += os.urandom(padding_count)
+        padding = len(plain_text) % 16
+        if padding:
+            plain_text += os.urandom(16 - padding)
 
         if cryptg:
             return cryptg.encrypt_ige(plain_text, key, iv)
+        if libssl.encrypt_ige:
+            return libssl.encrypt_ige(plain_text, key, iv)
 
         iv1 = iv[:len(iv) // 2]
         iv2 = iv[len(iv) // 2:]

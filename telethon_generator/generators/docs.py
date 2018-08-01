@@ -188,7 +188,8 @@ def _get_description(arg):
         desc.append('If left unspecified, it will be inferred automatically.')
         otherwise = True
     elif arg.is_flag:
-        desc.append('This argument can be omitted.')
+        desc.append('This argument defaults to '
+                    '<code>None</code> and can be omitted.')
         otherwise = True
 
     if arg.type in {'InputPeer', 'InputUser', 'InputChannel'}:
@@ -370,11 +371,12 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                                  bold=True)
 
                     # Type row
+                    friendly_type = 'flag' if arg.type == 'true' else arg.type
                     if arg.is_generic:
-                        docs.add_row('!' + arg.type, align='center')
+                        docs.add_row('!' + friendly_type, align='center')
                     else:
                         docs.add_row(
-                            arg.type, align='center', link=
+                            friendly_type, align='center', link=
                             path_for_type(arg.type, relative_to=filename)
                          )
 

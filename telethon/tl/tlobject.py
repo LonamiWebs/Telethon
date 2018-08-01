@@ -1,8 +1,12 @@
+import abc
 import struct
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 
 class TLObject:
+    CONSTRUCTOR_ID = None
+    SUBCLASS_OF_ID = None
+
     @staticmethod
     def pretty_format(obj, indent=None):
         """
@@ -23,10 +27,6 @@ class TLObject:
             elif hasattr(obj, '__iter__'):
                 return '[{}]'.format(
                     ', '.join(TLObject.pretty_format(x) for x in obj)
-                )
-            elif isinstance(obj, datetime):
-                return 'datetime.utcfromtimestamp({})'.format(
-                    int(obj.timestamp())
                 )
             else:
                 return repr(obj)
@@ -68,11 +68,6 @@ class TLObject:
                 indent -= 1
                 result.append('\t' * indent)
                 result.append(']')
-
-            elif isinstance(obj, datetime):
-                result.append('datetime.utcfromtimestamp(')
-                result.append(repr(int(obj.timestamp())))
-                result.append(')')
 
             else:
                 result.append(repr(obj))
@@ -125,6 +120,9 @@ class TLObject:
             dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
         elif isinstance(dt, float):
             dt = int(dt)
+        elif isinstance(dt, timedelta):
+            # Timezones are tricky. datetime.now() + ... timestamp() works
+            dt = int((datetime.now() + dt).timestamp())
 
         if isinstance(dt, int):
             return struct.pack('<I', dt)

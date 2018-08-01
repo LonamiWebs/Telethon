@@ -3,6 +3,7 @@ import io
 import logging
 import os
 import pathlib
+import urllib.request
 
 from .users import UserMethods
 from .. import utils, helpers, errors
@@ -123,6 +124,9 @@ class DownloadMethods(UserMethods):
             date = datetime.datetime.now()
             media = message
 
+        if isinstance(media, str):
+            media = utils.resolve_bot_file_id(media)
+
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
@@ -139,6 +143,10 @@ class DownloadMethods(UserMethods):
         elif isinstance(media, types.MessageMediaContact):
             return self._download_contact(
                 media, file
+            )
+        elif isinstance(media, (types.WebDocument, types.WebDocumentNoProxy)):
+            return self._download_web_document(
+                media, file, progress_callback
             )
 
     def download_file(
@@ -200,10 +208,27 @@ class DownloadMethods(UserMethods):
         else:
             f = file
 
-        # The used sender will change if ``FileMigrateError`` occurs
-        sender = self._sender
-        exported = False
-        input_location = utils.get_input_location(input_location)
+        dc_id, input_location = utils.get_input_location(input_location)
+        exported = dc_id and self.session.dc_id != dc_id
+        if exported:
+            try:
+                sender = self._borrow_exported_sender(dc_id)
+            except errors.DcIdInvalidError:
+                # Can't export a sender for the ID we are currently in
+                config = self(functions.help.GetConfigRequest())
+                for option in config.dc_options:
+                    if option.ip_address == self.session.server_address:
+                        self.session.set_dc(
+                            option.id, option.ip_address, option.port)
+                        self.session.save()
+                        break
+
+                # TODO Figure out why the session may have the wrong DC ID
+                sender = self._sender
+                exported = False
+        else:
+            # The used sender will also change if ``FileMigrateError`` occurs
+            sender = self._sender
 
         __log__.info('Downloading file in chunks of %d bytes', part_size)
         try:
@@ -281,19 +306,12 @@ class DownloadMethods(UserMethods):
             progress_callback=progress_callback)
         return file
 
-    def _download_document(
-            self, document, file, date, progress_callback):
-        """Specialized version of .download_media() for documents."""
-        if isinstance(document, types.MessageMediaDocument):
-            document = document.document
-        if not isinstance(document, types.Document):
-            return
-
-        file_size = document.size
-
+    @staticmethod
+    def _get_kind_and_names(attributes):
+        """Gets kind and possible names for :tl:`DocumentAttribute`."""
         kind = 'document'
         possible_names = []
-        for attr in document.attributes:
+        for attr in attributes:
             if isinstance(attr, types.DocumentAttributeFilename):
                 possible_names.insert(0, attr.file_name)
 
@@ -310,13 +328,24 @@ class DownloadMethods(UserMethods):
                 elif attr.voice:
                     kind = 'voice'
 
+        return kind, possible_names
+
+    def _download_document(
+            self, document, file, date, progress_callback):
+        """Specialized version of .download_media() for documents."""
+        if isinstance(document, types.MessageMediaDocument):
+            document = document.document
+        if not isinstance(document, types.Document):
+            return
+
+        kind, possible_names = self._get_kind_and_names(document.attributes)
         file = self._get_proper_filename(
             file, kind, utils.get_extension(document),
             date=date, possible_names=possible_names
         )
 
         self.download_file(
-            document, file, file_size=file_size,
+            document, file, file_size=document.size,
             progress_callback=progress_callback)
         return file
 
@@ -355,6 +384,37 @@ class DownloadMethods(UserMethods):
                 f.close()
 
         return file
+
+    @classmethod
+    async def _download_web_document(cls, web, file, progress_callback):
+        """
+        Specialized version of .download_media() for web documents.
+        """
+        # TODO Better way to get opened handles of files and auto-close
+        if isinstance(file, str):
+            kind, possible_names = cls._get_kind_and_names(web.attributes)
+            file = cls._get_proper_filename(
+                file, kind, utils.get_extension(web),
+                possible_names=possible_names
+            )
+            f = open(file, 'wb')
+        else:
+            f = file
+
+        session = urllib.request.urlopen(web.url)
+        try:
+            # TODO Use progress_callback; get content length from response
+            # int(session.info().getheaders('Content-Length')[0])
+            # https://github.com/telegramdesktop/tdesktop/blob/c7e773dd9aeba94e2be48c032edc9a78bb50234e/Telegram/SourceFiles/ui/images.cpp#L1318-L1319
+            while True:
+                chunk = await session.read(128 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
+        finally:
+            session.close()
+            if isinstance(file, str):
+                f.close()
 
     @staticmethod
     def _get_proper_filename(file, kind, extension,

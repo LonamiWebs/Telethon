@@ -1,4 +1,7 @@
 import abc
+import asyncio
+import collections
+import inspect
 import logging
 import platform
 import queue
@@ -219,6 +222,9 @@ class TelegramBaseClient(abc.ABC):
             auto_reconnect_callback=self._handle_auto_reconnect
         )
 
+        # Remember flood-waited requests to avoid making them again
+        self._flood_waited_requests = {}
+
         # Cache ``{dc_id: (n, MTProtoSender)}`` for all borrowed senders,
         # being ``n`` the amount of borrows a given sender has; once ``n``
         # reaches ``0`` it should be disconnected and removed.
@@ -251,6 +257,11 @@ class TelegramBaseClient(abc.ABC):
         self._event_builders = []
         self._events_pending_resolve = []
         self._event_resolve_lock = threading.Lock()
+
+        # Keep track of how many event builders there are for
+        # each type {type: count}. If there's at least one then
+        # the event will be built, and the same event be reused.
+        self._event_builders_count = collections.defaultdict(int)
 
         # Default parse mode
         self._parse_mode = markdown
@@ -409,6 +420,9 @@ class TelegramBaseClient(abc.ABC):
             if not sender:
                 sender = self._create_exported_sender(dc_id)
                 sender.dc_id = dc_id
+            elif not n:
+                dc = self._get_dc(dc_id)
+                sender.connect(dc.ip_address, dc.port)
 
             self._borrowed_senders[dc_id] = (n + 1, sender)
 
@@ -423,12 +437,10 @@ class TelegramBaseClient(abc.ABC):
             dc_id = sender.dc_id
             n, _ = self._borrowed_senders[dc_id]
             n -= 1
-            if n > 0:
-                self._borrowed_senders[dc_id] = (n, sender)
-            else:
+            self._borrowed_senders[dc_id] = (n, sender)
+            if not n:
                 __log__.info('Disconnecting borrowed sender for DC %d', dc_id)
                 sender.disconnect()
-                del self._borrowed_senders[dc_id]
 
     def _get_cdn_client(self, cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""

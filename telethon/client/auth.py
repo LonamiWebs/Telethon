@@ -16,7 +16,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
     def start(
             self,
-            phone=lambda: input('Please enter your phone: '),
+            phone=lambda: input('Please enter your phone (or bot token): '),
             password=lambda: getpass.getpass('Please enter your password: '),
             *,
             bot_token=None, force_sms=False, code_callback=None,
@@ -45,7 +45,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         Args:
             phone (`str` | `int` | `callable`):
                 The phone (or callable without arguments to get it)
-                to which the code will be sent.
+                to which the code will be sent. If a bot-token-like
+                string is given, it will be used as such instead.
 
             password (`callable`, optional):
                 The password for 2 Factor Authentication (2FA).
@@ -118,13 +119,20 @@ class AuthMethods(MessageParseMethods, UserMethods):
         if self.is_user_authorized():
             return self
 
+        if not bot_token:
+            # Turn the callable into a valid phone number (or bot token)
+            while callable(phone):
+                value = phone()
+                if ':' in value:
+                    # Bot tokens have 'user_id:access_hash' format
+                    bot_token = value
+                    break
+
+                phone = utils.parse_phone(value) or phone
+
         if bot_token:
             self.sign_in(bot_token=bot_token)
             return self
-
-        # Turn the callable into a valid phone number
-        while callable(phone):
-            phone = utils.parse_phone(phone()) or phone
 
         me = None
         attempts = 0

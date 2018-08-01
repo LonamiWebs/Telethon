@@ -67,6 +67,7 @@ class TcpClient:
         if proxy is None:
             s = socket.socket(mode, socket.SOCK_STREAM)
         else:
+            __log__.info('Connection will be made through proxy %s', proxy)
             import socks
             s = socks.socksocket(mode, socket.SOCK_STREAM)
             if isinstance(proxy, dict):
@@ -92,11 +93,16 @@ class TcpClient:
         try:
             if self._socket is None:
                 self._socket = self._create_socket(mode, self.proxy)
-                if self.ssl and port == SSL_PORT:
-                    self._socket = ssl.wrap_socket(self._socket, **self.ssl)
+                wrap_ssl = self.ssl and port == SSL_PORT
+            else:
+                wrap_ssl = False
 
             self._socket.settimeout(self.timeout)
             self._socket.connect(address)
+            if wrap_ssl:
+                self._socket = ssl.wrap_socket(
+                    self._socket, do_handshake_on_connect=True, **self.ssl)
+
             self._closed.clear()
         except OSError as e:
             if e.errno in CONN_RESET_ERRNOS:

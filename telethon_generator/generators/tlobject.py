@@ -36,6 +36,13 @@ NAMED_AUTO_CASTS = {
 BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
               'int256', 'double', 'Bool', 'true', 'date')
 
+# Patched types {fullname: custom.ns.Name}
+PATCHED_TYPES = {
+    'messageEmpty': 'message.Message',
+    'message': 'message.Message',
+    'messageService': 'message.Message'
+}
+
 
 def _write_modules(
         out_dir, depth, kind, namespace_tlobjects, type_constructors):
@@ -130,11 +137,14 @@ def _write_modules(
 
             # Generate the class for every TLObject
             for t in tlobjects:
-                _write_source_code(t, kind, builder, type_constructors)
-                builder.current_indent = 0
+                if t.fullname in PATCHED_TYPES:
+                    builder.writeln('{} = None  # Patched', t.class_name)
+                else:
+                    _write_source_code(t, kind, builder, type_constructors)
+                    builder.current_indent = 0
 
             # Write the type definitions generated earlier.
-            builder.writeln('')
+            builder.writeln()
             for line in type_defs:
                 builder.writeln(line)
 
@@ -618,11 +628,38 @@ def _write_arg_read_code(builder, arg, args, name):
         arg.is_flag = True
 
 
+def _write_patched(out_dir, namespace_tlobjects):
+    os.makedirs(out_dir, exist_ok=True)
+    for ns, tlobjects in namespace_tlobjects.items():
+        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
+        with open(file, 'w', encoding='utf-8') as f,\
+                SourceBuilder(f) as builder:
+            builder.writeln(AUTO_GEN_NOTICE)
+
+            builder.writeln('import struct')
+            builder.writeln('from .. import types, custom')
+            builder.writeln()
+            for t in tlobjects:
+                builder.writeln('class {}(custom.{}):', t.class_name,
+                                PATCHED_TYPES[t.fullname])
+
+                _write_to_dict(t, builder)
+                _write_to_bytes(t, builder)
+                _write_from_reader(t, builder)
+                builder.current_indent = 0
+                builder.writeln()
+                builder.writeln(
+                    'types.{1}{0} = {0}', t.class_name,
+                    '{}.'.format(t.namespace) if t.namespace else ''
+                )
+                builder.writeln()
+
+
 def _write_all_tlobjects(tlobjects, layer, builder):
     builder.writeln(AUTO_GEN_NOTICE)
     builder.writeln()
 
-    builder.writeln('from . import types, functions')
+    builder.writeln('from . import types, functions, patched')
     builder.writeln()
 
     # Create a constant variable to indicate which layer this is
@@ -636,9 +673,14 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
     for tlobject in tlobjects:
         builder.write('{:#010x}: ', tlobject.id)
-        builder.write('functions' if tlobject.is_function else 'types')
+        # TODO Probably circular dependency
+        if tlobject.fullname in PATCHED_TYPES:
+            builder.write('patched')
+        else:
+            builder.write('functions' if tlobject.is_function else 'types')
+
         if tlobject.namespace:
-            builder.write('.' + tlobject.namespace)
+            builder.write('.{}', tlobject.namespace)
 
         builder.writeln('.{},', tlobject.class_name)
 
@@ -647,13 +689,10 @@ def _write_all_tlobjects(tlobjects, layer, builder):
 
 
 def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
-    get_file = functools.partial(os.path.join, output_dir)
-    os.makedirs(get_file('functions'), exist_ok=True)
-    os.makedirs(get_file('types'), exist_ok=True)
-
     # Group everything by {namespace: [tlobjects]} to generate __init__.py
     namespace_functions = defaultdict(list)
     namespace_types = defaultdict(list)
+    namespace_patched = defaultdict(list)
 
     # Group {type: [constructors]} to generate the documentation
     type_constructors = defaultdict(list)
@@ -663,11 +702,15 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
         else:
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
+            if tlobject.fullname in PATCHED_TYPES:
+                namespace_patched[tlobject.namespace].append(tlobject)
 
+    get_file = functools.partial(os.path.join, output_dir)
     _write_modules(get_file('functions'), import_depth, 'TLRequest',
                    namespace_functions, type_constructors)
     _write_modules(get_file('types'), import_depth, 'TLObject',
                    namespace_types, type_constructors)
+    _write_patched(get_file('patched'), namespace_patched)
 
     filename = os.path.join(get_file('alltlobjects.py'))
     with open(filename, 'w', encoding='utf-8') as file:

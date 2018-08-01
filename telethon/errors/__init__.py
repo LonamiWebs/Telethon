@@ -36,7 +36,7 @@ def report_error(code, message, report_method):
         )
         url.read()
         url.close()
-    except:
+    except Exception as e:
         "We really don't want to crash when just reporting an error"
 
 
@@ -65,5 +65,8 @@ def rpc_message_to_error(rpc_error, report_method=None):
             capture = int(m.group(1)) if m.groups() else None
             return cls(capture=capture)
 
-    cls = base_errors.get(rpc_error.error_code, RPCError)
-    return cls(rpc_error.error_message)
+    cls = base_errors.get(rpc_error.error_code)
+    if cls:
+        return cls(rpc_error.error_message)
+
+    return RPCError(rpc_error.error_code, rpc_error.error_message)

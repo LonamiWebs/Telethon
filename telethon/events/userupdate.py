@@ -9,15 +9,16 @@ class UserUpdate(EventBuilder):
     """
     Represents an user update (gone online, offline, joined Telegram).
     """
-    def build(self, update):
+    @classmethod
+    def build(cls, update):
         if isinstance(update, types.UpdateUserStatus):
-            event = UserUpdate.Event(update.user_id,
-                                     status=update.status)
+            event = cls.Event(update.user_id,
+                              status=update.status)
         else:
             return
 
         event._entities = update._entities
-        return self._filter_event(event)
+        return event
 
     class Event(EventCommon):
         """
@@ -95,7 +96,8 @@ class UserUpdate(EventBuilder):
                 isinstance(status, types.UserStatusOnline) else None
 
             if self.last_seen:
-                diff = datetime.datetime.now() - self.last_seen
+                now = datetime.datetime.now(tz=datetime.timezone.utc)
+                diff = now - self.last_seen
                 if diff < datetime.timedelta(days=30):
                     self.within_months = True
                     if diff < datetime.timedelta(days=7):
