@@ -66,22 +66,3 @@ def get_password_hash(pw, current_salt):
     return sha256(pw_hash).digest()
 
 # endregion
-
-# region Custom Classes
-
-class TotalList(collections.UserList):
-    """
-    A list with an extra `total` property, which may not match its `len`
-    since the total represents the total amount of items *available*
-    somewhere else, not the items *in this list*.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.total = 0
-
-    def __str__(self):
-        return '[{}, total={}]'.format(
-            ', '.join(repr(x) for x in self), self.total)
-
-# endregion
