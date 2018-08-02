@@ -122,6 +122,8 @@ class MemorySession(Session):
             entities = tlo
         else:
             entities = []
+            if hasattr(tlo, 'user'):
+                entities.append(tlo.user)
             if hasattr(tlo, 'chats') and utils.is_list_like(tlo.chats):
                 entities.extend(tlo.chats)
             if hasattr(tlo, 'users') and utils.is_list_like(tlo.users):
