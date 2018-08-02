@@ -660,6 +660,28 @@ def get_inner_text(text, entities):
     return result
 
 
+def get_peer(peer):
+    try:
+        if peer.SUBCLASS_OF_ID == 0x2d45687:
+            return peer
+        elif isinstance(peer, (
+                types.contacts.ResolvedPeer, types.InputNotifyPeer,
+                types.TopPeer)):
+            return peer.peer
+        elif isinstance(peer, types.ChannelFull):
+            return types.PeerChannel(peer.id)
+
+        peer = get_input_peer(peer, allow_self=False)
+        if isinstance(peer, types.InputPeerUser):
+            return types.PeerUser(peer.user_id)
+        elif isinstance(peer, types.InputPeerChat):
+            return types.PeerChat(peer.chat_id)
+        elif isinstance(peer, types.InputPeerChannel):
+            return types.PeerChannel(peer.channel_id)
+    except (AttributeError, TypeError):
+        _raise_cast_fail(peer, 'Peer')
+
+
 def get_peer_id(peer, add_mark=True):
     """
     Finds the ID of the given peer, and converts it to the "bot api" format
@@ -674,51 +696,30 @@ def get_peer_id(peer, add_mark=True):
         return peer if add_mark else resolve_id(peer)[0]
 
     try:
-        if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
-            if isinstance(peer, (
-                    types.contacts.ResolvedPeer, types.InputNotifyPeer,
-                    types.TopPeer)):
-                peer = peer.peer
-            else:
-                # Not a Peer or an InputPeer, so first get its Input version
-                peer = get_input_peer(peer, allow_self=False)
-    except AttributeError:
+        peer = get_peer(peer)
+    except TypeError:
         _raise_cast_fail(peer, 'int')
 
-    # Set the right ID/kind, or raise if the TLObject is not recognised
-    if isinstance(peer, (types.PeerUser, types.InputPeerUser)):
+    if isinstance(peer, types.PeerUser):
         return peer.user_id
-    elif isinstance(peer, (types.PeerChat, types.InputPeerChat)):
+    elif isinstance(peer, types.PeerChat):
         # Check in case the user mixed things up to avoid blowing up
         if not (0 < peer.chat_id <= 0x7fffffff):
             peer.chat_id = resolve_id(peer.chat_id)[0]
 
         return -peer.chat_id if add_mark else peer.chat_id
-    elif isinstance(peer, (
-            types.PeerChannel, types.InputPeerChannel, types.ChannelFull)):
-        if isinstance(peer, types.ChannelFull):
-            # Special case: .get_input_peer can't return InputChannel from
-            # ChannelFull since it doesn't have an .access_hash attribute.
-            i = peer.id
-        else:
-            i = peer.channel_id
-
+    else:  # if isinstance(peer, types.PeerChannel):
         # Check in case the user mixed things up to avoid blowing up
-        if not (0 < i <= 0x7fffffff):
-            i = resolve_id(i)[0]
-            if isinstance(peer, types.ChannelFull):
-                peer.id = i
-            else:
-                peer.channel_id = i
+        if not (0 < peer.channel_id <= 0x7fffffff):
+            peer.channel_id = resolve_id(peer.channel_id)[0]
 
-        if add_mark:
-            # Concat -100 through math tricks, .to_supergroup() on
-            # Madeline IDs will be strictly positive -> log works.
-            return -(i + pow(10, math.floor(math.log10(i) + 3)))
-        else:
-            return i
+        if not add_mark:
+            return peer.channel_id
 
-    _raise_cast_fail(peer, 'int')
+        # Concat -100 through math tricks, .to_supergroup() on
+        # Madeline IDs will be strictly positive -> log works.
+        return -(peer.channel_id + pow(
+            10, math.floor(math.log10(peer.channel_id) + 3)))
 
 
 def resolve_id(marked_id):
