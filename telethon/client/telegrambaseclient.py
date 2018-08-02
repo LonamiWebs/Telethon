@@ -13,7 +13,7 @@ from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
 from ..network.mtprotostate import MTProtoState
-from ..sessions import Session, SQLiteSession
+from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
 
@@ -171,7 +171,18 @@ class TelegramBaseClient(abc.ABC):
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
-            session = SQLiteSession(session)
+            try:
+                session = SQLiteSession(session)
+            except ValueError:
+                import warnings
+                warnings.warn(
+                    'The sqlite3 module is not available under this '
+                    'Python installation and no custom session '
+                    'instance was given; using MemorySession.\n'
+                    'You will need to re-login every time unless '
+                    'you use another session storage'
+                )
+                session = MemorySession()
         elif not isinstance(session, Session):
             raise TypeError(
                 'The given session must be a str or a Session instance.'

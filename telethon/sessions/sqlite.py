@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import sqlite3
 from base64 import b64decode
 from os.path import isfile as file_exists
 
@@ -12,6 +11,11 @@ from ..crypto import AuthKey
 from ..tl.types import (
     InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
 )
+
+try:
+    import sqlite3
+except ImportError:
+    sqlite3 = None
 
 EXTENSION = '.session'
 CURRENT_VERSION = 4  # database version
@@ -27,6 +31,9 @@ class SQLiteSession(MemorySession):
     """
 
     def __init__(self, session_id=None):
+        if sqlite3 is None:
+            raise ValueError('sqlite3 is not installed')
+
         super().__init__()
         self.filename = ':memory:'
         self.save_entities = True
