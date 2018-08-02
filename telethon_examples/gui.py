@@ -1,7 +1,9 @@
 import asyncio
+import collections
 import functools
 import inspect
 import os
+import re
 import sys
 import tkinter
 import tkinter.constants
@@ -13,6 +15,9 @@ from telethon import TelegramClient, events, utils
 # Some configuration for the app
 TITLE = 'Telethon GUI'
 SIZE = '640x280'
+REPLY = re.compile(r'\.r(\d+)\s*(.+)', re.IGNORECASE)
+DELETE = re.compile(r'\.d(\d+)', re.IGNORECASE)
+EDIT = re.compile(r'\.s(.+?[^\\])/(.*)', re.IGNORECASE)
 
 # Session name, API ID and hash to use; loaded from environmental variables
 SESSION = os.environ.get('TG_SESSION', 'gui')
@@ -94,6 +99,14 @@ class App(tkinter.Tk):
         self.rowconfigure(2, weight=1)
         self.cl.add_event_handler(self.on_message, events.NewMessage)
 
+        # Save shown message IDs to support replying with ".rN reply"
+        # For instance to reply to the last message ".r1 this is a reply"
+        self.message_ids = []
+
+        # Save the sent texts to allow editing with ".s text/replacement"
+        # For instance to edit the last "hello" with "bye" ".s hello/bye"
+        self.sent_text = collections.deque(maxlen=10)
+
         # Sending messages
         tkinter.Label(self, text='Message:').grid(row=3, column=0)
         self.message = tkinter.Entry(self)
@@ -126,6 +139,9 @@ class App(tkinter.Tk):
         if event.chat_id != self.chat_id:
             return
 
+        # Save the message ID so we know which to reply to
+        self.message_ids.append(event.id)
+
         # Decide a prefix (">> " for our messages, "<user>" otherwise)
         if event.out:
             text = '>> '
@@ -141,7 +157,7 @@ class App(tkinter.Tk):
         text += '\n'
 
         # Append the text to the end with a newline, and scroll to the end
-        self.log.insert(tkinter.INSERT, text)
+        self.log.insert(tkinter.END, text)
         self.log.yview(tkinter.END)
 
     # noinspection PyUnusedLocal
@@ -211,8 +227,59 @@ class App(tkinter.Tk):
         self.message.delete(0, tkinter.END)
         self.message.focus()
 
+        # NOTE: This part is optional but supports editing messages
+        #       You can remove it if you find it too complicated.
+        #
+        # Check if the edit matches any text
+        m = EDIT.match(text)
+        if m:
+            find = re.compile(m.group(1).lstrip())
+            # Cannot reversed(enumerate(...)), use index
+            for i in reversed(range(len(self.sent_text))):
+                msg_id, msg_text = self.sent_text[i]
+                if find.search(msg_text):
+                    # Found text to replace, so replace it and edit
+                    new = find.sub(m.group(2), msg_text)
+                    self.sent_text[i] = (msg_id, new)
+                    await self.cl.edit_message(self.chat_id, msg_id, new)
+
+                    # Notify that a replacement was made
+                    self.log.insert(tkinter.END, '(message edited: {} -> {})\n'
+                                    .format(msg_text, new))
+                    self.log.yview(tkinter.END)
+                    return
+
+        # Check if we want to delete the message
+        m = DELETE.match(text)
+        if m:
+            try:
+                delete = self.message_ids[-int(m.group(1))]
+            except IndexError:
+                pass
+            else:
+                await self.cl.delete_messages(self.chat_id, delete)
+                # Notify that a message was deleted
+                self.log.insert(tkinter.END, '(message deleted)\n')
+                self.log.yview(tkinter.END)
+                return
+
+        # Check if we want to reply to some message
+        reply_to = None
+        m = REPLY.match(text)
+        if m:
+            text = m.group(2)
+            try:
+                reply_to = self.message_ids[-int(m.group(1))]
+            except IndexError:
+                pass
+
+        # NOTE: This part is no longer optional. It sends the message.
         # Send the message text and get back the sent message object
-        message = await self.cl.send_message(self.chat_id, text)
+        message = await self.cl.send_message(self.chat_id, text,
+                                             reply_to=reply_to)
+
+        # Save the sent message ID and text to allow edits
+        self.sent_text.append((message.id, text))
 
         # Process the sent message as if it were an event
         await self.on_message(message)
@@ -228,9 +295,16 @@ class App(tkinter.Tk):
             chat = int(chat)
 
         try:
+            old = self.chat_id
             # Valid chat ID, set it and configure the colour back to white
             self.chat_id = await self.cl.get_peer_id(chat)
             self.chat.configure(bg='white')
+
+            # If the chat ID changed, clear the
+            # messages that we could edit or reply
+            if self.chat_id != old:
+                self.message_ids.clear()
+                self.sent_text.clear()
         except ValueError:
             # Invalid chat ID, let the user know with a yellow background
             self.chat_id = None
