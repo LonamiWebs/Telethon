@@ -1,4 +1,5 @@
 from .. import types
+from .messagebutton import MessageButton
 
 
 class Button:
@@ -41,12 +42,14 @@ class Button:
         """
         if isinstance(button, cls):
             return button.is_inline
-        else:
-            return isinstance(button, (
-                types.KeyboardButtonCallback,
-                types.KeyboardButtonSwitchInline,
-                types.KeyboardButtonUrl
-            ))
+        elif isinstance(button, MessageButton):
+            button = button.button
+
+        return isinstance(button, (
+            types.KeyboardButtonCallback,
+            types.KeyboardButtonSwitchInline,
+            types.KeyboardButtonUrl
+        ))
 
     @classmethod
     def inline(cls, text, callback=None, data=None):
