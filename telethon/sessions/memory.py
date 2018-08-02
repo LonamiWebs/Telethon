@@ -196,9 +196,13 @@ class MemorySession(Session):
             if phone:
                 result = self.get_entity_rows_by_phone(phone)
             else:
-                username, _ = utils.parse_username(key)
-                if username:
+                username, invite = utils.parse_username(key)
+                if username and not invite:
                     result = self.get_entity_rows_by_username(username)
+                else:
+                    key = utils.resolve_invite_link(key)[1]
+                    if key:
+                        result = self.get_entity_rows_by_id(key, exact=False)
 
         elif isinstance(key, int):
             result = self.get_entity_rows_by_id(key, exact)

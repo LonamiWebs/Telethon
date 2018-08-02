@@ -742,6 +742,9 @@ def _rle_decode(data):
     """
     Decodes run-length-encoded `data`.
     """
+    if not data:
+        return data
+
     new = b''
     last = b''
     for cur in data:
@@ -756,6 +759,27 @@ def _rle_decode(data):
     return new + last
 
 
+def _decode_telegram_base64(string):
+    """
+    Decodes an url-safe base64-encoded string into its bytes.
+
+    This is the way Telegram shares binary data as strings,
+    such as Bot API-style file IDs or invite links.
+    """
+    try:
+        data = string.encode('ascii')
+    except (UnicodeEncodeError, AttributeError):
+        return None
+
+    data = data.replace(b'-', b'+').replace(
+        b'_', b'/') + b'=' * (len(data) % 4)
+
+    try:
+        return base64.b64decode(data)
+    except binascii.Error:
+        return None
+
+
 def resolve_bot_file_id(file_id):
     """
     Given a Bot API-style `file_id`, returns the media it represents.
@@ -766,19 +790,8 @@ def resolve_bot_file_id(file_id):
 
     For thumbnails, the photo ID and hash will always be zero.
     """
-    try:
-        data = file_id.encode('ascii')
-    except (UnicodeEncodeError, AttributeError):
-        return None
-
-    data.replace(b'-', b'+').replace(b'_', b'/') + b'=' * (len(data) % 4)
-    try:
-        data = base64.b64decode(data)
-    except binascii.Error:
-        return None
-
-    data = _rle_decode(data)
-    if data[-1] == b'\x02':
+    data = _rle_decode(_decode_telegram_base64(file_id))
+    if not data or data[-1] == b'\x02':
         return None
 
     data = data[:-1]
@@ -832,6 +845,31 @@ def resolve_bot_file_id(file_id):
                 local_id=local_id
             ), w=0, h=0, size=0)
         ], date=None)
+
+
+def resolve_invite_link(link):
+    """
+    Resolves the given invite link. Returns a tuple of
+    ``(creator user id, global chat id, random int)``.
+
+    Note that for broadcast channels, the creator user
+    ID will be zero to protect their identity. Normal
+    chats and megagroup channels will have creator ID.
+
+    Note that the chat ID may not be accurate for chats
+    with a link that were upgraded to megagroup, since
+    the link can remain the same, but the ID will be
+    correct once a new link is generated.
+    """
+    link_hash, is_link = parse_username(link)
+    if not is_link:
+        # Perhaps the user passed the link hash directly
+        link_hash = link
+
+    try:
+        return struct.unpack('>LLQ', _decode_telegram_base64(link_hash))
+    except (struct.error, TypeError):
+        return None, None, None
 
 
 def get_appropriated_part_size(file_size):
