@@ -51,6 +51,8 @@ class ButtonMethods(UpdateMethods):
                         )
 
                     button = button.button
+                elif isinstance(button, custom.MessageButton):
+                    button = button.button
 
                 if button.SUBCLASS_OF_ID == 0xbad74a3:
                     # 0xbad74a3 == crc32(b'KeyboardButton')
