@@ -1,10 +1,9 @@
 import itertools
-from collections import UserList
 
 from async_generator import async_generator, yield_
 
 from .users import UserMethods
-from .. import utils
+from .. import utils, helpers
 from ..tl import types, functions, custom
 
 
@@ -124,12 +123,12 @@ class DialogMethods(UserMethods):
 
     async def get_dialogs(self, *args, **kwargs):
         """
-        Same as :meth:`iter_dialogs`, but returns a list instead
-        with an additional ``.total`` attribute on the list.
+        Same as `iter_dialogs`, but returns a
+        `TotalList <telethon.helpers.TotalList>` instead.
         """
         total = [0]
         kwargs['_total'] = total
-        dialogs = UserList()
+        dialogs = helpers.TotalList()
         async for x in self.iter_dialogs(*args, **kwargs):
             dialogs.append(x)
         dialogs.total = total[0]

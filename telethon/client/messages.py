@@ -2,14 +2,13 @@ import asyncio
 import itertools
 import logging
 import time
-from collections import UserList
 
 from async_generator import async_generator, yield_
 
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .buttons import ButtonMethods
-from .. import utils
+from .. import utils, helpers
 from ..tl import types, functions, custom
 
 __log__ = logging.getLogger(__name__)
@@ -323,8 +322,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def get_messages(self, *args, **kwargs):
         """
-        Same as :meth:`iter_messages`, but returns a list instead
-        with an additional ``.total`` attribute on the list.
+        Same as `iter_messages`, but returns a
+        `TotalList <telethon.helpers.TotalList>` instead.
 
         If the `limit` is not set, it will be 1 by default unless both
         `min_id` **and** `max_id` are set (as *named* arguments), in
@@ -346,7 +345,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             else:
                 kwargs['limit'] = 1
 
-        msgs = UserList()
+        msgs = helpers.TotalList()
         async for x in self.iter_messages(*args, **kwargs):
             msgs.append(x)
         msgs.total = total[0]

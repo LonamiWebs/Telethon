@@ -1,4 +1,5 @@
 """Various helpers not related to the Telegram API itself"""
+import collections
 import os
 import struct
 from hashlib import sha1, sha256
@@ -63,5 +64,27 @@ def get_password_hash(pw, current_salt):
 
     pw_hash = current_salt + data + current_salt
     return sha256(pw_hash).digest()
+
+# endregion
+
+# region Custom Classes
+
+class TotalList(list):
+    """
+    A list with an extra `total` property, which may not match its `len`
+    since the total represents the total amount of items *available*
+    somewhere else, not the items *in this list*.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.total = 0
+
+    def __str__(self):
+        return '[{}, total={}]'.format(
+            ', '.join(str(x) for x in self), self.total)
+
+    def __repr__(self):
+        return '[{}, total={}]'.format(
+            ', '.join(repr(x) for x in self), self.total)
 
 # endregion

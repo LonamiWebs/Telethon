@@ -10,7 +10,6 @@ import mimetypes
 import os
 import re
 import struct
-from collections import UserList
 from mimetypes import guess_extension
 from types import GeneratorType
 
@@ -603,8 +602,7 @@ def is_list_like(obj):
     enough. Things like ``open()`` are also iterable (and probably many
     other things), so just support the commonly known list-like objects.
     """
-    return isinstance(obj, (list, tuple, set, dict,
-                            UserList, GeneratorType))
+    return isinstance(obj, (list, tuple, set, dict, GeneratorType))
 
 
 def parse_phone(phone):

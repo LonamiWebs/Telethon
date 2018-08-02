@@ -1,9 +1,7 @@
-from collections import UserList
-
 from async_generator import async_generator, yield_
 
 from .users import UserMethods
-from .. import utils
+from .. import utils, helpers
 from ..tl import types, functions
 
 
@@ -169,12 +167,12 @@ class ChatMethods(UserMethods):
 
     async def get_participants(self, *args, **kwargs):
         """
-        Same as :meth:`iter_participants`, but returns a list instead
-        with an additional ``.total`` attribute on the list.
+        Same as `iter_participants`, but returns a
+        `TotalList <telethon.helpers.TotalList>` instead.
         """
         total = [0]
         kwargs['_total'] = total
-        participants = UserList()
+        participants = helpers.TotalList()
         async for x in self.iter_participants(*args, **kwargs):
             participants.append(x)
         participants.total = total[0]

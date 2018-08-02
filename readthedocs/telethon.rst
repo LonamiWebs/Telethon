@@ -27,6 +27,15 @@ telethon\.utils module
     :show-inheritance:
 
 
+telethon\.helpers module
+------------------------
+
+.. automodule:: telethon.helpers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 telethon\.events package
 ------------------------
 
