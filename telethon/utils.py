@@ -761,23 +761,18 @@ def _rle_decode(data):
 
 def _decode_telegram_base64(string):
     """
-    Decodes an url-safe base64-encoded string into its bytes.
+    Decodes an url-safe base64-encoded string into its bytes
+    by first adding the stripped necessary padding characters.
 
     This is the way Telegram shares binary data as strings,
     such as Bot API-style file IDs or invite links.
+
+    Returns ``None`` if the input string was not valid.
     """
     try:
-        data = string.encode('ascii')
-    except (UnicodeEncodeError, AttributeError):
-        return None
-
-    data = data.replace(b'-', b'+').replace(
-        b'_', b'/') + b'=' * (len(data) % 4)
-
-    try:
-        return base64.b64decode(data)
-    except binascii.Error:
-        return None
+        return base64.urlsafe_b64decode(string + '=' * (len(string) % 4))
+    except (binascii.Error, ValueError, TypeError):
+        return None  # not valid base64, not valid ascii, not a string
 
 
 def resolve_bot_file_id(file_id):
@@ -850,16 +845,16 @@ def resolve_bot_file_id(file_id):
 def resolve_invite_link(link):
     """
     Resolves the given invite link. Returns a tuple of
-    ``(creator user id, global chat id, random int)``.
+    ``(link creator user id, global chat id, random int)``.
 
-    Note that for broadcast channels, the creator user
-    ID will be zero to protect their identity. Normal
-    chats and megagroup channels will have creator ID.
+    Note that for broadcast channels, the link creator
+    user ID will be zero to protect their identity.
+    Normal chats and megagroup channels will have such ID.
 
     Note that the chat ID may not be accurate for chats
     with a link that were upgraded to megagroup, since
-    the link can remain the same, but the ID will be
-    correct once a new link is generated.
+    the link can remain the same, but the chat ID will
+    be correct once a new link is generated.
     """
     link_hash, is_link = parse_username(link)
     if not is_link:
