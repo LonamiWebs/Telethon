@@ -38,8 +38,4 @@ class BotMethods(UserMethods):
             geo_point=geo_point
         ))
 
-        # TODO Custom InlineResults(list) class with more information
-        return [
-            custom.InlineResult(self, x, query_id=result.query_id)
-            for x in result.results
-        ]
+        return custom.InlineResults(self, result)

@@ -7,3 +7,4 @@ from .message import Message
 from .button import Button
 from .inline import InlineBuilder
 from .inlineresult import InlineResult
+from .inlineresults import InlineResults
