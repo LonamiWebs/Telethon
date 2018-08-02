@@ -15,8 +15,8 @@ from telethon import TelegramClient, events, utils
 # Some configuration for the app
 TITLE = 'Telethon GUI'
 SIZE = '640x280'
-REPLY = re.compile(r'\.r(\d+)\s*(.+)', re.IGNORECASE)
-DELETE = re.compile(r'\.d(\d+)', re.IGNORECASE)
+REPLY = re.compile(r'\.r\s*(\d+)\s*(.+)', re.IGNORECASE)
+DELETE = re.compile(r'\.d\s*(\d+)', re.IGNORECASE)
 EDIT = re.compile(r'\.s(.+?[^\\])/(.*)', re.IGNORECASE)
 
 # Session name, API ID and hash to use; loaded from environmental variables
@@ -101,6 +101,7 @@ class App(tkinter.Tk):
 
         # Save shown message IDs to support replying with ".rN reply"
         # For instance to reply to the last message ".r1 this is a reply"
+        # Deletion also works with ".dN".
         self.message_ids = []
 
         # Save the sent texts to allow editing with ".s text/replacement"
@@ -253,7 +254,7 @@ class App(tkinter.Tk):
         m = DELETE.match(text)
         if m:
             try:
-                delete = self.message_ids[-int(m.group(1))]
+                delete = self.message_ids.pop(-int(m.group(1)))
             except IndexError:
                 pass
             else:
@@ -291,8 +292,10 @@ class App(tkinter.Tk):
         Checks the input chat where to send and listen messages from.
         """
         chat = self.chat.get().strip()
-        if chat.isdigit():
+        try:
             chat = int(chat)
+        except ValueError:
+            pass
 
         try:
             old = self.chat_id
