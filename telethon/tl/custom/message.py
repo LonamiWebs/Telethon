@@ -90,6 +90,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             You may want to access the `photo`, `document`
             etc. properties instead.
 
+            If the media was not present or it was :tl:`MessageMediaEmpty`,
+            this member will instead be ``None`` for convenience.
+
         reply_markup (:tl:`ReplyMarkup`):
             The reply markup for this message (which was sent
             either via a bot or by a bot). You probably want
@@ -153,7 +156,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self.message = message
         self.fwd_from = fwd_from
         self.via_bot_id = via_bot_id
-        self.media = media
+        self.media = None if isinstance(
+            media, types.MessageMediaEmpty) else media
+
         self.reply_markup = reply_markup
         self.entities = entities
         self.views = views
