@@ -269,6 +269,20 @@ class UpdateMethods(UserMethods):
         built = {builder: builder.build(update)
                  for builder in self._event_builders_count}
 
+        if self._conversations:
+            for ev_type in (events.NewMessage, events.MessageEdited,
+                            events.MessageRead):
+                if ev_type not in built:
+                    built[ev_type] = ev_type.build(update)
+
+            for conv in self._conversations.values():
+                if built[events.NewMessage]:
+                    conv._on_new_message(built[events.NewMessage])
+                if built[events.MessageEdited]:
+                    conv._on_edit(built[events.MessageEdited])
+                if built[events.MessageRead]:
+                    conv._on_read(built[events.MessageRead])
+
         for builder, callback in self._event_builders:
             event = built[type(builder)]
             if not event or not builder.filter(event):

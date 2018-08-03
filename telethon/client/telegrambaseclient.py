@@ -272,6 +272,7 @@ class TelegramBaseClient(abc.ABC):
         self._event_builders = []
         self._events_pending_resolve = []
         self._event_resolve_lock = asyncio.Lock()
+        self._conversations = {}
 
         # Keep track of how many event builders there are for
         # each type {type: count}. If there's at least one then

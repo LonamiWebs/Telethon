@@ -157,4 +157,80 @@ class DialogMethods(UserMethods):
             result.append(x)
         return result
 
+    def conversation(
+            self, entity,
+            *, timeout=None, total_timeout=60, max_messages=100,
+            replies_are_responses=True):
+        """
+        Returns an iterator over the dialogs, yielding 'limit' at most.
+        Dialogs are the open "chats" or conversations with other people,
+        groups you have joined, or channels you are subscribed to.
+
+        Args:
+            entity (`entity`):
+                The entity with which a new conversation should be opened.
+
+            timeout (`int` | `float`, optional):
+                The default timeout *per action* to be used. You
+                can override this on each action. By default there
+                is no per-action time limit but there is still a
+                `total_timeout` for the entire conversation.
+
+            total_timeout (`int` | `float`, optional):
+                The total timeout to use for the whole conversation.
+                After these many seconds pass, subsequent actions
+                will result in ``asyncio.TimeoutError``.
+
+            max_messages (`int`, optional):
+                The maximum amount of messages this conversation will
+                remember. After these many messages arrive in the
+                specified chat, subsequent actions will result in
+                ``ValueError``.
+
+            replies_are_responses (`bool`, optional):
+                Whether replies should be treated as responses or not.
+
+                If the setting is enabled, calls to `conv.get_response
+                <telethon.tl.custom.conversation.Conversation.get_response>`
+                and a subsequent call to `conv.get_reply
+                <telethon.tl.custom.conversation.Conversation.get_reply>`
+                will return different messages, otherwise they may return
+                the same message.
+
+                Consider the following scenario with one outgoing message,
+                1, and two incoming messages, the second one replying::
+
+                                        Hello! <1
+                    2> (reply to 1) Hi!
+                    3> (reply to 1) How are you?
+
+                And the following code:
+
+                .. code-block:: python
+
+                    async with client.conversation(chat) as conv:
+                        msg1 = await conv.send_message('Hello!')
+                        msg2 = await conv.get_response()
+                        msg3 = await conv.get_reply()
+
+                With the setting enabled, ``msg2`` will be ``'Hi!'`` and
+                ``msg3`` be ``'How are you?'`` since replies are also
+                responses, and a response was already returned.
+
+                With the setting disabled, both ``msg2`` and ``msg3`` will
+                be ``'Hi!'`` since one is a response and also a reply.
+
+        Returns:
+            A `Conversation <telethon.tl.custom.conversation.Conversation>`.
+        """
+        return custom.Conversation(
+            self,
+            entity,
+            timeout=timeout,
+            total_timeout=total_timeout,
+            max_messages=max_messages,
+            replies_are_responses=replies_are_responses
+
+        )
+
     # endregion
