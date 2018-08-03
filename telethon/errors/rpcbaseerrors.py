@@ -3,8 +3,8 @@ class RPCError(Exception):
     code = None
     message = None
 
-    def __init__(self, code, message):
-        super().__init__('RPCError {}: {}'.format(code, message))
+    def __init__(self, message, code=None):
+        super().__init__('RPCError {}: {}'.format(code or self.code, message))
         self.code = code
         self.message = message
 

@@ -69,4 +69,4 @@ def rpc_message_to_error(rpc_error, report_method=None):
     if cls:
         return cls(rpc_error.error_message)
 
-    return RPCError(rpc_error.error_code, rpc_error.error_message)
+    return RPCError(rpc_error.error_message, rpc_error.error_code)
