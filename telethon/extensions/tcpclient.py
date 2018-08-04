@@ -151,7 +151,14 @@ class TcpClient:
             loop=self._loop
         )
         for r in running:
-            r.cancel()
+            if not r.cancelled():
+                if r.done():
+                    # Retrieve exception to avoid "not retrieved" errors
+                    r.exception()
+
+                # Cancel the future despite its state
+                r.cancel()
+
         if not self.is_connected:
             raise self.SocketClosed()
         if not done:

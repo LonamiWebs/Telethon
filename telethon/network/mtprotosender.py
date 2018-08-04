@@ -167,7 +167,7 @@ class MTProtoSender:
                 self._recv_loop_handle.cancel()
 
         __log__.info('Disconnection from {} complete!'.format(self._ip))
-        if self._disconnected:
+        if self._disconnected and not self._disconnected.done():
             if error:
                 self._disconnected.set_exception(error)
             else:
