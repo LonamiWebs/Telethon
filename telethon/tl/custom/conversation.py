@@ -71,6 +71,38 @@ class Conversation(ChatGetter):
         self._last_outgoing = message.id
         return message
 
+    async def send_file(self, *args, **kwargs):
+        """
+        Sends a file in the context of this conversation. Shorthand
+        for `telethon.client.uploads.UploadMethods.send_file` with
+        ``entity`` already set.
+        """
+        message = await self._client.send_file(
+            self._input_chat, *args, **kwargs)
+
+        self._outgoing.add(message.id)
+        self._last_outgoing = message.id
+        return message
+
+    async def mark_read(self, message=None):
+        """
+        Marks as read the latest received message if ``message is None``.
+        Otherwise, marks as read until the given message (or message ID).
+
+        This is equivalent to calling `client.send_read_acknowledge
+        <telethon.client.messages.MessageMethods.send_read_acknowledge>`.
+        """
+        if message is None:
+            if self._incoming:
+                message = self._incoming[-1].id
+            else:
+                message = 0
+        elif not isinstance(message, int):
+            message = message.id
+
+        return await self._client.send_read_acknowledge(
+            self._input_chat, max_id=message)
+
     async def get_response(self, message=None, *, timeout=None):
         """
         Awaits for a response to arrive.
