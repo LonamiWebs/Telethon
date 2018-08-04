@@ -137,7 +137,8 @@ class ChatMethods(UserMethods):
             if not isinstance(
                     full.full_chat.participants, types.ChatParticipants):
                 # ChatParticipantsForbidden won't have ``.participants``
-                _total[0] = 0
+                if _total:
+                    _total[0] = 0
                 return
 
             if _total:
