@@ -33,10 +33,8 @@ class Conversation(ChatGetter):
         self._broadcast = None
 
         self._timeout = timeout
-        if total_timeout:
-            self._total_due = time.time() + total_timeout
-        else:
-            self._total_due = float('inf')
+        self._total_timeout = total_timeout
+        self._total_due = None
 
         self._outgoing = set()
         self._last_outgoing = 0
@@ -305,6 +303,11 @@ class Conversation(ChatGetter):
         self._last_incoming = 0
         self._pending_responses.clear()
         self._response_indices.clear()
+        if self._total_timeout:
+            self._total_due = time.time() + self._total_timeout
+        else:
+            self._total_due = float('inf')
+
         return self
 
     async def __aexit__(self, *args):
