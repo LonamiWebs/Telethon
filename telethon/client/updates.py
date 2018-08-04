@@ -283,6 +283,9 @@ class UpdateMethods(UserMethods):
                 if built[events.MessageRead]:
                     conv._on_read(built[events.MessageRead])
 
+                if conv._custom:
+                    await conv._check_custom(built, update)
+
         for builder, callback in self._event_builders:
             event = built[type(builder)]
             if not event or not builder.filter(event):

@@ -19,6 +19,7 @@ class Conversation(ChatGetter):
     as you better see fit.
     """
     _id_counter = 0
+    _custom_counter = 0
 
     def __init__(self, client, input_chat,
                  *, timeout, total_timeout, max_messages,
@@ -42,6 +43,7 @@ class Conversation(ChatGetter):
         self._last_incoming = 0
         self._max_incoming = max_messages
         self._last_read = None
+        self._custom = {}
 
         self._pending_responses = {}
         self._pending_replies = {}
@@ -256,6 +258,69 @@ class Conversation(ChatGetter):
             raise asyncio.TimeoutError()
         else:
             return future.result()
+
+    def wait_event(self, event, *, timeout=None):
+        """
+        Waits for a custom event to occur. Timeouts still apply.
+
+        Unless you're certain that your code will run fast enough,
+        generally you should get a "handle" of this special coroutine
+        before acting. Generally, you should do this:
+
+        >>> from telethon import TelegramClient, events
+        >>>
+        >>> client = TelegramClient(...)
+        >>>
+        >>> async def main():
+        >>>     async with client.conversation(...) as conv:
+        >>>         response = conv.wait_event(events.NewMessage(incoming=True))
+        >>>         await conv.send_message('Hi')
+        >>>         response = await response
+
+        This way your event can be registered before acting,
+        since the response may arrive before your event was
+        registered. It depends on your use case since this
+        also means the event can arrive before you send
+        a previous action.
+        """
+        now = time.time()
+        if isinstance(event, type):
+            event = event()
+
+        counter = Conversation._custom_counter
+        Conversation._custom_counter += 1
+
+        future = asyncio.Future()
+        async def result():
+            done, pending = await asyncio.wait(
+                [future, self._sleep(now, timeout)],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            del self._custom[counter]
+            if future in pending:
+                for x in pending:
+                    x.cancel()
+
+                raise asyncio.TimeoutError()
+            else:
+                return future.result()
+
+        self._custom[counter] = (event, future, False)
+        return result()
+
+    async def _check_custom(self, built, update):
+        for i, (ev, fut, resolved) in self._custom.items():
+            ev_type = type(ev)
+            if ev_type not in built:
+                built[ev_type] = ev.build(update)
+
+            if built[ev_type]:
+                if not resolved:
+                    await ev.resolve(self._client)
+                    self._custom[i] = (ev, fut, True)
+
+                if ev.filter(built[ev_type]):
+                    fut.set_result(built[ev_type])
 
     def _on_new_message(self, response):
         if response.chat_id != self.chat_id or response.out:
