@@ -676,6 +676,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         to know what bot we want to start. Raises ``ValueError`` if the bot
         cannot be found but is needed. Returns ``None`` if it's not needed.
         """
+        if not isinstance(self.reply_markup, (
+                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+            return None
+
         for row in self.reply_markup.rows:
             for button in row.buttons:
                 if isinstance(button, types.KeyboardButtonSwitchInline):
