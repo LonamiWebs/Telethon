@@ -18,16 +18,18 @@ class StringSession(MemorySession):
     """
     def __init__(self, string=None):
         super().__init__()
-        if string and string[0] != CURRENT_VERSION:
-            raise ValueError('Not a valid string')
+        if string:
+            if string[0] != CURRENT_VERSION:
+                raise ValueError('Not a valid string')
 
-        ip_len = 4 if len(string) == 353 else 16
-        self._dc_id, ip, self._port, key = struct.unpack(
-            '>B{}sH256s'.format(ip_len), base64.urlsafe_b64decode(string[1:]))
+            string = string[1:]
+            ip_len = 4 if len(string) == 352 else 16
+            self._dc_id, ip, self._port, key = struct.unpack(
+                '>B{}sH256s'.format(ip_len), base64.urlsafe_b64decode(string))
 
-        self._server_address = ipaddress.ip_address(ip).compressed
-        if any(key):
-            self._auth_key = AuthKey(key)
+            self._server_address = ipaddress.ip_address(ip).compressed
+            if any(key):
+                self._auth_key = AuthKey(key)
 
     def save(self):
         if not self._auth_key:
