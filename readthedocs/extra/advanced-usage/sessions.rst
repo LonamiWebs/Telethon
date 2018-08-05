@@ -36,8 +36,9 @@ If you're not going to work with updates, or don't need to cache the
 ``access_hash`` associated with the entities' ID, you can disable this
 by setting ``client.session.save_entities = False``.
 
-Custom Session Storage
-----------------------
+
+Different Session Storage
+*************************
 
 If you don't want to use the default SQLite session storage, you can also use
 one of the other implementations or implement your own storage.
@@ -46,89 +47,100 @@ To use a custom session storage, simply pass the custom session instance to
 :ref:`TelegramClient <telethon-client>` instead of
 the session name.
 
-Telethon contains two implementations of the abstract ``Session`` class:
+Telethon contains three implementations of the abstract ``Session`` class:
 
-* ``MemorySession``: stores session data in Python variables.
-* ``SQLiteSession``, (default): stores sessions in their own SQLite databases.
+* ``MemorySession``: stores session data within memory.
+* ``SQLiteSession``: stores sessions within on-disk SQLite databases. Default.
+* ``StringSession``: stores session data within memory,
+  but can be saved as a string.
+
+You can import these ``from telethon.sessions``. For example, using the
+``StringSession`` is done as follows:
+
+.. code-block:: python
+
+    from telethon.sync import TelegramClient
+    from telethon.sessions import StringSession
+
+    with TelegramClient(StringSession(string), api_id, api_hash) as client:
+        ...  # use the client
+
+        # Save the string session as a string; you should decide how
+        # you want to save this information (over a socket, remote
+        # database, print it and then paste the string in the code,
+        # etc.); the advantage is that you don't need to save it
+        # on the current disk as a separate file, and can be reused
+        # anywhere else once you log in.
+        string = client.session.save()
+
+    # Note that it's also possible to save any other session type
+    # as a string by using ``StringSession.save(session_instance)``:
+    client = TelegramClient('sqlite-session', api_id, api_hash)
+    string = StringSession.save(client.session)
 
 There are other community-maintained implementations available:
 
-* `SQLAlchemy <https://github.com/tulir/telethon-session-sqlalchemy>`_: stores all sessions in a single database via SQLAlchemy.
-* `Redis <https://github.com/ezdev128/telethon-session-redis>`_: stores all sessions in a single Redis data store.
+* `SQLAlchemy <https://github.com/tulir/telethon-session-sqlalchemy>`_:
+  stores all sessions in a single database via SQLAlchemy.
 
-Creating your own storage
-~~~~~~~~~~~~~~~~~~~~~~~~~
+* `Redis <https://github.com/ezdev128/telethon-session-redis>`_:
+  stores all sessions in a single Redis data store.
 
-The easiest way to create your own storage implementation is to use ``MemorySession``
-as the base and check out how ``SQLiteSession`` or one of the community-maintained
-implementations work. You can find the relevant Python files under the ``sessions``
-directory in Telethon.
+Creating your Own Storage
+*************************
 
-After you have made your own implementation, you can add it to the community-maintained
-session implementation list above with a pull request.
+The easiest way to create your own storage implementation is to use
+``MemorySession`` as the base and check out how ``SQLiteSession`` or
+one of the community-maintained implementations work. You can find the
+relevant Python files under the ``sessions`` directory in Telethon.
 
-SQLite Sessions and Heroku
---------------------------
-
-You probably have a newer version of SQLite installed (>= 3.8.2). Heroku uses
-SQLite 3.7.9 which does not support ``WITHOUT ROWID``. So, if you generated
-your session file on a system with SQLite >= 3.8.2 your session file will not
-work on Heroku's platform and will throw a corrupted schema error.
-
-There are multiple ways to solve this, the easiest of which is generating a
-session file on your Heroku dyno itself. The most complicated is creating
-a custom buildpack to install SQLite >= 3.8.2.
+After you have made your own implementation, you can add it to the
+community-maintained session implementation list above with a pull request.
 
 
-Generating a SQLite Session File on a Heroku Dyno
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+String Sessions
+***************
 
-.. note::
-    Due to Heroku's ephemeral filesystem all dynamically generated
-    files not part of your applications buildpack or codebase are destroyed
-    upon each restart.
+``StringSession`` are a convenient way to embed your login credentials
+directly into your code for extremely easy portability, since all they
+take is a string to be able to login without asking for your phone and
+code (or faster start if you're using a bot token).
+
+The easiest way to generate a string session is as follows:
+
+.. code-block:: python
+
+    from telethon.sync import TelegramClient
+    from telethon.sessions import StringSession
+
+    with TelegramClient(StringSession(), api_id, api_hash) as client:
+        print(client.session.save())
+
+
+Think of this as a way to export your authorization key (what's needed
+to login into your account). This will print a string in the standard
+output (likely your terminal).
 
 .. warning::
-    Do not restart your application Dyno at any point prior to retrieving your
-    session file. Constantly creating new session files from Telegram's API
-    will result in a 24 hour rate limit ban.
 
-Due to Heroku's ephemeral filesystem all dynamically generated
-files not part of your applications buildpack or codebase are destroyed upon
-each restart.
+    **Keep this string safe!** Anyone with this string can use it
+    to login into your account and do anything they want to to do.
 
-Using this scaffolded code we can start the authentication process:
+    This is similar to leaking your ``*.session`` files online,
+    but it is easier to leak a string than it is to leak a file.
 
-    .. code-block:: python
 
-        client = TelegramClient('login.session', api_id, api_hash).start()
+Once you have the string (which is a bit long), load it into your script
+somehow. You can use a normal text file and ``open(...).read()`` it or
+you can save it in a variable directly:
 
-At this point your Dyno will crash because you cannot access stdin. Open your
-Dyno's control panel on the Heroku website and "Run console" from the "More"
-dropdown at the top right. Enter ``bash`` and wait for it to load.
+.. code-block:: python
 
-You will automatically be placed into your applications working directory.
-So run your application ``python app.py`` and now you can complete the input
-requests such as "what is your phone number" etc.
+    string = '1aaNk8EX-YRfwoRsebUkugFvht6DUPi_Q25UOCzOAqzc...'
+    with TelegramClient(StringSession(string), api_id, api_hash) as client:
+        client.send_message('me', 'Hi')
 
-Once you're successfully authenticated exit your application script with
-CTRL + C and ``ls`` to confirm ``login.session`` exists in your current
-directory. Now you can create a git repo on your account and commit
-``login.session`` to that repo.
 
-You cannot ``ssh`` into your Dyno instance because it has crashed, so unless
-you programatically upload this file to a server host this is the only way to
-get it off of your Dyno.
-
-You now have a session file compatible with SQLite <= 3.8.2. Now you can
-programatically fetch this file from an external host (Firebase, S3 etc.)
-and login to your session using the following scaffolded code:
-
-    .. code-block:: python
-
-        fileName, headers = urllib.request.urlretrieve(file_url, 'login.session')
-        client = TelegramClient(os.path.abspath(fileName), api_id, api_hash).start()
-
-.. note::
-    - ``urlretrieve`` will be depreciated, consider using ``requests``.
-    - ``file_url`` represents the location of your file.
+These strings are really convenient for using in places like Heroku since
+their ephemeral filesystem will delete external files once your application
+is over.
