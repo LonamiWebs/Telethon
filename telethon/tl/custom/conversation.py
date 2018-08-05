@@ -164,12 +164,12 @@ class Conversation(ChatGetter):
         # If there is no last-chosen ID, make sure to pick one *after*
         # the input message, since we don't want responses back in time
         if target_id not in indices:
-            for i, incoming in self._incoming:
+            for i, incoming in enumerate(self._incoming):
                 if incoming.id > target_id:
                     indices[target_id] = i
                     break
             else:
-                indices[target_id] = 0
+                indices[target_id] = len(self._incoming)
 
         # If there are enough responses saved return the next one
         last_idx = indices[target_id]
