@@ -335,12 +335,7 @@ class Conversation(ChatGetter):
             return
 
         if len(self._incoming) == self._max_incoming:
-            too_many = ValueError('Too many incoming messages')
-            for pending in itertools.chain(
-                    self._pending_responses.values(),
-                    self._pending_replies.values(),
-                    self._pending_edits):
-                pending.set_exception(too_many)
+            self._cancel_all(ValueError('Too many incoming messages'))
             return
 
         self._incoming.append(response)
@@ -420,6 +415,22 @@ class Conversation(ChatGetter):
         except asyncio.CancelledError:
             pass
 
+    def _cancel_all(self, exception=None):
+        for pending in itertools.chain(
+                self._pending_responses.values(),
+                self._pending_replies.values(),
+                self._pending_edits):
+            if exception:
+                pending.set_exception(exception)
+            else:
+                pending.cancel()
+
+        for _, fut, _ in self._custom:
+            if exception:
+                fut.set_exception(exception)
+            else:
+                fut.cancel()
+
     def __enter__(self):
         return self._client.loop.run_until_complete(self.__aenter__())
 
@@ -429,12 +440,15 @@ class Conversation(ChatGetter):
             await self._client.get_input_entity(self._input_chat)
 
         self._chat_peer = utils.get_peer(self._input_chat)
-        self._outgoing.clear()
         self._last_outgoing = 0
-        self._incoming.clear()
         self._last_incoming = 0
-        self._pending_responses.clear()
-        self._response_indices.clear()
+        for d in (
+                self._outgoing, self._incoming,
+                self._pending_responses, self._pending_replies,
+                self._pending_edits, self._response_indices,
+                self._reply_indices, self._edit_dates, self._custom):
+            d.clear()
+
         if self._total_timeout:
             self._total_due = time.time() + self._total_timeout
         else:
@@ -447,3 +461,4 @@ class Conversation(ChatGetter):
 
     async def __aexit__(self, *args):
         del self._client._conversations[self._id]
+        self._cancel_all()
