@@ -309,6 +309,9 @@ class Conversation(ChatGetter):
         return result()
 
     async def _check_custom(self, built, update):
+        # TODO This code is quite much a copy paste of registering events
+        # in the client, resolving them and setting the client; perhaps
+        # there is a better way?
         for i, (ev, fut, resolved) in self._custom.items():
             ev_type = type(ev)
             if ev_type not in built:
@@ -320,6 +323,11 @@ class Conversation(ChatGetter):
                     self._custom[i] = (ev, fut, True)
 
                 if ev.filter(built[ev_type]):
+                    if hasattr(built[ev_type], '_set_client'):
+                        built[ev_type]._set_client(self._client)
+                    else:
+                        built[ev_type]._client = self._client
+
                     fut.set_result(built[ev_type])
 
     def _on_new_message(self, response):

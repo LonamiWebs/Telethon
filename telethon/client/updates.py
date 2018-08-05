@@ -276,11 +276,15 @@ class UpdateMethods(UserMethods):
                     built[ev_type] = ev_type.build(update)
 
             for conv in self._conversations.values():
+                # TODO Cleaner way to do this? Maybe just pass built always?
                 if built[events.NewMessage]:
+                    built[events.NewMessage]._set_client(self)
                     conv._on_new_message(built[events.NewMessage])
                 if built[events.MessageEdited]:
+                    built[events.MessageEdited]._set_client(self)
                     conv._on_edit(built[events.MessageEdited])
                 if built[events.MessageRead]:
+                    built[events.MessageRead]._set_client(self)
                     conv._on_read(built[events.MessageRead])
 
                 if conv._custom:
