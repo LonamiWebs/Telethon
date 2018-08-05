@@ -420,6 +420,9 @@ class Conversation(ChatGetter):
         except asyncio.CancelledError:
             pass
 
+    def __enter__(self):
+        return self._client.loop.run_until_complete(self.__aenter__())
+
     async def __aenter__(self):
         self._client._conversations[self._id] = self
         self._input_chat = \
@@ -438,6 +441,9 @@ class Conversation(ChatGetter):
             self._total_due = float('inf')
 
         return self
+
+    def __exit__(self, *args):
+        return self._client.loop.run_until_complete(self.__aexit__(*args))
 
     async def __aexit__(self, *args):
         del self._client._conversations[self._id]
