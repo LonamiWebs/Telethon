@@ -9,6 +9,55 @@ This section explores the methods defined in the :ref:`telegram-client`
 with some practical examples. The section assumes that you have imported
 the ``telethon.sync`` package and that you have a client ready to use.
 
+
+.. note::
+
+    There are some very common errors (such as forgetting to add
+    ``import telethon.sync``) for newcomers to ``asyncio``:
+
+    .. code-block:: python
+
+        # AttributeError: 'coroutine' object has no attribute 'first_name'
+        print(client.get_me().first_name)
+
+        # TypeError: 'AsyncGenerator' object is not iterable
+        for message in client.iter_messages('me'):
+            ...
+
+        # RuntimeError: This event loop is already running
+        with client.conversation('me') as conv:
+            ...
+
+    That error means you're probably inside an ``async def`` so you
+    need to use:
+
+    .. code-block:: python
+
+        print((await client.get_me()).first_name)
+        async for message in client.iter_messages('me'):
+            ...
+
+        async with client.conversation('me') as conv:
+            ...
+
+    You can of course call other ``def`` functions from your ``async def``
+    event handlers, but if they need making API calls, make your own
+    functions ``async def`` so you can ``await`` things:
+
+    .. code-block:: python
+
+        async def helper(client):
+            await client.send_message('me', 'Hi')
+
+    If you're not inside an ``async def`` you can enter one like so:
+
+    .. code-block:: python
+
+        import asyncio
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(my_async_def())
+
+
 .. contents::
 
 Authorization
@@ -29,6 +78,46 @@ And you can even use a ``with`` block:
 
     with client:
         ... # code using the client
+
+
+.. note::
+
+    Remember we assume you have ``import telethon.sync``. You can of course
+    use the library without importing it. The code would be rewritten as:
+
+    .. code-block:: python
+
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        async def main():
+            await client.start()
+            ...
+            await client.disconnect()
+
+            # or
+            async with client:
+                ...
+
+        loop.run_until_complete(main())
+
+    All methods that need access to the network (e.g. to make an API call)
+    **must** be awaited (or their equivalent such as ``async for`` and
+    ``async with``). You can do this yourself or you can let the library
+    do it for you by using ``import telethon.sync``. With event handlers,
+    you must do this yourself.
+
+The cleanest way to delete your ``*.session`` file is `client.log_out
+<telethon.client.auth.AuthMethods.log_out>`. Note that you will obviously
+need to login again if you use this:
+
+.. code-block:: python
+
+    # Logs out and deletes the session file; you will need to sign in again
+    client.log_out()
+
+    # You often simply want to disconnect. You will not need to sign in again
+    client.disconnect()
 
 
 Group Chats
@@ -192,6 +281,43 @@ You can also `reply <telethon.tl.custom.message.Message.reply>` or
     message.reply('Hello')
     message.respond('World')
 
+Sending Markdown or HTML messages
+*********************************
+
+Markdown (``'md'`` or ``'markdown'``) is the default `parse_mode
+<telethon.client.messageparse.MessageParseMethods.parse_mode>`
+for the client. You can change the default parse mode like so:
+
+.. code-block:: python
+
+    client.parse_mode = 'html'
+
+
+Now all messages will be formatted as HTML by default:
+
+.. code-block:: python
+
+    client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
+    client.send_message('me', 'An <a href="https://example.com">URL</b>')
+    client.send_message('me', '<code>code</code> and <pre>pre\nblocks</pre>')
+    client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
+
+
+You can override the default parse mode to use for special cases:
+
+.. code-block:: python
+
+    # No parse mode by default
+    client.parse_mode = None
+
+    # ...but here I want markdown
+    client.send_message('me', 'Hello, **world**!', parse_mode='md')
+
+    # ...and here I need HTML
+    client.send_message('me', 'Hello, <i>world</i>!', parse_mode='html')
+
+The rules are the same as for Bot API, so please refer to
+https://core.telegram.org/bots/api#formatting-options.
 
 Sending Messages with Media
 ***************************
@@ -288,6 +414,101 @@ Forcing a reply or removing the keyboard can also be done:
     client.send_message(chat, 'Bye Keyboard!', buttons=Button.clear())
 
 Remember to check `Button <telethon.tl.custom.button.Button>` for more.
+
+Making Inline Queries
+*********************
+
+You can send messages ``via @bot`` by first making an inline query:
+
+.. code-block:: python
+
+    results = client.inline_query('like', 'Do you like Telethon?')
+
+Then access the result you want and `click
+<telethon.tl.custom.inlineresult.InlineResult.click>` it in the chat
+where you want to send it to:
+
+.. code-block:: python
+
+    message = results[0].click('TelethonOffTopic')
+
+Sending messages through inline bots lets you use buttons as a normal user.
+
+Clicking Buttons
+****************
+
+Let's `click <telethon.tl.custom.message.Message.click>`
+the message we sent in the example above!
+
+.. code-block:: python
+
+    message.click(0)
+
+This will click the first button in the message. You could also
+``click(row, column)``, using some text such as ``click(text='👍')``
+or even the data directly ``click(data=b'payload')``.
+
+Conversations: Waiting for Messages or Replies
+**********************************************
+
+This one is really useful for unit testing your bots, which you can
+even write within Telethon itself! You can open a `Conversation
+<telethon.tl.custom.conversation.Conversation>` in any chat as:
+
+.. code-block:: python
+
+    with client.conversation(chat) as conv:
+        ...
+
+Conversations let you program a finite state machine with the
+higher-level constructs we are all used to, such as ``while``
+and ``if`` conditionals instead setting the state and jumping
+from one place to another which is less clean.
+
+For instance, let's imagine ``you`` are the bot talking to ``usr``:
+
+.. code-block:: text
+
+    <you> Hi!
+    <usr> Hello!
+    <you> Please tell me your name
+    <usr> ?
+    <you> Your name didn't have any letters! Try again
+    <usr> Lonami
+    <you> Thanks!
+
+This can be programmed as follows:
+
+.. code-block:: python
+
+    with bot.conversation(chat) as conv:
+        conv.send_message('Hi!')
+        hello = conv.get_response()
+
+        conv.send_message('Please tell me your name')
+        name = conv.get_response().raw_text
+        while not any(x.isalpha() for x in name):
+            conv.send_message("Your name didn't have any letters! Try again")
+            name = conv.get_response().raw_text
+
+        conv.send_message('Thanks {}!'.format(name))
+
+Note how we sent a message **with the conversation**, not with the client.
+This is important so the conversation remembers what messages you sent.
+
+The method reference for getting a response, getting a reply or marking
+the conversation as read can be found by clicking here: `Conversation
+<telethon.tl.custom.conversation.Conversation>`.
+
+Sending a message or getting a response returns a `Message
+<telethon.tl.custom.message.Message>`. Reading its documentation
+will also be really useful!
+
+If a reply never arrives or too many messages come in, getting
+responses will raise ``asyncio.TimeoutError`` or ``ValueError``
+respectively. You may want to ``except`` these and tell the user
+they were too slow, or simply drop the conversation.
+
 
 Forwarding Messages
 *******************
