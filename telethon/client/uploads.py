@@ -393,7 +393,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         file_handle = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        if not isinstance(file, str):
+        if not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(
                 file, progress_callback=progress_callback,
                 use_cache=use_cache if allow_cache else None
@@ -412,6 +412,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         if media:
             pass  # Already have media, don't check the rest
+        elif not file_handle:
+            raise ValueError(
+                'Failed to convert {} to media. Not an existing file, '
+                'an HTTP URL or a valid bot-API-like file ID'.format(file)
+            )
         elif isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
