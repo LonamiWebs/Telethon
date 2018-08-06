@@ -393,26 +393,30 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         file_handle = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        if not isinstance(file, str):
-            file_handle = await self.upload_file(
-                file, progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
-            )
-        elif re.match('https?://', file):
-            if as_image:
-                media = types.InputMediaPhotoExternal(file)
-            elif not force_document and utils.is_gif(file):
-                media = types.InputMediaGifExternal(file, '')
-            else:
-                media = types.InputMediaDocumentExternal(file)
-        else:
-            bot_file = utils.resolve_bot_file_id(file)
-            if bot_file:
-                media = utils.get_input_media(bot_file)
 
-        if media:
-            pass  # Already have media, don't check the rest
-        elif isinstance(file_handle, use_cache):
+        if isinstance(file, str):
+            if re.match('https?://', file):
+                if as_image:
+                    media = types.InputMediaPhotoExternal(file)
+                elif not force_document and utils.is_gif(file):
+                    media = types.InputMediaGifExternal(file, '')
+                else:
+                    media = types.InputMediaDocumentExternal(file)
+            else:
+                bot_file = utils.resolve_bot_file_id(file)
+                if bot_file:
+                    media = utils.get_input_media(bot_file)
+            # Return if media is resolved
+            if media:
+                return None, media
+        
+        # Proceed with local file handle
+        file_handle = await self.upload_file(
+            file, progress_callback=progress_callback,
+            use_cache=use_cache if allow_cache else None
+        )
+        
+        if isinstance(file_handle, use_cache):
             # File was cached, so an instance of use_cache was returned
             if as_image:
                 media = types.InputMediaPhoto(file_handle)
