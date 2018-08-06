@@ -393,18 +393,19 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         file_handle = None
         as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
-        if not isinstance(file, str):
-            file_handle = await self.upload_file(
-                file, progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
-            )
-        elif re.match('https?://', file):
+
+        if re.match('https?://', file):
             if as_image:
                 media = types.InputMediaPhotoExternal(file)
             elif not force_document and utils.is_gif(file):
                 media = types.InputMediaGifExternal(file, '')
             else:
                 media = types.InputMediaDocumentExternal(file)
+        elif isinstance(file, str):
+            file_handle = await self.upload_file(
+                file, progress_callback=progress_callback,
+                use_cache=use_cache if allow_cache else None
+            )
         else:
             bot_file = utils.resolve_bot_file_id(file)
             if bot_file:
