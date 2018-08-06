@@ -182,18 +182,7 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         pending[target_id] = future
-        done, pending = await asyncio.wait(
-            [future, self._sleep(now, timeout)],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-        if future in pending:
-            for future in pending:
-                future.cancel()
-
-            raise asyncio.TimeoutError()
-        else:
-            return future.result()
-
+        return await self._get_result(future, now, timeout)
 
     async def get_edit(self, message=None, *, timeout=None):
         """
@@ -218,17 +207,7 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         self._pending_edits[target_id] = future
-        done, pending = await asyncio.wait(
-            [future, self._sleep(now, timeout)],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-        if future in pending:
-            for future in pending:
-                future.cancel()
-
-            raise asyncio.TimeoutError()
-        else:
-            return future.result()
+        return await self._get_result(future, now, timeout)
 
     async def wait_read(self, message=None, *, timeout=None):
         """
@@ -247,17 +226,7 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        done, pending = await asyncio.wait(
-            [future, self._sleep(now, timeout)],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-        if future in pending:
-            for future in pending:
-                future.cancel()
-
-            raise asyncio.TimeoutError()
-        else:
-            return future.result()
+        return await self._get_result(future, now, timeout)
 
     def wait_event(self, event, *, timeout=None):
         """
@@ -292,18 +261,10 @@ class Conversation(ChatGetter):
 
         future = asyncio.Future()
         async def result():
-            done, pending = await asyncio.wait(
-                [future, self._sleep(now, timeout)],
-                return_when=asyncio.FIRST_COMPLETED
-            )
-            del self._custom[counter]
-            if future in pending:
-                for x in pending:
-                    x.cancel()
-
-                raise asyncio.TimeoutError()
-            else:
-                return future.result()
+            try:
+                return await self._get_result(future, now, timeout)
+            finally:
+                del self._custom[counter]
 
         self._custom[counter] = (event, future, False)
         return result()
@@ -398,22 +359,19 @@ class Conversation(ChatGetter):
         else:
             raise ValueError('No message was sent previously')
 
-    async def _sleep(self, now, timeout):
+    async def _get_result(self, future, start_time, timeout):
         due = self._total_due
         if timeout is None:
             timeout = self._timeout
 
         if timeout is not None:
-            due = min(due, now + timeout)
+            due = min(due, start_time + timeout)
 
-        try:
-            if due == float('inf'):
-                while True:
-                    await asyncio.sleep(60)
-            elif due > now:
-                await asyncio.sleep(due - now)
-        except asyncio.CancelledError:
-            pass
+        return await asyncio.wait_for(
+            future,
+            timeout=None if due == float('inf') else due - time.time(),
+            loop=self._client.loop
+        )
 
     def _cancel_all(self, exception=None):
         for pending in itertools.chain(
