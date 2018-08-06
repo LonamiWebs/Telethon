@@ -746,15 +746,29 @@ def _rle_decode(data):
     new = b''
     last = b''
     for cur in data:
-        cur = bytes([cur])
         if last == b'\0':
-            new += last * ord(cur)
+            new += last * cur
             last = b''
         else:
             new += last
-            last = cur
+            last = bytes([cur])
 
     return new + last
+
+
+def _rle_encode(string):
+    new = b''
+    count = 0
+    for cur in string:
+        if not cur:
+            count += 1
+        else:
+            if count:
+                new += b'\0' + bytes([count])
+                count = 0
+
+            new += bytes([cur])
+    return new
 
 
 def _decode_telegram_base64(string):
@@ -769,6 +783,16 @@ def _decode_telegram_base64(string):
     """
     try:
         return base64.urlsafe_b64decode(string + '=' * (len(string) % 4))
+    except (binascii.Error, ValueError, TypeError):
+        return None  # not valid base64, not valid ascii, not a string
+
+
+def _encode_telegram_base64(string):
+    """
+    Inverse for `_decode_telegram_base64`.
+    """
+    try:
+        return base64.urlsafe_b64encode(string).rstrip(b'=').decode('ascii')
     except (binascii.Error, ValueError, TypeError):
         return None  # not valid base64, not valid ascii, not a string
 
@@ -812,7 +836,6 @@ def resolve_bot_file_id(file_id):
         elif file_type == 10:
             attributes.append(types.DocumentAttributeAnimated())
 
-        print(file_type)
         return types.Document(
             id=media_id,
             access_hash=access_hash,
@@ -838,6 +861,49 @@ def resolve_bot_file_id(file_id):
                 local_id=local_id
             ), w=0, h=0, size=0)
         ], date=None)
+
+
+def pack_bot_file_id(file):
+    """
+    Inverse operation for `resolve_bot_file_id`.
+
+    The only parameters this method will accept are :tl:`Document` and
+    :tl:`Photo`, and it will return a variable-length ``file_id`` string.
+
+    If an invalid parameter is given, it will ``return None``.
+    """
+    if isinstance(file, types.Document):
+        file_type = 5
+        for attribute in file.attributes:
+            if isinstance(attribute, types.DocumentAttributeAudio):
+                file_type = 3 if attribute.voice else 9
+            elif isinstance(attribute, types.DocumentAttributeVideo):
+                file_type = 13 if attribute.round_message else 4
+            elif isinstance(attribute, types.DocumentAttributeSticker):
+                file_type = 8
+            elif isinstance(attribute, types.DocumentAttributeAnimated):
+                file_type = 10
+            else:
+                continue
+            break
+
+        return _encode_telegram_base64(_rle_encode(struct.pack(
+            '<iiqqb', file_type, file.dc_id, file.id, file.access_hash, 2)))
+
+    elif isinstance(file, types.Photo):
+        size = next((x for x in reversed(file.sizes) if isinstance(
+            x, (types.PhotoSize, types.PhotoCachedSize))), None)
+
+        if not size or not isinstance(size.location, types.FileLocation):
+            return None
+
+        size = size.location
+        return _encode_telegram_base64(_rle_encode(struct.pack(
+            '<iiqqqqib', 2, size.dc_id, file.id, file.access_hash,
+            size.volume_id, size.secret, size.local_id, 2
+        )))
+    else:
+        return None
 
 
 def resolve_invite_link(link):
