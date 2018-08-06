@@ -159,7 +159,7 @@ class Conversation(ChatGetter):
                 The condition callable that checks if an incoming
                 message is a valid response.
         """
-        now = time.time()
+        start_time = time.time()
         target_id = self._get_message_id(target_message)
 
         # If there is no last-chosen ID, make sure to pick one *after*
@@ -183,14 +183,14 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         pending[target_id] = future
-        return self._get_result(future, now, timeout)
+        return self._get_result(future, start_time, timeout)
 
     def get_edit(self, message=None, *, timeout=None):
         """
         Awaits for an edit after the last message to arrive.
         The arguments are the same as those for `get_response`.
         """
-        now = time.time()
+        start_time = time.time()
         target_id = self._get_message_id(message)
 
         target_date = self._edit_dates.get(target_id, 0)
@@ -208,7 +208,7 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         self._pending_edits[target_id] = future
-        return self._get_result(future, now, timeout)
+        return self._get_result(future, start_time, timeout)
 
     def wait_read(self, message=None, *, timeout=None):
         """
@@ -216,7 +216,7 @@ class Conversation(ChatGetter):
         a response doesn't imply the message was read, and this action
         will also trigger even without a response.
         """
-        now = time.time()
+        start_time = time.time()
         future = asyncio.Future()
         target_id = self._get_message_id(message)
 
@@ -227,7 +227,7 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        return self._get_result(future, now, timeout)
+        return self._get_result(future, start_time, timeout)
 
     def wait_event(self, event, *, timeout=None):
         """
@@ -253,7 +253,7 @@ class Conversation(ChatGetter):
         also means the event can arrive before you send
         a previous action.
         """
-        now = time.time()
+        start_time = time.time()
         if isinstance(event, type):
             event = event()
 
@@ -263,7 +263,7 @@ class Conversation(ChatGetter):
         future = asyncio.Future()
         async def result():
             try:
-                return await self._get_result(future, now, timeout)
+                return await self._get_result(future, start_time, timeout)
             finally:
                 del self._custom[counter]
 
