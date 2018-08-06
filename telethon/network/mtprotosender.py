@@ -755,48 +755,6 @@ class _ContainerQueue(queue.Queue):
     ``queue.Queue`` when needed for testing purposes, and
     a list won't be returned in said case.
     """
-    def get(self, block=True, timeout=None):
-        result = super().get(block=block, timeout=timeout)
-        if self.empty() or result == _reconnect_sentinel or\
-                isinstance(result.obj, MessageContainer):
-            return result
-
-        size = result.size()
-        result = [result]
-        while not self.empty():
-            # TODO Is this a bug in Python? For some reason get_nowait()
-            # sometimes returns a *list* even when one was *never* put.
-            #
-            # This can be seen by overriding `_put` to track if a list
-            # is ever inserted. The issue occurs when getting invoking
-            # many requests at once (thus a lot of messages are put
-            # really fast). With `_put` override it can be seen that
-            # no `list` is ever inserted but `get_nowait` may return it.
-            #
-            # If we use `self.queue.popleft()` it doesn't seem to occur
-            # which is the method that gets ultimately used.
-            #
-            # To work around that issue, always convert the result to
-            # a list, so if it's a list, we don't need to do anything.
-            #
-            # Changed to .get(block=False) which is what
-            # .get_nowait() does to avoid infinite recursion.
-            items = super().get(block=False)
-            if not isinstance(items, list):
-                items = [items]
-
-            items = iter(items)
-            for item in items:
-                if (item == _reconnect_sentinel or
-                    isinstance(item.obj, MessageContainer)
-                        or size + item.size() > MessageContainer.MAXIMUM_SIZE):
-                    self.put_nowait(item)
-                    for item in items:
-                        self.put_nowait(item)
-
-                    return result  # break 2 levels
-                else:
-                    size += item.size()
-                    result.append(item)
-
-        return result
+    # TODO Merge objects into MessageContainer like master.
+    # Not done due to some bug? Old code can be found in
+    # git checkout 5731cf015e1539c67100c06eea221c318dae8535
