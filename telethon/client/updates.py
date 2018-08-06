@@ -199,7 +199,9 @@ class UpdateMethods(UserMethods):
         rnd = lambda: random.randrange(-2**63, 2**63)
         while self.is_connected():
             try:
-                concurrent.futures.wait([self.disconnected], timeout=60)
+                next(concurrent.futures.as_completed(
+                    [self.disconnected], timeout=60))
+
                 continue  # We actually just want to act upon timeout
             except concurrent.futures.TimeoutError:
                 pass
