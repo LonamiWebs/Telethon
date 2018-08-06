@@ -86,7 +86,7 @@ class Conversation(ChatGetter):
         self._last_outgoing = message.id
         return message
 
-    async def mark_read(self, message=None):
+    def mark_read(self, message=None):
         """
         Marks as read the latest received message if ``message is None``.
         Otherwise, marks as read until the given message (or message ID).
@@ -102,12 +102,12 @@ class Conversation(ChatGetter):
         elif not isinstance(message, int):
             message = message.id
 
-        return await self._client.send_read_acknowledge(
+        return self._client.send_read_acknowledge(
             self._input_chat, max_id=message)
 
-    async def get_response(self, message=None, *, timeout=None):
+    def get_response(self, message=None, *, timeout=None):
         """
-        Awaits for a response to arrive.
+        Returns a coroutine that will resolve once a response arrives.
 
         Args:
             message (:tl:`Message` | `int`, optional):
@@ -118,22 +118,23 @@ class Conversation(ChatGetter):
                 If present, this `timeout` will override the
                 per-action timeout defined for the conversation.
         """
-        return await self._get_message(
+        return self._get_message(
             message, self._response_indices, self._pending_responses, timeout,
             lambda x, y: True
         )
 
-    async def get_reply(self, message=None, *, timeout=None):
+    def get_reply(self, message=None, *, timeout=None):
         """
-        Awaits for a reply (that is, a message being a reply) to arrive.
-        The arguments are the same as those for `get_response`.
+        Returns a coroutine that will resolve once a reply
+        (that is, a message being a reply) arrives. The
+        arguments are the same as those for `get_response`.
         """
-        return await self._get_message(
+        return self._get_message(
             message, self._reply_indices, self._pending_replies, timeout,
             lambda x, y: x.reply_to_msg_id == y
         )
 
-    async def _get_message(
+    def _get_message(
             self, target_message, indices, pending, timeout, condition):
         """
         Gets the next desired message under the desired condition.
@@ -182,9 +183,9 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         pending[target_id] = future
-        return await self._get_result(future, now, timeout)
+        return self._get_result(future, now, timeout)
 
-    async def get_edit(self, message=None, *, timeout=None):
+    def get_edit(self, message=None, *, timeout=None):
         """
         Awaits for an edit after the last message to arrive.
         The arguments are the same as those for `get_response`.
@@ -207,9 +208,9 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         self._pending_edits[target_id] = future
-        return await self._get_result(future, now, timeout)
+        return self._get_result(future, now, timeout)
 
-    async def wait_read(self, message=None, *, timeout=None):
+    def wait_read(self, message=None, *, timeout=None):
         """
         Awaits for the sent message to be read. Note that receiving
         a response doesn't imply the message was read, and this action
@@ -226,7 +227,7 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        return await self._get_result(future, now, timeout)
+        return self._get_result(future, now, timeout)
 
     def wait_event(self, event, *, timeout=None):
         """
@@ -359,7 +360,7 @@ class Conversation(ChatGetter):
         else:
             raise ValueError('No message was sent previously')
 
-    async def _get_result(self, future, start_time, timeout):
+    def _get_result(self, future, start_time, timeout):
         due = self._total_due
         if timeout is None:
             timeout = self._timeout
@@ -367,7 +368,7 @@ class Conversation(ChatGetter):
         if timeout is not None:
             due = min(due, start_time + timeout)
 
-        return await asyncio.wait_for(
+        return asyncio.wait_for(
             future,
             timeout=None if due == float('inf') else due - time.time(),
             loop=self._client.loop
