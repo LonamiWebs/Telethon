@@ -418,6 +418,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
 
+                All the following limits apply together:
+
+                * There can be 100 buttons at most (any more are ignored).
+                * There can be 8 buttons per row at most (more are ignored).
+                * The maximum callback data per button is 64 bytes.
+                * The maximum data that can be embedded in total is just
+                  over 4KB, shared between inline callback data and text.
+
             silent (`bool`, optional):
                 Whether the message should notify people in a broadcast
                 channel or not. Defaults to ``False``, which means it will

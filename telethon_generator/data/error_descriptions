@@ -68,3 +68,5 @@ TAKEOUT_INIT_DELAY_X=A wait of {} seconds is required before being able to initi
 CHAT_NOT_MODIFIED=The chat or channel wasn't modified (title, invites, username, admins, etc. are the same)
 URL_INVALID=The URL used was invalid (e.g. when answering a callback with an URL that's not t.me/yourbot or your game's URL)
 USER_NOT_PARTICIPANT=The target user is not a member of the specified megagroup or channel
+TAKEOUT_REQUIRED=You must initialize a takeout request first
+REPLY_MARKUP_TOO_LONG=The data embedded in the reply markup buttons was too much
