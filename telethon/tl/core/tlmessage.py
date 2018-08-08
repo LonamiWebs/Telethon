@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import struct
 
 from .gzippacked import GzipPacked
 from .. import TLObject
 from ..functions import InvokeAfterMsgRequest
+
+__log__ = logging.getLogger(__name__)
 
 
 class TLMessage(TLObject):
@@ -48,11 +51,17 @@ class TLMessage(TLObject):
         if not out:
             self._body = struct.pack('<qi', msg_id, seq_no)
         else:
-            if self.after_id is None:
-                body = GzipPacked.gzip_if_smaller(self.obj)
-            else:
-                body = GzipPacked.gzip_if_smaller(
-                    InvokeAfterMsgRequest(self.after_id, self.obj))
+            try:
+                if self.after_id is None:
+                    body = GzipPacked.gzip_if_smaller(self.obj)
+                else:
+                    body = GzipPacked.gzip_if_smaller(
+                        InvokeAfterMsgRequest(self.after_id, self.obj))
+            except Exception:
+                # struct.pack doesn't give a lot of information about
+                # why it may fail so log the exception AND the object
+                __log__.exception('Failed to pack %s', self.obj)
+                raise
 
             self._body = struct.pack('<qii', msg_id, seq_no, len(body)) + body
 
