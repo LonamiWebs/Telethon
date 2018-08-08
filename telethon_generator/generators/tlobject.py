@@ -54,7 +54,11 @@ def _write_modules(
                 SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            builder.writeln('from {}.tl.tlobject import {}', '.' * depth, kind)
+            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
+            if kind != 'TLObject':
+                builder.writeln(
+                    'from {}.tl.tlobject import {}', '.' * depth, kind)
+
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
 
@@ -296,13 +300,14 @@ def _write_to_dict(tlobject, builder):
         else:
             if arg.is_vector:
                 builder.write(
-                    '[] if self.{0} is None else [None '
-                    'if x is None else x.to_dict() for x in self.{0}]',
+                    '[] if self.{0} is None else [x.to_dict() '
+                    'if isinstance(x, TLObject) else x for x in self.{0}]',
                     arg.name
                 )
             else:
                 builder.write(
-                    'None if self.{0} is None else self.{0}.to_dict()',
+                    'self.{0}.to_dict() '
+                    'if isinstance(self.{0}, TLObject) else self.{0}',
                     arg.name
                 )
 
