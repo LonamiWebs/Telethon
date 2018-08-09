@@ -642,7 +642,7 @@ def _write_patched(out_dir, namespace_tlobjects):
             builder.writeln(AUTO_GEN_NOTICE)
 
             builder.writeln('import struct')
-            builder.writeln('from .. import types, custom')
+            builder.writeln('from .. import TLObject, types, custom')
             builder.writeln()
             for t in tlobjects:
                 builder.writeln('class {}(custom.{}):', t.class_name,
