@@ -129,29 +129,20 @@ class UpdateMethods(UserMethods):
     async def catch_up(self):
         state = self.session.get_update_state(0)
         if not state or not state.pts:
-            return
+            state = await self(functions.updates.GetStateRequest())
 
         self.session.catching_up = True
         try:
             while True:
                 d = await self(functions.updates.GetDifferenceRequest(
-                    state.pts, state.date, state.qts))
-                if isinstance(d, types.updates.DifferenceEmpty):
-                    state.date = d.date
-                    state.seq = d.seq
-                    break
-                elif isinstance(d, (types.updates.DifferenceSlice,
-                                    types.updates.Difference)):
+                    state.pts, state.date, state.qts
+                ))
+                if isinstance(d, (types.updates.DifferenceSlice,
+                                  types.updates.Difference)):
                     if isinstance(d, types.updates.Difference):
                         state = d.state
-                    elif d.intermediate_state.pts > state.pts:
-                        state = d.intermediate_state
                     else:
-                        # TODO Figure out why other applications can rely on
-                        # using always the intermediate_state to eventually
-                        # reach a DifferenceEmpty, but that leads to an
-                        # infinite loop here (so check against old pts to stop)
-                        break
+                        state = d.intermediate_state
 
                     self._handle_update(types.Updates(
                         users=d.users,
@@ -163,7 +154,12 @@ class UpdateMethods(UserMethods):
                             for m in d.new_messages
                         ]
                     ))
-                elif isinstance(d, types.updates.DifferenceTooLong):
+                else:
+                    if isinstance(d, types.updates.DifferenceEmpty):
+                        state.date = d.date
+                        state.seq = d.seq
+                    elif isinstance(d, types.updates.DifferenceTooLong):
+                        state.pts = d.pts
                     break
         finally:
             self.session.set_update_state(0, state)
