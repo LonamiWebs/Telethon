@@ -14,8 +14,92 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
-Better Custom Message(v1.1.1)
-=============================
+Conversations, String Sessions and More (v1.2)
+==============================================
+
+*Published at 2018/08/14*
+
+
+This is a big release! Quite a few things have been added to the library,
+such as the new `Conversation <telethon.tl.custom.conversation.Conversation>`.
+This makes it trivial to get tokens from `@BotFather <https://t.me/BotFather>`_:
+
+.. code-block:: python
+
+    from telethon.tl import types
+
+    with client.conversation('BotFather') as conv:
+        conv.send_message('/mybots')
+        message = conv.get_response()
+        message.click(0)
+        message = conv.get_edit()
+        message.click(0)
+        message = conv.get_edit()
+        for _, token in message.get_entities_text(types.MessageEntityCode):
+            print(token)
+
+
+In addition to that, you can now easily load and export session files
+without creating any on-disk file thanks to the ``StringSession``:
+
+.. code-block:: python
+
+    from telethon.sessions import StringSession
+    string = StringSession.save(client.session)
+
+Check out :ref:`sessions` for more details.
+
+For those who aren't able to install ``cryptg``, the support for ``libssl``
+has been added back. While interfacing ``libssl`` is not as fast, the speed
+when downloading and sending files should really be noticeably faster.
+
+While those are the biggest things, there are still more things to be
+excited about.
+
+
+Additions
+~~~~~~~~~
+
+- The mentioned method to start a new `client.conversation
+  <telethon.client.dialogs.DialogMethods.conversation>`.
+- Implemented global search through `client.iter_messages
+  <telethon.client.messages.MessageMethods.iter_messages>`
+  with ``None`` entity.
+- New `client.inline_query <telethon.client.bots.BotMethods.inline_query>`
+  method to perform inline queries.
+- Bot-API-style ``file_id`` can now be used to send files and download media.
+  You can also access `telethon.utils.resolve_bot_file_id` and
+  `telethon.utils.pack_bot_file_id` to resolve and create these
+  file IDs yourself. Note that each user has its own ID for each file
+  so you can't use a bot's ``file_id`` with your user, except stickers.
+- New `telethon.utils.get_peer`, useful when you expect a :tl:`Peer`.
+
+Bug fixes
+~~~~~~~~~
+
+- UTC timezone for `telethon.events.userupdate.UserUpdate`.
+- Bug with certain input parameters when iterating messages.
+- RPC errors without parent requests caused a crash, and better logging.
+- ``incoming = outgoing = True`` was not working properly.
+- Getting a message's ID was not working.
+- File attributes not being inferred for ``open()``'ed files.
+- Use ``MemorySession`` if ``sqlite3`` is not installed by default.
+- Self-user would not be saved to the session file after signing in.
+- `client.catch_up() <telethon.client.updates.UpdateMethods.catch_up>`
+  seems to be functional again.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+- Updated documentation.
+- Invite links will now use cache, so using them as entities is cheaper.
+- You can reuse message buttons to send new messages with those buttons.
+- ``.to_dict()`` will now work even on invalid ``TLObject``'s.
+
+
+Better Custom Message (v1.1.1)
+==============================
 
 *Published at 2018/07/23*
 

@@ -39,8 +39,8 @@ request. Omitted fields won't change after invoking :tl:`UpdateProfile`:
 
     from telethon.tl.functions.account import UpdateProfileRequest
 
-    client(UpdateProfileRequest(a
-        bout='This is a test from Telethon'
+    client(UpdateProfileRequest(
+        about='This is a test from Telethon'
     ))
 
 

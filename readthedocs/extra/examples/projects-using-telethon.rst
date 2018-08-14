@@ -14,6 +14,17 @@ the library.
 
 .. _projects-telegram-export:
 
+telethon_examples/
+******************
+
+`Link <https://github.com/LonamiWebs/Telethon/tree/master/telethon_examples>`_ /
+`Author's website <https://lonamiwebs.github.io>`_
+
+This documentation is not the only place where you can find useful code
+snippets using the library. The main repository also has a folder with
+some cool examples (even a Tkinter GUI!) which you can download, edit
+and run to learn and play with them.
+
 telegram-export
 ***************
 

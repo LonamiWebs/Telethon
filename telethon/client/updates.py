@@ -127,6 +127,13 @@ class UpdateMethods(UserMethods):
         return [(callback, event) for event, callback in self._event_builders]
 
     async def catch_up(self):
+        """
+        "Catches up" on the missed updates while the client was offline.
+        You should call this method after registering the event handlers
+        so that the updates it loads can by processed by your script.
+
+        This can also be used to forcibly fetch new updates if there are any.
+        """
         state = self.session.get_update_state(0)
         if not state or not state.pts:
             state = await self(functions.updates.GetStateRequest())
