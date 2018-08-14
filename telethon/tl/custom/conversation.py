@@ -196,13 +196,16 @@ class Conversation(ChatGetter):
         target_date = self._edit_dates.get(target_id, 0)
         earliest_edit = min(
             (x for x in self._incoming
-             if x.id > target_id and x.date.timestamp() > target_date),
-            key=lambda x: x.date,
+             if x.edit_date
+             and x.id > target_id
+             and x.edit_date.timestamp() > target_date
+             ),
+            key=lambda x: x.edit_date.timestamp(),
             default=None
         )
 
-        if earliest_edit and earliest_edit.date.timestamp() > target_date:
-            self._edit_dates[target_id] = earliest_edit.timestamp()
+        if earliest_edit and earliest_edit.edit_date.timestamp() > target_date:
+            self._edit_dates[target_id] = earliest_edit.edit_date.timestamp()
             return earliest_edit
 
         # Otherwise the next incoming response will be the one to use
@@ -293,6 +296,7 @@ class Conversation(ChatGetter):
                     fut.set_result(built[ev_type])
 
     def _on_new_message(self, response):
+        response = response.message
         if response.chat_id != self.chat_id or response.out:
             return
 
@@ -319,23 +323,19 @@ class Conversation(ChatGetter):
         for msg_id in found:
             self._pending_replies.pop(msg_id).set_result(response)
 
-    # TODO Edits are different since they work by date not indices
-    # That is, we need to scan all incoming messages and detect if
-    # the last used edit date is different from the one we knew.
     def _on_edit(self, message):
+        message = message.message
         if message.chat_id != self.chat_id or message.out:
             return
 
         found = []
         for msg_id, pending in self._pending_edits.items():
-            if msg_id == message.id:
+            if msg_id < message.id:
                 found.append(msg_id)
-                self._edit_dates[msg_id] = message.date.timestamp()
+                self._edit_dates[msg_id] = message.edit_date.timestamp()
 
         for msg_id in found:
             self._pending_edits.pop(msg_id).set_result(message)
-
-    # TODO Support custom events in a comfortable way
 
     def _on_read(self, event):
         if event.chat_id != self.chat_id or event.inbox:
@@ -378,7 +378,7 @@ class Conversation(ChatGetter):
         for pending in itertools.chain(
                 self._pending_responses.values(),
                 self._pending_replies.values(),
-                self._pending_edits):
+                self._pending_edits.values()):
             if exception:
                 pending.set_exception(exception)
             else:
