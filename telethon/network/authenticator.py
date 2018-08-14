@@ -163,7 +163,9 @@ async def do_authentication(sender):
     if dh_hash != new_nonce_hash:
         raise SecurityError('Step 3 invalid new nonce hash')
 
-    assert isinstance(dh_gen, DhGenOk), 'Step 3.2 answer was %s' % dh_gen
+    if not isinstance(dh_gen, DhGenOk):
+        raise AssertionError('Step 3.2 answer was %s' % dh_gen)
+
     return auth_key, time_offset
 
 

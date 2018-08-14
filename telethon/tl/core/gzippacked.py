@@ -31,7 +31,8 @@ class GzipPacked(TLObject):
 
     @staticmethod
     def read(reader):
-        assert reader.read_int(signed=False) == GzipPacked.CONSTRUCTOR_ID
+        constructor = reader.read_int(signed=False)
+        assert constructor == GzipPacked.CONSTRUCTOR_ID
         return gzip.decompress(reader.tgread_bytes())
 
     @classmethod

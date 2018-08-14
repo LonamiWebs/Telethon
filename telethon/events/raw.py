@@ -16,10 +16,14 @@ class Raw(EventBuilder):
         if not types:
             self.types = None
         elif not utils.is_list_like(types):
-            assert isinstance(types, type)
+            if not isinstance(types, type):
+                raise TypeError('Invalid input type given %s', types)
+
             self.types = types
         else:
-            assert all(isinstance(x, type) for x in types)
+            if not all(isinstance(x, type) for x in types):
+                raise TypeError('Invalid input types given %s', types)
+
             self.types = tuple(types)
 
     async def resolve(self, client):
