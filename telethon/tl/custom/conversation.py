@@ -105,7 +105,7 @@ class Conversation(ChatGetter):
         return self._client.send_read_acknowledge(
             self._input_chat, max_id=message)
 
-    def get_response(self, message=None, *, timeout=None):
+    async def get_response(self, message=None, *, timeout=None):
         """
         Returns a coroutine that will resolve once a response arrives.
 
@@ -118,18 +118,18 @@ class Conversation(ChatGetter):
                 If present, this `timeout` will override the
                 per-action timeout defined for the conversation.
         """
-        return self._get_message(
+        return await self._get_message(
             message, self._response_indices, self._pending_responses, timeout,
             lambda x, y: True
         )
 
-    def get_reply(self, message=None, *, timeout=None):
+    async def get_reply(self, message=None, *, timeout=None):
         """
         Returns a coroutine that will resolve once a reply
         (that is, a message being a reply) arrives. The
         arguments are the same as those for `get_response`.
         """
-        return self._get_message(
+        return await self._get_message(
             message, self._reply_indices, self._pending_replies, timeout,
             lambda x, y: x.reply_to_msg_id == y
         )
@@ -185,7 +185,7 @@ class Conversation(ChatGetter):
         pending[target_id] = future
         return self._get_result(future, start_time, timeout)
 
-    def get_edit(self, message=None, *, timeout=None):
+    async def get_edit(self, message=None, *, timeout=None):
         """
         Awaits for an edit after the last message to arrive.
         The arguments are the same as those for `get_response`.
@@ -208,9 +208,9 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future()
         self._pending_edits[target_id] = future
-        return self._get_result(future, start_time, timeout)
+        return await self._get_result(future, start_time, timeout)
 
-    def wait_read(self, message=None, *, timeout=None):
+    async def wait_read(self, message=None, *, timeout=None):
         """
         Awaits for the sent message to be read. Note that receiving
         a response doesn't imply the message was read, and this action
@@ -227,9 +227,9 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        return self._get_result(future, start_time, timeout)
+        return await self._get_result(future, start_time, timeout)
 
-    def wait_event(self, event, *, timeout=None):
+    async def wait_event(self, event, *, timeout=None):
         """
         Waits for a custom event to occur. Timeouts still apply.
 
@@ -268,7 +268,7 @@ class Conversation(ChatGetter):
                 del self._custom[counter]
 
         self._custom[counter] = (event, future, False)
-        return result()
+        return await result()
 
     async def _check_custom(self, built, update):
         # TODO This code is quite much a copy paste of registering events
