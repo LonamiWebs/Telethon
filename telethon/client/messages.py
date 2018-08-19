@@ -447,26 +447,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         entity = await self.get_input_entity(entity)
         if isinstance(message, types.Message):
-            if (message.media and not isinstance(
-                    message.media, types.MessageMediaWebPage)):
-                return await self.send_file(
-                    entity, message.media, caption=message.message,
-                    entities=message.entities
-                )
-
-            if reply_to is not None:
-                reply_id = utils.get_message_id(reply_to)
-            else:
-                if isinstance(entity, types.InputPeerSelf):
-                    eid = utils.get_peer_id(await self.get_me(input_peer=True))
-                else:
-                    eid = utils.get_peer_id(entity)
-
-                if eid == utils.get_peer_id(message.to_id):
-                    reply_id = message.reply_to_msg_id
-                else:
-                    reply_id = None
-
             if buttons is None:
                 markup = message.reply_markup
             else:
@@ -475,11 +455,23 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             if silent is None:
                 silent = message.silent
 
+            if (message.media and not isinstance(
+                    message.media, types.MessageMediaWebPage)):
+                return await self.send_file(
+                    entity,
+                    message.media,
+                    caption=message.message,
+                    silent=silent,
+                    reply_to=reply_to,
+                    buttons=markup,
+                    entities=message.entities
+                )
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message.message or '',
                 silent=silent,
-                reply_to_msg_id=reply_id,
+                reply_to_msg_id=utils.get_message_id(reply_to),
                 reply_markup=markup,
                 entities=message.entities,
                 clear_draft=clear_draft,
