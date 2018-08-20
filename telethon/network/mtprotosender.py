@@ -13,7 +13,7 @@ from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
-    MsgsStateInfo, MsgsAllInfo, MsgResendReq
+    MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload
 )
 
 __log__ = logging.getLogger(__name__)
@@ -514,8 +514,16 @@ class MTProtoSender:
 
         if not message:
             # TODO We should not get responses to things we never sent
-            __log__.info('Received response without parent request: {}'
-                         .format(rpc_result.body))
+            # However receiving a File() with empty bytes is "common".
+            # See #658, #759 and #958. They seem to happen in a container
+            # which contain the real response right after.
+            try:
+                with BinaryReader(rpc_result.body) as reader:
+                    if not isinstance(reader.tgread_object(), upload.File):
+                        raise ValueError('Not an upload.File')
+            except (TypeNotFoundError, ValueError):
+                __log__.info('Received response without parent request: {}'
+                             .format(rpc_result.body))
             return
 
         if rpc_result.error:
