@@ -282,7 +282,7 @@ class MTProtoSender:
 
         # First connection or manual reconnection after a failure
         if self._disconnected is None or self._disconnected.done():
-            self._disconnected = asyncio.Future(loop=self._loop)
+            self._disconnected = self._loop.create_future()
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):

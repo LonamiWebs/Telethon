@@ -30,7 +30,7 @@ class TLMessage(TLObject):
 
         # If no loop is given then it is an incoming message.
         # Only outgoing messages need the future to await them.
-        self.future = asyncio.Future(loop=loop) if loop else None
+        self.future = loop.create_future() if loop else None
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can

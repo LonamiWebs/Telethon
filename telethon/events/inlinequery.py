@@ -187,6 +187,6 @@ class InlineQuery(EventBuilder):
             if inspect.isawaitable(obj):
                 return obj
 
-            f = asyncio.Future(loop=loop)
+            f = loop.create_future()
             f.set_result(obj)
             return f
