@@ -25,6 +25,9 @@ class ChatMethods(UserMethods):
 
             search (`str`, optional):
                 Look for participants with this string in name/username.
+                
+                If ``aggressive is True``, the symbols from this string will
+                be used 
 
             filter (:tl:`ChannelParticipantsFilter`, optional):
                 The filter to be used, if you want e.g. only admins
@@ -86,11 +89,11 @@ class ChatMethods(UserMethods):
             if aggressive and not filter:
                 requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
-                    filter=types.ChannelParticipantsSearch(search + chr(x)),
+                    filter=types.ChannelParticipantsSearch(x),
                     offset=0,
                     limit=200,
                     hash=0
-                ) for x in range(ord('a'), ord('z') + 1)]
+                ) for x in search or range(ord('a'), ord('z') + 1)]
             else:
                 requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
