@@ -93,7 +93,7 @@ class ChatMethods(UserMethods):
                     offset=0,
                     limit=200,
                     hash=0
-                ) for x in (search or range(ord('a'), ord('z') + 1))]
+                ) for x in (search or map(chr, range(ord('a'), ord('z') + 1)))]
             else:
                 requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
