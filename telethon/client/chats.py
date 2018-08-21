@@ -11,8 +11,9 @@ class ChatMethods(UserMethods):
 
     @async_generator
     async def iter_participants(
-            self, entity, limit=None, *, search='',
-            filter=None, aggressive=False, _total=None):
+            self, entity, limit=None, *, search='', 
+            filter=None, aggressive=False, symbols=None,
+            _total=None):
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -40,6 +41,9 @@ class ChatMethods(UserMethods):
                 set, more than 200 will be often be retrieved.
 
                 This has no effect if a ``filter`` is given.
+
+            symbols (`list`, optional):
+                Set of symbols for aggressive search
 
             _total (`list`, optional):
                 A single-item list to pass the total parameter by reference.
@@ -90,7 +94,7 @@ class ChatMethods(UserMethods):
                     offset=0,
                     limit=200,
                     hash=0
-                ) for x in range(ord('a'), ord('z') + 1)]
+                ) for x in symbols or range(ord('a'), ord('z') + 1)]
             else:
                 requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
