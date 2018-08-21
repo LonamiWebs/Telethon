@@ -89,7 +89,7 @@ class UpdateMethods(UserMethods):
         elif not event:
             event = events.Raw()
 
-        self._events_pending_resolve.append(event)
+        self._loop.create_task(event.resolve(self))
         self._event_builders.append((event, callback))
 
     def remove_event_handler(self, callback, event=None):
@@ -249,17 +249,6 @@ class UpdateMethods(UserMethods):
         self._dispatching_updates_queue.clear()
 
     async def _dispatch_update(self, update):
-        if self._events_pending_resolve:
-            if self._event_resolve_lock.locked():
-                async with self._event_resolve_lock:
-                    pass
-            else:
-                async with self._event_resolve_lock:
-                    for event in self._events_pending_resolve:
-                        await event.resolve(self)
-
-            self._events_pending_resolve.clear()
-
         built = EventBuilderDict(self, update)
         if self._conversations:
             for conv in self._conversations.values():
@@ -274,7 +263,15 @@ class UpdateMethods(UserMethods):
 
         for builder, callback in self._event_builders:
             event = built[type(builder)]
-            if not event or not builder.filter(event):
+            if not event:
+                continue
+
+            # TODO Lock until it's resolved; the task for resolving
+            # was already created when adding the event handler.
+            if not builder.resolved:
+                await builder.resolve()
+
+            if not builder.filter(event):
                 continue
 
             try:

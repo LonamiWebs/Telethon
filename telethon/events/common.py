@@ -57,7 +57,7 @@ class EventBuilder(abc.ABC):
     def __init__(self, chats=None, blacklist_chats=False):
         self.chats = chats
         self.blacklist_chats = blacklist_chats
-        self._self_id = None
+        self.resolved = False
 
     @classmethod
     @abc.abstractmethod
@@ -66,9 +66,11 @@ class EventBuilder(abc.ABC):
 
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
-        self.chats = await _into_id_set(client, self.chats)
-        if not EventBuilder.self_id:
-            EventBuilder.self_id = await client.get_peer_id('me')
+        if not self.resolved:
+            self.resolved = True
+            self.chats = await _into_id_set(client, self.chats)
+            if not EventBuilder.self_id:
+                EventBuilder.self_id = await client.get_peer_id('me')
 
     def filter(self, event):
         """

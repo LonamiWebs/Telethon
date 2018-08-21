@@ -27,7 +27,7 @@ class Raw(EventBuilder):
             self.types = tuple(types)
 
     async def resolve(self, client):
-        pass
+        self.resolved = True
 
     @classmethod
     def build(cls, update):

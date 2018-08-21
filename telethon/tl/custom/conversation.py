@@ -260,6 +260,8 @@ class Conversation(ChatGetter):
         if isinstance(event, type):
             event = event()
 
+        await event.resolve()
+
         counter = Conversation._custom_counter
         Conversation._custom_counter += 1
 
@@ -270,22 +272,17 @@ class Conversation(ChatGetter):
             finally:
                 del self._custom[counter]
 
-        self._custom[counter] = (event, future, False)
+        self._custom[counter] = (event, future)
         return await result()
 
     async def _check_custom(self, built):
         # TODO This code is quite much a copy paste of registering events
         # in the client, resolving them and setting the client; perhaps
         # there is a better way?
-        for i, (ev, fut, resolved) in self._custom.items():
+        for i, (ev, fut) in self._custom.items():
             ev_type = type(ev)
-            if built[ev_type]:
-                if not resolved:
-                    await ev.resolve(self._client)
-                    self._custom[i] = (ev, fut, True)
-
-                if ev.filter(built[ev_type]):
-                    fut.set_result(built[ev_type])
+            if built[ev_type] and ev.filter(built[ev_type]):
+                fut.set_result(built[ev_type])
 
     def _on_new_message(self, response):
         response = response.message

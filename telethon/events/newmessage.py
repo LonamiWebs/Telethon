@@ -71,8 +71,9 @@ class NewMessage(EventBuilder):
         ))
 
     async def resolve(self, client):
-        await super().resolve(client)
-        self.from_users = await _into_id_set(client, self.from_users)
+        if not self.resolved:
+            await super().resolve(client)
+            self.from_users = await _into_id_set(client, self.from_users)
 
     @classmethod
     def build(cls, update):
