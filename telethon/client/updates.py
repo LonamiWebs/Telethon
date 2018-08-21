@@ -90,7 +90,6 @@ class UpdateMethods(UserMethods):
             event = events.Raw()
 
         self._events_pending_resolve.append(event)
-        self._event_builders_count[type(event)] += 1
         self._event_builders.append((event, callback))
 
     def remove_event_handler(self, callback, event=None):
@@ -109,11 +108,6 @@ class UpdateMethods(UserMethods):
             i -= 1
             ev, cb = self._event_builders[i]
             if cb == callback and (not event or isinstance(ev, event)):
-                type_ev = type(ev)
-                self._event_builders_count[type_ev] -= 1
-                if not self._event_builders_count[type_ev]:
-                    del self._event_builders_count[type_ev]
-
                 del self._event_builders[i]
                 found += 1
 
@@ -266,44 +260,23 @@ class UpdateMethods(UserMethods):
 
             self._events_pending_resolve.clear()
 
-        # TODO We can improve this further
-        # If we had a way to get all event builders for
-        # a type instead looping over them all always.
-        built = {builder: builder.build(update)
-                 for builder in self._event_builders_count}
-
+        built = EventBuilderDict(self, update)
         if self._conversations:
-            for ev_type in (events.NewMessage, events.MessageEdited,
-                            events.MessageRead):
-                if ev_type not in built:
-                    built[ev_type] = ev_type.build(update)
-
             for conv in self._conversations.values():
-                # TODO Cleaner way to do this? Maybe just pass built always?
                 if built[events.NewMessage]:
-                    built[events.NewMessage]._set_client(self)
                     conv._on_new_message(built[events.NewMessage])
                 if built[events.MessageEdited]:
-                    built[events.MessageEdited]._set_client(self)
                     conv._on_edit(built[events.MessageEdited])
                 if built[events.MessageRead]:
-                    built[events.MessageRead]._set_client(self)
                     conv._on_read(built[events.MessageRead])
-
                 if conv._custom:
-                    await conv._check_custom(built, update)
+                    await conv._check_custom(built)
 
         for builder, callback in self._event_builders:
             event = built[type(builder)]
             if not event or not builder.filter(event):
                 continue
 
-            if hasattr(event, '_set_client'):
-                event._set_client(self)
-            else:
-                event._client = self
-
-            event.original_update = update
             try:
                 await callback(event)
             except events.StopPropagation:
@@ -328,3 +301,26 @@ class UpdateMethods(UserMethods):
             __log__.info('Failed to get current state: %r', e)
 
     # endregion
+
+
+class EventBuilderDict:
+    """
+    Helper "dictionary" to return events from types and cache them.
+    """
+    def __init__(self, client, update):
+        self.client = client
+        self.update = update
+
+    def __getitem__(self, builder):
+        try:
+            return self.__dict__[builder]
+        except KeyError:
+            event = self.__dict__[builder] = builder.build(self.update)
+            if event:
+                event.original_update = self.update
+                if hasattr(event, '_set_client'):
+                    event._set_client(self.client)
+                else:
+                    event._client = self.client
+
+            return event
