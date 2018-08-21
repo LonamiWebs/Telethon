@@ -244,7 +244,7 @@ class TelegramBaseClient(abc.ABC):
         # being ``n`` the amount of borrows a given sender has; once ``n``
         # reaches ``0`` it should be disconnected and removed.
         self._borrowed_senders = {}
-        self._borrow_sender_lock = asyncio.Lock()
+        self._borrow_sender_lock = asyncio.Lock(loop=self._loop)
 
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
@@ -258,8 +258,8 @@ class TelegramBaseClient(abc.ABC):
         self._channel_pts = {}
 
         if sequential_updates:
-            self._updates_queue = asyncio.Queue()
-            self._dispatching_updates_queue = asyncio.Event()
+            self._updates_queue = asyncio.Queue(loop=self._loop)
+            self._dispatching_updates_queue = asyncio.Event(loop=self._loop)
         else:
             self._updates_queue = None
             self._dispatching_updates_queue = None

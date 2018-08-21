@@ -205,14 +205,16 @@ class MTProtoSender:
             result = []
             after = None
             for r in request:
-                message = self.state.create_message(r, after=after)
+                message = self.state.create_message(
+                    r, loop=self._loop, after=after)
+
                 self._pending_messages[message.msg_id] = message
                 self._send_queue.put_nowait(message)
                 result.append(message.future)
                 after = ordered and message
             return result
         else:
-            message = self.state.create_message(request)
+            message = self.state.create_message(request, loop=self._loop)
             self._pending_messages[message.msg_id] = message
             self._send_queue.put_nowait(message)
             return message.future
@@ -280,7 +282,7 @@ class MTProtoSender:
 
         # First connection or manual reconnection after a failure
         if self._disconnected is None or self._disconnected.done():
-            self._disconnected = asyncio.Future()
+            self._disconnected = asyncio.Future(loop=self._loop)
         __log__.info('Connection to {} complete!'.format(self._ip))
 
     async def _reconnect(self):
@@ -352,7 +354,7 @@ class MTProtoSender:
         while self._user_connected and not self._reconnecting:
             if self._pending_ack:
                 self._last_ack = self.state.create_message(
-                    MsgsAck(list(self._pending_ack))
+                    MsgsAck(list(self._pending_ack)), loop=self._loop
                 )
                 self._send_queue.put_nowait(self._last_ack)
                 self._pending_ack.clear()
@@ -365,7 +367,9 @@ class MTProtoSender:
                     continue
 
             if isinstance(messages, list):
-                message = self.state.create_message(MessageContainer(messages))
+                message = self.state.create_message(
+                    MessageContainer(messages), loop=self._loop)
+
                 self._pending_messages[message.msg_id] = message
                 self._pending_containers.append(message)
             else:
@@ -394,7 +398,7 @@ class MTProtoSender:
                         __log__.warning('OSError while sending %s', e)
                     else:
                         __log__.exception('Unhandled exception while receiving')
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(1, loop=self._loop)
 
                     self._start_reconnect()
                     break
@@ -433,7 +437,7 @@ class MTProtoSender:
                     __log__.warning('OSError while receiving %s', e)
                 else:
                     __log__.exception('Unhandled exception while receiving')
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1, loop=self._loop)
 
                 self._start_reconnect()
                 break
@@ -471,7 +475,7 @@ class MTProtoSender:
                 return
             except Exception as e:
                 __log__.exception('Unhandled exception while unpacking %s',e)
-                await asyncio.sleep(1)
+                await asyncio.sleep(1, loop=self._loop)
             else:
                 try:
                     await self._process_message(message)
@@ -480,7 +484,7 @@ class MTProtoSender:
                 except Exception as e:
                     __log__.exception('Unhandled exception while '
                                       'processing %s', message)
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1, loop=self._loop)
 
     # Response Handlers
 
@@ -525,7 +529,7 @@ class MTProtoSender:
         if rpc_result.error:
             error = rpc_message_to_error(rpc_result.error)
             self._send_queue.put_nowait(self.state.create_message(
-                MsgsAck([message.msg_id])
+                MsgsAck([message.msg_id]), loop=self._loop
             ))
 
             if not message.future.cancelled():

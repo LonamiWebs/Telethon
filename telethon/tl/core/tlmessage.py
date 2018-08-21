@@ -24,10 +24,13 @@ class TLMessage(TLObject):
     sent `TLMessage`, and this result can be represented as a `Future`
     that will eventually be set with either a result, error or cancelled.
     """
-    def __init__(self, msg_id, seq_no, obj, out=False, after_id=0):
+    def __init__(self, msg_id, seq_no, obj, *, loop, out=False, after_id=0):
         self.obj = obj
         self.container_msg_id = None
-        self.future = asyncio.Future()
+
+        # If no loop is given then it is an incoming message.
+        # Only outgoing messages need the future to await them.
+        self.future = asyncio.Future(loop=loop) if loop else None
 
         # After which message ID this one should run. We do this so
         # InvokeAfterMsgRequest is transparent to the user and we can

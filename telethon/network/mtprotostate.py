@@ -37,7 +37,7 @@ class MTProtoState:
         self._sequence = 0
         self._last_msg_id = 0
 
-    def create_message(self, obj, after=None):
+    def create_message(self, obj, *, loop, after=None):
         """
         Creates a new `telethon.tl.tl_message.TLMessage` from
         the given `telethon.tl.tlobject.TLObject` instance.
@@ -47,7 +47,8 @@ class MTProtoState:
             seq_no=self._get_seq_no(isinstance(obj, TLRequest)),
             obj=obj,
             after_id=after.msg_id if after else None,
-            out=True  # Pre-convert the request into bytes
+            out=True,  # Pre-convert the request into bytes
+            loop=loop
         )
 
     def update_message_id(self, message):
@@ -135,7 +136,7 @@ class MTProtoState:
         # reader isn't used for anything else after this, it's unnecessary.
         obj = reader.tgread_object()
 
-        return TLMessage(remote_msg_id, remote_sequence, obj)
+        return TLMessage(remote_msg_id, remote_sequence, obj, loop=None)
 
     def _get_new_msg_id(self):
         """

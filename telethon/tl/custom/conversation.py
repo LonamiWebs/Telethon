@@ -181,7 +181,7 @@ class Conversation(ChatGetter):
                 return incoming
 
         # Otherwise the next incoming response will be the one to use
-        future = asyncio.Future()
+        future = asyncio.Future(loop=self._client.loop)
         pending[target_id] = future
         return self._get_result(future, start_time, timeout)
 
@@ -209,7 +209,7 @@ class Conversation(ChatGetter):
             return earliest_edit
 
         # Otherwise the next incoming response will be the one to use
-        future = asyncio.Future()
+        future = asyncio.Future(loop=self._client.loop)
         self._pending_edits[target_id] = future
         return await self._get_result(future, start_time, timeout)
 
@@ -220,7 +220,7 @@ class Conversation(ChatGetter):
         will also trigger even without a response.
         """
         start_time = time.time()
-        future = asyncio.Future()
+        future = asyncio.Future(loop=self._client.loop)
         target_id = self._get_message_id(message)
 
         if self._last_read is None:
@@ -265,7 +265,7 @@ class Conversation(ChatGetter):
         counter = Conversation._custom_counter
         Conversation._custom_counter += 1
 
-        future = asyncio.Future()
+        future = asyncio.Future(loop=self._client.loop)
         async def result():
             try:
                 return await self._get_result(future, start_time, timeout)

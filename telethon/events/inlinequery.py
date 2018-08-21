@@ -162,8 +162,10 @@ class InlineQuery(EventBuilder):
             if self._answered:
                 return
 
-            results = [self._as_awaitable(x) for x in results]
-            done, _ = await asyncio.wait(results)
+            results = [self._as_awaitable(x, self._client.loop)
+                       for x in results]
+
+            done, _ = await asyncio.wait(results, loop=self._client.loop)
             results = [x.result() for x in done]
 
             if switch_pm:
@@ -181,10 +183,10 @@ class InlineQuery(EventBuilder):
             )
 
         @staticmethod
-        def _as_awaitable(obj):
+        def _as_awaitable(obj, loop):
             if inspect.isawaitable(obj):
                 return obj
 
-            f = asyncio.Future()
+            f = asyncio.Future(loop=loop)
             f.set_result(obj)
             return f
