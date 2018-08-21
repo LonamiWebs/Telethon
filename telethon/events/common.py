@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import warnings
 
 from .. import utils
@@ -57,26 +58,48 @@ class EventBuilder(abc.ABC):
     def __init__(self, chats=None, blacklist_chats=False):
         self.chats = chats
         self.blacklist_chats = blacklist_chats
-        self.resolved = False
+        self.resolved = None
 
     @classmethod
     @abc.abstractmethod
     def build(cls, update):
         """Builds an event for the given update if possible, or returns None"""
 
+    def ensure_resolve(self, client):
+        """
+        Sets the event loop so that self.resolved can be used.
+
+        The expected workflow is:
+        1. Creating the event builder.
+        2a. Calling `ensure_resolve`.
+        2b. Awaiting `resolved.wait`.
+        OR
+        2a. Awaiting `resolve`.
+        3. Using `filter`.
+        """
+        if not self.resolved:
+            self.resolved = asyncio.Event(loop=client.loop)
+            client.loop.create_task(self.resolve(client))
+
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
-        if not self.resolved:
-            self.resolved = True
+        if not self.resolved.is_set():
             self.chats = await _into_id_set(client, self.chats)
             if not EventBuilder.self_id:
                 EventBuilder.self_id = await client.get_peer_id('me')
+
+            self.resolved.set()
 
     def filter(self, event):
         """
         If the ID of ``event._chat_peer`` isn't in the chats set (or it is
         but the set is a blacklist) returns ``None``, otherwise the event.
+
+        The events must have been resolved before this can be called.
         """
+        if not self.resolved:
+            return None
+
         if self.chats is not None:
             inside = utils.get_peer_id(event._chat_peer) in self.chats
             if inside == self.blacklist_chats:

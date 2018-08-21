@@ -260,6 +260,9 @@ class Conversation(ChatGetter):
         if isinstance(event, type):
             event = event()
 
+        # Since we await resolve here we don't need to await resolved.
+        # We know it has already been resolved, unlike when normally
+        # adding an event handler, for which a task is created to resolve.
         await event.resolve()
 
         counter = Conversation._custom_counter
@@ -276,9 +279,6 @@ class Conversation(ChatGetter):
         return await result()
 
     async def _check_custom(self, built):
-        # TODO This code is quite much a copy paste of registering events
-        # in the client, resolving them and setting the client; perhaps
-        # there is a better way?
         for i, (ev, fut) in self._custom.items():
             ev_type = type(ev)
             if built[ev_type] and ev.filter(built[ev_type]):

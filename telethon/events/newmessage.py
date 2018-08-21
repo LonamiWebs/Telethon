@@ -1,7 +1,8 @@
+import asyncio
 import re
 
 from .common import EventBuilder, EventCommon, name_inner_event, _into_id_set
-from ..tl import types, custom
+from ..tl import types
 
 
 @name_inner_event
@@ -71,9 +72,9 @@ class NewMessage(EventBuilder):
         ))
 
     async def resolve(self, client):
-        if not self.resolved:
-            await super().resolve(client)
+        if not self.resolved.is_set():
             self.from_users = await _into_id_set(client, self.from_users)
+            await super().resolve(client)
 
     @classmethod
     def build(cls, update):

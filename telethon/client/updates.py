@@ -89,7 +89,7 @@ class UpdateMethods(UserMethods):
         elif not event:
             event = events.Raw()
 
-        self._loop.create_task(event.resolve(self))
+        event.ensure_resolve(self)
         self._event_builders.append((event, callback))
 
     def remove_event_handler(self, callback, event=None):
@@ -266,10 +266,8 @@ class UpdateMethods(UserMethods):
             if not event:
                 continue
 
-            # TODO Lock until it's resolved; the task for resolving
-            # was already created when adding the event handler.
-            if not builder.resolved:
-                await builder.resolve()
+            if not builder.resolved.is_set():
+                await builder.resolved.wait()
 
             if not builder.filter(event):
                 continue
