@@ -228,7 +228,7 @@ class MemorySession(Session):
     def cache_file(self, md5_digest, file_size, instance):
         if not isinstance(instance, (InputDocument, InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
-        key = (md5_digest, file_size, _SentFileType.from_type(instance))
+        key = (md5_digest, file_size, _SentFileType.from_type(type(instance)))
         value = (instance.id, instance.access_hash)
         self._files[key] = value
 
