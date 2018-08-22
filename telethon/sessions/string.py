@@ -15,7 +15,15 @@ class StringSession(MemorySession):
     It is thought to be used where you don't want to create any on-disk
     files but would still like to be able to save and load existing sessions
     by other means.
+
+    You can use custom `encode` and `decode` functions, if present:
+
+    * `encode` definition must be ``def encode(value: bytes) -> str:``.
+    * `decode` definition must be ``def decode(value: str) -> bytes:``.
     """
+    encode = lambda x: base64.urlsafe_b64encode(x).decode('ascii')
+    decode = base64.urlsafe_b64decode
+
     def __init__(self, string=None):
         super().__init__()
         if string:
@@ -25,7 +33,7 @@ class StringSession(MemorySession):
             string = string[1:]
             ip_len = 4 if len(string) == 352 else 16
             self._dc_id, ip, self._port, key = struct.unpack(
-                '>B{}sH256s'.format(ip_len), base64.urlsafe_b64decode(string))
+                '>B{}sH256s'.format(ip_len), StringSession.decode(string))
 
             self._server_address = ipaddress.ip_address(ip).compressed
             if any(key):
@@ -36,10 +44,10 @@ class StringSession(MemorySession):
             return ''
 
         ip = ipaddress.ip_address(self._server_address).packed
-        return CURRENT_VERSION + base64.urlsafe_b64encode(struct.pack(
+        return CURRENT_VERSION + StringSession.encode(struct.pack(
             '>B{}sH256s'.format(len(ip)),
             self._dc_id,
             ip,
             self._port,
             self._auth_key.key
-        )).decode('ascii')
+        ))
