@@ -52,7 +52,7 @@ class UserMethods(TelegramBaseClient):
                         exceptions.append(None)
                         results.append(result)
                         request_index += 1
-                    if exceptions:
+                    if any(x is not None for x in exceptions):
                         raise MultiError(exceptions, results, requests)
                     else:
                         return results
