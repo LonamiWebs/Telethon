@@ -1,4 +1,5 @@
 """Errors not related to the Telegram API itself"""
+from ..tl import TLRequest
 
 
 class ReadCancelledError(Exception):
@@ -67,3 +68,29 @@ class CdnFileTamperedError(SecurityError):
         super().__init__(
             'The CDN file has been altered and its download cancelled.'
         )
+
+
+class MultiError(Exception):
+    """ Exception container for multiple TL requests """
+
+    def __new__(cls, exceptions, result, requests):
+        if len(result) != len(exceptions) != len(requests):
+            raise ValueError(
+                "Need result, exception and request for each error")
+        for e, req in zip(exceptions, requests):
+            if not isinstance(e, BaseException):
+                raise TypeError(
+                    "Expected and exception object, not %r" % e
+                )
+            if not isinstance(req, TLRequest):
+                raise TypeError(
+                    "Expected TLRequest object, not %r" % req
+                )
+
+        if len(exceptions) == 1:
+            return exceptions[0]
+        self = BaseException.__new__(cls)
+        self.exceptions = list(exceptions)
+        self.results = list(result)
+        self.requests = list(requests)
+        return self
