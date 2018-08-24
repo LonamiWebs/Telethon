@@ -21,12 +21,18 @@ bot = TelegramClient(NAME, os.environ['TG_API_ID'], os.environ['TG_API_HASH'])
 
 
 # ============================== Constants ==============================
-WELCOME = (
+WELCOME = {
+-1001109500936:
     'Hi and welcome to the group. Before asking any questions, **please** '
     'read [the docs](https://telethon.readthedocs.io/). Make sure you are '
     'using the latest version with `pip3 install -U telethon`, since most '
-    'problems have already been fixed in newer versions.'
-)
+    'problems have already been fixed in newer versions.',
+
+-1001200633650:
+    'Welcome to the off-topic group. Feel free to talk, ask or test anything '
+    'here, politely. Check the description if you need to test more spammy '
+    '"features" of your or other people\'s bots (sed commands too).'
+}
 
 READ_FULL = (
     'Please read [Accessing the Full API](https://telethon.readthedocs.io'
@@ -46,19 +52,54 @@ DOCS_MESSAGE = (
     'https://telethon.readthedocs.io/en/latest/'
     'telethon.tl.custom.html#telethon.tl.custom.message.Message.'
 )
+
+ASK = (
+    "Hey, that's not how you ask a question! If you want helpful advice "
+    "(or any response at all) [read this first](https://stackoverflow.com"
+    "/help/how-to-ask) and then ask again."
+)
+
+LOGGING = '''
+**Please enable logging:**
+```import logging
+logging.basicConfig(level=logging.WARNING)```
+
+If you need more information, use `logging.DEBUG` instead.
+'''
+
+ALREADY_FIXED = (
+    "This issue has already been fixed, but it's not yet available in PyPi. "
+    "You can upgrade now with `pip install --upgrade git+https://github.com"
+    "/LonamiWebs/Telethon@master`."
+)
+
+LEARN_PYTHON = (
+    "That issue is no longer related with Telethon. You should learn more "
+    "Python before trying again. Some good resources:\n"
+    "• [Official Docs](https://docs.python.org/3/tutorial/index.html).\n"
+    "• [Dive Into Python 3](http://www.diveintopython3.net/).\n"
+    "• [Learn Python](https://www.learnpython.org/).\n"
+    "• [CodeAcademy](https://www.codecademy.com/learn/learn-python).\n"
+    "• [Hitchhiker’s Guide to Python](https://docs.python-guide.org/).\n"
+    "• The @PythonRes Telegram Channel.\n"
+    "• Corey Schafer videos for [beginners](https://www.youtube.com/watch?v="
+    "YYXdXT2l-Gg&list=PL-osiE80TeTskrapNbzXhwoFUiLCjGgY7) and in [general]"
+    "(https://www.youtube.com/watch?v=YYXdXT2l-Gg&list=PL-osiE80TeTt2d9bfV"
+    "yTiXJA-UTHn6WwU)."
+)
+
 # ============================== Constants ==============================
 # ==============================  Welcome  ==============================
-last_welcome = None
+last_welcome = {}
 
 
 @bot.on(events.ChatAction)
 async def handler(event):
     if event.user_joined:
-        global last_welcome
-        if last_welcome is not None:
-            await last_welcome.delete()
+        if event.chat_id in last_welcome:
+            await last_welcome[event.chat_id].delete()
 
-        last_welcome = await event.reply(WELCOME)
+        last_welcome[event.chat_id] = await event.reply(WELCOME[event.chat_id])
 
 
 # ==============================  Welcome  ==============================
@@ -144,6 +185,44 @@ async def handler(event):
     )
 
 
+@bot.on(events.NewMessage(pattern='(?i)#(ask|question)', forwards=False))
+async def handler(event):
+    """#ask or #question: Advices the user to ask a better question."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(
+            ASK, reply_to=event.reply_to_msg_id, link_preview=False)
+    ])
+
+
+@bot.on(events.NewMessage(pattern='(?i)#log(s|ging)?', forwards=False))
+async def handler(event):
+    """#log, #logs or #logging: Explains how to enable logging."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(LOGGING, reply_to=event.reply_to_msg_id)
+    ])
+
+
+@bot.on(events.NewMessage(pattern='(?i)#master', forwards=False))
+async def handler(event):
+    """#master: The bug has been fixed in the `master` branch."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(ALREADY_FIXED, reply_to=event.reply_to_msg_id)
+    ])
+
+
+@bot.on(events.NewMessage(pattern='(?i)#(learn|python)', forwards=False))
+async def handler(event):
+    """#learn or #python: Tells the user to learn some Python first."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(
+            LEARN_PYTHON, reply_to=event.reply_to_msg_id, link_preview=False)
+    ])
+
+
 @bot.on(events.NewMessage(pattern='#list', forwards=False))
 async def handler(event):
     await event.delete()
@@ -174,6 +253,9 @@ async def handler(event):
         return
 
     name = what[0]
+    if len(name) < 4:
+        return  # Short words trigger very commonly (such as "on")
+
     attr = attr_fullname(TelegramClient, name)
     await event.reply(
         f'Documentation for [{name}]({DOCS_CLIENT}{attr})',
