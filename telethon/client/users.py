@@ -6,6 +6,7 @@ import time
 from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils
 from ..tl import TLObject, TLRequest, types, functions
+from ..errors import MultiError, RPCError
 
 __log__ = logging.getLogger(__name__)
 _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
@@ -13,7 +14,8 @@ _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
 class UserMethods(TelegramBaseClient):
     async def __call__(self, request, ordered=False):
-        for r in (request if utils.is_list_like(request) else (request,)):
+        requests = (request if utils.is_list_like(request) else (request,))
+        for r in requests:
             if not isinstance(r, TLRequest):
                 raise _NOT_A_REQUEST
             await r.resolve(self, utils)
@@ -38,12 +40,22 @@ class UserMethods(TelegramBaseClient):
                 future = self._sender.send(request, ordered=ordered)
                 if isinstance(future, list):
                     results = []
+                    exceptions = []
                     for f in future:
-                        result = await f
+                        try:
+                            result = await f
+                        except RPCError as e:
+                            exceptions.append(e)
+                            results.append(None)
+                            continue
                         self.session.process_entities(result)
+                        exceptions.append(None)
                         results.append(result)
                         request_index += 1
-                    return results
+                    if exceptions:
+                        raise MultiError(exceptions, results, requests)
+                    else:
+                        return results
                 else:
                     result = await future
                     self.session.process_entities(result)
