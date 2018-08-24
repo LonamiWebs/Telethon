@@ -78,13 +78,13 @@ class MultiError(Exception):
             raise ValueError(
                 'Need result, exception and request for each error')
         for e, req in zip(exceptions, requests):
-            if not isinstance(e, BaseException):
+            if not isinstance(e, BaseException) and e is not None:
                 raise TypeError(
-                    'Expected and exception object, not %r' % e
+                    "Expected an exception object, not '%r'" % e
                 )
             if not isinstance(req, TLRequest):
                 raise TypeError(
-                    'Expected TLRequest object, not %r' % req
+                    "Expected TLRequest object, not '%r'" % req
                 )
 
         if len(exceptions) == 1:
