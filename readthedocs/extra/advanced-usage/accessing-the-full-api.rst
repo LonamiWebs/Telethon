@@ -157,6 +157,75 @@ This can further be simplified to:
     though, for instance, in "messages.search" it will actually return 0 items.
 
 
+Requests in Parallel
+********************
+
+The library will automatically merge outgoing requests into a single
+*container*. Telegram's API supports sending multiple requests in a
+single container, which is faster because it has less overhead and
+the server can run them without waiting for others. You can also
+force using a container manually:
+
+.. code-block:: python
+
+    async def main():
+
+        # Letting the library do it behind the scenes
+        await asyncio.wait([
+            client.send_message('me', 'Hello'),
+            client.send_message('me', ','),
+            client.send_message('me', 'World'),
+            client.send_message('me', '.')
+        ])
+
+        # Manually invoking many requests at once
+        await client([
+            SendMessageRequest('me', 'Hello'),
+            SendMessageRequest('me', ', '),
+            SendMessageRequest('me', 'World'),
+            SendMessageRequest('me', '.')
+        ])
+
+Note that you cannot guarantee the order in which they are run.
+Try running the above code more than one time. You will see the
+order in which the messages arrive is different.
+
+If you use the raw API (the first option), you can use ``ordered``
+to tell the server that it should run the requests sequentially.
+This will still be faster than going one by one, since the server
+knows all requests directly:
+
+.. code-block:: python
+
+    client([
+        SendMessageRequest('me', 'Hello'),
+        SendMessageRequest('me', ', '),
+        SendMessageRequest('me', 'World'),
+        SendMessageRequest('me', '.')
+    ], ordered=True)
+
+If any of the requests fails with a Telegram error (not connection
+errors or any other unexpected events), the library will raise
+`telethon.errors.common.MultiError`. You can ``except`` this
+and still access the successful results:
+
+.. code-block:: python
+
+    from telethon.errors import MultiError
+
+    try:
+        client([
+            SendMessageRequest('me', 'Hello'),
+            SendMessageRequest('me', ''),
+            SendMessageRequest('me', 'World')
+        ], ordered=True)
+    except MultiError as e:
+        # The first and third requests worked.
+        first = e.results[0]
+        third = e.results[2]
+        # The second request failed.
+        second = e.exceptions[1]
+
 __ https://lonamiwebs.github.io/Telethon
 __ https://lonamiwebs.github.io/Telethon/methods/index.html
 __ https://lonamiwebs.github.io/Telethon/?q=message&redirect=no
