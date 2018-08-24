@@ -69,6 +69,12 @@ you're able to just do this:
     my_channel = client.get_entity(PeerChannel(some_id))
 
 
+.. note::
+
+    You **don't** need to get the entity before using it! Just let
+    the library do its job. Use the phone, username, ID or input
+    entity (preferred but not necessary), whatever you already have.
+
 All methods in the :ref:`telegram-client` call `.get_input_entity()
 <telethon.client.users.UserMethods.get_input_entity>` prior
 to sending the requst to save you from the hassle of doing so manually.
@@ -95,20 +101,32 @@ Entities vs. Input Entities
     other means like `client.get_dialogs()
     <telethon.client.dialogs.DialogMethods.get_dialogs>`.
 
-
 On top of the normal types, the API also make use of what they call their
 ``Input*`` versions of objects. The input version of an entity (e.g.
 :tl:`InputPeerUser`, :tl:`InputChat`, etc.) only contains the minimum
 information that's required from Telegram to be able to identify
-who you're referring to: a :tl:`Peer`'s **ID** and **hash**.
+who you're referring to: a :tl:`Peer`'s **ID** and **hash**. They
+are named like this because they are input parameters in the requests.
 
-This ID/hash pair is unique per user, so if you use the pair given by another
-user **or bot** it will **not** work.
+Entities' ID are the same for all user and bot accounts, however, the access
+hash is **different for each account**, so trying to reuse the access hash
+from one account in another will **not** work.
 
-To save *even more* bandwidth, the API also makes use of the :tl:`Peer`
-versions, which just have an ID. This serves to identify them, but
-peers alone are not enough to use them. You need to know their hash
-before you can "use them".
+Sometimes, Telegram only needs to indicate the type of the entity along
+with their ID. For this purpose, :tl:`Peer` versions of the entities also
+exist, which just have the ID. You cannot get the hash out of them since
+you should not be needing it. The library probably has cached it before.
+
+Peers are enough to identify an entity, but they are not enough to make
+a request with them use them. You need to know their hash before you can
+"use them", and to know the hash you need to "encounter" them, let it
+be in your dialogs, participants, message forwards, etc.
+
+.. note::
+
+    You *can* use peers with the library. Behind the scenes, they are
+    replaced with the input variant. Peers "aren't enough" on their own
+    but the library will do some more work to use the right type.
 
 As we just mentioned, API calls don't need to know the whole information
 about the entities, only their ID and hash. For this reason, another method,

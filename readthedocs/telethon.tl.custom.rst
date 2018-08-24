@@ -77,3 +77,11 @@ telethon\.tl\.custom\.sendergetter module
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.tl\.custom\.conversation module
+-----------------------------------------
+
+.. automodule:: telethon.tl.custom.conversation
+    :members:
+    :undoc-members:
+    :show-inheritance:
