@@ -71,20 +71,20 @@ class CdnFileTamperedError(SecurityError):
 
 
 class MultiError(Exception):
-    """ Exception container for multiple TL requests """
+    """Exception container for multiple `TLRequest`'s."""
 
     def __new__(cls, exceptions, result, requests):
         if len(result) != len(exceptions) != len(requests):
             raise ValueError(
-                "Need result, exception and request for each error")
+                'Need result, exception and request for each error')
         for e, req in zip(exceptions, requests):
             if not isinstance(e, BaseException):
                 raise TypeError(
-                    "Expected and exception object, not %r" % e
+                    'Expected and exception object, not %r' % e
                 )
             if not isinstance(req, TLRequest):
                 raise TypeError(
-                    "Expected TLRequest object, not %r" % req
+                    'Expected TLRequest object, not %r' % req
                 )
 
         if len(exceptions) == 1:
