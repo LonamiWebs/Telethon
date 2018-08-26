@@ -381,10 +381,14 @@ class UserMethods(TelegramBaseClient):
                     raise ValueError('No user has "{}" as username'
                                      .format(username)) from e
 
-                for entity in itertools.chain(result.users, result.chats):
-                    if getattr(entity, 'username', None) or '' \
-                            .lower() == username:
-                        return entity
+                try:
+                    pid = utils.get_peer_id(result.peer, add_mark=False)
+                    if isinstance(result.peer, types.PeerUser):
+                        return next(x for x in result.users if x.id == pid)
+                    else:
+                        return next(x for x in result.chats if x.id == pid)
+                except StopIteration:
+                    pass
             try:
                 # Nobody with this username, maybe it's an exact name/title
                 return await self.get_entity(
