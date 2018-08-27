@@ -266,7 +266,7 @@ class UpdateMethods(UserMethods):
                 continue
 
             if not builder.resolved:
-                await builder.resolve()
+                await builder.resolve(self)
 
             if not builder.filter(event):
                 continue
