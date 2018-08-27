@@ -46,21 +46,84 @@ your disk. This is by default a database file using Python's ``sqlite3``.
     creates the file in your working directory, but absolute paths work too.
 
 
-.. important::
+Once you have a client ready, simply `.start()
+<telethon.client.auth.AuthMethods.start>` it:
 
-    The process shown here shows how to sign in *manually*. You **should**
-    use `client.start() <telethon.client.auth.AuthMethods.start>` instead
-    unless you have a better reason not to (e.g. you need more control):
+.. code-block:: python
+
+    client.start()
+
+This line connects to Telegram, checks whether the current user is
+authorized or not, and if it's not, it begins the login or sign up process.
+
+When you're done with your code, you should always disconnect:
+
+.. code-block:: python
+
+    client = TelegramClient(...)
+    try:
+        client.start()
+        ...  # your code here
+    finally:
+        client.disconnect()
+
+
+You can also use a ``with`` block to achieve the same effect:
+
+.. code-block:: python
+
+    client = TelegramClient(...)
+    with client:
+        ...  # your code here
+
+    # or
+    with TelegramClient(...) as client:
+        ...  # your code here
+
+
+Wrapping it all together:
+
+.. code-block:: python
+
+    from telethon import TelegramClient, sync
+    with TelegramClient('session_name', api_id, api_hash) as client:
+        ...  # your code
+
+Just two setup lines.
+
+.. warning::
+    Please note that if you fail to login around 5 times (or change the first
+    parameter of the :ref:`TelegramClient <telethon-client>`, which is the session
+    name) you will receive a ``FloodWaitError`` of around 22 hours, so be
+    careful not to mess this up! This shouldn't happen if you're doing things
+    as explained, though.
+
+.. note::
+    If you want to use a **proxy**, you have to `install PySocks`__
+    (via pip or manual) and then set the appropriated parameters:
 
     .. code-block:: python
 
-        client.start()
+        import socks
+        client = TelegramClient('session_id',
+            api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
+            proxy=(socks.SOCKS5, 'localhost', 4444)
+        )
 
-    This is explained after going through the manual process.
+    The ``proxy=`` argument should be a tuple, a list or a dict,
+    consisting of parameters described `here`__.
 
 
-Before using the client, you must be connected to Telegram.
-Doing so is very easy:
+Manually Signing In
+*******************
+
+.. note::
+
+    Skip this unless you need more control when connecting.
+
+If you need more control, you can replicate what `client.start()
+<telethon.client.auth.AuthMethods.start>` is doing behind the scenes
+for your convenience. The first step is to connect to the servers:
 
 .. code-block:: python
 
@@ -102,7 +165,8 @@ As a full example:
 
 .. code-block:: python
 
-    client = TelegramClient('anon', api_id, api_hash)
+    from telethon import TelegramClient, sync
+    client = TelegramClient('session_name', api_id, api_hash)
 
     client.connect()
     if not client.is_user_authorized():
@@ -110,14 +174,8 @@ As a full example:
         me = client.sign_in(phone_number, input('Enter code: '))
 
 
-All of this, however, can be done through a call to `.start()
-<telethon.client.auth.AuthMethods.start>`:
-
-.. code-block:: python
-
-    client = TelegramClient('anon', api_id, api_hash)
-    client.start()
-
+Remember that this is the manual process and it's so much easier
+to use the code snippets shown at the beginning of the page.
 
 The code shown is just what `.start()
 <telethon.client.auth.AuthMethods.start>` will be doing behind the scenes
@@ -132,32 +190,9 @@ is just a matter of taste, and how much control you need.
 Remember that you can get yourself at any time with `client.get_me()
 <telethon.client.users.UserMethods.get_me>`.
 
-.. warning::
-    Please note that if you fail to login around 5 times (or change the first
-    parameter of the :ref:`TelegramClient <telethon-client>`, which is the session
-    name) you will receive a ``FloodWaitError`` of around 22 hours, so be
-    careful not to mess this up! This shouldn't happen if you're doing things
-    as explained, though.
-
-.. note::
-    If you want to use a **proxy**, you have to `install PySocks`__
-    (via pip or manual) and then set the appropriated parameters:
-
-    .. code-block:: python
-
-        import socks
-        client = TelegramClient('session_id',
-            api_id=12345, api_hash='0123456789abcdef0123456789abcdef',
-            proxy=(socks.SOCKS5, 'localhost', 4444)
-        )
-
-    The ``proxy=`` argument should be a tuple, a list or a dict,
-    consisting of parameters described `here`__.
-
-
 
 Two Factor Authorization (2FA)
-******************************
+------------------------------
 
 If you have Two Factor Authorization (from now on, 2FA) enabled on your
 account, calling `.sign_in()
