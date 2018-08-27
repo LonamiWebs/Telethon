@@ -24,6 +24,10 @@ try:
 except ImportError:
     hachoir = None
 
+# .webp mimetype is unknown on some operative systems, so stickers won't
+# work. Manually register it here to make sure stickers work everywhere.
+mimetypes.add_type('image/webp', '.webp')
+
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
