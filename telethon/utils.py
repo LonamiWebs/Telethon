@@ -24,8 +24,8 @@ try:
 except ImportError:
     hachoir = None
 
-# .webp and .ogg mimetypes are unknown on some operative systems, so stickers and voices won't
-# work. Manually register it here to make sure stickers and voices work everywhere.
+# .webp (stickers) and .ogg (some voice notes) mimetypes are unknown on some
+# operative systems. Manually register them here to make them work everywhere.
 mimetypes.add_type('image/webp', '.webp')
 mimetypes.add_type('audio/ogg', '.ogg')
 
