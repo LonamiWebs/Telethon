@@ -1,10 +1,15 @@
-<!--
-0. The library is Python >= 3.4, not Python 2.x.
-1. If you have a QUESTION, ask it on @TelethonChat (Telegram) or StackOverflow, not here. It will be closed immediatly with no explanation if you post it here.
-2. If you have an ISSUE or you are experiencing strange behaviour, make sure you're using the latest version (pip install -U telethon), and post as much information as possible here. Enhancement suggestions are welcome too.
+DON'T ASK QUESTIONS HERE.
+
+This place is for issues with the library, so please make sure that:
+1. The error is in the library's code, and not in your own.
+2. You have already searched for your error on existing issues.
+3. You are testing with upstream code (pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip).
+
+If you have a question, ask in the official Telegram group https://t.me/TelethonChat or  https://stackoverflow.com. Enhancement ideas are currently welcome, too.
 
 If you paste code, please put it between three backticks (`):
 ```python
 code here
 ```
--->
+
+Once you have read and understood this, delete all this text and detail whatever issue you are posting.
