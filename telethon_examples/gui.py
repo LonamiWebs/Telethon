@@ -31,6 +31,11 @@ if not API_HASH:
     API_HASH = input('Enter API hash (or add TG_API_HASH to env vars): ')
 
 
+def sanitize_str(string):
+    return ''.join(x if ord(x) <= 0xffff else
+                   '{{{:x}ū}}'.format(ord(x)) for x in string)
+
+
 def callback(func):
     """
     This decorator turns `func` into a callback for Tkinter
@@ -148,13 +153,14 @@ class App(tkinter.Tk):
             text = '>> '
         else:
             sender = await event.get_sender()
-            text = '<{}> '.format(utils.get_display_name(sender))
+            text = '<{}> '.format(sanitize_str(
+                utils.get_display_name(sender)))
 
         # If the message has media show "(MediaType) "
         if event.media:
             text += '({}) '.format(event.media.__class__.__name__)
 
-        text += event.text
+        text += sanitize_str(event.text)
         text += '\n'
 
         # Append the text to the end with a newline, and scroll to the end
@@ -224,9 +230,11 @@ class App(tkinter.Tk):
             return
 
         # Get the message, clear the text field and focus it again
-        text = self.message.get()
+        text = self.message.get().strip()
         self.message.delete(0, tkinter.END)
         self.message.focus()
+        if not text:
+            return
 
         # NOTE: This part is optional but supports editing messages
         #       You can remove it if you find it too complicated.
@@ -308,6 +316,9 @@ class App(tkinter.Tk):
             if self.chat_id != old:
                 self.message_ids.clear()
                 self.sent_text.clear()
+                for msg in reversed(
+                        await self.cl.get_messages(self.chat_id, 100)):
+                    await self.on_message(msg)
         except ValueError:
             # Invalid chat ID, let the user know with a yellow background
             self.chat_id = None
