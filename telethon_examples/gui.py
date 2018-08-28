@@ -73,6 +73,8 @@ class App(tkinter.Tk):
     def __init__(self, client, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cl = client
+        self.me = None
+
         self.title(TITLE)
         self.geometry(SIZE)
 
@@ -203,6 +205,7 @@ class App(tkinter.Tk):
         Configures the application as "signed in" (displays user's
         name and disables the entry to input phone/bot token/code).
         """
+        self.me = me
         self.sign_in_label.configure(text='Signed in')
         self.sign_in_entry.configure(state=tkinter.NORMAL)
         self.sign_in_entry.delete(0, tkinter.END)
@@ -299,6 +302,9 @@ class App(tkinter.Tk):
         """
         Checks the input chat where to send and listen messages from.
         """
+        if self.me is None:
+            return  # Not logged in yet
+
         chat = self.chat.get().strip()
         try:
             chat = int(chat)
@@ -316,9 +322,11 @@ class App(tkinter.Tk):
             if self.chat_id != old:
                 self.message_ids.clear()
                 self.sent_text.clear()
-                for msg in reversed(
-                        await self.cl.get_messages(self.chat_id, 100)):
-                    await self.on_message(msg)
+                self.log.delete('1.0', tkinter.END)
+                if not self.me.bot:
+                    for msg in reversed(
+                            await self.cl.get_messages(self.chat_id, 100)):
+                        await self.on_message(msg)
         except ValueError:
             # Invalid chat ID, let the user know with a yellow background
             self.chat_id = None
