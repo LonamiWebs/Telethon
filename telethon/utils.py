@@ -24,9 +24,10 @@ try:
 except ImportError:
     hachoir = None
 
-# .webp mimetype is unknown on some operative systems, so stickers won't
-# work. Manually register it here to make sure stickers work everywhere.
+# .webp (stickers) and .ogg (some voice notes) mimetypes are unknown on some
+# operative systems. Manually register them here to make them work everywhere.
 mimetypes.add_type('image/webp', '.webp')
+mimetypes.add_type('audio/ogg', '.ogg')
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
