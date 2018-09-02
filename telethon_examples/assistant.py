@@ -53,6 +53,16 @@ DOCS_MESSAGE = (
     'telethon.tl.custom.html#telethon.tl.custom.message.Message.'
 )
 
+SPAM = (
+    "Telethon is free software. That means using it is a right: you are " 
+    "free to use it for absolutely any purpose whatsoever. However, help "
+    "and support with using it is a privilege. If you misbehave or want "
+    "to bad things, nobody is obligated to help you and you're not welcome "
+    "here."
+)
+
+OFFTOPIC = "That is not related to Telethon. You may continue the conversation in @TelethonOffTopic"
+
 ASK = (
     "Hey, that's not how you ask a question! If you want helpful advice "
     "(or any response at all) [read this first](https://stackoverflow.com"
@@ -198,6 +208,23 @@ async def handler(event):
     ])
 
 
+@bot.on(events.NewMessage(pattern='(?i)#spam(mer|ming)?', forwards=False))
+async def handler(event):
+    """#spam, #spammer, #spamming: Informs spammers that they are not welcome here."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(SPAM, reply_to=event.reply_to_msg_id)
+    ])
+
+@bot.on(events.NewMessage(pattern='(?i)#(ot|offtopic)', forwards=False))
+async def handler(event):
+    """#ot, #offtopic: Tells the user to move to @TelethonOffTopic."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(OFFTOPIC, reply_to=event.reply_to_msg_id)
+    ])
+
+
 @bot.on(events.NewMessage(pattern='(?i)#log(s|ging)?', forwards=False))
 async def handler(event):
     """#log, #logs or #logging: Explains how to enable logging."""
@@ -226,13 +253,14 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='#list', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)#(list|help)', forwards=False))
 async def handler(event):
     await event.delete()
     text = 'Available commands:\n'
     for callback, handler in bot.list_event_handlers():
         if isinstance(handler, events.NewMessage) and callback.__doc__:
             text += f'\n{callback.__doc__}'
+    text += '\n\nYou can suggest new commands [here](https://docs.google.com/spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit)'
 
     message = await event.respond(text)
     await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
