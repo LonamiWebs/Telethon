@@ -57,16 +57,21 @@ SPAM = (
     "Telethon is free software. That means using it is a right: you are " 
     "free to use it for absolutely any purpose whatsoever. However, help "
     "and support with using it is a privilege. If you misbehave or want "
-    "to bad things, nobody is obligated to help you and you're not welcome "
-    "here."
+    "to do bad things, nobody is obligated to help you and you're not "
+    "welcome here."
 )
 
-OFFTOPIC = "That is not related to Telethon. You may continue the conversation in @TelethonOffTopic"
+OFFTOPIC = (
+    'That is not related to Telethon. '
+    'You may continue the conversation in @TelethonOffTopic'
+)
 
 ASK = (
     "Hey, that's not how you ask a question! If you want helpful advice "
     "(or any response at all) [read this first](https://stackoverflow.com"
-    "/help/how-to-ask) and then ask again."
+    "/help/how-to-ask) and then ask again. If you have the time, [How To "
+    "Ask Questions The Smart Way](catb.org/~esr/faqs/smart-questions.html)"
+    " is another wonderful resource worth reading."
 )
 
 LOGGING = '''
@@ -260,7 +265,8 @@ async def handler(event):
     for callback, handler in bot.list_event_handlers():
         if isinstance(handler, events.NewMessage) and callback.__doc__:
             text += f'\n{callback.__doc__}'
-    text += '\n\nYou can suggest new commands [here](https://docs.google.com/spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit)'
+    text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
+            'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
 
     message = await event.respond(text)
     await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
