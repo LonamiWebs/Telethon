@@ -268,7 +268,7 @@ async def handler(event):
     text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
             'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
 
-    message = await event.respond(text)
+    message = await event.respond(text, link_preview=False)
     await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
     await message.delete()
 
