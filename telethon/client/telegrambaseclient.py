@@ -329,6 +329,8 @@ class TelegramBaseClient(abc.ABC):
         """
         await self._disconnect()
         if getattr(self, 'session', None):
+            if getattr(self, '_state', None):
+                self.session.set_update_state(0, self._state)
             self.session.close()
 
     async def _disconnect(self):
