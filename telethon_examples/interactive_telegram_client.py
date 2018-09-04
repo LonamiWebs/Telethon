@@ -1,14 +1,13 @@
+import asyncio
 import os
 import sys
-import asyncio
+import time
 from getpass import getpass
 
-from telethon.utils import get_display_name
-
 from telethon import TelegramClient, events
-from telethon.network import ConnectionTcpAbridged
 from telethon.errors import SessionPasswordNeededError
-
+from telethon.network import ConnectionTcpAbridged
+from telethon.utils import get_display_name
 
 # Create a global variable to hold the loop we will be using
 loop = asyncio.get_event_loop()
@@ -54,6 +53,19 @@ async def async_input(prompt):
     return (await loop.run_in_executor(None, sys.stdin.readline)).rstrip()
 
 
+def get_env(name, message, cast=str):
+    """Helper to get environment variables interactively"""
+    if name in os.environ:
+        return os.environ[name]
+    while True:
+        value = input(message)
+        try:
+            return cast(value)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            time.sleep(1)
+
+
 class InteractiveTelegramClient(TelegramClient):
     """Full featured Telegram client, meant to be used on an interactive
        session to see what Telethon is capable off -
@@ -63,12 +75,11 @@ class InteractiveTelegramClient(TelegramClient):
        talking to people, downloading media, and receiving updates.
     """
 
-    def __init__(self, session_user_id, user_phone, api_id, api_hash,
+    def __init__(self, session_user_id, api_id, api_hash,
                  proxy=None):
         """
         Initializes the InteractiveTelegramClient.
         :param session_user_id: Name of the *.session file.
-        :param user_phone: The phone of the user that will login.
         :param api_id: Telegram's api_id acquired through my.telegram.org.
         :param api_hash: Telegram's api_hash.
         :param proxy: Optional proxy tuple/dictionary.
@@ -114,6 +125,7 @@ class InteractiveTelegramClient(TelegramClient):
         # the *.session file so you don't need to enter the code every time.
         if not loop.run_until_complete(self.is_user_authorized()):
             print('First run. Sending code request...')
+            user_phone = input('Enter your phone: ')
             loop.run_until_complete(self.sign_in(user_phone))
 
             self_user = None
@@ -380,3 +392,11 @@ class InteractiveTelegramClient(TelegramClient):
                 sprint('<< {} sent "{}"'.format(
                     get_display_name(chat), event.text
                 ))
+
+
+if __name__ == '__main__':
+    SESSION = os.environ.get('TG_SESSION', 'interactive')
+    API_ID = get_env('TG_API_ID', 'Enter your API ID: ', int)
+    API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
+    client = InteractiveTelegramClient(SESSION, API_ID, API_HASH)
+    loop.run_until_complete(client.run())

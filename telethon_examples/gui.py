@@ -5,6 +5,7 @@ import inspect
 import os
 import re
 import sys
+import time
 import tkinter
 import tkinter.constants
 import tkinter.scrolledtext
@@ -19,16 +20,23 @@ REPLY = re.compile(r'\.r\s*(\d+)\s*(.+)', re.IGNORECASE)
 DELETE = re.compile(r'\.d\s*(\d+)', re.IGNORECASE)
 EDIT = re.compile(r'\.s(.+?[^\\])/(.*)', re.IGNORECASE)
 
+
+def get_env(name, message, cast=str):
+    if name in os.environ:
+        return os.environ[name]
+    while True:
+        value = input(message)
+        try:
+            return cast(value)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            time.sleep(1)
+
+
 # Session name, API ID and hash to use; loaded from environmental variables
 SESSION = os.environ.get('TG_SESSION', 'gui')
-
-API_ID = os.environ.get('TG_API_ID')
-if not API_ID:
-    API_ID = input('Enter API ID (or add TG_API_ID to env vars): ')
-
-API_HASH = os.environ.get('TG_API_HASH')
-if not API_HASH:
-    API_HASH = input('Enter API hash (or add TG_API_HASH to env vars): ')
+API_ID = get_env('TG_API_ID', 'Enter your API ID: ', int)
+API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
 
 
 def sanitize_str(string):

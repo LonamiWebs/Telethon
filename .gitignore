@@ -12,7 +12,6 @@ telethon/errors/rpcerrorlist.py
 # User session
 *.session
 usermedia/
-api/settings
 
 # Quick tests should live in this file
 example.py

@@ -2,17 +2,15 @@
 """
 A example script to automatically send messages based on certain triggers.
 
-NOTE: To run this script you MUST have 'TG_API_ID' and 'TG_API_HASH' in
-      your environment variables. This is a good way to use these private
-      values. See https://superuser.com/q/284342.
-
 This script assumes that you have certain files on the working directory,
 such as "xfiles.m4a" or "anytime.png" for some of the automated replies.
 """
+import os
 import re
+import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-from os import environ
 
 from telethon import TelegramClient, events
 
@@ -30,10 +28,22 @@ REACTS = {'emacs': 'Needs more vim',
 recent_reacts = defaultdict(list)
 
 
-# TG_API_ID and TG_API_HASH *must* exist or this won't run!
-session_name = environ.get('TG_SESSION', 'session')
+def get_env(name, message, cast=str):
+    if name in os.environ:
+        return os.environ[name]
+    while True:
+        value = input(message)
+        try:
+            return cast(value)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            time.sleep(1)
+
+
 client = TelegramClient(
-    session_name, int(environ['TG_API_ID']), environ['TG_API_HASH'],
+    os.environ.get('TG_SESSION', 'replier'),
+    get_env('TG_API_ID', 'Enter your API ID: ', int),
+    get_env('TG_API_HASH', 'Enter your API hash: '),
     proxy=None
 )
 

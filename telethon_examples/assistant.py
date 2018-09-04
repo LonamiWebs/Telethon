@@ -11,13 +11,24 @@ from telethon import TelegramClient, events, custom
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
-for x in 'TG_API_ID TG_API_HASH TG_TOKEN'.split():
-    if x not in os.environ:
-        print(f'{x} not in environmental variables', file=sys.stderr)
-        quit()
 
-NAME = os.environ['TG_TOKEN'].split(':')[0]
-bot = TelegramClient(NAME, os.environ['TG_API_ID'], os.environ['TG_API_HASH'])
+def get_env(name, message, cast=str):
+    if name in os.environ:
+        return os.environ[name]
+    while True:
+        value = input(message)
+        try:
+            return cast(value)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            time.sleep(1)
+
+
+API_ID = get_env('TG_API_ID', 'Enter your API ID: ', int)
+API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
+TOKEN = get_env('TG_TOKEN', 'Enter the bot token: ')
+NAME = TOKEN.split(':')[0]
+bot = TelegramClient(NAME, API_ID, API_HASH)
 
 
 # ============================== Constants ==============================
@@ -336,5 +347,5 @@ def attr_fullname(cls, n):
 # ==============================  Helpers  ==============================
 
 
-bot.start(bot_token=os.environ['TG_TOKEN'])
+bot.start(bot_token=TOKEN)
 bot.run_until_disconnected()
