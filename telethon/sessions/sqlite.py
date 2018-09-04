@@ -231,7 +231,8 @@ class SQLiteSession(MemorySession):
         """Saves the current session object as session_user_id.session"""
         # This is a no-op if there are no changes to commit, so there's
         # no need for us to keep track of an "unsaved changes" variable.
-        self._conn.commit()
+        if self._conn is not None:
+            self._conn.commit()
 
     def _cursor(self):
         """Asserts that the connection is open and returns a cursor"""
