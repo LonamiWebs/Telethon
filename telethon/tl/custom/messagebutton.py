@@ -5,6 +5,13 @@ import webbrowser
 
 class MessageButton:
     """
+    .. note::
+
+        `Message.buttons <telethon.tl.custom.message.Message.buttons>`
+        are instances of this type. If you want to **define** a reply
+        markup for e.g. sending messages, refer to `Button
+        <telethon.tl.custom.button.Button>` instead.
+
     Custom class that encapsulates a message button providing
     an abstraction to easily access some commonly needed features
     (such as clicking the button itself).

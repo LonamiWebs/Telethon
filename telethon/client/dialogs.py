@@ -162,9 +162,9 @@ class DialogMethods(UserMethods):
             *, timeout=None, total_timeout=60, max_messages=100,
             replies_are_responses=True):
         """
-        Returns an iterator over the dialogs, yielding 'limit' at most.
-        Dialogs are the open "chats" or conversations with other people,
-        groups you have joined, or channels you are subscribed to.
+        Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
+        with the given entity so you can easily send messages and await for
+        responses or other reactions. Refer to its documentation for more.
 
         Args:
             entity (`entity`):

@@ -47,7 +47,8 @@ class ButtonMethods(UpdateMethods):
 
                         self.add_event_handler(
                             button.callback,
-                            events.CallbackQuery(data=button.data)
+                            events.CallbackQuery(data=getattr(
+                                button.button, 'data', None))
                         )
 
                     button = button.button

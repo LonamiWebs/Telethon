@@ -4,6 +4,15 @@ from .messagebutton import MessageButton
 
 class Button:
     """
+    .. note::
+
+        This class is used to **define** reply markups, e.g. when
+        sending a message or replying to events. When you access
+        `Message.buttons <telethon.tl.custom.message.Message.buttons>`
+        they are actually `MessageButton
+        <telethon.tl.custom.messagebutton.MessageButton>`,
+        so you might want to refer to that class instead.
+
     Helper class to allow defining ``reply_markup`` when
     sending a message with inline or keyboard buttons.
 
@@ -29,11 +38,6 @@ class Button:
         self.button = button
         self.callback = callback
         self.is_inline = self._is_inline(button)
-
-    @property
-    def data(self):
-        if isinstance(self.button, types.KeyboardButtonCallback):
-            return self.button.data
 
     @classmethod
     def _is_inline(cls, button):
