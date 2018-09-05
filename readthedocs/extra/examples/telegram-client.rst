@@ -185,7 +185,7 @@ It's easy to `download_profile_photo
 
 .. code-block:: python
 
-    client.download_profile_method(user)
+    client.download_profile_photo(user)
 
 Or `download_media <telethon.client.downloads.DownloadMethods.download_media>`
 from a message:
