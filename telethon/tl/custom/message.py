@@ -185,6 +185,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         else:
             self._chat_peer = to_id
 
+        if post and not from_id and self._chat_peer:
+            # If the message comes from a Channel, let the sender be it
+            self._sender_id = utils.get_peer_id(self._chat_peer)
+
         self._broadcast = post
         self._chat = None
         self._input_chat = None

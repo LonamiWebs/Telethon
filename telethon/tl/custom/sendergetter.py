@@ -14,8 +14,8 @@ class SenderGetter(abc.ABC):
     @property
     def sender(self):
         """
-        Returns the :tl:`User` that created this object. It may be ``None``
-        if the object has no sender or if Telegram didn't send the sender.
+        Returns the :tl:`User` or :tl:`Channel` that sent this object.
+        It may be ``None`` if Telegram didn't send the sender.
 
         If you're using `telethon.events`, use `get_sender` instead.
         """
@@ -37,7 +37,7 @@ class SenderGetter(abc.ABC):
     @property
     def input_sender(self):
         """
-        This :tl:`InputPeer` is the input version of the user who
+        This :tl:`InputPeer` is the input version of the user/channel who
         sent the message. Similarly to `input_chat`, this doesn't have
         things like username or similar, but still useful in some cases.
 
