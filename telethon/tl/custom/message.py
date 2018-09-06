@@ -700,9 +700,12 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         Helper method to return the document only if it has an attribute
         that's an instance of the given kind, and passes the condition.
         """
-        for attr in self.document.attributes:
-            if isinstance(attr, kind):
-                if not condition or condition(self.document):
-                    return self.document
+        doc = self.document
+        if doc:
+            for attr in doc.attributes:
+                if isinstance(attr, kind):
+                    if not condition or condition(doc):
+                        return doc
+                    return None
 
     # endregion Private Methods
