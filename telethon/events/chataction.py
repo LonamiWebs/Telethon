@@ -1,6 +1,6 @@
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
-from ..tl import types, functions, custom
+from ..tl import types, functions
 
 
 @name_inner_event
@@ -139,8 +139,8 @@ class ChatAction(EventBuilder):
 
             self._added_by = None
             self._kicked_by = None
-            self.user_added, self.user_joined, self.user_left,\
-                self.user_kicked, self.unpin = (False, False, False, False, False)
+            self.user_added = self.user_joined = self.user_left = \
+                self.user_kicked = self.unpin = False
 
             if added_by is True:
                 self.user_joined = True

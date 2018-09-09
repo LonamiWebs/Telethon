@@ -31,8 +31,9 @@ class InlineQuery(EventBuilder):
             against the message, a callable function that returns ``True``
             if a message is acceptable, or a compiled regex pattern.
     """
-    def __init__(self, users=None, *, blacklist_users=False, pattern=None):
-        super().__init__(chats=users, blacklist_chats=blacklist_users)
+    def __init__(
+            self, users=None, *, blacklist_users=False, func=None, pattern=None):
+        super().__init__(users, blacklist_chats=blacklist_users, func=func)
 
         if isinstance(pattern, str):
             self.pattern = re.compile(pattern).match

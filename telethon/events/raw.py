@@ -11,8 +11,8 @@ class Raw(EventBuilder):
             The type or types that the :tl:`Update` instance must be.
             Equivalent to ``if not isinstance(update, types): return``.
     """
-    def __init__(self, types=None):
-        super().__init__()
+    def __init__(self, types=None, *, func=None):
+        super().__init__(func=func)
         if not types:
             self.types = None
         elif not utils.is_list_like(types):
@@ -34,5 +34,6 @@ class Raw(EventBuilder):
         return update
 
     def filter(self, event):
-        if not self.types or isinstance(event, self.types):
+        if ((not self.types or isinstance(event, self.types))
+                and (not self.func or self.func(event))):
             return event

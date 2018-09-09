@@ -38,7 +38,7 @@ class NewMessage(EventBuilder):
             against the message, a callable function that returns ``True``
             if a message is acceptable, or a compiled regex pattern.
     """
-    def __init__(self, chats=None, *, blacklist_chats=False,
+    def __init__(self, chats=None, *, blacklist_chats=False, func=None,
                  incoming=None, outgoing=None,
                  from_users=None, forwards=None, pattern=None):
         if incoming and outgoing:
@@ -51,7 +51,7 @@ class NewMessage(EventBuilder):
             raise ValueError("Don't create an event handler if you "
                              "don't want neither incoming or outgoing!")
 
-        super().__init__(chats=chats, blacklist_chats=blacklist_chats)
+        super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
         self.incoming = incoming
         self.outgoing = outgoing
         self.from_users = from_users
@@ -68,7 +68,7 @@ class NewMessage(EventBuilder):
         # Should we short-circuit? E.g. perform no check at all
         self._no_check = all(x is None for x in (
             self.chats, self.incoming, self.outgoing, self.pattern,
-            self.from_users, self.forwards, self.from_users
+            self.from_users, self.forwards, self.from_users, self.func
         ))
 
     async def _resolve(self, client):

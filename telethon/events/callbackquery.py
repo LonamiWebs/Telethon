@@ -23,8 +23,9 @@ class CallbackQuery(EventBuilder):
             instance, to check against ``'data_1'`` and ``'data_2'`` you
             can use ``re.compile(b'data_')``.
     """
-    def __init__(self, chats=None, *, blacklist_chats=False, data=None):
-        super().__init__(chats=chats, blacklist_chats=blacklist_chats)
+    def __init__(
+            self, chats=None, *, blacklist_chats=False, func=None, data=None):
+        super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
 
         if isinstance(data, bytes):
             self.data = data

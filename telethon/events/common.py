@@ -52,13 +52,26 @@ class EventBuilder(abc.ABC):
             as a whitelist (default). This means that every chat
             will be handled *except* those specified in ``chats``
             which will be ignored if ``blacklist_chats=True``.
+
+        func (`callable`, optional):
+            A callable function that should accept the event as input
+            parameter, and return a value indicating whether the event
+            should be dispatched or not (any truthy value will do, it
+            does not need to be a `bool`). It works like a custom filter:
+
+            .. code-block:: python
+
+                @client.on(events.NewMessage(func=lambda e: e.is_private))
+                async def handler(event):
+                    pass  # code here
     """
     self_id = None
 
-    def __init__(self, chats=None, blacklist_chats=False):
+    def __init__(self, chats=None, *, blacklist_chats=False, func=None):
         self.chats = chats
         self.blacklist_chats = blacklist_chats
         self.resolved = False
+        self.func = func
         self._resolve_lock = None
 
     @classmethod
@@ -100,7 +113,9 @@ class EventBuilder(abc.ABC):
                 # If this chat matches but it's a blacklist ignore.
                 # If it doesn't match but it's a whitelist ignore.
                 return None
-        return event
+
+        if not self.func or self.func(event):
+            return event
 
 
 class EventCommon(ChatGetter, abc.ABC):
