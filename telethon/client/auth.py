@@ -47,10 +47,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 The phone (or callable without arguments to get it)
                 to which the code will be sent. If a bot-token-like
                 string is given, it will be used as such instead.
+                The argument may be a coroutine.
 
-            password (`callable`, optional):
+            password (`str`, `callable`, optional):
                 The password for 2 Factor Authentication (2FA).
                 This is only required if it is enabled in your account.
+                The argument may be a coroutine.
 
             bot_token (`str`):
                 Bot Token obtained by `@BotFather <https://t.me/BotFather>`_
@@ -64,6 +66,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             code_callback (`callable`, optional):
                 A callable that will be used to retrieve the Telegram
                 login code. Defaults to `input()`.
+                The argument may be a coroutine.
 
             first_name (`str`, optional):
                 The first name to be used if signing up. This has no
@@ -124,6 +127,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
             # Turn the callable into a valid phone number (or bot token)
             while callable(phone):
                 value = phone()
+                if inspect.isawaitable(value):
+                    value = await value
+
                 if ':' in value:
                     # Bot tokens have 'user_id:access_hash' format
                     bot_token = value
@@ -143,12 +149,15 @@ class AuthMethods(MessageParseMethods, UserMethods):
         sign_up = not sent_code.phone_registered
         while attempts < max_attempts:
             try:
+                value = code_callback()
+                if inspect.isawaitable(value):
+                    value = await value
+
                 if sign_up:
-                    me = await self.sign_up(
-                        code_callback(), first_name, last_name)
+                    me = await self.sign_up(value, first_name, last_name)
                 else:
                     # Raises SessionPasswordNeededError if 2FA enabled
-                    me = await self.sign_in(phone, code=code_callback())
+                    me = await self.sign_in(phone, code=value)
                 break
             except errors.SessionPasswordNeededError:
                 two_step_detected = True
@@ -180,8 +189,11 @@ class AuthMethods(MessageParseMethods, UserMethods):
             if callable(password):
                 for _ in range(max_attempts):
                     try:
-                        me = await self.sign_in(
-                            phone=phone, password=password())
+                        value = password()
+                        if inspect.isawaitable(value):
+                            value = await value
+
+                        me = await self.sign_in(phone=phone, password=value)
                         break
                     except errors.PasswordHashInvalidError:
                         print('Invalid password. Please try again',
