@@ -356,6 +356,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 return self.media.photo
         elif isinstance(self.action, types.MessageActionChatEditPhoto):
             return self.action.photo
+        else:
+            web = self.web_preview
+            if web and isinstance(web.photo, types.Photo):
+                return web.photo
 
     @property
     def document(self):
@@ -366,6 +370,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         if isinstance(self.media, types.MessageMediaDocument):
             if isinstance(self.media.document, types.Document):
                 return self.media.document
+        else:
+            web = self.web_preview
+            if web and isinstance(web.photo, types.Document):
+                return web.photo
+
+    @property
+    def web_preview(self):
+        if isinstance(self.media, types.MessageMediaWebPage):
+            if isinstance(self.media.webpage, types.WebPage):
+                return self.media.webpage
 
     @property
     def audio(self):
