@@ -800,7 +800,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         # arbitrary chats. Validate these unless ``from_id is None``.
         for message in r.messages:
             if isinstance(message, types.MessageEmpty) or (
-                    from_id and utils.get_peer_id(message.to_id) != from_id):
+                    from_id and message.chat_id != from_id):
                 await yield_(None)
             else:
                 message._finish_init(self, entities, entity)
