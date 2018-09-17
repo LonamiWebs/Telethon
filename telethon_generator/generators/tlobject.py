@@ -648,6 +648,10 @@ def _write_patched(out_dir, namespace_tlobjects):
                 builder.writeln('class {}(custom.{}):', t.class_name,
                                 PATCHED_TYPES[t.fullname])
 
+                builder.writeln('CONSTRUCTOR_ID = {:#x}', t.id)
+                builder.writeln('SUBCLASS_OF_ID = {:#x}',
+                                crc32(t.result.encode('ascii')))
+
                 _write_to_dict(t, builder)
                 _write_to_bytes(t, builder)
                 _write_from_reader(t, builder)
