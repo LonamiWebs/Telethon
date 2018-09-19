@@ -936,6 +936,27 @@ def resolve_invite_link(link):
         return None, None, None
 
 
+def resolve_inline_message_id(inline_msg_id):
+    """
+    Resolves an inline message ID. Returns a tuple of
+    ``(message id, peer, dc id, access hash)``
+
+    The ``peer`` may either be a :tl:`PeerUser` referencing
+    the user who sent the message via the bot in a private
+    conversation or small group chat, or a :tl:`PeerChannel`
+    if the message was sent in a channel.
+
+    The ``access_hash`` does not have any use yet.
+    """
+    try:
+        dc_id, message_id, pid, access_hash = \
+            struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
+        peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
+        return message_id, peer, dc_id, access_hash
+    except (struct.error, TypeError):
+        return None, None, None, None
+
+
 def get_appropriated_part_size(file_size):
     """
     Gets the appropriated part size when uploading or downloading files,
