@@ -140,7 +140,7 @@ class CallbackQuery(EventBuilder):
             try:
                 chat = await self.get_input_chat() if self.is_channel else None
                 self._message = await self._client.get_messages(
-                    chat, ids=self.query.msg_id)
+                    chat, ids=self._message_id)
             except ValueError:
                 return
 
