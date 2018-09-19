@@ -1,4 +1,5 @@
 import re
+import struct
 
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
@@ -43,9 +44,14 @@ class CallbackQuery(EventBuilder):
 
     @classmethod
     def build(cls, update):
-        if isinstance(update, (types.UpdateBotCallbackQuery,
-                               types.UpdateInlineBotCallbackQuery)):
-            event = cls.Event(update)
+        if isinstance(update, types.UpdateBotCallbackQuery):
+            event = cls.Event(update, update.peer, update.msg_id)
+        elif isinstance(update, types.UpdateInlineBotCallbackQuery):
+            # See https://github.com/LonamiWebs/Telethon/pull/1005
+            # The long message ID is actually just msg_id + peer_id
+            mid, pid = struct.unpack('<ii', struct.pack('<q', update.msg_id.id))
+            peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
+            event = cls.Event(update, peer, mid)
         else:
             return
 
@@ -84,9 +90,8 @@ class CallbackQuery(EventBuilder):
                 when creating the event builder, if any. Similar
                 to ``pattern_match`` for the new message event.
         """
-        def __init__(self, query):
-            super().__init__(chat_peer=getattr(query, 'peer', None),
-                             msg_id=query.msg_id)
+        def __init__(self, query, peer, msg_id):
+            super().__init__(peer, msg_id=msg_id)
             self.query = query
             self.data_match = None
             self._sender_id = query.user_id
@@ -108,7 +113,7 @@ class CallbackQuery(EventBuilder):
             """
             Returns the message ID to which the clicked inline button belongs.
             """
-            return self.query.msg_id
+            return self._message_id
 
         @property
         def data(self):
