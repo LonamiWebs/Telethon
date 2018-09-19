@@ -185,7 +185,7 @@ It's easy to `download_profile_photo
 
 .. code-block:: python
 
-    client.download_profile_method(user)
+    client.download_profile_photo(user)
 
 Or `download_media <telethon.client.downloads.DownloadMethods.download_media>`
 from a message:
@@ -298,7 +298,7 @@ Now all messages will be formatted as HTML by default:
 .. code-block:: python
 
     client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
-    client.send_message('me', 'An <a href="https://example.com">URL</b>')
+    client.send_message('me', 'An <a href="https://example.com">URL</a>')
     client.send_message('me', '<code>code</code> and <pre>pre\nblocks</pre>')
     client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
 
@@ -336,7 +336,7 @@ You can send voice notes or round videos by setting the right arguments:
 .. code-block:: python
 
     client.send_file(chat, '/my/songs/song.mp3', voice_note=True)
-    client.send_file(chat, '/my/videos/video.mp3', video_note=True)
+    client.send_file(chat, '/my/videos/video.mp4', video_note=True)
 
 You can set a JPG thumbnail for any document:
 

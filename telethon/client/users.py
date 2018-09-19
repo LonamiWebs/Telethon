@@ -244,11 +244,15 @@ class UserMethods(TelegramBaseClient):
         >>> chat = rc(client.get_input_entity(-123456789))
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
-            If an username is given, **the library will use the cache**. This
-            means that it's possible to be using an username that *changed*.
+            If an username or invite link is given, **the library will
+            use the cache**. This means that it's possible to be using
+            an username that *changed* or an old invite link (this only
+            happens if an invite link for a small group chat is used
+            after it was upgraded to a mega-group).
 
-            If the username is not found in the cache, it will be fetched.
-            The same rules apply to phone numbers (``'+34 123456789'``).
+            If the username or ID from the invite link is not found in
+            the cache, it will be fetched. The same rules apply to phone
+            numbers (``'+34 123456789'``).
 
             If an exact name is given, it must be in the cache too. This
             is not reliable as different people can share the same name
@@ -267,9 +271,6 @@ class UserMethods(TelegramBaseClient):
 
             If the given object can be turned into an input entity directly,
             said operation will be done.
-
-            Invite links make an API call **always** and are expensive.
-            You should use the chat ID instead.
 
             Unsupported types will raise ``TypeError``.
 
