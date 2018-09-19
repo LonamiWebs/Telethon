@@ -939,15 +939,20 @@ def resolve_invite_link(link):
 def resolve_inline_message_id(inline_msg_id):
     """
     Resolves an inline message ID. Returns a tuple of
-    ``(dc id, message id, group id, access hash)``
+    ``(message id, peer, dc id, access hash)``
 
-    Note that ``group_id`` is negated if the message originated from a channel
-    otherwise it's the (positive) ID of the sender
+    The ``peer`` may either be a :tl:`PeerUser` referencing
+    the user who sent the message via the bot in a private
+    conversation or small group chat, or a :tl:`PeerChannel`
+    if the message was sent in a channel.
 
-    The ``access_hash`` isn't particularly useful, but it's unpacked nevertheless
+    The ``access_hash`` does not have any use yet.
     """
     try:
-        return struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
+        dc_id, message_id, pid, access_hash = \
+            struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
+        peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
+        return message_id, peer, dc_id, access_hash
     except (struct.error, TypeError):
         return None, None, None, None
 
