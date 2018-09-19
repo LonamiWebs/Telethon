@@ -936,6 +936,22 @@ def resolve_invite_link(link):
         return None, None, None
 
 
+def resolve_inline_message_id(inline_msg_id):
+    """
+    Resolves an inline message ID. Returns a tuple of
+    ``(dc id, message id, group id, access hash)``
+
+    Note that ``group_id`` is negated if the message originated from a channel
+    otherwise it's the (positive) ID of the sender
+
+    The ``access_hash`` isn't particularly useful, but it's unpacked nevertheless
+    """
+    try:
+        return struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
+    except (struct.error, TypeError):
+        return None, None, None, None
+
+
 def get_appropriated_part_size(file_size):
     """
     Gets the appropriated part size when uploading or downloading files,
