@@ -191,7 +191,7 @@ class NewMessage(EventBuilder):
             self.__dict__['_init'] = False
             if not message.out and isinstance(message.to_id, types.PeerUser):
                 # Incoming message (e.g. from a bot) has to_id=us, and
-                # from_id=bot (the actual "chat" from an user's perspective).
+                # from_id=bot (the actual "chat" from a user's perspective).
                 chat_peer = types.PeerUser(message.from_id)
             else:
                 chat_peer = message.to_id

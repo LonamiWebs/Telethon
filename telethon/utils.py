@@ -1,6 +1,6 @@
 """
 Utilities for working with the Telegram API itself (such as handy methods
-to convert between an entity like an User, Chat, etc. into its Input version)
+to convert between an entity like a User, Chat, etc. into its Input version)
 """
 import base64
 import binascii

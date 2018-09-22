@@ -25,7 +25,7 @@ when you upgrade!
 .. note::
     The library uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
     under the hood, but you don't need to know anything about it unless you're
-    going to work with updates! If you're an user of Telethon pre-1.0 and you
+    going to work with updates! If you're a user of Telethon pre-1.0 and you
     aren't ready to convert your event handlers into ``async``, you can use
     `a simpler version <https://github.com/LonamiWebs/Telethon/tree/sync>`_
     (select the "sync" version in ``readthedocs``' bottom left corner).

@@ -47,14 +47,14 @@ how the library refers to either of these:
 
 .. code-block:: python
 
-    # The method will infer that you've passed an username
+    # The method will infer that you've passed a username
     # It also accepts phone numbers, and will get the user
     # from your contact list.
     lonami = client.get_entity('lonami')
 
 The so called "entities" are another important whole concept on its own,
 but for now you don't need to worry about it. Simply know that they are
-a good way to get information about an user, chat or channel.
+a good way to get information about a user, chat or channel.
 
 Many other common methods for quick scripts are also available:
 

@@ -7,7 +7,7 @@ from ..tl import types
 @name_inner_event
 class UserUpdate(EventBuilder):
     """
-    Represents an user update (gone online, offline, joined Telegram).
+    Represents a user update (gone online, offline, joined Telegram).
     """
     @classmethod
     def build(cls, update):
@@ -22,7 +22,7 @@ class UserUpdate(EventBuilder):
 
     class Event(EventCommon):
         """
-        Represents the event of an user status update (last seen, joined).
+        Represents the event of a user status update (last seen, joined).
 
         Members:
             online (`bool`, optional):

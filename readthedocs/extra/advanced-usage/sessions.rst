@@ -23,7 +23,7 @@ talk to the Telegram servers, such as to which IP the client should connect,
 port, authorization key so that messages can be encrypted, and so on.
 
 These files will by default also save all the input entities that you've seen,
-so that you can get information about an user or channel by just their ID.
+so that you can get information about a user or channel by just their ID.
 Telegram will **not** send their ``access_hash`` required to retrieve more
 information about them, if it thinks you have already seem them. For this
 reason, the library needs to store this information offline.

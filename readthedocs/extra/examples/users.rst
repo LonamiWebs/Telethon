@@ -11,7 +11,7 @@ Users
 Retrieving full information
 ***************************
 
-If you need to retrieve the bio, biography or about information for an user
+If you need to retrieve the bio, biography or about information for a user
 you should use :tl:`GetFullUser`:
 
 

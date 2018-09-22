@@ -222,7 +222,7 @@ Restricting Users
 *****************
 
 Similar to how you give or revoke admin permissions, you can edit the
-banned rights of an user through :tl:`EditBannedRequest` and its parameter
+banned rights of a user through :tl:`EditBannedRequest` and its parameter
 :tl:`ChannelBannedRights`:
 
 .. code-block:: python
@@ -232,7 +232,7 @@ banned rights of an user through :tl:`EditBannedRequest` and its parameter
 
     from datetime import datetime, timedelta
 
-    # Restricting an user for 7 days, only allowing view/send messages.
+    # Restricting a user for 7 days, only allowing view/send messages.
     #
     # Note that it's "reversed". You must set to ``True`` the permissions
     # you want to REMOVE, and leave as ``None`` those you want to KEEP.
@@ -272,7 +272,7 @@ https://core.telegram.org/bots/api#restrictchatmember.
 Kicking a member
 ****************
 
-Telegram doesn't actually have a request to kick an user from a group.
+Telegram doesn't actually have a request to kick a user from a group.
 Instead, you need to restrict them so they can't see messages. Any date
 is enough:
 

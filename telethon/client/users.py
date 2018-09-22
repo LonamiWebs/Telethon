@@ -139,7 +139,7 @@ class UserMethods(TelegramBaseClient):
         and they will be efficiently fetched from the network.
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
-            If an username is given, **the username will be resolved** making
+            If a username is given, **the username will be resolved** making
             an API call every time. Resolving usernames is an expensive
             operation and will start hitting flood waits around 50 usernames
             in a short period of time.
@@ -244,9 +244,9 @@ class UserMethods(TelegramBaseClient):
         >>> chat = rc(client.get_input_entity(-123456789))
 
         entity (`str` | `int` | :tl:`Peer` | :tl:`InputPeer`):
-            If an username or invite link is given, **the library will
+            If a username or invite link is given, **the library will
             use the cache**. This means that it's possible to be using
-            an username that *changed* or an old invite link (this only
+            a username that *changed* or an old invite link (this only
             happens if an invite link for a small group chat is used
             after it was upgraded to a mega-group).
 
@@ -267,7 +267,7 @@ class UserMethods(TelegramBaseClient):
             (prefixed with ``-100``).
 
             If a :tl:`Peer` is given, it will be searched exactly in the
-            cache as either an user, chat or channel.
+            cache as either a user, chat or channel.
 
             If the given object can be turned into an input entity directly,
             said operation will be done.
@@ -343,7 +343,7 @@ class UserMethods(TelegramBaseClient):
     async def _get_entity_from_string(self, string):
         """
         Gets a full entity from the given string, which may be a phone or
-        an username, and processes all the found entities on the session.
+        a username, and processes all the found entities on the session.
         The string may also be a user link, or a channel/chat invite link.
 
         This method has the side effect of adding the found users to the
