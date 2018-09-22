@@ -181,7 +181,7 @@ random number, while if you say ``'eval 4+4'``, you will reply with the
 solution. Try it!
 
 
-Properties vs. methods
+Properties vs. Methods
 **********************
 
 The event shown above acts just like a `custom.Message
@@ -220,26 +220,91 @@ methods (`message.get_sender
 and you should use methods in events for these properties that may need network.
 
 
-Events without decorators
+Events Without the client
 *************************
 
-If for any reason you can't use the `@client.on
-<telethon.client.updates.UpdateMethods.on>` syntax, don't worry.
-You can call `client.add_event_handler(callback, event)
-<telethon.client.updates.UpdateMethods.add_event_handler>` to achieve
-the same effect.
+The code of your application starts getting big, so you decide to
+separate the handlers into different files. But how can you access
+the client from these files? You don't need to! Just `events.register
+<telethon.events.register>` them:
+
+.. code-block:: python
+
+    # handlers/welcome.py
+    from telethon import events
+
+    @events.register(events.NewMessage('(?i)hello'))
+    async def handler(event):
+        client = event.client
+        await event.respond('Hey!')
+        await client.send_message('me', 'I said hello to someone')
+
+
+Registering events is a way of saying "this method is an event handler".
+You can use `telethon.events.is_handler` to check if any method is a handler.
+You can think of them as a different approach to Flask's blueprints.
+
+It's important to note that this does **not** add the handler to any client!
+You never specified the client on which the handler should be used. You only
+declared that it is a handler, and its type.
+
+To actually use the handler, you need to `client.add_event_handler
+<telethon.client.updates.UpdateMethods.add_event_handler>` to the
+client (or clients) where they should be added to:
+
+.. code-block:: python
+
+    # main.py
+    from telethon import TelegramClient
+    import handlers.welcome
+
+    with TelegramClient(...) as client:
+        client.add_event_handler(handlers.welcome.handler)
+        client.run_until_disconnected()
+
+
+This also means that you can register an event handler once and
+then add it to many clients without re-declaring the event.
+
+
+Events Without Decorators
+*************************
+
+If for any reason you don't want to use `telethon.events.register`,
+you can explicitly pass the event handler to use to the mentioned
+`client.add_event_handler
+<telethon.client.updates.UpdateMethods.add_event_handler>`:
+
+.. code-block:: python
+
+    from telethon import TelegramClient, events
+
+    async def handler(event):
+        ...
+
+    with TelegramClient(...) as client:
+        client.add_event_handler(handler, events.NewMessage)
+        client.run_until_disconnected()
+
 
 Similarly, you also have `client.remove_event_handler
 <telethon.client.updates.UpdateMethods.remove_event_handler>`
 and `client.list_event_handlers
 <telethon.client.updates.UpdateMethods.list_event_handlers>`.
 
-The ``event`` type is optional in all methods and defaults to
+The ``event`` argument is optional in all three methods and defaults to
 `events.Raw <telethon.events.raw.Raw>` for adding, and ``None`` when
 removing (so all callbacks would be removed).
 
+.. note::
 
-Stopping propagation of Updates
+    The ``event`` type is ignored in `client.add_event_handler
+    <telethon.client.updates.UpdateMethods.add_event_handler>`
+    if you have used `telethon.events.register` on the ``callback``
+    before, since that's the point of using such method at all.
+
+
+Stopping Propagation of Updates
 *******************************
 
 There might be cases when an event handler is supposed to be used solitary and

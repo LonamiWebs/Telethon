@@ -216,7 +216,7 @@ Will show a much better:
 Now it's easy to see how we could get, for example,
 the ``was_online`` time. It's inside ``status``:
 
-.. code-block::
+.. code-block:: python
 
     online_at = user.status.was_online
 

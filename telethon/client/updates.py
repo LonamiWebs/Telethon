@@ -76,6 +76,10 @@ class UpdateMethods(UserMethods):
             callback (`callable`):
                 The callable function accepting one parameter to be used.
 
+                Note that if you have used `telethon.events.register` in
+                the callback, ``event`` will be ignored, and instead the
+                events you previously registered will be used.
+
             event (`_EventBuilder` | `type`, optional):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
@@ -84,6 +88,12 @@ class UpdateMethods(UserMethods):
                 :tl:`Update` objects with no further processing) will
                 be passed instead.
         """
+        builders = events._get_handlers(callback)
+        if builders is not None:
+            for event in builders:
+                self._event_builders.append((event, callback))
+            return
+
         if isinstance(event, type):
             event = event()
         elif not event:
