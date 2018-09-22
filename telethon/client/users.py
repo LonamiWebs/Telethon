@@ -401,6 +401,23 @@ class UserMethods(TelegramBaseClient):
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
+    async def _get_input_dialog(self, dialog):
+        """
+        Returns a :tl:`InputDialogPeer`. This is a bit tricky because
+        it may or not need access to the client to convert what's given
+        into an input entity.
+        """
+        try:
+            if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
+                dialog.peer = await self.get_input_entity(dialog.peer)
+                return dialog
+            elif dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
+                return types.InputDialogPeer(dialog)
+        except AttributeError:
+            pass
+
+        return types.InputDialogPeer(await self.get_input_entity(dialog))
+
     async def _get_input_notify(self, notify):
         """
         Returns a :tl:`InputNotifyPeer`. This is a bit tricky because

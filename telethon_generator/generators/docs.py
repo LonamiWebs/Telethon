@@ -192,7 +192,8 @@ def _get_description(arg):
                     '<code>None</code> and can be omitted.')
         otherwise = True
 
-    if arg.type in {'InputPeer', 'InputUser', 'InputChannel'}:
+    if arg.type in {'InputPeer', 'InputUser', 'InputChannel',
+                    'InputNotifyPeer', 'InputDialogPeer'}:
         desc.append(
             'Anything entity-like will work if the library can find its '
             '<code>Input</code> version (e.g., usernames, <code>Peer</code>, '

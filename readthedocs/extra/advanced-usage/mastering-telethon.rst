@@ -262,7 +262,7 @@ You can also except it and act as you prefer:
         print('Flood waited for', e.seconds)
         quit(1)
 
-VoIP numbers are very limited, and some countries are more limitted too.
+VoIP numbers are very limited, and some countries are more limited too.
 
 Chat or User From Messages
 **************************
