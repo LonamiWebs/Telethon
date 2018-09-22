@@ -1,3 +1,3 @@
 pyaes
 rsa
-typing
+async_generator

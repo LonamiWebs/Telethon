@@ -14,6 +14,104 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Event Templates (v1.3)
+======================
+
+*Published at 2018/09/22*
+
+
+If you have worked with Flask templates, you will love this update,
+since it gives you the same features but even more conveniently:
+
+.. code-block:: python
+
+    # handlers/welcome.py
+    from telethon import events
+
+    @events.register(events.NewMessage('(?i)hello'))
+    async def handler(event):
+        client = event.client
+        await event.respond('Hi!')
+        await client.send_message('me', 'Sent hello to someone')
+
+
+This will `register <telethon.events.register>` the ``handler`` callback
+to handle new message events. Note that you didn't add this to any client
+yet, and this is the key point: you don't need a client to define handlers!
+You can add it later:
+
+.. code-block:: python
+
+    # main.py
+    from telethon import TelegramClient
+    import handlers.welcome
+
+    with TelegramClient(...) as client:
+        # This line adds the handler we defined before for new messages
+        client.add_event_handler(handlers.welcome.handler)
+        client.run_until_disconnected()
+
+
+This should help you to split your big code base into a more modular design.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* ``.sender`` is the ``.chat`` when the message is sent in a broadcast
+  channel. This makes sense, because the sender of the message was the
+  channel itself, but you now must take into consideration that it may
+  be either a :tl:`User` or :tl:`Channel` instead of being ``None``.
+
+
+Additions
+~~~~~~~~~
+
+* New ``MultiError`` class when invoking many requests at once
+  through ``client([requests])``.
+* New custom ``func=`` on all events. These will receive the entire
+  event, and a good usage example is ``func=lambda e: e.is_private``.
+* New ``.web_preview`` field on messages. The ``.photo`` and ``.document``
+  will also return the media in the web preview if any, for convenience.
+* Callback queries now have a ``.chat`` in most circumstances.
+
+
+Bug fixes
+~~~~~~~~~
+
+* Running code with `python3 -O` would remove critical code from asserts.
+* Fix some rare ghost disconnections after reconnecting.
+* Fix strange behavior for `send_message(chat, Message, reply_to=foo)
+  <telethon.client.messages.MessageMethods.send_message>`.
+* The ``loop=`` argument was being pretty much ignored.
+* Fix ``MemorySession`` file caching.
+* The logic for getting entities from their username is now correct.
+* Fixes for sending stickers from ``.webp`` files in Windows, again.
+* Fix disconnection without being logged in.
+* Retrieving media from messages would fail.
+* Getting some messages by ID on private chats.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* `iter_participants <telethon.client.chats.ChatMethods.iter_participants>`
+  will now use its ``search=`` as a symbol set when ``aggressive=True``,
+  so you can do ``client.get_participants(group, aggressive=True,
+  search='абвгдеёжзийклмнопрст')``.
+* The ``StringSession`` supports custom encoding.
+* Callbacks for `telethon.client.auth.AuthMethods.start` can be ``async``.
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+* Cherry-picked a commit to use ``asyncio.open_connection`` in the lowest
+  level of the library. Do open issues if this causes trouble, but it should
+  otherwise improve performance and reliability.
+* Building and resolving events overhaul.
+
+
 Conversations, String Sessions and More (v1.2)
 ==============================================
 
