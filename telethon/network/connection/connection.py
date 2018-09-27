@@ -69,6 +69,7 @@ class Connection(abc.ABC):
             self._send(await self._send_queue.get())
             await self._writer.drain()
 
+    # TODO Handle IncompleteReadError and InvalidChecksumError
     async def _recv_loop(self):
         """
         This loop is constantly putting items on the queue as they're read.
