@@ -1,6 +1,9 @@
 from . import Draft
 from .. import TLObject, types
+from ..functions.channels import LeaveChannelRequest
+from ..functions.messages import DeleteHistoryRequest
 from ... import utils
+from ...errors import PeerIdInvalidError
 
 
 class Dialog:
@@ -63,6 +66,7 @@ class Dialog:
         is_channel (`bool`):
             ``True`` if the `entity` is a :tl:`Channel`.
     """
+
     def __init__(self, client, dialog, entities, messages):
         # Both entities and messages being dicts {ID: item}
         self._client = client
@@ -83,8 +87,8 @@ class Dialog:
 
         self.is_user = isinstance(self.entity, types.User)
         self.is_group = (
-            isinstance(self.entity, types.Chat) or
-            (isinstance(self.entity, types.Channel) and self.entity.megagroup)
+                isinstance(self.entity, types.Chat) or
+                (isinstance(self.entity, types.Channel) and self.entity.megagroup)
         )
         self.is_channel = isinstance(self.entity, types.Channel)
 
@@ -95,6 +99,13 @@ class Dialog:
         """
         return await self._client.send_message(
             self.input_entity, *args, **kwargs)
+
+    async def delete(self):
+        try:
+            await self._client(DeleteHistoryRequest(self, 0))
+
+        except PeerIdInvalidError:
+            await self._client(LeaveChannelRequest(self))
 
     def to_dict(self):
         return {
