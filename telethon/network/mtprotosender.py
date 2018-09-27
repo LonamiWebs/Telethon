@@ -15,7 +15,7 @@ from ..tl.types import (
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
     MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload
 )
-
+from ..utils import AsyncClassWrapper
 __log__ = logging.getLogger(__name__)
 
 
@@ -262,7 +262,7 @@ class MTProtoSender:
                         await authenticator.do_authentication(plain)
 
                     if self._auth_key_callback:
-                        self._auth_key_callback(self.state.auth_key)
+                        await self._auth_key_callback(self.state.auth_key)
 
                     break
                 except (SecurityError, AssertionError) as e:
@@ -570,7 +570,7 @@ class MTProtoSender:
         __log__.debug('Handling update {}'
                       .format(message.obj.__class__.__name__))
         if self._update_callback:
-            self._update_callback(message.obj)
+           await self._update_callback(message.obj)
 
     async def _handle_pong(self, message):
         """

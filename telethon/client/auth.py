@@ -399,7 +399,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             return False
 
         await self.disconnect()
-        self.session.delete()
+        await self.session.delete()
         self._authorized = False
         return True
 
