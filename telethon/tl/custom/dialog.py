@@ -98,13 +98,14 @@ class Dialog:
 
     async def delete(self):
         if self.is_channel:
-            await self._client(functions.channels.LeaveChannelRequest(self.input_entity))
-        elif self.is_group:
-            await self._client(functions.messages.DeleteChatUserRequest(self.entity.id,
-                                                                        types.InputPeerSelf()))
-            await self._client(functions.messages.DeleteHistoryRequest(self.input_entity, 0, just_clear=False))
+            await self._client(functions.channels.LeaveChannelRequest(
+                self.input_entity))
         else:
-            await self._client(functions.messages.DeleteHistoryRequest(self.input_entity, 0))
+            if self.is_group:
+                await self._client(functions.messages.DeleteChatUserRequest(
+                    self.entity.id, types.InputPeerSelf()))
+            await self._client(functions.messages.DeleteHistoryRequest(
+                self.input_entity, 0))
 
     def to_dict(self):
         return {
