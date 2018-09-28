@@ -35,14 +35,22 @@ class Connection(abc.ABC):
 
         self._disconnected.clear()
         self._send_task = self._loop.create_task(self._send_loop())
-        self._recv_task = self._loop.create_task(self._send_loop())
+        self._recv_task = self._loop.create_task(self._recv_loop())
 
     def disconnect(self):
         """
         Disconnects from the server.
         """
         self._disconnected.set()
+        self._send_task.cancel()
+        self._recv_task.cancel()
         self._writer.close()
+
+    def clone(self):
+        """
+        Creates a clone of the connection.
+        """
+        return self.__class__(self._ip, self._port, loop=self._loop)
 
     def send(self, data):
         """
@@ -75,8 +83,13 @@ class Connection(abc.ABC):
         This loop is constantly putting items on the queue as they're read.
         """
         while not self._disconnected.is_set():
-            data = await self._recv()
-            await self._recv_queue.put(data)
+            try:
+                data = await self._recv()
+            except asyncio.IncompleteReadError:
+                if not self._disconnected.is_set():
+                    raise
+            else:
+                await self._recv_queue.put(data)
 
     @abc.abstractmethod
     def _send(self, data):
