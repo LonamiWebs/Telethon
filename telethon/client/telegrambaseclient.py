@@ -1,6 +1,5 @@
 import abc
 import asyncio
-import collections
 import inspect
 import logging
 import platform
@@ -54,7 +53,7 @@ class TelegramBaseClient(abc.ABC):
 
         connection (`telethon.network.connection.common.Connection`, optional):
             The connection instance to be used when creating a new connection
-            to the servers. If it's a type, the `proxy` argument will be used.
+            to the servers. It **must** be a type.
 
             Defaults to `telethon.network.connection.tcpfull.ConnectionTcpFull`.
 
@@ -206,9 +205,8 @@ class TelegramBaseClient(abc.ABC):
         self._connection_retries = connection_retries or sys.maxsize
         self._auto_reconnect = auto_reconnect
 
-        if isinstance(connection, type):
-            connection = connection(
-                proxy=proxy, timeout=timeout, loop=self._loop)
+        assert isinstance(connection, type)
+        self._connection = connection
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -229,7 +227,7 @@ class TelegramBaseClient(abc.ABC):
         state = MTProtoState(self.session.auth_key)
         self._connection = connection
         self._sender = MTProtoSender(
-            state, connection, self._loop,
+            state, self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update,
@@ -308,8 +306,8 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
-        await self._sender.connect(
-            self.session.server_address, self.session.port)
+        await self._sender.connect(self._connection(
+            self.session.server_address, self.session.port, loop=self._loop))
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
@@ -420,8 +418,9 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(state, self._connection.clone(), self._loop)
-        await sender.connect(dc.ip_address, dc.port)
+        sender = MTProtoSender(state, self._loop)
+        await sender.connect(self._connection(
+            dc.ip_address, dc.port, loop=self._loop))
         __log__.info('Exporting authorization for data center %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
         req = self._init_with(functions.auth.ImportAuthorizationRequest(
