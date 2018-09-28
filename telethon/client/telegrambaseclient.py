@@ -17,6 +17,7 @@ from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
 from ..utils import AsyncClassWrapper
+
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
@@ -196,6 +197,7 @@ class TelegramBaseClient(abc.ABC):
                 DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
                 DEFAULT_PORT
             )
+
         self.flood_sleep_threshold = flood_sleep_threshold
         self.session = AsyncClassWrapper(session)
         self.api_id = int(api_id)
@@ -372,7 +374,7 @@ class TelegramBaseClient(abc.ABC):
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = self._sender.state.auth_key = None
-        self.session.save()
+        await self.session.save()
         await self._disconnect()
         return await self.connect()
 
@@ -471,8 +473,8 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = self.session.clone()
-            session.set_dc(dc.id, dc.ip_address, dc.port)
+            session = await self.session.clone()
+            await session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         __log__.info('Creating new CDN client')
