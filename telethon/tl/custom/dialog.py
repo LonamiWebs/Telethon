@@ -1,5 +1,5 @@
 from . import Draft
-from .. import TLObject, types
+from .. import TLObject, types, functions
 from ... import utils
 
 
@@ -95,6 +95,17 @@ class Dialog:
         """
         return await self._client.send_message(
             self.input_entity, *args, **kwargs)
+
+    async def delete(self):
+        if self.is_channel:
+            await self._client(functions.channels.LeaveChannelRequest(
+                self.input_entity))
+        else:
+            if self.is_group:
+                await self._client(functions.messages.DeleteChatUserRequest(
+                    self.entity.id, types.InputPeerSelf()))
+            await self._client(functions.messages.DeleteHistoryRequest(
+                self.input_entity, 0))
 
     def to_dict(self):
         return {
