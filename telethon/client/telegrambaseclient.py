@@ -196,7 +196,7 @@ class TelegramBaseClient(abc.ABC):
                 DEFAULT_IPV6_IP if self._use_ipv6 else DEFAULT_IPV4_IP,
                 DEFAULT_PORT
             )
-
+        self.flood_sleep_threshold = flood_sleep_threshold
         self.session = AsyncClassWrapper(session)
         self.api_id = int(api_id)
         self.api_hash = api_hash
@@ -329,7 +329,7 @@ class TelegramBaseClient(abc.ABC):
         await self._disconnect()
         if getattr(self, 'session', None):
             if getattr(self, '_state', None):
-                f = await self.session.set_update_state(0, self._state)
+                await self.session.set_update_state(0, self._state)
             await self.session.close()
 
     async def _disconnect(self):
@@ -471,7 +471,7 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = await self.session.clone()
+            session = self.session.clone()
             session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 

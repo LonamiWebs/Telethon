@@ -972,6 +972,7 @@ def get_appropriated_part_size(file_size):
 
     raise ValueError('File size too large')
 
+
 class AsyncClassWrapper:
     def __init__(self, wrapped):
         self.wrapped = wrapped

@@ -174,7 +174,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, await self(request), entity)
-        self._cache_media(msg, file, file_handle, force_document=force_document)
+        await self._cache_media(msg, file, file_handle, force_document=force_document)
 
         return msg
 
