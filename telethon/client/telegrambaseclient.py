@@ -224,10 +224,9 @@ class TelegramBaseClient(abc.ABC):
             )
         )
 
-        state = MTProtoState(self.session.auth_key)
         self._connection = connection
         self._sender = MTProtoSender(
-            state, self._loop,
+            self.session.auth_key, self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update,
@@ -413,12 +412,11 @@ class TelegramBaseClient(abc.ABC):
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization
         dc = await self._get_dc(dc_id)
-        state = MTProtoState(None)
         # Can't reuse self._sender._connection as it has its own seqno.
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(state, self._loop)
+        sender = MTProtoSender(None, self._loop)
         await sender.connect(self._connection(
             dc.ip_address, dc.port, loop=self._loop))
         __log__.info('Exporting authorization for data center %s', dc)

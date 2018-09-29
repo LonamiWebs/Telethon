@@ -8,7 +8,8 @@ from ..crypto import AES
 from ..errors import SecurityError, BrokenAuthKeyError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
-from ..tl.tlobject import TLRequest
+from ..tl.functions import InvokeAfterMsgRequest
+from ..tl.core.gzippacked import GzipPacked
 
 __log__ = logging.getLogger(__name__)
 
@@ -37,20 +38,6 @@ class MTProtoState:
         self._sequence = 0
         self._last_msg_id = 0
 
-    def create_message(self, obj, *, loop, after=None):
-        """
-        Creates a new `telethon.tl.tl_message.TLMessage` from
-        the given `telethon.tl.tlobject.TLObject` instance.
-        """
-        return TLMessage(
-            msg_id=self._get_new_msg_id(),
-            seq_no=self._get_seq_no(isinstance(obj, TLRequest)),
-            obj=obj,
-            after_id=after.msg_id if after else None,
-            out=True,  # Pre-convert the request into bytes
-            loop=loop
-        )
-
     def update_message_id(self, message):
         """
         Updates the message ID to a new one,
@@ -74,14 +61,30 @@ class MTProtoState:
 
         return aes_key, aes_iv
 
-    def pack_message(self, message):
+    def write_data_as_message(self, buffer, data, after_id=None):
         """
-        Packs the given `telethon.tl.tl_message.TLMessage` using the
-        current authorization key following MTProto 2.0 guidelines.
+        Writes a message containing the given data into buffer.
 
-        See https://core.telegram.org/mtproto/description.
+        Returns the message id.
         """
-        data = struct.pack('<qq', self.salt, self.id) + bytes(message)
+        msg_id = self._get_new_msg_id()
+        seq_no = self._get_seq_no(True)  # TODO ack/ping are not content-related
+        if after_id is None:
+            body = GzipPacked.gzip_if_smaller(data)
+        else:
+            body = GzipPacked.gzip_if_smaller(
+                bytes(InvokeAfterMsgRequest(after_id, data)))
+
+        buffer.write(struct.pack('<qii', msg_id, seq_no, len(body)))
+        buffer.write(body)
+        return msg_id
+
+    def encrypt_message_data(self, data):
+        """
+        Encrypts the given message data using the current authorization key
+        following MTProto 2.0 guidelines core.telegram.org/mtproto/description.
+        """
+        data = struct.pack('<qq', self.salt, self.id) + data
         padding = os.urandom(-(len(data) + 12) % 16 + 12)
 
         # Being substr(what, offset, length); x = 0 for client
@@ -97,11 +100,12 @@ class MTProtoState:
         return (key_id + msg_key +
                 AES.encrypt_ige(data + padding, aes_key, aes_iv))
 
-    def unpack_message(self, body):
+    def decrypt_message_data(self, body):
         """
-        Inverse of `pack_message` for incoming server messages.
+        Inverse of `encrypt_message_data` for incoming server messages.
         """
         if len(body) < 8:
+            # TODO If len == 4, raise HTTPErrorCode(-little endian int)
             if body == b'l\xfe\xff\xff':
                 raise BrokenAuthKeyError()
             else:
@@ -136,7 +140,7 @@ class MTProtoState:
         # reader isn't used for anything else after this, it's unnecessary.
         obj = reader.tgread_object()
 
-        return TLMessage(remote_msg_id, remote_sequence, obj, loop=None)
+        return TLMessage(remote_msg_id, remote_sequence, obj)
 
     def _get_new_msg_id(self):
         """

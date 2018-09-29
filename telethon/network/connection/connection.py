@@ -108,3 +108,9 @@ class Connection(abc.ABC):
         the way it should be read from `self._reader`.
         """
         raise NotImplementedError
+
+    def __str__(self):
+        return '{}:{}/{}'.format(
+            self._ip, self._port,
+            self.__class__.__name__.replace('Connection', '')
+        )

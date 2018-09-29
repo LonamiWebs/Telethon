@@ -27,11 +27,6 @@ class MessageContainer(TLObject):
                 ],
         }
 
-    def __bytes__(self):
-        return struct.pack(
-            '<Ii', MessageContainer.CONSTRUCTOR_ID, len(self.messages)
-        ) + b''.join(bytes(m) for m in self.messages)
-
     @classmethod
     def from_reader(cls, reader):
         # This assumes that .read_* calls are done in the order they appear
@@ -43,5 +38,5 @@ class MessageContainer(TLObject):
             before = reader.tell_position()
             obj = reader.tgread_object()  # May over-read e.g. RpcResult
             reader.set_position(before + length)
-            messages.append(TLMessage(msg_id, seq_no, obj, loop=None))
+            messages.append(TLMessage(msg_id, seq_no, obj))
         return MessageContainer(messages)

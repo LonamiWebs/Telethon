@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from . import MTProtoPlainSender, authenticator
+from .mtprotolayer import MTProtoLayer
 from .. import utils
 from ..errors import (
     BadMessageError, TypeNotFoundError, BrokenAuthKeyError, SecurityError,
@@ -40,11 +40,11 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, state, loop, *,
+    def __init__(self, auth_key, loop, *,
                  retries=5, auto_reconnect=True, update_callback=None,
                  auth_key_callback=None, auto_reconnect_callback=None):
-        self.state = state
-        self._connection = None
+        self._auth_key = auth_key
+        self._connection = None  # MTProtoLayer, a.k.a. encrypted connection
         self._loop = loop
         self._retries = retries
         self._auto_reconnect = auto_reconnect
@@ -118,7 +118,7 @@ class MTProtoSender:
             __log__.info('User is already connected!')
             return
 
-        self._connection = connection
+        self._connection = MTProtoLayer(connection, self._auth_key)
         self._user_connected = True
         await self._connect()
 
@@ -137,7 +137,7 @@ class MTProtoSender:
         await self._disconnect()
 
     async def _disconnect(self, error=None):
-        __log__.info('Disconnecting from %s...', self._connection._ip)
+        __log__.info('Disconnecting from %s...', self._connection)
         self._user_connected = False
         try:
             __log__.debug('Closing current connection...')
@@ -163,7 +163,7 @@ class MTProtoSender:
                 __log__.debug('Cancelling the receive loop...')
                 self._recv_loop_handle.cancel()
 
-        __log__.info('Disconnection from %s complete!', self._connection._ip)
+        __log__.info('Disconnection from %s complete!', self._connection)
         if self._disconnected and not self._disconnected.done():
             if error:
                 self._disconnected.set_exception(error)
@@ -235,8 +235,7 @@ class MTProtoSender:
         authorization key if necessary, and starting the send and
         receive loops.
         """
-        __log__.info('Connecting to %s:%d...',
-                     self._connection._ip, self._connection._port)
+        __log__.info('Connecting to %s...', self._connection)
         for retry in range(1, self._retries + 1):
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
@@ -251,6 +250,8 @@ class MTProtoSender:
                                   .format(self._retries))
 
         __log__.debug('Connection success!')
+        # TODO Handle this, maybe an empty MTProtoState that does no encryption
+        """
         if self.state.auth_key is None:
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
@@ -271,6 +272,7 @@ class MTProtoSender:
                                     .format(self._retries))
                 await self._disconnect(error=e)
                 raise e
+        """
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = self._loop.create_task(self._send_loop())
@@ -281,7 +283,7 @@ class MTProtoSender:
         # First connection or manual reconnection after a failure
         if self._disconnected is None or self._disconnected.done():
             self._disconnected = self._loop.create_future()
-        __log__.info('Connection to %s complete!', self._connection._ip)
+        __log__.info('Connection to %s complete!', self._connection)
 
     async def _reconnect(self):
         """
