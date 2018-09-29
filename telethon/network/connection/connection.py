@@ -51,8 +51,8 @@ class Connection(abc.ABC):
     @property
     def disconnected(self):
         if not self._disconnected_future:
-            self._disconnected_future = asyncio.ensure_future(
-                self._disconnected.wait(), loop=self._loop)
+            self._disconnected_future = \
+                self._loop.create_task(self._disconnected.wait())
         return self._disconnected_future
 
     def clone(self):

@@ -111,12 +111,16 @@ class _ReadyQueue:
         Returns a list of all the items added to the queue until now and
         clears the list from the queue itself. Returns ``None`` if cancelled.
         """
-        ready = asyncio.ensure_future(self._ready.wait(), loop=self._loop)
-        done, pending = await asyncio.wait(
-            [ready, cancellation],
-            return_when=asyncio.FIRST_COMPLETED,
-            loop=self._loop
-        )
+        ready = self._loop.create_task(self._ready.wait())
+        try:
+            done, pending = await asyncio.wait(
+                [ready, cancellation],
+                return_when=asyncio.FIRST_COMPLETED,
+                loop=self._loop
+            )
+        except asyncio.CancelledError:
+            done = [cancellation]
+
         if cancellation in done:
             ready.cancel()
             return None
