@@ -9,6 +9,7 @@ from ..errors import (
     BadMessageError, TypeNotFoundError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
+from ..helpers import _ReadyQueue
 from ..tl.core import RpcResult, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
@@ -64,10 +65,7 @@ class MTProtoSender:
         # Outgoing messages are put in a queue and sent in a batch.
         # Note that here we're also storing their ``_RequestState``.
         # Note that it may also store lists (implying order must be kept).
-        #
-        # TODO Abstract this queue away?
-        self._send_queue = []
-        self._send_ready = asyncio.Event(loop=self._loop)
+        self._send_queue = _ReadyQueue(self._loop)
 
         # Sent states are remembered until a response is received.
         self._pending_state = {}
@@ -192,7 +190,6 @@ class MTProtoSender:
         if not utils.is_list_like(request):
             state = RequestState(request, self._loop)
             self._send_queue.append(state)
-            self._send_ready.set()
             return state.future
         else:
             states = []
@@ -206,7 +203,6 @@ class MTProtoSender:
             else:
                 self._send_queue.extend(states)
 
-            self._send_ready.set()
             return futures
 
     @property
@@ -333,28 +329,14 @@ class MTProtoSender:
             if self._pending_ack:
                 ack = RequestState(MsgsAck(list(self._pending_ack)), self._loop)
                 self._send_queue.append(ack)
-                self._send_ready.set()
                 self._last_acks.append(ack)
                 self._pending_ack.clear()
 
-            queue = asyncio.ensure_future(
-                self._send_ready.wait(), loop=self._loop)
+            state_list = await self._send_queue.get(
+                self._connection._connection.disconnected)
 
-            disconnected = asyncio.ensure_future(
-                self._connection._connection._disconnected.wait())
-
-            # Basically using the disconnected as a cancellation token
-            done, pending = await asyncio.wait(
-                [queue, disconnected],
-                return_when=asyncio.FIRST_COMPLETED,
-                loop=self._loop
-            )
-            if disconnected in done:
+            if state_list is None:
                 break
-
-            state_list = self._send_queue
-            self._send_queue = []
-            self._send_ready.clear()
 
             # TODO Debug logs to notify which messages are being sent
             # TODO Try sending them while no future was cancelled?
@@ -425,7 +407,6 @@ class MTProtoSender:
             error = rpc_message_to_error(rpc_result.error)
             self._send_queue.append(
                 RequestState(MsgsAck([state.msg_id]), loop=self._loop))
-            self._send_ready.set()
 
             if not state.future.cancelled():
                 state.future.set_exception(error)
@@ -494,12 +475,10 @@ class MTProtoSender:
         try:
             self._send_queue.append(
                 self._pending_state.pop(bad_salt.bad_msg_id))
-            self._send_ready.set()
         except KeyError:
             for ack in self._pending_ack:
                 if ack.msg_id == bad_salt.bad_msg_id:
                     self._send_queue.append(ack)
-                    self._send_ready.set()
                     return
 
             __log__.info('Message %d not resent due to bad salt',
@@ -539,7 +518,6 @@ class MTProtoSender:
         # Messages are to be re-sent once we've corrected the issue
         if state:
             self._send_queue.append(state)
-            self._send_ready.set()
         else:
             # TODO Generic method that may return from the acks too
             # May be MsgsAck, those are not saved in pending messages
@@ -627,7 +605,6 @@ class MTProtoSender:
         self._send_queue.append(RequestState(MsgsStateInfo(
             req_msg_id=message.msg_id, info=chr(1) * len(message.obj.msg_ids)),
             loop=self._loop))
-        self._send_ready.set()
 
     async def _handle_msg_all(self, message):
         """

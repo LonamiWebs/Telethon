@@ -21,6 +21,7 @@ class Connection(abc.ABC):
         self._writer = None
         self._disconnected = asyncio.Event(loop=loop)
         self._disconnected.set()
+        self._disconnected_future = None
         self._send_task = None
         self._recv_task = None
         self._send_queue = asyncio.Queue(1)
@@ -34,6 +35,7 @@ class Connection(abc.ABC):
             self._ip, self._port, loop=self._loop)
 
         self._disconnected.clear()
+        self._disconnected_future = None
         self._send_task = self._loop.create_task(self._send_loop())
         self._recv_task = self._loop.create_task(self._recv_loop())
 
@@ -45,6 +47,13 @@ class Connection(abc.ABC):
         self._send_task.cancel()
         self._recv_task.cancel()
         self._writer.close()
+
+    @property
+    def disconnected(self):
+        if not self._disconnected_future:
+            self._disconnected_future = asyncio.ensure_future(
+                self._disconnected.wait(), loop=self._loop)
+        return self._disconnected_future
 
     def clone(self):
         """

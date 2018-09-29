@@ -1,4 +1,5 @@
 """Various helpers not related to the Telegram API itself"""
+import asyncio
 import collections
 import os
 import struct
@@ -86,5 +87,43 @@ class TotalList(list):
     def __repr__(self):
         return '[{}, total={}]'.format(
             ', '.join(repr(x) for x in self), self.total)
+
+
+class _ReadyQueue:
+    """
+    A queue list that supports an arbitrary cancellation token for `get`.
+    """
+    def __init__(self, loop):
+        self._list = []
+        self._loop = loop
+        self._ready = asyncio.Event(loop=loop)
+
+    def append(self, item):
+        self._list.append(item)
+        self._ready.set()
+
+    def extend(self, items):
+        self._list.extend(items)
+        self._ready.set()
+
+    async def get(self, cancellation):
+        """
+        Returns a list of all the items added to the queue until now and
+        clears the list from the queue itself. Returns ``None`` if cancelled.
+        """
+        ready = asyncio.ensure_future(self._ready.wait(), loop=self._loop)
+        done, pending = await asyncio.wait(
+            [ready, cancellation],
+            return_when=asyncio.FIRST_COMPLETED,
+            loop=self._loop
+        )
+        if cancellation in done:
+            ready.cancel()
+            return None
+
+        result = self._list
+        self._list = []
+        self._ready.clear()
+        return result
 
 # endregion
