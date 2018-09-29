@@ -33,17 +33,16 @@ class MTProtoLayer:
         """
         self._connection.disconnect()
 
-    async def send(self, data_list):
+    async def send(self, state_list):
         """
-        A list of serialized RPC queries as bytes must be given to be sent.
+        The list of `RequestState` that will be sent. They will
+        be updated with their new message and container IDs.
+
         Nested lists imply an order is required for the messages in them.
         Message containers will be used if there is more than one item.
-
-        Returns ``(container_id, msg_ids)``.
         """
-        data, container_id, msg_ids = self._pack_data_list(data_list)
+        data = self._pack_state_list(state_list)
         await self._connection.send(self._state.encrypt_message_data(data))
-        return container_id, msg_ids
 
     async def recv(self):
         """
@@ -52,12 +51,14 @@ class MTProtoLayer:
         body = await self._connection.recv()
         return self._state.decrypt_message_data(body)
 
-    def _pack_data_list(self, data_list):
+    def _pack_state_list(self, state_list):
         """
-        A list of serialized RPC queries as bytes must be given to be packed.
-        Nested lists imply an order is required for the messages in them.
+        The list of `RequestState` that will be sent. They will
+        be updated with their new message and container IDs.
 
-        Returns ``(data, container_id, msg_ids)``.
+        Packs all their serialized data into a message (possibly
+        nested inside another message and message container) and
+        returns the serialized message data.
         """
         # TODO write_data_as_message raises on invalid messages, handle it
         # TODO This method could be an iterator yielding messages while small
@@ -72,33 +73,39 @@ class MTProtoLayer:
         # to store and serialize the data. However, to keep the context local
         # and relevant to the only place where such feature is actually used,
         # this is not done.
-        msg_ids = []
+        n = 0
         buffer = io.BytesIO()
-        for data in data_list:
-            if not isinstance(data, list):
-                msg_ids.append(self._state.write_data_as_message(buffer, data))
+        for state in state_list:
+            if not isinstance(state, list):
+                n += 1
+                state.msg_id = \
+                    self._state.write_data_as_message(buffer, state.data)
             else:
                 last_id = None
-                for d in data:
-                    last_id = self._state.write_data_as_message(
-                        buffer, d, after_id=last_id)
-                    msg_ids.append(last_id)
+                for s in state:
+                    n += 1
+                    last_id = s.msg_id = self._state.write_data_as_message(
+                        buffer, s.data, after_id=last_id)
 
-        if len(msg_ids) == 1:
-            container_id = None
-        else:
+        if n > 1:
             # Inlined code to pack several messages into a container
             #
             # TODO This part and encrypting data prepend a few bytes but
             # force a potentially large payload to be appended, which
             # may be expensive. Can we do better?
             data = struct.pack(
-                '<Ii', MessageContainer.CONSTRUCTOR_ID, len(msg_ids)
+                '<Ii', MessageContainer.CONSTRUCTOR_ID, n
             ) + buffer.getvalue()
             buffer = io.BytesIO()
             container_id = self._state.write_data_as_message(buffer, data)
+            for state in state_list:
+                if not isinstance(state, list):
+                    state.container_id = container_id
+                else:
+                    for s in state:
+                        s.container_id = container_id
 
-        return buffer.getvalue(), container_id, msg_ids
+        return buffer.getvalue()
 
     def __str__(self):
         return str(self._connection)
