@@ -44,9 +44,14 @@ class Connection(abc.ABC):
         Disconnects from the server.
         """
         self._disconnected.set()
-        self._send_task.cancel()
-        self._recv_task.cancel()
-        self._writer.close()
+        if self._send_task:
+            self._send_task.cancel()
+
+        if self._recv_task:
+            self._recv_task.cancel()
+
+        if self._writer:
+            self._writer.close()
 
     @property
     def disconnected(self):
