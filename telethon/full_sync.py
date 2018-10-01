@@ -88,7 +88,14 @@ def _syncify(*types, loop, thread_name):
                     _syncify_gen(t, method_name, loop, thread_name)
 
 
+__asyncthread = None
+
+
 def enable(loop=None, thread_name="__telethon_async_thread__"):
+    global __asyncthread
+    if __asyncthread is not None:
+        raise ValueError("full_sync has already been enabled.")
+
     if not loop:
         loop = asyncio.get_event_loop()
     old_init = TelegramClient.__init__
@@ -136,6 +143,14 @@ def enable(loop=None, thread_name="__telethon_async_thread__"):
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
-    asyncthread = threading.Thread(target=start, name=thread_name)
-    asyncthread.start()
-    return asyncthread
+    __asyncthread = threading.Thread(target=start, name=thread_name)
+    __asyncthread.start()
+    __asyncthread.loop = loop
+    return __asyncthread
+
+
+def stop():
+    global __asyncthread
+    if not __asyncthread:
+        raise ValueError("Can't find asyncio thread")
+    __asyncthread.loop.call_soon_threadsafe(__asyncthread.loop.stop)
