@@ -38,10 +38,9 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, auth_key, loop, *,
+    def __init__(self, loop, *,
                  retries=5, auto_reconnect=True, update_callback=None,
                  auth_key_callback=None, auto_reconnect_callback=None):
-        self._auth_key = auth_key
         self._connection = None  # MTProtoLayer, a.k.a. encrypted connection
         self._loop = loop
         self._retries = retries
@@ -100,17 +99,15 @@ class MTProtoSender:
 
     # Public API
 
-    async def connect(self, connection):
+    async def connect(self, auth_key, connection):
         """
-        Connects to the specified ``ip:port``, and generates a new
-        authorization key for the `MTProtoSender.session` if it does
-        not exist yet.
+        Connects to the specified given connection using the given auth key.
         """
         if self._user_connected:
             __log__.info('User is already connected!')
             return
 
-        self._connection = MTProtoLayer(connection, self._auth_key)
+        self._connection = MTProtoLayer(connection, auth_key)
         self._user_connected = True
         await self._connect()
 

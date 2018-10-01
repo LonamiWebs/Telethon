@@ -11,7 +11,6 @@ from .. import version
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
-from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
@@ -226,7 +225,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._connection = connection
         self._sender = MTProtoSender(
-            self.session.auth_key, self._loop,
+            self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
             update_callback=self._handle_update,
@@ -305,7 +304,7 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
-        await self._sender.connect(self._connection(
+        await self._sender.connect(self.session.auth_key, self._connection(
             self.session.server_address, self.session.port, loop=self._loop))
 
         await self._sender.send(self._init_with(
@@ -369,7 +368,7 @@ class TelegramBaseClient(abc.ABC):
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
-        self.session.auth_key = self._sender._connection._state.auth_key = None
+        self.session.auth_key = None
         self.session.save()
         await self._disconnect()
         return await self.connect()
@@ -416,8 +415,8 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(None, self._loop)
-        await sender.connect(self._connection(
+        sender = MTProtoSender(self._loop)
+        await sender.connect(None, self._connection(
             dc.ip_address, dc.port, loop=self._loop))
         __log__.info('Exporting authorization for data center %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
