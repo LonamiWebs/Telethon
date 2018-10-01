@@ -2,7 +2,7 @@ import logging
 from .client.telegramclient import TelegramClient
 from .network import connection
 from .tl import types, functions, custom
-from . import version, events, utils, errors
+from . import version, events, utils, errors, full_sync
 
 
 __version__ = version.__version__
