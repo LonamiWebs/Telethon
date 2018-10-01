@@ -378,6 +378,30 @@ class MTProtoSender:
                                      self._handle_update)
         await handler(message)
 
+    def _pop_states(self, msg_id):
+        """
+        Pops the states known to match the given ID from pending messages.
+
+        This method should be used when the response isn't specific.
+        """
+        state = self._pending_state.pop(msg_id, None)
+        if state:
+            return [state]
+
+        to_pop = []
+        for state in self._pending_state.values():
+            if state.container_id == msg_id:
+                to_pop.append(state.msg_id)
+
+        if to_pop:
+            return [self._pending_state.pop(x) for x in to_pop]
+
+        for ack in self._last_acks:
+            if ack.msg_id == msg_id:
+                return [ack]
+
+        return []
+
     async def _handle_rpc_result(self, message):
         """
         Handles the result for Remote Procedure Calls:
@@ -470,17 +494,10 @@ class MTProtoSender:
         bad_salt = message.obj
         __log__.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
         self._connection._state.salt = bad_salt.new_server_salt
-        try:
-            self._send_queue.append(
-                self._pending_state.pop(bad_salt.bad_msg_id))
-        except KeyError:
-            for ack in self._pending_ack:
-                if ack.msg_id == bad_salt.bad_msg_id:
-                    self._send_queue.append(ack)
-                    return
+        states = self._pop_states(bad_salt.bad_msg_id)
+        self._send_queue.extend(states)
 
-            __log__.info('Message %d not resent due to bad salt',
-                         bad_salt.bad_msg_id)
+        __log__.debug('%d message(s) will be resent', len(states))
 
     async def _handle_bad_notification(self, message):
         """
@@ -491,8 +508,7 @@ class MTProtoSender:
             error_code:int = BadMsgNotification;
         """
         bad_msg = message.obj
-        # TODO Pending state may need to pop by container ID
-        state = self._pending_state.pop(bad_msg.bad_msg_id, None)
+        states = self._pop_states(bad_msg.bad_msg_id)
 
         __log__.debug('Handling bad msg %s', bad_msg)
         if bad_msg.error_code in (16, 17):
@@ -509,18 +525,13 @@ class MTProtoSender:
             # msg_seqno too high never seems to happen but just in case
             self._connection._state._sequence -= 16
         else:
-            if state:
+            for state in states:
                 state.future.set_exception(BadMessageError(bad_msg.error_code))
             return
 
         # Messages are to be re-sent once we've corrected the issue
-        if state:
-            self._send_queue.append(state)
-        else:
-            # TODO Generic method that may return from the acks too
-            # May be MsgsAck, those are not saved in pending messages
-            __log__.info('Message %d not resent due to bad msg',
-                         bad_msg.bad_msg_id)
+        self._send_queue.extend(states)
+        __log__.debug('%d messages will be resent due to bad msg', len(states))
 
     async def _handle_detailed_info(self, message):
         """
