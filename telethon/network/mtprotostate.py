@@ -69,14 +69,15 @@ class MTProtoState:
 
         return aes_key, aes_iv
 
-    def write_data_as_message(self, buffer, data, after_id=None):
+    def write_data_as_message(self, buffer, data, content_related,
+                              *, after_id=None):
         """
         Writes a message containing the given data into buffer.
 
         Returns the message id.
         """
         msg_id = self._get_new_msg_id()
-        seq_no = self._get_seq_no(True)  # TODO ack/ping are not content-related
+        seq_no = self._get_seq_no(content_related)
         if after_id is None:
             body = GzipPacked.gzip_if_smaller(data)
         else:

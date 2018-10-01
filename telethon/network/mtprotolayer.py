@@ -2,6 +2,7 @@ import io
 import struct
 
 from .mtprotostate import MTProtoState
+from ..tl import TLRequest
 from ..tl.core.messagecontainer import MessageContainer
 
 
@@ -78,14 +79,15 @@ class MTProtoLayer:
         for state in state_list:
             if not isinstance(state, list):
                 n += 1
-                state.msg_id = \
-                    self._state.write_data_as_message(buffer, state.data)
+                state.msg_id = self._state.write_data_as_message(
+                    buffer, state.data, isinstance(state.request, TLRequest))
             else:
                 last_id = None
                 for s in state:
                     n += 1
                     last_id = s.msg_id = self._state.write_data_as_message(
-                        buffer, s.data, after_id=last_id)
+                        buffer, s.data, isinstance(s.request, TLRequest),
+                        after_id=last_id)
 
         if n > 1:
             # Inlined code to pack several messages into a container
@@ -97,7 +99,9 @@ class MTProtoLayer:
                 '<Ii', MessageContainer.CONSTRUCTOR_ID, n
             ) + buffer.getvalue()
             buffer = io.BytesIO()
-            container_id = self._state.write_data_as_message(buffer, data)
+            container_id = self._state.write_data_as_message(
+                buffer, data, content_related=False
+            )
             for state in state_list:
                 if not isinstance(state, list):
                     state.container_id = container_id

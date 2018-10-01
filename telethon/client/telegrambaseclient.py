@@ -369,7 +369,7 @@ class TelegramBaseClient(abc.ABC):
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
-        self.session.auth_key = self._sender.state.auth_key = None
+        self.session.auth_key = self._sender._connection._state.auth_key = None
         self.session.save()
         await self._disconnect()
         return await self.connect()
