@@ -28,6 +28,14 @@ class MTProtoState:
     for all these is not a good idea as each need their own authkey, and
     the concept of "copying" sessions with the unnecessary entities or
     updates state for these connections doesn't make sense.
+
+    While it would be possible to have a `MTProtoPlainState` that does no
+    encryption so that it was usable through the `MTProtoLayer` and thus
+    avoid the need for a `MTProtoPlainSender`, the `MTProtoLayer` is more
+    focused to efficiency and this state is also more advanced (since it
+    supports gzipping and invoking after other message IDs). There are too
+    many methods that would be needed to make it convenient to use for the
+    authentication process, at which point the `MTProtoPlainSender` is better.
     """
     def __init__(self, auth_key):
         # Session IDs can be random on every connection

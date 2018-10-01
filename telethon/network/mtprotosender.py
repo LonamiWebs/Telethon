@@ -2,11 +2,13 @@ import asyncio
 import collections
 import logging
 
+from . import authenticator
 from .mtprotolayer import MTProtoLayer
+from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
 from .. import utils
 from ..errors import (
-    BadMessageError, TypeNotFoundError, rpc_message_to_error
+    BadMessageError, SecurityError, TypeNotFoundError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
 from ..helpers import _ReadyQueue
@@ -206,18 +208,18 @@ class MTProtoSender:
                                   .format(self._retries))
 
         __log__.debug('Connection success!')
-        # TODO Handle this, maybe an empty MTProtoState that does no encryption
-        """
-        if self.state.auth_key is None:
-            plain = MTProtoPlainSender(self._connection)
+        state = self._connection._state
+        if state.auth_key is None:
+            plain = MTProtoPlainSender(self._connection._connection)
             for retry in range(1, self._retries + 1):
                 try:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
-                    self.state.auth_key, self.state.time_offset =\
+                    state.auth_key, state.time_offset =\
                         await authenticator.do_authentication(plain)
 
+                    # TODO This callback feels out of place
                     if self._auth_key_callback:
-                        self._auth_key_callback(self.state.auth_key)
+                        self._auth_key_callback(state.auth_key)
 
                     break
                 except (SecurityError, AssertionError) as e:
@@ -228,7 +230,6 @@ class MTProtoSender:
                                     .format(self._retries))
                 await self._disconnect(error=e)
                 raise e
-        """
 
         __log__.debug('Starting send loop')
         self._send_loop_handle = self._loop.create_task(self._send_loop())
