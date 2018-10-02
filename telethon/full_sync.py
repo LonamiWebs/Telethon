@@ -111,8 +111,9 @@ def enable(loop=None, executor=None, max_workers=1):
 
     @functools.wraps(old_add_event_handler)
     def add_proxied_event_handler(self, callback, *args, **kwargs):
-        def _proxy(*pargs, **pkwargs):
-            executor.submit(callback, *pargs, **pkwargs)
+        async def _proxy(*pargs, **pkwargs):
+            await loop.run_in_executor(
+                executor, functools.partial(callback, *pargs, **pkwargs))
 
         proxied_event_handlers[callback] = _proxy
 
