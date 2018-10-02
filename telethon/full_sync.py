@@ -77,7 +77,18 @@ def _syncify(*types, loop, thread_ident):
 __asyncthread = None
 
 
-def enable(loop=None, executor=None, max_workers=1):
+def enable(*, loop=None, executor=None, max_workers=1):
+    """
+    Enables the fully synchronous mode. You should enable this at
+    the beginning of your script, right after importing, only once.
+
+    **Please** make sure to call `stop` at the end of your script.
+
+    You can define the event loop to use and executor, otherwise
+    the default loop and ``ThreadPoolExecutor`` will be used, in
+    which case `max_workers` will be passed to it. If you pass a
+    custom executor, `max_workers` will be ignored.
+    """
     global __asyncthread
     if __asyncthread is not None:
         raise RuntimeError("full_sync can only be enabled once")
@@ -91,14 +102,16 @@ def enable(loop=None, executor=None, max_workers=1):
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
-    __asyncthread = threading.Thread(target=start, name="__telethon_async_thread__",
-                                     daemon=True)
+    __asyncthread = threading.Thread(
+        target=start, name="__telethon_async_thread__", daemon=True
+    )
     __asyncthread.start()
     __asyncthread.loop = loop
     __asyncthread.executor = executor
 
-    TelegramClient.__init__ = functools.partialmethod(TelegramClient.__init__,
-                                                      loop=loop)
+    TelegramClient.__init__ = functools.partialmethod(
+        TelegramClient.__init__, loop=loop
+    )
 
     _syncify(TelegramClient, Draft, Dialog, MessageButton, ChatGetter,
              SenderGetter, Forward, Message, InlineResult, Conversation,
@@ -137,6 +150,10 @@ def enable(loop=None, executor=None, max_workers=1):
 
 
 def stop():
+    """
+    Stops the fully synchronous code. You
+    should call this before your script exits.
+    """
     global __asyncthread
     if not __asyncthread:
         raise RuntimeError("Can't find asyncio thread")
