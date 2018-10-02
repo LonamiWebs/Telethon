@@ -34,6 +34,9 @@ class MTProtoLayer:
         """
         self._connection.disconnect()
 
+    def reset_state(self):
+        self._state = MTProtoState(self._state.auth_key)
+
     async def send(self, state_list):
         """
         The list of `RequestState` that will be sent. They will

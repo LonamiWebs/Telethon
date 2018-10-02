@@ -120,6 +120,7 @@ class MTProtoState:
             else:
                 raise BufferError("Can't decode packet ({})".format(body))
 
+        # TODO Check salt, session_id and sequence_number
         key_id = struct.unpack('<Q', body[:8])[0]
         if key_id != self.auth_key.key_id:
             raise SecurityError('Server replied with an invalid auth key')
