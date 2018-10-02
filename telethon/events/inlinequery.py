@@ -124,7 +124,7 @@ class InlineQuery(EventBuilder):
 
         async def answer(
                 self, results=None, cache_time=0, *,
-                gallery=False, next_offset=False, private=False,
+                gallery=False, next_offset=None, private=False,
                 switch_pm=None, switch_pm_param=''):
             """
             Answers the inline query with the given results.
