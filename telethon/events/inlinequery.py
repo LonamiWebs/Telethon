@@ -124,7 +124,7 @@ class InlineQuery(EventBuilder):
 
         async def answer(
                 self, results=None, cache_time=0, *,
-                gallery=False, private=False,
+                gallery=False, next_offset=False, private=False,
                 switch_pm=None, switch_pm_param=''):
             """
             Answers the inline query with the given results.
@@ -147,6 +147,10 @@ class InlineQuery(EventBuilder):
 
                 gallery (`bool`, optional):
                     Whether the results should show as a gallery (grid) or not.
+                
+                next_offset (`str`, optional):
+                    The offset the client will send when the user scrolls the 
+                    results and it repeates the request.
 
                 private (`bool`, optional):
                     Whether the results should be cached by Telegram
@@ -163,11 +167,14 @@ class InlineQuery(EventBuilder):
             if self._answered:
                 return
 
-            results = [self._as_awaitable(x, self._client.loop)
-                       for x in results]
+            if results:
+                results = [self._as_awaitable(x, self._client.loop)
+                        for x in results]
 
-            done, _ = await asyncio.wait(results, loop=self._client.loop)
-            results = [x.result() for x in done]
+                done, _ = await asyncio.wait(results, loop=self._client.loop)
+                results = [x.result() for x in done]
+            else:
+                results = []
 
             if switch_pm:
                 switch_pm = types.InlineBotSwitchPM(switch_pm, switch_pm_param)
@@ -178,6 +185,7 @@ class InlineQuery(EventBuilder):
                     results=results,
                     cache_time=cache_time,
                     gallery=gallery,
+                    next_offset=next_offset,
                     private=private,
                     switch_pm=switch_pm
                 )
