@@ -14,6 +14,10 @@ class ConnectionTcpFull(Connection):
         super().__init__(ip, port, loop=loop)
         self._send_counter = 0
 
+    async def connect(self):
+        await super().connect()
+        self._send_counter = 0  # Important or Telegram won't reply
+
     def _send(self, data):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
