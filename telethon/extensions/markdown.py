@@ -9,8 +9,8 @@ from ..helpers import add_surrogate, del_surrogate
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityTextUrl
-)
+    MessageEntityPre, MessageEntityTextUrl,
+    MessageEntityMentionName)
 
 DEFAULT_DELIMITERS = {
     '**': MessageEntityBold,
@@ -120,9 +120,9 @@ def parse(message, delimiters=None, url_re=None):
     # If this is the case, we want to insert the delimiter character back.
     if current is not None:
         message = (
-            message[:current.offset]
-            + end_delimiter
-            + message[current.offset:]
+                message[:current.offset]
+                + end_delimiter
+                + message[current.offset:]
         )
 
     return del_surrogate(message), result
@@ -163,9 +163,12 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
             text = text[:s] + delimiter + text[s:e] + delimiter + text[e:]
         elif isinstance(entity, MessageEntityTextUrl) and url_fmt:
             text = (
-                text[:s] +
-                add_surrogate(url_fmt.format(text[s:e], entity.url)) +
-                text[e:]
+                    text[:s] +
+                    add_surrogate(url_fmt.format(text[s:e], entity.url)) +
+                    text[e:]
             )
-
+        elif isinstance(entity, MessageEntityMentionName):
+            text = text[:entity.offset] + "[{}](tg://user?id={})".format(
+                text[entity.offset:entity.offset + entity.length], entity.user_id) + text[
+                                                                                     entity.offset + entity.length:]
     return del_surrogate(text)
