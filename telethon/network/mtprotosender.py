@@ -9,7 +9,7 @@ from .requeststate import RequestState
 from .. import utils
 from ..errors import (
     BadMessageError, BrokenAuthKeyError, SecurityError, TypeNotFoundError,
-    rpc_message_to_error
+    InvalidChecksumError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
 from ..helpers import _ReadyQueue
@@ -376,11 +376,23 @@ class MTProtoSender:
                 __log__.warning('Security error while unpacking a '
                                 'received message: %s', e)
                 continue
+            except InvalidChecksumError as e:
+                __log__.warning(
+                    'Invalid checksum on the read packet (was %s expected %s)',
+                    e.checksum, e.valid_checksum
+                )
             except asyncio.CancelledError:
                 return
             except (BrokenAuthKeyError, BufferError):
                 __log__.info('Broken authorization key; resetting')
                 self._connection._state.auth_key = None
+                self._start_reconnect()
+                return
+            except asyncio.IncompleteReadError:
+                # TODO Handle packets that are too big and trigger this
+                # If it's not a packet that triggered this, just reconnect
+                __log__.info('Telegram closed the connection')
+                self._pending_state.clear()
                 self._start_reconnect()
                 return
             except Exception:

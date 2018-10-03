@@ -1,5 +1,9 @@
 import abc
 import asyncio
+import logging
+
+
+__log__ = logging.getLogger(__name__)
 
 
 class Connection(abc.ABC):
@@ -74,36 +78,44 @@ class Connection(abc.ABC):
         """
         return self._send_queue.put(data)
 
-    def recv(self):
+    async def recv(self):
         """
         Receives a packet of data through this connection mode.
 
         This method returns a coroutine.
         """
-        return self._recv_queue.get()
+        ok, result = await self._recv_queue.get()
+        if ok:
+            return result
+        else:
+            raise result from None
 
     # TODO Get/put to the queue with cancellation
     async def _send_loop(self):
         """
         This loop is constantly popping items off the queue to send them.
         """
-        while not self._disconnected.is_set():
-            self._send(await self._send_queue.get())
-            await self._writer.drain()
+        try:
+            while not self._disconnected.is_set():
+                self._send(await self._send_queue.get())
+                await self._writer.drain()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logging.exception('Unhandled exception in the sending loop')
+            self.disconnect()
 
-    # TODO Handle IncompleteReadError and InvalidChecksumError
     async def _recv_loop(self):
         """
         This loop is constantly putting items on the queue as they're read.
         """
-        while not self._disconnected.is_set():
-            try:
+        try:
+            while not self._disconnected.is_set():
                 data = await self._recv()
-            except asyncio.IncompleteReadError:
-                if not self._disconnected.is_set():
-                    raise
-            else:
-                await self._recv_queue.put(data)
+                await self._recv_queue.put((True, data))
+        except Exception as e:
+            await self._recv_queue.put((False, e))
+            self.disconnect()
 
     @abc.abstractmethod
     def _send(self, data):
