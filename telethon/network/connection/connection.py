@@ -113,6 +113,8 @@ class Connection(abc.ABC):
             while not self._disconnected.is_set():
                 data = await self._recv()
                 await self._recv_queue.put((True, data))
+        except asyncio.CancelledError:
+            pass
         except Exception as e:
             await self._recv_queue.put((False, e))
             self.disconnect()
