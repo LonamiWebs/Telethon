@@ -14,8 +14,8 @@ class ConnectionTcpFull(Connection):
         super().__init__(ip, port, loop=loop)
         self._send_counter = 0
 
-    async def connect(self):
-        await super().connect()
+    async def connect(self, timeout=None):
+        await super().connect(timeout=timeout)
         self._send_counter = 0  # Important or Telegram won't reply
 
     def _send(self, data):

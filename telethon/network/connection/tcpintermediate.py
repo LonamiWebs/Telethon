@@ -8,8 +8,8 @@ class ConnectionTcpIntermediate(Connection):
     Intermediate mode between `ConnectionTcpFull` and `ConnectionTcpAbridged`.
     Always sends 4 extra bytes for the packet length.
     """
-    async def connect(self):
-        await super().connect()
+    async def connect(self, timeout=None):
+        await super().connect(timeout=timeout)
         await self.send(b'\xee\xee\xee\xee')
 
     def _send(self, data):

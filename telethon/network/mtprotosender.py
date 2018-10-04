@@ -40,12 +40,14 @@ class MTProtoSender:
     key exists yet.
     """
     def __init__(self, loop, *,
-                 retries=5, auto_reconnect=True, update_callback=None,
+                 retries=5, auto_reconnect=True, connect_timeout=None,
+                 update_callback=None,
                  auth_key_callback=None, auto_reconnect_callback=None):
         self._connection = None  # MTProtoLayer, a.k.a. encrypted connection
         self._loop = loop
         self._retries = retries
         self._auto_reconnect = auto_reconnect
+        self._connect_timeout = connect_timeout
         self._update_callback = update_callback
         self._auth_key_callback = auth_key_callback
         self._auto_reconnect_callback = auto_reconnect_callback
@@ -189,14 +191,12 @@ class MTProtoSender:
         authorization key if necessary, and starting the send and
         receive loops.
         """
-        # TODO With ``asyncio.open_connection``, no timeout occurs
-        # However, these are probably desirable in some circumstances.
         __log__.info('Connecting to %s...', self._connection)
         for retry in range(1, self._retries + 1):
             try:
                 __log__.debug('Connection attempt {}...'.format(retry))
-                await self._connection.connect()
-            except OSError as e:
+                await self._connection.connect(timeout=self._connect_timeout)
+            except (OSError, asyncio.TimeoutError) as e:
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
             else:

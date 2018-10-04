@@ -16,7 +16,7 @@ class Connection(abc.ABC):
     under any conditions for as long as the user doesn't disconnect or
     the input parameters to auto-reconnect dictate otherwise.
     """
-    # TODO Support proxy. Support timeout?
+    # TODO Support proxy
     def __init__(self, ip, port, *, loop):
         self._ip = ip
         self._port = port
@@ -31,12 +31,14 @@ class Connection(abc.ABC):
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
 
-    async def connect(self):
+    async def connect(self, timeout=None):
         """
         Establishes a connection with the server.
         """
-        self._reader, self._writer = await asyncio.open_connection(
-            self._ip, self._port, loop=self._loop)
+        self._reader, self._writer = await asyncio.wait_for(
+            asyncio.open_connection(self._ip, self._port, loop=self._loop),
+            loop=self._loop, timeout=timeout
+        )
 
         self._disconnected.clear()
         self._disconnected_future = None

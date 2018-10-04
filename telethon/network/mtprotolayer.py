@@ -22,11 +22,11 @@ class MTProtoLayer:
         self._connection = connection
         self._state = MTProtoState(auth_key)
 
-    def connect(self):
+    def connect(self, timeout=None):
         """
         Wrapper for ``self._connection.connect()``.
         """
-        return self._connection.connect()
+        return self._connection.connect(timeout=timeout)
 
     def disconnect(self):
         """

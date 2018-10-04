@@ -202,6 +202,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._request_retries = request_retries or sys.maxsize
         self._connection_retries = connection_retries or sys.maxsize
+        self._timeout = timeout
         self._auto_reconnect = auto_reconnect
 
         assert isinstance(connection, type)
@@ -228,6 +229,7 @@ class TelegramBaseClient(abc.ABC):
             self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
+            connect_timeout=self._timeout,
             update_callback=self._handle_update,
             auth_key_callback=self._auth_key_callback,
             auto_reconnect_callback=self._handle_auto_reconnect
