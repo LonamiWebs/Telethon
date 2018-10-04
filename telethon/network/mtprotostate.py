@@ -79,9 +79,9 @@ class MTProtoState:
         msg_id = self._get_new_msg_id()
         seq_no = self._get_seq_no(content_related)
         if after_id is None:
-            body = GzipPacked.gzip_if_smaller(data)
+            body = GzipPacked.gzip_if_smaller(content_related, data)
         else:
-            body = GzipPacked.gzip_if_smaller(
+            body = GzipPacked.gzip_if_smaller(content_related,
                 bytes(InvokeAfterMsgRequest(after_id, data)))
 
         buffer.write(struct.pack('<qii', msg_id, seq_no, len(body)))
