@@ -343,7 +343,6 @@ class MTProtoSender:
             if state_list is None:
                 break
 
-            # TODO Debug logs to notify which messages are being sent
             # TODO Try sending them while no future was cancelled?
             # TODO Handle cancelled?, arbitrary errors
             await self._connection.send(state_list)
@@ -362,7 +361,6 @@ class MTProtoSender:
         Besides `connect`, only this method ever receives data.
         """
         while self._user_connected and not self._reconnecting:
-            # TODO handle incomplete read?
             __log__.debug('Receiving items from the network...')
             try:
                 message = await self._connection.recv()

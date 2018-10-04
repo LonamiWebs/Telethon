@@ -127,7 +127,6 @@ class Connection(abc.ABC):
         else:
             raise result from None
 
-    # TODO Get/put to the queue with cancellation
     async def _send_loop(self):
         """
         This loop is constantly popping items off the queue to send them.

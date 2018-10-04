@@ -1,9 +1,12 @@
 import io
+import logging
 import struct
 
 from .mtprotostate import MTProtoState
 from ..tl import TLRequest
 from ..tl.core.messagecontainer import MessageContainer
+
+__log__ = logging.getLogger(__name__)
 
 
 class MTProtoLayer:
@@ -64,7 +67,6 @@ class MTProtoLayer:
         nested inside another message and message container) and
         returns the serialized message data.
         """
-        # TODO write_data_as_message raises on invalid messages, handle it
         # TODO This method could be an iterator yielding messages while small
         # respecting the ``MessageContainer.MAXIMUM_SIZE`` limit.
         #
@@ -84,6 +86,10 @@ class MTProtoLayer:
                 n += 1
                 state.msg_id = self._state.write_data_as_message(
                     buffer, state.data, isinstance(state.request, TLRequest))
+
+                __log__.debug('Assigned msg_id = %d to %s (%x)',
+                              state.msg_id, state.request.__class__.__name__,
+                              id(state.request))
             else:
                 last_id = None
                 for s in state:
@@ -92,6 +98,9 @@ class MTProtoLayer:
                         buffer, s.data, isinstance(s.request, TLRequest),
                         after_id=last_id)
 
+                    __log__.debug('Assigned msg_id = %d to %s (%x)',
+                                  s.msg_id, s.request.__class__.__name__,
+                                  id(s.request))
         if n > 1:
             # Inlined code to pack several messages into a container
             #
@@ -112,7 +121,9 @@ class MTProtoLayer:
                     for s in state:
                         s.container_id = container_id
 
-        return buffer.getvalue()
+        r = buffer.getvalue()
+        __log__.debug('Packed %d message(s) in %d bytes for sending', n, len(r))
+        return r
 
     def __str__(self):
         return str(self._connection)
