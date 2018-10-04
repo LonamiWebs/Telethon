@@ -10,7 +10,8 @@ class ConnectionTcpIntermediate(Connection):
     """
     async def connect(self, timeout=None, ssl=None):
         await super().connect(timeout=timeout, ssl=ssl)
-        await self.send(b'\xee\xee\xee\xee')
+        self._writer.write(b'\xee\xee\xee\xee')
+        await self._writer.drain()
 
     def _send(self, data):
         self._writer.write(struct.pack('<i', len(data)) + data)

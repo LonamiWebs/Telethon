@@ -1,6 +1,5 @@
 import os
 
-from .connection import Connection
 from .tcpabridged import ConnectionTcpAbridged
 from ...crypto import AESModeCTR
 
@@ -48,4 +47,5 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         self._aes_decrypt = AESModeCTR(decrypt_key, decrypt_iv)
 
         random[56:64] = self._aes_encrypt.encrypt(bytes(random))[56:64]
-        await self._send(random)
+        self._writer.write(random)
+        await self._writer.drain()

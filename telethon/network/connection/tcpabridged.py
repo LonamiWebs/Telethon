@@ -11,7 +11,8 @@ class ConnectionTcpAbridged(Connection):
     """
     async def connect(self, timeout=None, ssl=None):
         await super().connect(timeout=timeout, ssl=ssl)
-        await self.send(b'\xef')
+        self._writer.write(b'\xef')
+        await self._writer.drain()
 
     def _write(self, data):
         """
