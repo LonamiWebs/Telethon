@@ -9,8 +9,8 @@ from html.parser import HTMLParser
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
-    MessageEntityTextUrl
-)
+    MessageEntityTextUrl, MessageEntityMentionName
+    )
 
 
 # Helpers from markdown.py
@@ -178,6 +178,9 @@ def unparse(text, entities):
         elif entity_type == MessageEntityTextUrl:
             html.append('<a href="{}">{}</a>'
                         .format(escape(entity.url), entity_text))
+        elif entity_type == MessageEntityMentionName:
+            html.append('<a href="tg://user?id={}">{}</a>'
+                        .format(entity.user_id, entity_text))
         else:
             skip_entity = True
         last_offset = entity.offset + (0 if skip_entity else entity.length)
