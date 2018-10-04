@@ -3,20 +3,12 @@ import asyncio
 from .connection import Connection
 
 
-class ConnectionHttp(Connection):
-    async def connect(self, timeout=None):
-        # TODO Test if the ssl part works or it needs to be as before:
-        # dict(ssl_version=ssl.PROTOCOL_SSLv23, ciphers='ADH-AES256-SHA')
-        self._reader, self._writer = await asyncio.wait_for(
-            asyncio.open_connection(
-                self._ip, self._port, loop=self._loop, ssl=True),
-            loop=self._loop, timeout=timeout
-        )
+SSL_PORT = 443
 
-        self._disconnected.clear()
-        self._disconnected_future = None
-        self._send_task = self._loop.create_task(self._send_loop())
-        self._recv_task = self._loop.create_task(self._send_loop())
+
+class ConnectionHttp(Connection):
+    async def connect(self, timeout=None, ssl=None):
+        await super().connect(timeout=timeout, ssl=self._port == SSL_PORT)
 
     def _send(self, message):
         self._writer.write(

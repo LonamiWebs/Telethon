@@ -202,6 +202,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._request_retries = request_retries or sys.maxsize
         self._connection_retries = connection_retries or sys.maxsize
+        self._proxy = proxy
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
 
@@ -307,7 +308,9 @@ class TelegramBaseClient(abc.ABC):
         Connects to Telegram.
         """
         await self._sender.connect(self.session.auth_key, self._connection(
-            self.session.server_address, self.session.port, loop=self._loop))
+            self.session.server_address, self.session.port,
+            loop=self._loop, proxy=self._proxy
+        ))
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
@@ -419,7 +422,7 @@ class TelegramBaseClient(abc.ABC):
         # with no further clues.
         sender = MTProtoSender(self._loop)
         await sender.connect(None, self._connection(
-            dc.ip_address, dc.port, loop=self._loop))
+            dc.ip_address, dc.port, loop=self._loop, proxy=self._proxy))
         __log__.info('Exporting authorization for data center %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
         req = self._init_with(functions.auth.ImportAuthorizationRequest(
