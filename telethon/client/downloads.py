@@ -223,9 +223,9 @@ class DownloadMethods(UserMethods):
                 config = await self(functions.help.GetConfigRequest())
                 for option in config.dc_options:
                     if option.ip_address == self.session.server_address:
-                        self.session.set_dc(
+                        await self.session.set_dc(
                             option.id, option.ip_address, option.port)
-                        self.session.save()
+                        await self.session.save()
                         break
 
                 # TODO Figure out why the session may have the wrong DC ID

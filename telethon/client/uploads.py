@@ -174,7 +174,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, await self(request), entity)
-        self._cache_media(msg, file, file_handle, force_document=force_document)
+        await self._cache_media(msg, file, file_handle, force_document=force_document)
 
         return msg
 
@@ -211,7 +211,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     entity, media=types.InputMediaUploadedPhoto(fh)
                 ))
                 input_photo = utils.get_input_photo(r.photo)
-                self.session.cache_file(fh.md5, fh.size, input_photo)
+                await self.session.cache_file(fh.md5, fh.size, input_photo)
                 fh = input_photo
 
             if captions:
@@ -326,7 +326,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     file = stream.read()
             hash_md5.update(file)
             if use_cache:
-                cached = self.session.get_file(
+                cached = await self.session.get_file(
                     hash_md5.digest(), file_size, cls=use_cache
                 )
                 if cached:
@@ -446,7 +446,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             )
         return file_handle, media
 
-    def _cache_media(self, msg, file, file_handle,
+    async def _cache_media(self, msg, file, file_handle,
                      force_document=False):
         if file and msg and isinstance(file_handle,
                                        custom.InputSizedFile):
@@ -457,6 +457,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 to_cache = utils.get_input_photo(msg.media.photo)
             else:
                 to_cache = utils.get_input_document(msg.media.document)
-            self.session.cache_file(md5, size, to_cache)
+            await self.session.cache_file(md5, size, to_cache)
 
     # endregion

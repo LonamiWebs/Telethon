@@ -14,6 +14,7 @@ from ..network import MTProtoSender, ConnectionTcpFull
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
+from ..utils import AsyncClassWrapper
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -196,7 +197,7 @@ class TelegramBaseClient(abc.ABC):
             )
 
         self.flood_sleep_threshold = flood_sleep_threshold
-        self.session = session
+        self.session = AsyncClassWrapper(session)
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
@@ -327,8 +328,8 @@ class TelegramBaseClient(abc.ABC):
         await self._disconnect()
         if getattr(self, 'session', None):
             if getattr(self, '_state', None):
-                self.session.set_update_state(0, self._state)
-            self.session.close()
+                await self.session.set_update_state(0, self._state)
+            await self.session.close()
 
     async def _disconnect(self):
         """
@@ -366,22 +367,22 @@ class TelegramBaseClient(abc.ABC):
         __log__.info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
-        self.session.set_dc(dc.id, dc.ip_address, dc.port)
+        await self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = None
-        self.session.save()
+        await self.session.save()
         await self._disconnect()
         return await self.connect()
 
-    def _auth_key_callback(self, auth_key):
+    async def _auth_key_callback(self, auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
         self._authorized = None
         self.session.auth_key = auth_key
-        self.session.save()
+        await self.session.save()
 
     # endregion
 
@@ -469,8 +470,8 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = self.session.clone()
-            session.set_dc(dc.id, dc.ip_address, dc.port)
+            session = await self.session.clone()
+            await session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         __log__.info('Creating new CDN client')

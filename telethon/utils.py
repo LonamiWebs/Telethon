@@ -16,6 +16,7 @@ from types import GeneratorType
 from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate
 from .tl import types
+import inspect
 
 try:
     import hachoir
@@ -994,3 +995,21 @@ def get_appropriated_part_size(file_size):
         return 512
 
     raise ValueError('File size too large')
+
+
+class AsyncClassWrapper:
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+
+    def __getattr__(self, item):
+        w = getattr(self.wrapped, item)
+        async def wrapper(*args, **kwargs):
+            val = w(*args, **kwargs)
+            return await val if inspect.isawaitable(val) else val
+
+        if callable(w):
+            return wrapper
+        elif isinstance(w, property):
+            return w.fget(self.wrapped)
+        else:
+            return w

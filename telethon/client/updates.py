@@ -137,7 +137,7 @@ class UpdateMethods(UserMethods):
 
         This can also be used to forcibly fetch new updates if there are any.
         """
-        state = self.session.get_update_state(0)
+        state = await self.session.get_update_state(0)
         if not state or not state.pts:
             state = await self(functions.updates.GetStateRequest())
 
@@ -172,15 +172,15 @@ class UpdateMethods(UserMethods):
                         state.pts = d.pts
                     break
         finally:
-            self.session.set_update_state(0, state)
+            await self.session.set_update_state(0, state)
             self.session.catching_up = False
 
     # endregion
 
     # region Private methods
 
-    def _handle_update(self, update):
-        self.session.process_entities(update)
+    async def _handle_update(self, update):
+        await self.session.process_entities(update)
         if isinstance(update, (types.Updates, types.UpdatesCombined)):
             entities = {utils.get_peer_id(x): x for x in
                         itertools.chain(update.users, update.chats)}
@@ -236,7 +236,7 @@ class UpdateMethods(UserMethods):
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
-            self.session.save()
+            await self.session.save()
 
             # We need to send some content-related request at least hourly
             # for Telegram to keep delivering updates, otherwise they will
