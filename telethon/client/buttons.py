@@ -37,23 +37,12 @@ class ButtonMethods(UpdateMethods):
         for row in buttons:
             current = []
             for button in row:
+                if isinstance(button, custom.MessageButton):
+                    button = button.button
+
                 inline = custom.Button._is_inline(button)
                 is_inline |= inline
                 is_normal |= not inline
-                if isinstance(button, custom.Button):
-                    if button.callback:
-                        self.remove_event_handler(
-                            button.callback, events.CallbackQuery)
-
-                        self.add_event_handler(
-                            button.callback,
-                            events.CallbackQuery(data=getattr(
-                                button.button, 'data', None))
-                        )
-
-                    button = button.button
-                elif isinstance(button, custom.MessageButton):
-                    button = button.button
 
                 if button.SUBCLASS_OF_ID == 0xbad74a3:
                     # 0xbad74a3 == crc32(b'KeyboardButton')

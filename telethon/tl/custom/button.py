@@ -18,7 +18,7 @@ class Button:
 
     You should make use of the defined class methods to create button
     instances instead making them yourself (i.e. don't do ``Button(...)``
-    but instead use methods line `Button.inline(...) <inline>` etc.)
+    but instead use methods line `Button.inline(...) <inline>` etc.
 
     You can use `inline`, `switch_inline` and `url`
     together to create inline buttons (under the message).
@@ -34,35 +34,25 @@ class Button:
     to 128 characters and add the ellipsis (…) character as
     the 129.
     """
-    def __init__(self, button, callback=None):
-        self.button = button
-        self.callback = callback
-        self.is_inline = self._is_inline(button)
+    def __init__(self):
+        raise ValueError('Cannot create instances of this class; '
+                         'use the static methods')
 
-    @classmethod
-    def _is_inline(cls, button):
+    @staticmethod
+    def _is_inline(button):
         """
         Returns ``True`` if the button belongs to an inline keyboard.
         """
-        if isinstance(button, cls):
-            return button.is_inline
-        elif isinstance(button, MessageButton):
-            button = button.button
-
         return isinstance(button, (
             types.KeyboardButtonCallback,
             types.KeyboardButtonSwitchInline,
             types.KeyboardButtonUrl
         ))
 
-    @classmethod
-    def inline(cls, text, callback=None, data=None):
+    @staticmethod
+    def inline(text, data=None):
         """
         Creates a new inline button.
-
-        The `callback` parameter should be a function callback accepting
-        a single parameter (the triggered event on click) if specified.
-        Otherwise, you should register the event manually.
 
         If `data` is omitted, the given `text` will be used as `data`.
         In any case `data` should be either ``bytes`` or ``str``.
@@ -72,14 +62,16 @@ class Button:
         """
         if not data:
             data = text.encode('utf-8')
+        elif not isinstance(data, (bytes, bytearray, memoryview)):
+            data = str(data).encode('utf-8')
 
         if len(data) > 64:
             raise ValueError('Too many bytes for the data')
 
-        return cls(types.KeyboardButtonCallback(text, data), callback)
+        return types.KeyboardButtonCallback(text, data)
 
-    @classmethod
-    def switch_inline(cls, text, query='', same_peer=False):
+    @staticmethod
+    def switch_inline(text, query='', same_peer=False):
         """
         Creates a new button to switch to inline query.
 
@@ -90,50 +82,50 @@ class Button:
         set under the currently opened chat. Otherwise, the user will
         have to select a different dialog to make the query.
         """
-        return cls(types.KeyboardButtonSwitchInline(text, query, same_peer))
+        return types.KeyboardButtonSwitchInline(text, query, same_peer)
 
-    @classmethod
-    def url(cls, text, url=None):
+    @staticmethod
+    def url(text, url=None):
         """
         Creates a new button to open the desired URL upon clicking it.
 
         If no `url` is given, the `text` will be used as said URL instead.
         """
-        return cls(types.KeyboardButtonUrl(text, url or text))
+        return types.KeyboardButtonUrl(text, url or text)
 
-    @classmethod
-    def text(cls, text):
+    @staticmethod
+    def text(text):
         """
         Creates a new button with the given text.
         """
-        return cls(types.KeyboardButton(text))
+        return types.KeyboardButton(text)
 
-    @classmethod
-    def request_location(cls, text):
+    @staticmethod
+    def request_location(text):
         """
         Creates a new button that will request
         the user's location upon being clicked.
         """
-        return cls(types.KeyboardButtonRequestGeoLocation(text))
+        return types.KeyboardButtonRequestGeoLocation(text)
 
-    @classmethod
-    def request_phone(cls, text):
+    @staticmethod
+    def request_phone(text):
         """
         Creates a new button that will request
         the user's phone number upon being clicked.
         """
-        return cls(types.KeyboardButtonRequestPhone(text))
+        return types.KeyboardButtonRequestPhone(text)
 
-    @classmethod
-    def clear(cls):
+    @staticmethod
+    def clear():
         """
         Clears all the buttons. When used, no other
         button should be present or it will be ignored.
         """
         return types.ReplyKeyboardHide()
 
-    @classmethod
-    def force_reply(cls):
+    @staticmethod
+    def force_reply():
         """
         Forces a reply. If used, no other button
         should be present or it will be ignored.
