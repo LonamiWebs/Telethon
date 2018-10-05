@@ -270,7 +270,39 @@ def get_input_photo(photo):
     if isinstance(photo, types.PhotoEmpty):
         return types.InputPhotoEmpty()
 
+    if isinstance(photo, types.messages.ChatFull):
+        photo = photo.full_chat
+    if isinstance(photo, types.ChannelFull):
+        return get_input_photo(photo.chat_photo)
+    elif isinstance(photo, types.UserFull):
+        return get_input_photo(photo.profile_photo)
+    elif isinstance(photo, (types.Channel, types.Chat, types.User)):
+        return get_input_photo(photo.photo)
+
+    if isinstance(photo, (types.UserEmpty, types.ChatEmpty,
+                          types.ChatForbidden, types.ChannelForbidden)):
+        return types.InputPhotoEmpty()
+
     _raise_cast_fail(photo, 'InputPhoto')
+
+
+def get_input_chat_photo(photo):
+    """Similar to :meth:`get_input_peer`, but for chat photos"""
+    try:
+        if photo.SUBCLASS_OF_ID == 0xd4eb2d74:  # crc32(b'InputChatPhoto')
+            return photo
+        elif photo.SUBCLASS_OF_ID == 0xe7655f1f:  # crc32(b'InputFile'):
+            return types.InputChatUploadedPhoto(photo)
+    except AttributeError:
+        _raise_cast_fail(photo, 'InputChatPhoto')
+
+    photo = get_input_photo(photo)
+    if isinstance(photo, types.InputPhoto):
+        return types.InputChatPhoto(photo)
+    elif isinstance(photo, types.InputPhotoEmpty):
+        return types.InputChatPhotoEmpty()
+
+    _raise_cast_fail(photo, 'InputChatPhoto')
 
 
 def get_input_geo(geo):

@@ -25,7 +25,9 @@ AUTO_CASTS = {
     'InputNotifyPeer': 'await client._get_input_notify({})',
     'InputMedia': 'utils.get_input_media({})',
     'InputPhoto': 'utils.get_input_photo({})',
-    'InputMessage': 'utils.get_input_message({})'
+    'InputMessage': 'utils.get_input_message({})',
+    'InputDocument': 'utils.get_input_document({})',
+    'InputChatPhoto': 'utils.get_input_chat_photo({})',
 }
 
 NAMED_AUTO_CASTS = {
