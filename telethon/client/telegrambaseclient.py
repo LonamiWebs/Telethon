@@ -65,11 +65,11 @@ class TelegramBaseClient(abc.ABC):
             A tuple consisting of ``(socks.SOCKS5, 'host', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
-        timeout (`int` | `float` | `timedelta`, optional):
-            The timeout to be used when connecting, sending and receiving
-            responses from the network. This is **not** the timeout to
-            be used when ``await``'ing for invoked requests, and you
-            should use ``asyncio.wait`` or ``asyncio.wait_for`` for that.
+        timeout (`int` | `float`, optional):
+            The timeout in seconds to be used when connecting.
+            This is **not** the timeout to be used when ``await``'ing for
+            invoked requests, and you should use ``asyncio.wait`` or
+            ``asyncio.wait_for`` for that.
 
         request_retries (`int`, optional):
             How many times a request should be retried. Request are retried
@@ -147,7 +147,7 @@ class TelegramBaseClient(abc.ABC):
                  connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
-                 timeout=timedelta(seconds=10),
+                 timeout=10,
                  request_retries=5,
                  connection_retries=5,
                  auto_reconnect=True,
@@ -247,10 +247,6 @@ class TelegramBaseClient(abc.ABC):
 
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
-
-        # Default PingRequest delay
-        self._last_ping = datetime.now()
-        self._ping_delay = timedelta(minutes=1)
 
         self._updates_handle = None
         self._last_request = time.time()
