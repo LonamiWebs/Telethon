@@ -979,13 +979,13 @@ class AsyncClassWrapper:
 
     def __getattr__(self, item):
         w = getattr(self.wrapped, item)
-        async def wrapper(*args,**kwargs):
+        async def wrapper(*args, **kwargs):
             val = w(*args, **kwargs)
             return await val if inspect.isawaitable(val) else val
 
-        if inspect.isfunction(w) or inspect.ismethod(w):
+        if callable(w):
             return wrapper
-        elif isinstance(w,property):
+        elif isinstance(w, property):
             return w.fget(self.wrapped)
         else:
             return w
