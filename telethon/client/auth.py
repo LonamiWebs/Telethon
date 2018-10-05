@@ -85,7 +85,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
         """
         if code_callback is None:
             def code_callback():
-                return input('Please enter the code you received: ')
+                code = input('Please enter the code you received: ')
+                if code == '':
+                    code = 1
+                return code
         elif not callable(code_callback):
             raise ValueError(
                 'The code_callback parameter needs to be a callable '
