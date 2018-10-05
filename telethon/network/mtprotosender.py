@@ -6,6 +6,7 @@ from . import authenticator
 from .mtprotolayer import MTProtoLayer
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
+from ..tl.tlobject import TLRequest
 from .. import utils
 from ..errors import (
     BadMessageError, BrokenAuthKeyError, SecurityError, TypeNotFoundError,
@@ -122,11 +123,7 @@ class MTProtoSender:
         Cleanly disconnects the instance from the network, cancels
         all pending requests, and closes the send and receive loops.
         """
-        if not self._user_connected:
-            __log__.info('User is already disconnected!')
-            return
-
-        await self._disconnect()
+        self._disconnect()
 
     def send(self, request, ordered=False):
         """
@@ -215,7 +212,6 @@ class MTProtoSender:
                     state.auth_key, state.time_offset =\
                         await authenticator.do_authentication(plain)
 
-                    # TODO This callback feels out of place
                     if self._auth_key_callback:
                         self._auth_key_callback(state.auth_key)
 
@@ -240,7 +236,7 @@ class MTProtoSender:
             self._disconnected = self._loop.create_future()
         __log__.info('Connection to %s complete!', self._connection)
 
-    async def _disconnect(self, error=None):
+    def _disconnect(self, error=None):
         __log__.info('Disconnecting from %s...', self._connection)
         self._user_connected = False
         try:
@@ -307,7 +303,6 @@ class MTProtoSender:
                 self._send_queue.extend(self._pending_state.values())
                 self._pending_state.clear()
 
-                # TODO Where is this needed?
                 if self._auto_reconnect_callback:
                     self._loop.create_task(self._auto_reconnect_callback())
 
@@ -343,15 +338,20 @@ class MTProtoSender:
             if state_list is None:
                 break
 
-            # TODO Try sending them while no future was cancelled?
-            # TODO Handle cancelled?, arbitrary errors
-            await self._connection.send(state_list)
+            try:
+                await self._connection.send(state_list)
+            except Exception:
+                __log__.exception('Unhandled error while sending data')
+                continue
+
             for state in state_list:
                 if not isinstance(state, list):
-                    self._pending_state[state.msg_id] = state
+                    if isinstance(state.request, TLRequest):
+                        self._pending_state[state.msg_id] = state
                 else:
                     for s in state:
-                        self._pending_state[s.msg_id] = s
+                        if isinstance(s.request, TLRequest):
+                            self._pending_state[s.msg_id] = s
 
     async def _recv_loop(self):
         """
@@ -387,10 +387,7 @@ class MTProtoSender:
                 self._start_reconnect()
                 return
             except asyncio.IncompleteReadError:
-                # TODO Handle packets that are too big and trigger this
-                # If it's not a packet that triggered this, just reconnect
                 __log__.info('Telegram closed the connection')
-                self._pending_state.clear()
                 self._start_reconnect()
                 return
             except Exception:
