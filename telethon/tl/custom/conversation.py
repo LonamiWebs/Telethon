@@ -260,10 +260,7 @@ class Conversation(ChatGetter):
         if isinstance(event, type):
             event = event()
 
-        # Since we await resolve here we don't need to await resolved.
-        # We know it has already been resolved, unlike when normally
-        # adding an event handler, for which a task is created to resolve.
-        await event.resolve()
+        await event.resolve(self._client)
 
         counter = Conversation._custom_counter
         Conversation._custom_counter += 1
