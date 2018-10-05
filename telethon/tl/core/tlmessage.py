@@ -22,6 +22,8 @@ class TLMessage(TLObject):
     inlined and is unlikely to change. Thus these are only needed to
     encapsulate responses.
     """
+    SIZE_OVERHEAD = 12
+
     def __init__(self, msg_id, seq_no, obj):
         self.msg_id = msg_id
         self.seq_no = seq_no
