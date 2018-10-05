@@ -1,6 +1,5 @@
 import abc
 import asyncio
-import collections
 import inspect
 import logging
 import platform
@@ -12,7 +11,6 @@ from .. import version
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
-from ..network.mtprotostate import MTProtoState
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
@@ -55,7 +53,7 @@ class TelegramBaseClient(abc.ABC):
 
         connection (`telethon.network.connection.common.Connection`, optional):
             The connection instance to be used when creating a new connection
-            to the servers. If it's a type, the `proxy` argument will be used.
+            to the servers. It **must** be a type.
 
             Defaults to `telethon.network.connection.tcpfull.ConnectionTcpFull`.
 
@@ -68,11 +66,11 @@ class TelegramBaseClient(abc.ABC):
             A tuple consisting of ``(socks.SOCKS5, 'host', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
-        timeout (`int` | `float` | `timedelta`, optional):
-            The timeout to be used when connecting, sending and receiving
-            responses from the network. This is **not** the timeout to
-            be used when ``await``'ing for invoked requests, and you
-            should use ``asyncio.wait`` or ``asyncio.wait_for`` for that.
+        timeout (`int` | `float`, optional):
+            The timeout in seconds to be used when connecting.
+            This is **not** the timeout to be used when ``await``'ing for
+            invoked requests, and you should use ``asyncio.wait`` or
+            ``asyncio.wait_for`` for that.
 
         request_retries (`int`, optional):
             How many times a request should be retried. Request are retried
@@ -150,7 +148,7 @@ class TelegramBaseClient(abc.ABC):
                  connection=ConnectionTcpFull,
                  use_ipv6=False,
                  proxy=None,
-                 timeout=timedelta(seconds=10),
+                 timeout=10,
                  request_retries=5,
                  connection_retries=5,
                  auto_reconnect=True,
@@ -205,11 +203,12 @@ class TelegramBaseClient(abc.ABC):
 
         self._request_retries = request_retries or sys.maxsize
         self._connection_retries = connection_retries or sys.maxsize
+        self._proxy = proxy
+        self._timeout = timeout
         self._auto_reconnect = auto_reconnect
 
-        if isinstance(connection, type):
-            connection = connection(
-                proxy=proxy, timeout=timeout, loop=self._loop)
+        assert isinstance(connection, type)
+        self._connection = connection
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -227,12 +226,12 @@ class TelegramBaseClient(abc.ABC):
             )
         )
 
-        state = MTProtoState(self.session.auth_key)
         self._connection = connection
         self._sender = MTProtoSender(
-            state, connection, self._loop,
+            self._loop,
             retries=self._connection_retries,
             auto_reconnect=self._auto_reconnect,
+            connect_timeout=self._timeout,
             update_callback=self._handle_update,
             auth_key_callback=self._auth_key_callback,
             auto_reconnect_callback=self._handle_auto_reconnect
@@ -249,10 +248,6 @@ class TelegramBaseClient(abc.ABC):
 
         # Save whether the user is authorized here (a.k.a. logged in)
         self._authorized = None  # None = We don't know yet
-
-        # Default PingRequest delay
-        self._last_ping = datetime.now()
-        self._ping_delay = timedelta(minutes=1)
 
         self._updates_handle = None
         self._last_request = time.time()
@@ -309,8 +304,10 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
         """
-        await self._sender.connect(
-            self.session.server_address, self.session.port)
+        await self._sender.connect(self.session.auth_key, self._connection(
+            self.session.server_address, self.session.port,
+            loop=self._loop, proxy=self._proxy
+        ))
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
@@ -373,7 +370,7 @@ class TelegramBaseClient(abc.ABC):
         await self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
-        self.session.auth_key = self._sender.state.auth_key = None
+        self.session.auth_key = None
         await self.session.save()
         await self._disconnect()
         return await self.connect()
@@ -416,13 +413,13 @@ class TelegramBaseClient(abc.ABC):
         # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
         # for clearly showing how to export the authorization
         dc = await self._get_dc(dc_id)
-        state = MTProtoState(None)
         # Can't reuse self._sender._connection as it has its own seqno.
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(state, self._connection.clone(), self._loop)
-        await sender.connect(dc.ip_address, dc.port)
+        sender = MTProtoSender(self._loop)
+        await sender.connect(None, self._connection(
+            dc.ip_address, dc.port, loop=self._loop, proxy=self._proxy))
         __log__.info('Exporting authorization for data center %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
         req = self._init_with(functions.auth.ImportAuthorizationRequest(

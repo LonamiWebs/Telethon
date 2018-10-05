@@ -3,9 +3,10 @@ import datetime
 from .. import TLObject
 from ..functions.messages import SaveDraftRequest
 from ..types import UpdateDraftMessage, DraftMessage
+from ... import default
 from ...errors import RPCError
 from ...extensions import markdown
-from ...utils import Default, get_peer_id, get_input_peer
+from ...utils import get_peer_id, get_input_peer
 
 
 class Draft:
@@ -116,7 +117,7 @@ class Draft:
         return not self._text
 
     async def set_message(
-            self, text=None, reply_to=0, parse_mode=Default,
+            self, text=None, reply_to=0, parse_mode=default,
             link_preview=None):
         """
         Changes the draft message on the Telegram servers. The changes are
@@ -163,7 +164,7 @@ class Draft:
 
         return result
 
-    async def send(self, clear=True, parse_mode=Default):
+    async def send(self, clear=True, parse_mode=default):
         """
         Sends the contents of this draft to the dialog. This is just a
         wrapper around ``send_message(dialog.input_entity, *args, **kwargs)``.

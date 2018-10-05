@@ -9,8 +9,8 @@ from ..helpers import add_surrogate, del_surrogate
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityTextUrl
-)
+    MessageEntityPre, MessageEntityTextUrl, MessageEntityMentionName
+    )
 
 DEFAULT_DELIMITERS = {
     '**': MessageEntityBold,
@@ -161,11 +161,17 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
         delimiter = delimiters.get(type(entity), None)
         if delimiter:
             text = text[:s] + delimiter + text[s:e] + delimiter + text[e:]
-        elif isinstance(entity, MessageEntityTextUrl) and url_fmt:
-            text = (
-                text[:s] +
-                add_surrogate(url_fmt.format(text[s:e], entity.url)) +
-                text[e:]
-            )
+        elif url_fmt:
+            url = None
+            if isinstance(entity, MessageEntityTextUrl):
+                url = entity.url
+            elif isinstance(entity, MessageEntityMentionName):
+                url = 'tg://user?id={}'.format(entity.user_id)
+            if url:
+                text = (
+                    text[:s] +
+                    add_surrogate(url_fmt.format(text[s:e], url)) +
+                    text[e:]
+                )
 
     return del_surrogate(text)

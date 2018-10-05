@@ -1,62 +1,34 @@
-import errno
-import ssl
+import asyncio
 
-from .common import Connection
-from ...extensions import TcpClient
+from .connection import Connection
+
+
+SSL_PORT = 443
 
 
 class ConnectionHttp(Connection):
-    def __init__(self, *, loop, timeout, proxy=None):
-        super().__init__(loop=loop, timeout=timeout, proxy=proxy)
-        self.conn = TcpClient(
-            timeout=self._timeout, loop=self._loop, proxy=self._proxy,
-            ssl=dict(ssl_version=ssl.PROTOCOL_SSLv23, ciphers='ADH-AES256-SHA')
-        )
-        self.read = self.conn.read
-        self.write = self.conn.write
-        self._host = None
+    async def connect(self, timeout=None, ssl=None):
+        await super().connect(timeout=timeout, ssl=self._port == SSL_PORT)
 
-    async def connect(self, ip, port):
-        self._host = '{}:{}'.format(ip, port)
-        try:
-            await self.conn.connect(ip, port)
-        except OSError as e:
-            if e.errno == errno.EISCONN:
-                return  # Already connected, no need to re-set everything up
-            else:
-                raise
-
-    def get_timeout(self):
-        return self.conn.timeout
-
-    def is_connected(self):
-        return self.conn.is_connected
-
-    async def close(self):
-        self.conn.close()
-
-    async def recv(self):
-        while True:
-            line = await self._read_line()
-            if line.lower().startswith(b'content-length: '):
-                await self.read(2)
-                length = int(line[16:-2])
-                return await self.read(length)
-
-    async def _read_line(self):
-        newline = ord('\n')
-        line = await self.read(1)
-        while line[-1] != newline:
-            line += await self.read(1)
-        return line
-
-    async def send(self, message):
-        await self.write(
+    def _send(self, message):
+        self._writer.write(
             'POST /api HTTP/1.1\r\n'
-            'Host: {}\r\n'
+            'Host: {}:{}\r\n'
             'Content-Type: application/x-www-form-urlencoded\r\n'
             'Connection: keep-alive\r\n'
             'Keep-Alive: timeout=100000, max=10000000\r\n'
-            'Content-Length: {}\r\n\r\n'.format(self._host, len(message))
+            'Content-Length: {}\r\n\r\n'
+            .format(self._ip, self._port, len(message))
             .encode('ascii') + message
         )
+
+    async def _recv(self):
+        while True:
+            line = await self._reader.readline()
+            if not line or line[-1] != b'\n':
+                raise asyncio.IncompleteReadError(line, None)
+
+            if line.lower().startswith(b'content-length: '):
+                await self._reader.readexactly(2)
+                length = int(line[16:-2])
+                return await self._reader.readexactly(length)

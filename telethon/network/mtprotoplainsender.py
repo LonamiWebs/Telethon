@@ -30,7 +30,7 @@ class MTProtoPlainSender:
         body = bytes(request)
         msg_id = self._state._get_new_msg_id()
         await self._connection.send(
-            struct.pack('<QQi', 0, msg_id, len(body)) + body
+            struct.pack('<qqi', 0, msg_id, len(body)) + body
         )
 
         body = await self._connection.recv()
