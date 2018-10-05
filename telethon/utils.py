@@ -45,14 +45,6 @@ VALID_USERNAME_RE = re.compile(
 )
 
 
-class Default:
-    """
-    Sentinel value to indicate that the default value should be used.
-    Currently used for the ``parse_mode``, where a ``None`` mode should
-    be considered different from using the default.
-    """
-
-
 def chunks(iterable, size=100):
     """
     Turns the given iterable into chunks of the specified size,

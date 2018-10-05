@@ -2,8 +2,8 @@ import itertools
 import re
 
 from .users import UserMethods
-from .. import utils
-from ..tl import types, custom
+from .. import default, utils
+from ..tl import types
 
 
 class MessageParseMethods(UserMethods):
@@ -62,7 +62,7 @@ class MessageParseMethods(UserMethods):
         """
         Returns a (parsed message, entities) tuple depending on ``parse_mode``.
         """
-        if parse_mode == utils.Default:
+        if parse_mode == default:
             parse_mode = self._parse_mode
         else:
             parse_mode = utils.sanitize_parse_mode(parse_mode)

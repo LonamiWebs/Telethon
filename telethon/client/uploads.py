@@ -5,11 +5,11 @@ import os
 import pathlib
 import re
 from io import BytesIO
-from mimetypes import guess_type
 
+from .buttons import ButtonMethods
 from .messageparse import MessageParseMethods
 from .users import UserMethods
-from .buttons import ButtonMethods
+from .. import default
 from .. import utils, helpers
 from ..tl import types, functions, custom
 
@@ -23,7 +23,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     async def send_file(
             self, entity, file, *, caption='', force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
-            thumb=None, allow_cache=True, parse_mode=utils.Default,
+            thumb=None, allow_cache=True, parse_mode=default,
             voice_note=False, video_note=False, buttons=None, silent=None,
             **kwargs):
         """
@@ -180,7 +180,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     async def _send_album(self, entity, files, caption='',
                     progress_callback=None, reply_to=None,
-                    parse_mode=utils.Default, silent=None):
+                    parse_mode=default, silent=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing

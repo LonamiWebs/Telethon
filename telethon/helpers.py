@@ -1,6 +1,5 @@
 """Various helpers not related to the Telegram API itself"""
 import asyncio
-import collections
 import os
 import struct
 from hashlib import sha1, sha256
