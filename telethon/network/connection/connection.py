@@ -71,9 +71,8 @@ class Connection(abc.ABC):
                 )
                 self._socket.setblocking(False)
 
-            self._reader, self._writer = await asyncio.open_connection(
-                self._ip, self._port, loop=self._loop, sock=s
-            )
+            self._reader, self._writer = \
+                await asyncio.open_connection(sock=s, loop=self._loop)
 
         self._disconnected.clear()
         self._disconnected_future = None
