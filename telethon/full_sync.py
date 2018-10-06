@@ -13,6 +13,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 
 from async_generator import isasyncgenfunction
 
+from . import events
 from .client.telegramclient import TelegramClient
 from .tl.custom import (
     Draft, Dialog, MessageButton, Forward, Message, InlineResult, Conversation
@@ -113,8 +114,13 @@ def enable(*, loop=None, executor=None, max_workers=1):
         TelegramClient.__init__, loop=loop
     )
 
+    event_cls = filter(None, (
+        getattr(getattr(events, name), 'Event', None)
+        for name in dir(events)
+    ))
     _syncify(TelegramClient, Draft, Dialog, MessageButton, ChatGetter,
              SenderGetter, Forward, Message, InlineResult, Conversation,
+             *event_cls,
              loop=loop, thread_ident=__asyncthread.ident)
     _syncify_wrap(TelegramClient, "start", loop, __asyncthread.ident)
 
