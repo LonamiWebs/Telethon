@@ -5,6 +5,40 @@ Users, Chats and Channels
 =========================
 
 
+.. important::
+
+    TL;DR; If you're here because of *"Could not find the input entity for"*,
+    you must ask yourself "how did I find this entity through official
+    applications"? Now do the same with the library. Use what applies:
+
+    .. code-block:: python
+
+        with client:
+            # Does it have an username? Use it!
+            entity = client.get_entity(username)
+
+            # Do you have a conversation open with them? Get dialogs.
+            client.get_dialogs()
+
+            # Are they participant of some group? Get them.
+            client.get_participants('TelethonChat')
+
+            # Is the entity the original sender of a forwarded message? Get it.
+            client.get_messages('TelethonChat', 100)
+
+            # NOW you can use the ID, anywhere!
+            entity = client.get_entity(123456)
+            client.send_message(123456, 'Hi!')
+
+    Once the library has "seen" the entity, you can use their **integer** ID.
+    You can't use entities from IDs the library hasn't seen. You must make the
+    library see them *at least once* and disconnect properly. You know where
+    the entities are and you must tell the library. It won't guess for you.
+
+
+.. contents::
+
+
 Introduction
 ************
 

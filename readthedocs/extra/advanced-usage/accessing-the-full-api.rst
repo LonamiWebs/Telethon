@@ -29,9 +29,9 @@ can go through a sorted list of everything you can do.
 .. important::
 
     All the examples in this documentation assume that you have
-    ``from telethon import sync`` or ``import telethon.sync``
-    for the sake of simplicity and that you understand what
-    it does (see :ref:`asyncio-magic` for more). Simply add
+    ``from telethon import sync`` or ``import telethon.sync`` for the
+    sake of simplicity and that you understand what it does (see
+    :ref:`compatibility-and-convenience` for more). Simply add
     either line at the beginning of your project and it will work.
 
 
@@ -108,10 +108,9 @@ every time its used, simply call `telethon.utils.get_input_peer`:
 .. note::
 
     Since ``v0.16.2`` this is further simplified. The ``Request`` itself
-    will call `client.get_input_entity <
-    telethon.client.users.UserMethods.get_input_entity>` for you when required,
-    but it's good to remember what's happening.
-
+    will call `client.get_input_entity
+    <telethon.client.users.UserMethods.get_input_entity>` for you when
+    required, but it's good to remember what's happening.
 
 After this small parenthesis about `client.get_entity
 <telethon.client.users.UserMethods.get_entity>` versus

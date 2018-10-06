@@ -15,25 +15,10 @@ or use the menu on the left. Remember to read the :ref:`changelog`
 when you upgrade!
 
 .. important::
-    If you're new here, you want to read :ref:`getting-started`. If you're
-    looking for the method reference, you should check :ref:`telethon-client`.
 
-    The mentioned :ref:`telethon-client` is an important section and it
-    contains the friendly methods that **you should use** most of the time.
-
-
-.. note::
-    The library uses `asyncio <https://docs.python.org/3/library/asyncio.html>`_
-    under the hood, but you don't need to know anything about it unless you're
-    going to work with updates! If you're a user of Telethon pre-1.0 and you
-    aren't ready to convert your event handlers into ``async``, you can use
-    `a simpler version <https://github.com/LonamiWebs/Telethon/tree/sync>`_
-    (select the "sync" version in ``readthedocs``' bottom left corner).
-
-    If you used Telethon pre-1.0 but your scripts don't use updates or threads,
-    running ``import telethon.sync`` should make them Just Work. Otherwise,
-    we have :ref:`asyncio-magic` to teach you why ``asyncio`` is good and
-    how to use it.
+    * Are you new here? Jump straight into :ref:`getting-started`!
+    * Looking for available friendly methods? See :ref:`telethon-client`.
+    * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
 
 
 What is this?
@@ -56,8 +41,8 @@ heavy job for you, so you can focus on developing an application.
    extra/basic/creating-a-client
    extra/basic/telegram-client
    extra/basic/entities
-   extra/basic/asyncio-magic
    extra/basic/working-with-updates
+   extra/basic/compatibility-and-convenience
 
 
 .. _Advanced-usage:
@@ -70,6 +55,7 @@ heavy job for you, so you can focus on developing an application.
    extra/advanced-usage/sessions
    extra/advanced-usage/update-modes
    extra/advanced-usage/mastering-telethon
+   extra/advanced-usage/mastering-asyncio
 
 
 .. _Examples:

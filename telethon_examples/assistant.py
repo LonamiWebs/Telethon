@@ -108,6 +108,7 @@ LEARN_PYTHON = (
     "• [Official Docs](https://docs.python.org/3/tutorial/index.html).\n"
     "• [Dive Into Python 3](http://www.diveintopython3.net/).\n"
     "• [Learn Python](https://www.learnpython.org/).\n"
+    "• [Project Python](http://projectpython.net/).\n"
     "• [Computer Science Circles](https://cscircles.cemc.uwaterloo.ca/).\n"
     "• [MIT OpenCourse](https://ocw.mit.edu/courses/electrical-engineering-"
     "and-computer-science/6-0001-introduction-to-computer-science-and-progr"

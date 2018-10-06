@@ -71,6 +71,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 Optional JPEG thumbnail (for documents). **Telegram will
                 ignore this parameter** unless you pass a ``.jpg`` file!
 
+                The file must also be small in dimensions and in-disk size.
+                Successful thumbnails were files below 20kb and 200x200px.
+                Width/height and dimensions/size ratios may be important.
+
             allow_cache (`bool`, optional):
                 Whether to allow using the cached version stored in the
                 database or not. Defaults to ``True`` to avoid re-uploads.
@@ -94,8 +98,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 Set `allow_cache` to ``False`` if you sent the same file
                 without this setting before for it to work.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
-            :tl:`KeyboardButton`):
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own

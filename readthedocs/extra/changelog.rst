@@ -453,11 +453,8 @@ Synchronous magic (v1.0)
 .. important::
 
     If you come from Telethon pre-1.0 you **really** want to read
-    :ref:`asyncio-magic` to port your scripts to the new version.
-
-    If you're not ready for this, you can ``pip install telethon-sync``.
-    It's a synchronous branch that mimics the ``asyncio`` version with
-    threads and should work under Python 3.4
+    :ref:`compatibility-and-convenience` to port your scripts to
+    the new version.
 
 The library has been around for well over a year. A lot of improvements have
 been made, a lot of user complaints have been fixed, and a lot of user desires

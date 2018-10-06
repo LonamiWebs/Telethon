@@ -7,6 +7,8 @@ Bots
 
     These examples assume you have read :ref:`accessing-the-full-api`.
 
+.. contents::
+
 
 Talking to Inline Bots
 **********************

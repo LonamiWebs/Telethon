@@ -4,6 +4,8 @@
 Installation
 ============
 
+.. contents::
+
 
 Automatic Installation
 **********************

@@ -6,14 +6,9 @@ Working with Updates
 
 .. important::
 
-    Make sure you have read at least the first part of :ref:`asyncio-magic`
-    before working with updates. **This is a big change from Telethon pre-1.0
-    and 1.0, and your old handlers won't work with this version**.
-
-    To port your code to the new version, you should just prefix all your
-    event handlers with ``async`` and ``await`` everything that makes an
-    API call, such as replying, deleting messages, etc.
-
+    Coming from Telethon before it reached its version 1.0?
+    Make sure to read :ref:`compatibility-and-convenience`!
+    Otherwise, you can ignore this note and just follow along.
 
 The library comes with the `telethon.events` module. *Events* are an abstraction
 over what Telegram calls `updates`__, and are meant to ease simple and common

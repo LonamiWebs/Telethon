@@ -4,10 +4,6 @@
 TelegramClient
 ==============
 
-
-Introduction
-************
-
 .. note::
 
     Make sure to use the friendly methods described in :ref:`telethon-client`!

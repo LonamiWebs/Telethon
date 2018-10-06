@@ -33,6 +33,9 @@ mimetypes.add_type('audio/ogg', '.ogg')
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
+TG_JOIN_RE = re.compile(
+    r'tg://(join)?invite='
+)
 
 # The only shorter-than-five-characters usernames are those used for some
 # special, very well known bots. This list may be incomplete though:
@@ -646,15 +649,16 @@ def parse_phone(phone):
 
 
 def parse_username(username):
-    """Parses the given username or channel access hash, given
-       a string, username or URL. Returns a tuple consisting of
-       both the stripped, lowercase username and whether it is
-       a joinchat/ hash (in which case is not lowercase'd).
+    """
+    Parses the given username or channel access hash, given
+    a string, username or URL. Returns a tuple consisting of
+    both the stripped, lowercase username and whether it is
+    a joinchat/ hash (in which case is not lowercase'd).
 
-       Returns ``None`` if the ``username`` is not valid.
+    Returns ``(None, False)`` if the ``username`` or link is not valid.
     """
     username = username.strip()
-    m = USERNAME_RE.match(username)
+    m = USERNAME_RE.match(username) or TG_JOIN_RE.match(username)
     if m:
         username = username[m.end():]
         is_invite = bool(m.group(1))

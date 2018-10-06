@@ -28,7 +28,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             reverse=False, _total=None):
         """
         Iterator over the message history for the specified entity.
-
         If either `search`, `filter` or `from_user` are provided,
         :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
@@ -48,6 +47,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Number of messages to be retrieved. Due to limitations with
                 the API retrieving more than 3000 messages will take longer
                 than half a minute (or even more based on previous calls).
+
                 The limit may also be ``None``, which would eventually return
                 the whole history.
 
@@ -411,8 +411,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Whether the existing draft should be cleared or not.
                 Has no effect when sending a file.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
-            :tl:`KeyboardButton`):
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
@@ -616,8 +615,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 The file object that should replace the existing media
                 in the message.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`,
-            :tl:`KeyboardButton`):
+            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own

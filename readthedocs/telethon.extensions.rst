@@ -25,11 +25,3 @@ telethon\.extensions\.html module
     :members:
     :undoc-members:
     :show-inheritance:
-
-telethon\.extensions\.tcpclient module
---------------------------------------
-
-.. automodule:: telethon.extensions.tcpclient
-    :members:
-    :undoc-members:
-    :show-inheritance:

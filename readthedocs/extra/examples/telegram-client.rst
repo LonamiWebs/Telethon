@@ -60,6 +60,7 @@ the ``telethon.sync`` package and that you have a client ready to use.
 
 .. contents::
 
+
 Authorization
 *************
 

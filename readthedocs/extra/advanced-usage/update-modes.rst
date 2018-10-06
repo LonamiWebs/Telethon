@@ -27,7 +27,6 @@ Behind the scenes, this method is ``await``'ing on the `client.disconnected
 <telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>` property,
 so the code above and the following are equivalent:
 
-
 .. code-block:: python
 
     import asyncio
@@ -63,3 +62,12 @@ also be ran while the loop is running, so you can do this:
         await client.run_until_disconnected()
 
     loop.run_until_complete(main())
+
+
+If you need to process updates sequentially (i.e. not in parallel),
+you should set ``sequential_updates=True`` when creating the client:
+
+.. code-block:: python
+
+    with TelegramClient(..., sequential_updates=True) as client:
+        ...

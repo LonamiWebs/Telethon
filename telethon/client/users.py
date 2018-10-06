@@ -304,7 +304,7 @@ class UserMethods(TelegramBaseClient):
             return utils.get_input_peer(peer)
 
         raise ValueError(
-            'Could not find the input entity for "{}". Please read https://'
+            'Could not find the input entity for {!r}. Please read https://'
             'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
             ' find out more details.'
             .format(peer)

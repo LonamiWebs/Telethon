@@ -7,6 +7,8 @@ Users
 
     These examples assume you have read :ref:`accessing-the-full-api`.
 
+.. contents::
+
 
 Retrieving full information
 ***************************

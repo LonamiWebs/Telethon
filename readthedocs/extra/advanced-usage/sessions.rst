@@ -4,6 +4,11 @@
 Session Files
 ==============
 
+.. contents::
+
+What are sessions?
+******************
+
 The first parameter you pass to the constructor of the
 :ref:`TelegramClient <telethon-client>` is
 the ``session``, and defaults to be the session name (or full path). That is,
