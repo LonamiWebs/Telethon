@@ -154,7 +154,7 @@ class UpdateMethods(UserMethods):
                     else:
                         state = d.intermediate_state
 
-                    self._handle_update(types.Updates(
+                    await self._handle_update(types.Updates(
                         users=d.users,
                         chats=d.chats,
                         date=state.date,
@@ -186,9 +186,9 @@ class UpdateMethods(UserMethods):
                         itertools.chain(update.users, update.chats)}
             for u in update.updates:
                 u._entities = entities
-                self._handle_update(u)
+                await self._handle_update(u)
         elif isinstance(update, types.UpdateShort):
-            self._handle_update(update.update)
+            await self._handle_update(update.update)
         else:
             update._entities = getattr(update, '_entities', {})
             if self._updates_queue is None:

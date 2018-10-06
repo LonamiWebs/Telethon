@@ -504,7 +504,7 @@ class MTProtoSender:
         __log__.debug('Handling update {}'
                       .format(message.obj.__class__.__name__))
         if self._update_callback:
-            self._update_callback(message.obj)
+            await self._update_callback(message.obj)
 
     async def _handle_pong(self, message):
         """
