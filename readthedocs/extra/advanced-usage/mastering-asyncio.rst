@@ -248,6 +248,39 @@ It just means you didn't create a loop for that thread, and if you don't
 pass a loop when creating the client, it uses ``asyncio.get_event_loop()``,
 which only works in the main thread.
 
+
+client.run_until_disconnected() blocks!
+***************************************
+
+All of what `client.run_until_disconnected()
+<telethon.client.updates.UpdateMethods.run_until_disconnected>` does is
+run the asyncio_'s event loop until the client is disconnected. That means
+*the loop is running*. And if the loop is running, it will run all the tasks
+in it. So if you want to run *other* code, create tasks for it:
+
+.. code-block:: python
+
+    from datetime import datetime
+
+    async def clock():
+        while True:
+            print('The time:', datetime.now())
+            await asyncio.sleep(1)
+
+    loop.create_task(clock())
+    ...
+    client.run_until_disconnected()
+
+This creates a task for a clock that prints the time every second.
+You don't need to use `client.run_until_disconnected()
+<telethon.client.updates.UpdateMethods.run_until_disconnected>` either!
+You just need to make the loop is running, somehow. ``asyncio.run_forever``
+and ``asyncio.run_until_complete`` can also be used to run the loop, and
+Telethon will be happy with any approach.
+
+Of course, there are better tools to run code hourly or daily, see below.
+
+
 What else can asyncio do?
 *************************
 
@@ -255,12 +288,12 @@ Asynchronous IO is a really powerful tool, as we've seen. There are plenty
 of other useful libraries that also use asyncio_ and that you can integrate
 with Telethon.
 
-* `aiocron <https://github.com/gawel/aiocron>`_ lets you schedule
-  things to run things at a desired time, or run some tasks daily.
 * `aiohttp <https://github.com/aio-libs/aiohttp>`_ is like the infamous
   `requests <https://github.com/requests/requests/>`_ but asynchronous.
 * `quart <https://gitlab.com/pgjones/quart>`_ is an asynchronous alternative
-   to `Flask <http://flask.pocoo.org/>`_.
+  to `Flask <http://flask.pocoo.org/>`_.
+* `aiocron <https://github.com/gawel/aiocron>`_ lets you schedule things
+  to run things at a desired time, or run some tasks hourly, daily, etc.
 
 And of course, `asyncio <https://docs.python.org/3/library/asyncio.html>`_
 itself! It has a lot of methods that let you do nice things. For example,
@@ -293,6 +326,16 @@ A different way would be:
     loop.create_task(client.download_profile_photo('TelethonChat'))
 
 They will run in the background as long as the loop is running too.
+
+You can also `start an asyncio server
+<https://docs.python.org/3/library/asyncio-stream.html#asyncio.start_server>`_
+in the main script, and from another script, `connect to it
+<https://docs.python.org/3/library/asyncio-stream.html#asyncio.open_connection>`_
+to achieve `Inter-Process Communication
+<https://en.wikipedia.org/wiki/Inter-process_communication>`_.
+You can get as creative as you want. You can program anything you want.
+When you use a library, you're not limited to use only its methods. You can
+combine all the libraries you want. People seem to forget this simple fact!
 
 
 Why does client.start() work outside async?
