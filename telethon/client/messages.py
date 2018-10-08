@@ -8,7 +8,7 @@ from async_generator import async_generator, yield_
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .buttons import ButtonMethods
-from .. import default, helpers, utils
+from .. import helpers, utils
 from ..tl import types, functions
 
 __log__ = logging.getLogger(__name__)
@@ -360,7 +360,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def send_message(
             self, entity, message='', *, reply_to=None,
-            parse_mode=default, link_preview=True, file=None,
+            parse_mode=(), link_preview=True, file=None,
             force_document=False, clear_draft=False, buttons=None,
             silent=None):
         """
@@ -583,7 +583,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def edit_message(
             self, entity, message=None, text=None,
-            *, parse_mode=default, link_preview=True, file=None,
+            *, parse_mode=(), link_preview=True, file=None,
             buttons=None):
         """
         Edits the given message ID (to change its contents or disable preview).

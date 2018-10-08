@@ -1,7 +1,7 @@
 import hashlib
 
 from .. import functions, types
-from ... import default, utils
+from ... import utils
 
 
 class InlineBuilder:
@@ -54,7 +54,7 @@ class InlineBuilder:
     async def article(
             self, title, description=None,
             *, url=None, thumb=None, content=None,
-            id=None, text=None, parse_mode=default, link_preview=True,
+            id=None, text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
@@ -104,7 +104,7 @@ class InlineBuilder:
 
     async def photo(
             self, file, *, id=None,
-            text=None, parse_mode=default, link_preview=True,
+            text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
@@ -143,7 +143,7 @@ class InlineBuilder:
             self, file, title=None, *, description=None, type=None,
             mime_type=None, attributes=None, force_document=False,
             voice_note=False, video_note=False, use_cache=True, id=None,
-            text=None, parse_mode=default, link_preview=True,
+            text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
@@ -218,7 +218,7 @@ class InlineBuilder:
 
     async def game(
             self, short_name, *, id=None,
-            text=None, parse_mode=default, link_preview=True,
+            text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
@@ -246,7 +246,7 @@ class InlineBuilder:
 
     async def _message(
             self, *,
-            text=None, parse_mode=default, link_preview=True,
+            text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         if sum(1 for x in (text, geo, contact, game) if x) != 1:
