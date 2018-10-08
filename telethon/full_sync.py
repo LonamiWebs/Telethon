@@ -67,12 +67,14 @@ def _syncify_wrap(t, method_name, loop, thread_ident, syncifier=_sync_result):
 
 def _syncify(*types, loop, thread_ident):
     for t in types:
-        for method_name in dir(t):
-            if not method_name.startswith('_') or method_name == '__call__':
-                if inspect.iscoroutinefunction(getattr(t, method_name)):
-                    _syncify_wrap(t, method_name, loop, thread_ident, _sync_result)
-                elif isasyncgenfunction(getattr(t, method_name)):
-                    _syncify_wrap(t, method_name, loop, thread_ident, _SyncGen)
+        for name in dir(t):
+            if not name.startswith('_') or name == '__call__':
+                meth = getattr(t, name)
+                meth = getattr(meth, '__tl.sync', meth)
+                if inspect.iscoroutinefunction(meth):
+                    _syncify_wrap(t, name, loop, thread_ident)
+                elif isasyncgenfunction(meth):
+                    _syncify_wrap(t, name, loop, thread_ident, _SyncGen)
 
 
 __asyncthread = None

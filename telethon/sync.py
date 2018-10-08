@@ -24,20 +24,6 @@ from .tl.custom.chatgetter import ChatGetter
 from .tl.custom.sendergetter import SenderGetter
 
 
-def _syncify_coro(t, method_name):
-    method = getattr(t, method_name)
-
-    @functools.wraps(method)
-    def syncified(*args, **kwargs):
-        coro = method(*args, **kwargs)
-        return (
-            coro if asyncio.get_event_loop().is_running()
-            else asyncio.get_event_loop().run_until_complete(coro)
-        )
-
-    setattr(t, method_name, syncified)
-
-
 class _SyncGen:
     def __init__(self, loop, gen):
         self.loop = loop
@@ -53,7 +39,7 @@ class _SyncGen:
             raise StopIteration from None
 
 
-def _syncify_gen(t, method_name):
+def _syncify_wrap(t, method_name, syncifier):
     method = getattr(t, method_name)
 
     @functools.wraps(method)
@@ -61,9 +47,11 @@ def _syncify_gen(t, method_name):
         coro = method(*args, **kwargs)
         return (
             coro if asyncio.get_event_loop().is_running()
-            else _SyncGen(asyncio.get_event_loop(), coro)
+            else syncifier(coro)
         )
 
+    # Save an accessible reference to the original method
+    setattr(syncified, '__tl.sync', method)
     setattr(t, method_name, syncified)
 
 
@@ -73,13 +61,14 @@ def syncify(*types):
     into synchronous, which return either the coroutine or the result
     based on whether ``asyncio's`` event loop is running.
     """
+    loop = asyncio.get_event_loop()
     for t in types:
-        for method_name in dir(t):
-            if not method_name.startswith('_') or method_name == '__call__':
-                if inspect.iscoroutinefunction(getattr(t, method_name)):
-                    _syncify_coro(t, method_name)
-                elif isasyncgenfunction(getattr(t, method_name)):
-                    _syncify_gen(t, method_name)
+        for name in dir(t):
+            if not name.startswith('_') or name == '__call__':
+                if inspect.iscoroutinefunction(getattr(t, name)):
+                    _syncify_wrap(t, name, loop.run_until_complete)
+                elif isasyncgenfunction(getattr(t, name)):
+                    _syncify_wrap(t, name, functools.partial(_SyncGen, loop))
 
 
 syncify(TelegramClient, Draft, Dialog, MessageButton,
