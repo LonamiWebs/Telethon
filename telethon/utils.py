@@ -29,6 +29,7 @@ except ImportError:
 # operative systems. Manually register them here to make them work everywhere.
 mimetypes.add_type('image/webp', '.webp')
 mimetypes.add_type('audio/ogg', '.ogg')
+mimetypes.add_type('application/vnd.android.package-archive','.apk')
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
