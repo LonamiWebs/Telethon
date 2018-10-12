@@ -2,6 +2,7 @@ import asyncio
 import difflib
 import logging
 import os
+import re
 import sys
 import time
 import urllib.parse
@@ -102,9 +103,8 @@ ALREADY_FIXED = (
     "/LonamiWebs/Telethon@master`."
 )
 
-LEARN_PYTHON = (
-    "That issue is no longer related with Telethon. You should learn more "
-    "Python before trying again. Some good resources:\n"
+GOOD_RESOURCES = (
+    "Some good resources to learn Python:\n"
     "• [Official Docs](https://docs.python.org/3/tutorial/index.html).\n"
     "• [Dive Into Python 3](http://www.diveintopython3.net/).\n"
     "• [Learn Python](https://www.learnpython.org/).\n"
@@ -119,6 +119,11 @@ LEARN_PYTHON = (
     "YYXdXT2l-Gg&list=PL-osiE80TeTskrapNbzXhwoFUiLCjGgY7) and in [general]"
     "(https://www.youtube.com/watch?v=YYXdXT2l-Gg&list=PL-osiE80TeTt2d9bfV"
     "yTiXJA-UTHn6WwU)."
+)
+
+LEARN_PYTHON = (
+    "That issue is no longer related with Telethon. You should learn more "
+    "Python before trying again. " + GOOD_RESOURCES
 )
 
 # ============================== Constants ==============================
@@ -189,31 +194,35 @@ async def handler(event):
     ])
 
 
+def get_docs_message(kind, query):
+    kind = kind.lower()
+    cls = {'client': TelegramClient, 'msg': custom.Message}[kind]
+
+    attr = search_attr(cls, query.lower())
+    if not attr:
+        return f'No such method "{query}" :/'
+
+    name = attr
+    if kind == 'client':
+        attr = attr_fullname(cls, attr)
+        url = DOCS_CLIENT
+    elif kind == 'msg':
+        name = f'Message.{name}'
+        url = DOCS_MESSAGE
+    else:
+        return f'No documentation for "{kind}"'
+
+    return f'Documentation for [{name}]({url}{attr})'
+
+
 @bot.on(events.NewMessage(pattern='(?i)#(client|msg) (.+)', forwards=False))
 async def handler(event):
     """#client or #msg query: Looks for the given attribute in RTD."""
     await event.delete()
-    query = event.pattern_match.group(2).lower()
-    cls = ({'client': TelegramClient, 'msg': custom.Message}
-           [event.pattern_match.group(1)])
-
-    attr = search_attr(cls, query)
-    if not attr:
-        await event.respond(f'No such method "{query}" :/')
-        return
-
-    name = attr
-    if event.pattern_match.group(1) == 'client':
-        attr = attr_fullname(cls, attr)
-        url = DOCS_CLIENT
-    elif event.pattern_match.group(1) == 'msg':
-        name = f'Message.{name}'
-        url = DOCS_MESSAGE
-    else:
-        return
 
     await event.respond(
-        f'Documentation for [{name}]({url}{attr})',
+        get_docs_message(kind=event.pattern_match.group(1),
+                         query=event.pattern_match.group(2)),
         reply_to=event.reply_to_msg_id
     )
 
@@ -289,6 +298,45 @@ async def handler(event):
 
 
 # ==============================  Commands ==============================
+# ==============================   Inline  ==============================
+
+
+@bot.on(events.InlineQuery)
+async def handler(event):
+    builder = event.builder
+    result = None
+    query = event.text.lower()
+    if query == 'ping':
+        result = builder.article('Pong!', text='This bot works inline')
+    elif query == 'group':
+        result = builder.article(
+            'Move to the right group!',
+            text='Try moving to the [right group](t.me/TelethonChat)',
+            buttons=custom.Button.url('Join the group!', 't.me/TelethonChat'),
+            link_preview=False
+        )
+    elif query in ('python', 'learn'):
+        result = builder.article(
+            'Resources to Learn Python',
+            text=GOOD_RESOURCES,
+            link_preview=False
+        )
+    else:
+        m = re.match('(client|msg).(.+)', query)
+        if m:
+            text = get_docs_message(m.group(1), m.group(2))
+            result = builder.article(text, text=text)
+        else:
+            m = re.match('ref.(.+)', query)
+            if m:
+                query = m.group(1)
+                text = DOCS.format(query, urllib.parse.quote(query))
+                result = builder.article(query, text=text)
+
+    await event.answer([result] if result else None)
+
+
+# ==============================   Inline  ==============================
 # ============================== AutoReply ==============================
 
 
