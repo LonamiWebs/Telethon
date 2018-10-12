@@ -399,7 +399,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = None
         self._state.pts = -1
         await self.disconnect()
-        await self.session.delete()
+        self.session.delete()
         return True
 
     async def edit_2fa(

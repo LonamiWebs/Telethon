@@ -197,7 +197,15 @@ class TelegramBaseClient(abc.ABC):
             )
 
         self.flood_sleep_threshold = flood_sleep_threshold
-        self.session = AsyncClassWrapper(session)
+
+        # TODO Figure out how to use AsyncClassWrapper(session)
+        # The problem is that ChatGetter and SenderGetter rely
+        # on synchronous calls to session.get_entity precisely
+        # to avoid network access and the need for await.
+        #
+        # With asynchronous sessions, it would need await,
+        # and defeats the purpose of properties.
+        self.session = session
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
@@ -325,8 +333,8 @@ class TelegramBaseClient(abc.ABC):
         await self._disconnect()
         if getattr(self, 'session', None):
             if getattr(self, '_state', None):
-                await self.session.set_update_state(0, self._state)
-            await self.session.close()
+                self.session.set_update_state(0, self._state)
+            self.session.close()
 
     async def _disconnect(self):
         """
@@ -364,11 +372,11 @@ class TelegramBaseClient(abc.ABC):
         __log__.info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
-        await self.session.set_dc(dc.id, dc.ip_address, dc.port)
+        self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = None
-        await self.session.save()
+        self.session.save()
         await self._disconnect()
         return await self.connect()
 
@@ -378,7 +386,7 @@ class TelegramBaseClient(abc.ABC):
         new authorization key. This means we are not authorized.
         """
         self.session.auth_key = auth_key
-        await self.session.save()
+        self.session.save()
 
     # endregion
 
@@ -466,7 +474,7 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = await self.session.clone()
+            session = self.session.clone()
             await session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 

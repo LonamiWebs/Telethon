@@ -48,7 +48,7 @@ class UserMethods(TelegramBaseClient):
                             exceptions.append(e)
                             results.append(None)
                             continue
-                        await self.session.process_entities(result)
+                        self.session.process_entities(result)
                         exceptions.append(None)
                         results.append(result)
                         request_index += 1
@@ -58,7 +58,7 @@ class UserMethods(TelegramBaseClient):
                         return results
                 else:
                     result = await future
-                    await self.session.process_entities(result)
+                    self.session.process_entities(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError) as e:
                 __log__.warning('Telegram is having internal issues %s: %s',
@@ -288,7 +288,7 @@ class UserMethods(TelegramBaseClient):
 
         try:
             # First try to get the entity from cache, otherwise figure it out
-            return await self.session.get_input_entity(peer)
+            return self.session.get_input_entity(peer)
         except ValueError:
             pass
 
@@ -393,7 +393,7 @@ class UserMethods(TelegramBaseClient):
             try:
                 # Nobody with this username, maybe it's an exact name/title
                 return await self.get_entity(
-                    await self.session.get_input_entity(string))
+                    self.session.get_input_entity(string))
             except ValueError:
                 pass
 
