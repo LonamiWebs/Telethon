@@ -5,7 +5,7 @@ from .messagebutton import MessageButton
 from .forward import Forward
 from .message import Message
 from .button import Button
-from .inline import InlineBuilder
+from .inlinebuilder import InlineBuilder
 from .inlineresult import InlineResult
 from .inlineresults import InlineResults
 from .conversation import Conversation

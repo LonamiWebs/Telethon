@@ -115,10 +115,10 @@ class InlineBuilder:
                 Same as ``file`` for `client.send_file
                 <telethon.client.uploads.UploadMethods.send_file>`.
         """
-        fh = self._client.upload_file(file, use_cache=types.InputPhoto)
+        fh = await self._client.upload_file(file, use_cache=types.InputPhoto)
         if not isinstance(fh, types.InputPhoto):
             r = await self._client(functions.messages.UploadMediaRequest(
-                types.InputPeerEmpty(), media=types.InputMediaUploadedPhoto(fh)
+                types.InputPeerSelf(), media=types.InputMediaUploadedPhoto(fh)
             ))
             fh = utils.get_input_photo(r.photo)
 
@@ -177,9 +177,9 @@ class InlineBuilder:
                 type = 'document'
 
         use_cache = types.InputDocument if use_cache else None
-        fh = self._client.upload_file(file, use_cache=use_cache)
+        fh = await self._client.upload_file(file, use_cache=use_cache)
         if not isinstance(fh, types.InputDocument):
-            attributes, mime_type =  utils.get_attributes(
+            attributes, mime_type = utils.get_attributes(
                 file,
                 mime_type=mime_type,
                 attributes=attributes,
@@ -188,7 +188,7 @@ class InlineBuilder:
                 video_note=video_note
             )
             r = await self._client(functions.messages.UploadMediaRequest(
-                types.InputPeerEmpty(), media=types.InputMediaUploadedDocument(
+                types.InputPeerSelf(), media=types.InputMediaUploadedDocument(
                     fh,
                     mime_type=mime_type,
                     attributes=attributes,
@@ -249,8 +249,13 @@ class InlineBuilder:
             text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
-        if sum(1 for x in (text, geo, contact, game) if x) != 1:
-            raise ValueError('Can only use one of text, geo, contact or game')
+        args = (text, geo, contact, game)
+        if sum(1 for x in args if x) != 1:
+            raise ValueError(
+                'Must set exactly one of text, geo, contact or game (set {})'
+                .format(', '.join(x[0] for x in zip(
+                    'text geo contact game'.split(), args) if x[1]) or 'none')
+            )
 
         markup = self._client.build_reply_markup(buttons, inline_only=True)
         if text:
