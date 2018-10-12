@@ -435,6 +435,9 @@ where you want to send it to:
 
 Sending messages through inline bots lets you use buttons as a normal user.
 
+It can look a bit strange at first, but you can make inline queries in no
+chat in particular, and then click a *result* to send it to some chat.
+
 Clicking Buttons
 ****************
 
@@ -448,6 +451,28 @@ the message we sent in the example above!
 This will click the first button in the message. You could also
 ``click(row, column)``, using some text such as ``click(text='👍')``
 or even the data directly ``click(data=b'payload')``.
+
+Answering Inline Queries
+************************
+
+As a bot, you can answer to inline queries with `events.InlineQuery
+<telethon.events.inlinequery.InlineQuery>`. You should make use of the
+`builder <telethon.tl.custom.inlinebuilder.InlineBuilder>` property
+to conveniently build the list of results to show to the user. Remember
+to check the properties of the `InlineQuery.Event
+<telethon.events.inlinequery.InlineQuery.Event>`:
+
+.. code-block:: python
+
+    @bot.on(events.InlineQuery)
+    async def handler(event):
+        builder = event.builder
+
+        rev_text = event.text[::-1]
+        await event.answer([
+            builder.article('Reverse text', text=rev_text),
+            builder.photo('/path/to/photo.jpg')
+        ])
 
 Conversations: Waiting for Messages or Replies
 **********************************************

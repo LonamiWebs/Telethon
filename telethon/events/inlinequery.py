@@ -71,6 +71,9 @@ class InlineQuery(EventBuilder):
             query (:tl:`UpdateBotCallbackQuery`):
                 The original :tl:`UpdateBotCallbackQuery`.
 
+                Make sure to access the `text` of the query if
+                that's what you want instead working with this.
+
             pattern_match (`obj`, optional):
                 The resulting object from calling the passed ``pattern``
                 function, which is ``re.compile(...).match`` by default.
@@ -117,8 +120,8 @@ class InlineQuery(EventBuilder):
         @property
         def builder(self):
             """
-            Returns a new `inline result builder
-            <telethon.tl.custom.inline.InlineBuilder>`.
+            Returns a new `InlineBuilder
+            <telethon.tl.custom.inlinebuilder.InlineBuilder>` instance.
             """
             return custom.InlineBuilder(self._client)
 
@@ -134,7 +137,7 @@ class InlineQuery(EventBuilder):
                     A list of :tl:`InputBotInlineResult` to use.
                     You should use `builder` to create these:
 
-                    .. code-block: python
+                    .. code-block:: python
 
                         builder = inline.builder
                         r1 = builder.article('Be nice', text='Have a nice day')

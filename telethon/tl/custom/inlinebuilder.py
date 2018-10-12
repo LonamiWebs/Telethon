@@ -6,7 +6,8 @@ from ... import utils
 
 class InlineBuilder:
     """
-    Helper class to allow defining inline queries ``results``.
+    Helper class to allow defining `InlineQuery
+    <telethon.events.inlinequery.InlineQuery>` ``results``.
 
     Common arguments to all methods are
     explained here to avoid repetition:
@@ -19,16 +20,13 @@ class InlineBuilder:
             Whether to show a link preview in the sent
             text message or not.
 
-        geo (:tl:`InputGeoPoint`, :tl:`GeoPoint`,
-        :tl:`InputMediaVenue`, :tl:`MessageMediaVenue`,
-        optional):
+        geo (:tl:`InputGeoPoint`, :tl:`GeoPoint`, :tl:`InputMediaVenue`, :tl:`MessageMediaVenue`, optional):
             If present, it may either be a geo point or a venue.
 
         period (int, optional):
             The period in seconds to be used for geo points.
 
-        contact (:tl:`InputMediaContact`, :tl:`MessageMediaContact`,
-        optional):
+        contact (:tl:`InputMediaContact`, :tl:`MessageMediaContact`, optional):
             If present, it must be the contact information to send.
 
         game (`bool`, optional):
@@ -155,8 +153,8 @@ class InlineBuilder:
 
         Args:
             file (`obj`):
-                Same as ``file`` for `<client.send_file>
-                telethon.client.uploads.UploadMethods.send_file`.
+                Same as ``file`` for `client.send_file
+                <telethon.client.uploads.UploadMethods.send_file>`.
 
             title (`str`, optional):
                 The title to be shown for this result.

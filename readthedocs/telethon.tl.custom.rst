@@ -10,8 +10,6 @@ telethon\.tl\.custom\.draft module
     :undoc-members:
     :show-inheritance:
 
-
-
 telethon\.tl\.custom\.dialog module
 -----------------------------------
 
@@ -20,7 +18,6 @@ telethon\.tl\.custom\.dialog module
     :undoc-members:
     :show-inheritance:
 
-
 telethon\.tl\.custom\.message module
 ------------------------------------
 
@@ -28,7 +25,6 @@ telethon\.tl\.custom\.message module
     :members:
     :undoc-members:
     :show-inheritance:
-
 
 telethon\.tl\.custom\.messagebutton module
 ------------------------------------------
@@ -54,10 +50,26 @@ telethon\.tl\.custom\.button module
     :undoc-members:
     :show-inheritance:
 
+telethon\.tl\.custom\.inlinebuilder module
+------------------------------------------
+
+.. automodule:: telethon.tl.custom.inlinebuilder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 telethon\.tl\.custom\.inlineresult module
 -----------------------------------------
 
 .. automodule:: telethon.tl.custom.inlineresult
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+telethon\.tl\.custom\.inlineresults module
+------------------------------------------
+
+.. automodule:: telethon.tl.custom.inlineresults
     :members:
     :undoc-members:
     :show-inheritance:

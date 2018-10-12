@@ -2,6 +2,7 @@ import time
 
 from .inlineresult import InlineResult
 
+
 class InlineResults(list):
     """
     Custom class that encapsulates :tl:`BotResults` providing
