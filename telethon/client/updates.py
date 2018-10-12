@@ -283,6 +283,10 @@ class UpdateMethods(UserMethods):
 
             try:
                 await callback(event)
+            except errors.AlreadyInConversationError:
+                name = getattr(callback, '__name__', repr(callback))
+                __log__.debug('Event handler "%s" already has an open '
+                              'conversation, ignoring new one', name)
             except events.StopPropagation:
                 name = getattr(callback, '__name__', repr(callback))
                 __log__.debug(

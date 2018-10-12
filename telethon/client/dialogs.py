@@ -160,7 +160,7 @@ class DialogMethods(UserMethods):
     def conversation(
             self, entity,
             *, timeout=None, total_timeout=60, max_messages=100,
-            replies_are_responses=True):
+            exclusive=True, replies_are_responses=True):
         """
         Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
         with the given entity so you can easily send messages and await for
@@ -186,6 +186,16 @@ class DialogMethods(UserMethods):
                 remember. After these many messages arrive in the
                 specified chat, subsequent actions will result in
                 ``ValueError``.
+
+            exclusive (`bool`, optional):
+                By default, conversations are exclusive within a single
+                chat. That means that while a conversation is open in a
+                chat, you can't open another one in the same chat, unless
+                you disable this flag.
+
+                If you try opening an exclusive conversation for
+                a chat where it's already open, it will raise
+                ``AlreadyInConversationError``.
 
             replies_are_responses (`bool`, optional):
                 Whether replies should be treated as responses or not.
@@ -229,6 +239,7 @@ class DialogMethods(UserMethods):
             timeout=timeout,
             total_timeout=total_timeout,
             max_messages=max_messages,
+            exclusive=exclusive,
             replies_are_responses=replies_are_responses
 
         )

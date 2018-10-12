@@ -3,7 +3,7 @@ import itertools
 import time
 
 from .chatgetter import ChatGetter
-from ... import utils
+from ... import utils, errors
 
 
 class Conversation(ChatGetter):
@@ -23,7 +23,7 @@ class Conversation(ChatGetter):
 
     def __init__(self, client, input_chat,
                  *, timeout, total_timeout, max_messages,
-                 replies_are_responses):
+                 exclusive, replies_are_responses):
         self._id = Conversation._id_counter
         Conversation._id_counter += 1
 
@@ -49,6 +49,8 @@ class Conversation(ChatGetter):
         self._pending_replies = {}
         self._pending_edits = {}
         self._pending_reads = {}
+
+        self._exclusive = exclusive
 
         # The user is able to expect two responses for the same message.
         # {desired message ID: next incoming index}
@@ -380,11 +382,20 @@ class Conversation(ChatGetter):
         return self._client.loop.run_until_complete(self.__aenter__())
 
     async def __aenter__(self):
-        self._client._conversations[self._id] = self
         self._input_chat = \
             await self._client.get_input_entity(self._input_chat)
 
         self._chat_peer = utils.get_peer(self._input_chat)
+
+        # Make sure we're the only conversation in this chat if it's exclusive
+        chat_id = utils.get_peer_id(self._chat_peer)
+        count = self._client._ids_in_conversations.get(chat_id, 0)
+        if self._exclusive and count:
+            raise errors.AlreadyInConversationError()
+
+        self._client._ids_in_conversations[chat_id] = count + 1
+        self._client._conversations[self._id] = self
+
         self._last_outgoing = 0
         self._last_incoming = 0
         for d in (
@@ -405,5 +416,11 @@ class Conversation(ChatGetter):
         return self._client.loop.run_until_complete(self.__aexit__(*args))
 
     async def __aexit__(self, *args):
+        chat_id = utils.get_peer_id(self._chat_peer)
+        if self._client._ids_in_conversations[chat_id] == 1:
+            del self._client._ids_in_conversations[chat_id]
+        else:
+            self._client._ids_in_conversations[chat_id] -= 1
+
         del self._client._conversations[self._id]
         self._cancel_all()

@@ -272,6 +272,7 @@ class TelegramBaseClient(abc.ABC):
         # Some further state for subclasses
         self._event_builders = []
         self._conversations = {}
+        self._ids_in_conversations = {}  # chat_id: count
 
         # Default parse mode
         self._parse_mode = markdown
