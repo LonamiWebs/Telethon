@@ -5,7 +5,7 @@ import time
 from hashlib import sha256
 
 from ..crypto import AES
-from ..errors import SecurityError, BrokenAuthKeyError
+from ..errors import SecurityError, InvalidBufferError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
 from ..tl.functions import InvokeAfterMsgRequest
@@ -114,11 +114,7 @@ class MTProtoState:
         Inverse of `encrypt_message_data` for incoming server messages.
         """
         if len(body) < 8:
-            # TODO If len == 4, raise HTTPErrorCode(-little endian int)
-            if body == b'l\xfe\xff\xff':
-                raise BrokenAuthKeyError()
-            else:
-                raise BufferError("Can't decode packet ({})".format(body))
+            raise InvalidBufferError(body)
 
         # TODO Check salt, session_id and sequence_number
         key_id = struct.unpack('<Q', body[:8])[0]

@@ -5,7 +5,7 @@ in plain text, when no authorization key has been created yet.
 import struct
 
 from .mtprotostate import MTProtoState
-from ..errors import BrokenAuthKeyError
+from ..errors import InvalidBufferError
 from ..extensions import BinaryReader
 
 
@@ -34,9 +34,8 @@ class MTProtoPlainSender:
         )
 
         body = await self._connection.recv()
-        if body == b'l\xfe\xff\xff':  # -404 little endian signed
-            # Broken authorization, must reset the auth key
-            raise BrokenAuthKeyError()
+        if len(body) < 8:
+            raise InvalidBufferError(body)
 
         with BinaryReader(body) as reader:
             auth_key_id = reader.read_long()

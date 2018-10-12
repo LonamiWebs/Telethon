@@ -9,7 +9,7 @@ from .requeststate import RequestState
 from ..tl.tlobject import TLRequest
 from .. import utils
 from ..errors import (
-    BadMessageError, BrokenAuthKeyError, SecurityError, TypeNotFoundError,
+    BadMessageError, InvalidBufferError, SecurityError, TypeNotFoundError,
     InvalidChecksumError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
@@ -382,8 +382,12 @@ class MTProtoSender:
                 )
             except asyncio.CancelledError:
                 return
-            except (BrokenAuthKeyError, BufferError):
-                __log__.info('Broken authorization key; resetting')
+            except BufferError as e:
+                if isinstance(e, InvalidBufferError) and e.code == 404:
+                    __log__.info('Broken authorization key; resetting')
+                else:
+                    __log__.warning('Invalid buffer %s', e)
+
                 self._connection._state.auth_key = None
                 self._start_reconnect()
                 return

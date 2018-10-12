@@ -1,4 +1,6 @@
 """Errors not related to the Telegram API itself"""
+import struct
+
 from ..tl import TLRequest
 
 
@@ -39,14 +41,21 @@ class InvalidChecksumError(Exception):
         self.valid_checksum = valid_checksum
 
 
-class BrokenAuthKeyError(Exception):
+class InvalidBufferError(BufferError):
     """
-    Occurs when the authorization key for a data center is not valid.
+    Occurs when the buffer is invalid, and may contain an HTTP error code.
+    For instance, 404 means "forgotten/broken authorization key", while
     """
-    def __init__(self):
-        super().__init__(
-            'The authorization key is broken, and it must be reset.'
-        )
+    def __init__(self, payload):
+        self.payload = payload
+        if len(payload) == 4:
+            self.code = -struct.unpack('<i', payload)[0]
+            super().__init__(
+                'Invalid response buffer (HTTP code {})'.format(self.code))
+        else:
+            self.code = None
+            super().__init__(
+                'Invalid response buffer (too short {})'.format(self.payload))
 
 
 class SecurityError(Exception):
