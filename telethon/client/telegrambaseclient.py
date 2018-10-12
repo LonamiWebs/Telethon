@@ -246,9 +246,6 @@ class TelegramBaseClient(abc.ABC):
         self._borrowed_senders = {}
         self._borrow_sender_lock = asyncio.Lock(loop=self._loop)
 
-        # Save whether the user is authorized here (a.k.a. logged in)
-        self._authorized = None  # None = We don't know yet
-
         self._updates_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
@@ -380,7 +377,6 @@ class TelegramBaseClient(abc.ABC):
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
-        self._authorized = None
         self.session.auth_key = auth_key
         await self.session.save()
 
@@ -487,7 +483,6 @@ class TelegramBaseClient(abc.ABC):
         # when needed by ._get_dc, and also it's static so it's likely
         # set already. Avoid invoking non-CDN methods by not syncing updates.
         client.connect(_sync_updates=False)
-        client._authorized = self._authorized
         return client
 
     # endregion

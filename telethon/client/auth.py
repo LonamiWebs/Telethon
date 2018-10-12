@@ -291,7 +291,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
-        self._authorized = True
         return result.user
 
     async def sign_up(self, code, first_name, last_name=''):
@@ -344,7 +343,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(
             result.user, allow_self=False
         )
-        self._authorized = True
         return result.user
 
     async def send_code_request(self, phone, *, force_sms=False):
@@ -398,9 +396,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
         except errors.RPCError:
             return False
 
+        self._self_input_peer = None
+        self._state.pts = -1
         await self.disconnect()
         await self.session.delete()
-        self._authorized = False
         return True
 
     async def edit_2fa(
