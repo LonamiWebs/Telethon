@@ -354,10 +354,14 @@ class UserMethods(TelegramBaseClient):
         """
         phone = utils.parse_phone(string)
         if phone:
-            for user in (await self(
-                    functions.contacts.GetContactsRequest(0))).users:
-                if user.phone == phone:
-                    return user
+            try:
+                for user in (await self(
+                        functions.contacts.GetContactsRequest(0))).users:
+                    if user.phone == phone:
+                        return user
+            except errors.BotMethodInvalidError:
+                raise ValueError('Cannot get entity by phone number as a '
+                                 'bot (try using integer IDs, not strings)')
         else:
             username, is_join_chat = utils.parse_username(string)
             if is_join_chat:
