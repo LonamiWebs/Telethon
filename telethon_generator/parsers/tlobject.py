@@ -1,3 +1,4 @@
+import collections
 import re
 import struct
 from zlib import crc32
@@ -127,6 +128,7 @@ class TLArg:
         self.is_flag = False
         self.skip_constructor_id = False
         self.flag_index = -1
+        self.cls = None
 
         # Special case: some types can be inferred, which makes it
         # less annoying to type. Currently the only type that can
@@ -274,10 +276,18 @@ def _from_line(line, is_function, layer):
 
 
 def parse_tl(file_path, layer, invalid_bot_methods=None):
-    """This method yields TLObjects from a given .tl file."""
+    """
+    This method yields TLObjects from a given .tl file.
+
+    Note that the file is parsed completely before the function yields
+    because references to other objects may appear later in the file.
+    """
     if invalid_bot_methods is None:
         invalid_bot_methods = set()
 
+    obj_all = []
+    obj_by_name = {}
+    obj_by_type = collections.defaultdict(list)
     with open(file_path, 'r', encoding='utf-8') as file:
         is_function = False
         for line in file:
@@ -298,10 +308,22 @@ def parse_tl(file_path, layer, invalid_bot_methods=None):
             try:
                 result = _from_line(line, is_function, layer=layer)
                 result.bot_usable = result.fullname not in invalid_bot_methods
-                yield result
+                obj_all.append(result)
+                obj_by_name[result.fullname] = result
+                obj_by_type[result.result].append(result)
             except ValueError as e:
                 if 'vector#1cb5c415' not in str(e):
                     raise
+
+    # Once all objects have been parsed, replace the
+    # string type from the arguments with references
+    for obj in obj_all:
+        for arg in obj.args:
+            arg.cls = obj_by_type.get(arg.type) or (
+                [obj_by_name[arg.type]] if arg.type in obj_by_name else []
+            )
+
+    yield from obj_all
 
 
 def find_layer(file_path):
