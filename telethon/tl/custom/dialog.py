@@ -83,7 +83,7 @@ class Dialog:
 
         self.is_user = isinstance(self.entity, types.User)
         self.is_group = (
-            isinstance(self.entity, types.Chat) or
+            isinstance(self.entity, (types.Chat, types.ChatForbidden)) or
             (isinstance(self.entity, types.Channel) and self.entity.megagroup)
         )
         self.is_channel = isinstance(self.entity, types.Channel)
