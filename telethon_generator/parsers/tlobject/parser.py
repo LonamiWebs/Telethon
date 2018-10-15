@@ -71,8 +71,9 @@ def parse_tl(file_path, layer, invalid_bot_methods=None):
                 result = _from_line(line, is_function, layer=layer)
                 result.bot_usable = result.fullname not in invalid_bot_methods
                 obj_all.append(result)
-                obj_by_name[result.fullname] = result
-                obj_by_type[result.result].append(result)
+                if not result.is_function:
+                    obj_by_name[result.fullname] = result
+                    obj_by_type[result.result].append(result)
             except ValueError as e:
                 if 'vector#1cb5c415' not in str(e):
                     raise
