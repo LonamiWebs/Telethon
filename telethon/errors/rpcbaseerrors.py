@@ -3,10 +3,16 @@ class RPCError(Exception):
     code = None
     message = None
 
-    def __init__(self, message, code=None):
-        super().__init__('RPCError {}: {}'.format(code or self.code, message))
+    def __init__(self, request, message, code=None):
+        super().__init__('RPCError {}: {}{}'.format(
+            code or self.code, message, self._fmt_request(request)))
+
         self.code = code
         self.message = message
+
+    @staticmethod
+    def _fmt_request(request):
+        return ' (caused by {})'.format(request.__class__.__name__)
 
     def __reduce__(self):
         return type(self), (self.code, self.message)
@@ -47,8 +53,8 @@ class ForbiddenError(RPCError):
     code = 403
     message = 'FORBIDDEN'
 
-    def __init__(self, message):
-        super().__init__(message)
+    def __init__(self, request, message):
+        super().__init__(request, message)
         self.message = message
 
 
@@ -59,8 +65,8 @@ class NotFoundError(RPCError):
     code = 404
     message = 'NOT_FOUND'
 
-    def __init__(self, message):
-        super().__init__(message)
+    def __init__(self, request, message):
+        super().__init__(request, message)
         self.message = message
 
 
@@ -72,8 +78,8 @@ class AuthKeyError(RPCError):
     code = 406
     message = 'AUTH_KEY'
 
-    def __init__(self, message):
-        super().__init__(message)
+    def __init__(self, request, message):
+        super().__init__(request, message)
         self.message = message
 
 
@@ -97,8 +103,8 @@ class ServerError(RPCError):
     code = 500
     message = 'INTERNAL'
 
-    def __init__(self, message):
-        super().__init__(message)
+    def __init__(self, request, message):
+        super().__init__(request, message)
         self.message = message
 
 
@@ -110,8 +116,8 @@ class BotTimeout(RPCError):
     code = -503
     message = 'Timeout'
 
-    def __init__(self, message):
-        super().__init__(message)
+    def __init__(self, request, message):
+        super().__init__(request, message)
         self.message = message
 
 
@@ -154,8 +160,8 @@ class BadMessageError(Exception):
         'Invalid container.'
     }
 
-    def __init__(self, code):
-        super().__init__(self.ErrorMessages.get(
+    def __init__(self, request, code):
+        super().__init__(request, self.ErrorMessages.get(
             code,
             'Unknown error code (this should not happen): {}.'.format(code)))
 

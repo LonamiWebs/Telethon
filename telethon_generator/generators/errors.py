@@ -26,14 +26,16 @@ def generate_errors(errors, f):
 
     # Error classes generation
     for error in errors:
-        f.write('\n\nclass {}({}):\n    def __init__(self, **kwargs):\n'
+        f.write('\n\nclass {}({}):\n'
+                '    def __init__(self, request, **kwargs):\n'
                 '        '.format(error.name, error.subclass))
 
         if error.has_captures:
             f.write("self.{} = int(kwargs.get('capture', 0))\n        "
                     .format(error.capture_name))
 
-        f.write('super(Exception, self).__init__({}'
+        f.write('super(Exception, self).__init__('
+                '{} + self._fmt_request(request)'
                 .format(repr(error.description)))
 
         if error.has_captures:

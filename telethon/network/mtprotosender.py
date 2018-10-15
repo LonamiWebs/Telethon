@@ -470,7 +470,7 @@ class MTProtoSender:
             return
 
         if rpc_result.error:
-            error = rpc_message_to_error(rpc_result.error)
+            error = rpc_message_to_error(rpc_result.error, state.request)
             self._send_queue.append(
                 RequestState(MsgsAck([state.msg_id]), loop=self._loop))
 
