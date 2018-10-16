@@ -297,7 +297,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
             docs.write_title(tlobject.class_name)
 
             if tlobject.is_function:
-                docs.write_text('Bots <strong>can{}</strong> use this method.'
+                docs.write_text('Bots <strong>can{}</strong> use this method. '
+                                '<a href="#examples">See code examples.</a>'
                                 .format("" if tlobject.bot_usable else "'t"))
                 if tlobject.is_function and tlobject.bot_usable:
                     bot_docs_paths.append(filename)
@@ -409,6 +410,28 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
                     docs.end_table()
                     docs.write_text('You can import these from '
                                     '<code>telethon.errors</code>.')
+
+                docs.write_title('Example', id='examples')
+                docs.write(
+                    '<pre>from telethon.sync import TelegramClient\n'
+                    'from telethon import functions, types\n'
+                    '\n'
+                    'with TelegramClient(name, api_id, api_hash) as client:\n'
+                    '    result = client(')
+                tlobject.as_example(docs, indent=1)
+                docs.write(')\n')
+                if tlobject.result.startswith('Vector'):
+                    docs.write(
+                        '    for x in result:\n'
+                        '        print(x'
+                    )
+                else:
+                    docs.write('    print(result')
+                    if tlobject.result != 'Bool' \
+                            and not tlobject.result.startswith('Vector'):
+                        docs.write('.stringify()')
+
+                docs.write(')</pre>')
 
             depth = '../' * (2 if tlobject.namespace else 1)
             docs.add_script(src='prependPath = "{}";'.format(depth))

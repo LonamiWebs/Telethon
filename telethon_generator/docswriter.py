@@ -95,11 +95,16 @@ class DocsWriter:
             raise RuntimeError('No menu had been started in the first place.')
         self.write('</ul>')
 
-    def write_title(self, title, level=1):
+    def write_title(self, title, level=1, id=None):
         """Writes a title header in the document body,
            with an optional depth level
         """
-        self.write('<h{level}>{title}</h{level}>', title=title, level=level)
+        if id:
+            self.write('<h{lv} id="{id}">{title}</h{lv}>',
+                       title=title, lv=level, id=id)
+        else:
+            self.write('<h{lv}>{title}</h{lv}>',
+                       title=title, lv=level)
 
     def write_code(self, tlobject):
         """Writes the code for the given 'tlobject' properly

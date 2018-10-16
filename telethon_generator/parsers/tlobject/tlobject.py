@@ -102,3 +102,42 @@ class TLObject:
             'type':
                 self.result
         }
+
+    def is_good_example(self):
+        return not self.class_name.endswith('Empty')
+
+    def as_example(self, f, indent=0):
+        f.write('functions' if self.is_function else 'types')
+        if self.namespace:
+            f.write('.')
+            f.write(self.namespace)
+
+        f.write('.')
+        f.write(self.class_name)
+        f.write('(')
+
+        args = [arg for arg in self.real_args if not arg.omit_example()]
+        if not args:
+            f.write(')')
+            return
+
+        f.write('\n')
+        indent += 1
+        remaining = len(args)
+        for arg in args:
+            remaining -= 1
+            f.write('    ' * indent)
+            f.write(arg.name)
+            f.write('=')
+            if arg.is_vector:
+                f.write('[')
+            arg.as_example(f, indent)
+            if arg.is_vector:
+                f.write(']')
+            if remaining:
+                f.write(',')
+            f.write('\n')
+
+        indent -= 1
+        f.write('    ' * indent)
+        f.write(')')

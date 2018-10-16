@@ -1,6 +1,64 @@
 import re
 
 
+KNOWN_NAMED_EXAMPLES = {
+    ('peer', 'InputPeer'): "'TelethonOffTopic'",
+    ('channel', 'InputChannel'): "'TelethonOffTopic'",
+    ('user_id', 'InputUser'): "'Lonami'",
+    ('users', 'InputUser'): "'Lonami'",
+    ('message', 'string'): "'Hello there!'",
+    ('expires_at', 'date'): 'datetime.timedelta(minutes=5)',
+    ('until_date', 'date'): 'datetime.timedelta(days=14)',
+    ('view_messages', 'true'): 'None',
+    ('send_messages', 'true'): 'None',
+    ('limit', 'int'): '100',
+    ('hash', 'int'): '0',
+    ('hash', 'string'): "'A4LmkR23G0IGxBE71zZfo1'",
+    ('min_id', 'int'): '0',
+    ('max_id', 'int'): '0',
+    ('add_offset', 'int'): '0',
+    ('title', 'string'): "'My awesome title'",
+    ('device_model', 'string'): "'ASUS Laptop'",
+    ('system_version', 'string'): "'Arch Linux'",
+    ('app_version', 'string'): "'1.0'",
+    ('system_lang_code', 'string'): "'en'",
+    ('lang_pack', 'string'): "''",
+    ('lang_code', 'string'): "'en'",
+    ('chat_id', 'int'): '478614198'
+}
+
+KNOWN_TYPED_EXAMPLES = {
+    'int128': "int.from_bytes(os.urandom(16), 'big')",
+    'bytes': "b'arbitrary\\x7f data \\xfa here'",
+    'long': "-12398745604826",
+    'string': "'some string here'",
+    'int': '42',
+    'date': 'datetime.datetime(2018, 6, 25)',
+    'double': '7.13',
+    'Bool': 'False',
+    'true': 'True',
+    'InputChatPhoto': "client.upload_file('/path/to/photo.jpg')"
+}
+
+# These are flags that are cleaner to leave off
+OMITTED_EXAMPLES = {
+    'silent',
+    'background',
+    'clear_draft',
+    'reply_to_msg_id',
+    'random_id',
+    'reply_markup',
+    'entities',
+    'embed_links',
+    'hash',
+    'min_id',
+    'max_id',
+    'add_offset',
+    'grouped',
+    'broadcast'
+}
+
+
 class TLArg:
     def __init__(self, name, arg_type, generic_definition):
         """
@@ -131,3 +189,29 @@ class TLArg:
             'name': self.name.replace('is_self', 'self'),
             'type': re.sub(r'\bdate$', 'int', self.real_type())
         }
+
+    def as_example(self, f, indent=0):
+        if self.is_generic:
+            f.write('other_request')
+            return
+
+        known = (KNOWN_NAMED_EXAMPLES.get((self.name, self.type))
+                 or KNOWN_TYPED_EXAMPLES.get(self.type))
+        if known:
+            f.write(known)
+            return
+
+        assert self.omit_example() or self.cls, 'TODO handle ' + str(self)
+
+        # Pick an interesting example if any
+        for cls in self.cls:
+            if cls.is_good_example():
+                cls.as_example(f, indent)
+                break
+        else:
+            # If no example is good, just pick the first
+            self.cls[0].as_example(f, indent)
+
+    def omit_example(self):
+        return (self.is_flag or self.can_be_inferred) \
+               and self.name in OMITTED_EXAMPLES
