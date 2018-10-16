@@ -268,7 +268,7 @@ class DownloadMethods(UserMethods):
             if exported:
                 await self._return_exported_sender(sender)
             elif sender != self._sender:
-                await sender.disconnect()
+                sender.disconnect()
             if isinstance(file, str) or in_memory:
                 f.close()
 

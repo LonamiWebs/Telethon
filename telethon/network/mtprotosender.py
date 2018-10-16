@@ -119,7 +119,7 @@ class MTProtoSender:
     def is_connected(self):
         return self._user_connected
 
-    async def disconnect(self):
+    def disconnect(self):
         """
         Cleanly disconnects the instance from the network, cancels
         all pending requests, and closes the send and receive loops.
@@ -223,7 +223,7 @@ class MTProtoSender:
             else:
                 e = ConnectionError('auth_key generation failed {} times'
                                     .format(self._retries))
-                await self._disconnect(error=e)
+                self._disconnect(error=e)
                 raise e
 
         __log__.debug('Starting send loop')
@@ -310,7 +310,7 @@ class MTProtoSender:
                 break
         else:
             __log__.error('Failed to reconnect automatically.')
-            await self._disconnect(error=ConnectionError())
+            self._disconnect(error=ConnectionError())
 
     def _start_reconnect(self):
         """Starts a reconnection in the background."""

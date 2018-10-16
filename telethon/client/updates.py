@@ -20,7 +20,7 @@ class UpdateMethods(UserMethods):
         try:
             await self.disconnected
         except KeyboardInterrupt:
-            await self.disconnect()
+            self.disconnect()
 
     def run_until_disconnected(self):
         """
@@ -37,12 +37,7 @@ class UpdateMethods(UserMethods):
         try:
             return self.loop.run_until_complete(self.disconnected)
         except KeyboardInterrupt:
-            # Importing the magic sync module turns disconnect into sync.
-            # TODO Maybe disconnect() should not need the magic module...
-            if inspect.iscoroutinefunction(self.disconnect):
-                self.loop.run_until_complete(self.disconnect())
-            else:
-                self.disconnect()
+            self.disconnect()
 
     def on(self, event):
         """
@@ -223,7 +218,7 @@ class UpdateMethods(UserMethods):
             except asyncio.TimeoutError:
                 pass
             except asyncio.CancelledError:
-                await self.disconnect()
+                self.disconnect()
                 return
             except Exception as e:
                 continue  # Any disconnected exception should be ignored

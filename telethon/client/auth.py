@@ -398,7 +398,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         self._self_input_peer = None
         self._state.pts = -1
-        await self.disconnect()
+        self.disconnect()
         self.session.delete()
         return True
 
@@ -489,14 +489,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return await self.start()
 
     def __exit__(self, *args):
-        if self._loop.is_running():
-            self._loop.create_task(self.disconnect())
-        elif inspect.iscoroutinefunction(self.disconnect):
-            self._loop.run_until_complete(self.disconnect())
-        else:
-            self.disconnect()
+        self.disconnect()
 
     async def __aexit__(self, *args):
-        await self.disconnect()
+        self.disconnect()
 
     # endregion

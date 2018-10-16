@@ -327,17 +327,25 @@ class TelegramBaseClient(abc.ABC):
         sender = getattr(self, '_sender', None)
         return sender and sender.is_connected()
 
-    async def disconnect(self):
+    def disconnect(self):
         """
         Disconnects from Telegram.
+
+        Returns a dummy completed future with ``None`` as a result so
+        you can ``await`` this method just like every other method for
+        consistency or compatibility.
         """
-        await self._disconnect()
+        self._disconnect()
         if getattr(self, 'session', None):
             if getattr(self, '_state', None):
                 self.session.set_update_state(0, self._state)
             self.session.close()
 
-    async def _disconnect(self):
+        result = self._loop.create_future()
+        result.set_result(None)
+        return result
+
+    def _disconnect(self):
         """
         Disconnect only, without closing the session. Used in reconnections
         to different data centers, where we don't want to close the session
@@ -347,24 +355,20 @@ class TelegramBaseClient(abc.ABC):
         # All properties may be ``None`` if `__init__` fails, and this
         # method will be called from `__del__` which would crash then.
         if getattr(self, '_sender', None):
-            await self._sender.disconnect()
+            self._sender.disconnect()
         if getattr(self, '_updates_handle', None):
-            await self._updates_handle
+            self._updates_handle.cancel()
 
     def __del__(self):
         if not self.is_connected() or self.loop.is_closed():
             return
 
+        # READ THIS IF DISCONNECT IS ASYNC AND A TASK WOULD BE MADE.
         # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
         # able to close the pending tasks properly, and letting the script
         # complete without calling disconnect causes the script to trigger
         # 100% CPU load. Call disconnect to make sure it doesn't happen.
-        if not inspect.iscoroutinefunction(self.disconnect):
-            self.disconnect()
-        elif self._loop.is_running():
-            self._loop.create_task(self.disconnect())
-        else:
-            self._loop.run_until_complete(self.disconnect())
+        self.disconnect()
 
     async def _switch_dc(self, new_dc):
         """
@@ -378,7 +382,7 @@ class TelegramBaseClient(abc.ABC):
         # so it's not valid anymore. Set to None to force recreating it.
         self.session.auth_key = None
         self.session.save()
-        await self._disconnect()
+        self._disconnect()
         return await self.connect()
 
     async def _auth_key_callback(self, auth_key):
@@ -466,7 +470,7 @@ class TelegramBaseClient(abc.ABC):
             self._borrowed_senders[dc_id] = (n, sender)
             if not n:
                 __log__.info('Disconnecting borrowed sender for DC %d', dc_id)
-                await sender.disconnect()
+                sender.disconnect()
 
     async def _get_cdn_client(self, cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""
