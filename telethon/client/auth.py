@@ -483,6 +483,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
     # region with blocks
 
     def __enter__(self):
+        if self._loop.is_running():
+            raise RuntimeError(
+                'You must use "async with" if the event loop '
+                'is running (i.e. you are inside an "async def")'
+            )
+
         return self.start()
 
     async def __aenter__(self):

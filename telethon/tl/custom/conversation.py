@@ -379,6 +379,12 @@ class Conversation(ChatGetter):
                 fut.cancel()
 
     def __enter__(self):
+        if self._client.loop.is_running():
+            raise RuntimeError(
+                'You must use "async with" if the event loop '
+                'is running (i.e. you are inside an "async def")'
+            )
+
         return self._client.loop.run_until_complete(self.__aenter__())
 
     async def __aenter__(self):
