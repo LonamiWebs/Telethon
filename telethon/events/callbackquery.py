@@ -36,7 +36,8 @@ class CallbackQuery(EventBuilder):
             self.data = data
         elif hasattr(data, 'match') and callable(data.match):
             if not isinstance(getattr(data, 'pattern', b''), bytes):
-                data = re.compile(data.pattern.encode('utf-8'), data.flags)
+                data = re.compile(data.pattern.encode('utf-8'),
+                                  data.flags & (~re.UNICODE))
 
             self.data = data.match
         else:
