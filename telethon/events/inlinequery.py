@@ -104,7 +104,8 @@ class InlineQuery(EventBuilder):
         @property
         def offset(self):
             """
-            ???
+            The string the user's client used as an offset for the query.
+            This will either be empty or equal to offsets passed to `answer`.
             """
             return self.query.offset
 

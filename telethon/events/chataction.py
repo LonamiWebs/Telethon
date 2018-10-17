@@ -169,7 +169,7 @@ class ChatAction(EventBuilder):
         async def respond(self, *args, **kwargs):
             """
             Responds to the chat action message (not as a reply). Shorthand for
-            `telethon.telegram_client.TelegramClient.send_message` with
+            `telethon.client.messages.MessageMethods.send_message` with
             ``entity`` already set.
             """
             return await self._client.send_message(
@@ -178,7 +178,7 @@ class ChatAction(EventBuilder):
         async def reply(self, *args, **kwargs):
             """
             Replies to the chat action message (as a reply). Shorthand for
-            `telethon.telegram_client.TelegramClient.send_message` with
+            `telethon.client.messages.MessageMethods.send_message` with
             both ``entity`` and ``reply_to`` already set.
 
             Has the same effect as `respond` if there is no message.
@@ -195,7 +195,7 @@ class ChatAction(EventBuilder):
             Deletes the chat action message. You're responsible for checking
             whether you have the permission to do so, or to except the error
             otherwise. Shorthand for
-            `telethon.telegram_client.TelegramClient.delete_messages` with
+            `telethon.client.messages.MessageMethods.delete_messages` with
             ``entity`` and ``message_ids`` already set.
 
             Does nothing if no message action triggered this event.

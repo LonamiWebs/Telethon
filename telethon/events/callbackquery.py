@@ -204,7 +204,7 @@ class CallbackQuery(EventBuilder):
         async def respond(self, *args, **kwargs):
             """
             Responds to the message (not as a reply). Shorthand for
-            `telethon.telegram_client.TelegramClient.send_message` with
+            `telethon.client.messages.MessageMethods.send_message` with
             ``entity`` already set.
 
             This method also creates a task to `answer` the callback.
@@ -216,7 +216,7 @@ class CallbackQuery(EventBuilder):
         async def reply(self, *args, **kwargs):
             """
             Replies to the message (as a reply). Shorthand for
-            `telethon.telegram_client.TelegramClient.send_message` with
+            `telethon.client.messages.MessageMethods.send_message` with
             both ``entity`` and ``reply_to`` already set.
 
             This method also creates a task to `answer` the callback.
@@ -229,7 +229,7 @@ class CallbackQuery(EventBuilder):
         async def edit(self, *args, **kwargs):
             """
             Edits the message iff it's outgoing. Shorthand for
-            `telethon.telegram_client.TelegramClient.edit_message` with
+            `telethon.client.messages.MessageMethods.edit_message` with
             both ``entity`` and ``message`` already set.
 
             Returns the edited :tl:`Message`.
@@ -245,12 +245,12 @@ class CallbackQuery(EventBuilder):
         async def delete(self, *args, **kwargs):
             """
             Deletes the message. Shorthand for
-            `telethon.telegram_client.TelegramClient.delete_messages` with
+            `telethon.client.messages.MessageMethods.delete_messages` with
             ``entity`` and ``message_ids`` already set.
 
             If you need to delete more than one message at once, don't use
             this `delete` method. Use a
-            `telethon.telegram_client.TelegramClient` instance directly.
+            `telethon.client.telegramclient.TelegramClient` instance directly.
 
             This method also creates a task to `answer` the callback.
             """
