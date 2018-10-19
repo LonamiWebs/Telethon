@@ -60,7 +60,8 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._disconnected = None
+        self._disconnected = self._loop.create_future()
+        self._disconnected.set_result(None)
 
         # We need to join the loops upon disconnection
         self._send_loop_handle = None
@@ -176,11 +177,11 @@ class MTProtoSender:
         """
         Future that resolves when the connection to Telegram
         ends, either by user action or in the background.
+
+        Note that it may resolve in either a ``ConnectionError``
+        or any other unexpected error that could not be handled.
         """
-        if self._disconnected is not None:
-            return asyncio.shield(self._disconnected, loop=self._loop)
-        else:
-            raise ConnectionError('Sender was never connected')
+        return asyncio.shield(self._disconnected, loop=self._loop)
 
     # Private methods
 
@@ -229,9 +230,12 @@ class MTProtoSender:
         __log__.debug('Starting receive loop')
         self._recv_loop_handle = self._loop.create_task(self._recv_loop())
 
-        # First connection or manual reconnection after a failure
-        if self._disconnected is None or self._disconnected.done():
+        # _disconnected only completes after manual disconnection
+        # or errors after which the sender cannot continue such
+        # as failing to reconnect or any unexpected error.
+        if self._disconnected.done():
             self._disconnected = self._loop.create_future()
+
         __log__.info('Connection to %s complete!', self._connection)
 
     def _disconnect(self, error=None):
