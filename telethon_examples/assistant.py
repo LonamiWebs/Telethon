@@ -8,6 +8,7 @@ import time
 import urllib.parse
 
 from telethon import TelegramClient, events, custom
+from telethon.extensions import markdown
 
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
@@ -325,7 +326,8 @@ async def handler(event):
         m = re.match('(client|msg).(.+)', query)
         if m:
             text = get_docs_message(m.group(1), m.group(2))
-            result = builder.article(text, text=text)
+            query = markdown.parse(text)[0]
+            result = builder.article(query, text=text)
         else:
             m = re.match('ref.(.+)', query)
             if m:

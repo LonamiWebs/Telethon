@@ -73,3 +73,4 @@ REPLY_MARKUP_TOO_LONG=The data embedded in the reply markup buttons was too much
 SHORTNAME_OCCUPY_FAILED=An error occurred when trying to register the short-name used for the sticker pack. Try a different name
 PACK_SHORT_NAME_INVALID=Invalid sticker pack name. It must begin with a letter, can't contain consecutive underscores and must end in "_by_<bot username>".
 PHOTO_SAVE_FILE_INVALID=The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
+AUTH_KEY_DUPLICATED=The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions
