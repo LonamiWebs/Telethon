@@ -87,10 +87,11 @@ class Connection(abc.ABC):
         self._disconnect(error=None)
 
     def _disconnect(self, error):
-        if error:
-            self._disconnected.set_exception(error)
-        else:
-            self._disconnected.set_result(None)
+        if not self._disconnected.done():
+            if error:
+                self._disconnected.set_exception(error)
+            else:
+                self._disconnected.set_result(None)
 
         while not self._send_queue.empty():
             self._send_queue.get_nowait()
