@@ -20,7 +20,18 @@ class AuthKey:
         """
         self.key = data
 
-        with BinaryReader(sha1(self.key).digest()) as reader:
+    @property
+    def key(self):
+        return self._key
+
+    @key.setter
+    def key(self, value):
+        if not value:
+            self._key = self.aux_hash = self.key_id = None
+            return
+
+        self._key = value
+        with BinaryReader(sha1(self._key).digest()) as reader:
             self.aux_hash = reader.read_long(signed=False)
             reader.read(4)
             self.key_id = reader.read_long(signed=False)
@@ -39,5 +50,8 @@ class AuthKey:
         # Calculates the message key from the given data
         return int.from_bytes(sha1(data).digest()[4:20], 'little', signed=True)
 
+    def __bool__(self):
+        return bool(self._key)
+
     def __eq__(self, other):
-        return isinstance(other, type(self)) and other.key == self.key
+        return isinstance(other, type(self)) and other.key == self._key
