@@ -71,9 +71,9 @@ class MessagePacker:
             size += len(state.data) + TLMessage.SIZE_OVERHEAD
 
             if size <= MessageContainer.MAXIMUM_SIZE:
-                # TODO Implement back using after_id
                 state.msg_id = self._state.write_data_as_message(
-                    buffer, state.data, isinstance(state.request, TLRequest)
+                    buffer, state.data, isinstance(state.request, TLRequest),
+                    after_id=state.after.msg_id if state.after else None
                 )
                 batch.append(state)
                 __log__.debug('Assigned msg_id = %d to %s (%x)',

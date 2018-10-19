@@ -161,15 +161,13 @@ class MTProtoSender:
         else:
             states = []
             futures = []
+            state = None
             for req in request:
-                state = RequestState(req, self._loop)
+                state = RequestState(req, self._loop, after=ordered and state)
                 states.append(state)
                 futures.append(state.future)
-            if ordered:
-                self._send_queue.append(states)
-            else:
-                self._send_queue.extend(states)
 
+            self._send_queue.extend(states)
             return futures
 
     @property

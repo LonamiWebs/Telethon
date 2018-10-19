@@ -8,11 +8,12 @@ class RequestState:
     it belongs to, the request itself, the request as bytes, and the future
     result that will eventually be resolved.
     """
-    __slots__ = ('container_id', 'msg_id', 'request', 'data', 'future')
+    __slots__ = ('container_id', 'msg_id', 'request', 'data', 'future', 'after')
 
-    def __init__(self, request, loop):
+    def __init__(self, request, loop, after=None):
         self.container_id = None
         self.msg_id = None
         self.request = request
         self.data = bytes(request)
         self.future = asyncio.Future(loop=loop)
+        self.after = after
