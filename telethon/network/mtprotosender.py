@@ -342,6 +342,8 @@ class MTProtoSender:
                 continue
 
             try:
+                # TODO Split except
+                data = self._state.encrypt_message_data(data)
                 await self._connection.send(data)
             except Exception:
                 __log__.exception('Unhandled error while sending data')
