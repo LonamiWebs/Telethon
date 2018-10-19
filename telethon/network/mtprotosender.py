@@ -571,7 +571,8 @@ class MTProtoSender:
             self._state._sequence -= 16
         else:
             for state in states:
-                state.future.set_exception(BadMessageError(bad_msg.error_code))
+                state.future.set_exception(
+                    BadMessageError(state.request, bad_msg.error_code))
             return
 
         # Messages are to be re-sent once we've corrected the issue
