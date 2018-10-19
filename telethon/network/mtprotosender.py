@@ -115,6 +115,7 @@ class MTProtoSender:
             __log__.info('User is already connected!')
             return
 
+        self._auth_key.key = auth_key
         self._connection = connection
         self._user_connected = True
         await self._connect()
