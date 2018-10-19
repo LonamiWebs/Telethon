@@ -3,9 +3,10 @@ import collections
 import logging
 
 from . import authenticator
-from .mtprotolayer import MTProtoLayer
+from ..extensions.messagepacker import MessagePacker
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
+from .mtprotostate import MTProtoState
 from ..tl.tlobject import TLRequest
 from .. import utils
 from ..errors import (
@@ -13,7 +14,6 @@ from ..errors import (
     InvalidChecksumError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
-from ..helpers import _ReadyQueue
 from ..tl.core import RpcResult, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
 from ..tl.types import (
@@ -21,7 +21,7 @@ from ..tl.types import (
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
     MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload
 )
-from ..utils import AsyncClassWrapper
+from ..crypto import AuthKey
 
 __log__ = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ class MTProtoSender:
     """
     def __init__(self, loop, *,
                  retries=5, auto_reconnect=True, connect_timeout=None,
-                 update_callback=None,
+                 update_callback=None, auth_key=None,
                  auth_key_callback=None, auto_reconnect_callback=None):
-        self._connection = None  # MTProtoLayer, a.k.a. encrypted connection
+        self._connection = None
         self._loop = loop
         self._retries = retries
         self._auto_reconnect = auto_reconnect
@@ -68,10 +68,13 @@ class MTProtoSender:
         self._send_loop_handle = None
         self._recv_loop_handle = None
 
+        # Preserving the references of the AuthKey and state is important
+        self._auth_key = auth_key or AuthKey(None)
+        self._state = MTProtoState(self._auth_key)
+
         # Outgoing messages are put in a queue and sent in a batch.
         # Note that here we're also storing their ``_RequestState``.
-        # Note that it may also store lists (implying order must be kept).
-        self._send_queue = _ReadyQueue(self._loop)
+        self._send_queue = MessagePacker(self._state, self._loop)
 
         # Sent states are remembered until a response is received.
         self._pending_state = {}
@@ -112,7 +115,7 @@ class MTProtoSender:
             __log__.info('User is already connected!')
             return
 
-        self._connection = MTProtoLayer(connection, auth_key)
+        self._connection = connection
         self._user_connected = True
         await self._connect()
 
@@ -204,17 +207,16 @@ class MTProtoSender:
                                   .format(self._retries))
 
         __log__.debug('Connection success!')
-        state = self._connection._state
-        if state.auth_key is None:
-            plain = MTProtoPlainSender(self._connection._connection)
+        if not self._auth_key:
+            plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
                 try:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
-                    state.auth_key, state.time_offset =\
+                    self._auth_key.key, self._state.time_offset =\
                         await authenticator.do_authentication(plain)
 
                     if self._auth_key_callback:
-                        await self._auth_key_callback(state.auth_key)
+                        await self._auth_key_callback(self._auth_key)
 
                     break
                 except (SecurityError, AssertionError) as e:
@@ -292,7 +294,7 @@ class MTProtoSender:
         self._reconnecting = False
 
         # Start with a clean state (and thus session ID) to avoid old msgs
-        self._connection.reset_state()
+        self._state.reset()
 
         retries = self._retries if self._auto_reconnect else 0
         for retry in range(1, retries + 1):
@@ -333,19 +335,19 @@ class MTProtoSender:
                 self._last_acks.append(ack)
                 self._pending_ack.clear()
 
-            state_list = await self._send_queue.get(
-                self._connection._connection.disconnected)
+            batch, data = await self._send_queue.get(
+                self._connection.disconnected)
 
-            if state_list is None:
-                break
+            if not data:
+                continue
 
             try:
-                await self._connection.send(state_list)
+                await self._connection.send(data)
             except Exception:
                 __log__.exception('Unhandled error while sending data')
                 continue
 
-            for state in state_list:
+            for state in batch:
                 if not isinstance(state, list):
                     if isinstance(state.request, TLRequest):
                         self._pending_state[state.msg_id] = state
@@ -364,7 +366,9 @@ class MTProtoSender:
         while self._user_connected and not self._reconnecting:
             __log__.debug('Receiving items from the network...')
             try:
-                message = await self._connection.recv()
+                # TODO Split except
+                body = await self._connection.recv()
+                message = self._state.decrypt_message_data(body)
             except TypeNotFoundError as e:
                 __log__.info('Type %08x not found, remaining data %r',
                              e.invalid_constructor_id, e.remaining)
@@ -388,7 +392,7 @@ class MTProtoSender:
                 else:
                     __log__.warning('Invalid buffer %s', e)
 
-                self._connection._state.auth_key = None
+                self._auth_key.key = None
                 self._start_reconnect()
                 return
             except asyncio.IncompleteReadError:
@@ -533,7 +537,7 @@ class MTProtoSender:
         """
         bad_salt = message.obj
         __log__.debug('Handling bad salt for message %d', bad_salt.bad_msg_id)
-        self._connection._state.salt = bad_salt.new_server_salt
+        self._state.salt = bad_salt.new_server_salt
         states = self._pop_states(bad_salt.bad_msg_id)
         self._send_queue.extend(states)
 
@@ -554,16 +558,16 @@ class MTProtoSender:
         if bad_msg.error_code in (16, 17):
             # Sent msg_id too low or too high (respectively).
             # Use the current msg_id to determine the right time offset.
-            to = self._connection._state.update_time_offset(
+            to = self._state.update_time_offset(
                 correct_msg_id=message.msg_id)
             __log__.info('System clock is wrong, set time offset to %ds', to)
         elif bad_msg.error_code == 32:
             # msg_seqno too low, so just pump it up by some "large" amount
             # TODO A better fix would be to start with a new fresh session ID
-            self._connection._state._sequence += 64
+            self._state._sequence += 64
         elif bad_msg.error_code == 33:
             # msg_seqno too high never seems to happen but just in case
-            self._connection._state._sequence -= 16
+            self._state._sequence -= 16
         else:
             for state in states:
                 state.future.set_exception(BadMessageError(bad_msg.error_code))
@@ -606,7 +610,7 @@ class MTProtoSender:
         """
         # TODO https://goo.gl/LMyN7A
         __log__.debug('Handling new session created')
-        self._connection._state.salt = message.obj.server_salt
+        self._state.salt = message.obj.server_salt
 
     async def _handle_ack(self, message):
         """

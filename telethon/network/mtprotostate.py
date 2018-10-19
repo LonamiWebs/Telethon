@@ -38,11 +38,17 @@ class MTProtoState:
     authentication process, at which point the `MTProtoPlainSender` is better.
     """
     def __init__(self, auth_key):
-        # Session IDs can be random on every connection
-        self.id = struct.unpack('q', os.urandom(8))[0]
         self.auth_key = auth_key
         self.time_offset = 0
         self.salt = 0
+        self.reset()
+
+    def reset(self):
+        """
+        Resets the state.
+        """
+        # Session IDs can be random on every connection
+        self.id = struct.unpack('q', os.urandom(8))[0]
         self._sequence = 0
         self._last_msg_id = 0
 

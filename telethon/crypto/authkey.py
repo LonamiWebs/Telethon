@@ -30,12 +30,18 @@ class AuthKey:
             self._key = self.aux_hash = self.key_id = None
             return
 
+        if isinstance(value, type(self)):
+            self._key, self.aux_hash, self.key_id = \
+                value._key, value.aux_hash, value.key_id
+            return
+
         self._key = value
         with BinaryReader(sha1(self._key).digest()) as reader:
             self.aux_hash = reader.read_long(signed=False)
             reader.read(4)
             self.key_id = reader.read_long(signed=False)
 
+    # TODO This doesn't really fit here, it's only used in authentication
     def calc_new_nonce_hash(self, new_nonce, number):
         """
         Calculates the new nonce hash based on the current attributes.

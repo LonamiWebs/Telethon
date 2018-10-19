@@ -69,6 +69,7 @@ def get_password_hash(pw, current_salt):
 
 # region Custom Classes
 
+
 class TotalList(list):
     """
     A list with an extra `total` property, which may not match its `len`
@@ -87,46 +88,5 @@ class TotalList(list):
         return '[{}, total={}]'.format(
             ', '.join(repr(x) for x in self), self.total)
 
-
-class _ReadyQueue:
-    """
-    A queue list that supports an arbitrary cancellation token for `get`.
-    """
-    def __init__(self, loop):
-        self._list = []
-        self._loop = loop
-        self._ready = asyncio.Event(loop=loop)
-
-    def append(self, item):
-        self._list.append(item)
-        self._ready.set()
-
-    def extend(self, items):
-        self._list.extend(items)
-        self._ready.set()
-
-    async def get(self, cancellation):
-        """
-        Returns a list of all the items added to the queue until now and
-        clears the list from the queue itself. Returns ``None`` if cancelled.
-        """
-        ready = self._loop.create_task(self._ready.wait())
-        try:
-            done, pending = await asyncio.wait(
-                [ready, cancellation],
-                return_when=asyncio.FIRST_COMPLETED,
-                loop=self._loop
-            )
-        except asyncio.CancelledError:
-            done = [cancellation]
-
-        if cancellation in done:
-            ready.cancel()
-            return None
-
-        result = self._list
-        self._list = []
-        self._ready.clear()
-        return result
 
 # endregion
