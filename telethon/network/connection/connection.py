@@ -4,6 +4,8 @@ import logging
 import socket
 import ssl as ssl_mod
 
+from ...errors import InvalidChecksumError
+
 __log__ = logging.getLogger(__name__)
 
 
@@ -172,6 +174,9 @@ class Connection(abc.ABC):
         except Exception as e:
             if isinstance(e, asyncio.IncompleteReadError):
                 msg = 'The server closed the connection'
+                logging.info(msg)
+            elif isinstance(e, InvalidChecksumError):
+                msg = 'The server response had an invalid checksum'
                 logging.info(msg)
             else:
                 msg = 'Unexpected exception in the receive loop'

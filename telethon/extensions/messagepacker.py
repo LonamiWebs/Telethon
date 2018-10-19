@@ -111,6 +111,4 @@ class MessagePacker:
                 s.container_id = container_id
 
         data = buffer.getvalue()
-        __log__.debug('Packed %d message(s) in %d bytes for sending',
-                      len(batch), len(data))
         return batch, data
