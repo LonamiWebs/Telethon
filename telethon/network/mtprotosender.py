@@ -41,17 +41,15 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, loop, *,
+    def __init__(self, auth_key, loop, *,
                  retries=5, auto_reconnect=True, connect_timeout=None,
-                 update_callback=None, auth_key=None,
-                 auth_key_callback=None, auto_reconnect_callback=None):
+                 update_callback=None, auto_reconnect_callback=None):
         self._connection = None
         self._loop = loop
         self._retries = retries
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
         self._update_callback = update_callback
-        self._auth_key_callback = auth_key_callback
         self._auto_reconnect_callback = auto_reconnect_callback
 
         # Whether the user has explicitly connected or disconnected.
@@ -107,7 +105,7 @@ class MTProtoSender:
 
     # Public API
 
-    async def connect(self, auth_key, connection):
+    async def connect(self, connection):
         """
         Connects to the specified given connection using the given auth key.
         """
@@ -115,7 +113,6 @@ class MTProtoSender:
             __log__.info('User is already connected!')
             return
 
-        self._auth_key.key = auth_key
         self._connection = connection
         self._user_connected = True
         await self._connect()
@@ -215,9 +212,6 @@ class MTProtoSender:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
                     self._auth_key.key, self._state.time_offset =\
                         await authenticator.do_authentication(plain)
-
-                    if self._auth_key_callback:
-                        await self._auth_key_callback(self._auth_key)
 
                     break
                 except (SecurityError, AssertionError) as e:
