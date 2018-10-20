@@ -456,7 +456,10 @@ class TelegramBaseClient(abc.ABC):
                 sender.dc_id = dc_id
             elif not n:
                 dc = await self._get_dc(dc_id)
-                await sender.connect(dc.ip_address, dc.port)
+                await sender.connect(self._connection(
+                    dc.ip_address, dc.port,
+                    loop=self._loop, proxy=self._proxy
+                ))
 
             self._borrowed_senders[dc_id] = (n + 1, sender)
 
