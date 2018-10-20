@@ -35,11 +35,12 @@ def generate_errors(errors, f):
                     .format(error.capture_name))
 
         f.write('super(Exception, self).__init__('
-                '{} + self._fmt_request(request)'
-                .format(repr(error.description)))
+                '{}'.format(repr(error.description)))
 
         if error.has_captures:
             f.write('.format(self.{})'.format(error.capture_name))
+
+        f.write(' + self._fmt_request(request)')
 
         f.write(')\n')
 
