@@ -218,7 +218,6 @@ class UpdateMethods(UserMethods):
             except asyncio.TimeoutError:
                 pass
             except asyncio.CancelledError:
-                self.disconnect()
                 return
             except Exception as e:
                 continue  # Any disconnected exception should be ignored
