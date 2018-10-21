@@ -158,7 +158,7 @@ class Connection(abc.ABC):
             pass
         except Exception:
             msg = 'Unexpected exception in the send loop'
-            logging.exception(msg)
+            __log__.exception(msg)
             self._disconnect(ConnectionError(msg))
 
     async def _recv_loop(self):
@@ -174,13 +174,13 @@ class Connection(abc.ABC):
         except Exception as e:
             if isinstance(e, asyncio.IncompleteReadError):
                 msg = 'The server closed the connection'
-                logging.info(msg)
+                __log__.info(msg)
             elif isinstance(e, InvalidChecksumError):
                 msg = 'The server response had an invalid checksum'
-                logging.info(msg)
+                __log__.info(msg)
             else:
                 msg = 'Unexpected exception in the receive loop'
-                logging.exception(msg)
+                __log__.exception(msg)
 
             await self._recv_queue.put(None)
             self._disconnect(ConnectionError(msg))
