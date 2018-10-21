@@ -38,7 +38,7 @@ class MessagePacker:
         self._deque.extend(states)
         self._ready.set()
 
-    async def get(self, cancellation):
+    async def get(self):
         """
         Returns (batch, data) if one or more items could be retrieved.
 
@@ -47,19 +47,7 @@ class MessagePacker:
         """
         if not self._deque:
             self._ready.clear()
-            ready = self._loop.create_task(self._ready.wait())
-            try:
-                done, pending = await asyncio.wait(
-                    [ready, cancellation],
-                    return_when=asyncio.FIRST_COMPLETED,
-                    loop=self._loop
-                )
-            except asyncio.CancelledError:
-                done = [cancellation]
-
-            if cancellation in done:
-                ready.cancel()
-                return None, None
+            await self._ready.wait()
 
         buffer = io.BytesIO()
         batch = []

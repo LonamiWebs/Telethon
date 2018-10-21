@@ -279,11 +279,11 @@ class MTProtoSender:
         __log__.debug('Closing current connection...')
         self._connection.disconnect()
 
-        __log__.debug('Awaiting for the send loop before reconnecting...')
-        await self._send_loop_handle
+        __log__.debug('Cancelling the send loop...')
+        self._send_loop_handle.cancel()
 
-        __log__.debug('Awaiting for the receive loop before reconnecting...')
-        await self._recv_loop_handle
+        __log__.debug('Cancelling the receive loop...')
+        self._recv_loop_handle.cancel()
 
         self._reconnecting = False
 
@@ -334,8 +334,7 @@ class MTProtoSender:
             # This means that while it's not empty we can wait for
             # more messages to be added to the send queue.
             try:
-                batch, data = await self._send_queue.get(
-                    self._connection.disconnected)
+                batch, data = await self._send_queue.get()
             except asyncio.CancelledError:
                 return
 
