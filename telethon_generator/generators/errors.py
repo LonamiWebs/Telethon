@@ -40,9 +40,7 @@ def generate_errors(errors, f):
         if error.has_captures:
             f.write('.format(self.{})'.format(error.capture_name))
 
-        f.write(' + self._fmt_request(request)')
-
-        f.write(')\n')
+        f.write(' + self._fmt_request(request))\n')
 
     # Create the actual {CODE: ErrorClassName} dict once classes are defined
     f.write('\n\nrpc_errors_dict = {\n')
