@@ -153,6 +153,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 if inspect.isawaitable(value):
                     value = await value
 
+                # Since sign-in with no code works (it sends the code)
+                # we must double-check that here. Else we'll assume we
+                # logged in, and it will return None as the User.
+                if not value:
+                    raise errors.PhoneCodeEmptyError(request=None)
+
                 if sign_up:
                     me = await self.sign_up(value, first_name, last_name)
                 else:
