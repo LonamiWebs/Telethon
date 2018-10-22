@@ -63,7 +63,8 @@ class EventBuilder(abc.ABC):
 
                 @client.on(events.NewMessage(func=lambda e: e.is_private))
                 async def handler(event):
-                    pass  # code here
+                    # Access the result of func
+                    assert event.func_result is True
     """
     self_id = None
 
@@ -114,8 +115,14 @@ class EventBuilder(abc.ABC):
                 # If it doesn't match but it's a whitelist ignore.
                 return None
 
-        if not self.func or self.func(event):
-            return event
+        if self.func:
+            func_result = self.func(event)
+
+            if not func_result:
+                return None
+
+            event.func_result = func_result
+        return event
 
 
 class EventCommon(ChatGetter, abc.ABC):
@@ -126,8 +133,11 @@ class EventCommon(ChatGetter, abc.ABC):
     <telethon.tl.custom.chatgetter.ChatGetter>` which
     means you have access to all chat properties and methods.
 
-    In addition, you can access the `original_update`
-    field which contains the original :tl:`Update`.
+    You can access the `original_update` field which
+    contains the original :tl:`Update`.
+
+    In addition, the result of the event builder's `func`
+    predicate can be accessed via `event.func_result`.
     """
     _event_name = 'Event'
 
@@ -140,6 +150,7 @@ class EventCommon(ChatGetter, abc.ABC):
         self._chat = None
         self._broadcast = broadcast
         self.original_update = None
+        self.func_result = None
 
     def _set_client(self, client):
         """
