@@ -312,15 +312,10 @@ class TelegramBaseClient(abc.ABC):
             self.session.server_address, self.session.port,
             loop=self._loop, proxy=self._proxy
         ))
+        self.session.auth_key = self._sender.auth_key
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
-
-        # AuthKey is a property, so re-setting it has side-effects.
-        # Since it's used as a reference and only its inner payload
-        # may have actually changed after connecting, we use the
-        # reference from the session file itself as its value.
-        self.session.auth_key = self.session.auth_key
 
         self._updates_handle = self._loop.create_task(self._update_loop())
 

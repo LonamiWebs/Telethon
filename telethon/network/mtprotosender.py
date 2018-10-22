@@ -68,8 +68,8 @@ class MTProtoSender:
         self._recv_loop_handle = None
 
         # Preserving the references of the AuthKey and state is important
-        self._auth_key = auth_key or AuthKey(None)
-        self._state = MTProtoState(self._auth_key)
+        self.auth_key = auth_key or AuthKey(None)
+        self._state = MTProtoState(self.auth_key)
 
         # Outgoing messages are put in a queue and sent in a batch.
         # Note that here we're also storing their ``_RequestState``.
@@ -204,12 +204,12 @@ class MTProtoSender:
                                   .format(self._retries))
 
         __log__.debug('Connection success!')
-        if not self._auth_key:
+        if not self.auth_key:
             plain = MTProtoPlainSender(self._connection)
             for retry in range(1, self._retries + 1):
                 try:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
-                    self._auth_key.key, self._state.time_offset =\
+                    self.auth_key.key, self._state.time_offset =\
                         await authenticator.do_authentication(plain)
 
                     break
@@ -402,7 +402,7 @@ class MTProtoSender:
                 else:
                     __log__.warning('Invalid buffer %s', e)
 
-                self._auth_key.key = None
+                self.auth_key.key = None
                 self._start_reconnect()
                 return
             except Exception:
