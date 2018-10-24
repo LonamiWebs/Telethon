@@ -501,7 +501,7 @@ For instance, let's imagine ``you`` are the bot talking to ``usr``:
     <usr> ?
     <you> Your name didn't have any letters! Try again
     <usr> Lonami
-    <you> Thanks!
+    <you> Thanks Lonami!
 
 This can be programmed as follows:
 

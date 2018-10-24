@@ -351,7 +351,7 @@ async def handler(event):
         for i in range(1, 4)
     ]
     what = max(rates, key=lambda t: t[1])
-    if what[1] < 0.7:
+    if what[1] < 0.75:
         return
 
     name = what[0]

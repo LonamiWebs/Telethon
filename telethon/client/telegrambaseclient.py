@@ -313,6 +313,7 @@ class TelegramBaseClient(abc.ABC):
             loop=self._loop, proxy=self._proxy
         ))
         self.session.auth_key = self._sender.auth_key
+        self.session.save()
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
