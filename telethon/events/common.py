@@ -63,7 +63,8 @@ class EventBuilder(abc.ABC):
 
                 @client.on(events.NewMessage(func=lambda e: e.is_private))
                 async def handler(event):
-                    # Access the result of func
+                    # Access the result of func. You don't actually need the assert,
+                    # this is just an example showcasing how to access the result.
                     assert event.func_result is True
     """
     self_id = None
