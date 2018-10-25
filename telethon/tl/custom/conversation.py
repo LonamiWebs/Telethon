@@ -418,10 +418,14 @@ class Conversation(ChatGetter):
 
         return self
 
+    def cancel(self):
+        """Cancels the current conversation and exits the context manager."""
+        raise _ConversationCancelled()
+
     def __exit__(self, *args):
         return self._client.loop.run_until_complete(self.__aexit__(*args))
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         chat_id = utils.get_peer_id(self._chat_peer)
         if self._client._ids_in_conversations[chat_id] == 1:
             del self._client._ids_in_conversations[chat_id]
@@ -430,3 +434,8 @@ class Conversation(ChatGetter):
 
         del self._client._conversations[self._id]
         self._cancel_all()
+        return isinstance(exc_val, _ConversationCancelled)
+
+
+class _ConversationCancelled(InterruptedError):
+    pass
