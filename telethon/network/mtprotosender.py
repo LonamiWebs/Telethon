@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import functools
 import logging
 
 from . import authenticator
@@ -10,8 +11,8 @@ from .mtprotostate import MTProtoState
 from ..tl.tlobject import TLRequest
 from .. import utils
 from ..errors import (
-    BadMessageError, InvalidBufferError, SecurityError, TypeNotFoundError,
-    InvalidChecksumError, rpc_message_to_error
+    BadMessageError, InvalidBufferError, SecurityError,
+    TypeNotFoundError, rpc_message_to_error
 )
 from ..extensions import BinaryReader
 from ..tl.core import RpcResult, MessageContainer, GzipPacked
@@ -24,6 +25,23 @@ from ..tl.types import (
 from ..crypto import AuthKey
 
 __log__ = logging.getLogger(__name__)
+
+
+def _cancellable(func):
+    """
+    Silences `asyncio.CancelledError` for an entire function.
+
+    This way the function can be cancelled without the task ending
+    with a exception, and without the function body requiring another
+    indent level for the try/except.
+    """
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except asyncio.CancelledError:
+            pass
+    return wrapped
 
 
 class MTProtoSender:
@@ -315,6 +333,7 @@ class MTProtoSender:
 
     # Loops
 
+    @_cancellable
     async def _send_loop(self):
         """
         This loop is responsible for popping items off the send
@@ -333,10 +352,7 @@ class MTProtoSender:
             # TODO Wait for the connection send queue to be empty?
             # This means that while it's not empty we can wait for
             # more messages to be added to the send queue.
-            try:
-                batch, data = await self._send_queue.get()
-            except asyncio.CancelledError:
-                return
+            batch, data = await self._send_queue.get()
 
             if not data:
                 continue
@@ -347,8 +363,6 @@ class MTProtoSender:
             data = self._state.encrypt_message_data(data)
             try:
                 await self._connection.send(data)
-            except asyncio.CancelledError:
-                return
             except ConnectionError:
                 __log__.info('Connection closed while sending data')
                 self._start_reconnect()
@@ -365,6 +379,7 @@ class MTProtoSender:
 
             __log__.debug('Encrypted messages put in a queue to be sent')
 
+    @_cancellable
     async def _recv_loop(self):
         """
         This loop is responsible for reading all incoming responses
@@ -376,8 +391,6 @@ class MTProtoSender:
             __log__.debug('Receiving items from the network...')
             try:
                 body = await self._connection.recv()
-            except asyncio.CancelledError:
-                return
             except ConnectionError:
                 __log__.info('Connection closed while receiving data')
                 self._start_reconnect()
