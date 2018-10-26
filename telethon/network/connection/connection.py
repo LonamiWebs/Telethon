@@ -163,7 +163,7 @@ class Connection(abc.ABC):
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            if isinstance(e, asyncio.IncompleteReadError):
+            if isinstance(e, (ConnectionError, asyncio.IncompleteReadError)):
                 msg = 'The server closed the connection'
                 __log__.info(msg)
             elif isinstance(e, InvalidChecksumError):
