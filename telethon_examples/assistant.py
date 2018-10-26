@@ -1,5 +1,6 @@
 import asyncio
 import difflib
+import html
 import logging
 import os
 import re
@@ -314,10 +315,15 @@ if aiohttp:
             return
 
         msg = await event.get_reply_message()
+        if len(msg.raw_text or '') < 200:
+            return
+
         sent = await event.respond(
             'Uploading paste...', reply_to=msg.reply_to_msg_id)
 
-        name = utils.get_display_name(await msg.get_sender()) or 'A user'
+        name = html.escape(
+            utils.get_display_name(await msg.get_sender()) or 'A user')
+
         text = msg.raw_text
         code = ''
         for _, string in msg.get_entities_text((
@@ -339,9 +345,9 @@ if aiohttp:
 
         await asyncio.wait([
             msg.delete(),
-            sent.edit(f'[{name}](tg://user?id={msg.sender_id}) '
+            sent.edit(f'<a href="tg://user?id={msg.sender_id}">{name}</a> '
                       f'said: {text} hastebin.com/{haste}.py'
-                      .replace('  ', ' '))
+                      .replace('  ', ' '), parse_mode='html')
         ])
 
 
