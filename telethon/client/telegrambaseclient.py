@@ -93,6 +93,7 @@ class TelegramBaseClient(abc.ABC):
             The delay should wait between each retry in seconds, either
             on the initial connection or when Telegram disconnects us
             or when sending requests.
+            
             May be set to a false-y value (``0`` or ``None``) for no delays.
 
         auto_reconnect (`bool`, optional):
