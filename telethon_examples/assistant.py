@@ -7,12 +7,17 @@ import sys
 import time
 import urllib.parse
 
-from telethon import TelegramClient, events, custom
+from telethon import TelegramClient, events, types, custom, utils
 from telethon.extensions import markdown
 
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger('asyncio').setLevel(logging.ERROR)
 
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
+    logging.warning('aiohttp module not available; #haste command disabled')
 
 def get_env(name, message, cast=str):
     if name in os.environ:
@@ -296,6 +301,48 @@ async def handler(event):
     message = await event.respond(text, link_preview=False)
     await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
     await message.delete()
+
+
+if aiohttp:
+    @bot.on(events.NewMessage(pattern='(?i)#[hp]aste(bin)?', forwards=False))
+    async def handler(event):
+        """
+        #haste: Replaces the message you reply to with a hastebin link.
+        """
+        await event.delete()
+        if not event.reply_to_msg_id:
+            return
+
+        msg = await event.get_reply_message()
+        sent = await event.respond(
+            'Uploading paste...', reply_to=msg.reply_to_msg_id)
+
+        name = utils.get_display_name(await msg.get_sender()) or 'A user'
+        text = msg.raw_text
+        code = ''
+        for _, string in msg.get_entities_text((
+                types.MessageEntityCode, types.MessageEntityPre)):
+            code += f'{string}\n'
+            text = text.replace(string, '')
+
+        code = code.rstrip()
+        if code:
+            text = re.sub(r'\s+', ' ', text)
+        else:
+            code = msg.raw_text
+            text = ''
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post('https://hastebin.com/documents',
+                                    data=code.encode('utf-8')) as resp:
+                haste = (await resp.json())['key']
+
+        await asyncio.wait([
+            msg.delete(),
+            sent.edit(f'[{name}](tg://user?id={msg.sender_id}) '
+                      f'said: {text} hastebin.com/{haste}.py'
+                      .replace('  ', ' '))
+        ])
 
 
 # ==============================  Commands ==============================

@@ -101,4 +101,4 @@ or even the TelegramClient_ itself to learn how it works.
 See the mentioned :ref:`telethon-client` to find the available methods.
 
 .. _InteractiveTelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/interactive_telegram_client.py
-.. _TelegramClient: https://github.com/LonamiWebs/Telethon/blob/master/telethon/telegram_client.py
+.. _TelegramClient: https://github.com/LonamiWebs/Telethon/tree/master/telethon/client
