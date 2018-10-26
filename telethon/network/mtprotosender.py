@@ -60,11 +60,12 @@ class MTProtoSender:
     key exists yet.
     """
     def __init__(self, auth_key, loop, *,
-                 retries=5, auto_reconnect=True, connect_timeout=None,
+                 retries=5, delay=0, auto_reconnect=True, connect_timeout=None,
                  update_callback=None, auto_reconnect_callback=None):
         self._connection = None
         self._loop = loop
         self._retries = retries
+        self._delay = delay
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
         self._update_callback = update_callback
@@ -215,6 +216,9 @@ class MTProtoSender:
             except (ConnectionError, asyncio.TimeoutError) as e:
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
+                __log__.warning('Sleeping for {} seconds on failed attempt {}:'
+                                .format(self._delay,retry))
+                await asyncio.sleep(self._delay)                                
             else:
                 break
         else:
@@ -234,6 +238,9 @@ class MTProtoSender:
                 except (SecurityError, AssertionError) as e:
                     __log__.warning('Attempt {} at new auth_key failed: {}'
                                     .format(retry, e))
+                    __log__.warning('Sleeping for {} seconds on failed attempt {}:'
+                                .format(self._delay,retry))
+                    await asyncio.sleep(self._delay)
             else:
                 e = ConnectionError('auth_key generation failed {} times'
                                     .format(self._retries))
@@ -314,6 +321,9 @@ class MTProtoSender:
                 await self._connect()
             except ConnectionError:
                 __log__.info('Failed reconnection retry %d/%d', retry, retries)
+                __log__.warning('Sleeping for {} seconds on failed attempt {}:'
+                                .format(self._delay,retry))
+                await asyncio.sleep(self._delay)            
             else:
                 self._send_queue.extend(self._pending_state.values())
                 self._pending_state.clear()
