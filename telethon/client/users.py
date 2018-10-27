@@ -31,7 +31,7 @@ class UserMethods(TelegramBaseClient):
                     await asyncio.sleep(diff, loop=self._loop)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
-                    raise errors.FloodWaitError(capture=diff)
+                    raise errors.FloodWaitError(r, capture=diff)
 
         request_index = 0
         self._last_request = time.time()
