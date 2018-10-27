@@ -205,7 +205,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                         print('Invalid password. Please try again',
                               file=sys.stderr)
                 else:
-                    raise errors.PasswordHashInvalidError()
+                    raise errors.PasswordHashInvalidError(None)
             else:
                 me = await self.sign_in(phone=phone, password=password)
 
