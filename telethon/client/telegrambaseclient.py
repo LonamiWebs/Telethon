@@ -89,6 +89,9 @@ class TelegramBaseClient(abc.ABC):
             retries, but this is not recommended, since the program can
             get stuck in an infinite loop.
 
+        retry_delay (`int` | `float`, optional):
+            The delay in seconds to sleep between automatic reconnections.
+
         auto_reconnect (`bool`, optional):
             Whether reconnection should be retried `connection_retries`
             times automatically if Telegram disconnects us or not.
@@ -150,6 +153,7 @@ class TelegramBaseClient(abc.ABC):
                  timeout=10,
                  request_retries=5,
                  connection_retries=5,
+                 retry_delay=1,
                  auto_reconnect=True,
                  sequential_updates=False,
                  flood_sleep_threshold=60,
@@ -210,6 +214,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._request_retries = request_retries or sys.maxsize
         self._connection_retries = connection_retries or sys.maxsize
+        self._retry_delay = retry_delay or 0
         self._proxy = proxy
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
@@ -237,6 +242,7 @@ class TelegramBaseClient(abc.ABC):
         self._sender = MTProtoSender(
             self.session.auth_key, self._loop,
             retries=self._connection_retries,
+            delay=self._retry_delay,
             auto_reconnect=self._auto_reconnect,
             connect_timeout=self._timeout,
             update_callback=self._handle_update,
