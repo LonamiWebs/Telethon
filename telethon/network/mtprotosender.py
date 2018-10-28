@@ -60,7 +60,7 @@ class MTProtoSender:
     key exists yet.
     """
     def __init__(self, auth_key, loop, *,
-                 retries=5, delay=0, auto_reconnect=True, connect_timeout=None,
+                 retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
                  update_callback=None, auto_reconnect_callback=None):
         self._connection = None
         self._loop = loop
