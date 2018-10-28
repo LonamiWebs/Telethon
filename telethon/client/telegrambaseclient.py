@@ -153,7 +153,7 @@ class TelegramBaseClient(abc.ABC):
                  timeout=10,
                  request_retries=5,
                  connection_retries=5,
-                 retry_delay=0,
+                 retry_delay=1,
                  auto_reconnect=True,
                  sequential_updates=False,
                  flood_sleep_threshold=60,
