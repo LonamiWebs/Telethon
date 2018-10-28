@@ -27,12 +27,25 @@ You **don't** need to import these `AuthMethods`, `MessageMethods`, etc.
 Together they are the `telethon.TelegramClient` and you can access all of
 their methods.
 
+.. automodule:: telethon.client.telegrambaseclient
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 .. automodule:: telethon.client.auth
     :members:
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: telethon.client.bots
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: telethon.client.buttons
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 .. automodule:: telethon.client.chats
     :members:
@@ -40,6 +53,11 @@ their methods.
     :show-inheritance:
 
 .. automodule:: telethon.client.dialogs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: telethon.client.downloads
     :members:
     :undoc-members:
     :show-inheritance:
@@ -59,23 +77,12 @@ their methods.
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: telethon.client.downloads
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: telethon.client.uploads
     :members:
     :undoc-members:
     :show-inheritance:
 
 .. automodule:: telethon.client.users
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-.. automodule:: telethon.client.telegrambaseclient
     :members:
     :undoc-members:
     :show-inheritance:
