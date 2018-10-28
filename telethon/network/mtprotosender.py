@@ -216,9 +216,7 @@ class MTProtoSender:
             except (ConnectionError, asyncio.TimeoutError) as e:
                 __log__.warning('Attempt {} at connecting failed: {}: {}'
                                 .format(retry, type(e).__name__, e))
-                __log__.warning('Sleeping for {} seconds on failed attempt {}:'
-                                .format(self._delay,retry))
-                await asyncio.sleep(self._delay)                                
+                await asyncio.sleep(self._delay)
             else:
                 break
         else:
