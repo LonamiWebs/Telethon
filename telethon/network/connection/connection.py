@@ -33,6 +33,7 @@ class Connection(abc.ABC):
         self._recv_task = None
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
+        self._waiting_recv = False
 
     async def connect(self, timeout=None, ssl=None):
         """
@@ -131,7 +132,10 @@ class Connection(abc.ABC):
         if not self._connected:
             raise ConnectionError('Not connected')
 
+        self._waiting_recv = True
         result = await self._recv_queue.get()
+        self._waiting_recv = False
+
         if result:
             return result
         else:
@@ -173,7 +177,9 @@ class Connection(abc.ABC):
                 msg = 'Unexpected exception in the receive loop'
                 __log__.exception(msg)
 
-            await self._recv_queue.put(None)
+            if self._waiting_recv and not self._recv_queue.empty():
+                await self._recv_queue.put_nowait(None)
+
             self._disconnect(ConnectionError(msg))
 
     @abc.abstractmethod
