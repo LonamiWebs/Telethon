@@ -317,9 +317,7 @@ class MTProtoSender:
                 await self._connect()
             except ConnectionError:
                 __log__.info('Failed reconnection retry %d/%d', retry, retries)
-                __log__.warning('Sleeping for {} seconds on failed attempt {}:'
-                                .format(self._delay,retry))
-                await asyncio.sleep(self._delay)            
+                await asyncio.sleep(self._delay)
             else:
                 self._send_queue.extend(self._pending_state.values())
                 self._pending_state.clear()
