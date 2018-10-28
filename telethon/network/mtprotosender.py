@@ -236,8 +236,6 @@ class MTProtoSender:
                 except (SecurityError, AssertionError) as e:
                     __log__.warning('Attempt {} at new auth_key failed: {}'
                                     .format(retry, e))
-                    __log__.warning('Sleeping for {} seconds on failed attempt {}:'
-                                .format(self._delay,retry))
                     await asyncio.sleep(self._delay)
             else:
                 e = ConnectionError('auth_key generation failed {} times'
