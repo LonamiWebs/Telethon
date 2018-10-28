@@ -89,12 +89,8 @@ class TelegramBaseClient(abc.ABC):
             retries, but this is not recommended, since the program can
             get stuck in an infinite loop.
 
-        retry_delay (`float`, optional):
-            The delay should wait between each retry in seconds, either
-            on the initial connection or when Telegram disconnects us
-            or when sending requests.
-            
-            May be set to a false-y value (``0`` or ``None``) for no delays.
+        retry_delay (`int` | `float`, optional):
+            The delay in seconds to sleep between automatic reconnections.
 
         auto_reconnect (`bool`, optional):
             Whether reconnection should be retried `connection_retries`
