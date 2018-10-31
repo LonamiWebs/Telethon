@@ -235,6 +235,6 @@ class MemorySession(Session):
     def get_file(self, md5_digest, file_size, cls):
         key = (md5_digest, file_size, _SentFileType.from_type(cls))
         try:
-            return cls(self._files[key])
+            return cls(*self._files[key])
         except KeyError:
             return None
