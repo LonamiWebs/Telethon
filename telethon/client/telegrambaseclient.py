@@ -13,7 +13,6 @@ from ..network import MTProtoSender, ConnectionTcpFull
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
-from ..crypto import AuthKey
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -245,6 +244,7 @@ class TelegramBaseClient(abc.ABC):
             delay=self._retry_delay,
             auto_reconnect=self._auto_reconnect,
             connect_timeout=self._timeout,
+            auth_key_callback=self._auth_key_callback,
             update_callback=self._handle_update,
             auto_reconnect_callback=self._handle_auto_reconnect
         )
@@ -386,12 +386,13 @@ class TelegramBaseClient(abc.ABC):
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
+        self._sender.auth_key.key = None
         self.session.auth_key = None
         self.session.save()
         self._disconnect()
         return await self.connect()
 
-    async def _auth_key_callback(self, auth_key):
+    def _auth_key_callback(self, auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.

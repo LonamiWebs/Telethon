@@ -61,6 +61,7 @@ class MTProtoSender:
     """
     def __init__(self, auth_key, loop, *,
                  retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
+                 auth_key_callback=None,
                  update_callback=None, auto_reconnect_callback=None):
         self._connection = None
         self._loop = loop
@@ -68,6 +69,7 @@ class MTProtoSender:
         self._delay = delay
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
+        self._auth_key_callback = auth_key_callback
         self._update_callback = update_callback
         self._auto_reconnect_callback = auto_reconnect_callback
 
@@ -231,6 +233,13 @@ class MTProtoSender:
                     __log__.debug('New auth_key attempt {}...'.format(retry))
                     self.auth_key.key, self._state.time_offset =\
                         await authenticator.do_authentication(plain)
+
+                    # This is *EXTREMELY* important since we don't control
+                    # external references to the authorization key, we must
+                    # notify whenever we change it. This is crucial when we
+                    # switch to different data centers.
+                    if self._auth_key_callback:
+                        self._auth_key_callback(self.auth_key)
 
                     break
                 except (SecurityError, AssertionError) as e:
@@ -420,6 +429,9 @@ class MTProtoSender:
                     __log__.warning('Invalid buffer %s', e)
 
                 self.auth_key.key = None
+                if self._auth_key_callback:
+                    self._auth_key_callback(None)
+
                 self._start_reconnect()
                 return
             except Exception:
