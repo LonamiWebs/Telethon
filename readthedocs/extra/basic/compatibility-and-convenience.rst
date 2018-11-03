@@ -14,31 +14,48 @@ is there to tell you when these important changes happen.
 Compatibility
 *************
 
-.. important::
+Some decisions when developing will inevitable be proven wrong in the future.
+One of these decisions was using threads. Now that Python 3.4 is reaching EOL
+and using ``asyncio`` is usable as of Python 3.5 it makes sense for a library
+like Telethon to make a good use of it.
 
-    **You should not enable the thread-compatibility mode for new projects.**
-    It comes with a cost, and new projects will greatly benefit from using
-    ``asyncio`` by default such as increased speed and easier reasoning about
-    the code flow. You should only enable it for old projects you don't have
-    the time to upgrade to ``asyncio``.
+If you have old code, **just use old versions** of the library! There is
+nothing wrong with that other than not getting new updates or fixes, but
+using a fixed version with ``pip install telethon==0.19.1.6`` is easy
+enough to do.
 
-There exists a fair amount of code online using Telethon before it reached
-its 1.0 version, where it became fully asynchronous by default. Since it was
-necessary to clean some things, compatibility was not kept 100% but the
-changes are simple:
+You might want to consider using `Virtual Environments
+<https://docs.python.org/3/tutorial/venv.html>`_ in your projects.
+
+There's no point in maintaining a synchronous version because the whole point
+is that people don't have time to upgrade, and there has been several changes
+and clean-ups. Using an older version is the right way to go.
+
+Sometimes, other small decisions are made. These all will be reflected in the
+:ref:`changelog` which you should read when upgrading.
+
+If you want to jump the ``asyncio`` boat, here are some of the things you will
+need to start migrating really old code:
 
 .. code-block:: python
 
-    # 1. The library no longer uses threads.
-    # Add this at the **beginning** of your script to work around that.
-    from telethon import full_sync
-    full_sync.enable()
+    # 1. Import the client from telethon.sync
+    from telethon.sync import TelegramClient
 
-    # 2. client.connect() no longer returns True.
-    # Change this...
-    assert client.connect()
+    # 2. Change this monster...
+    try:
+        assert client.connect()
+        if not client.is_user_authorized():
+            client.send_code_request(phone_number)
+            me = client.sign_in(phone_number, input('Enter code: '))
+
+        ...  # REST OF YOUR CODE
+    finally:
+        client.disconnect()
+
     # ...for this:
-    client.connect()
+    with client:
+        ...  # REST OF YOUR CODE
 
     # 3. client.idle() no longer exists.
     # Change this...
@@ -52,11 +69,10 @@ changes are simple:
     # ...to this:
     client.add_event_handler(handler)
 
-    # 5. It's good practice to stop the full_sync mode once you're done
-    try:
-        ...  # all your code in here
-    finally:
-        full_sync.stop()
+
+In addition, all the update handlers must be ``async def``, and you need
+to ``await`` method calls that rely on network requests, such as getting
+the chat or sender. If you don't use updates, you're done!
 
 
 Convenience
@@ -75,8 +91,8 @@ Convenience
     This makes the examples shorter and easier to think about.
 
 For quick scripts that don't need updates, it's a lot more convenient to
-forget about ``full_sync`` or ``asyncio`` and just work with sequential code.
-This can prove to be a powerful hybrid for running under the Python REPL too.
+forget about ``asyncio`` and just work with sequential code. This can prove
+to be a powerful hybrid for running under the Python REPL too.
 
 .. code-block:: python
 
@@ -122,7 +138,7 @@ Speed
 
 When you're ready to micro-optimize your application, or if you simply
 don't need to call any non-basic methods from a synchronous context,
-just get rid of both ``telethon.sync`` and ``telethon.full_sync``:
+just get rid of ``telethon.sync`` and work inside an ``async def``:
 
 .. code-block:: python
 
