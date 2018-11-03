@@ -97,6 +97,10 @@ class Dialog:
             self.input_entity, *args, **kwargs)
 
     async def delete(self):
+        """
+        Deletes the dialog from your dialog list. If you own the
+        channel this won't destroy it, only delete it from the list.
+        """
         if self.is_channel:
             await self._client(functions.channels.LeaveChannelRequest(
                 self.input_entity))

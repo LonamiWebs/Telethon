@@ -14,6 +14,83 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Connection Overhaul (v1.4)
+==========================
+
+*Published at 2018/11/03*
+
+Yet again, a lot of work has been put into reworking the low level connection
+classes. This means ``asyncio.open_connection`` is now used correctly and the
+errors it can produce are handled properly. The separation between packing,
+encrypting and network is now abstracted away properly, so reasoning about
+the code is easier, making it more maintainable.
+
+As a user, you shouldn't worry about this, other than being aware that quite
+a few changes were made in the insides of the library and you should report
+any issues that you encounter with this version if any.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The threaded version of the library will no longer be maintained, primarily
+  because it never was properly maintained anyway. If you have old code, stick
+  with old versions of the library, such as ``0.19.1.6``.
+* Timeouts no longer accept ``timedelta``. Simply use seconds.
+* The ``callback`` parameter from `telethon.tl.custom.button.Button.inline()`
+  was removed, since it had always been a bad idea. Adding the callback there
+  meant a lot of extra work for every message sent, and only registering it
+  after the first message was sent! Instead, use
+  `telethon.events.callbackquery.CallbackQuery`.
+
+
+Additions
+~~~~~~~~~
+
+* New `dialog.delete() <telethon.tl.custom.dialog.Dialog.delete>` method.
+* New `conversation.cancel()
+  <telethon.tl.custom.conversation.Conversation.cancel>` method.
+* New ``retry_delay`` delay for the client to be used on auto-reconnection.
+
+
+Bug fixes
+~~~~~~~~~
+
+* Fixed `Conversation.wait_event()
+  <telethon.tl.custom.conversation.Conversation.wait_event>`.
+* Fixed replying with photos/documents on inline results.
+* `client.is_user_authorized()
+  <telethon.client.users.UserMethods.is_user_authorized>` now works
+  correctly after `client.log_out()
+  <telethon.client.auth.AuthMethods.log_out>`.
+* `dialog.is_group <telethon.tl.custom.dialog.Dialog>` now works for
+  :tl:`ChatForbidden`.
+* Not using ``async with`` when needed is now a proper error.
+* `events.CallbackQuery <telethon.events.callbackquery.CallbackQuery>`
+  with string regex was not working properly.
+* `client.get_entity('me') <telethon.client.users.UserMethods.get_entity>`
+  now works again.
+* Empty codes when signing in are no longer valid.
+* Fixed file cache for in-memory sessions.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* Support ``next_offset`` in `inline_query.answer()
+  <telethon.events.inlinequery.InlineQuery.Event.answer>`.
+* Support ``<a href="tg://user?id=123">`` mentions in HTML parse mode.
+* New auto-casts for :tl:`InputDocument` and :tl:`InputChatPhoto`.
+* Conversations are now exclusive per-chat by default.
+* The request that caused a RPC error is now shown in the error message.
+* New full API examples in the generated documentation.
+* Fixed some broken links in the documentation.
+* `client.disconnect()
+  <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
+  is now synchronous, but you can still ``await`` it for consistency
+  or compatibility.
+
+
 Event Templates (v1.3)
 ======================
 
