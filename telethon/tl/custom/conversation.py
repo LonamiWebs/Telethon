@@ -372,7 +372,7 @@ class Conversation(ChatGetter):
             else:
                 pending.cancel()
 
-        for _, fut, _ in self._custom:
+        for _, fut in self._custom:
             if exception:
                 fut.set_exception(exception)
             else:
