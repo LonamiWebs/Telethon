@@ -185,3 +185,27 @@ that, you need to use ``asyncio`` correctly too. For this reason, there
 is a section called :ref:`mastering-asyncio` that will introduce you to
 the ``asyncio`` world, with links to more resources for learning how to
 use it. Feel free to check that section out once you have read the rest.
+
+Using Telethon with Flask
+*************************
+
+When using Telethon in a Flask app Telethon will try to access the event
+loop in the main program thread if an event loop is not explicitly
+passed to the TelegramClient object. When using Flask with auto reloader
+active then it does not run in the main thread and Telethon will fail
+to find the active event loop. To solve this either disable the
+use_reloader via;
+
+.. code-block:: python
+
+    app = Flask(__name__)
+    app.run(host=localhost, use_reloader=False)
+
+or explicitly pass a new event loop to the TelegramClient in the running
+thread;
+
+.. code-block:: python
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    tg_client = TelegramClient(PATH, TELEGRAM_API_ID, TELEGRAM_API_HASH, loop=loop)
