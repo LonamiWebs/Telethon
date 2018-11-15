@@ -66,6 +66,10 @@ SEARCH = (
 DOCS = 'TL Reference for [{}](https://lonamiwebs.github.io/Telethon/?q={})'
 RTD = '[Read The Docs!](https://telethon.readthedocs.io)'
 RTFD = '[Read The F* Docs!](https://telethon.readthedocs.io)'
+UPDATES = (
+    'Check out [Working with Updates](https://telethon.readthedocs.io'
+    '/en/latest/extra/basic/working-with-updates.html) in the documentation.'
+)
 DOCS_CLIENT = 'https://telethon.readthedocs.io/en/latest/telethon.client.html#'
 DOCS_MESSAGE = (
     'https://telethon.readthedocs.io/en/latest/'
@@ -106,8 +110,8 @@ If you need more information, use `logging.DEBUG` instead.
 
 ALREADY_FIXED = (
     "This issue has already been fixed, but it's not yet available in PyPi. "
-    "You can upgrade now with `pip install --upgrade git+https://github.com"
-    "/LonamiWebs/Telethon@master`."
+    "You can upgrade now with `pip3 install -U https://github.com/LonamiWebs"
+    "/Telethon/archive/master.zip`."
 )
 
 GOOD_RESOURCES = (
@@ -198,6 +202,15 @@ async def handler(event):
     await asyncio.wait([
         event.delete(),
         event.respond(rtd, reply_to=event.reply_to_msg_id)
+    ])
+
+
+@bot.on(events.NewMessage(pattern='#(updates|events?)', forwards=False))
+async def handler(event):
+    """#updates: Advices the user to read "Working with Updates"."""
+    await asyncio.wait([
+        event.delete(),
+        event.respond(UPDATES, reply_to=event.reply_to_msg_id)
     ])
 
 
@@ -319,7 +332,7 @@ if aiohttp:
             return
 
         sent = await event.respond(
-            'Uploading paste...', reply_to=msg.reply_to_msg_id)
+            'Uploading paste…', reply_to=msg.reply_to_msg_id)
 
         name = html.escape(
             utils.get_display_name(await msg.get_sender()) or 'A user')
@@ -341,6 +354,10 @@ if aiohttp:
         async with aiohttp.ClientSession() as session:
             async with session.post('https://hastebin.com/documents',
                                     data=code.encode('utf-8')) as resp:
+                if resp.status >= 300:
+                    await sent.edit("Hastebin seems to be down… ( ^^')")
+                    return
+
                 haste = (await resp.json())['key']
 
         await asyncio.wait([
