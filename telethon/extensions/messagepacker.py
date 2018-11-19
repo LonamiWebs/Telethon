@@ -53,8 +53,9 @@ class MessagePacker:
         batch = []
         size = 0
 
-        # Fill a new batch to return while the size is small enough
-        while self._deque:
+        # Fill a new batch to return while the size is small enough,
+        # as long as we don't exceed the maximum length of messages.
+        while self._deque and len(batch) <= MessageContainer.MAXIMUM_LENGTH:
             state = self._deque.popleft()
             size += len(state.data) + TLMessage.SIZE_OVERHEAD
 
