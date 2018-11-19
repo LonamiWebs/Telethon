@@ -34,6 +34,12 @@ class ChatMethods(UserMethods):
                 Note that you might not have permissions for some filter.
                 This has no effect for normal chats or users.
 
+                .. note::
+
+                    The filter :tl:`ChannelParticipantsBanned` will return
+                    *restricted* users. If you want *banned* users you should
+                    use :tl:`ChannelParticipantsKicked` instead.
+
             aggressive (`bool`, optional):
                 Aggressively looks for all participants in the chat.
 
