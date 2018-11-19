@@ -293,6 +293,7 @@ class ChatAction(EventBuilder):
             if self.users or await self.get_users():
                 return self._users[0]
 
+        @property
         def input_user(self):
             """
             Input version of the ``self.user`` property.
