@@ -81,6 +81,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
             from_user (`entity`):
                 Only messages from this user will be returned.
+                This parameter will be ignored if it is not an user.
 
             batch_size (`int`):
                 Messages will be returned in chunks of this size (100 is
@@ -165,7 +166,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             else:
                 offset_id = 1
 
-        from_id = None
+        if not from_user:
+            from_id = None
+        else:
+            from_id = await self.get_input_entity(from_user)
+            if not isinstance(from_id, (
+                    types.InputPeerUser, types.InputPeerSelf)):
+                from_id = None  # Ignore from_user unless it's a user
+
         limit = float('inf') if limit is None else int(limit)
         if not entity:
             if reverse:
@@ -179,7 +187,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 offset_id=offset_id,
                 limit=1
             )
-        elif search is not None or filter or from_user:
+        elif search is not None or filter or from_id:
             if filter is None:
                 filter = types.InputMessagesFilterEmpty()
             request = functions.messages.SearchRequest(
@@ -194,18 +202,19 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 max_id=0,
                 min_id=0,
                 hash=0,
-                from_id=(
-                    await self.get_input_entity(from_user)
-                    if from_user else None
-                )
+                from_id=from_id
             )
-            if isinstance(entity, types.InputPeerUser):
+
+            if not isinstance(entity, (
+                    types.InputPeerUser, types.InputPeerSelf)):
+                from_id = None
+            else:
                 # Telegram completely ignores `from_id` in private
                 # chats, so we need to do this check client-side.
-                if isinstance(request.from_id, types.InputPeerSelf):
-                    from_id = (await self.get_me(input_peer=True)).user_id
+                if isinstance(from_id, types.InputPeerSelf):
+                    from_id = await self.get_peer_id('me')
                 else:
-                    from_id = request.from_id
+                    from_id = from_id.user_id
         else:
             request = functions.messages.GetHistoryRequest(
                 peer=entity,
