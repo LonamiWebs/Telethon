@@ -98,7 +98,7 @@ class HTMLToTelegramParser(HTMLParser):
                 text = url
 
         for tag, entity in self._building_entities.items():
-            entity.length += len(text.strip('\n'))
+            entity.length += len(text)
 
         self.text += text
 
