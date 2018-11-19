@@ -5,12 +5,12 @@ since they seem to count as two characters and it's a bit strange.
 """
 import re
 
-from ..helpers import add_surrogate, del_surrogate
+from ..helpers import add_surrogate, del_surrogate, strip_text
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityTextUrl, MessageEntityMentionName
-    )
+)
 
 DEFAULT_DELIMITERS = {
     '**': MessageEntityBold,
@@ -125,6 +125,7 @@ def parse(message, delimiters=None, url_re=None):
             + message[current.offset:]
         )
 
+    message = strip_text(message, result)
     return del_surrogate(message), result
 
 

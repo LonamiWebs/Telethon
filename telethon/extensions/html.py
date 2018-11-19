@@ -6,11 +6,12 @@ from collections import deque
 from html import escape, unescape
 from html.parser import HTMLParser
 
+from .. import helpers
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName
-    )
+)
 
 
 # Helpers from markdown.py
@@ -126,7 +127,8 @@ def parse(html):
 
     parser = HTMLToTelegramParser()
     parser.feed(_add_surrogate(html))
-    return _del_surrogate(parser.text), parser.entities
+    text = helpers.strip_text(parser.text, parser.entities)
+    return _del_surrogate(text), parser.entities
 
 
 def unparse(text, entities):

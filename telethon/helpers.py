@@ -33,6 +33,41 @@ def del_surrogate(text):
     return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
+def strip_text(text, entities):
+    """
+    Strips whitespace from the given text modifying the provided entities.
+
+    This assumes that there are no overlapping entities, that their length
+    is greater or equal to one, and that their length is not out of bounds.
+    """
+    if not entities:
+        return text.strip()
+
+    while text and text[-1].isspace():
+        e = entities[-1]
+        if e.offset + e.length == len(text):
+            if e.length == 1:
+                del entities[-1]
+                if not entities:
+                    return text.strip()
+            else:
+                e.length -= 1
+        text = text[:-1]
+
+    while text and text[0].isspace():
+        e = entities[0]
+        if e.offset == 0:
+            if e.length == 1:
+                del entities[0]
+                if not entities:
+                    return text.lstrip()
+            else:
+                e.length -= 1
+        text = text[1:]
+
+    return text
+
+
 # endregion
 
 # region Cryptographic related utils
