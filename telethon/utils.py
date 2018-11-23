@@ -711,7 +711,8 @@ def get_peer(peer):
         elif isinstance(peer, types.InputPeerChannel):
             return types.PeerChannel(peer.channel_id)
     except (AttributeError, TypeError):
-        _raise_cast_fail(peer, 'Peer')
+        pass
+    _raise_cast_fail(peer, 'Peer')
 
 
 def get_peer_id(peer, add_mark=True):
