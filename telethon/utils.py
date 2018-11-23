@@ -728,6 +728,10 @@ def get_peer_id(peer, add_mark=True):
     if isinstance(peer, int):
         return peer if add_mark else resolve_id(peer)[0]
 
+    # Tell the user to use their client to resolve InputPeerSelf if we got one
+    if isinstance(peer, types.InputPeerSelf):
+        _raise_cast_fail(peer, 'int (you might want to use client.get_peer_id)')
+
     try:
         peer = get_peer(peer)
     except TypeError:
