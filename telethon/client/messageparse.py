@@ -55,8 +55,9 @@ class MessageParseMethods(UserMethods):
                 entities[i].offset, entities[i].length,
                 await self.get_input_entity(user)
             )
+            return True            
         except (ValueError, TypeError):
-            pass
+            return False
 
     async def _parse_message_text(self, message, parse_mode):
         """
@@ -71,15 +72,20 @@ class MessageParseMethods(UserMethods):
             return message, []
 
         message, msg_entities = parse_mode.parse(message)
-        for i, e in enumerate(msg_entities):
+        for i in reversed(range(len(msg_entities))):
+            e = msg_entities[i]
             if isinstance(e, types.MessageEntityTextUrl):
                 m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
                 if m:
                     user = int(m.group(1)) if m.group(1) else e.url
-                    await self._replace_with_mention(msg_entities, i, user)
+                    is_mention = await self._replace_with_mention(msg_entities, i, user)
+                    if not is_mention:
+                        del msg_entities[i]
             elif isinstance(e, (types.MessageEntityMentionName,
                                 types.InputMessageEntityMentionName)):
-                await self._replace_with_mention(msg_entities, i, e.user_id)
+                is_mention = await self._replace_with_mention(msg_entities, i, e.user_id)
+                if not is_mention:
+                    del msg_entities[i]
 
         return message, msg_entities
 
