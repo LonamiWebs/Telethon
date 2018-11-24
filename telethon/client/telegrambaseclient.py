@@ -494,7 +494,7 @@ class TelegramBaseClient(abc.ABC):
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         __log__.info('Creating new CDN client')
-        client = TelegramBareClient(
+        client = TelegramBaseClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
             timeout=self._sender.connection.get_timeout()
