@@ -725,6 +725,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         This effectively marks a message as read (or more than one) in the
         given conversation.
 
+        If neither message nor maximum ID are provided, all messages will be
+        marked as read by assuming that ``max_id = 0``.
+
         Args:
             entity (`entity`):
                 The chat where these messages are located.
@@ -744,14 +747,13 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 taken.
         """
         if max_id is None:
-            if message:
+            if not message:
+                max_id = 0
+            else:
                 if utils.is_list_like(message):
                     max_id = max(msg.id for msg in message)
                 else:
                     max_id = message.id
-            elif not clear_mentions:
-                raise ValueError(
-                    'Either a message list or a max_id must be provided.')
 
         entity = await self.get_input_entity(entity)
         if clear_mentions:
