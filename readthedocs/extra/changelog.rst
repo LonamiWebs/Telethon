@@ -14,6 +14,34 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Bug Fixes (v1.4.2)
+==================
+
+*Published at 2018/11/24*
+
+This version also includes the v1.4.1 hot-fix, which was a single
+quick fix and didn't really deserve an entry in the changelog.
+
+Bug fixes
+~~~~~~~~~
+
+* Authorization key wouldn't be saved correctly, requiring re-login.
+* Conversations with custom events failed to be cancelled.
+* Fixed ``telethon.sync`` when using other threads.
+* Fix markdown/HTML parser from failing with leading/trailing whitespace.
+* Fix accessing ``chat_action_event.input_user`` property.
+* Potentially improved handling unexpected disconnections.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* Better default behaviour for `client.send_read_acknowledge
+  <telethon.client.messages.MessageMethods.send_read_acknowledge>`.
+* Clarified some points in the documentation.
+* Clearer errors for ``utils.get_peer*``.
+
+
 Connection Overhaul (v1.4)
 ==========================
 
