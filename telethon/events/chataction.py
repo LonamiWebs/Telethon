@@ -344,20 +344,10 @@ class ChatAction(EventBuilder):
                 return []
 
             if self._users is None or len(self._users) != len(self._user_peers):
-                have, missing = [], []
-                for peer in self._user_peers:
-                    user = self._entities.get(utils.get_peer_id(peer))
-                    if user:
-                        have.append(user)
-                    else:
-                        missing.append(peer)
-
-                try:
-                    missing = await self._client.get_entity(missing)
-                except (TypeError, ValueError):
-                    missing = []
-
-                self._users = have + missing
+                await self.action_message._reload_message()
+                self._users = [
+                    u for u in self.action_message.action_entities
+                    if isinstance(u, (types.User, types.UserEmpty))]
 
             return self._users
 
@@ -381,8 +371,15 @@ class ChatAction(EventBuilder):
             """
             Returns `input_users` but will make an API call if necessary.
             """
-            # TODO Maybe we could re-fetch the message
-            return self.input_users
+            self._input_users = None
+            if self._input_users is None:
+                await self.action_message._reload_message()
+                self._input_users = [
+                    utils.get_input_peer(u)
+                    for u in self.action_message.action_entities
+                    if isinstance(u, (types.User, types.UserEmpty))]
+
+            return self._input_users or []
 
         @property
         def user_ids(self):

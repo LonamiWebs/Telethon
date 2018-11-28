@@ -177,6 +177,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._sender_id = from_id
         self._sender = None
         self._input_sender = None
+        self._action_entities = None
 
         if not out and isinstance(to_id, types.PeerUser):
             self._chat_peer = types.PeerUser(from_id)
@@ -219,6 +220,23 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
         if self.fwd_from:
             self._forward = Forward(self._client, self.fwd_from, entities)
+
+        if self.action:
+            if isinstance(self.action, (types.MessageActionChatAddUser,
+                                        types.MessageActionChatCreate)):
+                self._action_entities = [entities.get(i)
+                                         for i in self.action.users]
+            elif isinstance(self.action, types.MessageActionChatDeleteUser):
+                self._action_entities = [entities.get(self.action.user_id)]
+            elif isinstance(self.action, types.MessageActionChatJoinedByLink):
+                self._action_entities = [entities.get(self.action.inviter_id)]
+            elif isinstance(self.action, types.MessageActionChatMigrateTo):
+                self._action_entities = [entities.get(utils.get_peer_id(
+                    types.PeerChannel(self.action.channel_id)))]
+            elif isinstance(
+                    self.action, types.MessageActionChannelMigrateFrom):
+                self._action_entities = [entities.get(utils.get_peer_id(
+                    types.PeerChat(self.action.chat_id)))]
 
     # endregion Initialization
 
@@ -431,6 +449,22 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         this returns the :tl:`Document` object.
         """
         return self._document_by_attribute(types.DocumentAttributeSticker)
+
+    @property
+    def action_entities(self):
+        """
+        Returns a list of entities that can took part in this action.
+
+        Possible cases for this are :tl:`MessageActionChatAddUser`,
+        :tl:`types.MessageActionChatCreate`, :tl:`MessageActionChatDeleteUser`,
+        :tl:`MessageActionChatJoinedByLink` :tl:`MessageActionChatMigrateTo`
+        and :tl:`MessageActionChannelMigrateFrom).
+
+        If the action is neither of those, the result will be ``None``.
+        If some entities could not be retrieved, the list may contain
+        some ``None`` items in it.
+        """
+        return self._action_entities
 
     # endregion Public Properties
 
@@ -670,6 +704,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._input_sender = msg._input_sender
         self._chat = msg._chat
         self._input_chat = msg._input_chat
+        self._action_entities = msg._action_entities
 
     async def _refetch_sender(self):
         await self._reload_message()
