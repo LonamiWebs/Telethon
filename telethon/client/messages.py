@@ -103,6 +103,15 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 will appear in its place, so that zipping the list of IDs
                 with the messages can match one-to-one.
 
+                .. note::
+
+                    At the time of writing, Telegram will **not** return
+                    :tl:`MessageEmpty` for :tl:`InputMessageReplyTo` IDs that
+                    failed (i.e. the message is not replying to any, or is
+                    replying to a deleted message). This means that it is
+                    **not** possible to match messages one-by-one, so be
+                    careful if you use non-integers in this parameter.
+
             reverse (`bool`, optional):
                 If set to ``True``, the messages will be returned in reverse
                 order (from oldest to newest, instead of the default newest
@@ -359,7 +368,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             msgs.append(x)
         msgs.total = total[0]
         if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
-            return msgs[0]
+            # Check for empty list to handle InputMessageReplyTo
+            return msgs[0] if msgs else None
 
         return msgs
 
