@@ -324,8 +324,15 @@ class MTProtoSender:
         for retry in range(1, retries + 1):
             try:
                 await self._connect()
-            except ConnectionError:
-                __log__.info('Failed reconnection retry %d/%d', retry, retries)
+            except (ConnectionError, asyncio.TimeoutError) as e:
+                __log__.info('Failed reconnection retry %d/%d with %s',
+                             retry, retries, e.__class__.__name__)
+
+                await asyncio.sleep(self._delay)
+            except Exception:
+                __log__.exception('Unexpected exception reconnecting on '
+                                  'retry %d/%d', retry, retries)
+
                 await asyncio.sleep(self._delay)
             else:
                 self._send_queue.extend(self._pending_state.values())
