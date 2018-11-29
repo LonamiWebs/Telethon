@@ -506,10 +506,21 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             if not self.reply_to_msg_id:
                 return None
 
+            # Bots cannot access other bots' messages by their ID.
+            # However they can access them through replies...
             self._reply_message = await self._client.get_messages(
                 await self.get_input_chat() if self.is_channel else None,
-                ids=self.reply_to_msg_id
+                ids=types.InputMessageReplyTo(self.id)
             )
+            if not self._reply_message:
+                # ...unless the current message got deleted.
+                #
+                # If that's the case, give it a second chance accessing
+                # directly by its ID.
+                self._reply_message = await self._client.get_messages(
+                    self._input_chat if self.is_channel else None,
+                    ids=self.reply_to_msg_id
+                )
 
         return self._reply_message
 
