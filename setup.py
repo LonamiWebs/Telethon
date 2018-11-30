@@ -15,7 +15,6 @@ import json
 import os
 import re
 import shutil
-from codecs import open
 from sys import argv
 
 from setuptools import find_packages, setup
@@ -40,11 +39,10 @@ class TempWorkDir:
 GENERATOR_DIR = 'telethon_generator'
 LIBRARY_DIR = 'telethon'
 
-ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
-ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
+ERRORS_IN = os.path.join(GENERATOR_DIR, 'data', 'errors.csv')
 ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpcerrorlist.py')
 
-INVALID_BM_IN = os.path.join(GENERATOR_DIR, 'data', 'invalid_bot_methods.json')
+METHODS_IN = os.path.join(GENERATOR_DIR, 'data', 'methods.csv')
 
 TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
 TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
@@ -56,16 +54,19 @@ DOCS_OUT = 'docs'
 
 
 def generate(which):
-    from telethon_generator.parsers import parse_errors, parse_tl, find_layer
+    # TODO make docs generator use the new CSV too
+    from telethon_generator.parsers import\
+        parse_errors, parse_methods, parse_tl, find_layer
+
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
-    # Older Python versions open the file as bytes instead (3.4.2)
-    with open(INVALID_BM_IN, 'r') as f:
-        invalid_bot_methods = set(json.load(f))
-
     layer = find_layer(TLOBJECT_IN_TL)
-    errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
+    errors = list(parse_errors(ERRORS_IN))
+    methods = list(parse_methods(METHODS_IN, {e.str_code: e for e in errors}))
+    invalid_bot_methods = {m.name for m in methods
+                           if not m.usability.startswith('bot')}
+
     tlobjects = list(itertools.chain(
         parse_tl(TLOBJECT_IN_CORE_TL, layer, invalid_bot_methods),
         parse_tl(TLOBJECT_IN_TL, layer, invalid_bot_methods)))

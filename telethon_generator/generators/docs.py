@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import csv
 import functools
 import os
 import re
@@ -8,7 +9,6 @@ from collections import defaultdict
 from ..docswriter import DocsWriter
 from ..parsers import TLObject
 from ..utils import snake_to_camel_case
-
 
 CORE_TYPES = {
     'int', 'long', 'int128', 'int256', 'double',
