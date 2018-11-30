@@ -54,7 +54,6 @@ DOCS_OUT = 'docs'
 
 
 def generate(which):
-    # TODO make docs generator use the new CSV too
     from telethon_generator.parsers import\
         parse_errors, parse_methods, parse_tl, find_layer
 
@@ -64,8 +63,7 @@ def generate(which):
     layer = find_layer(TLOBJECT_IN_TL)
     errors = list(parse_errors(ERRORS_IN))
     methods = list(parse_methods(METHODS_IN, {e.str_code: e for e in errors}))
-    invalid_bot_methods = {m.name for m in methods
-                           if not m.usability.startswith('bot')}
+    invalid_bot_methods = {m.name for m in methods if m.usability == 'user'}
 
     tlobjects = list(itertools.chain(
         parse_tl(TLOBJECT_IN_CORE_TL, layer, invalid_bot_methods),
@@ -110,7 +108,7 @@ def generate(which):
             if os.path.isdir(DOCS_OUT):
                 shutil.rmtree(DOCS_OUT)
         else:
-            generate_docs(tlobjects, errors, layer, DOCS_IN_RES, DOCS_OUT)
+            generate_docs(tlobjects, methods, layer, DOCS_IN_RES, DOCS_OUT)
 
     if 'json' in which:
         which.remove('json')

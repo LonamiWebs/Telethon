@@ -231,7 +231,7 @@ def _copy_replace(src, dst, replacements):
         ))
 
 
-def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
+def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
     """
     Generates the documentation HTML files from from ``scheme.tl``
     to ``/methods`` and ``/constructors``, etc.
@@ -263,15 +263,7 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
     for t, cs in type_to_constructors.items():
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
 
-    # Telegram may send errors with the same str_code but different int_code.
-    # They are all imported on telethon.errors anyway so makes no difference.
-    errors = list(sorted({e.str_code: e for e in errors}.values(),
-                         key=lambda e: e.name))
-
-    method_causes_errors = defaultdict(list)
-    for error in errors:
-        for method in error.caused_by:
-            method_causes_errors[method].append(error)
+    methods = {m.name: m for m in methods}
 
     # Since the output directory is needed everywhere partially apply it now
     create_path_for = functools.partial(_get_create_path_for, output_dir)
@@ -394,7 +386,8 @@ def _write_html_pages(tlobjects, errors, layer, input_res, output_dir):
 
             if tlobject.is_function:
                 docs.write_title('Known RPC errors')
-                errors = method_causes_errors[tlobject.fullname]
+                method_info = methods.get(tlobject.fullname)
+                errors = method_info and method_info.errors
                 if not errors:
                     docs.write_text("This request can't cause any RPC error "
                                     "as far as we know.")
@@ -650,7 +643,7 @@ def _copy_resources(res_dir, out_dir):
             shutil.copy(os.path.join(res_dir, dirname, file), dirpath)
 
 
-def generate_docs(tlobjects, errors, layer, input_res, output_dir):
+def generate_docs(tlobjects, methods, layer, input_res, output_dir):
     os.makedirs(output_dir, exist_ok=True)
-    _write_html_pages(tlobjects, errors, layer, input_res, output_dir)
+    _write_html_pages(tlobjects, methods, layer, input_res, output_dir)
     _copy_resources(input_res, output_dir)
