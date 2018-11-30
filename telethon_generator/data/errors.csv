@@ -122,6 +122,8 @@ MD5_CHECKSUM_INVALID,,The MD5 check-sums do not match
 MEDIA_CAPTION_TOO_LONG,400,The caption is too long
 MEDIA_EMPTY,400,The provided media object is invalid
 MEDIA_INVALID,400,Media invalid
+MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as stickers or voice notes)
+MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
 MEMBER_NO_LOCATION,500,An internal failure occurred while fetching user info (couldn't find location)
 MEMBER_OCCUPY_PRIMARY_LOC_FAILED,500,Occupation of primary member location failed
 MESSAGE_AUTHOR_REQUIRED,403,Message author required
