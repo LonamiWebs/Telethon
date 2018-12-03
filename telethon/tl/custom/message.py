@@ -764,7 +764,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         if doc:
             for attr in doc.attributes:
                 if isinstance(attr, kind):
-                    if not condition or condition(doc):
+                    if not condition or condition(attr):
                         return doc
                     return None
 
