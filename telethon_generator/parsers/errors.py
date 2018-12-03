@@ -1,4 +1,5 @@
 import csv
+import re
 
 from ..utils import snake_to_camel_case
 
@@ -12,19 +13,6 @@ KNOWN_BASE_CLASSES = {
     406: 'AuthKeyError',
     420: 'FloodError',
     500: 'ServerError',
-}
-
-# Give better semantic names to some captures
-# TODO Move this to the CSV?
-CAPTURE_NAMES = {
-    'FloodWaitError': 'seconds',
-    'FloodTestPhoneWaitError': 'seconds',
-    'TakeoutInitDelayError': 'seconds',
-    'FileMigrateError': 'new_dc',
-    'NetworkMigrateError': 'new_dc',
-    'PhoneMigrateError': 'new_dc',
-    'UserMigrateError': 'new_dc',
-    'FilePartMissingError': 'which'
 }
 
 
@@ -57,7 +45,7 @@ class Error:
         if self.has_captures:
             self.name = _get_class_name(name.replace('_X', ''))
             self.pattern = name.replace('_X', r'_(\d+)')
-            self.capture_name = CAPTURE_NAMES.get(self.name, 'x')
+            self.capture_name = re.search(r'{(\w+)}', description).group(1)
         else:
             self.name = _get_class_name(name)
             self.pattern = name

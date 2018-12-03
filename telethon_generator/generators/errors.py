@@ -38,7 +38,7 @@ def generate_errors(errors, f):
                 '{}'.format(repr(error.description)))
 
         if error.has_captures:
-            f.write('.format(self.{})'.format(error.capture_name))
+            f.write('.format({0}=self.{0})'.format(error.capture_name))
 
         f.write(' + self._fmt_request(request))\n')
 
