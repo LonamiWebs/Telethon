@@ -63,11 +63,10 @@ def generate(which):
     layer = find_layer(TLOBJECT_IN_TL)
     errors = list(parse_errors(ERRORS_IN))
     methods = list(parse_methods(METHODS_IN, {e.str_code: e for e in errors}))
-    invalid_bot_methods = {m.name for m in methods if m.usability == 'user'}
 
     tlobjects = list(itertools.chain(
-        parse_tl(TLOBJECT_IN_CORE_TL, layer, invalid_bot_methods),
-        parse_tl(TLOBJECT_IN_TL, layer, invalid_bot_methods)))
+        parse_tl(TLOBJECT_IN_CORE_TL, layer, methods),
+        parse_tl(TLOBJECT_IN_TL, layer, methods)))
 
     if not which:
         which.extend(('tl', 'errors'))

@@ -7,7 +7,7 @@ import shutil
 from collections import defaultdict
 
 from ..docswriter import DocsWriter
-from ..parsers import TLObject
+from ..parsers import TLObject, Usability
 from ..utils import snake_to_camel_case
 
 CORE_TYPES = {
@@ -138,8 +138,8 @@ def _generate_index(folder, original_paths, root,
 
         docs.write_title(_get_relative_path(folder, root, folder=True).title())
         if bots_index:
-            docs.write_text('These are the methods that you can use as a bot. '
-                            'Click <a href="{}">here</a> to '
+            docs.write_text('These are the methods that you may be able to '
+                            'use as a bot. Click <a href="{}">here</a> to '
                             'view them all.'.format(INDEX))
         else:
             docs.write_text('Click <a href="{}">here</a> to view the methods '
@@ -289,11 +289,21 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
             docs.write_title(tlobject.class_name)
 
             if tlobject.is_function:
-                docs.write_text('Bots <strong>can{}</strong> use this method. '
-                                '<a href="#examples">See code examples.</a>'
-                                .format("" if tlobject.bot_usable else "'t"))
-                if tlobject.is_function and tlobject.bot_usable:
+                if tlobject.usability == Usability.USER:
+                    start = '<strong>Only users</strong> can'
+                elif tlobject.usability == Usability.BOT:
                     bot_docs_paths.append(filename)
+                    start = '<strong>Only bots</strong> can'
+                elif tlobject.usability == Usability.BOTH:
+                    bot_docs_paths.append(filename)
+                    start = '<strong>Both users and bots</strong> can'
+                else:
+                    bot_docs_paths.append(filename)
+                    start = \
+                        'Both users and bots <strong>may</strong> be able to'
+
+                docs.write_text('{} use this method. <a href="#examples">'
+                                'See code examples.</a>'.format(start))
 
             # Write the code definition for this TLObject
             docs.write_code(tlobject)

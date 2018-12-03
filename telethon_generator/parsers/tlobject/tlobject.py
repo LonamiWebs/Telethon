@@ -14,7 +14,8 @@ for i in range(77, 83):
 
 
 class TLObject:
-    def __init__(self, fullname, object_id, args, result, is_function, layer):
+    def __init__(self, fullname, object_id, args, result,
+                 is_function, usability, layer):
         """
         Initializes a new TLObject, given its properties.
 
@@ -24,6 +25,7 @@ class TLObject:
         :param args: The arguments, if any, of the TL object
         :param result: The result type of the TL object
         :param is_function: Is the object a function or a type?
+        :param usability: The usability for this method.
         :param layer: The layer this TLObject belongs to.
         """
         # The name can or not have a namespace
@@ -36,7 +38,7 @@ class TLObject:
         self.args = args
         self.result = result
         self.is_function = is_function
-        self.bot_usable = None
+        self.usability = usability
         self.id = None
         if object_id is None:
             self.id = self.infer_id()

@@ -3,9 +3,10 @@ import re
 
 from .tlarg import TLArg
 from .tlobject import TLObject
+from ..methods import Usability
 
 
-def _from_line(line, is_function, layer):
+def _from_line(line, is_function, method_info, layer):
     match = re.match(
         r'^([\w.]+)'                     # 'name'
         r'(?:#([0-9a-fA-F]+))?'          # '#optionalcode'
@@ -26,27 +27,33 @@ def _from_line(line, is_function, layer):
         r'}?',
         line
     )
+
+    name = match.group(1)
+    if name in method_info:
+        usability = method_info[name].usability
+    else:
+        usability = Usability.UNKNOWN
+
     return TLObject(
-        fullname=match.group(1),
+        fullname=name,
         object_id=match.group(2),
         result=match.group(3),
         is_function=is_function,
         layer=layer,
+        usability=usability,
         args=[TLArg(name, arg_type, brace != '')
               for brace, name, arg_type in args_match]
     )
 
 
-def parse_tl(file_path, layer, invalid_bot_methods=None):
+def parse_tl(file_path, layer, methods=None):
     """
     This method yields TLObjects from a given .tl file.
 
     Note that the file is parsed completely before the function yields
     because references to other objects may appear later in the file.
     """
-    if invalid_bot_methods is None:
-        invalid_bot_methods = set()
-
+    method_info = {m.name: m for m in (methods or [])}
     obj_all = []
     obj_by_name = {}
     obj_by_type = collections.defaultdict(list)
@@ -68,8 +75,9 @@ def parse_tl(file_path, layer, invalid_bot_methods=None):
                 continue
 
             try:
-                result = _from_line(line, is_function, layer=layer)
-                result.bot_usable = result.fullname not in invalid_bot_methods
+                result = _from_line(
+                    line, is_function, method_info, layer=layer)
+
                 obj_all.append(result)
                 if not result.is_function:
                     obj_by_name[result.fullname] = result
