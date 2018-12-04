@@ -14,6 +14,41 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Error Descriptions in CSV files (v1.4.3)
+========================================
+
+*Published at 2018/12/04*
+
+While this may seem like a minor thing, it's a big usability improvement.
+
+Anyone who wants to update the documentation for known errors, or whether
+some methods can be used as a bot, user or both, can now be easily edited.
+Everyone is encouraged to help document this better!
+
+Bug fixes
+~~~~~~~~~
+
+* ``TimeoutError`` was not handled during automatic reconnects.
+* Getting messages by ID using :tl:`InputMessageReplyTo` could fail.
+* Fixed `message.get_reply_message
+  <telethon.tl.custom.message.Message.get_reply_message>`
+  as a bot when a user replied to a different bot.
+* Accessing some document properties in a `Message
+  <telethon.tl.custom.message.Message>` would fail.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Accessing `events.ChatAction <telethon.events.chataction.ChatAction>`
+  properties such as input users may now work in more cases.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+* Error descriptions and information about methods is now loaded
+  from a CSV file instead of being part of several messy JSON files.
+
+
 Bug Fixes (v1.4.2)
 ==================
 
