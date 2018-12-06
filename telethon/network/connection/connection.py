@@ -136,9 +136,12 @@ class Connection(abc.ABC):
                 await self._writer.drain()
         except asyncio.CancelledError:
             pass
-        except Exception:
-            msg = 'Unexpected exception in the send loop'
-            __log__.exception(msg)
+        except Exception as e:
+            if isinstance(e, ConnectionError):
+                __log__.info('The server closed the connection while sending')
+            else:
+                __log__.exception('Unexpected exception in the send loop')
+
             self.disconnect()
 
     async def _recv_loop(self):
