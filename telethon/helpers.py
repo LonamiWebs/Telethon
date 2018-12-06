@@ -1,5 +1,4 @@
 """Various helpers not related to the Telegram API itself"""
-import asyncio
 import os
 import struct
 from hashlib import sha1, sha256
@@ -55,14 +54,19 @@ def strip_text(text, entities):
         text = text[:-1]
 
     while text and text[0].isspace():
-        e = entities[0]
-        if e.offset == 0:
+        for i in reversed(range(len(entities))):
+            e = entities[i]
+            if e.offset != 0:
+                e.offset -= 1
+                continue
+
             if e.length == 1:
                 del entities[0]
                 if not entities:
                     return text.lstrip()
             else:
                 e.length -= 1
+
         text = text[1:]
 
     return text
