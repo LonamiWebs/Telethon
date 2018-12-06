@@ -269,9 +269,9 @@ class TelegramBaseClient(abc.ABC):
             self._updates_queue = None
             self._dispatching_updates_queue = None
 
-        # Start with invalid state (-1) so we can have somewhere to store
-        # the state, but also be able to determine if we are authorized.
-        self._state = types.updates.State(-1, 0, datetime.now(), 0, -1)
+        self._authorized = None  # None = unknown, False = no, True = yes
+        self._state = (self.session.get_update_state(0)
+                       or types.updates.State(0, 0, datetime.now(), 0, 0))
 
         # Some further state for subclasses
         self._event_builders = []

@@ -5,8 +5,8 @@ import time
 
 from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils
-from ..tl import TLObject, TLRequest, types, functions
 from ..errors import MultiError, RPCError
+from ..tl import TLObject, TLRequest, types, functions
 
 __log__ = logging.getLogger(__name__)
 _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
@@ -123,14 +123,14 @@ class UserMethods(TelegramBaseClient):
         """
         Returns ``True`` if the user is authorized.
         """
-        if self._self_input_peer is not None or self._state.pts != -1:
-            return True
+        if self._authorized is None:
+            try:
+                self._state = await self(functions.updates.GetStateRequest())
+                self._authorized = True
+            except errors.RPCError:
+                self._authorized = False
 
-        try:
-            self._state = await self(functions.updates.GetStateRequest())
-            return True
-        except errors.RPCError:
-            return False
+        return self._authorized
 
     async def get_entity(self, entity):
         """

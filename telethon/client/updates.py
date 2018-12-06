@@ -132,9 +132,10 @@ class UpdateMethods(UserMethods):
 
         This can also be used to forcibly fetch new updates if there are any.
         """
-        state = self.session.get_update_state(0)
-        if not state or state.pts <= 0:
-            state = await self(functions.updates.GetStateRequest())
+        state = self._state
+        if state.pts == 0:
+            # pts = 0 is invalid, pts = 1 will catch up since the beginning
+            state.pts = 1
 
         self.session.catching_up = True
         try:
@@ -167,6 +168,7 @@ class UpdateMethods(UserMethods):
                         state.pts = d.pts
                     break
         finally:
+            self._state = state
             self.session.set_update_state(0, state)
             self.session.catching_up = False
 

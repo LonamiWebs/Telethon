@@ -1,3 +1,4 @@
+import datetime
 import getpass
 import hashlib
 import inspect
@@ -294,10 +295,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 'and a password only if an RPCError was raised before.'
             )
 
-        self._self_input_peer = utils.get_input_peer(
-            result.user, allow_self=False
-        )
-        return result.user
+        return self._on_login(result.user)
 
     async def sign_up(self, code, first_name, last_name=''):
         """
@@ -346,10 +344,24 @@ class AuthMethods(MessageParseMethods, UserMethods):
             await self(
                 functions.help.AcceptTermsOfServiceRequest(self._tos.id))
 
-        self._self_input_peer = utils.get_input_peer(
-            result.user, allow_self=False
-        )
-        return result.user
+        return self._on_login(result.user)
+
+    def _on_login(self, user):
+        """
+        Callback called whenever the login or sign up process completes.
+
+        Returns the input user parameter.
+        """
+        self._self_input_peer = utils.get_input_peer(user, allow_self=False)
+        self._authorized = True
+
+        # By setting state.pts = 1 after logging in, the user or bot can
+        # `catch_up` on all updates (and obtain necessary access hashes)
+        # if they desire. The date parameter is ignored when pts = 1.
+        self._state.pts = 1
+        self._state.date = datetime.datetime.now()
+
+        return user
 
     async def send_code_request(self, phone, *, force_sms=False):
         """
@@ -403,7 +415,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
             return False
 
         self._self_input_peer = None
-        self._state.pts = -1
+        self._authorized = False
+        self._state = types.updates.State(0, 0, datetime.datetime.now(), 0, 0)
         self.disconnect()
         self.session.delete()
         return True
