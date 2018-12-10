@@ -64,14 +64,14 @@ class Connection(abc.ABC):
                 loop=self._loop
             )
             if ssl:
-                self._socket.settimeout(timeout)
-                self._socket = ssl_mod.wrap_socket(
+                s.settimeout(timeout)
+                s = ssl_mod.wrap_socket(
                     s,
                     do_handshake_on_connect=True,
                     ssl_version=ssl_mod.PROTOCOL_SSLv23,
                     ciphers='ADH-AES256-SHA'
                 )
-                self._socket.setblocking(False)
+                s.setblocking(False)
 
             self._reader, self._writer = \
                 await asyncio.open_connection(sock=s, loop=self._loop)
