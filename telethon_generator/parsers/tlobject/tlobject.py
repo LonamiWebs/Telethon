@@ -7,10 +7,9 @@ from ...utils import snake_to_camel_case
 # https://github.com/telegramdesktop/tdesktop/blob/4bf66cb6e93f3965b40084771b595e93d0b11bcd/Telegram/SourceFiles/codegen/scheme/codegen_scheme.py#L57-L62
 WHITELISTED_MISMATCHING_IDS = {
     # 0 represents any layer
-    0: {'ipPortSecret', 'accessPointRule', 'help.configSimple'}
+    0: {'channel',  # Since layer 77, there seems to be no going back...
+        'ipPortSecret', 'accessPointRule', 'help.configSimple'}
 }
-for i in range(77, 83):
-    WHITELISTED_MISMATCHING_IDS[i] = {'channel'}
 
 
 class TLObject:
