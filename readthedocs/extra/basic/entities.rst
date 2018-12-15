@@ -52,7 +52,7 @@ in response to certain methods, such as :tl:`GetUsersRequest`.
     provide something that can be turned into an entity. These things include,
     but are not limited to, usernames, exact titles, IDs, :tl:`Peer` objects,
     or even entire :tl:`User`, :tl:`Chat` and :tl:`Channel` objects and even
-    phone numbers from people you have in your contacts.
+    phone numbers **from people you have in your contact list**.
 
     To "encounter" an ID, you would have to "find it" like you would in the
     normal app. If the peer is in your dialogs, you would need to
@@ -105,9 +105,9 @@ you're able to just do this:
 
 .. note::
 
-    You **don't** need to get the entity before using it! Just let
-    the library do its job. Use the phone, username, ID or input
-    entity (preferred but not necessary), whatever you already have.
+    You **don't** need to get the entity before using it! Just let the
+    library do its job. Use a phone from your contacts, username, ID or
+    input entity (preferred but not necessary), whatever you already have.
 
 All methods in the :ref:`telegram-client` call `.get_input_entity()
 <telethon.client.users.UserMethods.get_input_entity>` prior
@@ -131,8 +131,8 @@ Entities vs. Input Entities
     Don't worry if you don't understand this section, just remember some
     of the details listed here are important. When you're calling a method,
     don't call `client.get_entity() <telethon.client.users.UserMethods.get_entity>`
-    beforehand, just use the username or phone, or the entity retrieved by
-    other means like `client.get_dialogs()
+    beforehand, just use the username, a phone from your contacts, or the entity
+    retrieved by other means like `client.get_dialogs()
     <telethon.client.dialogs.DialogMethods.get_dialogs>`.
 
 On top of the normal types, the API also make use of what they call their

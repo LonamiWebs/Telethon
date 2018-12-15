@@ -152,9 +152,10 @@ class UserMethods(TelegramBaseClient):
             Similar limits apply to invite links, and you should use their
             ID instead.
 
-            Using phone numbers, exact names, integer IDs or :tl:`Peer`
-            rely on a `get_input_entity` first, which in turn needs the
-            entity to be in cache, unless a :tl:`InputPeer` was passed.
+            Using phone numbers (from people in your contact list), exact
+            names, integer IDs or :tl:`Peer` rely on a `get_input_entity`
+            first, which in turn needs the entity to be in cache, unless
+            a :tl:`InputPeer` was passed.
 
             Unsupported types will raise ``TypeError``.
 
@@ -252,7 +253,7 @@ class UserMethods(TelegramBaseClient):
 
             If the username or ID from the invite link is not found in
             the cache, it will be fetched. The same rules apply to phone
-            numbers (``'+34 123456789'``).
+            numbers (``'+34 123456789'``) from people in your contact list.
 
             If an exact name is given, it must be in the cache too. This
             is not reliable as different people can share the same name
@@ -315,7 +316,7 @@ class UserMethods(TelegramBaseClient):
         Gets the ID for the given peer, which may be anything entity-like.
 
         This method needs to be ``async`` because `peer` supports usernames,
-        invite-links, phone numbers, etc.
+        invite-links, phone numbers (from people in your contact list), etc.
 
         If ``add_mark is False``, then a positive ID will be returned
         instead. By default, bot-API style IDs (signed) are returned.

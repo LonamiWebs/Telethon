@@ -632,6 +632,7 @@ all the members from a chat first):
     for message in client.iter_messages('username'):
         ...
 
+    # Note that for this to work the phone number must be in your contacts
     some_id = client.get_peer_id('+34123456789')
 
 The documentation for shown methods are `get_entity

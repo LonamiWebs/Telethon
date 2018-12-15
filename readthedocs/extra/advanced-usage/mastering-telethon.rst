@@ -54,6 +54,11 @@ There are a lot of things that work as entities: usernames, phone numbers,
 chat links, invite links, IDs, and the types themselves. That is, you can
 use any of those when you see an "entity" is needed.
 
+.. note::
+
+    Remember that the phone number must be in your contact list before you
+    can use it.
+
 You should use, **from better to worse**:
 
 1. Input entities. For example, `event.input_chat
