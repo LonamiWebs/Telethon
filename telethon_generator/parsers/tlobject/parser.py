@@ -6,6 +6,15 @@ from .tlobject import TLObject
 from ..methods import Usability
 
 
+CORE_TYPES = {
+    0xbc799737,  # boolFalse#bc799737 = Bool;
+    0x997275b5,  # boolTrue#997275b5 = Bool;
+    0x3fedd339,  # true#3fedd339 = True;
+    0xc4b9f9bb,  # error#c4b9f9bb code:int text:string = Error;
+    0x56730bcc   # null#56730bcc = Null;
+}
+
+
 def _from_line(line, is_function, method_info, layer):
     match = re.match(
         r'^([\w.]+)'                     # 'name'
@@ -46,7 +55,7 @@ def _from_line(line, is_function, method_info, layer):
     )
 
 
-def parse_tl(file_path, layer, methods=None):
+def parse_tl(file_path, layer, methods=None, ignored_ids=CORE_TYPES):
     """
     This method yields TLObjects from a given .tl file.
 
@@ -77,6 +86,9 @@ def parse_tl(file_path, layer, methods=None):
             try:
                 result = _from_line(
                     line, is_function, method_info, layer=layer)
+
+                if result.id in ignored_ids:
+                    continue
 
                 obj_all.append(result)
                 if not result.is_function:
