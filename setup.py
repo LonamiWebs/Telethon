@@ -12,9 +12,10 @@ Extra supported commands are:
 
 import itertools
 import json
-import os
 import re
 import shutil
+from os import chdir
+from pathlib import Path
 from sys import argv
 
 from setuptools import find_packages, setup
@@ -28,29 +29,28 @@ class TempWorkDir:
         self.original = None
 
     def __enter__(self):
-        self.original = os.path.abspath(os.path.curdir)
-        os.chdir(os.path.abspath(os.path.dirname(__file__)))
+        self.original = Path('.')
+        chdir(Path(__file__).parent)
         return self
 
     def __exit__(self, *args):
-        os.chdir(self.original)
+        chdir(self.original)
 
 
-GENERATOR_DIR = 'telethon_generator'
-LIBRARY_DIR = 'telethon'
+GENERATOR_DIR = Path('telethon_generator')
+LIBRARY_DIR = Path('telethon')
 
-ERRORS_IN = os.path.join(GENERATOR_DIR, 'data', 'errors.csv')
-ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpcerrorlist.py')
+ERRORS_IN = GENERATOR_DIR / 'data/errors.csv'
+ERRORS_OUT = LIBRARY_DIR / 'errors/rpcerrorlist.py'
 
-METHODS_IN = os.path.join(GENERATOR_DIR, 'data', 'methods.csv')
+METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 
-TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
-TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
-TLOBJECT_OUT = os.path.join(LIBRARY_DIR, 'tl')
+TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
+TLOBJECT_OUT = LIBRARY_DIR / 'tl'
 IMPORT_DEPTH = 2
 
-DOCS_IN_RES = os.path.join(GENERATOR_DIR, 'data', 'html')
-DOCS_OUT = 'docs'
+DOCS_IN_RES = GENERATOR_DIR / 'data/html'
+DOCS_OUT = Path('docs')
 
 
 def generate(which):
@@ -60,13 +60,12 @@ def generate(which):
     from telethon_generator.generators import\
         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
 
-    layer = find_layer(TLOBJECT_IN_TL)
+    layer = next(filter(None, map(find_layer, TLOBJECT_IN_TLS)))
     errors = list(parse_errors(ERRORS_IN))
     methods = list(parse_methods(METHODS_IN, {e.str_code: e for e in errors}))
 
-    tlobjects = list(itertools.chain(
-        parse_tl(TLOBJECT_IN_CORE_TL, layer, methods),
-        parse_tl(TLOBJECT_IN_TL, layer, methods)))
+    tlobjects = list(itertools.chain(*(
+        parse_tl(file, layer, methods) for file in TLOBJECT_IN_TLS)))
 
     if not which:
         which.extend(('tl', 'errors'))
@@ -94,8 +93,8 @@ def generate(which):
         which.remove('errors')
         print(action, 'RPCErrors...')
         if clean:
-            if os.path.isfile(ERRORS_OUT):
-                os.remove(ERRORS_OUT)
+            if ERRORS_OUT.is_file():
+                ERRORS_OUT.unlink()
         else:
             with open(ERRORS_OUT, 'w', encoding='utf-8') as file:
                 generate_errors(errors, file)
@@ -104,7 +103,7 @@ def generate(which):
         which.remove('docs')
         print(action, 'documentation...')
         if clean:
-            if os.path.isdir(DOCS_OUT):
+            if DOCS_OUT.is_dir():
                 shutil.rmtree(DOCS_OUT)
         else:
             generate_docs(tlobjects, methods, layer, DOCS_IN_RES, DOCS_OUT)
@@ -112,12 +111,11 @@ def generate(which):
     if 'json' in which:
         which.remove('json')
         print(action, 'JSON schema...')
-        mtproto = 'mtproto_api.json'
-        telegram = 'telegram_api.json'
+        json_files = [x.with_suffix('.json') for x in TLOBJECT_IN_TLS]
         if clean:
-            for x in (mtproto, telegram):
-                if os.path.isfile(x):
-                    os.remove(x)
+            for file in json_files:
+                if file.is_file():
+                    file.unlink()
         else:
             def gen_json(fin, fout):
                 methods = []
@@ -131,8 +129,8 @@ def generate(which):
                 with open(fout, 'w') as f:
                     json.dump(what, f, indent=2)
 
-            gen_json(TLOBJECT_IN_CORE_TL, mtproto)
-            gen_json(TLOBJECT_IN_TL, telegram)
+            for fin, fout in zip(TLOBJECT_IN_TLS, json_files):
+                gen_json(fin, fout)
 
     if which:
         print('The following items were not understood:', which)
@@ -171,7 +169,7 @@ def main():
 
     else:
         # e.g. install from GitHub
-        if os.path.isdir(GENERATOR_DIR):
+        if GENERATOR_DIR.is_dir():
             generate(['tl', 'errors'])
 
         # Get the long description from the README file
