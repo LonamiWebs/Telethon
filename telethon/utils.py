@@ -108,10 +108,12 @@ def _raise_cast_fail(entity, target):
         type(entity).__name__, target))
 
 
-def get_input_peer(entity, allow_self=True):
+def get_input_peer(entity, allow_self=True, check_hash=True):
     """
     Gets the input peer for the given "entity" (user, chat or channel).
-    A ``TypeError`` is raised if the given entity isn't a supported type.
+
+    A ``TypeError`` is raised if the given entity isn't a supported type
+    or if ``check_hash is True`` but the entity's ``access_hash is None``.
     """
     try:
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
@@ -128,14 +130,19 @@ def get_input_peer(entity, allow_self=True):
     if isinstance(entity, types.User):
         if entity.is_self and allow_self:
             return types.InputPeerSelf()
+        elif entity.access_hash is not None or not check_hash:
+            return types.InputPeerUser(entity.id, entity.access_hash)
         else:
-            return types.InputPeerUser(entity.id, entity.access_hash or 0)
+            raise TypeError('User without access_hash cannot be input')
 
     if isinstance(entity, (types.Chat, types.ChatEmpty, types.ChatForbidden)):
         return types.InputPeerChat(entity.id)
 
     if isinstance(entity, (types.Channel, types.ChannelForbidden)):
-        return types.InputPeerChannel(entity.id, entity.access_hash or 0)
+        if entity.access_hash is not None or not check_hash:
+            return types.InputPeerChannel(entity.id, entity.access_hash)
+        else:
+            raise TypeError('Channel without access_hash cannot be input')
 
     if isinstance(entity, types.InputUser):
         return types.InputPeerUser(entity.user_id, entity.access_hash)
@@ -703,7 +710,7 @@ def get_peer(peer):
         elif isinstance(peer, types.ChannelFull):
             return types.PeerChannel(peer.id)
 
-        peer = get_input_peer(peer, allow_self=False)
+        peer = get_input_peer(peer, allow_self=False, check_hash=False)
         if isinstance(peer, types.InputPeerUser):
             return types.PeerUser(peer.user_id)
         elif isinstance(peer, types.InputPeerChat):
