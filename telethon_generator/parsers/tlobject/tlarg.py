@@ -2,10 +2,6 @@ import re
 
 
 KNOWN_NAMED_EXAMPLES = {
-    ('peer', 'InputPeer'): "'TelethonOffTopic'",
-    ('channel', 'InputChannel'): "'TelethonOffTopic'",
-    ('user_id', 'InputUser'): "'Lonami'",
-    ('users', 'InputUser'): "'Lonami'",
     ('message', 'string'): "'Hello there!'",
     ('expires_at', 'date'): 'datetime.timedelta(minutes=5)',
     ('until_date', 'date'): 'datetime.timedelta(days=14)',
@@ -24,7 +20,8 @@ KNOWN_NAMED_EXAMPLES = {
     ('system_lang_code', 'string'): "'en'",
     ('lang_pack', 'string'): "''",
     ('lang_code', 'string'): "'en'",
-    ('chat_id', 'int'): '478614198'
+    ('chat_id', 'int'): '478614198',
+    ('client_id', 'long'): 'random.randrange(-2**63, 2**63)'
 }
 
 KNOWN_TYPED_EXAMPLES = {
@@ -37,7 +34,17 @@ KNOWN_TYPED_EXAMPLES = {
     'double': '7.13',
     'Bool': 'False',
     'true': 'True',
-    'InputChatPhoto': "client.upload_file('/path/to/photo.jpg')"
+    'InputChatPhoto': "client.upload_file('/path/to/photo.jpg')",
+    'InputFile': "client.upload_file('/path/to/file.jpg')",
+    'InputPeer': "'username'"
+}
+
+SYNONYMS = {
+    'InputUser': 'InputPeer',
+    'InputChannel': 'InputPeer',
+    'InputDialogPeer': 'InputPeer',
+    'InputNotifyPeer': 'InputPeer',
+    'InputMessage': 'int'
 }
 
 # These are flags that are cleaner to leave off
@@ -196,7 +203,8 @@ class TLArg:
             return
 
         known = (KNOWN_NAMED_EXAMPLES.get((self.name, self.type))
-                 or KNOWN_TYPED_EXAMPLES.get(self.type))
+                 or KNOWN_TYPED_EXAMPLES.get(self.type)
+                 or KNOWN_TYPED_EXAMPLES.get(SYNONYMS.get(self.type)))
         if known:
             f.write(known)
             return
