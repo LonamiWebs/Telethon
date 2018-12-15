@@ -78,32 +78,41 @@ if (typeof prependPath !== 'undefined') {
 }
 
 // Assumes haystack has no whitespace and both are lowercase.
+//
+// Returns the penalty for finding the needle in the haystack
+// or -1 if the needle wasn't found at all.
 function find(haystack, needle) {
     if (needle.length == 0) {
         return true;
     }
     var hi = 0;
     var ni = 0;
+    var penalty = 0;
+    var started = false;
     while (true) {
         while (needle[ni] < 'a' || needle[ni] > 'z') {
             ++ni;
             if (ni == needle.length) {
-                return true;
+                return penalty;
             }
         }
         while (haystack[hi] != needle[ni]) {
             ++hi;
+            if (started) {
+                ++penalty;
+            }
             if (hi == haystack.length) {
-                return false;
+                return -1;
             }
         }
         ++hi;
         ++ni;
+        started = true;
         if (ni == needle.length) {
-            return true;
+            return penalty;
         }
         if (hi == haystack.length) {
-            return false;
+            return -1;
         }
     }
 }
@@ -117,7 +126,8 @@ function getSearchArray(original, originalu, query) {
     var destinationu = [];
 
     for (var i = 0; i < original.length; ++i) {
-        if (find(original[i].toLowerCase(), query)) {
+        var penalty = find(original[i].toLowerCase(), query);
+        if (penalty > -1 && penalty < original[i].length / 3) {
             destination.push(original[i]);
             destinationu.push(originalu[i]);
         }
