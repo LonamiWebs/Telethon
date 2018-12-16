@@ -1,7 +1,7 @@
 root = document.getElementById("main_div");
 root.innerHTML = `
 <!-- You can append '?q=query' to the URL to default to a search -->
-<input id="searchBox" type="text" onkeyup="updateSearch()"
+<input id="searchBox" type="text" onkeydown="updateSearch(event)"
        placeholder="Search for requests and types…" />
 
 <div id="searchDiv">
@@ -11,17 +11,17 @@ root.innerHTML = `
         </ul>
     </div>
 
-    <details open><summary class="title">Methods (<span id="methodsCount">0</span>)</summary>
+    <details id="methods" open><summary class="title">Methods (<span id="methodsCount">0</span>)</summary>
         <ul id="methodsList" class="together">
         </ul>
     </details>
 
-    <details open><summary class="title">Types (<span id="typesCount">0</span>)</summary>
+    <details id="types" open><summary class="title">Types (<span id="typesCount">0</span>)</summary>
         <ul id="typesList" class="together">
         </ul>
     </details>
 
-    <details><summary class="title">Constructors (<span id="constructorsCount">0</span>)</summary>
+    <details id="constructors"><summary class="title">Constructors (<span id="constructorsCount">0</span>)</summary>
         <ul id="constructorsList" class="together">
         </ul>
     </details>
@@ -35,12 +35,15 @@ searchDiv = document.getElementById("searchDiv");
 searchBox = document.getElementById("searchBox");
 
 // Search lists
+methodsDetails = document.getElementById("methods");
 methodsList = document.getElementById("methodsList");
 methodsCount = document.getElementById("methodsCount");
 
+typesDetails = document.getElementById("types");
 typesList = document.getElementById("typesList");
 typesCount = document.getElementById("typesCount");
 
+constructorsDetails = document.getElementById("constructors");
 constructorsList = document.getElementById("constructorsList");
 constructorsCount = document.getElementById("constructorsCount");
 
@@ -153,46 +156,55 @@ function buildList(countSpan, resultList, foundElements) {
     resultList.innerHTML = result;
 }
 
-function updateSearch() {
-    if (searchBox.value) {
-        contentDiv.style.display = "none";
-        searchDiv.style.display = "";
-
-        var query = searchBox.value.toLowerCase();
-
-        var foundRequests = getSearchArray(requests, requestsu, query);
-        var foundTypes = getSearchArray(types, typesu, query);
-        var foundConstructors = getSearchArray(
-            constructors, constructorsu, query
-        );
-
-        buildList(methodsCount, methodsList, foundRequests);
-        buildList(typesCount, typesList, foundTypes);
-        buildList(constructorsCount, constructorsList, foundConstructors);
-
-        // Now look for exact matches
-        var original = requests.concat(constructors);
-        var originalu = requestsu.concat(constructorsu);
-        var destination = [];
-        var destinationu = [];
-
-        for (var i = 0; i < original.length; ++i) {
-            if (original[i].toLowerCase().replace("request", "") == query) {
-                destination.push(original[i]);
-                destinationu.push(originalu[i]);
-            }
-        }
-
-        if (destination.length == 0) {
-            exactMatch.style.display = "none";
-        } else {
-            exactMatch.style.display = "";
-            buildList(null, exactList, [destination, destinationu]);
-            return destinationu[0];
-        }
-    } else {
+function updateSearch(event) {
+    var query = searchBox.value.toLowerCase();
+    if (!query) {
         contentDiv.style.display = "";
         searchDiv.style.display = "none";
+        return;
+    }
+
+    contentDiv.style.display = "none";
+    searchDiv.style.display = "";
+
+    var foundRequests = getSearchArray(requests, requestsu, query);
+    var foundTypes = getSearchArray(types, typesu, query);
+    var foundConstructors = getSearchArray(constructors, constructorsu, query);
+
+    if (event && event.keyCode == 13) {
+        if (methodsDetails.open && foundRequests[1].length) {
+            window.location = foundRequests[1][0];
+        } else if (typesDetails.open && foundTypes[1].length) {
+            window.location = foundTypes[1][0];
+        } else if (constructorsDetails.open && foundConstructors[1].length) {
+            window.location = foundConstructors[1][0];
+        }
+        return;
+    }
+
+    buildList(methodsCount, methodsList, foundRequests);
+    buildList(typesCount, typesList, foundTypes);
+    buildList(constructorsCount, constructorsList, foundConstructors);
+
+    // Now look for exact matches
+    var original = requests.concat(constructors);
+    var originalu = requestsu.concat(constructorsu);
+    var destination = [];
+    var destinationu = [];
+
+    for (var i = 0; i < original.length; ++i) {
+        if (original[i].toLowerCase().replace("request", "") == query) {
+            destination.push(original[i]);
+            destinationu.push(originalu[i]);
+        }
+    }
+
+    if (destination.length == 0) {
+        exactMatch.style.display = "none";
+    } else {
+        exactMatch.style.display = "";
+        buildList(null, exactList, [destination, destinationu]);
+        return destinationu[0];
     }
 }
 
