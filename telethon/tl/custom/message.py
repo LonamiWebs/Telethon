@@ -50,6 +50,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             Whether this message is a post in a broadcast
             channel or not.
 
+        from_scheduled (`bool`):
+            Whether this message was originated from
+            a scheduled one or not.
+
         to_id (:tl:`Peer`):
             The peer to which this message was sent, which is either
             :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`. This
@@ -138,7 +142,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             # For Message (flags)
             fwd_from=None, via_bot_id=None, media=None, reply_markup=None,
             entities=None, views=None, edit_date=None, post_author=None,
-            grouped_id=None,
+            grouped_id=None, from_scheduled=None,
 
             # For MessageAction (mandatory)
             action=None):
@@ -165,6 +169,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self.edit_date = edit_date
         self.post_author = post_author
         self.grouped_id = grouped_id
+        self.from_scheduled = from_scheduled
         self.action = action
 
         # Convenient storage for custom functions

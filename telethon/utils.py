@@ -268,7 +268,8 @@ def get_input_photo(photo):
         photo = photo.photo
 
     if isinstance(photo, types.Photo):
-        return types.InputPhoto(id=photo.id, access_hash=photo.access_hash)
+        return types.InputPhoto(id=photo.id, access_hash=photo.access_hash,
+                                file_reference=photo.file_reference)
 
     if isinstance(photo, types.PhotoEmpty):
         return types.InputPhotoEmpty()
@@ -577,7 +578,9 @@ def get_input_location(location):
 
     if isinstance(location, types.Document):
         return (location.dc_id, types.InputDocumentFileLocation(
-            location.id, location.access_hash, location.version))
+            location.id, location.access_hash,
+            file_reference=location.file_reference
+        ))
     elif isinstance(location, types.Photo):
         try:
             location = next(
@@ -587,10 +590,13 @@ def get_input_location(location):
         except StopIteration:
             pass
 
-    if isinstance(location, (
-            types.FileLocation, types.FileLocationUnavailable)):
-        return (getattr(location, 'dc_id', None), types.InputFileLocation(
-            location.volume_id, location.local_id, location.secret))
+    if isinstance(location, types.FileLocation):
+        return (location.dc_id, types.InputFileLocation(
+            location.volume_id, location.local_id, location.secret,
+            file_reference=location.file_reference
+        ))
+    elif isinstance(location, types.FileLocationUnavailable):
+        raise TypeError('Unavailable location cannot be used as input')
 
     _raise_cast_fail(location, 'InputFileLocation')
 
@@ -890,8 +896,8 @@ def resolve_bot_file_id(file_id):
             size=0,
             thumb=types.PhotoSizeEmpty('s'),
             dc_id=dc_id,
-            version=0,
-            attributes=attributes
+            attributes=attributes,
+            file_reference=b''
         )
     elif len(data) == 44:
         (file_type, dc_id, media_id, access_hash,

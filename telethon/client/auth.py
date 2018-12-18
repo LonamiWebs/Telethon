@@ -454,6 +454,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         Returns:
             ``True`` if successful, ``False`` otherwise.
         """
+        raise NotImplemented
+
         if new_password is None and current_password is None:
             return False
 
