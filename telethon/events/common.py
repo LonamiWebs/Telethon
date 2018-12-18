@@ -150,9 +150,9 @@ class EventCommon(ChatGetter, abc.ABC):
         if not self._chat:
             return
 
-        self._input_chat = utils.get_input_peer(self._chat)
-        if not getattr(self._input_chat, 'access_hash', True):
-            # getattr with True to handle the InputPeerSelf() case
+        try:
+            self._input_chat = utils.get_input_peer(self._chat)
+        except TypeError:
             try:
                 self._input_chat = self._client.session.get_input_entity(
                     self._chat_peer

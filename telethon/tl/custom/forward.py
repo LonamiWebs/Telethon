@@ -30,8 +30,11 @@ class Forward(ChatGetter, SenderGetter):
 
         self._sender_id = original.from_id
         self._sender = entities.get(original.from_id)
-        self._input_sender =\
-            utils.get_input_peer(self._sender) if self._sender else None
+        try:
+            self._input_sender =\
+                utils.get_input_peer(self._sender) if self._sender else None
+        except TypeError:
+            self._input_sender = None
 
         self._broadcast = None
         if original.channel_id:
@@ -41,7 +44,10 @@ class Forward(ChatGetter, SenderGetter):
             self._chat_peer = None
             self._chat = None
 
-        self._input_chat = \
-            utils.get_input_peer(self._chat) if self._chat else None
+        try:
+            self._input_chat = \
+                utils.get_input_peer(self._chat) if self._chat else None
+        except TypeError:
+            self._input_chat = None
 
     # TODO We could reload the message

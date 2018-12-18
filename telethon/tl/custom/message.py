@@ -204,18 +204,17 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._client = client
         self._sender = entities.get(self._sender_id)
         if self._sender:
-            self._input_sender = utils.get_input_peer(self._sender)
-            if not getattr(self._input_sender, 'access_hash', True):
+            try:
+                self._input_sender = utils.get_input_peer(self._sender)
+            except TypeError:
                 self._input_sender = None
 
         self._chat = entities.get(self.chat_id)
         self._input_chat = input_chat
         if not self._input_chat and self._chat:
-            self._input_chat = utils.get_input_peer(self._chat)
-            if not getattr(self._input_chat, 'access_hash', True):
-                # Telegram may omit the hash in updates -> invalid peer
-                # However things like InputPeerSelf() or InputPeerChat(id)
-                # are still valid so default to getting "True" on not found
+            try:
+                self._input_chat = utils.get_input_peer(self._chat)
+            except TypeError:
                 self._input_chat = None
 
         if self.fwd_from:
