@@ -20,7 +20,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     # region Public methods
 
     async def send_file(
-            self, entity, file, *, caption='', force_document=False,
+            self, entity, file, *, caption=None, force_document=False,
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=(),
             voice_note=False, video_note=False, buttons=None, silent=None,
@@ -116,6 +116,9 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             The `telethon.tl.custom.message.Message` (or messages) containing
             the sent file, or messages if a list of them was passed.
         """
+        if not caption:
+            caption = ''
+
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
