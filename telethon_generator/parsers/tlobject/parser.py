@@ -14,6 +14,26 @@ CORE_TYPES = {
     0x56730bcc   # null#56730bcc = Null;
 }
 
+# Telegram Desktop (C++) doesn't care about string/bytes, and the .tl files
+# don't either. However in Python we *do*, and we want to deal with bytes
+# for the authorization key process, not UTF-8 strings (they won't be).
+#
+# Every type with an ID that's in here should get their attribute types
+# with string being replaced with bytes.
+AUTH_KEY_TYPES = {
+    0x05162463,  # resPQ,
+    0x83c95aec,  # p_q_inner_data
+    0xa9f55f95,  # p_q_inner_data_dc
+    0x3c6a84d4,  # p_q_inner_data_temp
+    0x56fddf88,  # p_q_inner_data_temp_dc
+    0xd0e8075c,  # server_DH_params_ok
+    0xb5890dba,  # server_DH_inner_data
+    0x6643b654,  # client_DH_inner_data
+    0xd712e4be,  # req_DH_params
+    0xf5045f1f,  # set_client_DH_params
+    0x3072cfa1   # gzip_packed
+}
+
 
 def _from_line(line, is_function, method_info, layer):
     match = re.match(
@@ -101,6 +121,11 @@ def parse_tl(file_path, layer, methods=None, ignored_ids=CORE_TYPES):
     # Once all objects have been parsed, replace the
     # string type from the arguments with references
     for obj in obj_all:
+        if obj.id in AUTH_KEY_TYPES:
+            for arg in obj.args:
+                if arg.type == 'string':
+                    arg.type = 'bytes'
+
         for arg in obj.args:
             arg.cls = obj_by_type.get(arg.type) or (
                 [obj_by_name[arg.type]] if arg.type in obj_by_name else []
