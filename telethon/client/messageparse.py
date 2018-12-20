@@ -115,7 +115,7 @@ class MessageParseMethods(UserMethods):
                         for x in
                         itertools.chain(result.users, result.chats)}
         else:
-            return
+            return None
 
         found = None
         for update in updates:
@@ -141,5 +141,7 @@ class MessageParseMethods(UserMethods):
         if found:
             found._finish_init(self, entities, input_chat)
             return found
+        else:
+            return None  # explicit is better than implicit
 
     # endregion

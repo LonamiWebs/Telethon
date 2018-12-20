@@ -553,6 +553,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         Returns:
             The list of forwarded `telethon.tl.custom.message.Message`,
             or a single one if a list wasn't provided as input.
+
+            Note that if all messages are invalid (i.e. deleted) the call
+            will fail with ``MessageIdInvalidError``. If only some are
+            invalid, the list will have ``None`` instead of those messages.
         """
         single = not utils.is_list_like(messages)
         if single:
@@ -597,7 +601,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 update.message._finish_init(self, entities, entity)
                 id_to_message[update.message.id] = update.message
 
-        result = [id_to_message[random_to_id[rnd]] for rnd in req.random_id]
+        # Trying to forward only deleted messages causes `MESSAGE_ID_INVALID`
+        # but forwarding valid and invalid messages in the same call makes the
+        # call succeed, although the API won't return those messages thus
+        # `random_to_id[rnd]` would `KeyError`. Check the key beforehand.
+        result = [id_to_message[random_to_id[rnd]]
+                  if rnd in random_to_id else None
+                  for rnd in req.random_id]
+
         return result[0] if single else result
 
     async def edit_message(
