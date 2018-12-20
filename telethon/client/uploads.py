@@ -118,6 +118,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         """
         if not caption:
             caption = ''
+
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
