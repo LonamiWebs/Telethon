@@ -111,7 +111,7 @@ you're able to just do this:
 
 All methods in the :ref:`telegram-client` call `.get_input_entity()
 <telethon.client.users.UserMethods.get_input_entity>` prior
-to sending the requst to save you from the hassle of doing so manually.
+to sending the request to save you from the hassle of doing so manually.
 That way, convenience calls such as `client.send_message('lonami', 'hi!')
 <telethon.client.messages.MessageMethods.send_message>`
 become possible.

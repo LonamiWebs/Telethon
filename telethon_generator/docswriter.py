@@ -42,7 +42,7 @@ class DocsWriter:
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>{title}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link id="style" href="{rel_css}/docs.{def_css}.css" rel="stylesheet">
+    <link id="style" href="{rel_css}/docs.dark.css" rel="stylesheet">
     <script>
     document.getElementById("style").href = "{rel_css}/docs."
         + (localStorage.getItem("theme") || "{def_css}")
