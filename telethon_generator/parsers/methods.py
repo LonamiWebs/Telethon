@@ -30,7 +30,7 @@ def parse_methods(csv_file, errors_dict):
     Parses the input CSV file with columns (method, usability, errors)
     and yields `MethodInfo` instances as a result.
     """
-    with open(csv_file, newline='') as f:
+    with csv_file.open(newline='') as f:
         f = csv.reader(f)
         next(f, None)  # header
         for line, (method, usability, errors) in enumerate(f, start=2):

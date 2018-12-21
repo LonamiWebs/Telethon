@@ -16,6 +16,7 @@ import re
 import shutil
 from os import chdir
 from pathlib import Path
+from subprocess import run
 from sys import argv
 
 from setuptools import find_packages, setup
@@ -30,11 +31,11 @@ class TempWorkDir:
 
     def __enter__(self):
         self.original = Path('.')
-        chdir(Path(__file__).parent)
+        chdir(str(Path(__file__).parent))
         return self
 
     def __exit__(self, *args):
-        chdir(self.original)
+        chdir(str(self.original))
 
 
 GENERATOR_DIR = Path('telethon_generator')
@@ -96,7 +97,7 @@ def generate(which):
             if ERRORS_OUT.is_file():
                 ERRORS_OUT.unlink()
         else:
-            with open(ERRORS_OUT, 'w', encoding='utf-8') as file:
+            with ERRORS_OUT.open('w') as file:
                 generate_errors(errors, file)
 
     if 'docs' in which:
@@ -104,7 +105,7 @@ def generate(which):
         print(action, 'documentation...')
         if clean:
             if DOCS_OUT.is_dir():
-                shutil.rmtree(DOCS_OUT)
+                shutil.rmtree(str(DOCS_OUT))
         else:
             generate_docs(tlobjects, methods, layer, DOCS_IN_RES, DOCS_OUT)
 
@@ -154,18 +155,13 @@ def main():
             print('Packaging for PyPi aborted, importing the module failed.')
             return
 
-        # Need python3.5 or higher, but Telethon is supposed to support 3.x
-        # Place it here since noone should be running ./setup.py pypi anyway
-        from subprocess import run
-        from shutil import rmtree
-
         for x in ('build', 'dist', 'Telethon.egg-info'):
-            rmtree(x, ignore_errors=True)
+            shutil.rmtree(x, ignore_errors=True)
         run('python3 setup.py sdist', shell=True)
         run('python3 setup.py bdist_wheel', shell=True)
         run('twine upload dist/*', shell=True)
         for x in ('build', 'dist', 'Telethon.egg-info'):
-            rmtree(x, ignore_errors=True)
+            shutil.rmtree(x, ignore_errors=True)
 
     else:
         # e.g. install from GitHub

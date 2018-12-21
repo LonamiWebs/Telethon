@@ -57,7 +57,7 @@ def parse_errors(csv_file):
     Parses the input CSV file with columns (name, error codes, description)
     and yields `Error` instances as a result.
     """
-    with open(csv_file, newline='') as f:
+    with csv_file.open(newline='') as f:
         f = csv.reader(f)
         next(f, None)  # header
         for line, (name, codes, description) in enumerate(f, start=2):

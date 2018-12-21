@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import csv
 import functools
 import os
 import re
 import shutil
 from collections import defaultdict
+from pathlib import Path
 
 from ..docswriter import DocsWriter
 from ..parsers import TLObject, Usability
@@ -35,14 +35,14 @@ def get_import_code(tlobject):
 
 def _get_create_path_for(root, tlobject, make=True):
     """Creates and returns the path for the given TLObject at root."""
-    out_dir = 'methods' if tlobject.is_function else 'constructors'
+    out_dir = root / ('methods' if tlobject.is_function else 'constructors')
     if tlobject.namespace:
-        out_dir = os.path.join(out_dir, tlobject.namespace)
+        out_dir /= tlobject.namespace
 
-    out_dir = os.path.join(root, out_dir)
     if make:
-        os.makedirs(out_dir, exist_ok=True)
-    return os.path.join(out_dir, _get_file_name(tlobject))
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    return out_dir / _get_file_name(tlobject)
 
 
 def _get_path_for_type(root, type_, relative_to='.'):
@@ -55,15 +55,17 @@ def _get_path_for_type(root, type_, relative_to='.'):
     else:
         path = 'types/%s' % _get_file_name(type_)
 
-    return _get_relative_path(os.path.join(root, path), relative_to)
+    return _get_relative_path(root / path, relative_to)
 
 
 def _get_relative_path(destination, relative_to, folder=False):
     """Return the relative path to destination from relative_to."""
+    relative_to = Path(relative_to)
     if not folder:
-        relative_to = os.path.dirname(relative_to)
+        relative_to = relative_to.parent
 
-    return os.path.relpath(destination, start=relative_to)
+    # TODO Use pathlib here
+    return Path(os.path.relpath(destination, start=relative_to))
 
 
 def _find_title(html_file):
@@ -83,7 +85,7 @@ def _build_menu(docs, filename, root, relative_main_index):
     filename = _get_relative_path(filename, root)
     docs.add_menu('API', relative_main_index)
 
-    items = filename.split('/')
+    items = str(filename).split('/')
     for i in range(len(items) - 1):
         item = items[i]
         link = '../' * (len(items) - (i + 2))
@@ -106,8 +108,8 @@ def _generate_index(folder, original_paths, root,
     BOT_INDEX = 'botindex.html'
 
     if not bots_index:
-        for item in os.listdir(folder):
-            if os.path.isdir(os.path.join(folder, item)):
+        for item in folder.iterdir():
+            if item.is_dir():
                 namespaces.append(item)
             elif item not in (INDEX, BOT_INDEX):
                 files.append(item)
@@ -115,7 +117,7 @@ def _generate_index(folder, original_paths, root,
         # bots_index_paths should be a list of "namespace/method.html"
         # or "method.html"
         for item in bots_index_paths:
-            dirname = os.path.dirname(item)
+            dirname = item.parent
             if dirname and dirname not in namespaces:
                 namespaces.append(dirname)
             elif not dirname and item not in (INDEX, BOT_INDEX):
@@ -125,10 +127,10 @@ def _generate_index(folder, original_paths, root,
              for k, v in original_paths.items()}
 
     # Now that everything is setup, write the index.html file
-    filename = os.path.join(folder, BOT_INDEX if bots_index else INDEX)
+    filename = folder / (BOT_INDEX if bots_index else INDEX)
     with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
         # Title should be the current folder name
-        docs.write_head(folder.title(),
+        docs.write_head(str(folder).title(),
                         relative_css_path=paths['css'],
                         default_css=original_paths['default_css'])
 
@@ -136,7 +138,9 @@ def _generate_index(folder, original_paths, root,
         _build_menu(docs, filename, root,
                     relative_main_index=paths['index_all'])
 
-        docs.write_title(_get_relative_path(folder, root, folder=True).title())
+        docs.write_title(str(
+            _get_relative_path(folder, root, folder=True)).title())
+
         if bots_index:
             docs.write_text('These are the methods that you may be able to '
                             'use as a bot. Click <a href="{}">here</a> to '
@@ -153,24 +157,23 @@ def _generate_index(folder, original_paths, root,
                 namespace_paths = []
                 if bots_index:
                     for item in bots_index_paths:
-                        if os.path.dirname(item) == namespace:
-                            namespace_paths.append(os.path.basename(item))
-                _generate_index(os.path.join(folder, namespace),
+                        # TODO .name? or not
+                        if item.parent.name == namespace:
+                            namespace_paths.append(item.name)
+                _generate_index(folder / namespace,
                                 original_paths, root,
                                 bots_index, namespace_paths)
                 if bots_index:
-                    docs.add_row(namespace.title(),
-                                 link=os.path.join(namespace, BOT_INDEX))
+                    docs.add_row(namespace.title(), link=namespace / BOT_INDEX)
                 else:
-                    docs.add_row(namespace.title(),
-                                 link=os.path.join(namespace, INDEX))
+                    docs.add_row(namespace.title(), link=namespace / INDEX)
 
             docs.end_table()
 
         docs.write_title('Available items')
         docs.begin_table(2)
 
-        files = [(f, _find_title(os.path.join(folder, f))) for f in files]
+        files = [(f, _find_title(folder / f)) for f in files]
         files.sort(key=lambda t: t[1])
 
         for file, title in files:
@@ -250,9 +253,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
         'index_methods': 'methods/index.html',
         'index_constructors': 'constructors/index.html'
     }
-    original_paths = {k: os.path.join(output_dir, v)
-                      for k, v in original_paths.items()}
-
+    original_paths = {k: output_dir / v for k, v in original_paths.items()}
     original_paths['default_css'] = 'light'  # docs.<name>.css, local path
     type_to_constructors = defaultdict(list)
     type_to_functions = defaultdict(list)
@@ -443,16 +444,17 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
 
     temp = []
     for item in bot_docs_paths:
-        temp.append(os.path.sep.join(item.split(os.path.sep)[2:]))
+        # TODO What?
+        temp.append(os.path.sep.join(str(item).split(os.path.sep)[2:]))
     bot_docs_paths = temp
 
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
     for t, cs in type_to_constructors.items():
         filename = path_for_type(t)
-        out_dir = os.path.dirname(filename)
+        out_dir = filename.parent
         if out_dir:
-            os.makedirs(out_dir, exist_ok=True)
+            out_dir.mkdir(parents=True, exist_ok=True)
 
         # Since we don't have access to the full TLObject, split the type
         if '.' in t:
@@ -570,10 +572,10 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
     for folder in ['types', 'methods', 'constructors']:
-        _generate_index(os.path.join(output_dir, folder), original_paths,
+        _generate_index(output_dir / folder, original_paths,
                         output_dir)
 
-    _generate_index(os.path.join(output_dir, 'methods'), original_paths,
+    _generate_index(output_dir / 'methods', original_paths,
                     output_dir, True, bot_docs_paths)
 
     # Write the final core index, the main index for the rest of files
@@ -596,8 +598,8 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
     methods = sorted(methods, key=lambda m: m.name)
     cs = sorted(cs, key=lambda c: c.name)
 
-    shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
-    _copy_replace(os.path.join(input_res, 'core.html'),
+    shutil.copy(str(input_res / '404.html'), str(original_paths['404']))
+    _copy_replace(input_res / 'core.html',
                   original_paths['index_all'], {
         '{type_count}': len(types),
         '{method_count}': len(methods),
@@ -630,10 +632,8 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
     type_urls = fmt(types, path_for_type)
     constructor_urls = fmt(cs, create_path_for)
 
-    os.makedirs(os.path.abspath(os.path.join(
-        original_paths['search.js'], os.path.pardir
-    )), exist_ok=True)
-    _copy_replace(os.path.join(input_res, 'js', 'search.js'),
+    original_paths['search.js'].parent.mkdir(parents=True, exist_ok=True)
+    _copy_replace(input_res / 'js/search.js',
                   original_paths['search.js'], {
         '{request_names}': request_names,
         '{type_names}': type_names,
@@ -647,13 +647,13 @@ def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
 def _copy_resources(res_dir, out_dir):
     for dirname, files in [('css', ['docs.light.css', 'docs.dark.css']),
                            ('img', ['arrow.svg'])]:
-        dirpath = os.path.join(out_dir, dirname)
-        os.makedirs(dirpath, exist_ok=True)
+        dirpath = out_dir / dirname
+        dirpath.mkdir(parents=True, exist_ok=True)
         for file in files:
-            shutil.copy(os.path.join(res_dir, dirname, file), dirpath)
+            shutil.copy(str(res_dir / dirname / file), str(dirpath))
 
 
 def generate_docs(tlobjects, methods, layer, input_res, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     _write_html_pages(tlobjects, methods, layer, input_res, output_dir)
     _copy_resources(input_res, output_dir)

@@ -54,7 +54,7 @@ class DocsWriter:
 <body>
 <div id="main_div">''',
             title=title,
-            rel_css=relative_css_path.rstrip('/'),
+            rel_css=str(relative_css_path).rstrip('/'),
             def_css=default_css
         )
 
@@ -278,10 +278,7 @@ class DocsWriter:
     # With block
     def __enter__(self):
         # Sanity check
-        parent = os.path.dirname(self.filename)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-
+        self.filename.parent.mkdir(parents=True, exist_ok=True)
         self.handle = open(self.filename, 'w', encoding='utf-8')
         return self
 

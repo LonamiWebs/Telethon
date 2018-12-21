@@ -48,11 +48,10 @@ PATCHED_TYPES = {
 def _write_modules(
         out_dir, depth, kind, namespace_tlobjects, type_constructors):
     # namespace_tlobjects: {'namespace', [TLObject]}
-    os.makedirs(out_dir, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
-        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
-        with open(file, 'w', encoding='utf-8') as f,\
-                SourceBuilder(f) as builder:
+        file = out_dir / '{}.py'.format(ns or '__init__')
+        with file.open('w') as f, SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
             builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
@@ -635,11 +634,10 @@ def _write_arg_read_code(builder, arg, args, name):
 
 
 def _write_patched(out_dir, namespace_tlobjects):
-    os.makedirs(out_dir, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
-        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
-        with open(file, 'w', encoding='utf-8') as f,\
-                SourceBuilder(f) as builder:
+        file = out_dir / '{}.py'.format(ns or '__init__')
+        with file.open('w') as f, SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
             builder.writeln('import struct')
@@ -715,26 +713,24 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             if tlobject.fullname in PATCHED_TYPES:
                 namespace_patched[tlobject.namespace].append(tlobject)
 
-    get_file = functools.partial(os.path.join, output_dir)
-    _write_modules(get_file('functions'), import_depth, 'TLRequest',
+    _write_modules(output_dir / 'functions', import_depth, 'TLRequest',
                    namespace_functions, type_constructors)
-    _write_modules(get_file('types'), import_depth, 'TLObject',
+    _write_modules(output_dir / 'types', import_depth, 'TLObject',
                    namespace_types, type_constructors)
-    _write_patched(get_file('patched'), namespace_patched)
+    _write_patched(output_dir / 'patched', namespace_patched)
 
-    filename = os.path.join(get_file('alltlobjects.py'))
-    with open(filename, 'w', encoding='utf-8') as file:
+    filename = output_dir / 'alltlobjects.py'
+    with filename.open('w') as file:
         with SourceBuilder(file) as builder:
             _write_all_tlobjects(tlobjects, layer, builder)
 
 
 def clean_tlobjects(output_dir):
-    get_file = functools.partial(os.path.join, output_dir)
     for d in ('functions', 'types'):
-        d = get_file(d)
-        if os.path.isdir(d):
-            shutil.rmtree(d)
+        d = output_dir / d
+        if d.is_dir():
+            shutil.rmtree(str(d))
 
-    tl = get_file('alltlobjects.py')
-    if os.path.isfile(tl):
-        os.remove(tl)
+    tl = output_dir / 'alltlobjects.py'
+    if tl.is_file():
+        tl.unlink()

@@ -86,7 +86,7 @@ def parse_tl(file_path, layer, methods=None, ignored_ids=CORE_TYPES):
     obj_all = []
     obj_by_name = {}
     obj_by_type = collections.defaultdict(list)
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with file_path.open() as file:
         is_function = False
         for line in file:
             comment_index = line.find('//')
