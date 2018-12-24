@@ -32,21 +32,17 @@ def get_import_code(tlobject):
         .format(kind, ns, tlobject.class_name)
 
 
-def _get_create_path_for(root, tlobject, make=True):
+def _get_path_for(root, tlobject):
     """Creates and returns the path for the given TLObject at root."""
-    # TODO Can we pre-create all required directories?
     out_dir = root / ('methods' if tlobject.is_function else 'constructors')
     if tlobject.namespace:
         out_dir /= tlobject.namespace
-
-    if make:
-        out_dir.mkdir(parents=True, exist_ok=True)
 
     return out_dir / _get_file_name(tlobject)
 
 
 def _get_path_for_type(type_):
-    """Similar to `_get_create_path_for` but for only type names."""
+    """Similar to `_get_path_for` but for only type names."""
     if type_.lower() in CORE_TYPES:
         return Path('index.html#%s' % type_.lower())
     elif '.' in type_:
@@ -240,7 +236,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     methods = {m.name: m for m in methods}
 
     # Since the output directory is needed everywhere partially apply it now
-    create_path_for = functools.partial(_get_create_path_for, root)
+    create_path_for = functools.partial(_get_path_for, root)
     path_for_type = lambda t: root / _get_path_for_type(t)
     bot_docs_paths = []
 
@@ -576,12 +572,11 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     type_names = fmt(types, formatter=lambda x: x)
 
     # Local URLs shouldn't rely on the output's root, so set empty root
-    create_path_for = functools.partial(
-        _get_create_path_for, Path(), make=False)
+    get_path_for = functools.partial(_get_path_for, Path())
 
-    request_urls = fmt(methods, create_path_for)
+    request_urls = fmt(methods, get_path_for)
     type_urls = fmt(types, _get_path_for_type)
-    constructor_urls = fmt(cs, create_path_for)
+    constructor_urls = fmt(cs, get_path_for)
 
     paths['search.js'].parent.mkdir(parents=True, exist_ok=True)
     _copy_replace(input_res / 'js/search.js', paths['search.js'], {
@@ -603,7 +598,38 @@ def _copy_resources(res_dir, out_dir):
             shutil.copy(str(res_dir / dirname / file), str(dirpath))
 
 
-def generate_docs(tlobjects, methods, layer, input_res, output_dir):
-    output_dir.mkdir(parents=True, exist_ok=True)
-    _write_html_pages(output_dir, tlobjects, methods, layer, input_res)
+def _create_structure(tlobjects, output_dir):
+    """
+    Pre-create the required directory structure
+    in `output_dir` for the input objects.
+    """
+    types_ns = set()
+    method_ns = set()
+    for obj in tlobjects:
+        if obj.namespace:
+            if obj.is_function:
+                method_ns.add(obj.namespace)
+            else:
+                types_ns.add(obj.namespace)
+
+    output_dir.mkdir(exist_ok=True)
+
+    type_dir = output_dir / 'types'
+    type_dir.mkdir(exist_ok=True)
+
+    cons_dir = output_dir / 'constructors'
+    cons_dir.mkdir(exist_ok=True)
+    for ns in types_ns:
+        (type_dir / ns).mkdir(exist_ok=True)
+        (cons_dir / ns).mkdir(exist_ok=True)
+
+    meth_dir = output_dir / 'methods'
+    meth_dir.mkdir(exist_ok=True)
+    for ns in types_ns:
+        (meth_dir / ns).mkdir(exist_ok=True)
+
+
+def generate_docs(tlobjects, methods_info, layer, input_res, output_dir):
+    _create_structure(tlobjects, output_dir)
+    _write_html_pages(output_dir, tlobjects, methods_info, layer, input_res)
     _copy_resources(input_res, output_dir)
