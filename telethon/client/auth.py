@@ -7,7 +7,7 @@ import sys
 
 from .messageparse import MessageParseMethods
 from .users import UserMethods
-from .. import utils, helpers, errors
+from .. import utils, helpers, errors, password as pwd_mod
 from ..tl import types, functions
 
 
@@ -279,10 +279,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
             result = await self(functions.auth.SignInRequest(
                 phone, phone_code_hash, str(code)))
         elif password:
-            salt = (await self(
-                functions.account.GetPasswordRequest())).current_salt
+            pwd = await self(functions.account.GetPasswordRequest())
             result = await self(functions.auth.CheckPasswordRequest(
-                helpers.get_password_hash(password, salt)
+                pwd_mod.compute_check(pwd, password)
             ))
         elif bot_token:
             result = await self(functions.auth.ImportBotAuthorizationRequest(
