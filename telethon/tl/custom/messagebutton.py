@@ -93,3 +93,11 @@ class MessageButton:
             ))
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)
+        elif isinstance(self.button, types.KeyboardButtonGame):
+            req = functions.messages.GetBotCallbackAnswerRequest(
+                peer=self._chat, msg_id=self._msg_id, game=True
+            )
+            try:
+                return await self._client(req)
+            except BotTimeout:
+                return None
