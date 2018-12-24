@@ -114,6 +114,10 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
 
     A ``TypeError`` is raised if the given entity isn't a supported type
     or if ``check_hash is True`` but the entity's ``access_hash is None``.
+
+    Note that ``check_hash`` **is ignored** if an input peer is already
+    passed since in that case we assume the user knows what they're doing.
+    This is key to getting entities by explicitly passing ``hash = 0``.
     """
     try:
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')

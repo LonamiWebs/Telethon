@@ -304,6 +304,26 @@ class UserMethods(TelegramBaseClient):
             # Also ignore Peer (0x2d45687 == crc32(b'Peer'))'s, lacking hash.
             return utils.get_input_peer(peer)
 
+        # If we're a bot and the user has messaged us privately users.getUsers
+        # will work with access_hash = 0. Similar for channels.getChannels.
+        # If we're not a bot but the user is in our contacts, it seems to work
+        # regardless. These are the only two special-cased requests.
+        peer = utils.get_peer(peer)
+        if isinstance(peer, types.PeerUser):
+            users = await self(functions.users.GetUsersRequest([
+                types.InputUser(peer.user_id, access_hash=0)]))
+            if users:
+                return utils.get_input_peer(users[0])
+        elif isinstance(peer, types.PeerChat):
+            return types.InputPeerChat(peer.chat_id)
+        elif isinstance(peer, types.PeerChannel):
+            try:
+                channels = await self(functions.channels.GetChannelsRequest([
+                    types.InputChannel(peer.channel_id, access_hash=0)]))
+                return utils.get_input_peer(channels.chats[0])
+            except errors.ChannelInvalidError:
+                pass
+
         raise ValueError(
             'Could not find the input entity for {!r}. Please read https://'
             'telethon.readthedocs.io/en/latest/extra/basic/entities.html to'
