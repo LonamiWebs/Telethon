@@ -467,6 +467,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             return False
 
         pwd = await self(functions.account.GetPasswordRequest())
+        pwd.new_algo.salt1 += os.urandom(32)
         assert isinstance(pwd, types.account.Password)
         if not pwd.has_password and current_password:
             current_password = None
