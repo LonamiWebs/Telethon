@@ -47,7 +47,8 @@ class Factorization:
                 if g > 1:
                     break
 
-        return g, pq // g
+        p, q = g, pq // g
+        return (p, q) if p < q else (q, p)
 
     @staticmethod
     def gcd(a, b):

@@ -1,6 +1,7 @@
 import hashlib
 import os
 
+from .crypto import factorization
 from .tl import types
 
 
@@ -10,7 +11,9 @@ def check_prime_and_good_check(prime: int, g: int):
         raise ValueError('bad prime count {}, expected {}'
                          .format(prime.bit_length(), good_prime_bits_count))
 
-    # TODO if not is_prime(prime) raise
+    if factorization.Factorization.factorize(prime)[0] != 1:
+        raise ValueError('given "prime" is not prime')
+
     if g == 2:
         if prime % 8 != 7:
             raise ValueError('bad g {}, mod8 {}'.format(g, prime % 8))
@@ -32,8 +35,10 @@ def check_prime_and_good_check(prime: int, g: int):
         raise ValueError('bad g {}'.format(g))
 
     prime_sub1_div2 = (prime - 1) // 2
-    # TODO if not is_prime(prime_sub1_div2) raise
-    # It's good
+    if factorization.Factorization.factorize(prime_sub1_div2)[0] != 1:
+        raise ValueError('(prime - 1) // 2 is not prime')
+
+    # Else it's good
 
 
 def check_prime_and_good(prime_bytes: bytes, g: int):
@@ -112,6 +117,7 @@ def compute_hash(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter1000
     return sha256(algo.salt2, hash3, algo.salt2)
 
 
+# https://github.com/telegramdesktop/tdesktop/blob/18b74b90451a7db2379a9d753c9cbaf8734b4d5d/Telegram/SourceFiles/core/core_cloud_password.cpp
 def compute_check(request: types.account.Password, password: str):
     algo = request.current_algo
     if not isinstance(algo, types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow):

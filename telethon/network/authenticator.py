@@ -38,7 +38,7 @@ async def do_authentication(sender):
 
     # Step 2 sending: DH Exchange
     p, q = Factorization.factorize(pq)
-    p, q = rsa.get_byte_array(min(p, q)), rsa.get_byte_array(max(p, q))
+    p, q = rsa.get_byte_array(p), rsa.get_byte_array(q)
     new_nonce = int.from_bytes(os.urandom(32), 'little', signed=True)
 
     pq_inner_data = bytes(PQInnerData(
