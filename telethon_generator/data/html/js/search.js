@@ -1,7 +1,7 @@
 root = document.getElementById("main_div");
 root.innerHTML = `
 <!-- You can append '?q=query' to the URL to default to a search -->
-<input id="searchBox" type="text" onkeydown="updateSearch(event)"
+<input id="searchBox" type="text" onkeyup="updateSearch(event)"
        placeholder="Search for requests and types…" />
 
 <div id="searchDiv">
