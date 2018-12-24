@@ -90,20 +90,6 @@ def generate_key_data_from_nonce(server_nonce, new_nonce):
     return key, iv
 
 
-def get_password_hash(pw, current_salt):
-    """Gets the password hash for the two-step verification.
-       current_salt should be the byte array provided by
-       invoking GetPasswordRequest()
-    """
-
-    # Passwords are encoded as UTF-8
-    # At https://github.com/DrKLO/Telegram/blob/e31388
-    # src/main/java/org/telegram/ui/LoginActivity.java#L2003
-    data = pw.encode('utf-8')
-
-    pw_hash = current_salt + data + current_salt
-    return sha256(pw_hash).digest()
-
 # endregion
 
 # region Custom Classes
