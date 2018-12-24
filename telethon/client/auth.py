@@ -422,10 +422,14 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
     async def edit_2fa(
             self, current_password=None, new_password=None,
-            *, hint='', email=None):
+            *, hint='', email=None, email_code_callback=None):
         """
         Changes the 2FA settings of the logged in user, according to the
         passed parameters. Take note of the parameter explanations.
+
+        Note that this method may be *incredibly* slow depending on the
+        prime numbers that must be used during the process to make sure
+        that everything is safe.
 
         Has no effect if both current and new password are omitted.
 
@@ -450,53 +454,42 @@ class AuthMethods(MessageParseMethods, UserMethods):
             if value differs from current one, and has no effect if
             ``new_password`` is not set.
 
+        email_code_callback (`callable`, optional):
+            If an email is provided, a callback that returns the code sent
+            to it must also be set. This callback may be asynchronous.
+
         Returns:
             ``True`` if successful, ``False`` otherwise.
         """
-        raise NotImplemented
-
         if new_password is None and current_password is None:
             return False
 
-        pass_result = await self(functions.account.GetPasswordRequest())
-        if isinstance(
-                pass_result, types.account.NoPassword) and current_password:
+        pwd = await self(functions.account.GetPasswordRequest())
+        assert isinstance(pwd, types.account.Password)
+        if not pwd.has_password and current_password:
             current_password = None
 
-        salt_random = os.urandom(8)
-        salt = pass_result.new_salt + salt_random
-        if not current_password:
-            current_password_hash = salt
+        if current_password:
+            password = pwd_mod.compute_check(pwd, current_password)
         else:
-            current_password = (
-                pass_result.current_salt
-                + current_password.encode()
-                + pass_result.current_salt
-            )
-            current_password_hash = hashlib.sha256(current_password).digest()
+            password = types.InputCheckPasswordEmpty()
 
-        if new_password:  # Setting new password
-            new_password = salt + new_password.encode('utf-8') + salt
-            new_password_hash = hashlib.sha256(new_password).digest()
-            new_settings = types.account.PasswordInputSettings(
-                new_salt=salt,
+        if new_password:
+            new_password_hash = pwd_mod.compute_digest(
+                pwd.new_algo, new_password)
+        else:
+            new_password_hash = b''
+
+        await self(functions.account.UpdatePasswordSettingsRequest(
+            password=password,
+            new_settings=types.account.PasswordInputSettings(
+                new_algo=pwd.new_algo,
                 new_password_hash=new_password_hash,
-                hint=hint
+                hint=hint,
+                email=email,
+                new_secure_settings=None
             )
-            if email:  # If enabling 2FA or changing email
-                new_settings.email = email  # TG counts empty string as None
-            return await self(functions.account.UpdatePasswordSettingsRequest(
-                current_password_hash, new_settings=new_settings
-            ))
-        else:  # Removing existing password
-            return await self(functions.account.UpdatePasswordSettingsRequest(
-                current_password_hash,
-                new_settings=types.account.PasswordInputSettings(
-                    new_salt=bytes(),
-                    new_password_hash=bytes(),
-                    hint=hint
-                )
-            ))
+        ))
 
     # endregion
 

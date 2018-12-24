@@ -11,6 +11,7 @@ def check_prime_and_good_check(prime: int, g: int):
         raise ValueError('bad prime count {}, expected {}'
                          .format(prime.bit_length(), good_prime_bits_count))
 
+    # TODO This is awfully slow
     if factorization.Factorization.factorize(prime)[0] != 1:
         raise ValueError('given "prime" is not prime')
 
@@ -110,11 +111,25 @@ def pbkdf2sha512(password: bytes, salt: bytes, iterations: int):
 
 
 def compute_hash(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
-                 password: bytes):
-    hash1 = sha256(algo.salt1, password, algo.salt1)
+                 password: str):
+    hash1 = sha256(algo.salt1, password.encode('utf-8'), algo.salt1)
     hash2 = sha256(algo.salt2, hash1, algo.salt2)
     hash3 = pbkdf2sha512(hash2, algo.salt1, 100000)
     return sha256(algo.salt2, hash3, algo.salt2)
+
+
+def compute_digest(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
+                   password: str):
+    try:
+        check_prime_and_good(algo.p, algo.g)
+    except ValueError:
+        raise ValueError('bad p/g in password')
+
+    value = pow(algo.g,
+                int.from_bytes(compute_hash(algo, password), 'big'),
+                int.from_bytes(algo.p, 'big'))
+
+    return big_num_for_hash(value)
 
 
 # https://github.com/telegramdesktop/tdesktop/blob/18b74b90451a7db2379a9d753c9cbaf8734b4d5d/Telegram/SourceFiles/core/core_cloud_password.cpp
@@ -124,7 +139,7 @@ def compute_check(request: types.account.Password, password: str):
         raise ValueError('unsupported password algorithm {}'
                          .format(algo.__class__.__name__))
 
-    pw_hash = compute_hash(algo, password.encode('utf-8'))
+    pw_hash = compute_hash(algo, password)
 
     p = int.from_bytes(algo.p, 'big')
     g = algo.g
