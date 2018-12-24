@@ -110,6 +110,7 @@ class UserMethods(TelegramBaseClient):
             me = (await self(
                 functions.users.GetUsersRequest([types.InputUserSelf()])))[0]
 
+            self._bot = me.bot
             if not self._self_input_peer:
                 self._self_input_peer = utils.get_input_peer(
                     me, allow_self=False
@@ -118,6 +119,15 @@ class UserMethods(TelegramBaseClient):
             return self._self_input_peer if input_peer else me
         except errors.UnauthorizedError:
             return None
+
+    async def is_bot(self):
+        """
+        Return ``True`` if the signed-in user is a bot, ``False`` otherwise.
+        """
+        if self._bot is None:
+            self._bot = (await self.get_me()).bot
+
+        return self._bot
 
     async def is_user_authorized(self):
         """

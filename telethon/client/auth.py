@@ -351,6 +351,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         Returns the input user parameter.
         """
+        self._bot = bool(user.bot)
         self._self_input_peer = utils.get_input_peer(user, allow_self=False)
         self._authorized = True
 
@@ -413,6 +414,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         except errors.RPCError:
             return False
 
+        self._bot = None
         self._self_input_peer = None
         self._authorized = False
         self._state = types.updates.State(0, 0, datetime.datetime.now(), 0, 0)

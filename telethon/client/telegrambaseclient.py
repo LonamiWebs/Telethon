@@ -289,6 +289,7 @@ class TelegramBaseClient(abc.ABC):
 
         # Sometimes we need to know who we are, cache the self peer
         self._self_input_peer = None
+        self._bot = None
 
     # endregion
 
