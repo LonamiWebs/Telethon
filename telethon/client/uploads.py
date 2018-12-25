@@ -15,6 +15,18 @@ from ..tl import types, functions, custom
 __log__ = logging.getLogger(__name__)
 
 
+class _CacheType:
+    """Like functools.partial but pretends to be the wrapped class."""
+    def __init__(self, cls):
+        self._cls = cls
+
+    def __call__(self, *args, **kwargs):
+        return self._cls(*args, file_reference=b'', **kwargs)
+
+    def __eq__(self, other):
+        return self._cls == other
+
+
 class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     # region Public methods
@@ -332,7 +344,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             hash_md5.update(file)
             if use_cache:
                 cached = self.session.get_file(
-                    hash_md5.digest(), file_size, cls=use_cache
+                    hash_md5.digest(), file_size, cls=_CacheType(use_cache)
                 )
                 if cached:
                     return cached
