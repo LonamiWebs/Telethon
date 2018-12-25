@@ -8,7 +8,7 @@ from async_generator import async_generator, yield_
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .buttons import ButtonMethods
-from .. import helpers, utils
+from .. import helpers, utils, errors
 from ..tl import types, functions
 
 __log__ = logging.getLogger(__name__)
@@ -807,7 +807,12 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         from_id = None  # By default, no need to validate from_id
         if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
-            r = await self(functions.channels.GetMessagesRequest(entity, ids))
+            try:
+                r = await self(
+                    functions.channels.GetMessagesRequest(entity, ids))
+            except errors.MessageIdsEmptyError:
+                # All IDs were invalid, use a dummy result
+                r = types.messages.MessagesNotModified(len(ids))
         else:
             r = await self(functions.messages.GetMessagesRequest(ids))
             if entity:
@@ -822,7 +827,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                     for x in itertools.chain(r.users, r.chats)}
 
         # Telegram seems to return the messages in the order in which
-        # we asked them for, so we don't need to check it ourselves.
+        # we asked them for, so we don't need to check it ourselves,
+        # unless some messages were invalid in which case Telegram
+        # may decide to not send them at all.
         #
         # The passed message IDs may not belong to the desired entity
         # since the user can enter arbitrary numbers which can belong to
