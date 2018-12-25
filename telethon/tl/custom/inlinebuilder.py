@@ -113,7 +113,7 @@ class InlineBuilder:
                 Same as ``file`` for `client.send_file
                 <telethon.client.uploads.UploadMethods.send_file>`.
         """
-        fh = await self._client.upload_file(file, use_cache=types.InputPhoto)
+        fh = await self._client.upload_file(file)
         if not isinstance(fh, types.InputPhoto):
             r = await self._client(functions.messages.UploadMediaRequest(
                 types.InputPeerSelf(), media=types.InputMediaUploadedPhoto(fh)
@@ -140,14 +140,14 @@ class InlineBuilder:
     async def document(
             self, file, title=None, *, description=None, type=None,
             mime_type=None, attributes=None, force_document=False,
-            voice_note=False, video_note=False, use_cache=True, id=None,
+            voice_note=False, video_note=False, id=None,
             text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         """
         Creates a new inline result of document type.
 
-        `use_cache`, `mime_type`, `attributes`, `force_document`,
+        `mime_type`, `attributes`, `force_document`,
         `voice_note` and `video_note` are described in `client.send_file
         <telethon.client.uploads.UploadMethods.send_file>`.
 
@@ -174,8 +174,7 @@ class InlineBuilder:
             else:
                 type = 'document'
 
-        use_cache = types.InputDocument if use_cache else None
-        fh = await self._client.upload_file(file, use_cache=use_cache)
+        fh = await self._client.upload_file(file)
         if not isinstance(fh, types.InputDocument):
             attributes, mime_type = utils.get_attributes(
                 file,

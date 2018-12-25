@@ -690,7 +690,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             reply_markup=self.build_reply_markup(buttons)
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle)
         return msg
 
     async def delete_messages(self, entity, message_ids, *, revoke=True):

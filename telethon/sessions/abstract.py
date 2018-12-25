@@ -120,6 +120,8 @@ class Session(ABC):
         """
         raise NotImplementedError
 
+    # TODO get rid of now useless cache
+
     @abstractmethod
     def cache_file(self, md5_digest, file_size, instance):
         """
