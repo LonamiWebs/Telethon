@@ -14,6 +14,55 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Polls with the Latest Layer (v1.5)
+==================================
+
+*Published at 2018/12/25*
+
++-----------------------+
+| Scheme layer used: 91 |
++-----------------------+
+
+This version doesn't really bring many new features, but rather focuses on
+updating the code base to support the latest available Telegram layer, 91.
+This layer brings polls, and you can create and manage them through Telethon!
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The layer change from 82 to 91 changed a lot of things in the raw API,
+  so be aware that if you rely on raw API calls, you may need to update
+  your code, in particular **if you work with files**. They have a new
+  ``file_reference`` parameter that you must provide.
+
+Additions
+~~~~~~~~~
+
+* New `client.is_bot() <telethon.client.users.UserMethods.is_bot>` method.
+
+Bug fixes
+~~~~~~~~~
+
+* Markdown and HTML parsing now behave correctly with leading whitespace.
+* HTTP connection should now work correctly again.
+* Using ``caption=None`` would raise an error instead of setting no caption.
+* ``KeyError`` is now handled properly when forwarding messages.
+* `button.click() <telethon.tl.custom.messagebutton.MessageButton.click>`
+  now works as expected for :tl:`KeyboardButtonGame`.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Some improvements to the search in the full API and generated examples.
+* Using entities with ``access_hash = 0`` will now work in more cases.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+* Some changes to the documentation and code generation.
+* 2FA code was updated to work under the latest layer.
+
+
 Error Descriptions in CSV files (v1.4.3)
 ========================================
 
