@@ -246,7 +246,8 @@ def get_input_document(document):
 
     if isinstance(document, types.Document):
         return types.InputDocument(
-            id=document.id, access_hash=document.access_hash)
+            id=document.id, access_hash=document.access_hash,
+            file_reference=document.file_reference)
 
     if isinstance(document, types.DocumentEmpty):
         return types.InputDocumentEmpty()
