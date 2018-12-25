@@ -62,7 +62,8 @@ def check_prime_and_good(prime_bytes: bytes, g: int):
         0x6F, 0x4F, 0xAD, 0xF0, 0x34, 0xB1, 0x04, 0x03, 0x11, 0x9C, 0xD8, 0xE3, 0xB9, 0x2F, 0xCC, 0x5B))
 
     if good_prime == prime_bytes:
-        return  # It's good
+        if g in (3, 4, 5, 7):
+            return  # It's good
 
     check_prime_and_good_check(int.from_bytes(prime_bytes, 'big'), g)
 
