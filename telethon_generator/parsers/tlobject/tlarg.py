@@ -12,6 +12,8 @@ KNOWN_NAMED_EXAMPLES = {
     ('hash', 'string'): "'A4LmkR23G0IGxBE71zZfo1'",
     ('min_id', 'int'): '0',
     ('max_id', 'int'): '0',
+    ('min_id', 'long'): '0',
+    ('max_id', 'long'): '0',
     ('add_offset', 'int'): '0',
     ('title', 'string'): "'My awesome title'",
     ('device_model', 'string'): "'ASUS Laptop'",
@@ -62,7 +64,10 @@ OMITTED_EXAMPLES = {
     'max_id',
     'add_offset',
     'grouped',
-    'broadcast'
+    'broadcast',
+    'admins',
+    'edit',
+    'delete'
 }
 
 
