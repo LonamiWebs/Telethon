@@ -33,6 +33,8 @@ class DownloadMethods(UserMethods):
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
+                If file is the type `bytes`, it will be downloaded in-memory
+                as a bytestring (e.g. ``file=bytes``).
 
             download_big (`bool`, optional):
                 Whether to use the big version of the available photos.
@@ -81,8 +83,8 @@ class DownloadMethods(UserMethods):
         )
 
         try:
-            await self.download_file(loc, file)
-            return file
+            result = await self.download_file(loc, file)
+            return result if file is bytes else file
         except errors.LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
             # The fix seems to be using the full channel chat photo.
@@ -112,6 +114,8 @@ class DownloadMethods(UserMethods):
         file (`str` | `file`, optional):
             The output file path, directory, or stream-like object.
             If the path exists and is a file, it will be overwritten.
+            If file is the type `bytes`, it will be downloaded in-memory
+            as a bytestring (e.g. ``file=bytes``).
 
         progress_callback (`callable`, optional):
             A callback function accepting two parameters:
@@ -170,8 +174,8 @@ class DownloadMethods(UserMethods):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
-                If the file path is ``None``, then the result will be
-                saved in memory and returned as `bytes`.
+                If the file path is ``None`` or ``bytes``, then the result
+                will be saved in memory and returned as `bytes`.
 
             part_size_kb (`int`, optional):
                 Chunk size when downloading files. The larger, the less
@@ -203,7 +207,7 @@ class DownloadMethods(UserMethods):
             raise ValueError(
                 'The part size must be evenly divisible by 4096.')
 
-        in_memory = file is None
+        in_memory = file is None or file is bytes
         if in_memory:
             f = io.BytesIO()
         elif isinstance(file, str):
@@ -294,11 +298,14 @@ class DownloadMethods(UserMethods):
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
         if isinstance(photo, types.PhotoCachedSize):
             # No need to download anything, simply write the bytes
-            if isinstance(file, str):
+            if file is bytes:
+                return photo.bytes
+            elif isinstance(file, str):
                 helpers.ensure_parent_dir_exists(file)
                 f = open(file, 'wb')
             else:
                 f = file
+
             try:
                 f.write(photo.bytes)
             finally:
@@ -306,10 +313,10 @@ class DownloadMethods(UserMethods):
                     f.close()
             return file
 
-        await self.download_file(
+        result = await self.download_file(
             photo.location, file, file_size=photo.size,
             progress_callback=progress_callback)
-        return file
+        return result if file is bytes else file
 
     @staticmethod
     def _get_kind_and_names(attributes):
@@ -349,10 +356,10 @@ class DownloadMethods(UserMethods):
             date=date, possible_names=possible_names
         )
 
-        await self.download_file(
+        result = await self.download_file(
             document, file, file_size=document.size,
             progress_callback=progress_callback)
-        return file
+        return result if file is bytes else file
 
     @classmethod
     def _download_contact(cls, mm_contact, file):
@@ -364,7 +371,21 @@ class DownloadMethods(UserMethods):
         last_name = mm_contact.last_name
         phone_number = mm_contact.phone_number
 
-        if isinstance(file, str):
+        # Remove these pesky characters
+        first_name = first_name.replace(';', '')
+        last_name = (last_name or '').replace(';', '')
+        result = (
+            'BEGIN:VCARD\n'
+            'VERSION:4.0\n'
+            'N:{f};{l};;;\n'
+            'FN:{f} {l}\n'
+            'TEL;TYPE=cell;VALUE=uri:tel:+{p}\n'
+            'END:VCARD\n'
+        ).format(f=first_name, l=last_name, p=phone_number).encode('utf-8')
+
+        if file is bytes:
+            return result
+        elif isinstance(file, str):
             file = cls._get_proper_filename(
                 file, 'contact', '.vcard',
                 possible_names=[first_name, phone_number, last_name]
@@ -374,15 +395,7 @@ class DownloadMethods(UserMethods):
             f = file
 
         try:
-            # Remove these pesky characters
-            first_name = first_name.replace(';', '')
-            last_name = (last_name or '').replace(';', '')
-            f.write('BEGIN:VCARD\n')
-            f.write('VERSION:4.0\n')
-            f.write('N:{};{};;;\n'.format(first_name, last_name))
-            f.write('FN:{} {}\n'.format(first_name, last_name))
-            f.write('TEL;TYPE=cell;VALUE=uri:tel:+{}\n'.format(phone_number))
-            f.write('END:VCARD\n')
+            f.write(result)
         finally:
             # Only close the stream if we opened it
             if isinstance(file, str):
@@ -402,7 +415,10 @@ class DownloadMethods(UserMethods):
             )
 
         # TODO Better way to get opened handles of files and auto-close
-        if isinstance(file, str):
+        in_memory = file is bytes
+        if in_memory:
+            f = io.BytesIO()
+        elif isinstance(file, str):
             kind, possible_names = cls._get_kind_and_names(web.attributes)
             file = cls._get_proper_filename(
                 file, kind, utils.get_extension(web),
@@ -423,8 +439,10 @@ class DownloadMethods(UserMethods):
                             break
                         f.write(chunk)
         finally:
-            if isinstance(file, str):
+            if isinstance(file, str) or file is bytes:
                 f.close()
+
+        return f.getvalue() if in_memory else file
 
     @staticmethod
     def _get_proper_filename(file, kind, extension,
