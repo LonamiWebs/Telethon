@@ -1,6 +1,16 @@
-import abc
+import base64
+import json
 import struct
 from datetime import datetime, date, timedelta
+
+
+def _json_default(value):
+    if isinstance(value, bytes):
+        return base64.b64encode(value).decode('ascii')
+    elif isinstance(value, datetime):
+        return value.isoformat()
+    else:
+        return repr(value)
 
 
 class TLObject:
@@ -143,6 +153,23 @@ class TLObject:
 
     def to_dict(self):
         raise NotImplementedError
+
+    def to_json(self, fp=None, default=_json_default, **kwargs):
+        """
+        Represent the current `TLObject` as JSON.
+
+        If ``fp`` is given, the JSON will be dumped to said
+        file pointer, otherwise a JSON string will be returned.
+
+        Note that bytes and datetimes cannot be represented
+        in JSON, so if those are found, they will be base64
+        encoded and ISO-formatted, respectively, by default.
+        """
+        d = self.to_dict()
+        if fp:
+            return json.dump(d, fp, default=default, **kwargs)
+        else:
+            return json.dumps(d, default=default, **kwargs)
 
     def __bytes__(self):
         raise NotImplementedError
