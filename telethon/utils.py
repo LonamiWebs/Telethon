@@ -712,7 +712,10 @@ def get_inner_text(text, entities):
 
 def get_peer(peer):
     try:
-        if peer.SUBCLASS_OF_ID == 0x2d45687:
+        if isinstance(peer, int):
+            pid, cls = resolve_id(peer)
+            return cls(pid)
+        elif peer.SUBCLASS_OF_ID == 0x2d45687:
             return peer
         elif isinstance(peer, (
                 types.contacts.ResolvedPeer, types.InputNotifyPeer,
