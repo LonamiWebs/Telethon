@@ -169,6 +169,28 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
             elif isinstance(entity, MessageEntityMentionName):
                 url = 'tg://user?id={}'.format(entity.user_id)
             if url:
+                # It's possible that entities are malformed and end up in the
+                # middle of some character, like emoji, by using malformed
+                # clients or bots. Try decoding the current one to check if
+                # this is the case, and if it is, advance the entity.
+                while e <= len(text):
+                    try:
+                        del_surrogate(text[s:e])
+                        break
+                    except UnicodeDecodeError:
+                        e += 1
+                else:
+                    # Out of bounds, no luck going forward
+                    while e > s:
+                        try:
+                            del_surrogate(text[s:e])
+                            break
+                        except UnicodeDecodeError:
+                            e -= 1
+                    else:
+                        # No luck going backwards either, ignore entity
+                        continue
+
                 text = (
                     text[:s] +
                     add_surrogate(url_fmt.format(text[s:e], url)) +
