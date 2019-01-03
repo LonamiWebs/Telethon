@@ -14,6 +14,47 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+object.to_json() (v1.5.1)
+=========================
+
+*Published at 2019/01/03*
+
+The library already had a way to easily convert the objects the API returned
+into dictionaries through ``object.to_dict()``, but some of the fields are
+dates or ``bytes`` which JSON can't serialize directly.
+
+For convenience, a new ``object.to_json()`` has been added which will by
+default format both of those problematic types into something sensible.
+
+Additions
+~~~~~~~~~
+
+* New `client.iter_admin_log()
+  <telethon.client.chats.ChatMethods.iter_admin_log>` method.
+
+Bug fixes
+~~~~~~~~~
+
+* `client.is_connected()
+  <telethon.client.telegrambaseclient.TelegramBaseClient.is_connected>`
+  would be wrong when the initial connection failed.
+* Fixed ``UnicodeDecodeError`` when accessing the text of messages
+  with malformed offsets in their entities.
+* Fixed `client.get_input_entity()
+  <telethon.client.users.UserMethods.get_input_entity>` for integer IDs
+  that the client has not seen before.
+
+Enhancements
+~~~~~~~~~~~~
+
+* You can now configure the reply markup when using `Button
+  <telethon.tl.custom.button.Button>` as a bot.
+* More properties for `Message
+  <telethon.tl.custom.message.Message>` to make accessing media convenient.
+* Downloading to ``file=bytes`` will now return a ``bytes`` object
+  with the downloaded media.
+
+
 Polls with the Latest Layer (v1.5)
 ==================================
 
