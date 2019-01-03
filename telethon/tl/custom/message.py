@@ -399,6 +399,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
     @property
     def web_preview(self):
+        """
+        If the message has a loaded web preview,
+        this returns the :tl:`WebPage` object.
+        """
         if isinstance(self.media, types.MessageMediaWebPage):
             if isinstance(self.media.webpage, types.WebPage):
                 return self.media.webpage
@@ -453,6 +457,61 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         this returns the :tl:`Document` object.
         """
         return self._document_by_attribute(types.DocumentAttributeSticker)
+
+    @property
+    def contact(self):
+        """
+        If the message media is a contact,
+        this returns the :tl:`MessageMediaContact`.
+        """
+        if isinstance(self.media, types.MessageMediaContact):
+            return self.media
+
+    @property
+    def game(self):
+        """
+        If the message media is a game, this returns the :tl:`Game`.
+        """
+        if isinstance(self.media, types.MessageMediaGame):
+            return self.media.game
+
+    @property
+    def geo(self):
+        """
+        If the message media is geo, geo live or a venue,
+        this returns the :tl:`GeoPoint`.
+        """
+        if isinstance(self.media, (types.MessageMediaGeo,
+                                   types.MessageMediaGeoLive,
+                                   types.MessageMediaVenue)):
+            return self.media.geo
+
+    @property
+    def invoice(self):
+        """
+        If the message media is an invoice,
+        this returns the :tl:`MessageMediaInvoice`.
+        """
+        if isinstance(self.media, types.MessageMediaInvoice):
+            return self.media
+
+    @property
+    def poll(self):
+        """
+        If the message media is a poll,
+        this returns the :tl:`MessageMediaPoll`.
+        """
+        if isinstance(self.media, types.MessageMediaPoll):
+            return self.media
+
+    @property
+    def venue(self):
+        """
+        If the message media is a venue,
+        this returns the :tl:`MessageMediaVenue`.
+        """
+        if isinstance(self.media, types.MessageMediaVenue):
+            return self.media
 
     @property
     def action_entities(self):
