@@ -41,6 +41,7 @@ CHAT_ADMIN_REQUIRED,400 403,"Chat admin privileges are required to do that in th
 CHAT_FORBIDDEN,,You cannot write in this chat
 CHAT_ID_EMPTY,400,The provided chat ID is empty
 CHAT_ID_INVALID,400,"Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead"
+CHAT_INVALID,400,The chat is invalid for this request
 CHAT_NOT_MODIFIED,400,"The chat or channel wasn't modified (title, invites, username, admins, etc. are the same)"
 CHAT_RESTRICTED,400,The chat is restricted and cannot be used in that request
 CHAT_SEND_GIFS_FORBIDDEN,403,You can't send gifs in this chat

@@ -402,7 +402,7 @@ location, phone number, or simply for them to easily send a message:
 .. code-block:: python
 
     client.send_message(chat, 'Welcome', buttons=[
-        Button.text('Thanks!'),
+        Button.text('Thanks!', resize=True, single_use=True),
         Button.request_phone('Send phone'),
         Button.request_location('Send location')
     ])
@@ -644,3 +644,36 @@ Note that the utils package also has a `get_peer_id
 <telethon.utils.get_peer_id>` but it won't work with things
 that need access to the network such as usernames or phones,
 which need to be in your contact list.
+
+Getting the Admin Log
+*********************
+
+If you're an administrator in a channel or megagroup, then you have access
+to the admin log. This is a list of events within the last 48 hours of
+different actions, such as joining or leaving members, edited or deleted
+messages, new promotions, bans or restrictions.
+
+You can iterate over all the available actions like so:
+
+.. code-block:: python
+
+    for event in client.iter_admin_log(channel):
+        if event.changed_title:
+            print('The title changed from', event.old, 'to', event.new)
+
+You can also filter to only show some text or actions.
+Let's find people who swear to ban them:
+
+.. code-block:: python
+
+    # Get a list of deleted message events which said "heck"
+    events = client.get_admin_log(channel, search='heck', delete=True)
+
+    # Print the old message before it was deleted
+    print(events[0].old)
+
+You can find here the documentation for `client.iter_admin_log
+<telethon.client.chats.ChatMethods.iter_admin_log>`, and be sure
+to also check the properties of the returned `AdminLogEvent
+<telethon.tl.custom.adminlogevent.AdminLogEvent>` to know what
+you can access.

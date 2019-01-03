@@ -19,6 +19,7 @@ when you upgrade!
     * Are you new here? Jump straight into :ref:`getting-started`!
     * Looking for available friendly methods? See :ref:`telethon-client`.
     * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
+    * Need the full API reference? https://lonamiwebs.github.io/Telethon/.
 
 
 What is this?

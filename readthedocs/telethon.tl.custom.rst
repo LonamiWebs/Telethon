@@ -97,3 +97,11 @@ telethon\.tl\.custom\.conversation module
     :members:
     :undoc-members:
     :show-inheritance:
+
+telethon\.tl\.custom\.adminlogevent module
+------------------------------------------
+
+.. automodule:: telethon.tl.custom.adminlogevent
+    :members:
+    :undoc-members:
+    :show-inheritance:
