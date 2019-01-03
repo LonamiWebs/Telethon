@@ -322,8 +322,17 @@ class ChatMethods(UserMethods):
                         for x in itertools.chain(result.users, result.chats)}
 
             request.max_id = min((e.id for e in result.events), default=0)
-            for event in result.events:
-                await yield_(custom.AdminLogEvent(event, entities))
+            for ev in result.events:
+                if isinstance(ev.action,
+                              types.ChannelAdminLogEventActionEditMessage):
+                    ev.action.prev_message._finish_init(self, entities, entity)
+                    ev.action.new_message._finish_init(self, entities, entity)
+
+                elif isinstance(ev.action,
+                                types.ChannelAdminLogEventActionDeleteMessage):
+                    ev.action.message._finish_init(self, entities, entity)
+
+                await yield_(custom.AdminLogEvent(ev, entities))
 
             if len(result.events) < request.limit:
                 break

@@ -62,7 +62,7 @@ class AdminLogEvent:
         """
         The old value from the event.
         """
-        ori = self.original
+        ori = self.original.action
         if isinstance(ori, (
                 types.ChannelAdminLogEventActionChangeAbout,
                 types.ChannelAdminLogEventActionChangeTitle,
@@ -94,7 +94,7 @@ class AdminLogEvent:
         """
         The new value present in the event.
         """
-        ori = self.original
+        ori = self.original.action
         if isinstance(ori, (
                 types.ChannelAdminLogEventActionChangeAbout,
                 types.ChannelAdminLogEventActionChangeTitle,
@@ -125,7 +125,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``str``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeAbout)
 
     @property
@@ -135,7 +135,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``str``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeTitle)
 
     @property
@@ -145,7 +145,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``str``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeUsername)
 
     @property
@@ -155,7 +155,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as :tl:`ChatPhoto`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangePhoto)
 
     @property
@@ -165,7 +165,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as :tl:`InputStickerSet`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeStickerSet)
 
     @property
@@ -176,7 +176,7 @@ class AdminLogEvent:
         If ``True``, `old` and `new` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionEditMessage)
 
     @property
@@ -187,7 +187,7 @@ class AdminLogEvent:
         If ``True``, `old` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionDeleteMessage)
 
     @property
@@ -200,7 +200,7 @@ class AdminLogEvent:
         :tl:`ChannelParticipant`.
         """
         return isinstance(
-            self.original,
+            self.original.action,
             types.ChannelAdminLogEventActionParticipantToggleAdmin)
 
     @property
@@ -212,7 +212,7 @@ class AdminLogEvent:
         :tl:`ChannelParticipant`.
         """
         return isinstance(
-            self.original,
+            self.original.action,
             types.ChannelAdminLogEventActionParticipantToggleBan)
 
     @property
@@ -222,7 +222,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``bool``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleInvites)
 
     @property
@@ -231,7 +231,7 @@ class AdminLogEvent:
         Whether `user` joined through the channel's
         public username in this event or not.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionParticipantJoin)
 
     @property
@@ -243,7 +243,7 @@ class AdminLogEvent:
         If ``True``, `new` will be present as
         :tl:`ChannelParticipant`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionParticipantInvite)
 
     @property
@@ -251,7 +251,7 @@ class AdminLogEvent:
         """
         Whether `user` left the channel in this event or not.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionParticipantLeave)
 
     @property
@@ -262,7 +262,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``bool``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionTogglePreHistoryHidden)
 
     @property
@@ -273,7 +273,7 @@ class AdminLogEvent:
 
         If ``True``, `old` and `new` will be present as ``bool``.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleSignatures)
 
     @property
@@ -284,7 +284,7 @@ class AdminLogEvent:
         If ``True``, `new` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
-        return isinstance(self.original,
+        return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionUpdatePinned)
 
     def __str__(self):
