@@ -93,6 +93,13 @@ class DialogMethods(UserMethods):
                 r.dialogs = r.dialogs[:limit]
 
             for d in r.dialogs:
+                if offset_date:
+                    date = getattr(messages.get(
+                        d.top_message, None), 'date', None)
+
+                    if not date or date.timestamp() > offset_date.timestamp():
+                        continue
+
                 peer_id = utils.get_peer_id(d.peer)
                 if peer_id not in seen:
                     seen.add(peer_id)
