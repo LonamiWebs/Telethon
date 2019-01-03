@@ -32,12 +32,24 @@ class ButtonMethods(UpdateMethods):
 
         is_inline = False
         is_normal = False
+        resize = None
+        single_use = None
+        selective = None
 
         rows = []
         for row in buttons:
             current = []
             for button in row:
-                if isinstance(button, custom.MessageButton):
+                if isinstance(button, custom.Button):
+                    if button.resize is not None:
+                        resize = button.resize
+                    if button.single_use is not None:
+                        single_use = button.single_use
+                    if button.selective is not None:
+                        selective = button.selective
+
+                    button = button.button
+                elif isinstance(button, custom.MessageButton):
                     button = button.button
 
                 inline = custom.Button._is_inline(button)
@@ -57,5 +69,6 @@ class ButtonMethods(UpdateMethods):
             raise ValueError('You cannot mix inline with normal buttons')
         elif is_inline:
             return types.ReplyInlineMarkup(rows)
-        elif is_normal:
-            return types.ReplyKeyboardMarkup(rows)
+        # elif is_normal:
+        return types.ReplyKeyboardMarkup(
+            rows, resize=resize, single_use=single_use, selective=selective)

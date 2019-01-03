@@ -1,5 +1,4 @@
 from .. import types
-from .messagebutton import MessageButton
 
 
 class Button:
@@ -25,6 +24,7 @@ class Button:
 
     You can use `text`, `request_location` and `request_phone`
     together to create a reply markup (replaces the user keyboard).
+    You can also configure the aspect of the reply with these.
 
     You **cannot** mix the two type of buttons together,
     and it will error if you try to do so.
@@ -34,9 +34,11 @@ class Button:
     to 128 characters and add the ellipsis (…) character as
     the 129.
     """
-    def __init__(self):
-        raise ValueError('Cannot create instances of this class; '
-                         'use the static methods')
+    def __init__(self, button, *, resize, single_use, selective):
+        self.button = button
+        self.resize = resize
+        self.single_use = single_use
+        self.selective = selective
 
     @staticmethod
     def _is_inline(button):
@@ -93,28 +95,52 @@ class Button:
         """
         return types.KeyboardButtonUrl(text, url or text)
 
-    @staticmethod
-    def text(text):
+    @classmethod
+    def text(cls, text, *, resize=None, single_use=None, selective=None):
         """
         Creates a new button with the given text.
-        """
-        return types.KeyboardButton(text)
 
-    @staticmethod
-    def request_location(text):
+        Args:
+            resize (`bool`):
+                If present, the entire keyboard will be reconfigured to
+                be resized and be smaller if there are not many buttons.
+
+            single_use (`bool`):
+                If present, the entire keyboard will be reconfigured to
+                be usable only once before it hides itself.
+
+            selective (`bool`):
+                If present, the entire keyboard will be reconfigured to
+                be "selective". The keyboard will be shown only to specific
+                users. It will target users that are @mentioned in the text
+                of the message or to the sender of the message you reply to.
+        """
+        return cls(types.KeyboardButton(text),
+                   resize=resize, single_use=single_use, selective=selective)
+
+    @classmethod
+    def request_location(cls, text, *,
+                         resize=None, single_use=None, selective=None):
         """
         Creates a new button that will request
         the user's location upon being clicked.
-        """
-        return types.KeyboardButtonRequestGeoLocation(text)
 
-    @staticmethod
-    def request_phone(text):
+        ``resize``, ``single_use`` and ``selective`` are documented in `text`.
+        """
+        return cls(types.KeyboardButtonRequestGeoLocation(text),
+                   resize=resize, single_use=single_use, selective=selective)
+
+    @classmethod
+    def request_phone(cls, text, *,
+                      resize=None, single_use=None, selective=None):
         """
         Creates a new button that will request
         the user's phone number upon being clicked.
+
+        ``resize``, ``single_use`` and ``selective`` are documented in `text`.
         """
-        return types.KeyboardButtonRequestPhone(text)
+        return cls(types.KeyboardButtonRequestPhone(text),
+                   resize=resize, single_use=single_use, selective=selective)
 
     @staticmethod
     def clear():
