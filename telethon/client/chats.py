@@ -1,8 +1,11 @@
+import itertools
+import sys
+
 from async_generator import async_generator, yield_
 
 from .users import UserMethods
 from .. import utils, helpers
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 
 class ChatMethods(UserMethods):
@@ -187,5 +190,151 @@ class ChatMethods(UserMethods):
             participants.append(x)
         participants.total = total[0]
         return participants
+
+    @async_generator
+    async def iter_admin_log(
+            self, entity, limit=None, *, max_id=0, min_id=0, search=None,
+            admins=None, join=None, leave=None, invite=None, restrict=None,
+            unrestrict=None, ban=None, unban=None, promote=None, demote=None,
+            info=None, settings=None, pinned=None, edit=None, delete=None):
+        """
+        Iterator over the admin log for the specified channel.
+
+        Note that you must be an administrator of it to use this method.
+
+        If none of the filters are present (i.e. they all are ``None``),
+        *all* event types will be returned. If at least one of them is
+        ``True``, only those that are true will be returned.
+
+        Args:
+            entity (`entity`):
+                The channel entity from which to get its admin log.
+
+            limit (`int` | `None`, optional):
+                Number of events to be retrieved.
+
+                The limit may also be ``None``, which would eventually return
+                the whole history.
+
+            max_id (`int`):
+                All the events with a higher (newer) ID or equal to this will
+                be excluded.
+
+            min_id (`int`):
+                All the events with a lower (older) ID or equal to this will
+                be excluded.
+
+            search (`str`):
+                The string to be used as a search query.
+
+            admins (`entity` | `list`):
+                If present, the events will be filtered by these admins
+                (or single admin) and only those caused by them will be
+                returned.
+
+            join (`bool`):
+                If ``True``, events for when a user joined will be returned.
+
+            leave (`bool`):
+                If ``True``, events for when a user leaves will be returned.
+
+            invite (`bool`):
+                If ``True``, events for when a user joins through an invite
+                link will be returned.
+
+            restrict (`bool`):
+                If ``True``, events with partial restrictions will be
+                returned. This is what the API calls "ban".
+
+            unrestrict (`bool`):
+                If ``True``, events removing restrictions will be returned.
+                This is what the API calls "unban".
+
+            ban (`bool`):
+                If ``True``, events applying or removing all restrictions will
+                be returned. This is what the API calls "kick" (restricting
+                all permissions removed is a ban, which kicks the user).
+
+            unban (`bool`):
+                If ``True``, events removing all restrictions will be
+                returned. This is what the API calls "unkick".
+
+            promote (`bool`):
+                If ``True``, events with admin promotions will be returned.
+
+            demote (`bool`):
+                If ``True``, events with admin demotions will be returned.
+
+            info (`bool`):
+                If ``True``, events changing the group info will be returned.
+
+            settings (`bool`):
+                If ``True``, events changing the group settings will be
+                returned.
+
+            pinned (`bool`):
+                If ``True``, events of new pinned messages will be returned.
+
+            edit (`bool`):
+                If ``True``, events of message edits will be returned.
+
+            delete (`bool`):
+                If ``True``, events of message deletions will be returned.
+
+        Yields:
+            Instances of `telethon.tl.custom.adminlogevent.AdminLogEvent`.
+        """
+        if limit is None:
+            limit = sys.maxsize
+        elif limit <= 0:
+            return
+
+        if any((join, leave, invite, restrict, unrestrict, ban, unban,
+                promote, demote, info, settings, pinned, edit, delete)):
+            events_filter = types.ChannelAdminLogEventsFilter(
+                join=join, leave=leave, invite=invite, ban=restrict,
+                unban=unrestrict, kick=ban, unkick=unban, promote=promote,
+                demote=demote, info=info, settings=settings, pinned=pinned,
+                edit=edit, delete=delete
+            )
+        else:
+            events_filter = None
+
+        entity = await self.get_input_entity(entity)
+
+        admin_list = []
+        if admins:
+            if not utils.is_list_like(admins):
+                admins = (admins,)
+
+            for admin in admins:
+                admin_list.append(await self.get_input_entity(admin))
+
+        request = functions.channels.GetAdminLogRequest(
+            entity, q=search or '', min_id=min_id, max_id=max_id,
+            limit=0, events_filter=events_filter, admins=admin_list or None
+        )
+        while limit > 0:
+            request.limit = min(limit, 100)
+            result = await self(request)
+            limit -= len(result.events)
+            entities = {utils.get_peer_id(x): x
+                        for x in itertools.chain(result.users, result.chats)}
+
+            request.max_id = min((e.id for e in result.events), default=0)
+            for event in result.events:
+                await yield_(custom.AdminLogEvent(event, entities))
+
+            if len(result.events) < request.limit:
+                break
+
+    async def get_admin_log(self, *args, **kwargs):
+        """
+        Same as `iter_admin_log`, but returns a ``list`` instead.
+        """
+        admin_log = []
+        async for x in self.iter_admin_log(*args, **kwargs):
+            admin_log.append(x)
+        return admin_log
 
     # endregion

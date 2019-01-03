@@ -1,3 +1,4 @@
+from .adminlogevent import AdminLogEvent
 from .draft import Draft
 from .dialog import Dialog
 from .inputsizedfile import InputSizedFile
