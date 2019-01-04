@@ -375,7 +375,13 @@ class TelegramBaseClient(abc.ABC):
         # able to close the pending tasks properly, and letting the script
         # complete without calling disconnect causes the script to trigger
         # 100% CPU load. Call disconnect to make sure it doesn't happen.
-        self.disconnect()
+        try:
+            self.disconnect()
+        except Exception:
+            # Arguably not the best solution, but worth trying if the user
+            # forgot to disconnect; normally this is fine but sometimes it
+            # can fail (https://github.com/LonamiWebs/Telethon/issues/1073)
+            pass
 
     async def _switch_dc(self, new_dc):
         """
