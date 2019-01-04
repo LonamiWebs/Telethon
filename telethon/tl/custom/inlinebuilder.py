@@ -113,7 +113,11 @@ class InlineBuilder:
                 Same as ``file`` for `client.send_file
                 <telethon.client.uploads.UploadMethods.send_file>`.
         """
-        fh = await self._client.upload_file(file, use_cache=types.InputPhoto)
+        try:
+            fh = utils.get_input_photo(file)
+        except TypeError:
+            fh = await self._client.upload_file(file, use_cache=types.InputPhoto)
+
         if not isinstance(fh, types.InputPhoto):
             r = await self._client(functions.messages.UploadMediaRequest(
                 types.InputPeerSelf(), media=types.InputMediaUploadedPhoto(fh)
@@ -177,8 +181,12 @@ class InlineBuilder:
             else:
                 type = 'document'
 
-        use_cache = types.InputDocument if use_cache else None
-        fh = await self._client.upload_file(file, use_cache=use_cache)
+        try:
+            fh = utils.get_input_document(file)
+        except TypeError:
+            use_cache = types.InputDocument if use_cache else None
+            fh = await self._client.upload_file(file, use_cache=use_cache)
+
         if not isinstance(fh, types.InputDocument):
             attributes, mime_type = utils.get_attributes(
                 file,
