@@ -14,6 +14,27 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Takeout Sessions (v1.5.2)
+=========================
+
+*Published at 2019/01/05*
+
+You can now easily start takeout sessions (also known as data export sessions)
+through `client.takeout() <telethon.client.account.AccountMethods.takeout>`.
+Some of the requests will have lower flood limits when done through the
+takeout session.
+
+Bug fixes
+~~~~~~~~~
+
+* The new `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>`
+  had a bug that made it unusable.
+* `client.iter_dialogs() <telethon.client.dialogs.DialogMethods.iter_dialogs>`
+  will now locally check for the offset date, since Telegram ignores it.
+* Answering inline queries with media no works properly. You can now use
+  the library to create inline bots and send stickers through them!
+
+
 object.to_json() (v1.5.1)
 =========================
 
