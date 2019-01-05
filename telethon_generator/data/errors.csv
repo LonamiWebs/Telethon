@@ -20,6 +20,7 @@ BOT_INLINE_DISABLED,400,This bot can't be used in inline mode
 BOT_INVALID,400,This is not a valid bot
 BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method you tried to invoke cannot be executed as a bot
 BOT_MISSING,400,This method can only be run by a bot
+BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BUTTON_DATA_INVALID,400,The provided button data is invalid
 BUTTON_TYPE_INVALID,400,The type of one of the buttons you provided is invalid
 BUTTON_URL_INVALID,400,Button URL invalid
@@ -187,6 +188,7 @@ RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SEARCH_QUERY_EMPTY,400,The search query is empty
+SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
 SESSION_PASSWORD_NEEDED,401,Two-steps verification is enabled and a password is required
@@ -205,6 +207,7 @@ STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
 STORAGE_CHECK_FAILED,500,Server storage check failed
 STORE_INVALID_SCALAR_TYPE,500,
 TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being able to initiate the takeout
+TAKEOUT_INVALID,400,The takeout session has been invalidated by another data export session
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
 Timeout,-503,A timeout occurred while fetching data from the bot

@@ -262,6 +262,36 @@ Or just some IDs:
     message_1337 = client.get_messages(chats, ids=1337)
 
 
+Exporting Messages
+******************
+
+If you plan on exporting data from your Telegram account, such as the entire
+message history from your private conversations, chats or channels, or if you
+plan to download a lot of media, you may prefer to do this within a *takeout*
+session. Takeout sessions let you export data from your account with lower
+flood wait limits.
+
+To start a takeout session, simply call `client.takeout()
+<telethon.client.account.AccountMethods.takeout>`:
+
+.. code-block:: python
+
+    from telethon import errors
+
+    try:
+        with client.takeout() as takeout:
+            for message in takeout.iter_messages(chat, wait_time=0):
+                ...  # Do something with the message
+
+    except errors.TakeoutInitDelayError as e:
+        print('Must wait', e.seconds, 'before takeout')
+
+
+Depending on the condition of the session (for example, when it's very
+young and the method has not been called before), you may or not need
+to ``except errors.TakeoutInitDelayError``. However, it is good practice.
+
+
 Sending Messages
 ****************
 
