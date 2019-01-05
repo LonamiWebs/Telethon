@@ -32,6 +32,11 @@ their methods.
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: telethon.client.account
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: telethon.client.auth
     :members:
     :undoc-members:
