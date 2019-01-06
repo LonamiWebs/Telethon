@@ -288,7 +288,7 @@ class DocsWriter:
     def __enter__(self):
         # Sanity check
         self.filename.parent.mkdir(parents=True, exist_ok=True)
-        self.handle = open(self.filename, 'w', encoding='utf-8')
+        self.handle = self.filename.open('w', encoding='utf-8')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

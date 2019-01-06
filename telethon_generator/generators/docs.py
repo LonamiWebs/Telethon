@@ -196,7 +196,7 @@ def _get_description(arg):
 
 def _copy_replace(src, dst, replacements):
     """Copies the src file into dst applying the replacements dict"""
-    with open(src, 'r') as infile, open(dst, 'w') as outfile:
+    with src.open() as infile, dst.open('w') as outfile:
         outfile.write(re.sub(
             '|'.join(re.escape(k) for k in replacements),
             lambda m: str(replacements[m.group(0)]),

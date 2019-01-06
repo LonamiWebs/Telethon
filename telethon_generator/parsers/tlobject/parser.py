@@ -137,7 +137,7 @@ def parse_tl(file_path, layer, methods=None, ignored_ids=CORE_TYPES):
 def find_layer(file_path):
     """Finds the layer used on the specified scheme.tl file."""
     layer_regex = re.compile(r'^//\s*LAYER\s*(\d+)$')
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with file_path.open('r') as file:
         for line in file:
             match = layer_regex.match(line)
             if match:
