@@ -60,7 +60,7 @@ Python
 A fairly new (as of the end of 2017) Telegram library written from the
 ground up in Python by
 `@delivrance <https://github.com/delivrance>`__ and his
-`Pyrogram <https://github.com/pyrogram/pyrogram>`__ library.
+`*[REDACTED]* <https://github.com/*[REDACTED]*/*[REDACTED]*>`__ library.
 There isn't really a reason to pick it over Telethon and it'd be kinda
 sad to see you go, but it would be nice to know what you miss from each
 other library in either one so both can improve.
