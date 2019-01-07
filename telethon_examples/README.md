@@ -8,18 +8,17 @@ You should have the `telethon` library installed with `pip`.
 Run `python3 -m pip install --upgrade telethon --user` if you don't
 have it installed yet (this is the most portable way to install it).
 
-Examples assume you have the following environment variables defined:
+The scripts will ask you for your API ID, hash, etc. through standard input.
+You can also define the following environment variables to avoid doing so:
 
 * `TG_API_ID`, this is your API ID from https://my.telegram.org.
 * `TG_API_HASH`, this is your API hash from https://my.telegram.org.
 * `TG_TOKEN`, this is your bot token from [@BotFather] for bot examples.
 * `TG_SESSION`, this is the name of the `*.session` file to use.
 
-You can ignore any of these, and the scripts will prompt you to enter them.
-
 ## Downloading Examples
 
-You may download all and run any example with by typing in a terminal:
+You may download all and run any example by typing in a terminal:
 ```sh
 git clone https://github.com/LonamiWebs/Telethon.git
 cd Telethon
@@ -37,7 +36,7 @@ them as the base for your own code without worrying about copyright.
 
 ### [`print_updates.py`]
 
-* Usable as a: **user and bot**.
+* Usable as: **user and bot**.
 * Difficulty: **easy**.
 
 Trivial example that just prints all the updates Telegram originally
@@ -46,7 +45,7 @@ some characters on screen.
 
 ### [`print_messages.py`]
 
-* Usable as a: **user and bot**.
+* Usable as: **user and bot**.
 * Difficulty: **easy**.
 
 This example uses the different `@client.on` syntax to register event
@@ -57,7 +56,7 @@ documentation of [`events.NewMessage`] since this is only a simple example.
 
 ### [`replier.py`]
 
-* Usable as a: **user and bot**.
+* Usable as: **user and bot**.
 * Difficulty: **easy**.
 
 This example showcases a third way to add event handlers (using decorators
@@ -78,7 +77,7 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
 ### [`interactive_telegram_client.py`]
 
-* Usable as a: **user and bot**.
+* Usable as: **user**.
 * Difficulty: **medium**.
 
 Interactive terminal client that you can use to list your dialogs,
@@ -88,7 +87,7 @@ state in order for downloads to work later.
 
 ### [`gui.py`]
 
-* Usable as a: **user and bot**.
+* Usable as: **user and bot**.
 * Difficulty: **high**.
 
 This is a simple GUI written with [`tkinter`] which becomes more complicated
