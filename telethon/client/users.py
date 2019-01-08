@@ -322,7 +322,14 @@ class UserMethods(TelegramBaseClient):
         if isinstance(peer, types.PeerUser):
             users = await self(functions.users.GetUsersRequest([
                 types.InputUser(peer.user_id, access_hash=0)]))
-            if users:
+            if users and not isinstance(users[0], types.UserEmpty):
+                # If the user passed a valid ID they expect to work for
+                # channels but would be valid for users, we get UserEmpty.
+                # Avoid returning the invalid empty input peer for that.
+                #
+                # We *could* try to guess if it's a channel first, and if
+                # it's not, work as a chat and try to validate it through
+                # another request, but that becomes too much work.
                 return utils.get_input_peer(users[0])
         elif isinstance(peer, types.PeerChat):
             return types.InputPeerChat(peer.chat_id)
