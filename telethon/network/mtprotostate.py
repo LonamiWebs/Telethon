@@ -1,4 +1,3 @@
-import logging
 import os
 import struct
 import time
@@ -10,8 +9,6 @@ from ..extensions import BinaryReader
 from ..tl.core import TLMessage
 from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.core.gzippacked import GzipPacked
-
-__log__ = logging.getLogger(__name__)
 
 
 class MTProtoState:
@@ -37,8 +34,9 @@ class MTProtoState:
     many methods that would be needed to make it convenient to use for the
     authentication process, at which point the `MTProtoPlainSender` is better.
     """
-    def __init__(self, auth_key):
+    def __init__(self, auth_key, loggers):
         self.auth_key = auth_key
+        self._log = loggers[__name__]
         self.time_offset = 0
         self.salt = 0
         self.reset()
@@ -183,7 +181,7 @@ class MTProtoState:
 
         if self.time_offset != old:
             self._last_msg_id = 0
-            __log__.debug(
+            self._log.debug(
                 'Updated time offset (old offset %d, bad %d, good %d, new %d)',
                 old, bad, correct_msg_id, self.time_offset
             )

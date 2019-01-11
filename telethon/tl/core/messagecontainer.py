@@ -1,10 +1,5 @@
-import logging
-import struct
-
 from .tlmessage import TLMessage
 from ..tlobject import TLObject
-
-__log__ = logging.getLogger(__name__)
 
 
 class MessageContainer(TLObject):

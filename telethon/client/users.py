@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import logging
 import time
 
 from .telegrambaseclient import TelegramBaseClient
@@ -8,7 +7,6 @@ from .. import errors, utils
 from ..errors import MultiError, RPCError
 from ..tl import TLObject, TLRequest, types, functions
 
-__log__ = logging.getLogger(__name__)
 _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
 
@@ -27,7 +25,8 @@ class UserMethods(TelegramBaseClient):
                 if diff <= 3:  # Flood waits below 3 seconds are "ignored"
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 elif diff <= self.flood_sleep_threshold:
-                    __log__.info('Sleeping early for %ds on flood wait', diff)
+                    self._log[__name__].info(
+                        'Sleeping early for %ds on flood wait', diff)
                     await asyncio.sleep(diff, loop=self._loop)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
@@ -61,8 +60,9 @@ class UserMethods(TelegramBaseClient):
                     self.session.process_entities(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError) as e:
-                __log__.warning('Telegram is having internal issues %s: %s',
-                                e.__class__.__name__, e)
+                self._log[__name__].warning(
+                    'Telegram is having internal issues %s: %s',
+                    e.__class__.__name__, e)
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
                 if utils.is_list_like(request):
                     request = request[request_index]
@@ -71,15 +71,16 @@ class UserMethods(TelegramBaseClient):
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
                 if e.seconds <= self.flood_sleep_threshold:
-                    __log__.info('Sleeping for %ds on flood wait', e.seconds)
+                    self._log[__name__].info('Sleeping for %ds on flood wait',
+                                             e.seconds)
                     await asyncio.sleep(e.seconds, loop=self._loop)
                 else:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
                     errors.UserMigrateError) as e:
-                __log__.info('Phone migrated to %d', e.new_dc)
+                self._log[__name__].info('Phone migrated to %d', e.new_dc)
                 should_raise = isinstance(e, (
-                    errors.PhoneMigrateError,  errors.NetworkMigrateError
+                    errors.PhoneMigrateError, errors.NetworkMigrateError
                 ))
                 if should_raise and await self.is_user_authorized():
                     raise
