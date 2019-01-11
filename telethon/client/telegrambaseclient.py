@@ -134,6 +134,15 @@ class TelegramBaseClient(abc.ABC):
         system_lang_code (`str`, optional):
             "System lang code"  to be sent when creating the initial connection.
             Defaults to `lang_code`.
+
+        loop (`asyncio.AbstractEventLoop`, optional):
+            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`
+
+        base_logger (`str` | `logging.Logger`, optional):
+            Base logger name or instance to use.
+            If a `str` is given, it'll be passed to `logging.getLogger()`. If a
+            `logging.Logger` is given, it'll be used directly. If something
+            else or nothing is given, the default logger will be used.
     """
 
     # Current TelegramClient version
@@ -176,12 +185,14 @@ class TelegramBaseClient(abc.ABC):
             base_logger = logging.getLogger(base_logger)
         elif not isinstance(base_logger, logging.Logger):
             base_logger = __default_log__
-        subloggers = ["client.updates", "client.users", "client.downloads",
-                      "network.mtprotosender", "network.mtprotostate",
-                      "network.connection.connection",
-                      "extensions.messagepacker"]
-        self._log = {"telethon.{}".format(name): base_logger.getChild(name)
-                     for name in subloggers}
+
+        class _Loggers(dict):
+            def __missing__(self, key):
+                if key.startswith("telethon."):
+                    key = key[len("telethon."):]
+                return base_logger.getChild(key)
+
+        self._log = _Loggers()
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
