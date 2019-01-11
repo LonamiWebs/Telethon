@@ -1,15 +1,11 @@
 import asyncio
-import inspect
 import itertools
-import logging
 import random
 import time
 
 from .users import UserMethods
 from .. import events, utils, errors
 from ..tl import types, functions
-
-__log__ = logging.getLogger(__name__)
 
 
 class UpdateMethods(UserMethods):
@@ -281,28 +277,31 @@ class UpdateMethods(UserMethods):
                 await callback(event)
             except errors.AlreadyInConversationError:
                 name = getattr(callback, '__name__', repr(callback))
-                __log__.debug('Event handler "%s" already has an open '
-                              'conversation, ignoring new one', name)
+                self._log[__name__].debug(
+                    'Event handler "%s" already has an open conversation, '
+                    'ignoring new one', name)
             except events.StopPropagation:
                 name = getattr(callback, '__name__', repr(callback))
-                __log__.debug(
+                self._log[__name__].debug(
                     'Event handler "%s" stopped chain of propagation '
                     'for event %s.', name, type(event).__name__
                 )
                 break
             except Exception:
                 name = getattr(callback, '__name__', repr(callback))
-                __log__.exception('Unhandled exception on %s', name)
+                self._log[__name__].exception('Unhandled exception on %s',
+                                              name)
 
     async def _handle_auto_reconnect(self):
         # Upon reconnection, we want to send getState
         # for Telegram to keep sending us updates.
         try:
-            __log__.info('Asking for the current state after reconnect...')
+            self._log[__name__].info(
+                'Asking for the current state after reconnect...')
             state = await self(functions.updates.GetStateRequest())
-            __log__.info('Got new state! %s', state)
+            self._log[__name__].info('Got new state! %s', state)
         except errors.RPCError as e:
-            __log__.info('Failed to get current state: %r', e)
+            self._log[__name__].info('Failed to get current state: %r', e)
 
     # endregion
 

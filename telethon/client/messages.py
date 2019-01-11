@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import logging
 import time
 
 from async_generator import async_generator, yield_
@@ -10,8 +9,6 @@ from .uploads import UploadMethods
 from .buttons import ButtonMethods
 from .. import helpers, utils, errors
 from ..tl import types, functions
-
-__log__ = logging.getLogger(__name__)
 
 
 class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):

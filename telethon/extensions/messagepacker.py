@@ -1,14 +1,11 @@
 import asyncio
 import collections
 import io
-import logging
 import struct
 
 from ..tl import TLRequest
 from ..tl.core.messagecontainer import MessageContainer
 from ..tl.core.tlmessage import TLMessage
-
-__log__ = logging.getLogger(__name__)
 
 
 class MessagePacker:
@@ -24,11 +21,13 @@ class MessagePacker:
     encryption and network overhead also is smaller. It's also a central
     point where outgoing requests are put, and where ready-messages are get.
     """
-    def __init__(self, state, loop):
+
+    def __init__(self, state, loop, loggers):
         self._state = state
         self._loop = loop
         self._deque = collections.deque()
         self._ready = asyncio.Event(loop=loop)
+        self._log = loggers[__name__]
 
     def append(self, state):
         self._deque.append(state)
@@ -65,9 +64,9 @@ class MessagePacker:
                     after_id=state.after.msg_id if state.after else None
                 )
                 batch.append(state)
-                __log__.debug('Assigned msg_id = %d to %s (%x)',
-                              state.msg_id, state.request.__class__.__name__,
-                              id(state.request))
+                self._log.debug('Assigned msg_id = %d to %s (%x)',
+                                state.msg_id, state.request.__class__.__name__,
+                                id(state.request))
                 continue
 
             # Put the item back since it can't be sent in this batch

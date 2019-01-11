@@ -1,8 +1,4 @@
-import logging
-
 from .. import TLObject
-
-__log__ = logging.getLogger(__name__)
 
 
 class TLMessage(TLObject):

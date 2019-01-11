@@ -1,6 +1,5 @@
 import datetime
 import io
-import logging
 import os
 import pathlib
 
@@ -12,9 +11,6 @@ try:
     import aiohttp
 except ImportError:
     aiohttp = None
-
-
-__log__ = logging.getLogger(__name__)
 
 
 class DownloadMethods(UserMethods):
@@ -239,7 +235,8 @@ class DownloadMethods(UserMethods):
             # The used sender will also change if ``FileMigrateError`` occurs
             sender = self._sender
 
-        __log__.info('Downloading file in chunks of %d bytes', part_size)
+        self._log[__name__].info('Downloading file in chunks of %d bytes',
+                                 part_size)
         try:
             offset = 0
             while True:
@@ -251,7 +248,7 @@ class DownloadMethods(UserMethods):
                         # TODO Implement
                         raise NotImplementedError
                 except errors.FileMigrateError as e:
-                    __log__.info('File lives in another DC')
+                    self._log[__name__].info('File lives in another DC')
                     sender = await self._borrow_exported_sender(e.new_dc)
                     exported = True
                     continue
@@ -264,7 +261,8 @@ class DownloadMethods(UserMethods):
                     else:
                         return getattr(result, 'type', '')
 
-                __log__.debug('Saving %d more bytes', len(result.bytes))
+                self._log[__name__].debug('Saving %d more bytes',
+                                          len(result.bytes))
                 f.write(result.bytes)
                 if progress_callback:
                     progress_callback(f.tell(), file_size)

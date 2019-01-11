@@ -1,12 +1,9 @@
 import abc
 import asyncio
-import logging
 import socket
 import ssl as ssl_mod
 
 from ...errors import InvalidChecksumError
-
-__log__ = logging.getLogger(__name__)
 
 
 class Connection(abc.ABC):
@@ -21,10 +18,11 @@ class Connection(abc.ABC):
     ``ConnectionError``, which will raise when attempting to send if
     the client is disconnected (includes remote disconnections).
     """
-    def __init__(self, ip, port, *, loop, proxy=None):
+    def __init__(self, ip, port, *, loop, loggers, proxy=None):
         self._ip = ip
         self._port = port
         self._loop = loop
+        self._log = loggers[__name__]
         self._proxy = proxy
         self._reader = None
         self._writer = None
@@ -156,13 +154,13 @@ class Connection(abc.ABC):
             except Exception as e:
                 if isinstance(e, (ConnectionError, asyncio.IncompleteReadError)):
                     msg = 'The server closed the connection'
-                    __log__.info(msg)
+                    self._log.info(msg)
                 elif isinstance(e, InvalidChecksumError):
                     msg = 'The server response had an invalid checksum'
-                    __log__.info(msg)
+                    self._log.info(msg)
                 else:
                     msg = 'Unexpected exception in the receive loop'
-                    __log__.exception(msg)
+                    self._log.exception(msg)
 
                 self.disconnect()
 

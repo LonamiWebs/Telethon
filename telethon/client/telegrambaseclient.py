@@ -6,7 +6,7 @@ import sys
 import time
 from datetime import datetime
 
-from .. import version
+from .. import version, __name__ as __base_name__
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull
@@ -19,7 +19,8 @@ DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
 
-__log__ = logging.getLogger(__name__)
+__default_log__ = logging.getLogger(__base_name__)
+__default_log__.addHandler(logging.NullHandler())
 
 
 class TelegramBaseClient(abc.ABC):
@@ -161,7 +162,8 @@ class TelegramBaseClient(abc.ABC):
                  app_version=None,
                  lang_code='en',
                  system_lang_code='en',
-                 loop=None):
+                 loop=None,
+                 base_logger=None):
         if not api_id or not api_hash:
             raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
@@ -169,6 +171,17 @@ class TelegramBaseClient(abc.ABC):
 
         self._use_ipv6 = use_ipv6
         self._loop = loop or asyncio.get_event_loop()
+
+        if isinstance(base_logger, str):
+            base_logger = logging.getLogger(base_logger)
+        elif not isinstance(base_logger, logging.Logger):
+            base_logger = __default_log__
+        subloggers = ["client.updates", "client.users", "client.downloads",
+                      "network.mtprotosender", "network.mtprotostate",
+                      "network.connection.connection",
+                      "extensions.messagepacker"]
+        self._log = {"telethon.{}".format(name): base_logger.getChild(name)
+                     for name in subloggers}
 
         # Determine what session object we have
         if isinstance(session, str) or session is None:
@@ -240,6 +253,7 @@ class TelegramBaseClient(abc.ABC):
         self._connection = connection
         self._sender = MTProtoSender(
             self.session.auth_key, self._loop,
+            loggers=self._log,
             retries=self._connection_retries,
             delay=self._retry_delay,
             auto_reconnect=self._auto_reconnect,
@@ -317,7 +331,8 @@ class TelegramBaseClient(abc.ABC):
         """
         await self._sender.connect(self._connection(
             self.session.server_address, self.session.port,
-            loop=self._loop, proxy=self._proxy
+            loop=self._loop, loggers=self._log,
+            proxy=self._proxy
         ))
         self.session.auth_key = self._sender.auth_key
         self.session.save()
@@ -387,7 +402,7 @@ class TelegramBaseClient(abc.ABC):
         """
         Permanently switches the current connection to the new data center.
         """
-        __log__.info('Reconnecting to new data center %s', new_dc)
+        self._log[__name__].info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
         self.session.set_dc(dc.id, dc.ip_address, dc.port)
@@ -443,7 +458,8 @@ class TelegramBaseClient(abc.ABC):
         sender = MTProtoSender(None, self._loop)
         await sender.connect(self._connection(
             dc.ip_address, dc.port, loop=self._loop, proxy=self._proxy))
-        __log__.info('Exporting authorization for data center %s', dc)
+        self._log[__name__].info('Exporting authorization for data center %s',
+                                 dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
         req = self._init_with(functions.auth.ImportAuthorizationRequest(
             id=auth.id, bytes=auth.bytes
@@ -486,7 +502,8 @@ class TelegramBaseClient(abc.ABC):
             n -= 1
             self._borrowed_senders[dc_id] = (n, sender)
             if not n:
-                __log__.info('Disconnecting borrowed sender for DC %d', dc_id)
+                self._log[__name__].info(
+                    'Disconnecting borrowed sender for DC %d', dc_id)
                 sender.disconnect()
 
     async def _get_cdn_client(self, cdn_redirect):

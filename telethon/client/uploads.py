@@ -1,6 +1,5 @@
 import hashlib
 import io
-import logging
 import os
 import pathlib
 import re
@@ -11,8 +10,6 @@ from .messageparse import MessageParseMethods
 from .users import UserMethods
 from .. import utils, helpers
 from ..tl import types, functions, custom
-
-__log__ = logging.getLogger(__name__)
 
 
 class _CacheType:
@@ -196,8 +193,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         return msg
 
     async def _send_album(self, entity, files, caption='',
-                    progress_callback=None, reply_to=None,
-                    parse_mode=(), silent=None):
+                          progress_callback=None, reply_to=None,
+                          parse_mode=(), silent=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -350,8 +347,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     return cached
 
         part_count = (file_size + part_size - 1) // part_size
-        __log__.info('Uploading file of %d bytes in %d chunks of %d',
-                     file_size, part_count, part_size)
+        self._log[__name__].info('Uploading file of %d bytes in %d chunks of %d',
+                                 file_size, part_count, part_size)
 
         with open(file, 'rb') if isinstance(file, str) else BytesIO(file)\
                 as stream:
@@ -370,8 +367,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
                 result = await self(request)
                 if result:
-                    __log__.debug('Uploaded %d/%d', part_index + 1,
-                                  part_count)
+                    self._log[__name__].debug('Uploaded %d/%d',
+                                              part_index + 1, part_count)
                     if progress_callback:
                         progress_callback(stream.tell(), file_size)
                 else:
@@ -464,7 +461,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         return file_handle, media
 
     async def _cache_media(self, msg, file, file_handle,
-                     force_document=False):
+                           force_document=False):
         if file and msg and isinstance(file_handle,
                                        custom.InputSizedFile):
             # There was a response message and we didn't use cached
