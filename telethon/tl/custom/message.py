@@ -628,9 +628,27 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
         Returns ``None`` if the message was incoming,
         or the edited `Message` otherwise.
+
+        .. note::
+
+            This is different from `client.edit_message
+            <telethon.client.messages.MessageMethods.edit_message>`
+            and **will respect** the previous state of the message.
+            For example, if the message didn't have a link preview,
+            the edit won't add one by default, and you should force
+            it by setting it to ``True`` if you want it.
+
+            This is generally the most desired and convenient behaviour,
+            and will work for link previews and message buttons.
         """
         if self.fwd_from or not self.out:
             return None  # We assume self.out was patched for our chat
+
+        if 'link_preview' not in kwargs:
+            kwargs['link_preview'] = bool(self.web_preview)
+
+        if 'buttons' not in kwargs:
+            kwargs['buttons'] = self.buttons
 
         return await self._client.edit_message(
             await self.get_input_chat(), self.id,
