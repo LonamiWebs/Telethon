@@ -189,7 +189,8 @@ class TelegramBaseClient(abc.ABC):
         class _Loggers(dict):
             def __missing__(self, key):
                 if key.startswith("telethon."):
-                    key = key[len("telethon."):]
+                    key = key.split('.', maxsplit=1)[1]
+
                 return base_logger.getChild(key)
 
         self._log = _Loggers()
@@ -466,7 +467,7 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(None, self._loop)
+        sender = MTProtoSender(None, self._loop, loggers=self._log)
         await sender.connect(self._connection(
             dc.ip_address, dc.port, loop=self._loop, proxy=self._proxy))
         self._log[__name__].info('Exporting authorization for data center %s',
@@ -528,7 +529,7 @@ class TelegramBaseClient(abc.ABC):
             await session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
-        __log__.info('Creating new CDN client')
+        self._log[__name__].info('Creating new CDN client')
         client = TelegramBareClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,

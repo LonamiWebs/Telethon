@@ -227,7 +227,7 @@ class MTProtoSender:
 
         self._log.debug('Connection success!')
         if not self.auth_key:
-            plain = MTProtoPlainSender(self._connection)
+            plain = MTProtoPlainSender(self._connection, loggers=self._loggers)
             for retry in range(1, self._retries + 1):
                 try:
                     self._log.debug('New auth_key attempt {}...'.format(retry))

@@ -14,13 +14,13 @@ class MTProtoPlainSender:
     MTProto Mobile Protocol plain sender
     (https://core.telegram.org/mtproto/description#unencrypted-messages)
     """
-    def __init__(self, connection):
+    def __init__(self, connection, *, loggers):
         """
         Initializes the MTProto plain sender.
 
         :param connection: the Connection to be used.
         """
-        self._state = MTProtoState(auth_key=None)
+        self._state = MTProtoState(auth_key=None, loggers=loggers)
         self._connection = connection
 
     async def send(self, request):

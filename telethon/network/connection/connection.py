@@ -136,9 +136,9 @@ class Connection(abc.ABC):
             pass
         except Exception as e:
             if isinstance(e, ConnectionError):
-                __log__.info('The server closed the connection while sending')
+                self._log.info('The server closed the connection while sending')
             else:
-                __log__.exception('Unexpected exception in the send loop')
+                self._log.exception('Unexpected exception in the send loop')
 
             self.disconnect()
 
