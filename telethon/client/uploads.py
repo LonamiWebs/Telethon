@@ -68,7 +68,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
-            reply_to (`int` | :tl:`Message`):
+            reply_to (`int` | `Message <telethon.tl.custom.message.Message>`):
                 Same as `reply_to` from `send_message`.
 
             attributes (`list`, optional):
@@ -90,8 +90,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 or thumb than those that were used when the file was cached.
 
             parse_mode (`object`, optional):
-                See the `TelegramClient.parse_mode` property for allowed
-                values. Markdown parsing will be used by default.
+                See the `TelegramClient.parse_mode
+                <telethon.client.messageparse.MessageParseMethods.parse_mode>`
+                property for allowed values. Markdown parsing will be used by
+                default.
 
             voice_note (`bool`, optional):
                 If ``True`` the audio will be sent as a voice note.

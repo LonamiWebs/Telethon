@@ -20,11 +20,11 @@ class NewMessage(EventBuilder):
             Mutually exclusive with ``incoming`` (can only set one of either).
 
         from_users (`entity`, optional):
-            Unlike `chats`, this parameter filters the *sender* of the message.
-            That is, only messages *sent by this user* will be handled. Use
-            `chats` if you want private messages with this/these users.
-            `from_users` lets you filter by messages sent by one or more users
-            across the desired chats.
+            Unlike `chats`, this parameter filters the *senders* of the
+            message. That is, only messages *sent by these users* will be
+            handled. Use `chats` if you want private messages with this/these
+            users. `from_users` lets you filter by messages sent by *one or
+            more* users across the desired chats (doesn't need a list).
 
         forwards (`bool`, optional):
             Whether forwarded messages should be handled or not. By default,
@@ -162,7 +162,7 @@ class NewMessage(EventBuilder):
         **refer to its documentation** to know what you can do with this event.
 
         Members:
-            message (:tl:`Message`):
+            message (`Message <telethon.tl.custom.message.Message>`):
                 This is the only difference with the received
                 `telethon.tl.custom.message.Message`, and will
                 return the `telethon.tl.custom.message.Message` itself,

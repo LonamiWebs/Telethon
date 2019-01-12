@@ -232,7 +232,7 @@ class CallbackQuery(EventBuilder):
             `telethon.client.messages.MessageMethods.edit_message` with
             both ``entity`` and ``message`` already set.
 
-            Returns the edited :tl:`Message`.
+            Returns the edited `Message <telethon.tl.custom.message.Message>`.
 
             This method also creates a task to `answer` the callback.
 

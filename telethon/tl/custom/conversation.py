@@ -112,7 +112,7 @@ class Conversation(ChatGetter):
         Returns a coroutine that will resolve once a response arrives.
 
         Args:
-            message (:tl:`Message` | `int`, optional):
+            message (`Message <telethon.tl.custom.message.Message>` | `int`, optional):
                 The message (or the message ID) for which a response
                 is expected. By default this is the last sent message.
 

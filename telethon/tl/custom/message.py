@@ -65,7 +65,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             messages.
 
         message (`str`):
-            The string text of the message for :tl:`Message` instances,
+            The string text of the message for `Message
+            <telethon.tl.custom.message.Message>` instances,
             which will be ``None`` for other types of messages.
 
         action (:tl:`MessageAction`):

@@ -106,7 +106,7 @@ class InlineResult:
             entity (`entity`):
                 The entity to which the message of this result should be sent.
 
-            reply_to (`int` | :tl:`Message`, optional):
+            reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
                 If present, the sent message will reply to this ID or message.
 
             silent (`bool`, optional):

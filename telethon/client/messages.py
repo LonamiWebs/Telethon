@@ -349,8 +349,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         specified it makes sense that it should return the entirety of it.
 
         If `ids` is present in the *named* arguments and is not a list,
-        a single :tl:`Message` will be returned for convenience instead
-        of a list.
+        a single `Message <telethon.tl.custom.message.Message>` will be
+        returned for convenience instead of a list.
         """
         total = [0]
         kwargs['_total'] = total
@@ -397,7 +397,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             entity (`entity`):
                 To who will it be sent.
 
-            message (`str` | :tl:`Message`):
+            message (`str` | `Message <telethon.tl.custom.message.Message>`):
                 The message to be sent, or another message object to resend.
 
                 The maximum length for a message is 35,000 bytes or 4,096
@@ -405,13 +405,15 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 and you should slice them manually if the text to send is
                 longer than said length.
 
-            reply_to (`int` | :tl:`Message`, optional):
+            reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
 
             parse_mode (`object`, optional):
-                See the `TelegramClient.parse_mode` property for allowed
-                values. Markdown parsing will be used by default.
+                See the `TelegramClient.parse_mode
+                <telethon.client.messageparse.MessageParseMethods.parse_mode>`
+                property for allowed values. Markdown parsing will be used by
+                default.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -510,10 +512,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         result = await self(request)
         if isinstance(result, types.UpdateShortSentMessage):
-            to_id, cls = utils.resolve_id(utils.get_peer_id(entity))
             message = types.Message(
                 id=result.id,
-                to_id=cls(to_id),
+                to_id=utils.get_peer(entity),
                 message=message,
                 date=result.date,
                 out=result.out,
@@ -535,7 +536,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             entity (`entity`):
                 To which entity the message(s) will be forwarded.
 
-            messages (`list` | `int` | :tl:`Message`):
+            messages (`list` | `int` | `Message <telethon.tl.custom.message.Message>`):
                 The message(s) to forward, or their integer IDs.
 
             from_peer (`entity`):
@@ -617,24 +618,28 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         Edits the given message ID (to change its contents or disable preview).
 
         Args:
-            entity (`entity` | :tl:`Message`):
+            entity (`entity` | `Message <telethon.tl.custom.message.Message>`):
                 From which chat to edit the message. This can also be
                 the message to be edited, and the entity will be inferred
                 from it, so the next parameter will be assumed to be the
                 message text.
 
-            message (`int` | :tl:`Message` | `str`):
-                The ID of the message (or :tl:`Message` itself) to be edited.
-                If the `entity` was a :tl:`Message`, then this message will be
-                treated as the new text.
+            message (`int` | `Message <telethon.tl.custom.message.Message>` | `str`):
+                The ID of the message (or `Message
+                <telethon.tl.custom.message.Message>` itself) to be edited.
+                If the `entity` was a `Message
+                <telethon.tl.custom.message.Message>`, then this message
+                will be treated as the new text.
 
             text (`str`, optional):
                 The new text of the message. Does nothing if the `entity`
-                was a :tl:`Message`.
+                was a `Message <telethon.tl.custom.message.Message>`.
 
             parse_mode (`object`, optional):
-                See the `TelegramClient.parse_mode` property for allowed
-                values. Markdown parsing will be used by default.
+                See the `TelegramClient.parse_mode
+                <telethon.client.messageparse.MessageParseMethods.parse_mode>`
+                property for allowed values. Markdown parsing will be used by
+                default.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -701,7 +706,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 be ``None`` for normal chats, but **must** be present
                 for channels and megagroups.
 
-            message_ids (`list` | `int` | :tl:`Message`):
+            message_ids (`list` | `int` | `Message <telethon.tl.custom.message.Message>`):
                 The IDs (or ID) or messages to be deleted.
 
             revoke (`bool`, optional):
@@ -751,7 +756,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             entity (`entity`):
                 The chat where these messages are located.
 
-            message (`list` | :tl:`Message`):
+            message (`list` | `Message <telethon.tl.custom.message.Message>`):
                 Either a list of messages or a single message.
 
             max_id (`int`):

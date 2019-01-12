@@ -17,7 +17,7 @@ class Dialog:
         pinned (`bool`):
             Whether this dialog is pinned to the top or not.
 
-        message (:tl:`Message`):
+        message (`Message <telethon.tl.custom.message.Message>`):
             The last message sent on this dialog. Note that this member
             will not be updated when new messages arrive, it's only set
             on creation of the instance.

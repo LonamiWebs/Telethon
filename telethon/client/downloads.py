@@ -104,7 +104,7 @@ class DownloadMethods(UserMethods):
         ``cryptg`` (through ``pip install cryptg``) so that decrypting the
         received data is done in C instead of Python (much faster).
 
-        message (:tl:`Message` | :tl:`Media`):
+        message (`Message <telethon.tl.custom.message.Message>` | :tl:`Media`):
             The media or message containing the media that will be downloaded.
 
         file (`str` | `file`, optional):
