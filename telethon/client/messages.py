@@ -518,7 +518,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 date=result.date,
                 out=result.out,
                 media=result.media,
-                entities=result.entities
+                entities=result.entities,
+                reply_markup=request.reply_markup
             )
             message._finish_init(self, {}, entity)
             return message

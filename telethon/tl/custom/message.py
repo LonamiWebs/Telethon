@@ -648,7 +648,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             kwargs['link_preview'] = bool(self.web_preview)
 
         if 'buttons' not in kwargs:
-            kwargs['buttons'] = self.buttons
+            kwargs['buttons'] = self.reply_markup
 
         return await self._client.edit_message(
             await self.get_input_chat(), self.id,
