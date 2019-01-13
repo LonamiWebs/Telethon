@@ -922,7 +922,8 @@ def resolve_bot_file_id(file_id):
                 dc_id=dc_id,
                 volume_id=volume_id,
                 secret=secret,
-                local_id=local_id
+                local_id=local_id,
+                file_reference=b''
             ), w=0, h=0, size=0)
         ], file_reference=b'', date=None)
 
