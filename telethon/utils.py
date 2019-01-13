@@ -924,7 +924,7 @@ def resolve_bot_file_id(file_id):
                 secret=secret,
                 local_id=local_id
             ), w=0, h=0, size=0)
-        ], date=None)
+        ], file_reference=b'', date=None)
 
 
 def pack_bot_file_id(file):
