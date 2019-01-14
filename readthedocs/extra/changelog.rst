@@ -14,6 +14,46 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Bug Fixes (v1.5.3)
+==================
+
+*Published at 2019/01/14*
+
+Several bug fixes and some quality of life enhancements.
+
+Additions
+~~~~~~~~~
+
+* You can now "hide_via" when clicking on results from `client.inline_query
+  <telethon.client.bots.BotMethods.inline_query>` to @bing and @gif.
+* You can now further configure the logger Telethon uses to suit your needs.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* `message.edit <telethon.tl.custom.message.Message.edit>` now respects
+  the previous message buttons or link preview being hidden. If you want to
+  toggle them you need to explicitly set them. This is generally the desired
+  behaviour, but may cause some bots to have buttons when they shouldn't.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixes for ReadTheDocs to correctly build the documentation.
+* Fix :tl:`UserEmpty` not being expected when getting the input variant.
+* The message object returned when sending a message with buttons wouldn't
+  always contain the :tl:`ReplyMarkup`.
+* Setting email when configuring 2FA wasn't properly supported.
+* ``utils.resolve_bot_file_id`` now works again for photos.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Chat and channel participants can now be used as peers.
+* Reworked README and examples at
+  https://github.com/LonamiWebs/Telethon/tree/master/telethon_examples
+
+
 Takeout Sessions (v1.5.2)
 =========================
 
