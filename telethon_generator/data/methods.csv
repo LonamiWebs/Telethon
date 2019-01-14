@@ -15,7 +15,7 @@ account.setAccountTTL,user,TTL_DAYS_INVALID
 account.setPrivacy,user,PRIVACY_KEY_INVALID
 account.unregisterDevice,user,TOKEN_INVALID
 account.updateNotifySettings,user,PEER_ID_INVALID
-account.updatePasswordSettings,user,EMAIL_UNCONFIRMED NEW_SALT_INVALID NEW_SETTINGS_INVALID PASSWORD_HASH_INVALID
+account.updatePasswordSettings,user,EMAIL_UNCONFIRMED_X NEW_SALT_INVALID NEW_SETTINGS_INVALID PASSWORD_HASH_INVALID
 account.updateProfile,user,ABOUT_TOO_LONG FIRSTNAME_INVALID
 account.updateStatus,user,SESSION_PASSWORD_NEEDED
 account.updateUsername,user,USERNAME_INVALID USERNAME_NOT_MODIFIED USERNAME_OCCUPIED

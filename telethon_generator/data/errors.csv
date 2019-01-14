@@ -52,6 +52,7 @@ CHAT_TITLE_EMPTY,400,No chat title provided
 CHAT_WRITE_FORBIDDEN,403,You can't write in this chat
 CODE_EMPTY,400,The provided code is empty
 CODE_HASH_INVALID,400,Code hash invalid
+CODE_INVALID,400,Code invalid (i.e. from email)
 CONNECTION_API_ID_INVALID,400,The provided API id is invalid
 CONNECTION_DEVICE_MODEL_EMPTY,400,Device model empty
 CONNECTION_LANG_PACK_INVALID,400,"The specified language pack is not valid. This is meant to be used by official applications only so far, leave it empty"
@@ -64,7 +65,8 @@ DATA_JSON_INVALID,400,The provided JSON data is invalid
 DATE_EMPTY,400,Date empty
 DC_ID_INVALID,400,This occurs when an authorization is tried to be exported for the same data center one is currently connected to
 DH_G_A_INVALID,400,g_a invalid
-EMAIL_UNCONFIRMED,400,Email unconfirmed
+EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
+EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
 ENCRYPTED_MESSAGE_INVALID,400,Encrypted message invalid
 ENCRYPTION_ALREADY_ACCEPTED,400,Secret chat already accepted
 ENCRYPTION_ALREADY_DECLINED,400,The secret chat was already declined

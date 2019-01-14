@@ -452,19 +452,26 @@ class AuthMethods(MessageParseMethods, UserMethods):
             Has no effect if ``new_password`` is not set.
 
         email (`str`, optional):
-            Recovery and verification email. Raises ``EmailUnconfirmedError``
-            if value differs from current one, and has no effect if
-            ``new_password`` is not set.
+            Recovery and verification email. If present, you must also
+            set `email_code_callback`, else it raises ``ValueError``.
 
         email_code_callback (`callable`, optional):
             If an email is provided, a callback that returns the code sent
             to it must also be set. This callback may be asynchronous.
+            It should return a string with the code. The length of the
+            code will be passed to the callback as an input parameter.
+
+            If the callback returns an invalid code, it will raise
+            ``CodeInvalidError``.
 
         Returns:
             ``True`` if successful, ``False`` otherwise.
         """
         if new_password is None and current_password is None:
             return False
+
+        if email and not callable(email_code_callback):
+            raise ValueError('email present without email_code_callback')
 
         pwd = await self(functions.account.GetPasswordRequest())
         pwd.new_algo.salt1 += os.urandom(32)
@@ -483,16 +490,26 @@ class AuthMethods(MessageParseMethods, UserMethods):
         else:
             new_password_hash = b''
 
-        await self(functions.account.UpdatePasswordSettingsRequest(
-            password=password,
-            new_settings=types.account.PasswordInputSettings(
-                new_algo=pwd.new_algo,
-                new_password_hash=new_password_hash,
-                hint=hint,
-                email=email,
-                new_secure_settings=None
-            )
-        ))
+        try:
+            await self(functions.account.UpdatePasswordSettingsRequest(
+                password=password,
+                new_settings=types.account.PasswordInputSettings(
+                    new_algo=pwd.new_algo,
+                    new_password_hash=new_password_hash,
+                    hint=hint,
+                    email=email,
+                    new_secure_settings=None
+                )
+            ))
+        except errors.EmailUnconfirmedError as e:
+            code = email_code_callback(e.code_length)
+            if inspect.isawaitable(code):
+                code = await code
+
+            code = str(code)
+            await self(functions.account.ConfirmPasswordEmailRequest(code))
+
+        return True
 
     # endregion
 
