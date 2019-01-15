@@ -342,8 +342,10 @@ class TelegramBaseClient(abc.ABC):
         Connects to Telegram.
         """
         await self._sender.connect(self._connection(
-            self.session.server_address, self.session.port,
-            loop=self._loop, loggers=self._log,
+            self.session.server_address,
+            self.session.port,
+            loop=self._loop,
+            loggers=self._log,
             proxy=self._proxy
         ))
         self.session.auth_key = self._sender.auth_key
@@ -469,7 +471,12 @@ class TelegramBaseClient(abc.ABC):
         # with no further clues.
         sender = MTProtoSender(None, self._loop, loggers=self._log)
         await sender.connect(self._connection(
-            dc.ip_address, dc.port, loop=self._loop, proxy=self._proxy))
+            dc.ip_address,
+            dc.port,
+            loop=self._loop,
+            loggers=self._log,
+            proxy=self._proxy
+        ))
         self._log[__name__].info('Exporting authorization for data center %s',
                                  dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
@@ -495,8 +502,11 @@ class TelegramBaseClient(abc.ABC):
             elif not n:
                 dc = await self._get_dc(dc_id)
                 await sender.connect(self._connection(
-                    dc.ip_address, dc.port,
-                    loop=self._loop, proxy=self._proxy
+                    dc.ip_address,
+                    dc.port,
+                    loop=self._loop,
+                    loggers=self._log,
+                    proxy=self._proxy
                 ))
 
             self._borrowed_senders[dc_id] = (n + 1, sender)
