@@ -26,6 +26,16 @@ class DownloadMethods(UserMethods):
             entity (`entity`):
                 From who the photo will be downloaded.
 
+                .. note::
+
+                    This method expects the full entity (which has the data
+                    to download the photo), not an input variant.
+
+                    It's possible that sometimes you can't fetch the entity
+                    from its input (since you can get errors like
+                    ``ChannelPrivateError``) but you already have it through
+                    another call, like getting a forwarded message from it.
+
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.

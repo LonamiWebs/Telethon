@@ -166,11 +166,13 @@ PHONE_NUMBER_OCCUPIED,400,The phone number is already in use
 PHONE_NUMBER_UNOCCUPIED,400,The phone number is not yet being used
 PHONE_PASSWORD_FLOOD,406,You have tried logging in too many times
 PHONE_PASSWORD_PROTECTED,400,This phone is password protected
+PHOTO_CONTENT_URL_EMPTY,400,The content from the URL used as a photo appears to be empty or has caused another HTTP error
 PHOTO_CROP_SIZE_SMALL,400,Photo is too small
 PHOTO_EXT_INVALID,400,The extension of the photo is invalid
 PHOTO_INVALID,400,Photo invalid
 PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid
 PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
+PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
 PIN_RESTRICTED,400,You can't pin messages in private chats with other people
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PTS_CHANGE_EMPTY,500,No PTS change
