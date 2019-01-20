@@ -121,7 +121,6 @@ request we do:
 .. code-block:: python
 
     result = client(SendMessageRequest(peer, 'Hello there!'))
-    # __call__ is an alias for client.invoke(request). Both will work
 
 Message sent! Of course, this is only an example. There are over 250
 methods available as of layer 80, and you can use every single of them
