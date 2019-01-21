@@ -65,7 +65,8 @@ class ChatMethods(UserMethods):
         if isinstance(filter, type):
             if filter in (types.ChannelParticipantsBanned,
                           types.ChannelParticipantsKicked,
-                          types.ChannelParticipantsSearch):
+                          types.ChannelParticipantsSearch,
+                          types.ChannelParticipantsContacts):
                 # These require a `q` parameter (support types for convenience)
                 filter = filter('')
             else:

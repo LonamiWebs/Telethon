@@ -88,6 +88,8 @@ class AdminLogEvent:
             return not ori.new_value
         elif isinstance(ori, types.ChannelAdminLogEventActionDeleteMessage):
             return ori.message
+        elif isinstance(ori, types.ChannelAdminLogEventActionDefaultBannedRights):
+            return ori.prev_banned_rights
 
     @property
     def new(self):
@@ -117,6 +119,10 @@ class AdminLogEvent:
             return ori.new_participant
         elif isinstance(ori, types.ChannelAdminLogEventActionParticipantInvite):
             return ori.participant
+        elif isinstance(ori, types.ChannelAdminLogEventActionDefaultBannedRights):
+            return ori.new_banned_rights
+        elif isinstance(ori, types.ChannelAdminLogEventActionStopPoll):
+            return ori.message
 
     @property
     def changed_about(self):
@@ -286,6 +292,28 @@ class AdminLogEvent:
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionUpdatePinned)
+
+    @property
+    def changed_default_banned_rights(self):
+        """
+        Whether the default banned rights were changed in this event or not.
+
+        If ``True``, `old` and `new` will
+        be present as :tl:`ChatBannedRights`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionDefaultBannedRights)
+
+    @property
+    def stopped_poll(self):
+        """
+        Whether a poll was stopped in this event or not.
+
+        If ``True``, `new` will be present as
+        `Message <telethon.tl.custom.message.Message>`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionStopPoll)
 
     def __str__(self):
         return str(self.original)

@@ -147,7 +147,8 @@ class DownloadMethods(UserMethods):
                 media = media.webpage.document or media.webpage.photo
 
         if isinstance(media, (types.MessageMediaPhoto, types.Photo,
-                              types.PhotoSize, types.PhotoCachedSize)):
+                              types.PhotoSize, types.PhotoCachedSize,
+                              types.PhotoStrippedSize)):
             return await self._download_photo(
                 media, file, date, progress_callback
             )
@@ -300,11 +301,12 @@ class DownloadMethods(UserMethods):
                     break
             else:
                 return
-        if not isinstance(photo, (types.PhotoSize, types.PhotoCachedSize)):
+        if not isinstance(photo, (types.PhotoSize, types.PhotoCachedSize,
+                                  types.PhotoStrippedSize)):
             return
 
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
-        if isinstance(photo, types.PhotoCachedSize):
+        if isinstance(photo, (types.PhotoCachedSize, types.PhotoStrippedSize)):
             # No need to download anything, simply write the bytes
             if file is bytes:
                 return photo.bytes
