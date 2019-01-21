@@ -463,7 +463,8 @@ def get_message_id(message):
 
 
 def get_attributes(file, *, attributes=None, mime_type=None,
-                   force_document=False, voice_note=False, video_note=False):
+                   force_document=False, voice_note=False, video_note=False,
+                   supports_streaming=False):
     """
     Get a list of attributes for the given file and
     the mime type as a tuple ([attribute], mime_type).
@@ -496,11 +497,13 @@ def get_attributes(file, *, attributes=None, mime_type=None,
                     w=m.get('width') if m.has('width') else 0,
                     h=m.get('height') if m.has('height') else 0,
                     duration=int(m.get('duration').seconds
-                                 if m.has('duration') else 0)
+                                 if m.has('duration') else 0),
+                    supports_streaming=supports_streaming
                 )
         else:
             doc = types.DocumentAttributeVideo(
-                0, 1, 1, round_message=video_note)
+                0, 1, 1, round_message=video_note,
+                supports_streaming=supports_streaming)
 
         attr_dict[types.DocumentAttributeVideo] = doc
 

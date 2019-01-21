@@ -247,6 +247,7 @@ USER_NOT_MUTUAL_CONTACT,400 403,The provided user is not a mutual contact
 USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagroup or channel
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
+VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty

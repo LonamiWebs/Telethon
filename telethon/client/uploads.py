@@ -33,7 +33,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             progress_callback=None, reply_to=None, attributes=None,
             thumb=None, allow_cache=True, parse_mode=(),
             voice_note=False, video_note=False, buttons=None, silent=None,
-            **kwargs):
+            supports_streaming=False, **kwargs):
         """
         Sends a file to the specified entity.
 
@@ -119,6 +119,13 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 channel or not. Defaults to ``False``, which means it will
                 notify them. Set it to ``True`` to alter this behaviour.
 
+            supports_streaming (`bool`, optional):
+                Whether the sent video supports streaming or not. Note that
+                Telegram only recognizes as streamable some formats like MP4,
+                and others like AVI or MKV will not work. You should convert
+                these to MP4 before sending if you want them to be streamable.
+                Unsupported formats will result in ``VideoContentTypeError``.
+
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
             it will be used to determine metadata from audio and video files.
@@ -161,6 +168,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, buttons=buttons, silent=silent,
+                    supports_streaming=supports_streaming,
                     **kwargs
                 ))
 
@@ -181,7 +189,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             file, force_document=force_document,
             progress_callback=progress_callback,
             attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
-            voice_note=voice_note, video_note=video_note
+            voice_note=voice_note, video_note=video_note,
+            supports_streaming=supports_streaming
         )
 
         markup = self.build_reply_markup(buttons)
@@ -389,7 +398,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     async def _file_to_media(
             self, file, force_document=False,
             progress_callback=None, attributes=None, thumb=None,
-            allow_cache=True, voice_note=False, video_note=False):
+            allow_cache=True, voice_note=False, video_note=False,
+            supports_streaming=False):
         if not file:
             return None, None
 
@@ -447,7 +457,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 attributes=attributes,
                 force_document=force_document,
                 voice_note=voice_note,
-                video_note=video_note
+                video_note=video_note,
+                supports_streaming=supports_streaming
             )
 
             input_kw = {}
