@@ -463,6 +463,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
             input_kw = {}
             if thumb:
+                if isinstance(thumb, pathlib.Path):
+                    thumb = str(thumb.absolute())
                 input_kw['thumb'] = await self.upload_file(thumb)
 
             media = types.InputMediaUploadedDocument(
