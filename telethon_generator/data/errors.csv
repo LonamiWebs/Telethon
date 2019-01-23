@@ -13,6 +13,7 @@ AUTH_KEY_INVALID,401,The key is invalid
 AUTH_KEY_PERM_EMPTY,401,"The method is unavailable for temporary authorization key, not bound to permanent"
 AUTH_KEY_UNREGISTERED,401,The key is not registered in the system
 AUTH_RESTART,500,Restart the authorization process
+BANNED_RIGHTS_INVALID,400,You cannot use that set of permissions in this request, i.e. restricting view_messages as a default
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_GROUPS_BLOCKED,400,This bot can't be added to groups
