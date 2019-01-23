@@ -25,10 +25,26 @@ try:
 except ImportError:
     hachoir = None
 
-# .webp (stickers) and .ogg (some voice notes) mimetypes are unknown on some
-# operative systems. Manually register them here to make them work everywhere.
+# Register some of the most common mime-types to avoid any issues.
+# See https://github.com/LonamiWebs/Telethon/issues/1096.
+mimetypes.add_type('image/png', '.png')
+mimetypes.add_type('image/jpeg', '.jpeg')
 mimetypes.add_type('image/webp', '.webp')
+mimetypes.add_type('image/gif', '.gif')
+mimetypes.add_type('image/bmp', '.bmp')
+mimetypes.add_type('image/x-tga', '.tga')
+mimetypes.add_type('image/tiff', '.tiff')
+mimetypes.add_type('image/vnd.adobe.photoshop', '.psd')
+
+mimetypes.add_type('video/mp4', '.mp4')
+mimetypes.add_type('video/quicktime', '.mov')
+mimetypes.add_type('video/avi', '.avi')
+
+mimetypes.add_type('audio/mp3', '.mp3')
+mimetypes.add_type('audio/m4a', '.m4a')
+mimetypes.add_type('audio/aac', '.aac')
 mimetypes.add_type('audio/ogg', '.ogg')
+mimetypes.add_type('audio/flac', '.flac')
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
