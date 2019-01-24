@@ -359,7 +359,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         # `catch_up` on all updates (and obtain necessary access hashes)
         # if they desire. The date parameter is ignored when pts = 1.
         self._state.pts = 1
-        self._state.date = datetime.datetime.now()
+        self._state.date = datetime.datetime.now(tz=datetime.timezone.utc)
 
         return user
 
@@ -417,7 +417,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._bot = None
         self._self_input_peer = None
         self._authorized = False
-        self._state = types.updates.State(0, 0, datetime.datetime.now(), 0, 0)
+        self._state = types.updates.State(
+            0, 0, datetime.datetime.now(tz=datetime.timezone.utc), 0, 0)
+
         self.disconnect()
         self.session.delete()
         return True

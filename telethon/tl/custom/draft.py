@@ -159,7 +159,7 @@ class Draft:
             self._raw_text = raw_text
             self.link_preview = link_preview
             self.reply_to_msg_id = reply_to
-            self.date = datetime.datetime.now()
+            self.date = datetime.datetime.now(tz=datetime.timezone.utc)
 
         return result
 

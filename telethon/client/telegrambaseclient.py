@@ -4,7 +4,7 @@ import logging
 import platform
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .. import version, __name__ as __base_name__
 from ..crypto import rsa
@@ -296,8 +296,10 @@ class TelegramBaseClient(abc.ABC):
             self._dispatching_updates_queue = None
 
         self._authorized = None  # None = unknown, False = no, True = yes
-        self._state = (self.session.get_update_state(0)
-                       or types.updates.State(0, 0, datetime.now(), 0, 0))
+        self._state = self.session.get_update_state(0)
+        if not self._state:
+            self._state = types.updates.State(
+                0, 0, datetime.now(tz=timezone.utc), 0, 0)
 
         # Some further state for subclasses
         self._event_builders = []
