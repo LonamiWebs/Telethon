@@ -172,13 +172,13 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             else:
                 offset_id = 1
 
-        if not from_user:
-            from_id = None
-        else:
-            from_id = await self.get_input_entity(from_user)
-            if not isinstance(from_id, (
+        if from_user:
+            from_user = await self.get_input_entity(from_user)
+            if not isinstance(from_user, (
                     types.InputPeerUser, types.InputPeerSelf)):
-                from_id = None  # Ignore from_user unless it's a user
+                from_user = None  # Ignore from_user unless it's a user
+
+        from_id = (await self.get_peer_id(from_user)) if from_user else None
 
         limit = float('inf') if limit is None else int(limit)
         if not entity:
@@ -193,9 +193,20 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 offset_id=offset_id,
                 limit=1
             )
-        elif search is not None or filter or from_id:
+        elif search is not None or filter or from_user:
             if filter is None:
                 filter = types.InputMessagesFilterEmpty()
+
+            # Telegram completely ignores `from_id` in private chats
+            if isinstance(entity, (types.InputPeerUser, types.InputPeerSelf)):
+                # Don't bother sending `from_user` (it's ignored anyway),
+                # but keep `from_id` defined above to check it locally.
+                from_user = None
+            else:
+                # Do send `from_user` to do the filtering server-side,
+                # and set `from_id` to None to avoid checking it locally.
+                from_id = None
+
             request = functions.messages.SearchRequest(
                 peer=entity,
                 q=search or '',
@@ -208,19 +219,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 max_id=0,
                 min_id=0,
                 hash=0,
-                from_id=from_id
+                from_id=from_user
             )
-
-            if not isinstance(entity, (
-                    types.InputPeerUser, types.InputPeerSelf)):
-                from_id = None
-            else:
-                # Telegram completely ignores `from_id` in private
-                # chats, so we need to do this check client-side.
-                if isinstance(from_id, types.InputPeerSelf):
-                    from_id = await self.get_peer_id('me')
-                else:
-                    from_id = from_id.user_id
         else:
             request = functions.messages.GetHistoryRequest(
                 peer=entity,
