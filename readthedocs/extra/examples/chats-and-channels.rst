@@ -101,14 +101,14 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
 .. code-block:: python
 
     from telethon.tl.functions.channels import EditAdminRequest
-    from telethon.tl.types import ChannelAdminRights
+    from telethon.tl.types import ChatAdminRights
 
     # You need both the channel and who to grant permissions
     # They can either be channel/user or input channel/input user.
     #
-    # ChannelAdminRights is a list of granted permissions.
+    # ChatAdminRights is a list of granted permissions.
     # Set to True those you want to give.
-    rights = ChannelAdminRights(
+    rights = ChatAdminRights(
         post_messages=None,
         add_admins=None,
         invite_users=None,
@@ -120,17 +120,23 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
         edit_messages=None
     )
     # Equivalent to:
-    #     rights = ChannelAdminRights(
+    #     rights = ChatAdminRights(
     #         change_info=True,
     #         delete_messages=True,
     #         pin_messages=True
     #     )
 
-    # Once you have a ChannelAdminRights, invoke it
+    # Once you have a ChatAdminRights, invoke it
     client(EditAdminRequest(channel, user, rights))
 
     # User will now be able to change group info, delete other people's
     # messages and pin messages.
+    #
+    # In a normal chat, you should do this instead:
+    from telethon.tl.functions.messages import EditChatAdminRequest
+
+    client(EditChatAdminRequest(chat_id, user, is_admin=True))
+
 
 
 .. note::
@@ -150,12 +156,12 @@ Restricting Users
 
 Similar to how you give or revoke admin permissions, you can edit the
 banned rights of a user through :tl:`EditBannedRequest` and its parameter
-:tl:`ChannelBannedRights`:
+:tl:`ChatBannedRights`:
 
 .. code-block:: python
 
     from telethon.tl.functions.channels import EditBannedRequest
-    from telethon.tl.types import ChannelBannedRights
+    from telethon.tl.types import ChatBannedRights
 
     from datetime import datetime, timedelta
 
@@ -163,7 +169,7 @@ banned rights of a user through :tl:`EditBannedRequest` and its parameter
     #
     # Note that it's "reversed". You must set to ``True`` the permissions
     # you want to REMOVE, and leave as ``None`` those you want to KEEP.
-    rights = ChannelBannedRights(
+    rights = ChatBannedRights(
         until_date=timedelta(days=7),
         view_messages=None,
         send_messages=None,
@@ -176,7 +182,7 @@ banned rights of a user through :tl:`EditBannedRequest` and its parameter
     )
 
     # The above is equivalent to
-    rights = ChannelBannedRights(
+    rights = ChatBannedRights(
         until_date=datetime.now() + timedelta(days=7),
         send_media=True,
         send_stickers=True,
@@ -206,10 +212,10 @@ is enough:
 .. code-block:: python
 
     from telethon.tl.functions.channels import EditBannedRequest
-    from telethon.tl.types import ChannelBannedRights
+    from telethon.tl.types import ChatBannedRights
 
     client(EditBannedRequest(
-        channel, user, ChannelBannedRights(
+        channel, user, ChatBannedRights(
             until_date=None,
             view_messages=True
         )
