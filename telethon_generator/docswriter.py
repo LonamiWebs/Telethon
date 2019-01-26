@@ -35,7 +35,8 @@ class DocsWriter:
         Get the relative path for the given path from the current
         file by working around https://bugs.python.org/issue20012.
         """
-        return os.path.relpath(str(path), self._parent)
+        return os.path.relpath(
+            str(path), self._parent).replace(os.path.sep, '/')
 
     # High level writing
     def write_head(self, title, css_path, default_css):
@@ -253,9 +254,10 @@ class DocsWriter:
         self.write('<button onclick="cp(\'{}\');">{}</button>'
                    .format(text_to_copy, text))
 
-    def add_script(self, src='', relative_src=None):
-        if relative_src:
-            self._script += '<script src="{}"></script>'.format(relative_src)
+    def add_script(self, src='', path=None):
+        if path:
+            self._script += '<script src="{}"></script>'.format(
+                self._rel(path))
         elif src:
             self._script += '<script>{}</script>'.format(src)
 

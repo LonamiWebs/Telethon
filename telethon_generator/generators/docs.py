@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import functools
+import os
 import re
 import shutil
 from collections import defaultdict
@@ -401,7 +402,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
             depth = '../' * (2 if tlobject.namespace else 1)
             docs.add_script(src='prependPath = "{}";'.format(depth))
-            docs.add_script(relative_src=paths['search.js'])
+            docs.add_script(path=paths['search.js'])
             docs.end_body()
 
     # Find all the available types (which are not the same as the constructors)
@@ -567,7 +568,8 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     constructor_names = fmt(cs)
 
     def fmt(xs, formatter):
-        return ', '.join('"{}"'.format(formatter(x)) for x in xs)
+        return ', '.join('"{}"'.format(
+            formatter(x)).replace(os.path.sep, '/') for x in xs)
 
     type_names = fmt(types, formatter=lambda x: x)
 
