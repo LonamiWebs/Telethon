@@ -166,7 +166,7 @@ class DialogMethods(UserMethods):
 
     def conversation(
             self, entity,
-            *, timeout=None, total_timeout=60, max_messages=100,
+            *, timeout=60, total_timeout=None, max_messages=100,
             exclusive=True, replies_are_responses=True):
         """
         Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
@@ -178,15 +178,15 @@ class DialogMethods(UserMethods):
                 The entity with which a new conversation should be opened.
 
             timeout (`int` | `float`, optional):
-                The default timeout *per action* to be used. You
-                can override this on each action. By default there
-                is no per-action time limit but there is still a
-                `total_timeout` for the entire conversation.
+                The default timeout *per action* to be used. You may also
+                override this timeout on a per-method basis. By default each
+                action can take up to 60 seconds (the value of this timeout).
 
             total_timeout (`int` | `float`, optional):
-                The total timeout to use for the whole conversation.
-                After these many seconds pass, subsequent actions
-                will result in ``asyncio.TimeoutError``.
+                The total timeout to use for the whole conversation. This
+                takes priority over per-action timeouts. After these many
+                seconds pass, subsequent actions will result in
+                ``asyncio.TimeoutError``.
 
             max_messages (`int`, optional):
                 The maximum amount of messages this conversation will
