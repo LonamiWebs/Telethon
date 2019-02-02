@@ -925,7 +925,7 @@ def resolve_bot_file_id(file_id):
             date=None,
             mime_type='',
             size=0,
-            thumb=types.PhotoSizeEmpty('s'),
+            thumbs=types.PhotoSizeEmpty('s'),
             dc_id=dc_id,
             attributes=attributes,
             file_reference=b''
