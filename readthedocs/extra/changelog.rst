@@ -14,19 +14,46 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Layer Update (v1.5.5)
+=====================
+
+*Published at 2019/01/14*
+
++-----------------------+
+| Scheme layer used: 93 |
++-----------------------+
+
+There isn't an entry for v1.5.4 because it contained only one hot-fix
+regarding loggers. This update is slightly bigger so it deserves mention.
+
+Additions
+~~~~~~~~~
+
+* New ``supports_streaming`` parameter in `client.send_file
+  <telethon.client.uploads.UploadMethods.send_file>`.
+
+Bug fixes
+~~~~~~~~~
+
+* Dealing with mimetypes should cause less issues in systems like Windows.
+* Potentially fix alternative session storages that had issues with dates.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Saner timeout defaults for conversations.
+* ``Path``-like files are now supported for thumbnails.
+* Added new hot-keys to the online documentation at
+  https://lonamiwebs.github.io/Telethon/ such as ``/`` to search.
+  Press ``?`` to view them all.
+
+
 Bug Fixes (v1.5.3)
 ==================
 
 *Published at 2019/01/14*
 
 Several bug fixes and some quality of life enhancements.
-
-Additions
-~~~~~~~~~
-
-* You can now "hide_via" when clicking on results from `client.inline_query
-  <telethon.client.bots.BotMethods.inline_query>` to @bing and @gif.
-* You can now further configure the logger Telethon uses to suit your needs.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -35,6 +62,13 @@ Breaking Changes
   the previous message buttons or link preview being hidden. If you want to
   toggle them you need to explicitly set them. This is generally the desired
   behaviour, but may cause some bots to have buttons when they shouldn't.
+
+Additions
+~~~~~~~~~
+
+* You can now "hide_via" when clicking on results from `client.inline_query
+  <telethon.client.bots.BotMethods.inline_query>` to @bing and @gif.
+* You can now further configure the logger Telethon uses to suit your needs.
 
 Bug fixes
 ~~~~~~~~~
