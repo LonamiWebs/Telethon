@@ -22,6 +22,7 @@ from ..tl.types import (
     MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload
 )
 from ..crypto import AuthKey
+from ..helpers import retry_range
 
 
 def _cancellable(func):
@@ -211,26 +212,27 @@ class MTProtoSender:
         receive loops.
         """
         self._log.info('Connecting to %s...', self._connection)
-        for retry in range(1, self._retries + 1):
+        for attempt in retry_range(self._retries):
             try:
-                self._log.debug('Connection attempt {}...'.format(retry))
+                self._log.debug('Connection attempt {}...'.format(attempt))
                 await self._connection.connect(timeout=self._connect_timeout)
             except (ConnectionError, asyncio.TimeoutError) as e:
                 self._log.warning('Attempt {} at connecting failed: {}: {}'
-                                .format(retry, type(e).__name__, e))
+                                .format(attempt, type(e).__name__, e))
                 await asyncio.sleep(self._delay)
             else:
                 break
         else:
-            raise ConnectionError('Connection to Telegram failed {} times'
-                                  .format(self._retries))
+            raise ConnectionError('Connection to Telegram failed {} time(s)'
+                                  .format(attempt))
 
         self._log.debug('Connection success!')
         if not self.auth_key:
             plain = MTProtoPlainSender(self._connection, loggers=self._loggers)
-            for retry in range(1, self._retries + 1):
+            for attempt in retry_range(self._retries):
                 try:
-                    self._log.debug('New auth_key attempt {}...'.format(retry))
+                    self._log.debug('New auth_key attempt {}...'
+                                    .format(attempt))
                     self.auth_key.key, self._state.time_offset =\
                         await authenticator.do_authentication(plain)
 
@@ -244,11 +246,11 @@ class MTProtoSender:
                     break
                 except (SecurityError, AssertionError) as e:
                     self._log.warning('Attempt {} at new auth_key failed: {}'
-                                    .format(retry, e))
+                                    .format(attempt, e))
                     await asyncio.sleep(self._delay)
             else:
-                e = ConnectionError('auth_key generation failed {} times'
-                                    .format(self._retries))
+                e = ConnectionError('auth_key generation failed {} time(s)'
+                                    .format(attempt))
                 self._disconnect(error=e)
                 raise e
 
@@ -321,17 +323,17 @@ class MTProtoSender:
         self._state.reset()
 
         retries = self._retries if self._auto_reconnect else 0
-        for retry in range(1, retries + 1):
+        for attempt in retry_range(retries):
             try:
                 await self._connect()
             except (ConnectionError, asyncio.TimeoutError) as e:
-                self._log.info('Failed reconnection retry %d/%d with %s',
-                             retry, retries, e.__class__.__name__)
+                self._log.info('Failed reconnection attempt %d with %s',
+                             attempt, e.__class__.__name__)
 
                 await asyncio.sleep(self._delay)
             except Exception:
                 self._log.exception('Unexpected exception reconnecting on '
-                                  'retry %d/%d', retry, retries)
+                                  'attempt %d', attempt)
 
                 await asyncio.sleep(self._delay)
             else:
@@ -343,7 +345,8 @@ class MTProtoSender:
 
                 break
         else:
-            self._log.error('Failed to reconnect automatically.')
+            self._log.error('Automatic reconnection failed {} time(s)'
+                            .format(attempt))
             self._disconnect(error=ConnectionError())
 
     def _start_reconnect(self):

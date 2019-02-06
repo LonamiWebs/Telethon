@@ -6,6 +6,7 @@ from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils
 from ..errors import MultiError, RPCError
 from ..tl import TLObject, TLRequest, types, functions
+from ..helpers import retry_range
 
 _NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
 
@@ -34,7 +35,7 @@ class UserMethods(TelegramBaseClient):
 
         request_index = 0
         self._last_request = time.time()
-        for _ in range(self._request_retries):
+        for attempt in retry_range(self._request_retries):
             try:
                 future = self._sender.send(request, ordered=ordered)
                 if isinstance(future, list):
@@ -86,7 +87,8 @@ class UserMethods(TelegramBaseClient):
                     raise
                 await self._switch_dc(e.new_dc)
 
-        raise ValueError('Number of retries reached 0')
+        raise ValueError('Request was unsuccessful {} time(s)'
+                         .format(attempt))
 
     # region Public methods
 

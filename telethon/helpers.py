@@ -72,6 +72,21 @@ def strip_text(text, entities):
     return text
 
 
+def retry_range(retries):
+    """
+    Generates an integer sequence starting from 1. If `retries` is
+    negative or ``None`` then sequence is infinite, otherwise it will
+    end at `retries + 1`.
+    """
+    yield 1
+    if retries is None:
+        retries = -1
+    attempt = 0
+    while attempt != retries:
+        attempt += 1
+        yield 1 + attempt
+
+
 # endregion
 
 # region Cryptographic related utils
