@@ -218,7 +218,7 @@ class MTProtoSender:
                 await self._connection.connect(timeout=self._connect_timeout)
             except (ConnectionError, asyncio.TimeoutError) as e:
                 self._log.warning('Attempt {} at connecting failed: {}: {}'
-                                .format(attempt, type(e).__name__, e))
+                                  .format(attempt, type(e).__name__, e))
                 await asyncio.sleep(self._delay)
             else:
                 break
@@ -246,7 +246,7 @@ class MTProtoSender:
                     break
                 except (SecurityError, AssertionError) as e:
                     self._log.warning('Attempt {} at new auth_key failed: {}'
-                                    .format(attempt, e))
+                                      .format(attempt, e))
                     await asyncio.sleep(self._delay)
             else:
                 e = ConnectionError('auth_key generation failed {} time(s)'
@@ -276,7 +276,7 @@ class MTProtoSender:
             self._connection.disconnect()
         finally:
             self._log.debug('Cancelling {} pending message(s)...'
-                          .format(len(self._pending_state)))
+                            .format(len(self._pending_state)))
             for state in self._pending_state.values():
                 if error and not state.future.done():
                     state.future.set_exception(error)
@@ -515,7 +515,7 @@ class MTProtoSender:
                         raise ValueError('Not an upload.File')
             except (TypeNotFoundError, ValueError):
                 self._log.info('Received response without parent request: {}'
-                             .format(rpc_result.body))
+                               .format(rpc_result.body))
             return
 
         if rpc_result.error:
@@ -555,7 +555,7 @@ class MTProtoSender:
 
     async def _handle_update(self, message):
         self._log.debug('Handling update {}'
-                      .format(message.obj.__class__.__name__))
+                        .format(message.obj.__class__.__name__))
         if self._update_callback:
             await self._update_callback(message.obj)
 
