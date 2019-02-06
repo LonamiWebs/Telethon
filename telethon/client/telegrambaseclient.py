@@ -71,23 +71,23 @@ class TelegramBaseClient(abc.ABC):
             invoked requests, and you should use ``asyncio.wait`` or
             ``asyncio.wait_for`` for that.
 
-        request_retries (`int`, optional):
+        request_retries (`int` | `None`, optional):
             How many times a request should be retried. Request are retried
             when Telegram is having internal issues (due to either
             ``errors.ServerError`` or ``errors.RpcCallFailError``),
             when there is a ``errors.FloodWaitError`` less than
             `flood_sleep_threshold`, or when there's a migrate error.
 
-            May set to a false-y value (``0`` or ``None``) for infinite
-            retries, but this is not recommended, since some requests can
-            always trigger a call fail (such as searching for messages).
+            May take a negative or ``None`` value for infinite retries, but
+            this is not recommended, since some requests can always trigger
+            a call fail (such as searching for messages).
 
-        connection_retries (`int`, optional):
+        connection_retries (`int` | `None`, optional):
             How many times the reconnection should retry, either on the
             initial connection or when Telegram disconnects us. May be
-            set to a false-y value (``0`` or ``None``) for infinite
-            retries, but this is not recommended, since the program can
-            get stuck in an infinite loop.
+            set to a negative or ``None`` value for infinite retries, but
+            this is not recommended, since the program can get stuck in an
+            infinite loop.
 
         retry_delay (`int` | `float`, optional):
             The delay in seconds to sleep between automatic reconnections.
@@ -236,8 +236,8 @@ class TelegramBaseClient(abc.ABC):
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
-        self._request_retries = request_retries or sys.maxsize
-        self._connection_retries = connection_retries or sys.maxsize
+        self._request_retries = request_retries
+        self._connection_retries = connection_retries
         self._retry_delay = retry_delay or 0
         self._proxy = proxy
         self._timeout = timeout

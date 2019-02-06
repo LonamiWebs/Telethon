@@ -53,7 +53,7 @@ class _TakeoutClient:
         wrapped = []
         for r in requests:
             if not isinstance(r, TLRequest):
-                raise _NOT_A_REQUEST
+                raise _NOT_A_REQUEST()
             await r.resolve(self, utils)
             wrapped.append(functions.InvokeWithTakeoutRequest(takeout_id, r))
 
