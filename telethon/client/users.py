@@ -8,7 +8,7 @@ from ..errors import MultiError, RPCError
 from ..tl import TLObject, TLRequest, types, functions
 from ..helpers import retry_range
 
-_NOT_A_REQUEST = TypeError('You can only invoke requests, not types!')
+_NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
 
 class UserMethods(TelegramBaseClient):
@@ -16,7 +16,7 @@ class UserMethods(TelegramBaseClient):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
-                raise _NOT_A_REQUEST
+                raise _NOT_A_REQUEST()
             await r.resolve(self, utils)
 
             # Avoid making the request if it's already in a flood wait
