@@ -61,8 +61,11 @@ class _TakeoutClient:
             wrapped[0] if single else wrapped, ordered=ordered)
 
     def __getattribute__(self, name):
-        if name[:2] == '__':
+        if name.startswith('__'):
             # We want to override special method names
+            if name == '__class__':
+                # See https://github.com/LonamiWebs/Telethon/issues/1103.
+                name = 'k'
             return super().__getattribute__(name)
 
         value = getattr(super().__getattribute__('c'), name)
