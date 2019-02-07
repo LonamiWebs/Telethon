@@ -574,8 +574,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 )
             except StopIteration:
                 raise ValueError(
-                    'from_chat must be given if integer IDs are used'
-                )
+                    'from_peer must be given if integer IDs are used'
+                ) from None
 
         req = functions.messages.ForwardMessagesRequest(
             from_peer=from_peer,
