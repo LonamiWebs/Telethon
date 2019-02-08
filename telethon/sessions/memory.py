@@ -32,6 +32,7 @@ class MemorySession(Session):
         self._server_address = None
         self._port = None
         self._auth_key = None
+        self._takeout_id = None
 
         self._files = {}
         self._entities = set()
@@ -61,6 +62,14 @@ class MemorySession(Session):
     @auth_key.setter
     def auth_key(self, value):
         self._auth_key = value
+
+    @property
+    def takeout_id(self):
+        return self._takeout_id
+
+    @takeout_id.setter
+    def takeout_id(self, value):
+        self._takeout_id = value
 
     def get_update_state(self, entity_id):
         return self._update_states.get(entity_id, None)

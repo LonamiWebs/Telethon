@@ -233,7 +233,6 @@ class TelegramBaseClient(abc.ABC):
         # With asynchronous sessions, it would need await,
         # and defeats the purpose of properties.
         self.session = session
-        self.takeout_id = None  # TODO: Move to session.
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
@@ -263,7 +262,6 @@ class TelegramBaseClient(abc.ABC):
             )
         )
 
-        self._connection = connection
         self._sender = MTProtoSender(
             self.session.auth_key, self._loop,
             loggers=self._log,

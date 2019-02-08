@@ -53,6 +53,23 @@ class Session(ABC):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def takeout_id(self):
+        """
+        Returns an ID of the takeout process initialized for this session,
+        or ``None`` if there's no were any unfinished takeout requests.
+        """
+        raise NotImplementedError
+
+    @takeout_id.setter
+    @abstractmethod
+    def takeout_id(self, value):
+        """
+        Sets the ID of the unfinished takeout process for this session.
+        """
+        raise NotImplementedError
+
     @abstractmethod
     def get_update_state(self, entity_id):
         """
