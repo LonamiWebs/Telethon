@@ -8,45 +8,48 @@ from ..tl import functions, TLRequest
 
 class _TakeoutClient:
     """
-    Proxy object over the client. `c` is the client, `k` it's class,
-    `r` is the takeout request, and `t` is the takeout ID.
+    Proxy object over the client.
     """
+    __PROXY_INTERFACE = ('__enter__', '__exit__', '__aenter__', '__aexit__')
+
     def __init__(self, client, request):
-        # We're a proxy object with __getattribute__overrode so we
-        # need to set attributes through the super class `object`.
-        super().__setattr__('c', client)
-        super().__setattr__('k', client.__class__)
-        super().__setattr__('r', request)
-        super().__setattr__('t', None)
+        # We use the name mangling for attributes to make them inaccessible
+        # from within the shadowed client object.
+        self.__client = client
+        self.__request = request
+
+        # After we initialize the proxy object variables, it's necessary to
+        # translate to the client any write-access to our attributes.
+        self.__setattr__ = lambda _, name, value: \
+            setattr(client, name, value)
 
     def __enter__(self):
-        # We also get self attributes through super()
-        if super().__getattribute__('c').loop.is_running():
+        if self.__client.loop.is_running():
             raise RuntimeError(
                 'You must use "async with" if the event loop '
                 'is running (i.e. you are inside an "async def")'
             )
 
-        return super().__getattribute__(
-            'c').loop.run_until_complete(self.__aenter__())
+        return self.__client.loop.run_until_complete(self.__aenter__())
 
     async def __aenter__(self):
-        # Enter/Exit behaviour is "overrode", we don't want to call start
-        cl = super().__getattribute__('c')
-        super().__setattr__('t', (await cl(super().__getattribute__('r'))).id)
+        # Enter/Exit behaviour is "overrode", we don't want to call start.
+        # TODO: Request only if takeout ID isn't set.
+        self.__client.takeout_id = (await self.__client(self.__request)).id
         return self
 
     def __exit__(self, *args):
-        return super().__getattribute__(
-            'c').loop.run_until_complete(self.__aexit__(*args))
+        return self.__client.loop.run_until_complete(self.__aexit__(*args))
 
     async def __aexit__(self, *args):
-        super().__setattr__('t', None)
+        # TODO: Reset only if takeout result is set.
+        self.__client.takeout_id = None
 
     async def __call__(self, request, ordered=False):
-        takeout_id = super().__getattribute__('t')
+        takeout_id = self.__client.takeout_id
         if takeout_id is None:
-            raise ValueError('Cannot call takeout methods outside of "with"')
+            raise ValueError('Takeout mode has not been initialized '
+                '(are you calling outside of "with"?)')
 
         single = not utils.is_list_like(request)
         requests = ((request,) if single else request)
@@ -57,28 +60,27 @@ class _TakeoutClient:
             await r.resolve(self, utils)
             wrapped.append(functions.InvokeWithTakeoutRequest(takeout_id, r))
 
-        return await super().__getattribute__('c')(
+        return await self.__client(
             wrapped[0] if single else wrapped, ordered=ordered)
 
     def __getattribute__(self, name):
-        if name.startswith('__'):
-            # We want to override special method names
-            if name == '__class__':
-                # See https://github.com/LonamiWebs/Telethon/issues/1103.
-                name = 'k'
-            return super().__getattribute__(name)
+        # We access class via type() because __class__ will recurse infinitely.
+        if name.startswith('__') and name not in type(self).__PROXY_INTERFACE:
+            raise AttributeError  # force call of __getattr__
 
-        value = getattr(super().__getattribute__('c'), name)
+        # Try to access attribute in the proxy object and check for the same
+        # attribute in the shadowed object (through our __getattr__) if failed.
+        return super().__getattribute__(name)
+
+    def __getattr__(self, name):
+        value = getattr(self.__client, name)
         if inspect.ismethod(value):
-            # Emulate bound methods behaviour by partially applying
-            # our proxy class as the self parameter instead of the client
+            # Emulate bound methods behavior by partially applying our proxy
+            # class as the self parameter instead of the client.
             return functools.partial(
-                getattr(super().__getattribute__('k'), name), self)
-        else:
-            return value
+                getattr(self.__client.__class__, name), self)
 
-    def __setattr__(self, name, value):
-        setattr(super().__getattribute__('c'), name, value)
+        return value
 
 
 class AccountMethods(UserMethods):
