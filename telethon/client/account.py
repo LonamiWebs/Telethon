@@ -12,13 +12,14 @@ class _TakeoutClient:
     """
     __PROXY_INTERFACE = ('__enter__', '__exit__', '__aenter__', '__aexit__')
 
-    def __init__(self, client, request):
+    def __init__(self, finalize, client, request):
         # We use the name mangling for attributes to make them inaccessible
         # from within the shadowed client object and to distinguish them from
         # its own attributes where needed.
+        self.__finalize = finalize
         self.__client = client
         self.__request = request
-        self.__success = True
+        self.__success = None
 
     @property
     def success(self):
@@ -50,9 +51,16 @@ class _TakeoutClient:
     def __exit__(self, *args):
         return self.__client.loop.run_until_complete(self.__aexit__(*args))
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self.__success is None and self.__finalize:
+            self.__success = exc_type is None
+
         if self.__success is not None:
-            await self.__client.end_takeout(self.__success)
+            result = await self(functions.account.FinishTakeoutSessionRequest(
+                self.__success))
+            if not result:
+                raise ValueError("Failed to finish the takeout.")
+            self.session.takeout_id = None
 
     async def __call__(self, request, ordered=False):
         takeout_id = self.__client.session.takeout_id
@@ -104,8 +112,8 @@ class _TakeoutClient:
 
 class AccountMethods(UserMethods):
     def takeout(
-            self, *, contacts=None, users=None, chats=None, megagroups=None,
-            channels=None, files=None, max_file_size=None):
+            self, finalize=True, *, contacts=None, users=None, chats=None,
+            megagroups=None, channels=None, files=None, max_file_size=None):
         """
         Creates a proxy object over the current :ref:`TelegramClient` through
         which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
@@ -135,11 +143,14 @@ class AccountMethods(UserMethods):
         before calling the method again.
 
         There's also a `success` property available in the takeout proxy
-        object, so you can set the boolean takeout result that will be sent
-        back to Telegram, from within the `with` body. You're also able to
-        set it to ``None`` so takeout will not be finished and its ID will
-        be preserved for future usage as `client.session.takeout_id
-        <telethon.sessions.abstract.Session.takeout_id>`. Default is ``True``.
+        object, so from the `with` body you can set the boolean result that
+        will be sent back to Telegram. But if it's left ``None`` as by
+        default, then the action is based on the `finalize` parameter. If
+        it's ``True`` then the takeout will be finished, and if no exception
+        occurred during it, then ``True`` will be considered as a result.
+        Otherwise, the takeout will not be finished and its ID will be
+        preserved for future usage as `client.session.takeout_id
+        <telethon.sessions.abstract.Session.takeout_id>`.
 
         Args:
             contacts (`bool`):
@@ -186,7 +197,7 @@ class AccountMethods(UserMethods):
         else:
             request = None
 
-        return _TakeoutClient(self, request)
+        return _TakeoutClient(finalize, self, request)
 
     async def end_takeout(self, success):
         """
@@ -195,8 +206,9 @@ class AccountMethods(UserMethods):
         Returns:
             ``True`` if the operation was successful, ``False`` otherwise.
         """
-        client = _TakeoutClient(self, None)
-        result = await client(
-            functions.account.FinishTakeoutSessionRequest(success))
-        self.session.takeout_id = None
-        return result
+        try:
+            async with _TakeoutClient(True, self, None) as takeout:
+                takeout.success = success
+        except ValueError:
+            return False
+        return True
