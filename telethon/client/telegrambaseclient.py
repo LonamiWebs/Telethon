@@ -262,7 +262,6 @@ class TelegramBaseClient(abc.ABC):
             )
         )
 
-        self._connection = connection
         self._sender = MTProtoSender(
             self.session.auth_key, self._loop,
             loggers=self._log,
