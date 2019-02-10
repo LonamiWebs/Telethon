@@ -174,16 +174,22 @@ class Conversation(ChatGetter):
             else:
                 indices[target_id] = len(self._incoming)
 
+        # We will always return a future from here, even if the result
+        # can be set immediately. Otherwise, needing to await only
+        # sometimes is an annoying edge case (i.e. we would return
+        # a `Message` but `get_response()` always `await`'s).
+        future = self._client.loop.create_future()
+
         # If there are enough responses saved return the next one
         last_idx = indices[target_id]
         if last_idx < len(self._incoming):
             incoming = self._incoming[last_idx]
             if condition(incoming, target_id):
                 indices[target_id] += 1
-                return incoming
+                future.set_result(incoming)
+                return future
 
         # Otherwise the next incoming response will be the one to use
-        future = self._client.loop.create_future()
         pending[target_id] = future
         return self._get_result(future, start_time, timeout)
 
@@ -268,6 +274,11 @@ class Conversation(ChatGetter):
         Conversation._custom_counter += 1
 
         future = asyncio.Future(loop=self._client.loop)
+
+        # We need the `async def` here because we want to block on the future
+        # from `_get_result` by using `await` on it. If we returned the future
+        # immediately we would `del` from `_custom` too early.
+
         async def result():
             try:
                 return await self._get_result(future, start_time, timeout)
