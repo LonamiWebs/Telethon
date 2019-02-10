@@ -1,5 +1,6 @@
 import os
 
+from .connection import Connection
 from .tcpabridged import ConnectionTcpAbridged
 from ...crypto import AESModeCTR
 
@@ -22,7 +23,8 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         return self._aes_decrypt.encrypt(await self._reader.readexactly(n))
 
     async def connect(self, timeout=None, ssl=None):
-        await super().connect(timeout=timeout, ssl=ssl)
+        # FIXME: that's an abstraction leak
+        await Connection.connect(self, timeout=timeout, ssl=ssl)
 
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee\xee\xee\xee')
