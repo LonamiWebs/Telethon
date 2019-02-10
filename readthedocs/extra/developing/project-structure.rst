@@ -33,11 +33,6 @@ The sender makes use of a ``Connection`` class which knows the format in
 which outgoing messages should be sent (how to encode their length and
 their body, if they're further encrypted).
 
-For now, all connection modes make use of the ``extensions/tcpclient``,
-a C#-like ``TcpClient`` to ease working with sockets in Python. All the
-``TcpClient`` know is how to connect through TCP and writing/reading
-from the socket with optional cancel.
-
 Auto-generated code
 *******************
 
