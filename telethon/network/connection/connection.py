@@ -95,14 +95,6 @@ class Connection(abc.ABC):
         if self._writer:
             self._writer.close()
 
-    def clone(self):
-        """
-        Creates a clone of the connection.
-        """
-        # TODO: Should we pass proxy?
-        return self.__class__(
-            self._ip, self._port, self._dc_id, loop=self._loop)
-
     def send(self, data):
         """
         Sends a packet of data through this connection mode.
