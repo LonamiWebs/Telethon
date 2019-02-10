@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from .. import version, __name__ as __base_name__
 from ..crypto import rsa
 from ..extensions import markdown
-from ..network import MTProtoSender, ConnectionTcpFull
+from ..network import MTProtoSender, ConnectionTcpFull, ConnectionTcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
@@ -245,6 +245,8 @@ class TelegramBaseClient(abc.ABC):
 
         assert isinstance(connection, type)
         self._connection = connection
+        init_proxy = None if connection is not ConnectionTcpMTProxy else \
+            types.InputClientProxy(*ConnectionTcpMTProxy.address_info(proxy))
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -258,7 +260,8 @@ class TelegramBaseClient(abc.ABC):
                 lang_code=lang_code,
                 system_lang_code=system_lang_code,
                 lang_pack='',  # "langPacks are for official apps only"
-                query=x
+                query=x,
+                proxy=init_proxy
             )
         )
 
@@ -345,6 +348,7 @@ class TelegramBaseClient(abc.ABC):
         await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
+            self.session.dc_id,
             loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
@@ -474,6 +478,7 @@ class TelegramBaseClient(abc.ABC):
         await sender.connect(self._connection(
             dc.ip_address,
             dc.port,
+            dc.id,
             loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
@@ -505,6 +510,7 @@ class TelegramBaseClient(abc.ABC):
                 await sender.connect(self._connection(
                     dc.ip_address,
                     dc.port,
+                    dc.id,
                     loop=self._loop,
                     loggers=self._log,
                     proxy=self._proxy

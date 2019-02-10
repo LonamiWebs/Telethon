@@ -18,9 +18,10 @@ class Connection(abc.ABC):
     ``ConnectionError``, which will raise when attempting to send if
     the client is disconnected (includes remote disconnections).
     """
-    def __init__(self, ip, port, *, loop, loggers, proxy=None):
+    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
         self._ip = ip
         self._port = port
+        self._dc_id = dc_id  # only for MTProxy, it's an abstraction leak
         self._loop = loop
         self._log = loggers[__name__]
         self._proxy = proxy
@@ -93,12 +94,6 @@ class Connection(abc.ABC):
 
         if self._writer:
             self._writer.close()
-
-    def clone(self):
-        """
-        Creates a clone of the connection.
-        """
-        return self.__class__(self._ip, self._port, loop=self._loop)
 
     def send(self, data):
         """

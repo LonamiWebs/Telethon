@@ -10,7 +10,7 @@ from ..tl.types import (
     ResPQ, PQInnerData, ServerDHParamsFail, ServerDHParamsOk,
     ServerDHInnerData, ClientDHInnerData, DhGenOk, DhGenRetry, DhGenFail
 )
-from .. import helpers as utils
+from .. import helpers
 from ..crypto import AES, AuthKey, Factorization, rsa
 from ..errors import SecurityError
 from ..extensions import BinaryReader
@@ -94,7 +94,7 @@ async def do_authentication(sender):
         'Step 2.2 answer was %s' % server_dh_params
 
     # Step 3 sending: Complete DH Exchange
-    key, iv = utils.generate_key_data_from_nonce(
+    key, iv = helpers.generate_key_data_from_nonce(
         res_pq.server_nonce, new_nonce
     )
     if len(server_dh_params.encrypted_answer) % 16 != 0:
