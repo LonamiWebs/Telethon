@@ -26,7 +26,7 @@ class ConnectionTcpMTProxy(ConnectionTcpObfuscated):
         self._secret = bytes.fromhex(proxy[2])
         if len(self._secret) != 16:
             raise ValueError(
-                "MTProxy secure mode is not implemented for now, sorry"
+                "MTProxy secure mode is not implemented for now"
                 if len(self._secret) == 17 and self._secret[0] == 0xDD else
                 "MTProxy secret must be a hex-string representing 16 bytes"
             )
