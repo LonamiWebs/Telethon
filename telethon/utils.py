@@ -956,6 +956,11 @@ def pack_bot_file_id(file):
 
     If an invalid parameter is given, it will ``return None``.
     """
+    if isinstance(file, types.MessageMediaDocument):
+        file = file.document
+    elif isinstance(file, types.MessageMediaPhoto):
+        file = file.photo
+
     if isinstance(file, types.Document):
         file_type = 5
         for attribute in file.attributes:
