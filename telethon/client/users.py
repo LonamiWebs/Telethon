@@ -365,13 +365,12 @@ class UserMethods(TelegramBaseClient):
             return utils.get_peer_id(peer, add_mark=add_mark)
 
         try:
-            if peer.SUBCLASS_OF_ID in (0x2d45687, 0xc91c90b6):
+            if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
                 # 0x2d45687, 0xc91c90b6 == crc32(b'Peer') and b'InputPeer'
-                return utils.get_peer_id(peer)
+                peer = await self.get_input_entity(peer)
         except AttributeError:
-            pass
+            peer = await self.get_input_entity(peer)
 
-        peer = await self.get_input_entity(peer)
         if isinstance(peer, types.InputPeerSelf):
             peer = await self.get_me(input_peer=True)
 
