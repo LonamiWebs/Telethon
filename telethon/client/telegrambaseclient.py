@@ -61,8 +61,11 @@ class TelegramBaseClient(abc.ABC):
             By default this is ``False`` as IPv6 support is not
             too widespread yet.
 
-        proxy (`tuple` | `dict`, optional):
-            A tuple consisting of ``(socks.SOCKS5, 'host', port)``.
+        proxy (`tuple` | `list` | `dict`, optional):
+            An iterable consisting of the proxy info. If `connection` is
+            `ConnectionTcpMTProxy`, then it should contain MTProxy credentials:
+            ``('hostname', port, 'secret')``. Otherwise, it's meant to store
+            function parameters for PySocks, like ``(type, 'hostname', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
         timeout (`int` | `float`, optional):
