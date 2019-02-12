@@ -221,6 +221,22 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return self
 
+    def _parse_phone_and_hash(self, phone, phone_hash):
+        """
+        Helper method to both parse and validate phone and its hash.
+        """
+        phone = utils.parse_phone(phone) or self._phone
+        if not phone:
+            raise ValueError(
+                'Please make sure to call send_code_request first.'
+            )
+
+        phone_code_hash = phone_hash or self._phone_code_hash.get(phone, None)
+        if not phone_code_hash:
+            raise ValueError('You also need to provide a phone_code_hash.')
+
+        return phone, phone_hash
+
     async def sign_in(
             self, phone=None, code=None, *, password=None,
             bot_token=None, phone_code_hash=None):
@@ -248,9 +264,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 Used to sign in as a bot. Not all requests will be available.
                 This should be the hash the @BotFather gave you.
 
-            phone_code_hash (`str`):
-                The hash returned by .send_code_request. This can be set to None
-                to use the last hash known.
+            phone_code_hash (`str`, optional):
+                The hash returned by `send_code_request`. This can be left as
+                ``None`` to use the last hash known for the phone to be used.
 
         Returns:
             The signed in user, or the information about
@@ -263,16 +279,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         if phone and not code and not password:
             return await self.send_code_request(phone)
         elif code:
-            phone = utils.parse_phone(phone) or self._phone
-            phone_code_hash = \
-                phone_code_hash or self._phone_code_hash.get(phone, None)
-
-            if not phone:
-                raise ValueError(
-                    'Please make sure to call send_code_request first.'
-                )
-            if not phone_code_hash:
-                raise ValueError('You also need to provide a phone_code_hash.')
+            phone, phone_code_hash = \
+                self._parse_phone_and_hash(phone, phone_code_hash)
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
@@ -296,7 +304,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return self._on_login(result.user)
 
-    async def sign_up(self, code, first_name, last_name=''):
+    async def sign_up(self, code, first_name, last_name='',
+                      *, phone=None, phone_code_hash=None):
         """
         Signs up to Telegram if you don't have an account yet.
         You must call .send_code_request(phone) first.
@@ -316,6 +325,14 @@ class AuthMethods(MessageParseMethods, UserMethods):
             last_name (`str`, optional)
                 Optional last name.
 
+            phone (`str` | `int`, optional):
+                The phone to sign up. This will be the last phone used by
+                default (you normally don't need to set this).
+
+            phone_code_hash (`str`, optional):
+                The hash returned by `send_code_request`. This can be left as
+                ``None`` to use the last hash known for the phone to be used.
+
         Returns:
             The new created :tl:`User`.
         """
@@ -331,9 +348,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
             sys.stderr.write("{}\n".format(t))
             sys.stderr.flush()
 
+        phone, phone_code_hash = \
+            self._parse_phone_and_hash(phone, phone_code_hash)
+
         result = await self(functions.auth.SignUpRequest(
-            phone_number=self._phone,
-            phone_code_hash=self._phone_code_hash.get(self._phone, ''),
+            phone_number=phone,
+            phone_code_hash=phone_code_hash,
             phone_code=str(code),
             first_name=first_name,
             last_name=last_name
