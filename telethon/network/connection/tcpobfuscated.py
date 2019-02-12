@@ -38,7 +38,6 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
                 break
 
         random = bytearray(random)
-        random[56] = random[57] = random[58] = random[59] = 0xef
         random_reversed = random[55:7:-1]  # Reversed (8, len=48)
 
         # Encryption has "continuous buffer" enabled
@@ -50,7 +49,9 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         self._aes_encrypt = AESModeCTR(encrypt_key, encrypt_iv)
         self._aes_decrypt = AESModeCTR(decrypt_key, decrypt_iv)
 
+        random[56:60] = b'\xef\xef\xef\xef'
         random[56:64] = self._compose_tail(bytes(random))
+
         self._writer.write(random)
         await self._writer.drain()
 

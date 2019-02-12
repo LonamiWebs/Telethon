@@ -36,5 +36,4 @@ class ConnectionTcpMTProxy(ConnectionTcpObfuscated):
 
     def _compose_tail(self, data):
         dc_id_bytes = self._dc_id.to_bytes(2, "little", signed=True)
-        tail_bytes = super()._compose_tail(data)
-        return tail_bytes[:4] + dc_id_bytes + tail_bytes[6:]
+        return super()._compose_tail(data[:60] + dc_id_bytes + data[62:])
