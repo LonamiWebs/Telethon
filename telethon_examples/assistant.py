@@ -8,7 +8,7 @@ import sys
 import time
 import urllib.parse
 
-from telethon import TelegramClient, events, types, custom, utils
+from telethon import TelegramClient, events, types, custom, utils, errors
 from telethon.extensions import markdown
 
 logging.basicConfig(level=logging.WARNING)
@@ -60,7 +60,7 @@ READ_FULL = (
 
 SEARCH = (
     'Remember [search is your friend]'
-    '(https://lonamiwebs.github.io/Telethon/?q={})'
+    '(https://lonamiwebs.github.io/Telethon/?q={}&redirect=no)'
 )
 
 DOCS = 'TL Reference for [{}](https://lonamiwebs.github.io/Telethon/?q={})'
@@ -117,7 +117,8 @@ ALREADY_FIXED = (
 GOOD_RESOURCES = (
     "Some good resources to learn Python:\n"
     "• [Official Docs](https://docs.python.org/3/tutorial/index.html).\n"
-    "• [Dive Into Python 3](http://www.diveintopython3.net/).\n"
+    "• [Dive Into Python 3](https://rawcdn.githack.com/diveintomark/"
+    "diveintopython3/master/table-of-contents.html).\n"
     "• [Learn Python](https://www.learnpython.org/).\n"
     "• [Project Python](http://projectpython.net/).\n"
     "• [Computer Science Circles](https://cscircles.cemc.uwaterloo.ca/).\n"
@@ -146,7 +147,11 @@ last_welcome = {}
 async def handler(event):
     if event.user_joined:
         if event.chat_id in last_welcome:
-            await last_welcome[event.chat_id].delete()
+            try:
+                await last_welcome[event.chat_id].delete()
+            except errors.MessageDeleteForbiddenError:
+                # We believe this happens when trying to delete old messages
+                pass
 
         last_welcome[event.chat_id] = await event.reply(WELCOME[event.chat_id])
 
