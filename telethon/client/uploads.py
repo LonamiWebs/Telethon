@@ -337,6 +337,12 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             else:
                 file_name = str(file_id)
 
+        # If the file name lacks extension, add it if possible.
+        # Else Telegram complains with `PHOTO_EXT_INVALID_ERROR`
+        # even if the uploaded image is indeed a photo.
+        if not os.path.splitext(file_name)[-1]:
+            file_name += utils._get_extension(file)
+
         # Determine whether the file is too big (over 10MB) or not
         # Telegram does make a distinction between smaller or larger files
         is_large = file_size > 10 * 1024 * 1024

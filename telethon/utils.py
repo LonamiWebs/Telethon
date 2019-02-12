@@ -4,6 +4,9 @@ to convert between an entity like a User, Chat, etc. into its Input version)
 """
 import base64
 import binascii
+import imghdr
+import inspect
+import io
 import itertools
 import math
 import mimetypes
@@ -16,7 +19,6 @@ from types import GeneratorType
 from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate
 from .tl import types
-import inspect
 
 try:
     import hachoir
@@ -632,6 +634,12 @@ def _get_extension(file):
     """
     if isinstance(file, str):
         return os.path.splitext(file)[-1]
+    elif isinstance(file, bytes):
+        kind = imghdr.what(io.BytesIO(file))
+        return ('.' + kind) if kind else ''
+    elif isinstance(file, io.IOBase) and file.seekable():
+        kind = imghdr.what(file) is not None
+        return ('.' + kind) if kind else ''
     elif getattr(file, 'name', None):
         return _get_extension(file.name)
     else:
