@@ -1,3 +1,4 @@
 cryptg
 pysocks
 hachoir3
+pillow

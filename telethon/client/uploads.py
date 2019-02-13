@@ -31,6 +31,7 @@ class _CacheType:
 
 
 def _resize_photo_if_needed(file, is_image, width=1280, height=1280):
+    # https://github.com/telegramdesktop/tdesktop/blob/12905f0dcb9d513378e7db11989455a1b764ef75/Telegram/SourceFiles/boxes/photo_crop_box.cpp#L254
     if (not is_image
             or PIL is None
             or (isinstance(file, io.IOBase) and not file.seekable())):
@@ -163,6 +164,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         Notes:
             If the ``hachoir3`` package (``hachoir`` module) is installed,
             it will be used to determine metadata from audio and video files.
+
+            If the `pillow` package is installed and you are sending a photo,
+            it will be resized to fit within the maximum dimensions allowed
+            by Telegram to avoid ``errors.PhotoInvalidDimensionsError``. This
+            cannot be done if you are sending :tl:`InputFile`, however.
 
         Returns:
             The `telethon.tl.custom.message.Message` (or messages) containing
