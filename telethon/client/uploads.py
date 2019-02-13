@@ -11,6 +11,12 @@ from .users import UserMethods
 from .. import utils, helpers
 from ..tl import types, functions, custom
 
+try:
+    import PIL
+    import PIL.Image
+except ImportError:
+    PIL = None
+
 
 class _CacheType:
     """Like functools.partial but pretends to be the wrapped class."""
@@ -22,6 +28,34 @@ class _CacheType:
 
     def __eq__(self, other):
         return self._cls == other
+
+
+def _resize_photo_if_needed(file, is_image, width=1280, height=1280):
+    if (not is_image
+            or PIL is None
+            or (isinstance(file, io.IOBase) and not file.seekable())):
+        return file
+
+    before = file.tell() if isinstance(file, io.IOBase) else None
+    if isinstance(file, bytes):
+        file = io.BytesIO(file)
+
+    try:
+        with PIL.Image.open(file) as image:
+            if image.width <= width and image.height <= height:
+                return file
+
+            image.thumbnail((width, height), PIL.Image.ANTIALIAS)
+            buffer = io.BytesIO()
+            image.save(buffer, 'JPEG')
+            buffer.seek(0)
+            return buffer
+
+    except IOError:
+        return file
+    finally:
+        if before is not None:
+            file.seek(before, io.SEEK_SET)
 
 
 class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
@@ -427,7 +461,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         use_cache = types.InputPhoto if as_image else types.InputDocument
         if not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(
-                file, progress_callback=progress_callback,
+                _resize_photo_if_needed(file, as_image),
+                progress_callback=progress_callback,
                 use_cache=use_cache if allow_cache else None
             )
         elif re.match('https?://', file):
