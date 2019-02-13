@@ -13,7 +13,12 @@ class MessageContainer(TLObject):
     # Maximum amount of messages that can't be sent inside a single
     # container, inclusive. Beyond this limit Telegram will respond
     # with BAD_MESSAGE 64 (invalid container).
-    MAXIMUM_LENGTH = 1024
+    #
+    # This limit is not 100% accurate and may in some cases be higher.
+    # However, sending up to 100 requests at once in a single container
+    # is a reasonable conservative value, since it could also depend on
+    # other factors like size per request, but we cannot know this.
+    MAXIMUM_LENGTH = 100
 
     def __init__(self, messages):
         self.messages = messages
