@@ -452,18 +452,30 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         if isinstance(file, pathlib.Path):
             file = str(file.absolute())
 
+        as_image = utils.is_image(file) and not force_document
+
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
             # getting the input media for whatever they passed and send it.
+            #
+            # We pass all attributes since these will be used if the user
+            # passed :tl:`InputFile`, and all information may be relevant.
             try:
-                return None, utils.get_input_media(file)
+                return (None, utils.get_input_media(
+                    file,
+                    is_photo=as_image,
+                    attributes=attributes,
+                    force_document=force_document,
+                    voice_note=voice_note,
+                    video_note=video_note,
+                    supports_streaming=supports_streaming
+                ))
             except TypeError:
                 return None, None  # Can't turn whatever was given into media
 
         media = None
         file_handle = None
-        as_image = utils.is_image(file) and not force_document
         use_cache = types.InputPhoto if as_image else types.InputDocument
         if not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(

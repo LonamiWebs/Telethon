@@ -355,12 +355,17 @@ def get_input_geo(geo):
     _raise_cast_fail(geo, 'InputGeoPoint')
 
 
-def get_input_media(media, is_photo=False):
+def get_input_media(
+        media, *,
+        is_photo=False, attributes=None, force_document=False,
+        voice_note=False, video_note=False, supports_streaming=False
+):
     """
     Similar to :meth:`get_input_peer`, but for media.
 
-    If the media is a file location and ``is_photo`` is known to be ``True``,
-    it will be treated as an :tl:`InputMediaUploadedPhoto`.
+    If the media is :tl:`InputFile` and ``is_photo`` is known to be ``True``,
+    it will be treated as an :tl:`InputMediaUploadedPhoto`. Else, the rest
+    of parameters will indicate how to treat it.
     """
     try:
         if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
@@ -394,15 +399,20 @@ def get_input_media(media, is_photo=False):
             id=get_input_document(media)
         )
 
-    if isinstance(media, types.FileLocation):
+    if isinstance(media, (types.InputFile, types.InputFileBig)):
         if is_photo:
             return types.InputMediaUploadedPhoto(file=media)
         else:
-            return types.InputMediaUploadedDocument(
-                file=media,
-                mime_type='application/octet-stream',  # unknown, assume bytes
-                attributes=[types.DocumentAttributeFilename('unnamed')]
+            attrs, mime = get_attributes(
+                media,
+                attributes=attributes,
+                force_document=force_document,
+                voice_note=voice_note,
+                video_note=video_note,
+                supports_streaming=supports_streaming
             )
+            return types.InputMediaUploadedDocument(
+                file=media, mime_type=mime, attributes=attrs)
 
     if isinstance(media, types.MessageMediaGame):
         return types.InputMediaGame(id=media.game.id)
@@ -487,6 +497,7 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     Get a list of attributes for the given file and
     the mime type as a tuple ([attribute], mime_type).
     """
+    # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase` streams
     name = file if isinstance(file, str) else getattr(file, 'name', 'unnamed')
     if mime_type is None:
         mime_type = mimetypes.guess_type(name)[0]
@@ -641,6 +652,7 @@ def _get_extension(file):
         kind = imghdr.what(file) is not None
         return ('.' + kind) if kind else ''
     elif getattr(file, 'name', None):
+        # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase`
         return _get_extension(file.name)
     else:
         return ''
