@@ -905,6 +905,16 @@ def resolve_bot_file_id(file_id):
     data = data[:-1]
     if len(data) == 24:
         file_type, dc_id, media_id, access_hash = struct.unpack('<iiqq', data)
+
+        if not (1 <= dc_id <= 5):
+            # Valid `file_id`'s must have valid DC IDs. Since this method is
+            # called when sending a file and the user may have entered a path
+            # they believe is correct but the file doesn't exist, this method
+            # may detect a path as "valid" bot `file_id` even when it's not.
+            # By checking the `dc_id`, we greatly reduce the chances of this
+            # happening.
+            return None
+
         attributes = []
         if file_type == 3 or file_type == 9:
             attributes.append(types.DocumentAttributeAudio(
@@ -941,6 +951,9 @@ def resolve_bot_file_id(file_id):
     elif len(data) == 44:
         (file_type, dc_id, media_id, access_hash,
             volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
+
+        if not (1 <= dc_id <= 5):
+            return None
 
         # Thumbnails (small) always have ID 0; otherwise size 'x'
         photo_size = 's' if media_id or access_hash else 'x'
