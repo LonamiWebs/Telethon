@@ -231,9 +231,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 'Please make sure to call send_code_request first.'
             )
 
-        phone_code_hash = phone_hash or self._phone_code_hash.get(phone, None)
-        if not phone_code_hash:
-            raise ValueError('You also need to provide a phone_code_hash.')
+        phone_hash = phone_hash or self._phone_code_hash.get(phone, None)
+        if not phone_hash:
+            raise ValueError('You also need to provide a phone_hash.')
 
         return phone, phone_hash
 
