@@ -202,7 +202,7 @@ class TelegramBaseClient(abc.ABC):
         if isinstance(session, str) or session is None:
             try:
                 session = SQLiteSession(session)
-            except ValueError:
+            except ImportError:
                 import warnings
                 warnings.warn(
                     'The sqlite3 module is not available under this '

@@ -14,8 +14,10 @@ from ..tl.types import (
 
 try:
     import sqlite3
-except ImportError:
+    sqlite3_err = None
+except ImportError as e:
     sqlite3 = None
+    sqlite3_err = type(e)
 
 EXTENSION = '.session'
 CURRENT_VERSION = 5  # database version
@@ -32,7 +34,7 @@ class SQLiteSession(MemorySession):
 
     def __init__(self, session_id=None):
         if sqlite3 is None:
-            raise ValueError('sqlite3 is not installed')
+            raise sqlite3_err
 
         super().__init__()
         self.filename = ':memory:'
