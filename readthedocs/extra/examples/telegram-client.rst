@@ -393,6 +393,57 @@ You can send albums if you pass more than one file:
 
 The caption can also be a list to match the different photos.
 
+Reusing Uploaded Files
+**********************
+
+All files you send are automatically cached, so if you do:
+
+.. code-block:: python
+
+    client.send_file(first_chat, 'document.txt')
+    client.send_file(second_chat, 'document.txt')
+
+The ``'document.txt'`` file will only be uploaded once. You
+can disable this behaviour by settings ``allow_cache=False``:
+
+.. code-block:: python
+
+    client.send_file(first_chat, 'document.txt', allow_cache=False)
+    client.send_file(second_chat, 'document.txt', allow_cache=False)
+
+Disabling cache is the only way to send the same document with different
+attributes (for example, you send an ``.ogg`` as a song but now you want
+it to show as a voice note; you probably need to disable the cache).
+
+However, you can *upload* the file once (not sending it yet!), and *then*
+you can send it with different attributes. This means you can send an image
+as a photo and a document:
+
+.. code-block:: python
+
+    file = client.upload_file('photo.jpg')
+    client.send_file(chat, file)                       # sends as photo
+    client.send_file(chat, file, force_document=True)  # sends as document
+
+    file.name = 'not a photo.jpg'
+    client.send_file(chat, file, force_document=True)  # document, new name
+
+Or, the example described before:
+
+.. code-block:: python
+
+    file = client.upload_file('song.ogg')
+    client.send_file(chat, file)                   # sends as song
+    client.send_file(chat, file, voice_note=True)  # sends as voice note
+
+The ``file`` returned by `client.upload_file
+<telethon.client.uploads.UploadMethods.upload_file>` represents the uploaded
+file, not an immutable document (that's why the attributes can change, because
+they are set later). This handle can be used only for a limited amount of time
+(somewhere within a day). Telegram decides this limit and it is not public.
+However, a day is often more than enough.
+
+
 Sending Messages with Buttons
 *****************************
 
