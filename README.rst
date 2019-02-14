@@ -64,6 +64,16 @@ Doing stuff
     async def handler(event):
         await event.respond('Hey!')
 
+our official groups
+----------
+
+Join `the main chat`_
+
+Join `the offtopic chat`_
+
+Group for `country-limited accounts like Iran`_
+
+Join `LonamiWebs general talk`_
 
 Next steps
 ----------
@@ -76,6 +86,10 @@ useful information.
 .. _MTProto: https://core.telegram.org/mtproto
 .. _Telegram: https://telegram.org
 .. _Compatibility and Convenience: https://telethon.readthedocs.io/en/latest/extra/basic/compatibility-and-convenience.html
+.. _the main chat: http://t.me/TelethonChat
+.. _the offtopic chat: http://t.me/TelethonOfftopic
+.. _country-limited accounts like Iran: http://t.me/joinchat/ENIGn1OHKk074GGhkGR0Kg
+.. _LonamiWebs general talk: http://t.me/LonamiWebs
 .. _Read The Docs: https://telethon.readthedocs.io
 
 .. |logo| image:: logo.svg
