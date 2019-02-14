@@ -145,6 +145,12 @@ class InlineQuery(EventBuilder):
                         r2 = builder.article('Be bad', text="I don't like you")
                         await inline.answer([r1, r2])
 
+                    You can send up to 50 results as documented in
+                    https://core.telegram.org/bots/api#answerinlinequery.
+                    Sending more will raise ``ResultsTooMuchError``,
+                    and you should consider using `next_offset` to
+                    paginate them.
+
                 cache_time (`int`, optional):
                     For how long this result should be cached on
                     the user's client. Defaults to 0 for no cache.

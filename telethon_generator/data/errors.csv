@@ -187,7 +187,9 @@ RANGES_INVALID,400,Invalid range provided
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
+RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs.
 RESULT_TYPE_INVALID,400,Result type invalid
+RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
 RIGHT_FORBIDDEN,403,Your admin rights do not allow you to do this
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."

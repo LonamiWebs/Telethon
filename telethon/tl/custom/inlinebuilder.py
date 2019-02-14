@@ -43,8 +43,15 @@ class InlineBuilder:
         id (`str`, optional):
             The string ID to use for this result. If not present, it
             will be the SHA256 hexadecimal digest of converting the
-            request with empty ID to ``bytes()``, so that the ID will
-            be deterministic for the same input.
+            created :tl:`InputBotInlineResult` with empty ID to ``bytes()``,
+            so that the ID will be deterministic for the same input.
+
+            .. note::
+
+                If two inputs are exactly the same, their IDs will be the same
+                too. If you send two articles with the same ID, it will raise
+                ``ResultIdDuplicateError``. Consider giving them an explicit
+                ID if you need to send two results that are the same.
     """
     def __init__(self, client):
         self._client = client
