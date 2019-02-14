@@ -30,7 +30,9 @@ class _CacheType:
         return self._cls == other
 
 
-def _resize_photo_if_needed(file, is_image, width=1280, height=1280):
+def _resize_photo_if_needed(
+        file, is_image, width=64, height=64, background=(255, 255, 255)):
+
     # https://github.com/telegramdesktop/tdesktop/blob/12905f0dcb9d513378e7db11989455a1b764ef75/Telegram/SourceFiles/boxes/photo_crop_box.cpp#L254
     if (not is_image
             or PIL is None
@@ -47,8 +49,16 @@ def _resize_photo_if_needed(file, is_image, width=1280, height=1280):
                 return file
 
             image.thumbnail((width, height), PIL.Image.ANTIALIAS)
+
+            # We could save the resized image with the original format, but
+            # JPEG often compresses better -> smaller size -> faster upload
+            # We need to mask away the alpha channel ([3]), since otherwise
+            # IOError is raised when trying to save alpha channels in JPEG.
+            result = PIL.Image.new('RGB', image.size, background)
+            result.paste(image, mask=image.split()[3])
+
             buffer = io.BytesIO()
-            image.save(buffer, 'JPEG')
+            result.save(buffer, 'JPEG')
             buffer.seek(0)
             return buffer
 
