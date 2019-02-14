@@ -60,10 +60,13 @@ class UserMethods(TelegramBaseClient):
                     result = await future
                     self.session.process_entities(result)
                     return result
-            except (errors.ServerError, errors.RpcCallFailError) as e:
+            except (errors.ServerError, errors.RpcCallFailError,
+                    errors.RpcMcgetFailError) as e:
                 self._log[__name__].warning(
                     'Telegram is having internal issues %s: %s',
                     e.__class__.__name__, e)
+
+                await asyncio.sleep(2)
             except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
                 if utils.is_list_like(request):
                     request = request[request_index]

@@ -233,7 +233,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         phone_hash = phone_hash or self._phone_code_hash.get(phone, None)
         if not phone_hash:
-            raise ValueError('You also need to provide a phone_hash.')
+            raise ValueError('You also need to provide a phone_code_hash.')
 
         return phone, phone_hash
 
