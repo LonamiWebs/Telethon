@@ -178,11 +178,17 @@ class InlineQuery(EventBuilder):
                 return
 
             if results:
-                results = [self._as_awaitable(x, self._client.loop)
+                futures = [self._as_future(x, self._client.loop)
                            for x in results]
 
-                done, _ = await asyncio.wait(results, loop=self._client.loop)
-                results = [x.result() for x in done]
+                await asyncio.wait(futures, loop=self._client.loop)
+
+                # All futures will be in the `done` *set* that `wait` returns.
+                #
+                # Precisely because it's a `set` and not a `list`, it
+                # will not preserve the order, but since all futures
+                # completed we can use our original, ordered `list`.
+                results = [x.result() for x in futures]
             else:
                 results = []
 
@@ -202,9 +208,9 @@ class InlineQuery(EventBuilder):
             )
 
         @staticmethod
-        def _as_awaitable(obj, loop):
+        def _as_future(obj, loop):
             if inspect.isawaitable(obj):
-                return obj
+                return asyncio.ensure_future(obj, loop=loop)
 
             f = loop.create_future()
             f.set_result(obj)
