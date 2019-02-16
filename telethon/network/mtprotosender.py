@@ -386,20 +386,27 @@ class MTProtoSender:
             data = self._state.encrypt_message_data(data)
             try:
                 await self._connection.send(data)
-            except ConnectionError:
-                self._log.info('Connection closed while sending data')
-                self._start_reconnect()
-                return
+            except ConnectionError as e:
+                __log__.error('Connection closed while sending data')
+                # TODO we will reconnect in _recv loop
+                # this will cause double reconnection
+                # self._start_reconnect()
+                error = e
 
             for state in batch:
                 if not isinstance(state, list):
                     if isinstance(state.request, TLRequest):
-                        self._pending_state[state.msg_id] = state
+                        if not error:
+                            self._pending_state[state.msg_id] = state
+                        else:
+                            state.future.set_exception(error)
                 else:
                     for s in state:
                         if isinstance(s.request, TLRequest):
-                            self._pending_state[s.msg_id] = s
-
+                            if not error:
+                                self._pending_state[s.msg_id] = s
+                            else:
+                                s.future.set_exception(error)
             self._log.debug('Encrypted messages put in a queue to be sent')
 
     @_cancellable
