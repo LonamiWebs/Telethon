@@ -313,7 +313,7 @@ async def handler(event):
     text = 'Available commands:\n'
     for callback, handler in bot.list_event_handlers():
         if isinstance(handler, events.NewMessage) and callback.__doc__:
-            text += f'\n{callback.__doc__}'
+            text += f'\n{callback.__doc__.strip()}'
     text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
             'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
 

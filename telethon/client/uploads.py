@@ -184,6 +184,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             The `telethon.tl.custom.message.Message` (or messages) containing
             the sent file, or messages if a list of them was passed.
         """
+        # i.e. ``None`` was used
+        if not file:
+            raise TypeError('Cannot use {!r} as file'.format(file))
+
         if not caption:
             caption = ''
 
@@ -242,6 +246,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             voice_note=voice_note, video_note=video_note,
             supports_streaming=supports_streaming
         )
+
+        # e.g. invalid cast from :tl:`MessageMediaWebPage`
+        if not media:
+            raise TypeError('Cannot use {!r} as file'.format(file))
 
         markup = self.build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
