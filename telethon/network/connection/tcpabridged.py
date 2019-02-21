@@ -9,10 +9,8 @@ class ConnectionTcpAbridged(Connection):
     only require 1 byte if the packet length is less than
     508 bytes (127 << 2, which is very common).
     """
-    async def connect(self, timeout=None, ssl=None):
-        await super().connect(timeout=timeout, ssl=ssl)
+    def _init_conn(self):
         self._writer.write(b'\xef')
-        await self._writer.drain()
 
     def _write(self, data):
         """

@@ -76,6 +76,9 @@ class Connection(abc.ABC):
                 await asyncio.open_connection(sock=s, loop=self._loop)
 
         self._connected = True
+        self._init_conn()
+        await self._writer.drain()
+
         self._send_task = self._loop.create_task(self._send_loop())
         self._recv_task = self._loop.create_task(self._recv_loop())
 
@@ -169,6 +172,18 @@ class Connection(abc.ABC):
                 await self._recv_queue.put(data)
             except asyncio.CancelledError:
                 break
+
+    @abc.abstractmethod
+    def _init_conn(self):
+        """
+        This method will be called after `connect` is called.
+        After this method finishes, the writer will be drained.
+
+        Subclasses should make use of this if they need to send
+        data to Telegram to indicate which connection mode will
+        be used.
+        """
+        raise NotImplemented
 
     @abc.abstractmethod
     def _send(self, data):

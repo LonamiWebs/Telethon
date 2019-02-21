@@ -24,10 +24,7 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
     async def _read(self, n):
         return self._aes_decrypt.encrypt(await self._reader.readexactly(n))
 
-    async def connect(self, timeout=None, ssl=None):
-        # FIXME: that's an abstraction leak
-        await Connection.connect(self, timeout=timeout, ssl=ssl)
-
+    def _init_conn(self):
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee\xee\xee\xee')
         while True:
@@ -53,7 +50,6 @@ class ConnectionTcpObfuscated(ConnectionTcpAbridged):
         random[56:64] = self._compose_tail(bytes(random))
 
         self._writer.write(random)
-        await self._writer.drain()
 
     # Next functions provide the variable parts of the connection handshake.
     # This is necessary to modify obfuscated2 the way that MTProxy requires.
