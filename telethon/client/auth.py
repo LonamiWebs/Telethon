@@ -403,7 +403,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         if not phone_hash:
             try:
                 result = await self(functions.auth.SendCodeRequest(
-                    phone, self.api_id, self.api_hash))
+                    phone, self.api_id, self.api_hash, types.CodeSettings()))
             except errors.AuthRestartError:
                 return self.send_code_request(phone, force_sms=force_sms)
 
