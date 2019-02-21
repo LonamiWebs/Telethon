@@ -173,7 +173,6 @@ class Connection(abc.ABC):
             except asyncio.CancelledError:
                 break
 
-    @abc.abstractmethod
     def _init_conn(self):
         """
         This method will be called after `connect` is called.
@@ -183,7 +182,6 @@ class Connection(abc.ABC):
         data to Telegram to indicate which connection mode will
         be used.
         """
-        raise NotImplemented
 
     @abc.abstractmethod
     def _send(self, data):
