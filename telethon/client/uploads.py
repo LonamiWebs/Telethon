@@ -302,9 +302,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
-                fm = utils.get_input_photo(r.photo)
-                self.session.cache_file(fh.md5, fh.size, fm)
-                fm = types.InputMediaPhoto(fm)
+                self.session.cache_file(
+                    fh.md5, fh.size, utils.get_input_photo(r.photo))
+
+                fm = utils.get_input_media(r.photo)
 
             if captions:
                 caption, msg_entities = captions.pop()
