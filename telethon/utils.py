@@ -662,7 +662,11 @@ def is_image(file):
     """
     Returns ``True`` if the file extension looks like an image file to Telegram.
     """
-    return re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
+    match = re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
+    if match:
+        return True
+    else:
+        return isinstance(resolve_bot_file_id(file), types.Photo)
 
 
 def is_gif(file):

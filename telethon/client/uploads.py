@@ -293,22 +293,25 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         # Need to upload the media first, but only if they're not cached yet
         media = []
         for file in files:
-            # fh will either be InputPhoto or a modified InputFile
-            fh = await self.upload_file(file, use_cache=types.InputPhoto)
-            if not isinstance(fh, types.InputPhoto):
+            # Albums want :tl:`InputMedia` which, in theory, includes
+            # :tl:`InputMediaUploadedPhoto`. However using that will
+            # make it `raise MediaInvalidError`, so we need to upload
+            # it as media and then convert that to :tl:`InputMediaPhoto`.
+            fh, fm = await self._file_to_media(file)
+            if isinstance(fm, types.InputMediaUploadedPhoto):
                 r = await self(functions.messages.UploadMediaRequest(
-                    entity, media=types.InputMediaUploadedPhoto(fh)
+                    entity, media=fm
                 ))
-                input_photo = utils.get_input_photo(r.photo)
-                self.session.cache_file(fh.md5, fh.size, input_photo)
-                fh = input_photo
+                fm = utils.get_input_photo(r.photo)
+                self.session.cache_file(fh.md5, fh.size, fm)
+                fm = types.InputMediaPhoto(fm)
 
             if captions:
                 caption, msg_entities = captions.pop()
             else:
                 caption, msg_entities = '', None
             media.append(types.InputSingleMedia(
-                types.InputMediaPhoto(fh),
+                fm,
                 message=caption,
                 entities=msg_entities
             ))
