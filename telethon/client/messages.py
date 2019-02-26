@@ -254,7 +254,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         # We don't need to fetch 100 if the limit is less.
         batch_size = min(max(batch_size, 1), min(100, limit))
 
-        # Use a negative offset to work around reversing the results
+        # When going in reverse we need an offset of `-limit`, but we
+        # also want to respect what the user passed, so add them together.
         if reverse:
             request.add_offset -= batch_size
 
@@ -263,8 +264,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
             request.limit = min(limit - have, batch_size)
             if reverse and request.limit != batch_size:
-                # Last batch needs special care if we're on reverse
-                request.add_offset += batch_size - request.limit + 1
+                # Remember that we need -limit when going in reverse
+                request.add_offset = add_offset - request.limit
 
             r = await self(request)
             if _total:
@@ -330,7 +331,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                     request.offset_peer = last_message.input_chat
                 elif reverse:
                     # We want to skip the one we already have
-                    request.add_offset -= 1
+                    request.offset_id += 1
 
             await asyncio.sleep(
                 max(wait_time - (time.time() - start), 0), loop=self._loop)
