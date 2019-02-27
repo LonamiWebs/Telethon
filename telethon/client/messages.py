@@ -214,7 +214,11 @@ class _MessagesIter(RequestIter):
             self.request.offset_id += 1
 
         if isinstance(self.request, functions.messages.SearchRequest):
-            self.request.max_date = last_message.date
+            # Unlike getHistory and searchGlobal that use *offset* date,
+            # this is *max* date. This means that doing a search in reverse
+            # will break it. Since it's not really needed once we're going
+            # (only for the first request), it's safe to just clear it off.
+            self.request.max_date = None
         else:
             # getHistory and searchGlobal call it offset_date
             self.request.offset_date = last_message.date
