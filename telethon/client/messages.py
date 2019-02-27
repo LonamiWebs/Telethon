@@ -283,8 +283,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     def iter_messages(
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
-            from_user=None, wait_time=None, ids=None, reverse=False,
-            _total=None):
+            from_user=None, wait_time=None, ids=None, reverse=False
+    ):
         """
         Iterator over the message history for the specified entity.
         If either `search`, `filter` or `from_user` are provided,
@@ -376,9 +376,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 in ascending order.
 
                 You cannot use this if both `entity` and `ids` are ``None``.
-
-            _total (`list`, optional):
-                A single-item list to pass the total parameter by reference.
 
         Yields:
             Instances of `telethon.tl.custom.message.Message`.

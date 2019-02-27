@@ -97,8 +97,8 @@ class DialogMethods(UserMethods):
 
     def iter_dialogs(
             self, limit=None, *, offset_date=None, offset_id=0,
-            offset_peer=types.InputPeerEmpty(), ignore_migrated=False,
-            _total=None):
+            offset_peer=types.InputPeerEmpty(), ignore_migrated=False
+    ):
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
         Dialogs are the open "chats" or conversations with other people,
@@ -126,9 +126,6 @@ class DialogMethods(UserMethods):
                 should be included or not. By default all the chats in your
                 dialogs are returned, but setting this to ``True`` will hide
                 them in the same way official applications do.
-
-            _total (`list`, optional):
-                A single-item list to pass the total parameter by reference.
 
         Yields:
             Instances of `telethon.tl.custom.dialog.Dialog`.

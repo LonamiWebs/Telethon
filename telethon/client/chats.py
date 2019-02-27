@@ -189,7 +189,8 @@ class ChatMethods(UserMethods):
 
     def iter_participants(
             self, entity, limit=None, *, search='',
-            filter=None, aggressive=False, _total=None):
+            filter=None, aggressive=False
+    ):
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -226,9 +227,6 @@ class ChatMethods(UserMethods):
                 set, more than 200 will be often be retrieved.
 
                 This has no effect if a ``filter`` is given.
-
-            _total (`list`, optional):
-                A single-item list to pass the total parameter by reference.
 
         Yields:
             The :tl:`User` objects returned by :tl:`GetParticipantsRequest`
