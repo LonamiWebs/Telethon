@@ -214,8 +214,7 @@ def main():
             packages=find_packages(exclude=[
                 'telethon_*', 'run_tests.py', 'try_telethon.py'
             ]),
-            install_requires=['pyaes', 'rsa',
-                              'async_generator'],
+            install_requires=['pyaes', 'rsa'],
             extras_require={
                 'cryptg': ['cryptg']
             }

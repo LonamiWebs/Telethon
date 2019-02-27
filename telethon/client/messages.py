@@ -1,14 +1,282 @@
-import asyncio
 import itertools
-import time
-
-from async_generator import async_generator, yield_
 
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .buttons import ButtonMethods
 from .. import helpers, utils, errors
 from ..tl import types, functions
+from ..requestiter import RequestIter
+
+
+# TODO Maybe RequestIter could rather have the update offset here?
+#      Maybe init should return the request to be used and it be
+#      called automatically? And another method to just process it.
+class _MessagesIter(RequestIter):
+    """
+    Common factor for all requests that need to iterate over messages.
+    """
+    async def _init(
+            self, entity, offset_id, min_id, max_id, from_user,
+            batch_size, offset_date, add_offset, filter, search
+    ):
+        # Note that entity being ``None`` will perform a global search.
+        if entity:
+            self.entity = await self.client.get_input_entity(entity)
+        else:
+            self.entity = None
+            if self.reverse:
+                raise ValueError('Cannot reverse global search')
+
+        # Telegram doesn't like min_id/max_id. If these IDs are low enough
+        # (starting from last_id - 100), the request will return nothing.
+        #
+        # We can emulate their behaviour locally by setting offset = max_id
+        # and simply stopping once we hit a message with ID <= min_id.
+        if self.reverse:
+            offset_id = max(offset_id, min_id)
+            if offset_id and max_id:
+                if max_id - offset_id <= 1:
+                    raise StopAsyncIteration
+
+            if not max_id:
+                max_id = float('inf')
+        else:
+            offset_id = max(offset_id, max_id)
+            if offset_id and min_id:
+                if offset_id - min_id <= 1:
+                    raise StopAsyncIteration
+
+        if self.reverse:
+            if offset_id:
+                offset_id += 1
+            else:
+                offset_id = 1
+
+        if from_user:
+            from_user = await self.client.get_input_entity(from_user)
+            if not isinstance(from_user, (
+                    types.InputPeerUser, types.InputPeerSelf)):
+                from_user = None  # Ignore from_user unless it's a user
+
+        if from_user:
+            self.from_id = await self.client.get_peer_id(from_user)
+        else:
+            self.from_id = None
+
+        if not self.entity:
+            self.request = functions.messages.SearchGlobalRequest(
+                q=search or '',
+                offset_date=offset_date,
+                offset_peer=types.InputPeerEmpty(),
+                offset_id=offset_id,
+                limit=1
+            )
+        elif search is not None or filter or from_user:
+            if filter is None:
+                filter = types.InputMessagesFilterEmpty()
+
+            # Telegram completely ignores `from_id` in private chats
+            if isinstance(
+                    self.entity, (types.InputPeerUser, types.InputPeerSelf)):
+                # Don't bother sending `from_user` (it's ignored anyway),
+                # but keep `from_id` defined above to check it locally.
+                from_user = None
+            else:
+                # Do send `from_user` to do the filtering server-side,
+                # and set `from_id` to None to avoid checking it locally.
+                self.from_id = None
+
+            self.request = functions.messages.SearchRequest(
+                peer=self.entity,
+                q=search or '',
+                filter=filter() if isinstance(filter, type) else filter,
+                min_date=None,
+                max_date=offset_date,
+                offset_id=offset_id,
+                add_offset=add_offset,
+                limit=0,  # Search actually returns 0 items if we ask it to
+                max_id=0,
+                min_id=0,
+                hash=0,
+                from_id=from_user
+            )
+        else:
+            self.request = functions.messages.GetHistoryRequest(
+                peer=self.entity,
+                limit=1,
+                offset_date=offset_date,
+                offset_id=offset_id,
+                min_id=0,
+                max_id=0,
+                add_offset=add_offset,
+                hash=0
+            )
+
+        if self.limit == 0:
+            # No messages, but we still need to know the total message count
+            result = await self.client(self.request)
+            if isinstance(result, types.messages.MessagesNotModified):
+                self.total = result.count
+            else:
+                self.total = getattr(result, 'count', len(result.messages))
+            raise StopAsyncIteration
+
+        if self.wait_time is None:
+            self.wait_time = 1 if self.limit > 3000 else 0
+
+        # Telegram has a hard limit of 100.
+        # We don't need to fetch 100 if the limit is less.
+        self.batch_size = min(max(batch_size, 1), min(100, self.limit))
+
+        # When going in reverse we need an offset of `-limit`, but we
+        # also want to respect what the user passed, so add them together.
+        if self.reverse:
+            self.request.add_offset -= self.batch_size
+
+        self.add_offset = add_offset
+        self.max_id = max_id
+        self.min_id = min_id
+        self.last_id = 0 if self.reverse else float('inf')
+
+    async def _load_next_chunk(self):
+        self.request.limit = min(self.left, self.batch_size)
+        if self.reverse and self.request.limit != self.batch_size:
+            # Remember that we need -limit when going in reverse
+            self.request.add_offset = self.add_offset - self.request.limit
+
+        r = await self.client(self.request)
+        self.total = getattr(r, 'count', len(r.messages))
+
+        entities = {utils.get_peer_id(x): x
+                    for x in itertools.chain(r.users, r.chats)}
+
+        messages = reversed(r.messages) if self.reverse else r.messages
+        for message in messages:
+            if (isinstance(message, types.MessageEmpty)
+                    or self.from_id and message.from_id != self.from_id):
+                continue
+
+            if not self._message_in_range(message):
+                return True
+
+            # There has been reports that on bad connections this method
+            # was returning duplicated IDs sometimes. Using ``last_id``
+            # is an attempt to avoid these duplicates, since the message
+            # IDs are returned in descending order (or asc if reverse).
+            self.last_id = message.id
+            message._finish_init(self.client, entities, self.entity)
+            self.buffer.append(message)
+
+        if len(r.messages) < self.request.limit:
+            return True
+
+        # Get the last message that's not empty (in some rare cases
+        # it can happen that the last message is :tl:`MessageEmpty`)
+        if self.buffer:
+            self._update_offset(self.buffer[-1])
+        else:
+            # There are some cases where all the messages we get start
+            # being empty. This can happen on migrated mega-groups if
+            # the history was cleared, and we're using search. Telegram
+            # acts incredibly weird sometimes. Messages are returned but
+            # only "empty", not their contents. If this is the case we
+            # should just give up since there won't be any new Message.
+            return True
+
+    def _message_in_range(self, message):
+        """
+        Determine whether the given message is in the range or
+        it should be ignored (and avoid loading more chunks).
+        """
+        # No entity means message IDs between chats may vary
+        if self.entity:
+            if self.reverse:
+                if message.id <= self.last_id or message.id >= self.max_id:
+                    return False
+            else:
+                if message.id >= self.last_id or message.id <= self.min_id:
+                    return False
+
+        return True
+
+    def _update_offset(self, last_message):
+        """
+        After making the request, update its offset with the last message.
+        """
+        self.request.offset_id = last_message.id
+        if self.reverse:
+            # We want to skip the one we already have
+            self.request.offset_id += 1
+
+        if isinstance(self.request, functions.messages.SearchRequest):
+            # Unlike getHistory and searchGlobal that use *offset* date,
+            # this is *max* date. This means that doing a search in reverse
+            # will break it. Since it's not really needed once we're going
+            # (only for the first request), it's safe to just clear it off.
+            self.request.max_date = None
+        else:
+            # getHistory and searchGlobal call it offset_date
+            self.request.offset_date = last_message.date
+
+        if isinstance(self.request, functions.messages.SearchGlobalRequest):
+            self.request.offset_peer = last_message.input_chat
+
+
+class _IDsIter(RequestIter):
+    async def _init(self, entity, ids):
+        # TODO We never actually split IDs in chunks, but maybe we should
+        if not utils.is_list_like(ids):
+            self.ids = [ids]
+        elif not ids:
+            raise StopAsyncIteration
+        elif self.reverse:
+            self.ids = list(reversed(ids))
+        else:
+            self.ids = ids
+
+        if entity:
+            entity = await self.client.get_input_entity(entity)
+
+        self.total = len(ids)
+
+        from_id = None  # By default, no need to validate from_id
+        if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
+            try:
+                r = await self.client(
+                    functions.channels.GetMessagesRequest(entity, ids))
+            except errors.MessageIdsEmptyError:
+                # All IDs were invalid, use a dummy result
+                r = types.messages.MessagesNotModified(len(ids))
+        else:
+            r = await self.client(functions.messages.GetMessagesRequest(ids))
+            if entity:
+                from_id = await self.client.get_peer_id(entity)
+
+        if isinstance(r, types.messages.MessagesNotModified):
+            self.buffer.extend(None for _ in ids)
+            return
+
+        entities = {utils.get_peer_id(x): x
+                    for x in itertools.chain(r.users, r.chats)}
+
+        # Telegram seems to return the messages in the order in which
+        # we asked them for, so we don't need to check it ourselves,
+        # unless some messages were invalid in which case Telegram
+        # may decide to not send them at all.
+        #
+        # The passed message IDs may not belong to the desired entity
+        # since the user can enter arbitrary numbers which can belong to
+        # arbitrary chats. Validate these unless ``from_id is None``.
+        for message in r.messages:
+            if isinstance(message, types.MessageEmpty) or (
+                    from_id and message.chat_id != from_id):
+                self.buffer.append(None)
+            else:
+                message._finish_init(self.client, entities, entity)
+                self.buffer.append(message)
+
+    async def _load_next_chunk(self):
+        return True  # no next chunk, all done in init
 
 
 class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
@@ -17,8 +285,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     # region Message retrieval
 
-    @async_generator
-    async def iter_messages(
+    def iter_messages(
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
             from_user=None, batch_size=100, wait_time=None, ids=None,
@@ -133,208 +400,26 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             an higher limit, so you're free to set the ``batch_size`` that
             you think may be good.
         """
-        # Note that entity being ``None`` is intended to get messages by
-        # ID under no specific chat, and also to request a global search.
-        if entity:
-            entity = await self.get_input_entity(entity)
 
-        if ids:
-            if not utils.is_list_like(ids):
-                ids = (ids,)
-            if reverse:
-                ids = list(reversed(ids))
-            async for x in self._iter_ids(entity, ids, total=_total):
-                await yield_(x)
-            return
+        if ids is not None:
+            return _IDsIter(self, limit, entity=entity, ids=ids)
 
-        # Telegram doesn't like min_id/max_id. If these IDs are low enough
-        # (starting from last_id - 100), the request will return nothing.
-        #
-        # We can emulate their behaviour locally by setting offset = max_id
-        # and simply stopping once we hit a message with ID <= min_id.
-        if reverse:
-            offset_id = max(offset_id, min_id)
-            if offset_id and max_id:
-                if max_id - offset_id <= 1:
-                    return
-
-            if not max_id:
-                max_id = float('inf')
-        else:
-            offset_id = max(offset_id, max_id)
-            if offset_id and min_id:
-                if offset_id - min_id <= 1:
-                    return
-
-        if reverse:
-            if offset_id:
-                offset_id += 1
-            else:
-                offset_id = 1
-
-        if from_user:
-            from_user = await self.get_input_entity(from_user)
-            if not isinstance(from_user, (
-                    types.InputPeerUser, types.InputPeerSelf)):
-                from_user = None  # Ignore from_user unless it's a user
-
-        from_id = (await self.get_peer_id(from_user)) if from_user else None
-
-        limit = float('inf') if limit is None else int(limit)
-        if not entity:
-            if reverse:
-                raise ValueError('Cannot reverse global search')
-
-            reverse = None
-            request = functions.messages.SearchGlobalRequest(
-                q=search or '',
-                offset_date=offset_date,
-                offset_peer=types.InputPeerEmpty(),
-                offset_id=offset_id,
-                limit=1
-            )
-        elif search is not None or filter or from_user:
-            if filter is None:
-                filter = types.InputMessagesFilterEmpty()
-
-            # Telegram completely ignores `from_id` in private chats
-            if isinstance(entity, (types.InputPeerUser, types.InputPeerSelf)):
-                # Don't bother sending `from_user` (it's ignored anyway),
-                # but keep `from_id` defined above to check it locally.
-                from_user = None
-            else:
-                # Do send `from_user` to do the filtering server-side,
-                # and set `from_id` to None to avoid checking it locally.
-                from_id = None
-
-            request = functions.messages.SearchRequest(
-                peer=entity,
-                q=search or '',
-                filter=filter() if isinstance(filter, type) else filter,
-                min_date=None,
-                max_date=offset_date,
-                offset_id=offset_id,
-                add_offset=add_offset,
-                limit=0,  # Search actually returns 0 items if we ask it to
-                max_id=0,
-                min_id=0,
-                hash=0,
-                from_id=from_user
-            )
-        else:
-            request = functions.messages.GetHistoryRequest(
-                peer=entity,
-                limit=1,
-                offset_date=offset_date,
-                offset_id=offset_id,
-                min_id=0,
-                max_id=0,
-                add_offset=add_offset,
-                hash=0
-            )
-
-        if limit == 0:
-            if not _total:
-                return
-            # No messages, but we still need to know the total message count
-            result = await self(request)
-            if isinstance(result, types.messages.MessagesNotModified):
-                _total[0] = result.count
-            else:
-                _total[0] = getattr(result, 'count', len(result.messages))
-            return
-
-        if wait_time is None:
-            wait_time = 1 if limit > 3000 else 0
-
-        have = 0
-        last_id = 0 if reverse else float('inf')
-
-        # Telegram has a hard limit of 100.
-        # We don't need to fetch 100 if the limit is less.
-        batch_size = min(max(batch_size, 1), min(100, limit))
-
-        # When going in reverse we need an offset of `-limit`, but we
-        # also want to respect what the user passed, so add them together.
-        if reverse:
-            request.add_offset -= batch_size
-
-        while have < limit:
-            start = time.time()
-
-            request.limit = min(limit - have, batch_size)
-            if reverse and request.limit != batch_size:
-                # Remember that we need -limit when going in reverse
-                request.add_offset = add_offset - request.limit
-
-            r = await self(request)
-            if _total:
-                _total[0] = getattr(r, 'count', len(r.messages))
-
-            entities = {utils.get_peer_id(x): x
-                        for x in itertools.chain(r.users, r.chats)}
-
-            messages = reversed(r.messages) if reverse else r.messages
-            for message in messages:
-                if (isinstance(message, types.MessageEmpty)
-                        or from_id and message.from_id != from_id):
-                    continue
-
-                if reverse is None:
-                    pass
-                elif reverse:
-                    if message.id <= last_id or message.id >= max_id:
-                        return
-                else:
-                    if message.id >= last_id or message.id <= min_id:
-                        return
-
-                # There has been reports that on bad connections this method
-                # was returning duplicated IDs sometimes. Using ``last_id``
-                # is an attempt to avoid these duplicates, since the message
-                # IDs are returned in descending order (or asc if reverse).
-                last_id = message.id
-
-                message._finish_init(self, entities, entity)
-                await yield_(message)
-                have += 1
-
-            if len(r.messages) < request.limit:
-                break
-
-            # Find the first message that's not empty (in some rare cases
-            # it can happen that the last message is :tl:`MessageEmpty`)
-            last_message = None
-            messages = r.messages if reverse else reversed(r.messages)
-            for m in messages:
-                if not isinstance(m, types.MessageEmpty):
-                    last_message = m
-                    break
-
-            if last_message is None:
-                # There are some cases where all the messages we get start
-                # being empty. This can happen on migrated mega-groups if
-                # the history was cleared, and we're using search. Telegram
-                # acts incredibly weird sometimes. Messages are returned but
-                # only "empty", not their contents. If this is the case we
-                # should just give up since there won't be any new Message.
-                break
-            else:
-                request.offset_id = last_message.id
-                if isinstance(request, functions.messages.SearchRequest):
-                    request.max_date = last_message.date
-                else:
-                    # getHistory and searchGlobal call it offset_date
-                    request.offset_date = last_message.date
-
-                if isinstance(request, functions.messages.SearchGlobalRequest):
-                    request.offset_peer = last_message.input_chat
-                elif reverse:
-                    # We want to skip the one we already have
-                    request.offset_id += 1
-
-            await asyncio.sleep(
-                max(wait_time - (time.time() - start), 0), loop=self._loop)
+        return _MessagesIter(
+            client=self,
+            reverse=reverse,
+            wait_time=wait_time,
+            limit=limit,
+            entity=entity,
+            offset_id=offset_id,
+            min_id=min_id,
+            max_id=max_id,
+            from_user=from_user,
+            batch_size=batch_size,
+            offset_date=offset_date,
+            add_offset=add_offset,
+            filter=filter,
+            search=search
+        )
 
     async def get_messages(self, *args, **kwargs):
         """
@@ -353,23 +438,23 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         a single `Message <telethon.tl.custom.message.Message>` will be
         returned for convenience instead of a list.
         """
-        total = [0]
-        kwargs['_total'] = total
         if len(args) == 1 and 'limit' not in kwargs:
             if 'min_id' in kwargs and 'max_id' in kwargs:
                 kwargs['limit'] = None
             else:
                 kwargs['limit'] = 1
 
-        msgs = helpers.TotalList()
-        async for x in self.iter_messages(*args, **kwargs):
-            msgs.append(x)
-        msgs.total = total[0]
-        if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
-            # Check for empty list to handle InputMessageReplyTo
-            return msgs[0] if msgs else None
+        it = self.iter_messages(*args, **kwargs)
 
-        return msgs
+        ids = kwargs.get('ids')
+        if ids and not utils.is_list_like(ids):
+            async for message in it:
+                return message
+            else:
+                # Iterator exhausted = empty, to handle InputMessageReplyTo
+                return None
+
+        return await it.collect()
 
     # endregion
 
@@ -797,54 +882,5 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         return False
 
     # endregion
-
-    # endregion
-
-    # region Private methods
-
-    @async_generator
-    async def _iter_ids(self, entity, ids, total):
-        """
-        Special case for `iter_messages` when it should only fetch some IDs.
-        """
-        if total:
-            total[0] = len(ids)
-
-        from_id = None  # By default, no need to validate from_id
-        if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
-            try:
-                r = await self(
-                    functions.channels.GetMessagesRequest(entity, ids))
-            except errors.MessageIdsEmptyError:
-                # All IDs were invalid, use a dummy result
-                r = types.messages.MessagesNotModified(len(ids))
-        else:
-            r = await self(functions.messages.GetMessagesRequest(ids))
-            if entity:
-                from_id = utils.get_peer_id(entity)
-
-        if isinstance(r, types.messages.MessagesNotModified):
-            for _ in ids:
-                await yield_(None)
-            return
-
-        entities = {utils.get_peer_id(x): x
-                    for x in itertools.chain(r.users, r.chats)}
-
-        # Telegram seems to return the messages in the order in which
-        # we asked them for, so we don't need to check it ourselves,
-        # unless some messages were invalid in which case Telegram
-        # may decide to not send them at all.
-        #
-        # The passed message IDs may not belong to the desired entity
-        # since the user can enter arbitrary numbers which can belong to
-        # arbitrary chats. Validate these unless ``from_id is None``.
-        for message in r.messages:
-            if isinstance(message, types.MessageEmpty) or (
-                    from_id and message.chat_id != from_id):
-                await yield_(None)
-            else:
-                message._finish_init(self, entities, entity)
-                await yield_(message)
 
     # endregion
