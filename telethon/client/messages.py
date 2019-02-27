@@ -250,7 +250,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     # region Message retrieval
 
-    async def iter_messages(
+    def iter_messages(
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
             from_user=None, batch_size=100, wait_time=None, ids=None,
