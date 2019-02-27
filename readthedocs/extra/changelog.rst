@@ -14,6 +14,100 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Tidying up Internals (v1.6)
+===========================
+
+*Published at 2019/02/27*
+
++-----------------------+
+| Scheme layer used: 95 |
++-----------------------+
+
+First things first, sorry for updating the layer in the previous patch
+version. That should only be done between major versions ideally, but
+due to how Telegram works, it's done between minor versions. However raw
+API has and will always be considered "unsafe", this meaning that you
+should always really on the convenience client methods instead. You can't
+do everything that you can do with raw API, so pull requests are welcome.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The layer update, of course. This didn't really need a mention here.
+* You can no longer pass a ``batch_size`` when iterating over messages.
+  No other method exposed this parameter, and it was only meant for testing
+  purposes. Instead, it's now a private constant.
+* ``client.iter_*`` methods no longer have a ``_total`` parameter which
+  was supposed to be private anyway. Instead, they return a new generator
+  object which has a ``.total`` attribute:
+
+  .. code-block:: python
+
+      it = client.iter_messages(chat)
+      for i, message in enumerate(it, start=1):
+          percentage = i / it.total
+          print('{:.2%} {}'.format(percentage, message.text))
+
+Additions
+~~~~~~~~~
+
+* You can now pass ``phone`` and ``phone_code_hash`` in `client.sign_up
+  <telethon.client.auth.AuthMethods.sign_up>`, although you probably don't
+  need that.
+* Thanks to the overhaul of all ``client.iter_*`` methods, you can now do:
+
+  .. code-block:: python
+
+      for message in reversed(client.iter_messages('me')):
+          print(message.text)
+
+Bug fixes
+~~~~~~~~~
+
+* Fix `telethon.utils.resolve_bot_file_id`, which wasn't working after
+  the layer update (so you couldn't send some files by bot file IDs).
+* Fix sending albums as bot file IDs (due to image detection improvements).
+* Fix `takeout() <telethon.client.account.AccountMethods.takeout>` failing
+  when they need to download media from other DCs.
+* Fix repeatedly calling `conversation.get_response()
+  <telethon.tl.custom.conversation.Conversation.get_response>` when many
+  messages arrived at once (i.e. when several of them were forwarded).
+* Fixed connecting with `ConnectionTcpObfuscated
+  <telethon.network.connection.tcpobfuscated.ConnectionTcpObfuscated>`.
+* Fix `client.get_peer_id('me')
+  <telethon.client.users.UserMethods.get_peer_id>`.
+* Fix warning of "missing sqlite3" when in reality it just had wrong tables.
+* Fix a strange error when using too many IDs in `client.delete_messages()
+  <telethon.client.messages.MessageMethods.delete_messages>`.
+* Fix `client.send_file <telethon.client.uploads.UploadMethods.send_file>`
+  with the result of `client.upload_file
+  <telethon.client.uploads.UploadMethods.upload_file>`.
+* When answering inline results, their order was not being preserved.
+* Fix `events.ChatAction <telethon.events.chataction.ChatAction>`
+  detecting user leaves as if they were kicked.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Cleared up some parts of the documentation.
+* Improved some auto-casts to make life easier.
+* Improved image detection. Now you can easily send ``bytes``
+  and streams of images as photos, unless you force document.
+* Sending images as photos that are too large will now be resized
+  before uploading, reducing the time it takes to upload them and
+  also avoiding errors when the image was too large (as long as
+  ``pillow`` is installed). The images will remain unchanged if you
+  send it as a document.
+* Treat ``errors.RpcMcgetFailError`` as a temporary server error
+  to automatically retry shortly. This works around most issues.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+* New common way to deal with retries (``retry_range``).
+* Cleaned up the takeout client.
+* Completely overhauled asynchronous generators.
+
 Layer Update (v1.5.5)
 =====================
 

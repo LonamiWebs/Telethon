@@ -1,7 +1,6 @@
 import hashlib
 
 from .tcpobfuscated import ConnectionTcpObfuscated
-from ...crypto import AESModeCTR
 
 
 class ConnectionTcpMTProxy(ConnectionTcpObfuscated):
@@ -10,6 +9,11 @@ class ConnectionTcpMTProxy(ConnectionTcpObfuscated):
     user to connect to the Telegram proxy servers commonly known as MTProxy.
     Implemented very ugly due to the leaky abstractions in Telethon networking
     classes that should be refactored later (TODO).
+
+    .. warning::
+
+        The support for MTProtoProxies class is **EXPERIMENTAL** and prone to
+        be changed. You shouldn't be using this class yet.
     """
     @staticmethod
     def address_info(proxy_info):
