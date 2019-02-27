@@ -68,7 +68,6 @@ class _ParticipantsIter(RequestIter):
 
             self.total = len(full.full_chat.participants.participants)
 
-            result = []
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
                 user = users[participant.user_id]
@@ -77,26 +76,22 @@ class _ParticipantsIter(RequestIter):
 
                 user = users[participant.user_id]
                 user.participant = participant
-                result.append(user)
+                self.buffer.append(user)
 
-            self.left = len(result)
-            self.buffer = result
+            return True
         else:
-            result = []
             self.total = 1
             if self.limit != 0:
                 user = await self.client.get_entity(entity)
                 if self.filter_entity(user):
                     user.participant = None
-                    result.append(user)
+                    self.buffer.append(user)
 
-            self.left = len(result)
-            self.buffer = result
+            return True
 
     async def _load_next_chunk(self):
-        result = []
         if not self.requests:
-            return result
+            return True
 
         # Only care about the limit for the first request
         # (small amount of people, won't be aggressive).
@@ -106,7 +101,7 @@ class _ParticipantsIter(RequestIter):
         # precise with being out of the offset/limit here.
         self.requests[0].limit = min(self.limit - self.requests[0].offset, 200)
         if self.requests[0].offset > self.limit:
-            return result
+            return True
 
         results = await self.client(self.requests)
         for i in reversed(range(len(self.requests))):
@@ -125,9 +120,7 @@ class _ParticipantsIter(RequestIter):
                 self.seen.add(participant.user_id)
                 user = users[participant.user_id]
                 user.participant = participant
-                result.append(user)
-
-        return result
+                self.buffer.append(user)
 
 
 class _AdminLogIter(RequestIter):
@@ -163,7 +156,6 @@ class _AdminLogIter(RequestIter):
         )
 
     async def _load_next_chunk(self):
-        result = []
         self.request.limit = min(self.left, 100)
         r = await self.client(self.request)
         entities = {utils.get_peer_id(x): x
@@ -184,12 +176,10 @@ class _AdminLogIter(RequestIter):
                 ev.action.message._finish_init(
                     self.client, entities, self.entity)
 
-            result.append(custom.AdminLogEvent(ev, entities))
+            self.buffer.append(custom.AdminLogEvent(ev, entities))
 
         if len(r.events) < self.request.limit:
-            self.left = len(result)
-
-        return result
+            return True
 
 
 class ChatMethods(UserMethods):

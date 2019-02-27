@@ -29,8 +29,6 @@ class _DialogsIter(RequestIter):
         self.ignore_migrated = ignore_migrated
 
     async def _load_next_chunk(self):
-        result = []
-
         self.request.limit = min(self.left, 100)
         r = await self.client(self.request)
 
@@ -62,34 +60,32 @@ class _DialogsIter(RequestIter):
 
                 if not self.ignore_migrated or getattr(
                         cd.entity, 'migrated_to', None) is None:
-                    result.append(cd)
+                    self.buffer.append(cd)
 
         if len(r.dialogs) < self.request.limit\
                 or not isinstance(r, types.messages.DialogsSlice):
             # Less than we requested means we reached the end, or
             # we didn't get a DialogsSlice which means we got all.
-            self.left = len(result)
-
-        self.request.offset_date = r.messages[-1].date
-        self.request.offset_peer =\
-            entities[utils.get_peer_id(r.dialogs[-1].peer)]
+            return True
 
         if self.request.offset_id == r.messages[-1].id:
             # In some very rare cases this will get stuck in an infinite
             # loop, where the offsets will get reused over and over. If
             # the new offset is the same as the one before, break already.
-            self.left = len(result)
+            return True
 
         self.request.offset_id = r.messages[-1].id
         self.request.exclude_pinned = True
-        return result
+        self.request.offset_date = r.messages[-1].date
+        self.request.offset_peer =\
+            entities[utils.get_peer_id(r.dialogs[-1].peer)]
 
 
 class _DraftsIter(RequestIter):
     async def _init(self, **kwargs):
         r = await self.client(functions.messages.GetAllDraftsRequest())
-        self.buffer = [custom.Draft._from_update(self.client, u)
-                       for u in r.updates]
+        self.buffer.extend(custom.Draft._from_update(self.client, u)
+                           for u in r.updates)
 
     async def _load_next_chunk(self):
         return []

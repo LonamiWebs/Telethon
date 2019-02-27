@@ -55,7 +55,8 @@ class RequestIter(abc.ABC):
         """
 
     async def __anext__(self):
-        if self.buffer is ():
+        if self.buffer is None:
+            self.buffer = []
             await self._init(**self.kwargs)
 
         if self.left <= 0:  # <= 0 because subclasses may change it
@@ -71,7 +72,9 @@ class RequestIter(abc.ABC):
                 self.last_load = time.time()
 
             self.index = 0
-            self.buffer = await self._load_next_chunk()
+            self.buffer = []
+            if await self._load_next_chunk():
+                self.left = len(self.buffer)
 
         if not self.buffer:
             raise StopAsyncIteration
@@ -82,7 +85,7 @@ class RequestIter(abc.ABC):
         return result
 
     def __aiter__(self):
-        self.buffer = ()
+        self.buffer = None
         self.index = 0
         self.last_load = 0
         self.left = self.limit
@@ -113,7 +116,12 @@ class RequestIter(abc.ABC):
     async def _load_next_chunk(self):
         """
         Called when the next chunk is necessary.
-        It should *always* return a `list`.
+
+        It should extend the `buffer` with new items.
+
+        It should return ``True`` if it's the last chunk,
+        after which moment the method won't be called again
+        during the same iteration.
         """
         raise NotImplementedError
 

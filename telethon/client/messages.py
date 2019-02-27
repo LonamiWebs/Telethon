@@ -139,8 +139,6 @@ class _MessagesIter(RequestIter):
         self.last_id = 0 if self.reverse else float('inf')
 
     async def _load_next_chunk(self):
-        result = []
-
         self.request.limit = min(self.left, self.batch_size)
         if self.reverse and self.request.limit != self.batch_size:
             # Remember that we need -limit when going in reverse
@@ -159,8 +157,7 @@ class _MessagesIter(RequestIter):
                 continue
 
             if not self._message_in_range(message):
-                self.left = len(result)
-                break
+                return True
 
             # There has been reports that on bad connections this method
             # was returning duplicated IDs sometimes. Using ``last_id``
@@ -168,15 +165,15 @@ class _MessagesIter(RequestIter):
             # IDs are returned in descending order (or asc if reverse).
             self.last_id = message.id
             message._finish_init(self.client, entities, self.entity)
-            result.append(message)
+            self.buffer.append(message)
 
         if len(r.messages) < self.request.limit:
-            self.left = len(result)
+            return True
 
         # Get the last message that's not empty (in some rare cases
         # it can happen that the last message is :tl:`MessageEmpty`)
-        if result:
-            self._update_offset(result[-1])
+        if self.buffer:
+            self._update_offset(self.buffer[-1])
         else:
             # There are some cases where all the messages we get start
             # being empty. This can happen on migrated mega-groups if
@@ -184,9 +181,7 @@ class _MessagesIter(RequestIter):
             # acts incredibly weird sometimes. Messages are returned but
             # only "empty", not their contents. If this is the case we
             # should just give up since there won't be any new Message.
-            self.left = len(result)
-
-        return result
+            return True
 
     def _message_in_range(self, message):
         """
@@ -258,7 +253,7 @@ class _IDsIter(RequestIter):
                 from_id = await self.client.get_peer_id(entity)
 
         if isinstance(r, types.messages.MessagesNotModified):
-            self.buffer = [None] * len(ids)
+            self.buffer.extend(None for _ in ids)
             return
 
         entities = {utils.get_peer_id(x): x
@@ -272,19 +267,16 @@ class _IDsIter(RequestIter):
         # The passed message IDs may not belong to the desired entity
         # since the user can enter arbitrary numbers which can belong to
         # arbitrary chats. Validate these unless ``from_id is None``.
-        result = []
         for message in r.messages:
             if isinstance(message, types.MessageEmpty) or (
                     from_id and message.chat_id != from_id):
-                result.append(None)
+                self.buffer.append(None)
             else:
                 message._finish_init(self.client, entities, entity)
-                result.append(message)
-
-        self.buffer = result
+                self.buffer.append(message)
 
     async def _load_next_chunk(self):
-        return []  # no next chunk, all done in init
+        return True  # no next chunk, all done in init
 
 
 class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
