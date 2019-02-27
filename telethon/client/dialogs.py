@@ -5,6 +5,8 @@ from .. import utils
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
+_MAX_CHUNK_SIZE = 100
+
 
 class _DialogsIter(RequestIter):
     async def _init(
@@ -29,7 +31,7 @@ class _DialogsIter(RequestIter):
         self.ignore_migrated = ignore_migrated
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, 100)
+        self.request.limit = min(self.left, _MAX_CHUNK_SIZE)
         r = await self.client(self.request)
 
         self.total = getattr(r, 'count', len(r.dialogs))

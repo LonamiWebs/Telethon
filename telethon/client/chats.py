@@ -6,6 +6,9 @@ from .. import utils
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
+_MAX_PARTICIPANTS_CHUNK_SIZE = 200
+_MAX_ADMIN_LOG_CHUNK_SIZE = 100
+
 
 class _ParticipantsIter(RequestIter):
     async def _init(self, entity, filter, search, aggressive):
@@ -46,7 +49,7 @@ class _ParticipantsIter(RequestIter):
                     channel=entity,
                     filter=types.ChannelParticipantsSearch(x),
                     offset=0,
-                    limit=200,
+                    limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
                 ) for x in (search or string.ascii_lowercase)]
             else:
@@ -54,7 +57,7 @@ class _ParticipantsIter(RequestIter):
                     channel=entity,
                     filter=filter or types.ChannelParticipantsSearch(search),
                     offset=0,
-                    limit=200,
+                    limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
                 )]
 
@@ -100,7 +103,9 @@ class _ParticipantsIter(RequestIter):
         # Most people won't care about getting exactly 12,345
         # members so it doesn't really matter not to be 100%
         # precise with being out of the offset/limit here.
-        self.requests[0].limit = min(self.limit - self.requests[0].offset, 200)
+        self.requests[0].limit = min(
+            self.limit - self.requests[0].offset, _MAX_PARTICIPANTS_CHUNK_SIZE)
+
         if self.requests[0].offset > self.limit:
             return True
 
@@ -157,7 +162,7 @@ class _AdminLogIter(RequestIter):
         )
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, 100)
+        self.request.limit = min(self.left, _MAX_ADMIN_LOG_CHUNK_SIZE)
         r = await self.client(self.request)
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(r.users, r.chats)}

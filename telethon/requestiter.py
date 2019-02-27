@@ -5,10 +5,6 @@ import time
 from . import helpers
 
 
-# TODO There are two types of iterators for requests.
-#      One has a limit of items to retrieve, and the
-#      other has a list that must be called in chunks.
-#      Make classes for both here so it's easy to use.
 class RequestIter(abc.ABC):
     """
     Helper class to deal with requests that need offsets to iterate.
