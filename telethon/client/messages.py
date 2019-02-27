@@ -173,10 +173,10 @@ class _MessagesIter(RequestIter):
         if len(r.messages) < self.request.limit:
             self.left = len(result)
 
-        # Get the first message that's not empty (in some rare cases
+        # Get the last message that's not empty (in some rare cases
         # it can happen that the last message is :tl:`MessageEmpty`)
         if result:
-            self._update_offset(result[0])
+            self._update_offset(result[-1])
         else:
             # There are some cases where all the messages we get start
             # being empty. This can happen on migrated mega-groups if
