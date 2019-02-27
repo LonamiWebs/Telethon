@@ -148,7 +148,9 @@ class ChatAction(EventBuilder):
                 self.user_added = True
                 self._added_by = added_by
 
-            if kicked_by is True:
+            # If `from_id` was not present (it's ``True``) or the affected
+            # user was "kicked by itself", then it left. Else it was kicked.
+            if kicked_by is True or kicked_by == users:
                 self.user_left = True
             elif kicked_by:
                 self.user_kicked = True
