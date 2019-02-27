@@ -446,24 +446,23 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         a single `Message <telethon.tl.custom.message.Message>` will be
         returned for convenience instead of a list.
         """
-        # TODO Make RequestIter have a .collect() or similar
-        total = [0]
-        kwargs['_total'] = total
         if len(args) == 1 and 'limit' not in kwargs:
             if 'min_id' in kwargs and 'max_id' in kwargs:
                 kwargs['limit'] = None
             else:
                 kwargs['limit'] = 1
 
-        msgs = helpers.TotalList()
-        async for x in self.iter_messages(*args, **kwargs):
-            msgs.append(x)
-        msgs.total = total[0]
-        if 'ids' in kwargs and not utils.is_list_like(kwargs['ids']):
-            # Check for empty list to handle InputMessageReplyTo
-            return msgs[0] if msgs else None
+        it = self.iter_messages(*args, **kwargs)
 
-        return msgs
+        ids = kwargs.get('ids')
+        if ids and not utils.is_list_like(ids):
+            async for message in it:
+                return message
+            else:
+                # Iterator exhausted = empty, to handle InputMessageReplyTo
+                return None
+
+        return await it.collect()
 
     # endregion
 

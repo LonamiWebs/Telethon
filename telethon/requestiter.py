@@ -2,6 +2,8 @@ import abc
 import asyncio
 import time
 
+from . import helpers
+
 
 # TODO There are two types of iterators for requests.
 #      One has a limit of items to retrieve, and the
@@ -94,6 +96,17 @@ class RequestIter(abc.ABC):
             )
 
         return self.__aiter__()
+
+    async def collect(self):
+        """
+        Create a `self` iterator and collect it into a `TotalList`
+        (a normal list with a `.total` attribute).
+        """
+        result = helpers.TotalList()
+        async for message in self:
+            result.append(message)
+
+        return result
 
     @abc.abstractmethod
     async def _load_next_chunk(self):
