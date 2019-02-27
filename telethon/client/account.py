@@ -6,6 +6,8 @@ from .. import utils
 from ..tl import functions, TLRequest
 
 
+# TODO Make use of :tl:`InvokeWithMessagesRange` somehow
+#      For that, we need to use :tl:`GetSplitRanges` first.
 class _TakeoutClient:
     """
     Proxy object over the client.

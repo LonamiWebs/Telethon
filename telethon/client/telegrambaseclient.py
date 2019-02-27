@@ -23,6 +23,7 @@ __default_log__ = logging.getLogger(__base_name__)
 __default_log__.addHandler(logging.NullHandler())
 
 
+# TODO How hard would it be to support both `trio` and `asyncio`?
 class TelegramBaseClient(abc.ABC):
     """
     This is the abstract base class for the client. It defines some

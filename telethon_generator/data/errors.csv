@@ -93,6 +93,7 @@ FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
 FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
+FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid

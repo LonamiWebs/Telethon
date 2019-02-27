@@ -90,7 +90,6 @@ heavy job for you, so you can focus on developing an application.
    :caption: Developing
 
    extra/developing/philosophy.rst
-   extra/developing/api-status.rst
    extra/developing/test-servers.rst
    extra/developing/project-structure.rst
    extra/developing/coding-style.rst
