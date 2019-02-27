@@ -106,6 +106,7 @@ class RequestIter(abc.ABC):
         async for message in self:
             result.append(message)
 
+        result.total = self.total
         return result
 
     @abc.abstractmethod
