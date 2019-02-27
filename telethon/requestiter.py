@@ -3,6 +3,10 @@ import asyncio
 import time
 
 
+# TODO There are two types of iterators for requests.
+#      One has a limit of items to retrieve, and the
+#      other has a list that must be called in chunks.
+#      Make classes for both here so it's easy to use.
 class RequestIter(abc.ABC):
     """
     Helper class to deal with requests that need offsets to iterate.
@@ -50,6 +54,9 @@ class RequestIter(abc.ABC):
         if self.buffer is ():
             await self._init(**self.kwargs)
 
+        if self.left <= 0:  # <= 0 because subclasses may change it
+            raise StopAsyncIteration
+
         if self.index == len(self.buffer):
             # asyncio will handle times <= 0 to sleep 0 seconds
             if self.wait_time:
@@ -84,7 +91,7 @@ class RequestIter(abc.ABC):
                 'is running (i.e. you are inside an "async def")'
             )
 
-        raise NotImplementedError('lol!')
+        return self.__aiter__()
 
     @abc.abstractmethod
     async def _load_next_chunk(self):
