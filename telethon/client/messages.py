@@ -3,21 +3,20 @@ import itertools
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
 from .buttons import ButtonMethods
-from .. import helpers, utils, errors
+from .. import utils, errors
 from ..tl import types, functions
 from ..requestiter import RequestIter
 
+_MAX_CHUNK_SIZE = 100
 
-# TODO Maybe RequestIter could rather have the update offset here?
-#      Maybe init should return the request to be used and it be
-#      called automatically? And another method to just process it.
+
 class _MessagesIter(RequestIter):
     """
     Common factor for all requests that need to iterate over messages.
     """
     async def _init(
-            self, entity, offset_id, min_id, max_id, from_user,
-            batch_size, offset_date, add_offset, filter, search
+            self, entity, offset_id, min_id, max_id,
+            from_user, offset_date, add_offset, filter, search
     ):
         # Note that entity being ``None`` will perform a global search.
         if entity:
@@ -124,14 +123,10 @@ class _MessagesIter(RequestIter):
         if self.wait_time is None:
             self.wait_time = 1 if self.limit > 3000 else 0
 
-        # Telegram has a hard limit of 100.
-        # We don't need to fetch 100 if the limit is less.
-        self.batch_size = min(max(batch_size, 1), min(100, self.limit))
-
         # When going in reverse we need an offset of `-limit`, but we
         # also want to respect what the user passed, so add them together.
         if self.reverse:
-            self.request.add_offset -= self.batch_size
+            self.request.add_offset -= _MAX_CHUNK_SIZE
 
         self.add_offset = add_offset
         self.max_id = max_id
@@ -139,8 +134,8 @@ class _MessagesIter(RequestIter):
         self.last_id = 0 if self.reverse else float('inf')
 
     async def _load_next_chunk(self):
-        self.request.limit = min(self.left, self.batch_size)
-        if self.reverse and self.request.limit != self.batch_size:
+        self.request.limit = min(self.left, _MAX_CHUNK_SIZE)
+        if self.reverse and self.request.limit != _MAX_CHUNK_SIZE:
             # Remember that we need -limit when going in reverse
             self.request.add_offset = self.add_offset - self.request.limit
 
@@ -288,8 +283,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     def iter_messages(
             self, entity, limit=None, *, offset_date=None, offset_id=0,
             max_id=0, min_id=0, add_offset=0, search=None, filter=None,
-            from_user=None, batch_size=100, wait_time=None, ids=None,
-            reverse=False, _total=None):
+            from_user=None, wait_time=None, ids=None, reverse=False,
+            _total=None):
         """
         Iterator over the message history for the specified entity.
         If either `search`, `filter` or `from_user` are provided,
@@ -347,11 +342,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Only messages from this user will be returned.
                 This parameter will be ignored if it is not an user.
 
-            batch_size (`int`):
-                Messages will be returned in chunks of this size (100 is
-                the maximum). While it makes no sense to modify this value,
-                you are still free to do so.
-
             wait_time (`int`):
                 Wait time between different :tl:`GetHistoryRequest`. Use this
                 parameter to avoid hitting the ``FloodWaitError`` as needed.
@@ -395,10 +385,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         Notes:
             Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
-            be around 30 seconds per 3000 messages, therefore a sleep of 1
-            second is the default for this limit (or above). You may need
-            an higher limit, so you're free to set the ``batch_size`` that
-            you think may be good.
+            be around 30 seconds per 10 requests, therefore a sleep of 1
+            second is the default for this limit (or above).
         """
 
         if ids is not None:
@@ -414,7 +402,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             min_id=min_id,
             max_id=max_id,
             from_user=from_user,
-            batch_size=batch_size,
             offset_date=offset_date,
             add_offset=add_offset,
             filter=filter,
