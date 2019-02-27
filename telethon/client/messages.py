@@ -111,7 +111,7 @@ class _MessagesIter(RequestIter):
                 hash=0
             )
 
-        if self.limit == 0:
+        if self.limit <= 0:
             # No messages, but we still need to know the total message count
             result = await self.client(self.request)
             if isinstance(result, types.messages.MessagesNotModified):

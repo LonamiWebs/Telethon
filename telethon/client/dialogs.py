@@ -18,7 +18,7 @@ class _DialogsIter(RequestIter):
             hash=0
         )
 
-        if self.limit == 0:
+        if self.limit <= 0:
             # Special case, get a single dialog and determine count
             dialogs = await self.client(self.request)
             self.total = getattr(dialogs, 'count', len(dialogs.dialogs))

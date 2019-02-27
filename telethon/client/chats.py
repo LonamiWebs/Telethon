@@ -37,7 +37,7 @@ class _ParticipantsIter(RequestIter):
                 functions.channels.GetFullChannelRequest(entity)
             )).full_chat.participants_count
 
-            if self.limit == 0:
+            if self.limit <= 0:
                 raise StopAsyncIteration
 
             self.seen = set()
