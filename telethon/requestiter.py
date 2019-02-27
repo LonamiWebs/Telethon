@@ -48,6 +48,8 @@ class RequestIter(abc.ABC):
         to avoid forgetting or misspelling any of them.
 
         This method may ``raise StopAsyncIteration`` if it cannot continue.
+
+        This method may actually fill the initial buffer if it needs to.
         """
 
     async def __anext__(self):
