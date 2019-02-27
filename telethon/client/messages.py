@@ -121,22 +121,22 @@ class _MessagesIter(RequestIter):
                 self.total = getattr(result, 'count', len(result.messages))
             raise StopAsyncIteration
 
+        if self.wait_time is None:
+            self.wait_time = 1 if self.limit > 3000 else 0
+
+        # Telegram has a hard limit of 100.
+        # We don't need to fetch 100 if the limit is less.
+        self.batch_size = min(max(batch_size, 1), min(100, self.limit))
+
         # When going in reverse we need an offset of `-limit`, but we
         # also want to respect what the user passed, so add them together.
         if self.reverse:
             self.request.add_offset -= self.batch_size
 
-        if self.wait_time is None:
-            self.wait_time = 1 if self.limit > 3000 else 0
-
         self.add_offset = add_offset
         self.max_id = max_id
         self.min_id = min_id
         self.last_id = 0 if self.reverse else float('inf')
-
-        # Telegram has a hard limit of 100.
-        # We don't need to fetch 100 if the limit is less.
-        self.batch_size = min(max(batch_size, 1), min(100, self.limit))
 
     async def _load_next_chunk(self):
         result = []
