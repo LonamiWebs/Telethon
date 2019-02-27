@@ -1,4 +1,5 @@
 import itertools
+import string
 
 from .users import UserMethods
 from .. import utils
@@ -47,7 +48,7 @@ class _ParticipantsIter(RequestIter):
                     offset=0,
                     limit=200,
                     hash=0
-                ) for x in (search or map(chr, range(ord('a'), ord('z') + 1)))]
+                ) for x in (search or string.ascii_lowercase)]
             else:
                 self.requests = [functions.channels.GetParticipantsRequest(
                     channel=entity,
