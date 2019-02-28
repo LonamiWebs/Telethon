@@ -81,7 +81,10 @@ class RequestIter(abc.ABC):
         return result
 
     def __next__(self):
-        return self.client.loop.run_until_complete(self.__anext__())
+        try:
+            return self.client.loop.run_until_complete(self.__anext__())
+        except StopAsyncIteration:
+            raise StopIteration
 
     def __aiter__(self):
         self.buffer = None
