@@ -232,7 +232,7 @@ class _IDsIter(RequestIter):
         if entity:
             entity = await self.client.get_input_entity(entity)
 
-        self.total = len(ids)
+        self.total = len(self.ids)
 
         from_id = None  # By default, no need to validate from_id
         if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
