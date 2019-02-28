@@ -221,18 +221,18 @@ class _IDsIter(RequestIter):
     async def _init(self, entity, ids):
         # TODO We never actually split IDs in chunks, but maybe we should
         if not utils.is_list_like(ids):
-            self.ids = [ids]
+            ids = [ids]
         elif not ids:
             raise StopAsyncIteration
         elif self.reverse:
-            self.ids = list(reversed(ids))
+            ids = list(reversed(ids))
         else:
-            self.ids = ids
+            ids = ids
 
         if entity:
             entity = await self.client.get_input_entity(entity)
 
-        self.total = len(self.ids)
+        self.total = len(ids)
 
         from_id = None  # By default, no need to validate from_id
         if isinstance(entity, (types.InputChannel, types.InputPeerChannel)):
