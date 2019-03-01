@@ -649,8 +649,8 @@ def _get_extension(file):
         kind = imghdr.what(io.BytesIO(file))
         return ('.' + kind) if kind else ''
     elif isinstance(file, io.IOBase) and file.seekable():
-        kind = imghdr.what(file) is not None
-        return ('.' + kind) if kind else ''
+        kind = imghdr.what(file)
+        return ('.' + kind) if kind is not None else ''
     elif getattr(file, 'name', None):
         # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase`
         return _get_extension(file.name)
