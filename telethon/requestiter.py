@@ -47,13 +47,16 @@ class RequestIter(abc.ABC):
 
         This method may ``raise StopAsyncIteration`` if it cannot continue.
 
-        This method may actually fill the initial buffer if it needs to.
+        This method may actually fill the initial buffer if it needs to,
+        and similarly to `_load_next_chunk`, ``return True`` to indicate
+        that this is the last iteration (just the initial load).
         """
 
     async def __anext__(self):
         if self.buffer is None:
             self.buffer = []
-            await self._init(**self.kwargs)
+            if await self._init(**self.kwargs):
+                self.left = len(self.buffer)
 
         if self.left <= 0:  # <= 0 because subclasses may change it
             raise StopAsyncIteration

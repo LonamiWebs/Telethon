@@ -35,6 +35,9 @@ class _ParticipantsIter(RequestIter):
         else:
             self.filter_entity = lambda ent: True
 
+        # Only used for channels, but we should always set the attribute
+        self.requests = []
+
         if isinstance(entity, types.InputPeerChannel):
             self.total = (await self.client(
                 functions.channels.GetFullChannelRequest(entity)
@@ -45,21 +48,21 @@ class _ParticipantsIter(RequestIter):
 
             self.seen = set()
             if aggressive and not filter:
-                self.requests = [functions.channels.GetParticipantsRequest(
+                self.requests.extend(functions.channels.GetParticipantsRequest(
                     channel=entity,
                     filter=types.ChannelParticipantsSearch(x),
                     offset=0,
                     limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
-                ) for x in (search or string.ascii_lowercase)]
+                ) for x in (search or string.ascii_lowercase))
             else:
-                self.requests = [functions.channels.GetParticipantsRequest(
+                self.requests.append(functions.channels.GetParticipantsRequest(
                     channel=entity,
                     filter=filter or types.ChannelParticipantsSearch(search),
                     offset=0,
                     limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
-                )]
+                ))
 
         elif isinstance(entity, types.InputPeerChat):
             full = await self.client(
