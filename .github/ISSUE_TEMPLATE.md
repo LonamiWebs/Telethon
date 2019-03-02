@@ -5,7 +5,7 @@ This place is for issues with the library, so please make sure that:
 2. You have already searched for your error on existing issues.
 3. You are testing with upstream code (pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip).
 
-If you have a question, ask in the official Telegram group https://t.me/TelethonChat or  https://stackoverflow.com. Enhancement ideas are currently welcome, too.
+If you have a question, ask in https://stackoverflow.com or find the link for the Telegram group in the description of https://t.me/TelethonUpdates. Enhancement ideas are currently welcome, too.
 
 If you paste code, please put it between three backticks (`):
 ```python

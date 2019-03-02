@@ -47,8 +47,9 @@ CHAT_INVALID,400,The chat is invalid for this request
 CHAT_NOT_MODIFIED,400,"The chat or channel wasn't modified (title, invites, username, admins, etc. are the same)"
 CHAT_RESTRICTED,400,The chat is restricted and cannot be used in that request
 CHAT_SEND_GIFS_FORBIDDEN,403,You can't send gifs in this chat
+CHAT_SEND_INLINE_FORBIDDEN,400,You cannot send inline results in this chat
 CHAT_SEND_MEDIA_FORBIDDEN,403,You can't send media in this chat
-CHAT_SEND_STICKERS_FORBIDDEN,403,You can't send stickers in this chat.
+CHAT_SEND_STICKERS_FORBIDDEN,403,You can't send stickers in this chat
 CHAT_TITLE_EMPTY,400,No chat title provided
 CHAT_WRITE_FORBIDDEN,403,You can't write in this chat
 CODE_EMPTY,400,The provided code is empty
@@ -67,7 +68,9 @@ DATE_EMPTY,400,Date empty
 DC_ID_INVALID,400,This occurs when an authorization is tried to be exported for the same data center one is currently connected to
 DH_G_A_INVALID,400,g_a invalid
 EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
+EMAIL_INVALID,400,The given email is invalid
 EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
+EMOTICON_EMPTY,400,The emoticon field cannot be empty
 ENCRYPTED_MESSAGE_INVALID,400,Encrypted message invalid
 ENCRYPTION_ALREADY_ACCEPTED,400,Secret chat already accepted
 ENCRYPTION_ALREADY_DECLINED,400,The secret chat was already declined
@@ -117,6 +120,7 @@ LASTNAME_INVALID,,The last name is invalid
 LIMIT_INVALID,400,An invalid limit was provided. See https://core.telegram.org/api/files#downloading-files
 LOCATION_INVALID,400,The location given for a file was invalid. See https://core.telegram.org/api/files#downloading-files
 MAX_ID_INVALID,400,The provided max ID is invalid
+MAX_QTS_INVALID,400,The provided QTS were invalid
 MD5_CHECKSUM_INVALID,,The MD5 check-sums do not match
 MEDIA_CAPTION_TOO_LONG,400,The caption is too long
 MEDIA_EMPTY,400,The provided media object is invalid
@@ -149,6 +153,7 @@ PARTICIPANT_CALL_FAILED,500,Failure while making call
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
+PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PEER_FLOOD,,Too many requests
 PEER_ID_INVALID,400,An invalid Peer was used. Make sure to pass the right peer type
 PEER_ID_NOT_SUPPORTED,400,The provided peer ID is not supported
@@ -243,6 +248,7 @@ USER_CHANNELS_TOO_MUCH,403,One of the users you tried to add is already in too m
 USER_CREATOR,400,"You can't leave this channel, because you're its creator"
 USER_DEACTIVATED,401,The user has been deleted/deactivated
 USER_ID_INVALID,400,"Invalid object ID for a user. Make sure to pass the right types, for instance making sure that the request is designed for users or otherwise look for a different one more suited"
+USER_INVALID,400,The given user was invalid
 USER_IS_BLOCKED,400 403,User is blocked
 USER_IS_BOT,400,Bots can't send messages to other bots
 USER_KICKED,400,This user was kicked from this supergroup/channel
@@ -252,6 +258,8 @@ USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagr
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
+WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
+WALLPAPER_INVALID,400,The input wallpaper was not valid
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty

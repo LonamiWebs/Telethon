@@ -27,8 +27,8 @@ First things first, sorry for updating the layer in the previous patch
 version. That should only be done between major versions ideally, but
 due to how Telegram works, it's done between minor versions. However raw
 API has and will always be considered "unsafe", this meaning that you
-should always really on the convenience client methods instead. You can't
-do everything that you can do with raw API, so pull requests are welcome.
+should always use the convenience client methods instead. These methods
+don't cover the full API yet, so pull requests are welcome.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
