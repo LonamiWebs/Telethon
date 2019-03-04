@@ -8,6 +8,7 @@ import imghdr
 import inspect
 import io
 import itertools
+import logging
 import math
 import mimetypes
 import os
@@ -65,6 +66,8 @@ VALID_USERNAME_RE = re.compile(
     r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub|ya)$',
     re.IGNORECASE
 )
+
+_log = logging.getLogger(__name__)
 
 
 def chunks(iterable, size=100):
@@ -490,6 +493,19 @@ def get_message_id(message):
     raise TypeError('Invalid message type: {}'.format(type(message)))
 
 
+def _get_metadata(file):
+    # `hachoir` only deals with paths to in-disk files, while
+    # `_get_extension` supports a few other things. The parser
+    # may also fail in any case and we don't want to crash if
+    # the extraction process fails.
+    if hachoir and isinstance(file, str) and os.path.isfile(file):
+        try:
+            with hachoir.parser.createParser(file) as parser:
+                return hachoir.metadata.extractMetadata(parser)
+        except Exception as e:
+            _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
+
+
 def get_attributes(file, *, attributes=None, mime_type=None,
                    force_document=False, voice_note=False, video_note=False,
                    supports_streaming=False):
@@ -505,9 +521,9 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     attr_dict = {types.DocumentAttributeFilename:
         types.DocumentAttributeFilename(os.path.basename(name))}
 
-    if is_audio(file) and hachoir is not None:
-        with hachoir.parser.createParser(file) as parser:
-            m = hachoir.metadata.extractMetadata(parser)
+    if is_audio(file):
+        m = _get_metadata(file)
+        if m:
             attr_dict[types.DocumentAttributeAudio] = \
                 types.DocumentAttributeAudio(
                     voice=voice_note,
@@ -518,17 +534,16 @@ def get_attributes(file, *, attributes=None, mime_type=None,
                 )
 
     if not force_document and is_video(file):
-        if hachoir:
-            with hachoir.parser.createParser(file) as parser:
-                m = hachoir.metadata.extractMetadata(parser)
-                doc = types.DocumentAttributeVideo(
-                    round_message=video_note,
-                    w=m.get('width') if m.has('width') else 0,
-                    h=m.get('height') if m.has('height') else 0,
-                    duration=int(m.get('duration').seconds
-                                 if m.has('duration') else 0),
-                    supports_streaming=supports_streaming
-                )
+        m = _get_metadata(file)
+        if m:
+            doc = types.DocumentAttributeVideo(
+                round_message=video_note,
+                w=m.get('width') if m.has('width') else 0,
+                h=m.get('height') if m.has('height') else 0,
+                duration=int(m.get('duration').seconds
+                             if m.has('duration') else 0),
+                supports_streaming=supports_streaming
+            )
         else:
             doc = types.DocumentAttributeVideo(
                 0, 1, 1, round_message=video_note,
