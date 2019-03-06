@@ -69,14 +69,24 @@ class MessagePacker:
                                 id(state.request))
                 continue
 
-            # Put the item back since it can't be sent in this batch
-            self._deque.appendleft(state)
             if batch:
+                # Put the item back since it can't be sent in this batch
+                self._deque.appendleft(state)
                 break
 
             # If a single message exceeds the maximum size, then the
             # message payload cannot be sent. Telegram would forcibly
             # close the connection; message would never be confirmed.
+            #
+            # We don't put the item back because it can never be sent.
+            # If we did, we would loop again and reach this same path.
+            # Setting the exception twice results in `InvalidStateError`
+            # and this method should never return with error, which we
+            # really want to avoid.
+            self._log.warning(
+                'Message payload for %s is too long (%d) and cannot be sent',
+                state.request.__class__.__name__, len(state.data)
+            )
             state.future.set_exception(
                 ValueError('Request payload is too big'))
 
