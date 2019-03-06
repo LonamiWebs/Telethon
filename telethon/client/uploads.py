@@ -247,7 +247,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             caption, msg_entities =\
                 await self._parse_message_text(caption, parse_mode)
 
-        file_handle, media = await self._file_to_media(
+        file_handle, media, image = await self._file_to_media(
             file, force_document=force_document,
             progress_callback=progress_callback,
             attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
@@ -265,7 +265,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle, force_document=force_document)
+        await self._cache_media(msg, file, file_handle, image=image)
 
         return msg
 
@@ -299,7 +299,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             # :tl:`InputMediaUploadedPhoto`. However using that will
             # make it `raise MediaInvalidError`, so we need to upload
             # it as media and then convert that to :tl:`InputMediaPhoto`.
-            fh, fm = await self._file_to_media(file)
+            fh, fm, _ = await self._file_to_media(file)
             if isinstance(fm, types.InputMediaUploadedPhoto):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
@@ -487,7 +487,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             allow_cache=True, voice_note=False, video_note=False,
             supports_streaming=False):
         if not file:
-            return None, None
+            return None, None, None
 
         if isinstance(file, pathlib.Path):
             file = str(file.absolute())
@@ -510,9 +510,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     voice_note=voice_note,
                     video_note=video_note,
                     supports_streaming=supports_streaming
-                ))
+                ), as_image)
             except TypeError:
-                return None, None  # Can't turn whatever was given into media
+                # Can't turn whatever was given into media
+                return None, None, as_image
 
         media = None
         file_handle = None
@@ -572,16 +573,15 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 attributes=attributes,
                 **input_kw
             )
-        return file_handle, media
+        return file_handle, media, as_image
 
-    async def _cache_media(self, msg, file, file_handle,
-                           force_document=False):
+    async def _cache_media(self, msg, file, file_handle, image):
         if file and msg and isinstance(file_handle,
                                        custom.InputSizedFile):
             # There was a response message and we didn't use cached
             # version, so cache whatever we just sent to the database.
             md5, size = file_handle.md5, file_handle.size
-            if utils.is_image(file) and not force_document:
+            if image:
                 to_cache = utils.get_input_photo(msg.media.photo)
             else:
                 to_cache = utils.get_input_document(msg.media.document)
