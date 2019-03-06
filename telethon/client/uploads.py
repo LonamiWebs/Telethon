@@ -384,7 +384,17 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         elif isinstance(file, bytes):
             file_size = len(file)
         else:
-            file = file.read()
+            if isinstance(file, io.IOBase) and file.seekable():
+                pos = file.tell()
+            else:
+                pos = None
+
+            # TODO Don't load the entire file in memory always
+            data = file.read()
+            if pos is not None:
+                file.seek(pos)
+
+            file = data
             file_size = len(file)
 
         # File will now either be a string or bytes
