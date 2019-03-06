@@ -44,29 +44,31 @@ def _resize_photo_if_needed(
         file = io.BytesIO(file)
 
     try:
-        with PIL.Image.open(file) as image:
-            if image.width <= width and image.height <= height:
-                return file
+        # Don't use a `with` block for `image`, or `file` would be closed.
+        # See https://github.com/LonamiWebs/Telethon/issues/1121 for more.
+        image = PIL.Image.open(file)
+        if image.width <= width and image.height <= height:
+            return file
 
-            image.thumbnail((width, height), PIL.Image.ANTIALIAS)
+        image.thumbnail((width, height), PIL.Image.ANTIALIAS)
 
-            alpha_index = image.mode.find('A')
-            if alpha_index == -1:
-                # If the image mode doesn't have alpha
-                # channel then don't bother masking it away.
-                result = image
-            else:
-                # We could save the resized image with the original format, but
-                # JPEG often compresses better -> smaller size -> faster upload
-                # We need to mask away the alpha channel ([3]), since otherwise
-                # IOError is raised when trying to save alpha channels in JPEG.
-                result = PIL.Image.new('RGB', image.size, background)
-                result.paste(image, mask=image.split()[alpha_index])
+        alpha_index = image.mode.find('A')
+        if alpha_index == -1:
+            # If the image mode doesn't have alpha
+            # channel then don't bother masking it away.
+            result = image
+        else:
+            # We could save the resized image with the original format, but
+            # JPEG often compresses better -> smaller size -> faster upload
+            # We need to mask away the alpha channel ([3]), since otherwise
+            # IOError is raised when trying to save alpha channels in JPEG.
+            result = PIL.Image.new('RGB', image.size, background)
+            result.paste(image, mask=image.split()[alpha_index])
 
-            buffer = io.BytesIO()
-            result.save(buffer, 'JPEG')
-            buffer.seek(0)
-            return buffer
+        buffer = io.BytesIO()
+        result.save(buffer, 'JPEG')
+        buffer.seek(0)
+        return buffer
 
     except IOError:
         return file
