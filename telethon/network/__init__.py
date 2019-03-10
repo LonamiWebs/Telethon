@@ -7,5 +7,7 @@ from .authenticator import do_authentication
 from .mtprotosender import MTProtoSender
 from .connection import (
     ConnectionTcpFull, ConnectionTcpIntermediate, ConnectionTcpAbridged,
-    ConnectionTcpObfuscated, ConnectionTcpMTProxy, ConnectionHttp
+    ConnectionTcpObfuscated, ConnectionTcpMTProxyAbridged,
+    ConnectionTcpMTProxyIntermediate,
+    ConnectionTcpMTProxyRandomizedIntermediate, ConnectionHttp, TcpMTProxy
 )

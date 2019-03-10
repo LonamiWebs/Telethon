@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from .. import version, __name__ as __base_name__
 from ..crypto import rsa
 from ..extensions import markdown
-from ..network import MTProtoSender, ConnectionTcpFull, ConnectionTcpMTProxy
+from ..network import MTProtoSender, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
@@ -64,7 +64,7 @@ class TelegramBaseClient(abc.ABC):
 
         proxy (`tuple` | `list` | `dict`, optional):
             An iterable consisting of the proxy info. If `connection` is
-            `ConnectionTcpMTProxy`, then it should contain MTProxy credentials:
+            one of `MTProxy`, then it should contain MTProxy credentials:
             ``('hostname', port, 'secret')``. Otherwise, it's meant to store
             function parameters for PySocks, like ``(type, 'hostname', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
@@ -249,8 +249,8 @@ class TelegramBaseClient(abc.ABC):
 
         assert isinstance(connection, type)
         self._connection = connection
-        init_proxy = None if connection is not ConnectionTcpMTProxy else \
-            types.InputClientProxy(*ConnectionTcpMTProxy.address_info(proxy))
+        init_proxy = None if not issubclass(connection, TcpMTProxy) else \
+            types.InputClientProxy(*connection.address_info(proxy))
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -551,7 +551,7 @@ class TelegramBaseClient(abc.ABC):
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
-        client = TelegramBareClient(
+        client = TelegramBaseClient(
             session, self.api_id, self.api_hash,
             proxy=self._sender.connection.conn.proxy,
             timeout=self._sender.connection.get_timeout()

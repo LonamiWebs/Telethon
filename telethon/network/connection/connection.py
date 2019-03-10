@@ -30,6 +30,8 @@ class Connection(abc.ABC):
         self._connected = False
         self._send_task = None
         self._recv_task = None
+        self._codec = None
+        self._obfuscation = None  # TcpObfuscated and MTProxy
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
 
