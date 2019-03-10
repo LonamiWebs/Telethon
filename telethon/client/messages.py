@@ -612,7 +612,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             from_peer (`entity`):
                 If the given messages are integer IDs and not instances
                 of the ``Message`` class, this *must* be specified in
-                order for the forward to work.
+                order for the forward to work. This parameter indicates
+                the entity from which the messages should be forwarded.
 
             silent (`bool`, optional):
                 Whether the message should notify people in a broadcast

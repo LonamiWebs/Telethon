@@ -95,15 +95,35 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 Who will receive the file.
 
             file (`str` | `bytes` | `file` | `media`):
-                The path of the file, byte array, or stream that will be sent.
-                Note that if a byte array or a stream is given, a filename
-                or its type won't be inferred, and it will be sent as an
-                "unnamed application/octet-stream".
+                The file to send, which can be one of:
 
-                Furthermore the file may be any media (a message, document,
-                photo or similar) so that it can be resent without the need
-                to download and re-upload it again. Bot API ``file_id``
-                format is also supported.
+                * A local file path to an in-disk file. The file name
+                  will be the path's base name.
+
+                * A `bytes` byte array with the file's data to send
+                  (for example, by using ``text.encode('utf-8')``).
+                  A default file name will be used.
+
+                * A bytes `io.IOBase` stream over the file to send
+                  (for example, by using ``open(file, 'rb')``).
+                  Its ``.name`` property will be used for the file name,
+                  or a default if it doesn't have one.
+
+                * An external URL to a file over the internet. This will
+                  send the file as "external" media, and Telegram is the
+                  one that will fetch the media and send it.
+
+                * A Bot API-like ``file_id``. You can convert previously
+                  sent media to file IDs for later reusing with
+                  `telethon.utils.pack_bot_file_id`.
+
+                * A handle to an existing file (for example, if you sent a
+                  message with media before, you can use its ``message.media``
+                  as a file here).
+
+                * A handle to an uploaded file (from `upload_file`).
+
+                To send an album, you should provide a list in this parameter.
 
                 If a list or similar is provided, the files in it will be
                 sent as an album in the order in which they appear, sliced
