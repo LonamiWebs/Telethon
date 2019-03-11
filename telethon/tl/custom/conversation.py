@@ -6,6 +6,12 @@ from .chatgetter import ChatGetter
 from ... import utils, errors
 
 
+# Sometimes the edits arrive very fast (within the same second).
+# In that case we add a small delta so that the age is older, for
+# comparision purposes. This value is enough for up to 1000 messages.
+_EDIT_COLLISION_DELTA = 0.001
+
+
 class Conversation(ChatGetter):
     """
     Represents a conversation inside an specific chat.
@@ -331,7 +337,15 @@ class Conversation(ChatGetter):
         for msg_id, pending in self._pending_edits.items():
             if msg_id < message.id:
                 found.append(msg_id)
-                self._edit_dates[msg_id] = message.edit_date.timestamp()
+                edit_ts = message.edit_date.timestamp()
+
+                # We compare <= because edit_ts resolution is always to
+                # seconds, but we may have increased _edit_dates before.
+                # Since the dates are ever growing this is not a problem.
+                if edit_ts <= self._edit_dates.get(msg_id, 0):
+                    self._edit_dates[msg_id] += _EDIT_COLLISION_DELTA
+                else:
+                    self._edit_dates[msg_id] = message.edit_date.timestamp()
 
         for msg_id in found:
             self._pending_edits.pop(msg_id).set_result(message)
