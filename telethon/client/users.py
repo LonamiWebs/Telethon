@@ -141,7 +141,8 @@ class UserMethods(TelegramBaseClient):
         """
         if self._authorized is None:
             try:
-                self._state = await self(functions.updates.GetStateRequest())
+                # Any request that requires authorization will work
+                await self(functions.updates.GetStateRequest())
                 self._authorized = True
             except errors.RPCError:
                 self._authorized = False
