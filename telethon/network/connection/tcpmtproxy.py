@@ -30,8 +30,8 @@ class MTProxyIO:
     def init_header(self, secret, dc_id, packet_codec):
         # Validate
         is_dd = (len(secret) == 17) and (secret[0] == 0xDD)
-        is_rand_codec = (
-            packet_codec == RandomizedIntermediatePacketCodec)
+        is_rand_codec = issubclass(
+            packet_codec, RandomizedIntermediatePacketCodec)
         if is_dd and not is_rand_codec:
             raise ValueError(
                 "Only RandomizedIntermediate can be used with dd-secrets")
