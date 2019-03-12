@@ -1,36 +1,29 @@
 import struct
 from zlib import crc32
 
-from .connection import Connection
+from .connection import Connection, PacketCodec
 from ...errors import InvalidChecksumError
 
 
-class ConnectionTcpFull(Connection):
-    """
-    Default Telegram mode. Sends 12 additional bytes and
-    needs to calculate the CRC value of the packet itself.
-    """
-    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
-        super().__init__(
-            ip, port, dc_id, loop=loop, loggers=loggers, proxy=proxy)
-        self._send_counter = 0
+class FullPacketCodec(PacketCodec):
+    tag = None
 
-    def _init_conn(self):
+    def __init__(self, _conn):
         self._send_counter = 0  # Important or Telegram won't reply
 
-    def _send(self, data):
+    def encode_packet(self, data):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(data) + 12
         data = struct.pack('<ii', length, self._send_counter) + data
         crc = struct.pack('<I', crc32(data))
         self._send_counter += 1
-        self._writer.write(data + crc)
+        return data + crc
 
-    async def _recv(self):
-        packet_len_seq = await self._reader.readexactly(8)  # 4 and 4
+    async def read_packet(self, reader):
+        packet_len_seq = await reader.readexactly(8)  # 4 and 4
         packet_len, seq = struct.unpack('<ii', packet_len_seq)
-        body = await self._reader.readexactly(packet_len - 8)
+        body = await reader.readexactly(packet_len - 8)
         checksum = struct.unpack('<I', body[-4:])[0]
         body = body[:-4]
 
@@ -39,3 +32,11 @@ class ConnectionTcpFull(Connection):
             raise InvalidChecksumError(checksum, valid_checksum)
 
         return body
+
+
+class ConnectionTcpFull(Connection):
+    """
+    Default Telegram mode. Sends 12 additional bytes and
+    needs to calculate the CRC value of the packet itself.
+    """
+    packet_codec = FullPacketCodec

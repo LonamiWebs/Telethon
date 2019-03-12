@@ -1,31 +1,11 @@
 import struct
 
-from .connection import Connection
+from .connection import Connection, PacketCodec
 
 
-class ConnectionTcpAbridged(Connection):
-    """
-    This is the mode with the lowest overhead, as it will
-    only require 1 byte if the packet length is less than
-    508 bytes (127 << 2, which is very common).
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._codec = AbridgedPacket()
-
-    def _init_conn(self):
-        self._writer.write(self._codec.tag)
-
-    def _send(self, data):
-        self._writer.write(self._codec.encode_packet(data))
-
-    async def _recv(self):
-        return await self._codec.read_packet(self._reader)
-
-
-class AbridgedPacket:
+class AbridgedPacketCodec(PacketCodec):
     tag = b'\xef'
-    mtproto_proxy_tag = b'\xef\xef\xef\xef'
+    obfuscate_tag = b'\xef\xef\xef\xef'
 
     def encode_packet(self, data):
         length = len(data) >> 2
@@ -42,3 +22,12 @@ class AbridgedPacket:
                 '<i', await reader.readexactly(3) + b'\0')[0]
 
         return await reader.readexactly(length << 2)
+
+
+class ConnectionTcpAbridged(Connection):
+    """
+    This is the mode with the lowest overhead, as it will
+    only require 1 byte if the packet length is less than
+    508 bytes (127 << 2, which is very common).
+    """
+    packet_codec = AbridgedPacketCodec

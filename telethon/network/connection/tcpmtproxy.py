@@ -1,82 +1,14 @@
 import hashlib
 import os
 
-from .connection import Connection
-from .tcpabridged import AbridgedPacket
-from .tcpintermediate import IntermediatePacket, RandomizedIntermediatePacket
+from .connection import ObfuscatedConnection
+from .tcpabridged import AbridgedPacketCodec
+from .tcpintermediate import (
+    IntermediatePacketCodec,
+    RandomizedIntermediatePacketCodec
+)
 
 from ...crypto import AESModeCTR
-
-
-class TcpMTProxy(Connection):
-    """
-    Connector which allows user to connect to the Telegram via proxy servers
-    commonly known as MTProxy.
-    Implemented very ugly due to the leaky abstractions in Telethon networking
-    classes that should be refactored later (TODO).
-
-    .. warning::
-
-        The support for MTProtoProxies class is **EXPERIMENTAL** and prone to
-        be changed. You shouldn't be using this class yet.
-    """
-    packet_codec = None
-
-    @staticmethod
-    def address_info(proxy_info):
-        if proxy_info is None:
-            raise ValueError("No proxy info specified for MTProxy connection")
-        return proxy_info[:2]
-
-    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
-        proxy_host, proxy_port = self.address_info(proxy)
-        super().__init__(
-            proxy_host, proxy_port, dc_id, loop=loop, loggers=loggers)
-        self._codec = self.packet_codec()
-        secret = bytes.fromhex(proxy[2])
-        is_dd = (len(secret) == 17) and (secret[0] == 0xDD)
-        if is_dd and (self.packet_codec != RandomizedIntermediatePacket):
-            raise ValueError(
-                "Only RandomizedIntermediate can be used with dd-secrets")
-        secret = secret[:-1] if is_dd else secret
-        if len(secret) != 16:
-            raise ValueError(
-                "MTProxy secret must be a hex-string representing 16 bytes")
-        self._dc_id = dc_id
-        self._secret = secret
-
-    def _init_conn(self):
-        self._obfuscation = MTProxyIO(self._reader, self._writer,
-                                      self._codec.mtproto_proxy_tag,
-                                      self._secret, self._dc_id)
-        self._writer.write(self._obfuscation.header)
-
-    def _send(self, data):
-        self._obfuscation.write(self._codec.encode_packet(data))
-
-    async def _recv(self):
-        return await self._codec.read_packet(self._obfuscation)
-
-
-class ConnectionTcpMTProxyAbridged(TcpMTProxy):
-    """
-    Connect to proxy using abridged protocol
-    """
-    packet_codec = AbridgedPacket
-
-
-class ConnectionTcpMTProxyIntermediate(TcpMTProxy):
-    """
-    Connect to proxy using intermediate protocol
-    """
-    packet_codec = IntermediatePacket
-
-
-class ConnectionTcpMTProxyRandomizedIntermediate(TcpMTProxy):
-    """
-    Connect to proxy using randomized intermediate protocol (dd-secrets)
-    """
-    packet_codec = RandomizedIntermediatePacket
 
 
 class MTProxyIO:
@@ -86,9 +18,28 @@ class MTProxyIO:
     """
     header = None
 
-    def __init__(self, reader, writer, protocol_tag, secret, dc_id):
-        self._reader = reader
-        self._writer = writer
+    def __init__(self, connection):
+        self._reader = connection._reader
+        self._writer = connection._writer
+
+        (self.header,
+         self._encrypt,
+         self._decrypt) = self.init_header(
+             connection._secret, connection._dc_id, connection.packet_codec)
+
+    def init_header(self, secret, dc_id, packet_codec):
+        # Validate
+        is_dd = (len(secret) == 17) and (secret[0] == 0xDD)
+        is_rand_codec = (
+            packet_codec == RandomizedIntermediatePacketCodec)
+        if is_dd and not is_rand_codec:
+            raise ValueError(
+                "Only RandomizedIntermediate can be used with dd-secrets")
+        secret = secret[:-1] if is_dd else secret
+        if len(secret) != 16:
+            raise ValueError(
+                "MTProxy secret must be a hex-string representing 16 bytes")
+
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee\xee\xee\xee')
         while True:
@@ -109,19 +60,68 @@ class MTProxyIO:
             bytes(random_reversed[:32]) + secret).digest()
         decrypt_iv = bytes(random_reversed[32:48])
 
-        self._aes_encrypt = AESModeCTR(encrypt_key, encrypt_iv)
-        self._aes_decrypt = AESModeCTR(decrypt_key, decrypt_iv)
+        encryptor = AESModeCTR(encrypt_key, encrypt_iv)
+        decryptor = AESModeCTR(decrypt_key, decrypt_iv)
 
-        random[56:60] = protocol_tag
+        random[56:60] = packet_codec.obfuscate_tag
 
         dc_id_bytes = dc_id.to_bytes(2, "little", signed=True)
         random = random[:60] + dc_id_bytes + random[62:]
-        random[56:64] = self._aes_encrypt.encrypt(bytes(random))[56:64]
-
-        self.header = random
+        random[56:64] = encryptor.encrypt(bytes(random))[56:64]
+        return (random, encryptor, decryptor)
 
     async def readexactly(self, n):
-        return self._aes_decrypt.encrypt(await self._reader.readexactly(n))
+        return self._decrypt.encrypt(await self._reader.readexactly(n))
 
     def write(self, data):
-        self._writer.write(self._aes_encrypt.encrypt(data))
+        self._writer.write(self._encrypt.encrypt(data))
+
+
+class TcpMTProxy(ObfuscatedConnection):
+    """
+    Connector which allows user to connect to the Telegram via proxy servers
+    commonly known as MTProxy.
+    Implemented very ugly due to the leaky abstractions in Telethon networking
+    classes that should be refactored later (TODO).
+
+    .. warning::
+
+        The support for TcpMTProxy classes is **EXPERIMENTAL** and prone to
+        be changed. You shouldn't be using this class yet.
+    """
+    packet_codec = None
+    obfuscated_io = MTProxyIO
+
+    @staticmethod
+    def address_info(proxy_info):
+        if proxy_info is None:
+            raise ValueError("No proxy info specified for MTProxy connection")
+        return proxy_info[:2]
+
+    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
+        # connect to proxy's host and port instead of telegram's ones
+        proxy_host, proxy_port = self.address_info(proxy)
+        self._secret = bytes.fromhex(proxy[2])
+        super().__init__(
+            proxy_host, proxy_port, dc_id, loop=loop, loggers=loggers)
+
+
+class ConnectionTcpMTProxyAbridged(TcpMTProxy):
+    """
+    Connect to proxy using abridged protocol
+    """
+    packet_codec = AbridgedPacketCodec
+
+
+class ConnectionTcpMTProxyIntermediate(TcpMTProxy):
+    """
+    Connect to proxy using intermediate protocol
+    """
+    packet_codec = IntermediatePacketCodec
+
+
+class ConnectionTcpMTProxyRandomizedIntermediate(TcpMTProxy):
+    """
+    Connect to proxy using randomized intermediate protocol (dd-secrets)
+    """
+    packet_codec = RandomizedIntermediatePacketCodec

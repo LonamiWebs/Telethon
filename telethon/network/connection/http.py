@@ -1,34 +1,43 @@
 import asyncio
 
-from .connection import Connection
+from .connection import Connection, PacketCodec
 
 
 SSL_PORT = 443
 
 
-class ConnectionHttp(Connection):
-    async def connect(self, timeout=None, ssl=None):
-        await super().connect(timeout=timeout, ssl=self._port == SSL_PORT)
+class HttpPacketCodec(PacketCodec):
+    tag = None
+    obfuscate_tag = None
 
-    def _send(self, message):
-        self._writer.write(
-            'POST /api HTTP/1.1\r\n'
-            'Host: {}:{}\r\n'
-            'Content-Type: application/x-www-form-urlencoded\r\n'
-            'Connection: keep-alive\r\n'
-            'Keep-Alive: timeout=100000, max=10000000\r\n'
-            'Content-Length: {}\r\n\r\n'
-            .format(self._ip, self._port, len(message))
-            .encode('ascii') + message
-        )
+    def __init__(self, connection):
+        self._ip = connection._ip
+        self._port = connection._port
 
-    async def _recv(self):
+    def encode_packet(self, data):
+        return ('POST /api HTTP/1.1\r\n'
+                'Host: {}:{}\r\n'
+                'Content-Type: application/x-www-form-urlencoded\r\n'
+                'Connection: keep-alive\r\n'
+                'Keep-Alive: timeout=100000, max=10000000\r\n'
+                'Content-Length: {}\r\n\r\n'
+                .format(self._ip, self._port, len(data))
+                .encode('ascii') + data)
+
+    async def read_packet(self, reader):
         while True:
-            line = await self._reader.readline()
+            line = await reader.readline()
             if not line or line[-1] != b'\n':
                 raise asyncio.IncompleteReadError(line, None)
 
             if line.lower().startswith(b'content-length: '):
-                await self._reader.readexactly(2)
+                await reader.readexactly(2)
                 length = int(line[16:-2])
-                return await self._reader.readexactly(length)
+                return await reader.readexactly(length)
+
+
+class ConnectionHttp(Connection):
+    packet_codec = HttpPacketCodec
+
+    async def connect(self, timeout=None, ssl=None):
+        await super().connect(timeout=timeout, ssl=self._port == SSL_PORT)
