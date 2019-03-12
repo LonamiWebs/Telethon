@@ -753,7 +753,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         entity = await self.get_input_entity(entity)
         text, msg_entities = await self._parse_message_text(text, parse_mode)
-        file_handle, media = await self._file_to_media(file)
+        file_handle, media, as_image = await self._file_to_media(file)
         request = functions.messages.EditMessageRequest(
             peer=entity,
             id=utils.get_message_id(message),
@@ -764,7 +764,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             reply_markup=self.build_reply_markup(buttons)
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle)
+        await self._cache_media(msg, file, file_handle, as_image)
         return msg
 
     async def delete_messages(self, entity, message_ids, *, revoke=True):
