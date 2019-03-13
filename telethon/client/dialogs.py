@@ -41,7 +41,7 @@ class _DialogsIter(RequestIter):
 
         messages = {}
         for m in r.messages:
-            m._finish_init(self, entities, None)
+            m._finish_init(self.client, entities, None)
             messages[m.id] = m
 
         for d in r.dialogs:
@@ -56,7 +56,7 @@ class _DialogsIter(RequestIter):
             peer_id = utils.get_peer_id(d.peer)
             if peer_id not in self.seen:
                 self.seen.add(peer_id)
-                cd = custom.Dialog(self, d, entities, messages)
+                cd = custom.Dialog(self.client, d, entities, messages)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
 
