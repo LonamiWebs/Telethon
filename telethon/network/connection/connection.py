@@ -18,6 +18,10 @@ class Connection(abc.ABC):
     ``ConnectionError``, which will raise when attempting to send if
     the client is disconnected (includes remote disconnections).
     """
+    # this static attribute should be redefined by `Connection` subclasses and
+    # should be one of `PacketCodec` implementations
+    packet_codec = None
+
     def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
         self._ip = ip
         self._port = port
@@ -30,6 +34,8 @@ class Connection(abc.ABC):
         self._connected = False
         self._send_task = None
         self._recv_task = None
+        self._codec = None
+        self._obfuscation = None  # TcpObfuscated and MTProxy
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
 
@@ -76,6 +82,7 @@ class Connection(abc.ABC):
                 await asyncio.open_connection(sock=s, loop=self._loop)
 
         self._connected = True
+        self._codec = self.packet_codec(self)
         self._init_conn()
         await self._writer.drain()
 
@@ -182,27 +189,71 @@ class Connection(abc.ABC):
         data to Telegram to indicate which connection mode will
         be used.
         """
+        if self._codec.tag:
+            self._writer.write(self._codec.tag)
 
-    @abc.abstractmethod
     def _send(self, data):
-        """
-        This method should be implemented differently under each
-        connection mode and serialize the data into the packet
-        the way it should be sent through `self._writer`.
-        """
-        raise NotImplementedError
+        self._writer.write(self._codec.encode_packet(data))
 
-    @abc.abstractmethod
     async def _recv(self):
-        """
-        This method should be implemented differently under each
-        connection mode and deserialize the data from the packet
-        the way it should be read from `self._reader`.
-        """
-        raise NotImplementedError
+        return await self._codec.read_packet(self._reader)
 
     def __str__(self):
         return '{}:{}/{}'.format(
             self._ip, self._port,
             self.__class__.__name__.replace('Connection', '')
         )
+
+
+class ObfuscatedConnection(Connection):
+    """
+    Base class for "obfuscated" connections ("obfuscated2", "mtproto proxy")
+    """
+    """
+    This attribute should be redefined by subclasses
+    """
+    obfuscated_io = None
+
+    def _init_conn(self):
+        self._obfuscation = self.obfuscated_io(self)
+        self._writer.write(self._obfuscation.header)
+
+    def _send(self, data):
+        self._obfuscation.write(self._codec.encode_packet(data))
+
+    async def _recv(self):
+        return await self._codec.read_packet(self._obfuscation)
+
+
+class PacketCodec(abc.ABC):
+    """
+    Base class for packet codecs
+    """
+
+    """
+    This attribute should be re-defined by subclass to define if some
+    "magic bytes" should be sent to server right after conection is made to
+    signal which protocol will be used
+    """
+    tag = None
+
+    def __init__(self, connection):
+        """
+        Codec is created when connection is just made.
+        """
+        pass
+
+    @abc.abstractmethod
+    def encode_packet(self, data):
+        """
+        Encodes single packet and returns encoded bytes.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def read_packet(self, reader):
+        """
+        Reads single packet from `reader` object that should have
+        `readexactly(n)` method.
+        """
+        raise NotImplementedError
