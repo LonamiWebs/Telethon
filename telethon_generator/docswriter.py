@@ -43,7 +43,6 @@ class DocsWriter:
         """Writes the head part for the generated document,
            with the given title and CSS
         """
-        #
         self.title = title
         self.write(
             '''<!DOCTYPE html>

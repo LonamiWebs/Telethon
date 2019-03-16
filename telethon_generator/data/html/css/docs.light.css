@@ -1,12 +1,12 @@
 body {
     font-family: 'Nunito', sans-serif;
     color: #333;
-    background-color:#fff;
+    background-color:#eee;
     font-size: 16px;
 }
 
 a {
-    color: #42aaed;
+    color: #329add;
     text-decoration: none;
 }
 
@@ -14,7 +14,7 @@ pre {
     font-family: 'Source Code Pro', monospace;
     padding: 8px;
     color: #567;
-    background: #f0f4f8;
+    background: #e0e4e8;
     border-radius: 0;
     overflow-x: auto;
 }
@@ -30,14 +30,14 @@ table {
 }
 
 table td {
-    border-top: 1px solid #eee;
+    border-top: 1px solid #ddd;
     padding: 8px;
 }
 
 .horizontal {
     margin-bottom: 16px;
     list-style: none;
-    background: #f0f4f8;
+    background: #e0e4e8;
     border-radius: 4px;
     padding: 8px 16px;
 }
@@ -118,14 +118,14 @@ button {
     font-size: 16px;
     padding: 8px;
     color: #000;
-    background-color: #fff;
-    border: 2px solid #42aaed;
+    background-color: #f7f7f7;
+    border: 2px solid #329add;
     transition-duration: 300ms;
 }
 
 button:hover {
-    background-color: #42aaed;
-    color: #fff;
+    background-color: #329add;
+    color: #f7f7f7;
 }
 
 /* https://www.w3schools.com/css/css_navbar.asp */
@@ -143,7 +143,7 @@ ul.together li {
 ul.together li a {
     display: block;
     border-radius: 8px;
-    background: #f0f4f8;
+    background: #e0e4e8;
     padding: 4px 8px;
     margin: 8px;
 }

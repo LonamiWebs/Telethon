@@ -85,8 +85,8 @@ if (typeof prependPath !== 'undefined') {
 // Returns the penalty for finding the needle in the haystack
 // or -1 if the needle wasn't found at all.
 function find(haystack, needle) {
-    if (needle.length == 0) {
-        return true;
+    if (haystack.indexOf(needle) != -1) {
+        return 0;
     }
     var hi = 0;
     var ni = 0;

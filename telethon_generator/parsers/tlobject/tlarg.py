@@ -1,6 +1,19 @@
 import re
 
 
+def _fmt_strings(*dicts):
+    for d in dicts:
+        for k, v in d.items():
+            if v in ('None', 'True', 'False'):
+                d[k] = '<strong>{}</strong>'.format(v)
+            else:
+                d[k] = re.sub(
+                    r'([brf]?([\'"]).*\2)',
+                    lambda m: '<em>{}</em>'.format(m.group(1)),
+                    v
+                )
+
+
 KNOWN_NAMED_EXAMPLES = {
     ('message', 'string'): "'Hello there!'",
     ('expires_at', 'date'): 'datetime.timedelta(minutes=5)',
@@ -40,6 +53,8 @@ KNOWN_TYPED_EXAMPLES = {
     'InputFile': "client.upload_file('/path/to/file.jpg')",
     'InputPeer': "'username'"
 }
+
+_fmt_strings(KNOWN_NAMED_EXAMPLES, KNOWN_TYPED_EXAMPLES)
 
 SYNONYMS = {
     'InputUser': 'InputPeer',

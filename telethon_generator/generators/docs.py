@@ -105,13 +105,14 @@ def _generate_index(root, folder, paths,
     filename = folder / (BOT_INDEX if bots_index else INDEX)
     with DocsWriter(root, filename, _get_path_for_type) as docs:
         # Title should be the current folder name
-        docs.write_head(str(folder).title(),
+        docs.write_head(str(folder).replace(os.path.sep, '/').title(),
                         css_path=paths['css'],
                         default_css=paths['default_css'])
 
         docs.set_menu_separator(paths['arrow'])
         _build_menu(docs)
-        docs.write_title(str(filename.parent.relative_to(root)).title())
+        docs.write_title(str(filename.parent.relative_to(root))
+                         .replace(os.path.sep, '/').title())
 
         if bots_index:
             docs.write_text('These are the methods that you may be able to '
@@ -379,19 +380,18 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
                                     '<code>telethon.errors</code>.')
 
                 docs.write_title('Example', id='examples')
-                docs.write(
-                    '<pre>from telethon.sync import TelegramClient\n'
-                    'from telethon import functions, types\n'
-                    '\n'
-                    'with TelegramClient(name, api_id, api_hash) as client:\n'
-                    '    result = client(')
+                docs.write('''<pre>\
+<strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> functions, types
+
+<strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:
+    result = client(''')
                 tlobject.as_example(docs, indent=1)
                 docs.write(')\n')
                 if tlobject.result.startswith('Vector'):
-                    docs.write(
-                        '    for x in result:\n'
-                        '        print(x'
-                    )
+                    docs.write('''\
+    <strong>for</strong> x <strong>in</strong> result:
+        print(x''')
                 else:
                     docs.write('    print(result')
                     if tlobject.result != 'Bool' \

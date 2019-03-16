@@ -447,34 +447,25 @@ However, a day is often more than enough.
 Sending Messages with Buttons
 *****************************
 
-You must sign in as a bot in order to add inline buttons (or normal
+**You must sign in as a bot** in order to add inline buttons (or normal
 keyboards) to your messages. Once you have signed in as a bot specify
 the `Button <telethon.tl.custom.button.Button>` or buttons to use:
 
 .. code-block:: python
 
+    from telethon import events
     from telethon.tl.custom import Button
 
-    async def callback(event):
-        await event.edit('Thank you!')
-
-    client.send_message(chat, 'Hello!',
-                        buttons=Button.inline('Click me', callback))
-
-
-You can also add the event handler yourself, or change the data payload:
-
-.. code-block:: python
-
-    from telethon import events
-
     @client.on(events.CallbackQuery)
-    async def handler(event):
-        await event.answer('You clicked {}!'.format(event.data))
+    async def callback(event):
+        await event.edit('Thank you for clicking {}!'.format(event.data))
 
-    client.send_message(chat, 'Pick one', buttons=[
+    client.send_message(chat, 'A single button, with "clk1" as data',
+                        buttons=Button.inline('Click me', b'clk1'))
+
+    client.send_message(chat, 'Pick one from this grid', buttons=[
         [Button.inline('Left'), Button.inline('Right')],
-        [Button.url('Check my site!', 'https://lonamiwebs.github.io')]
+        [Button.url('Check this site!', 'https://lonamiwebs.github.io')]
     ])
 
 You can also use normal buttons (not inline) to request the user's
