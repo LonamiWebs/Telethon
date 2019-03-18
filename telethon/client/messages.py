@@ -99,6 +99,18 @@ class _MessagesIter(RequestIter):
                 hash=0,
                 from_id=from_user
             )
+
+            # Workaround issue #1124 until a better solution is found.
+            # Telegram seemingly ignores `max_date` if `filter` (and
+            # nothing else) is specified, so we have to rely on doing
+            # a first request to offset from the ID instead.
+            #
+            # Even better, using `filter` and `from_id` seems to always
+            # trigger `RPC_CALL_FAIL` which is "internal issues"...
+            if filter and offset_date and not search and not offset_id:
+                async for m in self.client.iter_messages(
+                        self.entity, 1, offset_date=offset_date):
+                    self.request.offset_id = m.id + 1
         else:
             self.request = functions.messages.GetHistoryRequest(
                 peer=self.entity,
