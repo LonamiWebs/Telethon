@@ -180,15 +180,16 @@ class DialogMethods(UserMethods):
                 The entity with which a new conversation should be opened.
 
             timeout (`int` | `float`, optional):
-                The default timeout *per action* to be used. You may also
-                override this timeout on a per-method basis. By default each
-                action can take up to 60 seconds (the value of this timeout).
+                The default timeout (in seconds) *per action* to be used. You
+                may also override this timeout on a per-method basis. By
+                default each action can take up to 60 seconds (the value of
+                this timeout).
 
             total_timeout (`int` | `float`, optional):
-                The total timeout to use for the whole conversation. This
-                takes priority over per-action timeouts. After these many
-                seconds pass, subsequent actions will result in
-                ``asyncio.TimeoutError``.
+                The total timeout (in seconds) to use for the whole
+                conversation. This takes priority over per-action
+                timeouts. After these many seconds pass, subsequent
+                actions will result in ``asyncio.TimeoutError``.
 
             max_messages (`int`, optional):
                 The maximum amount of messages this conversation will

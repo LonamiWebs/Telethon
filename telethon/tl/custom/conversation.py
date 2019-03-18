@@ -123,7 +123,7 @@ class Conversation(ChatGetter):
                 is expected. By default this is the last sent message.
 
             timeout (`int` | `float`, optional):
-                If present, this `timeout` will override the
+                If present, this `timeout` (in seconds) will override the
                 per-action timeout defined for the conversation.
         """
         return await self._get_message(
@@ -161,7 +161,7 @@ class Conversation(ChatGetter):
                 once `condition` is met.
 
             timeout (`int`):
-                The timeout override to use for this operation.
+                The timeout (in seconds) override to use for this operation.
 
             condition (`callable`):
                 The condition callable that checks if an incoming

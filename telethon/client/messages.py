@@ -343,10 +343,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 This parameter will be ignored if it is not an user.
 
             wait_time (`int`):
-                Wait time between different :tl:`GetHistoryRequest`. Use this
-                parameter to avoid hitting the ``FloodWaitError`` as needed.
-                If left to ``None``, it will default to 1 second only if
-                the limit is higher than 3000.
+                Wait time (in seconds) between different
+                :tl:`GetHistoryRequest`. Use this parameter to avoid hitting
+                the ``FloodWaitError`` as needed. If left to ``None``, it will
+                default to 1 second only if the limit is higher than 3000.
 
             ids (`int`, `list`):
                 A single integer ID (or several IDs) for the message that

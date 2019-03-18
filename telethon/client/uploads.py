@@ -130,7 +130,9 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 in chunks of 10 if more than 10 are given.
 
             caption (`str`, optional):
-                Optional caption for the sent media message.
+                Optional caption for the sent media message. When sending an
+                album, the caption may be a list of strings, which will be
+                assigned to the files pairwise.
 
             force_document (`bool`, optional):
                 If left to ``False`` and the file is a path that ends with
