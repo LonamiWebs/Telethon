@@ -85,10 +85,25 @@ To generate the `method documentation`__, ``python3 setup.py gen docs``.
 Optional dependencies
 *********************
 
-If the `cryptg`__ is installed, you might notice a speed-up in the download
-and upload speed, since these are the most cryptographic-heavy part of the
-library and said module is a C extension. Otherwise, the ``pyaes`` fallback
-will be used.
+If pillow_ is installed, large images will be automatically resized when
+sending photos to prevent Telegram from failing with "invalid image".
+Official clients also do this.
+
+If aiohttp_ is installed, the library will be able to download
+:tl:`WebDocument` media files (otherwise you will get an error).
+
+If hachoir_ is installed, it will be used to extract metadata from files
+when sending documents. Telegram uses this information to show the song's
+performer, artist, title, duration, and for videos too (including size).
+Otherwise, they will default to empty values, and you can set the attributes
+manually.
+
+If cryptg_ is installed, encryption and decryption will be made in C instead
+of Python which will be a lot faster. If your code deals with a lot of
+updates or you are downloading/uploading a lot of files, you will notice
+a considerable speed-up (from a hundred kilobytes per second to several
+megabytes per second, if your connection allows it). If it's not installed,
+pyaes_ will be used (which is pure Python, so it's much slower).
 
 
 __ https://github.com/ricmoo/pyaes
@@ -96,4 +111,9 @@ __ https://pypi.python.org/pypi/pyaes
 __ https://github.com/sybrenstuvel/python-rsa
 __ https://pypi.python.org/pypi/rsa/3.4.2
 __ https://lonamiwebs.github.io/Telethon
-__ https://github.com/Lonami/cryptg
+
+.. _pillow: https://python-pillow.org
+.. _aiohttp: https://docs.aiohttp.org
+.. _hachoir: https://hachoir.readthedocs.io
+.. _cryptg: https://github.com/Lonami/cryptg
+.. _pyaes: https://github.com/ricmoo/pyaes
