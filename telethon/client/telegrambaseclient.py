@@ -381,10 +381,8 @@ class TelegramBaseClient(abc.ABC):
         consistency or compatibility.
         """
         self._disconnect()
-        if getattr(self, 'session', None):
-            if getattr(self, '_state', None):
-                self.session.set_update_state(0, self._state)
-            self.session.close()
+        self.session.set_update_state(0, self._state)
+        self.session.close()
 
         result = self._loop.create_future()
         result.set_result(None)
@@ -397,29 +395,9 @@ class TelegramBaseClient(abc.ABC):
         file; user disconnects however should close it since it means that
         their job with the client is complete and we should clean it up all.
         """
-        # All properties may be ``None`` if `__init__` fails, and this
-        # method will be called from `__del__` which would crash then.
-        if getattr(self, '_sender', None):
-            self._sender.disconnect()
-        if getattr(self, '_updates_handle', None):
+        self._sender.disconnect()
+        if self._updates_handle:
             self._updates_handle.cancel()
-
-    def __del__(self):
-        if not self.is_connected() or self.loop.is_closed():
-            return
-
-        # READ THIS IF DISCONNECT IS ASYNC AND A TASK WOULD BE MADE.
-        # Python 3.5.2's ``asyncio`` mod seems to have a bug where it's not
-        # able to close the pending tasks properly, and letting the script
-        # complete without calling disconnect causes the script to trigger
-        # 100% CPU load. Call disconnect to make sure it doesn't happen.
-        try:
-            self.disconnect()
-        except Exception:
-            # Arguably not the best solution, but worth trying if the user
-            # forgot to disconnect; normally this is fine but sometimes it
-            # can fail (https://github.com/LonamiWebs/Telethon/issues/1073)
-            pass
 
     async def _switch_dc(self, new_dc):
         """
