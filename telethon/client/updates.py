@@ -16,7 +16,7 @@ class UpdateMethods(UserMethods):
         try:
             await self.disconnected
         except KeyboardInterrupt:
-            self.disconnect()
+            await self.disconnect()
 
     def run_until_disconnected(self):
         """
@@ -33,7 +33,7 @@ class UpdateMethods(UserMethods):
         try:
             return self.loop.run_until_complete(self.disconnected)
         except KeyboardInterrupt:
-            self.disconnect()
+            self.loop.run_until_complete(self.disconnect())
 
     def on(self, event):
         """

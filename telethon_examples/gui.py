@@ -365,7 +365,7 @@ async def main(loop, interval=0.05):
         if 'application has been destroyed' not in e.args[0]:
             raise
     finally:
-        app.cl.disconnect()
+        await app.cl.disconnect()
 
 
 if __name__ == "__main__":

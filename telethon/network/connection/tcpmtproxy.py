@@ -111,7 +111,7 @@ class TcpMTProxy(ObfuscatedConnection):
             await asyncio.sleep(2)
 
         if self._reader.at_eof():
-            self.disconnect()
+            await self.disconnect()
             raise ConnectionError(
                 'Proxy closed the connection after sending initial payload')
 

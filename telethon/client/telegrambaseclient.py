@@ -6,7 +6,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from .. import version, __name__ as __base_name__
+from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
 from ..extensions import markdown
 from ..network import MTProtoSender, ConnectionTcpFull, TcpMTProxy
@@ -376,28 +376,29 @@ class TelegramBaseClient(abc.ABC):
         """
         Disconnects from Telegram.
 
-        Returns a dummy completed future with ``None`` as a result so
-        you can ``await`` this method just like every other method for
-        consistency or compatibility.
+        If the event loop is already running, this method returns a
+        coroutine that you should await on your own code; otherwise
+        the loop is ran until said coroutine completes.
         """
-        self._disconnect()
+        if self._loop.is_running():
+            return self._disconnect_coro()
+        else:
+            self._loop.run_until_complete(self._disconnect_coro())
+
+    async def _disconnect_coro(self):
+        await self._disconnect()
         self.session.set_update_state(0, self._state)
         self.session.close()
 
-        result = self._loop.create_future()
-        result.set_result(None)
-        return result
-
-    def _disconnect(self):
+    async def _disconnect(self):
         """
         Disconnect only, without closing the session. Used in reconnections
         to different data centers, where we don't want to close the session
         file; user disconnects however should close it since it means that
         their job with the client is complete and we should clean it up all.
         """
-        self._sender.disconnect()
-        if self._updates_handle:
-            self._updates_handle.cancel()
+        await self._sender.disconnect()
+        await helpers._cancel(self._log, updates_handle=self._updates_handle)
 
     async def _switch_dc(self, new_dc):
         """
@@ -412,7 +413,7 @@ class TelegramBaseClient(abc.ABC):
         self._sender.auth_key.key = None
         self.session.auth_key = None
         self.session.save()
-        self._disconnect()
+        await self._disconnect()
         return await self.connect()
 
     def _auth_key_callback(self, auth_key):
@@ -515,7 +516,7 @@ class TelegramBaseClient(abc.ABC):
             if not n:
                 self._log[__name__].info(
                     'Disconnecting borrowed sender for DC %d', dc_id)
-                sender.disconnect()
+                await sender.disconnect()
 
     async def _get_cdn_client(self, cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""

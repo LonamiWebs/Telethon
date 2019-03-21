@@ -1,4 +1,5 @@
 """Various helpers not related to the Telegram API itself"""
+import asyncio
 import os
 import struct
 from hashlib import sha1, sha256
@@ -84,6 +85,22 @@ def retry_range(retries):
         attempt += 1
         yield 1 + attempt
 
+
+async def _cancel(log, **tasks):
+    """
+    Helper to cancel one or more tasks gracefully, logging exceptions.
+    """
+    for name, task in tasks.items():
+        if not task:
+            continue
+
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.exception('Unhandled exception from %s after cancel', name)
 
 # endregion
 

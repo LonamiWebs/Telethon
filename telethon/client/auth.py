@@ -440,7 +440,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._state = types.updates.State(
             0, 0, datetime.datetime.now(tz=datetime.timezone.utc), 0, 0)
 
-        self.disconnect()
+        await self.disconnect()
         self.session.delete()
         return True
 
@@ -550,9 +550,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return await self.start()
 
     def __exit__(self, *args):
-        self.disconnect()
+        self.disconnect()  # It's also syncified, like start()
 
     async def __aexit__(self, *args):
-        self.disconnect()
+        await self.disconnect()
 
     # endregion

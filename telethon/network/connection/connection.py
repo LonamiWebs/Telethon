@@ -4,6 +4,7 @@ import socket
 import ssl as ssl_mod
 
 from ...errors import InvalidChecksumError
+from ... import helpers
 
 
 class Connection(abc.ABC):
@@ -92,18 +93,18 @@ class Connection(abc.ABC):
         self._send_task = self._loop.create_task(self._send_loop())
         self._recv_task = self._loop.create_task(self._recv_loop())
 
-    def disconnect(self):
+    async def disconnect(self):
         """
         Disconnects from the server, and clears
         pending outgoing and incoming messages.
         """
         self._connected = False
 
-        if self._send_task:
-            self._send_task.cancel()
-
-        if self._recv_task:
-            self._recv_task.cancel()
+        await helpers._cancel(
+            self._log,
+            send_task=self._send_task,
+            recv_task=self._recv_task
+        )
 
         if self._writer:
             self._writer.close()
@@ -148,7 +149,7 @@ class Connection(abc.ABC):
             else:
                 self._log.exception('Unexpected exception in the send loop')
 
-            self.disconnect()
+            await self.disconnect()
 
     async def _recv_loop(self):
         """
@@ -170,7 +171,7 @@ class Connection(abc.ABC):
                     msg = 'Unexpected exception in the receive loop'
                     self._log.exception(msg)
 
-                self.disconnect()
+                await self.disconnect()
 
                 # Add a sentinel value to unstuck recv
                 if self._recv_queue.empty():
