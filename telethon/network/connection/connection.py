@@ -39,10 +39,7 @@ class Connection(abc.ABC):
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
 
-    async def connect(self, timeout=None, ssl=None):
-        """
-        Establishes a connection with the server.
-        """
+    async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
             self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(
@@ -81,10 +78,16 @@ class Connection(abc.ABC):
             self._reader, self._writer = \
                 await asyncio.open_connection(sock=s, loop=self._loop)
 
-        self._connected = True
         self._codec = self.packet_codec(self)
         self._init_conn()
         await self._writer.drain()
+
+    async def connect(self, timeout=None, ssl=None):
+        """
+        Establishes a connection with the server.
+        """
+        await self._connect(timeout=timeout, ssl=ssl)
+        self._connected = True
 
         self._send_task = self._loop.create_task(self._send_loop())
         self._recv_task = self._loop.create_task(self._recv_loop())
