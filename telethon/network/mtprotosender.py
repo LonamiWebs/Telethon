@@ -285,8 +285,6 @@ class MTProtoSender:
         """
         Cleanly disconnects and then reconnects.
         """
-        self._reconnecting = True
-
         self._log.debug('Closing current connection...')
         await self._connection.disconnect()
 
@@ -296,6 +294,11 @@ class MTProtoSender:
             recv_loop_handle=self._recv_loop_handle
         )
 
+        # TODO See comment in `_start_reconnect`
+        # Perhaps this should be the last thing to do?
+        # But _connect() creates tasks which may run and,
+        # if they see that reconnecting is True, they will end.
+        # Perhaps that task creation should not belong in connect?
         self._reconnecting = False
 
         # Start with a clean state (and thus session ID) to avoid old msgs
@@ -331,6 +334,16 @@ class MTProtoSender:
     def _start_reconnect(self):
         """Starts a reconnection in the background."""
         if self._user_connected and not self._reconnecting:
+            # We set reconnecting to True here and not inside the new task
+            # because it may happen that send/recv loop calls this again
+            # while the new task hasn't had a chance to run yet. This race
+            # condition puts `self.connection` in a bad state with two calls
+            # to its `connect` without disconnecting, so it creates a second
+            # receive loop. There can't be two tasks receiving data from
+            # the reader, since that causes an error, and the library just
+            # gets stuck.
+            # TODO It still gets stuck? Investigate where and why.
+            self._reconnecting = True
             self._loop.create_task(self._reconnect())
 
     # Loops
