@@ -37,7 +37,8 @@ class UpdateMethods(UserMethods):
         except KeyboardInterrupt:
             pass
         finally:
-            self.loop.run_until_complete(self.disconnect())
+            # No loop.run_until_complete; it's already syncified
+            self.disconnect()
 
     def on(self, event):
         """

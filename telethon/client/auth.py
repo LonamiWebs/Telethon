@@ -550,7 +550,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return await self.start()
 
     def __exit__(self, *args):
-        self.disconnect()  # It's also syncified, like start()
+        # No loop.run_until_complete; it's already syncified
+        self.disconnect()
 
     async def __aexit__(self, *args):
         await self.disconnect()
