@@ -330,7 +330,7 @@ class MTProtoSender:
 
     def _start_reconnect(self):
         """Starts a reconnection in the background."""
-        if self._user_connected:
+        if self._user_connected and not self._reconnecting:
             self._loop.create_task(self._reconnect())
 
     # Loops
