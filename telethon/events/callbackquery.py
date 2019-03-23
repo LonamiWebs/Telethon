@@ -201,6 +201,21 @@ class CallbackQuery(EventBuilder):
                 )
             )
 
+        @property
+        def via_inline(self):
+            """
+            Whether this callback was generated from an inline button sent
+            via an inline query or not. If the bot sent the message itself
+            with buttons, and one of those is clicked, this will be ``False``.
+            If a user sent the message coming from an inline query to the
+            bot, and one of those is clicked, this will be ``True``.
+
+            If it's ``True``, it's likely that the bot is **not** in the
+            chat, so methods like `respond` or `delete` won't work (but
+            `edit` will always work).
+            """
+            return isinstance(self.query, types.UpdateInlineBotCallbackQuery)
+
         async def respond(self, *args, **kwargs):
             """
             Responds to the message (not as a reply). Shorthand for
@@ -208,6 +223,8 @@ class CallbackQuery(EventBuilder):
             ``entity`` already set.
 
             This method also creates a task to `answer` the callback.
+
+            This method will likely fail if `via_inline` is ``True``.
             """
             self._client.loop.create_task(self.answer())
             return await self._client.send_message(
@@ -220,6 +237,8 @@ class CallbackQuery(EventBuilder):
             both ``entity`` and ``reply_to`` already set.
 
             This method also creates a task to `answer` the callback.
+
+            This method will likely fail if `via_inline` is ``True``.
             """
             self._client.loop.create_task(self.answer())
             kwargs['reply_to'] = self.query.msg_id
@@ -228,11 +247,11 @@ class CallbackQuery(EventBuilder):
 
         async def edit(self, *args, **kwargs):
             """
-            Edits the message iff it's outgoing. Shorthand for
+            Edits the message. Shorthand for
             `telethon.client.messages.MessageMethods.edit_message` with
-            both ``entity`` and ``message`` already set.
+            the ``entity`` set to the correct :tl:`InputBotInlineMessageID`.
 
-            Returns the edited `Message <telethon.tl.custom.message.Message>`.
+            Returns ``True`` if the edit was successful.
 
             This method also creates a task to `answer` the callback.
 
@@ -244,8 +263,7 @@ class CallbackQuery(EventBuilder):
             """
             self._client.loop.create_task(self.answer())
             return await self._client.edit_message(
-                await self.get_input_chat(), self.query.msg_id,
-                *args, **kwargs
+                self.query.msg_id, *args, **kwargs
             )
 
         async def delete(self, *args, **kwargs):
@@ -259,6 +277,8 @@ class CallbackQuery(EventBuilder):
             `telethon.client.telegramclient.TelegramClient` instance directly.
 
             This method also creates a task to `answer` the callback.
+
+            This method will likely fail if `via_inline` is ``True``.
             """
             self._client.loop.create_task(self.answer())
             return await self._client.delete_messages(

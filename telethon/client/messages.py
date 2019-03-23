@@ -707,6 +707,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 from it, so the next parameter will be assumed to be the
                 message text.
 
+                You may also pass a :tl:`InputBotInlineMessageID`,
+                which is the only way to edit messages that were sent
+                after the user selects an inline query result.
+
             message (`int` | `Message <telethon.tl.custom.message.Message>` | `str`):
                 The ID of the message (or `Message
                 <telethon.tl.custom.message.Message>` itself) to be edited.
@@ -756,16 +760,32 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             not modified at all.
 
         Returns:
-            The edited `telethon.tl.custom.message.Message`.
+            The edited `telethon.tl.custom.message.Message`, unless
+            `entity` was a :tl:`InputBotInlineMessageID` in which
+            case this method returns a boolean.
         """
-        if isinstance(entity, types.Message):
+        if isinstance(entity, types.InputBotInlineMessageID):
+            text = message
+            message = entity
+        elif isinstance(entity, types.Message):
             text = message  # Shift the parameters to the right
             message = entity
             entity = entity.to_id
 
-        entity = await self.get_input_entity(entity)
         text, msg_entities = await self._parse_message_text(text, parse_mode)
         file_handle, media, image = await self._file_to_media(file)
+
+        if isinstance(entity, types.InputBotInlineMessageID):
+            return await self(functions.messages.EditInlineBotMessageRequest(
+                id=entity,
+                message=text,
+                no_webpage=not link_preview,
+                entities=msg_entities,
+                media=media,
+                reply_markup=self.build_reply_markup(buttons)
+            ))
+
+        entity = await self.get_input_entity(entity)
         request = functions.messages.EditMessageRequest(
             peer=entity,
             id=utils.get_message_id(message),
