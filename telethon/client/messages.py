@@ -816,7 +816,15 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Whether the message should be deleted for everyone or not.
                 By default it has the opposite behaviour of official clients,
                 and it will delete the message for everyone.
-                This has no effect on channels or megagroups.
+
+                `Since 24 March 2019
+                <https://telegram.org/blog/unsend-privacy-emoji>`_, you can
+                also revoke messages of any age (i.e. messages sent long in
+                the past) the *other* person sent in private conversations
+                (and of course your messages too).
+
+                Disabling this has no effect on channels or megagroups,
+                since it will unconditionally delete the message for everyone.
 
         Returns:
             A list of :tl:`AffectedMessages`, each item being the result
