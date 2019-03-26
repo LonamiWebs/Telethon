@@ -99,18 +99,12 @@ class MemorySession(Session):
             p = utils.get_input_peer(e, allow_self=False)
             marked_id = utils.get_peer_id(p)
         except TypeError:
+            # Note: `get_input_peer` already checks for
+            # non-zero `access_hash`. See issues #354 and #392.
             return
 
         if isinstance(p, (InputPeerUser, InputPeerChannel)):
-            if not p.access_hash:
-                # Some users and channels seem to be returned without
-                # an 'access_hash', meaning Telegram doesn't want you
-                # to access them. This is the reason behind ensuring
-                # that the 'access_hash' is non-zero. See issue #354.
-                # Note that this checks for zero or None, see #392.
-                return
-            else:
-                p_hash = p.access_hash
+            p_hash = p.access_hash
         elif isinstance(p, InputPeerChat):
             p_hash = 0
         else:

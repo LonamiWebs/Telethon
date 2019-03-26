@@ -179,6 +179,8 @@ class UpdateMethods(UserMethods):
 
     async def _handle_update(self, update):
         self.session.process_entities(update)
+        self._entity_cache.add(update)
+
         if isinstance(update, (types.Updates, types.UpdatesCombined)):
             entities = {utils.get_peer_id(x): x for x in
                         itertools.chain(update.users, update.chats)}

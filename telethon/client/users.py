@@ -49,6 +49,7 @@ class UserMethods(TelegramBaseClient):
                             results.append(None)
                             continue
                         self.session.process_entities(result)
+                        self._entity_cache.add(result)
                         exceptions.append(None)
                         results.append(result)
                         request_index += 1
@@ -59,6 +60,7 @@ class UserMethods(TelegramBaseClient):
                 else:
                     result = await future
                     self.session.process_entities(result)
+                    self._entity_cache.add(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError,
                     errors.RpcMcgetFailError) as e:

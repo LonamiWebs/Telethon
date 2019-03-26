@@ -2,7 +2,6 @@ import abc
 import asyncio
 import logging
 import platform
-import sys
 import time
 from datetime import datetime, timezone
 
@@ -13,6 +12,7 @@ from ..network import MTProtoSender, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
+from ..entitycache import EntityCache
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -229,14 +229,17 @@ class TelegramBaseClient(abc.ABC):
 
         self.flood_sleep_threshold = flood_sleep_threshold
 
-        # TODO Figure out how to use AsyncClassWrapper(session)
-        # The problem is that ChatGetter and SenderGetter rely
-        # on synchronous calls to session.get_entity precisely
-        # to avoid network access and the need for await.
+        # TODO Use AsyncClassWrapper(session)
+        # ChatGetter and SenderGetter can use the in-memory _entity_cache
+        # to avoid network access and the need for await in session files.
         #
-        # With asynchronous sessions, it would need await,
-        # and defeats the purpose of properties.
+        # The session files only wants the entities to persist
+        # them to disk, and to save additional useful information.
+        # TODO Make use of _entity_cache
+        # TODO Session should probably return all cached
+        #      info of entities, not just the input versions
         self.session = session
+        self._entity_cache = EntityCache()
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
