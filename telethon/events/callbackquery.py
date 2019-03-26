@@ -156,10 +156,8 @@ class CallbackQuery(EventBuilder):
             if not getattr(self._input_sender, 'access_hash', True):
                 # getattr with True to handle the InputPeerSelf() case
                 try:
-                    self._input_sender = self._client.session.get_input_entity(
-                        self._sender_id
-                    )
-                except ValueError:
+                    self._input_sender = self._client._entity_cache[self._sender_id]
+                except KeyError:
                     m = await self.get_message()
                     if m:
                         self._sender = m._sender

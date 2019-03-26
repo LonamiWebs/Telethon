@@ -362,10 +362,8 @@ class ChatAction(EventBuilder):
                 self._input_users = []
                 for peer in self._user_peers:
                     try:
-                        self._input_users.append(
-                            self._client.session.get_input_entity(peer)
-                        )
-                    except ValueError:
+                        self._input_users.append(self._client._entity_cache[peer])
+                    except KeyError:
                         pass
             return self._input_users or []
 

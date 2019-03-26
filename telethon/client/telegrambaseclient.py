@@ -235,7 +235,6 @@ class TelegramBaseClient(abc.ABC):
         #
         # The session files only wants the entities to persist
         # them to disk, and to save additional useful information.
-        # TODO Make use of _entity_cache
         # TODO Session should probably return all cached
         #      info of entities, not just the input versions
         self.session = session

@@ -834,8 +834,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                         if not bot:
                             raise ValueError('No input sender')
                     else:
-                        return self._client.session.get_input_entity(
-                            self.via_bot_id)
+                        try:
+                            return self._client._entity_cache[self.via_bot_id]
+                        except KeyError:
+                            raise ValueError('No input sender') from None
 
     def _document_by_attribute(self, kind, condition=None):
         """

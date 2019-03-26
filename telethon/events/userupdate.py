@@ -170,7 +170,7 @@ class UserUpdate(EventBuilder):
         def _set_client(self, client):
             if isinstance(self._chat_peer, int):
                 try:
-                    chat = client.session.get_input_entity(self._chat_peer)
+                    chat = client._entity_cache[self._chat_peer]
                     if isinstance(chat, types.InputPeerChat):
                         self._chat_peer = types.PeerChat(self._chat_peer)
                     elif isinstance(chat, types.InputPeerChannel):
@@ -178,7 +178,7 @@ class UserUpdate(EventBuilder):
                     else:
                         # Should not happen
                         self._chat_peer = types.PeerUser(self._chat_peer)
-                except ValueError:
+                except KeyError:
                     # Hope for the best. We don't know where this event
                     # occurred but it was most likely in a channel.
                     self._chat_peer = types.PeerChannel(self._chat_peer)

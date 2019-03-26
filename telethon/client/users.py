@@ -308,8 +308,8 @@ class UserMethods(TelegramBaseClient):
 
         try:
             # First try to get the entity from cache, otherwise figure it out
-            return self.session.get_input_entity(peer)
-        except ValueError:
+            return self._entity_cache[peer]
+        except KeyError:
             pass
 
         if isinstance(peer, str):

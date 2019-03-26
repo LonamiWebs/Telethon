@@ -154,10 +154,8 @@ class EventCommon(ChatGetter, abc.ABC):
             self._input_chat = utils.get_input_peer(self._chat)
         except TypeError:
             try:
-                self._input_chat = self._client.session.get_input_entity(
-                    self._chat_peer
-                )
-            except ValueError:
+                self._input_chat = self._client._entity_cache[self._chat_peer]
+            except KeyError:
                 self._input_chat = None
 
     @property

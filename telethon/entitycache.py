@@ -31,15 +31,17 @@ class EntityCache:
     def __getitem__(self, item):
         """
         Gets the corresponding :tl:`InputPeer` for the given ID or peer,
-        or returns `None` on error/not found.
+        or raises ``KeyError`` on any error (i.e. cannot be found).
         """
         if not isinstance(item, int) or item < 0:
             try:
-                return self.__dict__.get(utils.get_peer_id(item))
+                return self.__dict__[utils.get_peer_id(item)]
             except TypeError:
-                return None
+                raise KeyError('Invalid key will not have entity') from None
 
         for cls in (types.PeerUser, types.PeerChat, types.PeerChannel):
-            result = self.__dict__.get(cls(item))
+            result = self.__dict__.get(utils.get_peer_id(cls(item)))
             if result:
                 return result
+
+        raise KeyError('No cached entity for the given key')
