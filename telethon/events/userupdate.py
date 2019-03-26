@@ -14,6 +14,14 @@ class UserUpdate(EventBuilder):
         if isinstance(update, types.UpdateUserStatus):
             event = cls.Event(update.user_id,
                               status=update.status)
+        elif isinstance(update, types.UpdateChatUserTyping):
+            # Unfortunately, we can't know whether `chat_id`'s type
+            event = cls.Event(update.user_id,
+                              chat_id=update.chat_id,
+                              typing=update.action)
+        elif isinstance(update, types.UpdateUserTyping):
+            event = cls.Event(update.user_id,
+                              typing=update.action)
         else:
             return
 
@@ -83,8 +91,12 @@ class UserUpdate(EventBuilder):
             contact (`bool`):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
-        def __init__(self, user_id, *, status=None, typing=None):
+        def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
             super().__init__(types.PeerUser(user_id))
+
+            # TODO This should be passed to init, not here
+            # But we need to know the type beforehand
+            self.chat_id = chat_id
 
             self.online = None if status is None else \
                 isinstance(status, types.UserStatusOnline)
