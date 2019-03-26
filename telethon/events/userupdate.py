@@ -2,6 +2,7 @@ import datetime
 
 from .common import EventBuilder, EventCommon, name_inner_event
 from ..tl import types
+from ..tl.custom.sendergetter import SenderGetter
 
 
 @name_inner_event
@@ -28,7 +29,7 @@ class UserUpdate(EventBuilder):
         event._entities = update._entities
         return event
 
-    class Event(EventCommon):
+    class Event(EventCommon, SenderGetter):
         """
         Represents the event of a user status update (last seen, joined).
 
@@ -92,13 +93,16 @@ class UserUpdate(EventBuilder):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
         def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
-            # TODO Now we need to use the user_id!
             if chat_id is None:
                 super().__init__(types.PeerUser(user_id))
             else:
                 # Temporarily set the chat_peer to the ID until ._set_client.
                 # We need the client to actually figure out its type.
                 super().__init__(chat_id)
+
+            self._sender_id = user_id
+            self._input_sender = None
+            self._sender = None
 
             self.online = None if status is None else \
                 isinstance(status, types.UserStatusOnline)
@@ -183,23 +187,23 @@ class UserUpdate(EventBuilder):
 
         @property
         def user(self):
-            """Alias for `chat` (conversation)."""
-            return self.chat
+            """Alias for `sender`."""
+            return self.sender
 
         async def get_user(self):
-            """Alias for `get_chat` (conversation)."""
-            return await self.get_chat()
+            """Alias for `get_sender`."""
+            return await self.get_sender()
 
         @property
         def input_user(self):
-            """Alias for `input_chat`."""
-            return self.input_chat
+            """Alias for `input_sender`."""
+            return self.input_sender
 
         async def get_input_user(self):
-            """Alias for `get_input_chat`."""
-            return await self.get_input_chat()
+            """Alias for `get_input_sender`."""
+            return await self.get_input_sender()
 
         @property
         def user_id(self):
-            """Alias for `chat_id`."""
-            return self.chat_id
+            """Alias for `sender_id`."""
+            return self.sender_id
