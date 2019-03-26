@@ -92,11 +92,13 @@ class UserUpdate(EventBuilder):
                 ``True`` if what's being uploaded (selected) is a contact.
         """
         def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
-            super().__init__(types.PeerUser(user_id))
-
-            # TODO This should be passed to init, not here
-            # But we need to know the type beforehand
-            self.chat_id = chat_id
+            # TODO Now we need to use the user_id!
+            if chat_id is None:
+                super().__init__(types.PeerUser(user_id))
+            else:
+                # Temporarily set the chat_peer to the ID until ._set_client.
+                # We need the client to actually figure out its type.
+                super().__init__(chat_id)
 
             self.online = None if status is None else \
                 isinstance(status, types.UserStatusOnline)
@@ -160,6 +162,24 @@ class UserUpdate(EventBuilder):
                     self.uploading = self.round = True
                 elif isinstance(typing, types.SendMessageUploadVideoAction):
                     self.uploading = self.video = True
+
+        def _set_client(self, client):
+            if isinstance(self._chat_peer, int):
+                try:
+                    chat = client.session.get_input_entity(self._chat_peer)
+                    if isinstance(chat, types.InputPeerChat):
+                        self._chat_peer = types.PeerChat(self._chat_peer)
+                    elif isinstance(chat, types.InputPeerChannel):
+                        self._chat_peer = types.PeerChannel(self._chat_peer)
+                    else:
+                        # Should not happen
+                        self._chat_peer = types.PeerUser(self._chat_peer)
+                except ValueError:
+                    # Hope for the best. We don't know where this event
+                    # occurred but it was most likely in a channel.
+                    self._chat_peer = types.PeerChannel(self._chat_peer)
+
+            super()._set_client(client)
 
         @property
         def user(self):
