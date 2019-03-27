@@ -146,17 +146,23 @@ class EventCommon(ChatGetter, abc.ABC):
         Setter so subclasses can act accordingly when the client is set.
         """
         self._client = client
-        self._chat = self._entities.get(self.chat_id)
-        if not self._chat:
-            return
 
+    def _load_entities(self):
+        """
+        Must load all the entities it needs from cache, and
+        return ``False`` if it could not find all of them.
+        """
+        # TODO Make sure all subclasses implement this
+        self._chat = self._entities.get(self.chat_id)
         try:
             self._input_chat = utils.get_input_peer(self._chat)
         except TypeError:
             try:
                 self._input_chat = self._client._entity_cache[self._chat_peer]
             except KeyError:
-                self._input_chat = None
+                return False
+
+        return True
 
     @property
     def client(self):
