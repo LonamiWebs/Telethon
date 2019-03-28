@@ -211,8 +211,24 @@ class NewMessage(EventBuilder):
             m = self.message
             m._chat, m._input_chat = self._get_entity_pair(m.chat_id)
             m._sender, m._input_sender = self._get_entity_pair(m.sender_id)
-            return m._input_chat is not None and (
-                    not m.sender_id or m._input_sender is not None)
+            m._via_bot, m._via_input_bot = self._get_entity_pair(m.via_bot_id)
+            if not m.forward:
+                forward_ok = True
+            else:
+                f = m.forward
+                f._chat, f._input_chat = self._get_entity_pair(f.chat_id)
+                f._sender, f._input_sender = self._get_entity_pair(f.sender_id)
+                forward_ok = (
+                    (not f.chat_id or f._input_chat is not None)
+                    and (not f.sender_id or f._input_sender is not None)
+                )
+
+            return (
+                m._input_chat is not None
+                and (not m.sender_id or m._input_sender is not None)
+                and (not m.via_bot_id or m._via_input_bot is not None)
+                and forward_ok
+            )
 
         def __getattr__(self, item):
             if item in self.__dict__:

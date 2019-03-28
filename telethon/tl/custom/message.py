@@ -183,6 +183,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._sender_id = from_id
         self._sender = None
         self._input_sender = None
+        self._via_bot = None
+        self._via_input_bot = None
         self._action_entities = None
 
         if not out and isinstance(to_id, types.PeerUser):
@@ -222,6 +224,13 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 self._input_chat = utils.get_input_peer(self._chat)
             except TypeError:
                 self._input_chat = None
+
+        self._via_bot = entities.get(self.via_bot_id)
+        if self._via_bot:
+            try:
+                self._via_input_bot = utils.get_input_peer(self._via_bot)
+            except TypeError:
+                self._via_input_bot = None
 
         if self.fwd_from:
             self._forward = Forward(self._client, self.fwd_from, entities)
@@ -530,6 +539,24 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         """
         return self._action_entities
 
+    @property
+    def via_bot(self):
+        """
+        If this message was sent via some bot (i.e. `via_bot_id` is not
+        ``None``), this property returns the :tl:`User` of the bot that
+        was used to send this message.
+
+        Returns ``None`` otherwise (or if the bot entity is unknown).
+        """
+        return self._via_bot
+
+    @property
+    def via_input_bot(self):
+        """
+        Returns the input variant of `via_bot`.
+        """
+        return self._via_input_bot
+
     # endregion Public Properties
 
     # region Public Methods
@@ -779,7 +806,6 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
     # region Private Methods
 
-    # TODO Make a property for via_bot and via_input_bot, as well as get_*
     async def _reload_message(self):
         """
         Re-fetches this message to reload the sender and chat entities,
@@ -797,6 +823,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._input_sender = msg._input_sender
         self._chat = msg._chat
         self._input_chat = msg._input_chat
+        self._via_bot = msg._via_bot
+        self._via_input_bot = msg._via_input_bot
+        self._forward = msg._forward
         self._action_entities = msg._action_entities
 
     async def _refetch_sender(self):
