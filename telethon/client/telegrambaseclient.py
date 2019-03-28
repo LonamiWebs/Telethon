@@ -304,10 +304,17 @@ class TelegramBaseClient(abc.ABC):
             self._dispatching_updates_queue = None
 
         self._authorized = None  # None = unknown, False = no, True = yes
-        self._state = self.session.get_update_state(0)
-        if not self._state:
-            self._state = types.updates.State(
-                0, 0, datetime.now(tz=timezone.utc), 0, 0)
+
+        # Update state (for catching up after a disconnection)
+        self._old_state = self.session.get_update_state(0)
+        self._new_state = None
+
+        # If we catch up, while we don't get disconnected,
+        # the old state will be the same as the new one.
+        #
+        # If we do get disconnected, then the old and new
+        # state may differ.
+        self._old_state_is_new = False
 
         # Some further state for subclasses
         self._event_builders = []
@@ -389,7 +396,13 @@ class TelegramBaseClient(abc.ABC):
 
     async def _disconnect_coro(self):
         await self._disconnect()
-        self.session.set_update_state(0, self._state)
+
+        # If we disconnect, the old state is the last one we are aware of
+        self._old_state_is_new = True
+
+        if self._new_state:
+            self.session.set_update_state(0, self._new_state)
+
         self.session.close()
 
     async def _disconnect(self):
