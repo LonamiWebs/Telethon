@@ -185,6 +185,10 @@ class UserUpdate(EventBuilder):
 
             super()._set_client(client)
 
+        def _load_entities(self):
+            self._sender, self._input_sender = self._get_entity_pair(self.sender_id)
+            return super()._load_entities() and self._input_sender is not None
+
         @property
         def user(self):
             """Alias for `sender`."""

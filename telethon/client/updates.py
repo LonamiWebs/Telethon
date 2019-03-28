@@ -366,7 +366,7 @@ class EventBuilderDict:
 
         self.client._log[__name__].debug('Getting difference for entities')
         result = await self.client(functions.updates.GetDifferenceRequest(
-            pts, date, 0
+            pts - 1, date, 0
         ))
 
         if isinstance(result, (types.updates.Difference,

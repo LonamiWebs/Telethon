@@ -49,7 +49,7 @@ class ChatGetter(abc.ABC):
         """
         if self._input_chat is None and self._chat_peer:
             try:
-                self._input_chat = self._client._entity_cache(self._chat_peer)
+                self._input_chat = self._client._entity_cache[self._chat_peer]
             except KeyError:
                 pass
 

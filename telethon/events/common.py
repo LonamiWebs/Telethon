@@ -147,22 +147,31 @@ class EventCommon(ChatGetter, abc.ABC):
         """
         self._client = client
 
+    def _get_entity_pair(self, entity_id):
+        """
+        Returns ``(entity, input_entity)`` for the given entity ID.
+        """
+        entity = self._entities.get(entity_id)
+        try:
+            input_entity = utils.get_input_peer(entity)
+        except TypeError:
+            try:
+                input_entity = self._client._entity_cache[entity_id]
+            except KeyError:
+                input_entity = None
+
+        return entity, input_entity
+
     def _load_entities(self):
         """
         Must load all the entities it needs from cache, and
         return ``False`` if it could not find all of them.
         """
-        # TODO Make sure all subclasses implement this
-        self._chat = self._entities.get(self.chat_id)
-        try:
-            self._input_chat = utils.get_input_peer(self._chat)
-        except TypeError:
-            try:
-                self._input_chat = self._client._entity_cache[self._chat_peer]
-            except KeyError:
-                return False
+        if not self._chat_peer:
+            return True  # Nothing to load (e.g. MessageDeleted)
 
-        return True
+        self._chat, self._input_chat = self._get_entity_pair(self.chat_id)
+        return self._input_chat is not None
 
     @property
     def client(self):

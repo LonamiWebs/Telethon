@@ -207,6 +207,13 @@ class NewMessage(EventBuilder):
             self.message._finish_init(client, self._entities, None)
             self.__dict__['_init'] = True  # No new attributes can be set
 
+        def _load_entities(self):
+            m = self.message
+            m._chat, m._input_chat = self._get_entity_pair(m.chat_id)
+            m._sender, m._input_sender = self._get_entity_pair(m.sender_id)
+            return m._input_chat is not None and (
+                    not m.sender_id or m._input_sender is not None)
+
         def __getattr__(self, item):
             if item in self.__dict__:
                 return self.__dict__[item]
