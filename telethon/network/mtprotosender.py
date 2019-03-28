@@ -198,7 +198,7 @@ class MTProtoSender:
             try:
                 self._log.debug('Connection attempt {}...'.format(attempt))
                 await self._connection.connect(timeout=self._connect_timeout)
-            except (ConnectionError, asyncio.TimeoutError) as e:
+            except (IOError, asyncio.TimeoutError) as e:
                 self._log.warning('Attempt {} at connecting failed: {}: {}'
                                   .format(attempt, type(e).__name__, e))
                 await asyncio.sleep(self._delay)
@@ -308,7 +308,7 @@ class MTProtoSender:
         for attempt in retry_range(retries):
             try:
                 await self._connect()
-            except (ConnectionError, asyncio.TimeoutError) as e:
+            except (IOError, asyncio.TimeoutError) as e:
                 self._log.info('Failed reconnection attempt %d with %s',
                              attempt, e.__class__.__name__)
 
@@ -377,7 +377,7 @@ class MTProtoSender:
             data = self._state.encrypt_message_data(data)
             try:
                 await self._connection.send(data)
-            except ConnectionError:
+            except IOError:
                 self._log.info('Connection closed while sending data')
                 self._start_reconnect()
                 return
@@ -404,7 +404,7 @@ class MTProtoSender:
             self._log.debug('Receiving items from the network...')
             try:
                 body = await self._connection.recv()
-            except ConnectionError:
+            except IOError:
                 self._log.info('Connection closed while receiving data')
                 self._start_reconnect()
                 return

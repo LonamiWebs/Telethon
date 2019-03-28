@@ -144,7 +144,7 @@ class Connection(abc.ABC):
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            if isinstance(e, ConnectionError):
+            if isinstance(e, IOError):
                 self._log.info('The server closed the connection while sending')
             else:
                 self._log.exception('Unexpected exception in the send loop')
@@ -161,7 +161,7 @@ class Connection(abc.ABC):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                if isinstance(e, (ConnectionError, asyncio.IncompleteReadError)):
+                if isinstance(e, (IOError, asyncio.IncompleteReadError)):
                     msg = 'The server closed the connection'
                     self._log.info(msg)
                 elif isinstance(e, InvalidChecksumError):

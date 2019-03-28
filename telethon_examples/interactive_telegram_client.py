@@ -115,7 +115,10 @@ class InteractiveTelegramClient(TelegramClient):
         print('Connecting to Telegram servers...')
         try:
             loop.run_until_complete(self.connect())
-        except ConnectionError:
+        except IOError:
+            # We handle IOError and not ConnectionError because
+            # PySocks' errors do not subclass ConnectionError
+            # (so this will work with and without proxies).
             print('Initial connection failed. Retrying...')
             loop.run_until_complete(self.connect())
 
