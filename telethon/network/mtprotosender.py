@@ -281,7 +281,7 @@ class MTProtoSender:
             else:
                 self._disconnected.set_result(None)
 
-    async def _reconnect(self):
+    async def _reconnect(self, last_error):
         """
         Cleanly disconnects and then reconnects.
         """
@@ -309,13 +309,15 @@ class MTProtoSender:
             try:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:
+                last_error = e
                 self._log.info('Failed reconnection attempt %d with %s',
-                             attempt, e.__class__.__name__)
+                               attempt, e.__class__.__name__)
 
                 await asyncio.sleep(self._delay)
-            except Exception:
+            except Exception as e:
+                last_error = e
                 self._log.exception('Unexpected exception reconnecting on '
-                                  'attempt %d', attempt)
+                                    'attempt %d', attempt)
 
                 await asyncio.sleep(self._delay)
             else:
@@ -329,9 +331,9 @@ class MTProtoSender:
         else:
             self._log.error('Automatic reconnection failed {} time(s)'
                             .format(attempt))
-            await self._disconnect(error=ConnectionError())
+            await self._disconnect(error=last_error.with_traceback(None))
 
-    def _start_reconnect(self):
+    def _start_reconnect(self, error):
         """Starts a reconnection in the background."""
         if self._user_connected and not self._reconnecting:
             # We set reconnecting to True here and not inside the new task
@@ -344,7 +346,7 @@ class MTProtoSender:
             # gets stuck.
             # TODO It still gets stuck? Investigate where and why.
             self._reconnecting = True
-            self._loop.create_task(self._reconnect())
+            self._loop.create_task(self._reconnect(error))
 
     # Loops
 
@@ -377,9 +379,9 @@ class MTProtoSender:
             data = self._state.encrypt_message_data(data)
             try:
                 await self._connection.send(data)
-            except IOError:
+            except IOError as e:
                 self._log.info('Connection closed while sending data')
-                self._start_reconnect()
+                self._start_reconnect(e)
                 return
 
             for state in batch:
@@ -404,9 +406,9 @@ class MTProtoSender:
             self._log.debug('Receiving items from the network...')
             try:
                 body = await self._connection.recv()
-            except IOError:
+            except IOError as e:
                 self._log.info('Connection closed while receiving data')
-                self._start_reconnect()
+                self._start_reconnect(e)
                 return
 
             try:
@@ -432,11 +434,11 @@ class MTProtoSender:
                 if self._auth_key_callback:
                     self._auth_key_callback(None)
 
-                self._start_reconnect()
+                self._start_reconnect(e)
                 return
-            except Exception:
+            except Exception as e:
                 self._log.exception('Unhandled error while receiving data')
-                self._start_reconnect()
+                self._start_reconnect(e)
                 return
 
             try:
