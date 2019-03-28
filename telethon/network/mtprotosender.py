@@ -266,8 +266,6 @@ class MTProtoSender:
                     state.future.cancel()
 
             self._pending_state.clear()
-            self._pending_ack.clear()
-            self._last_ack = None
             await helpers._cancel(
                 self._log,
                 send_loop_handle=self._send_loop_handle,
