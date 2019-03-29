@@ -32,11 +32,11 @@ class RequestIter(abc.ABC):
         self.wait_time = wait_time
         self.kwargs = kwargs
         self.limit = max(float('inf') if limit is None else limit, 0)
-        self.left = None
+        self.left = self.limit
         self.buffer = None
-        self.index = None
+        self.index = 0
         self.total = None
-        self.last_load = None
+        self.last_load = 0
 
     async def _init(self, **kwargs):
         """
