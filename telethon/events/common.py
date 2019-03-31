@@ -108,7 +108,8 @@ class EventBuilder(abc.ABC):
             return None
 
         if self.chats is not None:
-            inside = utils.get_peer_id(event._chat_peer) in self.chats
+            # Note: the `event.chat_id` property checks if it's `None` for us
+            inside = event.chat_id in self.chats
             if inside == self.blacklist_chats:
                 # If this chat matches but it's a blacklist ignore.
                 # If it doesn't match but it's a whitelist ignore.
