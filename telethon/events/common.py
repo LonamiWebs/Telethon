@@ -69,7 +69,7 @@ class EventBuilder(abc.ABC):
 
     def __init__(self, chats=None, *, blacklist_chats=False, func=None):
         self.chats = chats
-        self.blacklist_chats = blacklist_chats
+        self.blacklist_chats = bool(blacklist_chats)
         self.resolved = False
         self.func = func
         self._resolve_lock = None

@@ -15,7 +15,7 @@ class MessageRead(EventBuilder):
             when messages you sent are read by someone else will fire it.
     """
     def __init__(
-            self, chats=None, *, blacklist_chats=None, func=None, inbox=False):
+            self, chats=None, *, blacklist_chats=False, func=None, inbox=False):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
         self.inbox = inbox
 
