@@ -413,7 +413,8 @@ class TelegramBaseClient(abc.ABC):
         their job with the client is complete and we should clean it up all.
         """
         await self._sender.disconnect()
-        await helpers._cancel(self._log, updates_handle=self._updates_handle)
+        await helpers._cancel(self._log[__name__],
+                              updates_handle=self._updates_handle)
 
     async def _switch_dc(self, new_dc):
         """

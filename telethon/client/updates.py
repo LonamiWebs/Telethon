@@ -141,8 +141,6 @@ class UpdateMethods(UserMethods):
         else:
             max_pts = float('inf')
 
-        print('catching up since', state, 'up to', max_pts)
-
         # No known state -> catch up since the beginning (date is ignored).
         # Note: pts = 0 is invalid (and so is no date/unix timestamp = 0).
         if not state:
@@ -195,6 +193,8 @@ class UpdateMethods(UserMethods):
                     elif isinstance(d, types.updates.DifferenceTooLong):
                         state.pts = d.pts
                     break
+        except (ConnectionError, asyncio.CancelledError):
+            pass
         finally:
             self._old_state = None
             self._new_state = state
@@ -262,12 +262,15 @@ class UpdateMethods(UserMethods):
                 pass
             except asyncio.CancelledError:
                 return
-            except Exception as e:
+            except Exception:
                 continue  # Any disconnected exception should be ignored
 
             # We also don't really care about their result.
             # Just send them periodically.
-            self._sender.send(functions.PingRequest(rnd()))
+            try:
+                self._sender.send(functions.PingRequest(rnd()))
+            except (ConnectionError, asyncio.CancelledError):
+                return
 
             # Entities and cached files are not saved when they are
             # inserted because this is a rather expensive operation
@@ -286,7 +289,10 @@ class UpdateMethods(UserMethods):
                     # long without being logged in...?
                     continue
 
-                await self(functions.updates.GetStateRequest())
+                try:
+                    await self(functions.updates.GetStateRequest())
+                except (ConnectionError, asyncio.CancelledError):
+                    return
 
     async def _dispatch_queue_updates(self):
         while not self._updates_queue.empty():
