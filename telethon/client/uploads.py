@@ -39,7 +39,7 @@ def _resize_photo_if_needed(
             or (isinstance(file, io.IOBase) and not file.seekable())):
         return file
 
-    before = file.tell() if isinstance(file, io.IOBase) else None
+    before = file.tell() if isinstance(file, io.IOBase) else 0
     if isinstance(file, bytes):
         file = io.BytesIO(file)
 
