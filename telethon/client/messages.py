@@ -667,31 +667,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             silent=silent
         )
         result = await self(req)
-        if isinstance(result, (types.Updates, types.UpdatesCombined)):
-            entities = {utils.get_peer_id(x): x
-                        for x in itertools.chain(result.users, result.chats)}
-        else:
-            entities = {}
-
-        random_to_id = {}
-        id_to_message = {}
-        for update in result.updates:
-            if isinstance(update, types.UpdateMessageID):
-                random_to_id[update.random_id] = update.id
-            elif isinstance(update, (
-                    types.UpdateNewMessage, types.UpdateNewChannelMessage)):
-                update.message._finish_init(self, entities, entity)
-                id_to_message[update.message.id] = update.message
-
-        # Trying to forward only deleted messages causes `MESSAGE_ID_INVALID`
-        # but forwarding valid and invalid messages in the same call makes the
-        # call succeed, although the API won't return those messages thus
-        # `random_to_id[rnd]` would `KeyError`. Check the key beforehand.
-        result = [id_to_message[random_to_id[rnd]]
-                  if rnd in random_to_id else None
-                  for rnd in req.random_id]
-
-        return result[0] if single else result
+        sent = self._get_response_message(req, result, entity)
+        return sent[0] if single else sent
 
     async def edit_message(
             self, entity, message=None, text=None,

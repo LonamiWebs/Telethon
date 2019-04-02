@@ -93,19 +93,9 @@ class MessageParseMethods(UserMethods):
         """
         Extracts the response message known a request and Update result.
         The request may also be the ID of the message to match.
-        """
-        # Telegram seems to send updateMessageID first, then updateNewMessage,
-        # however let's not rely on that just in case.
-        if isinstance(request, int):
-            msg_id = request
-        else:
-            msg_id = None
-            for update in result.updates:
-                if isinstance(update, types.UpdateMessageID):
-                    if update.random_id == request.random_id:
-                        msg_id = update.id
-                        break
 
+        If ``request.random_id`` is a list, this method returns a list too.
+        """
         if isinstance(result, types.UpdateShort):
             updates = [result.update]
             entities = {}
@@ -117,31 +107,43 @@ class MessageParseMethods(UserMethods):
         else:
             return None
 
-        found = None
+        random_to_id = {}
+        id_to_message = {}
         for update in updates:
-            if isinstance(update, (
+            if isinstance(update, types.UpdateMessageID):
+                random_to_id[update.random_id] = update.id
+
+            elif isinstance(update, (
                     types.UpdateNewChannelMessage, types.UpdateNewMessage)):
-                if update.message.id == msg_id:
-                    found = update.message
-                    break
+                update.message._finish_init(self, entities, input_chat)
+                id_to_message[update.message.id] = update.message
 
             elif (isinstance(update, types.UpdateEditMessage)
                   and not isinstance(request.peer, types.InputPeerChannel)):
                 if request.id == update.message.id:
-                    found = update.message
-                    break
+                    update.message._finish_init(self, entities, input_chat)
+                    return update.message
 
             elif (isinstance(update, types.UpdateEditChannelMessage)
                   and utils.get_peer_id(request.peer) ==
-                    utils.get_peer_id(update.message.to_id)):
+                  utils.get_peer_id(update.message.to_id)):
                 if request.id == update.message.id:
-                    found = update.message
-                    break
+                    update.message._finish_init(self, entities, input_chat)
+                    return update.message
 
-        if found:
-            found._finish_init(self, entities, input_chat)
-            return found
+        if not utils.is_list_like(request.random_id):
+            if request.random_id in random_to_id:
+                return id_to_message[random_to_id[request.random_id]]
+            else:
+                return None
         else:
-            return None  # explicit is better than implicit
+            # ``rnd in random_to_id`` is needed because trying to forward only
+            # deleted messages causes `MESSAGE_ID_INVALID`, but forwarding
+            # valid and invalid messages in the same call makes the call
+            # succeed, although the API won't return those messages thus
+            # `random_to_id[rnd]` would `KeyError`.
+            return [id_to_message[random_to_id[rnd]]
+                    if rnd in random_to_id else None
+                    for rnd in request.random_id]
 
     # endregion
