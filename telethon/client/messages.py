@@ -644,30 +644,43 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         if single:
             messages = (messages,)
 
-        if not from_peer:
-            try:
-                # On private chats (to_id = PeerUser), if the message is
-                # not outgoing, we actually need to use "from_id" to get
-                # the conversation on which the message was sent.
-                from_peer = next(
-                    m.from_id
-                    if not m.out and isinstance(m.to_id, types.PeerUser)
-                    else m.to_id for m in messages
-                    if isinstance(m, types.Message)
-                )
-            except StopIteration:
-                raise ValueError(
-                    'from_peer must be given if integer IDs are used'
-                ) from None
+        entity = await self.get_input_entity(entity)
 
-        req = functions.messages.ForwardMessagesRequest(
-            from_peer=from_peer,
-            id=[m if isinstance(m, int) else m.id for m in messages],
-            to_peer=entity,
-            silent=silent
-        )
-        result = await self(req)
-        sent = self._get_response_message(req, result, entity)
+        if from_peer:
+            from_peer = await self.get_input_entity(from_peer)
+            from_peer_id = await self.get_peer_id(from_peer)
+        else:
+            from_peer_id = None
+
+        def get_key(m):
+            if isinstance(m, int):
+                if from_peer_id is not None:
+                    return from_peer_id
+
+                raise ValueError('from_peer must be given if integer IDs are used')
+            elif isinstance(m, types.Message):
+                return m.chat_id
+            else:
+                raise TypeError('Cannot forward messages of type {}'.format(type(m)))
+
+        sent = []
+        for chat_id, group in itertools.groupby(messages, key=get_key):
+            group = list(group)
+            if isinstance(group[0], int):
+                chat = from_peer
+            else:
+                chat = await group[0].get_input_chat()
+                group = [m.id for m in group]
+
+            req = functions.messages.ForwardMessagesRequest(
+                from_peer=chat,
+                id=group,
+                to_peer=entity,
+                silent=silent
+            )
+            result = await self(req)
+            sent.extend(self._get_response_message(req, result, entity))
+
         return sent[0] if single else sent
 
     async def edit_message(
