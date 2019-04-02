@@ -264,9 +264,15 @@ class CallbackQuery(EventBuilder):
                 since the message object is normally not present.
             """
             self._client.loop.create_task(self.answer())
-            return await self._client.edit_message(
-                self.query.msg_id, *args, **kwargs
-            )
+            if isinstance(self.query.msg_id, types.InputBotInlineMessageID):
+                return await self._client.edit_message(
+                    self.query.msg_id, *args, **kwargs
+                )
+            else:
+                return await self._client.edit_message(
+                    await self.get_input_chat(), self.query.msg_id,
+                    *args, **kwargs
+                )
 
         async def delete(self, *args, **kwargs):
             """
