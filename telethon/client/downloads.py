@@ -78,10 +78,11 @@ class DownloadMethods(UserMethods):
         if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
             loc = photo.photo_big if download_big else photo.photo_small
         else:
-            try:
-                loc = utils.get_input_location(photo)
-            except TypeError:
-                return None
+            # It doesn't make any sense to check if `photo` can be used
+            # as input location, because then this method would be able
+            # to "download the profile photo of a message", i.e. its
+            # media which should be done with `download_media` instead.
+            return None
 
         file = self._get_proper_filename(
             file, 'profile_photo', '.jpg',
