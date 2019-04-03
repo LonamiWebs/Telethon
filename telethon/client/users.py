@@ -303,25 +303,34 @@ class UserMethods(TelegramBaseClient):
             If you need to get the ID of yourself, you should use
             `get_me` with ``input_peer=True``) instead.
         """
+        # Short-circuit if the input parameter directly maps to an InputPeer
+        try:
+            return utils.get_input_peer(peer)
+        except TypeError:
+            pass
+
+        # Next in priority is having a peer (or its ID) cached in-memory
+        try:
+            # 0x2d45687 == crc32(b'Peer')
+            if isinstance(peer, int) or peer.SUBCLASS_OF_ID == 0x2d45687:
+                return self._entity_cache[peer]
+        except (AttributeError, KeyError):
+            pass
+
+        # Then come known strings that take precedence
         if peer in ('me', 'self'):
             return types.InputPeerSelf()
 
+        # No InputPeer, cached peer, or known string. Fetch from disk cache
         try:
-            # First try to get the entity from cache, otherwise figure it out
-            return self._entity_cache[peer]
-        except KeyError:
+            return self.session.get_input_entity(peer)
+        except ValueError:
             pass
 
+        # Only network left to try
         if isinstance(peer, str):
             return utils.get_input_peer(
                 await self._get_entity_from_string(peer))
-
-        if not isinstance(peer, int) and (not isinstance(peer, TLObject)
-                                          or peer.SUBCLASS_OF_ID != 0x2d45687):
-            # Try casting the object into an input peer. Might TypeError.
-            # Don't do it if a not-found ID was given (instead ValueError).
-            # Also ignore Peer (0x2d45687 == crc32(b'Peer'))'s, lacking hash.
-            return utils.get_input_peer(peer)
 
         # If we're a bot and the user has messaged us privately users.getUsers
         # will work with access_hash = 0. Similar for channels.getChannels.

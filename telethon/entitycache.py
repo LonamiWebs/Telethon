@@ -12,11 +12,12 @@ class EntityCache:
         Adds the given entities to the cache, if they weren't saved before.
         """
         if not utils.is_list_like(entities):
-            # Invariant: all "chats" and "users" are always iterables
+            # Invariant: all "chats" and "users" are always iterables,
+            # and "user" never is (so we wrap it inside a list).
             entities = itertools.chain(
-                [getattr(entities, 'user', None)],
                 getattr(entities, 'chats', []),
-                getattr(entities, 'users', [])
+                getattr(entities, 'users', []),
+                (hasattr(entities, 'user') and [entities.user]) or []
             )
 
         for entity in entities:
