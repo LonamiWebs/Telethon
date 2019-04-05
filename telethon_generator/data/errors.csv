@@ -76,7 +76,8 @@ ENCRYPTION_ALREADY_ACCEPTED,400,Secret chat already accepted
 ENCRYPTION_ALREADY_DECLINED,400,The secret chat was already declined
 ENCRYPTION_DECLINED,400,The secret chat was declined
 ENCRYPTION_ID_INVALID,400,The provided secret chat ID is invalid
-ENCRYPTION_OCCUPY_FAILED,500,Internal server error while accepting secret chat
+ENCRYPTION_OCCUPY_FAILED,500,TDLib developer claimed it is not an error while accepting secret chats and 500 is used instead of 420
+ENTITIES_TOO_LONG,400,It is no longer possible to send such long data inside entity tags (for example inline text URLs)
 ENTITY_MENTION_USER_INVALID,400,You can't use this entity
 ERROR_TEXT_EMPTY,400,The provided error message is empty
 EXPORT_CARD_INVALID,400,Provided card is invalid
@@ -138,6 +139,7 @@ MESSAGE_ID_INVALID,400,The specified message ID is invalid
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
 MSG_WAIT_FAILED,400,A waiting call returned an error
+MT_SEND_QUEUE_TOO_LONG,500,
 NEED_CHAT_INVALID,500,The provided chat is invalid
 NEED_MEMBER_INVALID,500,The provided member is invalid
 NETWORK_MIGRATE_X,303,The source IP address is associated with DC {new_dc}
@@ -181,6 +183,7 @@ PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid (hint: `pip instal
 PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
 PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
 PIN_RESTRICTED,400,You can't pin messages in private chats with other people
+POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PTS_CHANGE_EMPTY,500,No PTS change
 QUERY_ID_EMPTY,400,The query ID is empty
