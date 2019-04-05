@@ -26,7 +26,14 @@ class SenderGetter(abc.ABC):
         Returns `sender`, but will make an API call to find the
         sender unless it's already cached.
         """
-        if self._sender is None and await self.get_input_sender():
+        # ``sender.min`` is present both in :tl:`User` and :tl:`Channel`.
+        # It's a flag that will be set if only minimal information is
+        # available (such as display name, but username may be missing),
+        # in which case we want to force fetch the entire thing because
+        # the user explicitly called a method. If the user is okay with
+        # cached information, they may use the property instead.
+        if (self._sender is None or self._sender.min) \
+                and await self.get_input_sender():
             try:
                 self._sender =\
                     await self._client.get_entity(self._input_sender)

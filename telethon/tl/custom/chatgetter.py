@@ -29,7 +29,9 @@ class ChatGetter(abc.ABC):
         Returns `chat`, but will make an API call to find the
         chat unless it's already cached.
         """
-        if self._chat is None and await self.get_input_chat():
+        # See `get_sender` for information about 'min'.
+        if (self._chat is None or getattr(self._chat, 'min', None))\
+                and await self.get_input_chat():
             try:
                 self._chat =\
                     await self._client.get_entity(self._input_chat)
