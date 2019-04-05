@@ -34,6 +34,18 @@ NAMED_AUTO_CASTS = {
     ('chat_id', 'int'): 'await client.get_peer_id({}, add_mark=False)'
 }
 
+# Secret chats have a chat_id which may be negative.
+# With the named auto-cast above, we would break it.
+# However there are plenty of other legit requests
+# with `chat_id:int` where it is useful.
+#
+# NOTE: This works because the auto-cast is not recursive.
+#       There are plenty of types that would break if we
+#       did recurse into them to resolve them.
+NAMED_BLACKLIST = {
+    'messages.discardEncryption'
+}
+
 BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
               'int256', 'double', 'Bool', 'true', 'date')
 
@@ -253,7 +265,8 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 def _write_resolve(tlobject, builder):
     if tlobject.is_function and any(
             (arg.type in AUTO_CASTS
-             or ((arg.name, arg.type) in NAMED_AUTO_CASTS))
+             or ((arg.name, arg.type) in NAMED_AUTO_CASTS
+                 and tlobject.fullname not in NAMED_BLACKLIST))
             for arg in tlobject.real_args
     ):
         builder.writeln('async def resolve(self, client, utils):')
