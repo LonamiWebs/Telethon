@@ -346,11 +346,18 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         result = await self(functions.messages.SendMultiMediaRequest(
             entity, reply_to_msg_id=reply_to, multi_media=media, silent=silent
         ))
-        return [
-            self._get_response_message(update.id, result, entity)
-            for update in result.updates
-            if isinstance(update, types.UpdateMessageID)
-        ]
+
+        # We never sent a `random_id` for the messages that resulted from
+        # the request so we can't pair them up with the `Updates` that we
+        # get from Telegram. However, the sent messages have a photo and
+        # the photo IDs match with those we did send.
+        #
+        # Updates -> {_: message}
+        messages = self._get_response_message(None, result, entity)
+        # {_: message} -> {photo ID: message}
+        messages = {m.photo.id: m for m in messages.values()}
+        # Sent photo IDs -> messages
+        return [messages[m.media.id.id] for m in media]
 
     async def upload_file(
             self, file, *, part_size_kb=None, file_name=None, use_cache=None,
