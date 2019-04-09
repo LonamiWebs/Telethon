@@ -94,6 +94,8 @@ class MessageParseMethods(UserMethods):
         Extracts the response message known a request and Update result.
         The request may also be the ID of the message to match.
 
+        If ``request is None`` this method returns ``{id: message}``.
+
         If ``request.random_id`` is a list, this method returns a list too.
         """
         if isinstance(result, types.UpdateShort):
@@ -130,6 +132,9 @@ class MessageParseMethods(UserMethods):
                 if request.id == update.message.id:
                     update.message._finish_init(self, entities, input_chat)
                     return update.message
+
+        if request is None:
+            return id_to_message
 
         random_id = request if isinstance(request, int) else request.random_id
         if not utils.is_list_like(random_id):
