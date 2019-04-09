@@ -131,9 +131,10 @@ class MessageParseMethods(UserMethods):
                     update.message._finish_init(self, entities, input_chat)
                     return update.message
 
-        if not utils.is_list_like(request.random_id):
-            if request.random_id in random_to_id:
-                return id_to_message[random_to_id[request.random_id]]
+        random_id = request if isinstance(request, int) else request.random_id
+        if not utils.is_list_like(random_id):
+            if random_id in random_to_id:
+                return id_to_message[random_to_id[random_id]]
             else:
                 return None
         else:
@@ -144,6 +145,6 @@ class MessageParseMethods(UserMethods):
             # `random_to_id[rnd]` would `KeyError`.
             return [id_to_message[random_to_id[rnd]]
                     if rnd in random_to_id else None
-                    for rnd in request.random_id]
+                    for rnd in random_id]
 
     # endregion
