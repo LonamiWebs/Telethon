@@ -306,15 +306,13 @@ class TelegramBaseClient(abc.ABC):
         self._authorized = None  # None = unknown, False = no, True = yes
 
         # Update state (for catching up after a disconnection)
-        self._old_state = self.session.get_update_state(0)
-        self._new_state = None
-
-        # If we catch up, while we don't get disconnected,
-        # the old state will be the same as the new one.
         #
-        # If we do get disconnected, then the old and new
-        # state may differ.
-        self._old_state_is_new = False
+        # We only care about the pts and the date. By using a tuple which
+        # is lightweight and immutable we can easily copy them around to
+        # each update in case they need to fetch missing entities.
+        state = self.session.get_update_state(0)
+        self._old_pts_date = state.pts, state.date
+        self._new_pts_date = (None, None)
 
         # Some further state for subclasses
         self._event_builders = []
@@ -397,11 +395,15 @@ class TelegramBaseClient(abc.ABC):
     async def _disconnect_coro(self):
         await self._disconnect()
 
-        # If we disconnect, the old state is the last one we are aware of
-        self._old_state_is_new = True
-
-        if self._new_state:
-            self.session.set_update_state(0, self._new_state)
+        pts, date = self._new_pts_date
+        if pts:
+            self.session.set_update_state(0, types.updates.State(
+                pts=pts,
+                qts=0,
+                date=date or datetime.now(),
+                seq=0,
+                unread_count=0
+            ))
 
         self.session.close()
 

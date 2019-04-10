@@ -375,11 +375,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(user, allow_self=False)
         self._authorized = True
 
-        # By setting state.pts = 1 after logging in, the user or bot can
-        # `catch_up` on all updates (and obtain necessary access hashes)
-        # if they desire. The date parameter is ignored when pts = 1.
-        self._old_state = types.updates.State(
-            1, 0, datetime.datetime.now(tz=datetime.timezone.utc), 0, 0)
+        # `catch_up` will getDifference from pts = 1, date = 1 (ignored)
+        # to fetch all updates (and obtain necessary access hashes) if
+        # the ``pts is None``.
+        self._old_pts_date = (None, None)
 
         return user
 
@@ -437,8 +436,8 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._bot = None
         self._self_input_peer = None
         self._authorized = False
-        self._old_state = None
-        self._new_state = None
+        self._old_pts_date = (None, None)
+        self._new_pts_date = (None, None)
 
         await self.disconnect()
         self.session.delete()
