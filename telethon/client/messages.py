@@ -610,7 +610,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         return self._get_response_message(request, result, entity)
 
     async def forward_messages(self, entity, messages, from_peer=None,
-                               *, silent=None, grouped=True):
+                               *, silent=None, grouped=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -634,9 +634,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
             grouped (`bool`, optional):
                 Whether several image messages should be forwarded grouped
-                (as an album) or not. If you want to forward albums, this
-                must be ``True``. Sending as album is the default
-                (``grouped=True``).
+                (as an album) or not. The default behaviour is to treat
+                albums specially and send outgoing requests with
+                ``grouped=True`` only for the albums if message objects
+                are used. If IDs are used it will group by default.
+
+                In short, the default should do what you expect,
+                ``True`` will group always (even converting separate
+                images into albums), and ``False`` will never group.
 
         Returns:
             The list of forwarded `telethon.tl.custom.message.Message`,
@@ -658,24 +663,44 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         else:
             from_peer_id = None
 
-        def get_key(m):
+        def _get_key(m):
             if isinstance(m, int):
                 if from_peer_id is not None:
-                    return from_peer_id
+                    return from_peer_id, None
 
                 raise ValueError('from_peer must be given if integer IDs are used')
             elif isinstance(m, types.Message):
-                return m.chat_id
+                return m.chat_id, m.grouped_id
             else:
                 raise TypeError('Cannot forward messages of type {}'.format(type(m)))
+
+        # We want to group outgoing chunks differently if we are "smart"
+        # about grouping albums.
+        #
+        # Why? We need separate requests for ``grouped=True/False``, so
+        # if we want that behaviour, when we group messages to create the
+        # chunks, we need to consider the grouped ID too. But if we don't
+        # care about that, we don't need to consider it for creating the
+        # chunks, so we can make less requests.
+        if grouped is None:
+            get_key = _get_key
+        else:
+            def get_key(m):
+                return _get_key(m)[0]  # Ignore grouped_id
 
         sent = []
         for chat_id, group in itertools.groupby(messages, key=get_key):
             group = list(group)
             if isinstance(group[0], int):
                 chat = from_peer
+                do_group = True if grouped is None else grouped
             else:
                 chat = await group[0].get_input_chat()
+                if grouped is None:
+                    do_group = any(m.grouped_id is not None for m in group)
+                else:
+                    do_group = grouped
+
                 group = [m.id for m in group]
 
             req = functions.messages.ForwardMessagesRequest(
@@ -683,7 +708,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 id=group,
                 to_peer=entity,
                 silent=silent,
-                grouped=grouped
+                grouped=do_group
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
