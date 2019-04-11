@@ -610,7 +610,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         return self._get_response_message(request, result, entity)
 
     async def forward_messages(self, entity, messages, from_peer=None,
-                               *, silent=None):
+                               *, silent=None, grouped=True):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -631,6 +631,12 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Whether the message should notify people in a broadcast
                 channel or not. Defaults to ``False``, which means it will
                 notify them. Set it to ``True`` to alter this behaviour.
+
+            grouped (`bool`, optional):
+                Whether several image messages should be forwarded grouped
+                (as an album) or not. If you want to forward albums, this
+                must be ``True``. Sending as album is the default
+                (``grouped=True``).
 
         Returns:
             The list of forwarded `telethon.tl.custom.message.Message`,
@@ -676,7 +682,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 from_peer=chat,
                 id=group,
                 to_peer=entity,
-                silent=silent
+                silent=silent,
+                grouped=grouped
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
