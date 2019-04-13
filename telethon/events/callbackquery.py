@@ -60,6 +60,7 @@ class CallbackQuery(EventBuilder):
         return event
 
     def filter(self, event):
+        # We can't call super().filter(...) because it ignores chat_instance
         if self.chats is not None:
             inside = event.query.chat_instance in self.chats
             if event.chat_id:
@@ -76,7 +77,8 @@ class CallbackQuery(EventBuilder):
             elif event.query.data != self.data:
                 return None
 
-        return event
+        if not self.func or self.func(event):
+            return event
 
     class Event(EventCommon, SenderGetter):
         """
