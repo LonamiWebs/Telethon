@@ -610,7 +610,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         return self._get_response_message(request, result, entity)
 
     async def forward_messages(self, entity, messages, from_peer=None,
-                               *, silent=None, grouped=None):
+                               *, silent=None, as_album=None):
         """
         Forwards the given message(s) to the specified entity.
 
@@ -632,11 +632,11 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 channel or not. Defaults to ``False``, which means it will
                 notify them. Set it to ``True`` to alter this behaviour.
 
-            grouped (`bool`, optional):
-                Whether several image messages should be forwarded grouped
-                (as an album) or not. The default behaviour is to treat
+            as_album (`bool`, optional):
+                Whether several image messages should be forwarded as an
+                album (grouped) or not. The default behaviour is to treat
                 albums specially and send outgoing requests with
-                ``grouped=True`` only for the albums if message objects
+                ``as_album=True`` only for the albums if message objects
                 are used. If IDs are used it will group by default.
 
                 In short, the default should do what you expect,
@@ -675,40 +675,40 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 raise TypeError('Cannot forward messages of type {}'.format(type(m)))
 
         # We want to group outgoing chunks differently if we are "smart"
-        # about grouping albums.
+        # about sending as album.
         #
-        # Why? We need separate requests for ``grouped=True/False``, so
+        # Why? We need separate requests for ``as_album=True/False``, so
         # if we want that behaviour, when we group messages to create the
         # chunks, we need to consider the grouped ID too. But if we don't
         # care about that, we don't need to consider it for creating the
         # chunks, so we can make less requests.
-        if grouped is None:
+        if as_album is None:
             get_key = _get_key
         else:
             def get_key(m):
                 return _get_key(m)[0]  # Ignore grouped_id
 
         sent = []
-        for chat_id, group in itertools.groupby(messages, key=get_key):
-            group = list(group)
-            if isinstance(group[0], int):
+        for chat_id, chunk in itertools.groupby(messages, key=get_key):
+            chunk = list(chunk)
+            if isinstance(chunk[0], int):
                 chat = from_peer
-                do_group = True if grouped is None else grouped
+                grouped = True if as_album is None else as_album
             else:
-                chat = await group[0].get_input_chat()
-                if grouped is None:
-                    do_group = any(m.grouped_id is not None for m in group)
+                chat = await chunk[0].get_input_chat()
+                if as_album is None:
+                    grouped = any(m.grouped_id is not None for m in chunk)
                 else:
-                    do_group = grouped
+                    grouped = as_album
 
-                group = [m.id for m in group]
+                chunk = [m.id for m in chunk]
 
             req = functions.messages.ForwardMessagesRequest(
                 from_peer=chat,
-                id=group,
+                id=chunk,
                 to_peer=entity,
                 silent=silent,
-                grouped=do_group
+                grouped=grouped
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
