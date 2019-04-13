@@ -108,17 +108,27 @@ def _sync_enter(self):
     Helps to cut boilerplate on async context
     managers that offer synchronous variants.
     """
-    if self._client.loop.is_running():
+    if hasattr(self, 'loop'):
+        loop = self.loop
+    else:
+        loop = self._client.loop
+
+    if loop.is_running():
         raise RuntimeError(
             'You must use "async with" if the event loop '
             'is running (i.e. you are inside an "async def")'
         )
 
-    return self._client.loop.run_until_complete(self.__aenter__())
+    return loop.run_until_complete(self.__aenter__())
 
 
 def _sync_exit(self, *args):
-    return self._client.loop.run_until_complete(self.__aexit__(*args))
+    if hasattr(self, 'loop'):
+        loop = self.loop
+    else:
+        loop = self._client.loop
+
+    return loop.run_until_complete(self.__aexit__(*args))
 
 
 # endregion
