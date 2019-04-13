@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import string
 
@@ -8,6 +9,93 @@ from ..tl import types, functions, custom
 
 _MAX_PARTICIPANTS_CHUNK_SIZE = 200
 _MAX_ADMIN_LOG_CHUNK_SIZE = 100
+
+
+class _ChatAction:
+    _str_mapping = {
+        'typing': types.SendMessageTypingAction(),
+        'contact': types.SendMessageChooseContactAction(),
+        'game': types.SendMessageGamePlayAction(),
+        'location': types.SendMessageGeoLocationAction(),
+
+        'record-audio': types.SendMessageRecordAudioAction(),
+        'record-voice': types.SendMessageRecordAudioAction(),  # alias
+        'record-round': types.SendMessageRecordRoundAction(),
+        'record-video': types.SendMessageRecordVideoAction(),
+
+        'audio': types.SendMessageUploadAudioAction(1),
+        'voice': types.SendMessageUploadAudioAction(1),  # alias
+        'round': types.SendMessageUploadRoundAction(1),
+        'video': types.SendMessageUploadVideoAction(1),
+
+        'photo': types.SendMessageUploadPhotoAction(1),
+        'document': types.SendMessageUploadDocumentAction(1),
+        'file': types.SendMessageUploadDocumentAction(1),  # alias
+        'song': types.SendMessageUploadDocumentAction(1),  # alias
+
+        'cancel': types.SendMessageCancelAction()
+    }
+
+    def __init__(self, client, chat, action, *, delay, auto_cancel):
+        self._client = client
+        self._chat = chat
+        self._action = action
+        self._delay = delay
+        self._auto_cancel = auto_cancel
+        self._request = None
+        self._task = None
+        self._running = False
+
+    async def __aenter__(self):
+        self._chat = await self._client.get_input_entity(self._chat)
+
+        # Since `self._action` is passed by reference we can avoid
+        # recreating the request all the time and still modify
+        # `self._action.progress` directly in `progress`.
+        self._request = functions.messages.SetTypingRequest(
+            self._chat, self._action)
+
+        self._running = True
+        self._task = self._client.loop.create_task(self._update())
+
+    async def __aexit__(self, *args):
+        self._running = False
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+
+            self._task = None
+
+    def __enter__(self):
+        if self._client.loop.is_running():
+            raise RuntimeError(
+                'You must use "async with" if the event loop '
+                'is running (i.e. you are inside an "async def")'
+            )
+
+        return self._client.loop.run_until_complete(self.__aenter__())
+
+    def __exit__(self, *args):
+        return self._client.loop.run_until_complete(self.__aexit__(*args))
+
+    async def _update(self):
+        try:
+            while self._running:
+                await self._client(self._request)
+                await asyncio.sleep(self._delay)
+        except ConnectionError:
+            pass
+        except asyncio.CancelledError:
+            if self._auto_cancel:
+                await self._client(functions.messages.SetTypingRequest(
+                    self._chat, types.SendMessageCancelAction()))
+
+    def progress(self, current, total):
+        if hasattr(self._action, 'progress'):
+            self._action.progress = 100 * round(current / total)
 
 
 class _ParticipantsIter(RequestIter):
@@ -379,5 +467,89 @@ class ChatMethods(UserMethods):
         Same as `iter_admin_log`, but returns a ``list`` instead.
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
+
+    def action(self, entity, action, *, delay=4, auto_cancel=True):
+        """
+        Returns a context-manager object to represent a "chat action".
+
+        Chat actions indicate things like "user is typing", "user is
+        uploading a photo", etc. Normal usage is as follows:
+
+        .. code-block:: python
+
+            async with client.action(chat, 'typing'):
+                await asyncio.sleep(2)  # type for 2 seconds
+                await client.send_message(chat, 'Hello world! I type slow ^^')
+
+        If the action is ``'cancel'``, you should just ``await`` the result,
+        since it makes no sense to use a context-manager for it:
+
+        .. code-block:: python
+
+            await client.action(chat, 'cancel')
+
+        Args:
+            entity (`entity`):
+                The entity where the action should be showed in.
+
+            action (`str` | :tl:`SendMessageAction`):
+                The action to show. You can either pass a instance of
+                :tl:`SendMessageAction` or better, a string used while:
+
+                * ``'typing'``: typing a text message.
+                * ``'contact'``: choosing a contact.
+                * ``'game'``: playing a game.
+                * ``'location'``: choosing a geo location.
+                * ``'record-audio'``: recording a voice note.
+                  You may use ``'record-voice'`` as alias.
+                * ``'record-round'``: recording a round video.
+                * ``'record-video'``: recording a normal video.
+                * ``'audio'``: sending an audio file (voice note or song).
+                  You may use ``'voice'`` and ``'song'`` as aliases.
+                * ``'round'``: uploading a round video.
+                * ``'video'``: uploading a video file.
+                * ``'photo'``: uploading a photo.
+                * ``'document'``: uploading a document file.
+                  You may use ``'file'`` as alias.
+                * ``'cancel'``: cancel any pending action in this chat.
+
+                Invalid strings will raise a ``ValueError``.
+
+            delay (`int` | `float`):
+                The delay, in seconds, to wait between sending actions.
+                For example, if the delay is 5 and it takes 7 seconds to
+                do something, three requests will be made at 0s, 5s, and
+                7s to cancel the action.
+
+            auto_cancel (`bool`):
+                Whether the action should be cancelled once the context
+                manager exists or not. The default is ``True``, since
+                you don't want progress to be shown when it has already
+                completed.
+
+        If you are uploading a file, you may do
+        ``progress_callback=chat.progress`` to update the progress of
+        the action. Some clients don't care about this progress, though,
+        so it's mostly not needed, but still available.
+        """
+        if isinstance(action, str):
+            try:
+                action = _ChatAction._str_mapping[action.lower()]
+            except KeyError:
+                raise ValueError('No such action "{}"'.format(action)) from None
+        elif not isinstance(action, types.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
+            # 0x20b2cc21 = crc32(b'SendMessageAction')
+            if isinstance(action, type):
+                raise ValueError('You must pass an instance, not the class')
+            else:
+                raise ValueError('Cannot use {} as action'.format(action))
+
+        if isinstance(action, types.SendMessageCancelAction):
+            # ``SetTypingRequest.resolve`` will get input peer of ``entity``.
+            return self(functions.messages.SetTypingRequest(
+                entity, types.SendMessageCancelAction()))
+
+        return _ChatAction(
+            self, entity, action, delay=delay, auto_cancel=auto_cancel)
 
     # endregion
