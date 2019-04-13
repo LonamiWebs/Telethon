@@ -311,7 +311,7 @@ class TelegramBaseClient(abc.ABC):
         # is lightweight and immutable we can easily copy them around to
         # each update in case they need to fetch missing entities.
         state = self.session.get_update_state(0)
-        self._old_pts_date = state.pts, state.date
+        self._old_pts_date = (state.pts, state.date) if state else (None, None)
         self._new_pts_date = (None, None)
 
         # Some further state for subclasses
