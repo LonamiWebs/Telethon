@@ -139,7 +139,7 @@ class UpdateMethods(UserMethods):
         if all(self._new_pts_date):
             pts, date = self._new_pts_date
         elif all(self._old_pts_date):
-            pts, date = self._new_pts_date
+            pts, date = self._old_pts_date
         else:
             return
 
@@ -223,6 +223,7 @@ class UpdateMethods(UserMethods):
         self._update_pts_date(update)
 
     def _process_update(self, update, entities=None):
+        update._pts_date = self._new_pts_date
         update._entities = entities or {}
         if self._updates_queue is None:
             self._loop.create_task(self._dispatch_update(update))
@@ -413,16 +414,14 @@ class EventBuilderDict:
         Calls :tl:`updates.getDifference`, which fills the entities cache
         (always done by `__call__`) and lets us know about the full entities.
         """
-        pts = getattr(self.update, 'pts', None)
+        # Fetch since the last known pts/date before this update arrived,
+        # in order to fetch this update at full.
+        pts, date = self.update._pts_date
         if not pts:
             return
 
-        date = getattr(self.update, 'date', None)
-        if date:
-            # Get the difference from one second ago to now
-            date -= datetime.timedelta(seconds=1)
-        else:
-            # No date known, 1 is the earliest date that works
+        # No date known, 1 is the earliest date that works
+        if not date:
             date = 1
 
         self.client._log[__name__].debug('Getting difference for entities')
