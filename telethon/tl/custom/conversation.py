@@ -3,7 +3,7 @@ import itertools
 import time
 
 from .chatgetter import ChatGetter
-from ... import utils, errors
+from ... import helpers, utils, errors
 
 
 # Sometimes the edits arrive very fast (within the same second).
@@ -403,15 +403,6 @@ class Conversation(ChatGetter):
             else:
                 fut.cancel()
 
-    def __enter__(self):
-        if self._client.loop.is_running():
-            raise RuntimeError(
-                'You must use "async with" if the event loop '
-                'is running (i.e. you are inside an "async def")'
-            )
-
-        return self._client.loop.run_until_complete(self.__aenter__())
-
     async def __aenter__(self):
         self._input_chat = \
             await self._client.get_input_entity(self._input_chat)
@@ -447,9 +438,6 @@ class Conversation(ChatGetter):
         """Cancels the current conversation and exits the context manager."""
         raise _ConversationCancelled()
 
-    def __exit__(self, *args):
-        return self._client.loop.run_until_complete(self.__aexit__(*args))
-
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         chat_id = utils.get_peer_id(self._chat_peer)
         if self._client._ids_in_conversations[chat_id] == 1:
@@ -460,6 +448,9 @@ class Conversation(ChatGetter):
         del self._client._conversations[self._id]
         self._cancel_all()
         return isinstance(exc_val, _ConversationCancelled)
+
+    __enter__ = helpers._sync_enter
+    __exit__ = helpers._sync_exit
 
 
 class _ConversationCancelled(InterruptedError):

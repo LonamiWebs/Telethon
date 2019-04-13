@@ -2,7 +2,7 @@ import functools
 import inspect
 
 from .users import UserMethods, _NOT_A_REQUEST
-from .. import utils
+from .. import helpers, utils
 from ..tl import functions, TLRequest
 
 
@@ -31,15 +31,6 @@ class _TakeoutClient:
     def success(self, value):
         self.__success = value
 
-    def __enter__(self):
-        if self.__client.loop.is_running():
-            raise RuntimeError(
-                'You must use "async with" if the event loop '
-                'is running (i.e. you are inside an "async def")'
-            )
-
-        return self.__client.loop.run_until_complete(self.__aenter__())
-
     async def __aenter__(self):
         # Enter/Exit behaviour is "overrode", we don't want to call start.
         client = self.__client
@@ -49,9 +40,6 @@ class _TakeoutClient:
             raise ValueError("Can't send a takeout request while another "
                 "takeout for the current session still not been finished yet.")
         return self
-
-    def __exit__(self, *args):
-        return self.__client.loop.run_until_complete(self.__aexit__(*args))
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         if self.__success is None and self.__finalize:
@@ -63,6 +51,9 @@ class _TakeoutClient:
             if not result:
                 raise ValueError("Failed to finish the takeout.")
             self.session.takeout_id = None
+
+    __enter__ = helpers._sync_enter
+    __exit__ = helpers._sync_exit
 
     async def __call__(self, request, ordered=False):
         takeout_id = self.__client.session.takeout_id

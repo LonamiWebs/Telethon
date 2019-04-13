@@ -536,23 +536,13 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
     # region with blocks
 
-    def __enter__(self):
-        if self._loop.is_running():
-            raise RuntimeError(
-                'You must use "async with" if the event loop '
-                'is running (i.e. you are inside an "async def")'
-            )
-
-        return self.start()
-
     async def __aenter__(self):
         return await self.start()
 
-    def __exit__(self, *args):
-        # No loop.run_until_complete; it's already syncified
-        self.disconnect()
-
     async def __aexit__(self, *args):
         await self.disconnect()
+
+    __enter__ = helpers._sync_enter
+    __exit__ = helpers._sync_exit
 
     # endregion

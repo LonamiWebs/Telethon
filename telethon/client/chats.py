@@ -3,7 +3,7 @@ import itertools
 import string
 
 from .users import UserMethods
-from .. import utils
+from .. import helpers, utils
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
@@ -69,17 +69,8 @@ class _ChatAction:
 
             self._task = None
 
-    def __enter__(self):
-        if self._client.loop.is_running():
-            raise RuntimeError(
-                'You must use "async with" if the event loop '
-                'is running (i.e. you are inside an "async def")'
-            )
-
-        return self._client.loop.run_until_complete(self.__aenter__())
-
-    def __exit__(self, *args):
-        return self._client.loop.run_until_complete(self.__aexit__(*args))
+    __enter__ = helpers._sync_enter
+    __exit__ = helpers._sync_exit
 
     async def _update(self):
         try:
