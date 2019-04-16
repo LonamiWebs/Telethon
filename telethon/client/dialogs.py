@@ -70,13 +70,13 @@ class _DialogsIter(RequestIter):
             # we didn't get a DialogsSlice which means we got all.
             return True
 
-        if self.request.offset_id == r.messages[-1].id:
-            # In some very rare cases this will get stuck in an infinite
-            # loop, where the offsets will get reused over and over. If
-            # the new offset is the same as the one before, break already.
-            return True
-
-        self.request.offset_id = r.messages[-1].id
+        # Don't set `request.offset_id` to the last message ID.
+        # Why? It seems to cause plenty of dialogs to be skipped.
+        #
+        # By leaving it to 0 after the first iteration, even if
+        # the user originally passed another ID, we ensure that
+        # it will work correctly.
+        self.request.offset_id = 0
         self.request.exclude_pinned = True
         self.request.offset_date = r.messages[-1].date
         self.request.offset_peer =\
