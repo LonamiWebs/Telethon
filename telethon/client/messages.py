@@ -708,7 +708,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 id=chunk,
                 to_peer=entity,
                 silent=silent,
-                grouped=grouped
+                # Trying to send a single message as grouped will cause
+                # GROUPED_MEDIA_INVALID. If more than one message is forwarded
+                # (even without media...), this error goes away.
+                grouped=len(chunk) > 1 and grouped
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
