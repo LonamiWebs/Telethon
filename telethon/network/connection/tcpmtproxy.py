@@ -36,7 +36,7 @@ class MTProxyIO:
         if is_dd and not is_rand_codec:
             raise ValueError(
                 "Only RandomizedIntermediate can be used with dd-secrets")
-        secret = secret[:-1] if is_dd else secret
+        secret = secret[1:] if is_dd else secret
         if len(secret) != 16:
             raise ValueError(
                 "MTProxy secret must be a hex-string representing 16 bytes")
