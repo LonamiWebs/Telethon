@@ -213,7 +213,8 @@ class UpdateMethods(UserMethods):
         self._state_cache.update(update)
 
     def _process_update(self, update, entities=None):
-        update._pts_date = self._state_cache[StateCache.get_channel_id(update)]
+        update._channel_id = StateCache.get_channel_id(update)
+        update._pts_date = self._state_cache[update._channel_id]
         update._entities = entities or {}
         if self._updates_queue is None:
             self._loop.create_task(self._dispatch_update(update))
@@ -395,27 +396,34 @@ class EventBuilderDict:
         (always done by `__call__`) and lets us know about the full entities.
         """
         # Fetch since the last known pts/date before this update arrived,
-        # in order to fetch this update at full.
-        pts_date = self.update._pts_date
-        if not isinstance(pts_date, tuple):
-            # TODO Handle channels, and handle this more nicely
-            return
-
-        pts, date = pts_date
-        if not pts:
-            return
-
-        # No date known, 1 is the earliest date that works
-        if not date:
-            date = 1
-
+        # in order to fetch this update at full, including its entities.
         self.client._log[__name__].debug('Getting difference for entities')
-        result = await self.client(functions.updates.GetDifferenceRequest(
-            pts - 1, date, 0
-        ))
+        if self.update._channel_id:
+            pts = self.update._pts_date
+            try:
+                where = await self.client.get_input_entity(self.update._channel_id)
+            except ValueError:
+                return
+
+            result = await self.client(functions.updates.GetChannelDifferenceRequest(
+                channel=where,
+                filter=types.ChannelMessagesFilterEmpty(),
+                pts=pts,
+                limit=100,
+                force=True
+            ))
+        else:
+            pts, date = self.update._pts_date
+            result = await self.client(functions.updates.GetDifferenceRequest(
+                pts=pts - 1,
+                date=date,
+                qts=0
+            ))
 
         if isinstance(result, (types.updates.Difference,
-                               types.updates.DifferenceSlice)):
+                               types.updates.DifferenceSlice,
+                               types.updates.ChannelDifference,
+                               types.updates.ChannelDifferenceTooLong)):
             self.update._entities.update({
                 utils.get_peer_id(x): x for x in
                 itertools.chain(result.users, result.chats)
