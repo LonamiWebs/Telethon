@@ -8,6 +8,7 @@ from .users import UserMethods
 from .. import events, utils, errors
 from ..tl import types, functions
 from ..events.common import EventCommon
+from ..statecache import StateCache
 
 
 class UpdateMethods(UserMethods):
@@ -135,14 +136,7 @@ class UpdateMethods(UserMethods):
 
         This can also be used to forcibly fetch new updates if there are any.
         """
-        # TODO Since which state should we catch up?
-        if all(self._new_pts_date):
-            pts, date = self._new_pts_date
-        elif all(self._old_pts_date):
-            pts, date = self._old_pts_date
-        else:
-            return
-
+        pts, date = self._state_cache[None]
         self.session.catching_up = True
         try:
             while True:
@@ -192,7 +186,7 @@ class UpdateMethods(UserMethods):
             pass
         finally:
             # TODO Save new pts to session
-            self._new_pts_date = (pts, date)
+            self._state_cache._pts_date = (pts, date)
             self.session.catching_up = False
 
     # endregion
@@ -211,19 +205,15 @@ class UpdateMethods(UserMethods):
                         itertools.chain(update.users, update.chats)}
             for u in update.updates:
                 self._process_update(u, entities)
-
-            self._new_pts_date = (self._new_pts_date[0], update.date)
         elif isinstance(update, types.UpdateShort):
             self._process_update(update.update)
-            self._new_pts_date = (self._new_pts_date[0], update.date)
         else:
             self._process_update(update)
 
-        # TODO Should this be done before or after?
-        self._update_pts_date(update)
+        self._state_cache.update(update)
 
     def _process_update(self, update, entities=None):
-        update._pts_date = self._new_pts_date
+        update._pts_date = self._state_cache[StateCache.get_channel_id(update)]
         update._entities = entities or {}
         if self._updates_queue is None:
             self._loop.create_task(self._dispatch_update(update))
@@ -233,17 +223,7 @@ class UpdateMethods(UserMethods):
                 self._dispatching_updates_queue.set()
                 self._loop.create_task(self._dispatch_queue_updates())
 
-        self._update_pts_date(update)
-
-    def _update_pts_date(self, update):
-        pts, date = self._new_pts_date
-        if getattr(update, 'pts', None):
-            pts = update.pts
-
-        if getattr(update, 'date', None):
-            date = update.date
-
-        self._new_pts_date = (pts, date)
+        self._state_cache.update(update)
 
     async def _update_loop(self):
         # Pings' ID don't really need to be secure, just "random"
@@ -416,7 +396,12 @@ class EventBuilderDict:
         """
         # Fetch since the last known pts/date before this update arrived,
         # in order to fetch this update at full.
-        pts, date = self.update._pts_date
+        pts_date = self.update._pts_date
+        if not isinstance(pts_date, tuple):
+            # TODO Handle channels, and handle this more nicely
+            return
+
+        pts, date = pts_date
         if not pts:
             return
 

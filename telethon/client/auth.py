@@ -375,11 +375,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._self_input_peer = utils.get_input_peer(user, allow_self=False)
         self._authorized = True
 
-        # `catch_up` will getDifference from pts = 1, date = 1 (ignored)
-        # to fetch all updates (and obtain necessary access hashes) if
-        # the ``pts is None``.
-        self._old_pts_date = (None, None)
-
         return user
 
     async def send_code_request(self, phone, *, force_sms=False):
@@ -436,8 +431,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._bot = None
         self._self_input_peer = None
         self._authorized = False
-        self._old_pts_date = (None, None)
-        self._new_pts_date = (None, None)
+        self._state_cache.reset()
 
         await self.disconnect()
         self.session.delete()

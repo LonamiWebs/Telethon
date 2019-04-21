@@ -13,6 +13,7 @@ from ..sessions import Session, SQLiteSession, MemorySession
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
 from ..entitycache import EntityCache
+from ..statecache import StateCache
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -306,13 +307,8 @@ class TelegramBaseClient(abc.ABC):
         self._authorized = None  # None = unknown, False = no, True = yes
 
         # Update state (for catching up after a disconnection)
-        #
-        # We only care about the pts and the date. By using a tuple which
-        # is lightweight and immutable we can easily copy them around to
-        # each update in case they need to fetch missing entities.
-        state = self.session.get_update_state(0)
-        self._old_pts_date = (state.pts, state.date) if state else (None, None)
-        self._new_pts_date = (None, None)
+        # TODO Get state from channels too
+        self._state_cache = StateCache(self.session.get_update_state(0))
 
         # Some further state for subclasses
         self._event_builders = []
@@ -395,15 +391,14 @@ class TelegramBaseClient(abc.ABC):
     async def _disconnect_coro(self):
         await self._disconnect()
 
-        pts, date = self._new_pts_date
-        if pts:
-            self.session.set_update_state(0, types.updates.State(
-                pts=pts,
-                qts=0,
-                date=date or datetime.now(),
-                seq=0,
-                unread_count=0
-            ))
+        pts, date = self._state_cache[None]
+        self.session.set_update_state(0, types.updates.State(
+            pts=pts,
+            qts=0,
+            date=date,
+            seq=0,
+            unread_count=0
+        ))
 
         self.session.close()
 
