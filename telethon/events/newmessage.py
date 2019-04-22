@@ -49,7 +49,7 @@ class NewMessage(EventBuilder):
             incoming = not outgoing
         elif all(x is not None and not x for x in (incoming, outgoing)):
             raise ValueError("Don't create an event handler if you "
-                             "don't want neither incoming or outgoing!")
+                             "don't want neither incoming nor outgoing!")
 
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
         self.incoming = incoming
