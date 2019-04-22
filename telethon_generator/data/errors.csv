@@ -251,6 +251,7 @@ USER_BOT_REQUIRED,400,This method can only be called by a bot
 USER_CHANNELS_TOO_MUCH,403,One of the users you tried to add is already in too many channels/supergroups
 USER_CREATOR,400,"You can't leave this channel, because you're its creator"
 USER_DEACTIVATED,401,The user has been deleted/deactivated
+USER_DEACTIVATED_BAN,401,The user has been deleted/deactivated
 USER_ID_INVALID,400,"Invalid object ID for a user. Make sure to pass the right types, for instance making sure that the request is designed for users or otherwise look for a different one more suited"
 USER_INVALID,400,The given user was invalid
 USER_IS_BLOCKED,400 403,User is blocked

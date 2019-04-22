@@ -420,13 +420,6 @@ def get_input_media(
     if isinstance(media, types.MessageMediaGame):
         return types.InputMediaGame(id=media.game.id)
 
-    if isinstance(media, (types.ChatPhoto, types.UserProfilePhoto)):
-        if isinstance(media.photo_big, types.FileLocationUnavailable):
-            media = media.photo_small
-        else:
-            media = media.photo_big
-        return get_input_media(media, is_photo=True)
-
     if isinstance(media, types.MessageMediaContact):
         return types.InputMediaContact(
             phone_number=media.phone_number,
@@ -451,7 +444,8 @@ def get_input_media(
     if isinstance(media, (
             types.MessageMediaEmpty, types.MessageMediaUnsupported,
             types.ChatPhotoEmpty, types.UserProfilePhotoEmpty,
-            types.FileLocationUnavailable)):
+            types.ChatPhoto, types.UserProfilePhoto,
+            types.FileLocationToBeDeprecated)):
         return types.InputMediaEmpty()
 
     if isinstance(media, types.Message):
@@ -644,13 +638,6 @@ def get_input_location(location):
         ))
 
     if isinstance(location, types.FileLocationToBeDeprecated):
-        return (None, types.InputFileLocation(
-            volume_id=location.volume_id,
-            local_id=location.local_id,
-            secret=0,
-            file_reference=b''
-        ))
-    elif isinstance(location, types.FileLocationUnavailable):
         raise TypeError('Unavailable location cannot be used as input')
 
     _raise_cast_fail(location, 'InputFileLocation')
@@ -991,15 +978,24 @@ def resolve_bot_file_id(file_id):
 
         # Thumbnails (small) always have ID 0; otherwise size 'x'
         photo_size = 's' if media_id or access_hash else 'x'
-        return types.Photo(id=media_id, access_hash=access_hash, sizes=[
-            types.PhotoSize(photo_size, location=types.FileLocation(
-                dc_id=dc_id,
-                volume_id=volume_id,
-                secret=secret,
-                local_id=local_id,
-                file_reference=b''
-            ), w=0, h=0, size=0)
-        ], file_reference=b'', date=None)
+        return types.Photo(
+            id=media_id,
+            access_hash=access_hash,
+            file_reference=b'',
+            date=None,
+            sizes=[types.PhotoSize(
+                type=photo_size,
+                location=types.FileLocationToBeDeprecated(
+                    volume_id=volume_id,
+                    local_id=local_id
+                ),
+                w=0,
+                h=0,
+                size=0
+            )],
+            dc_id=dc_id,
+            has_stickers=None
+        )
 
 
 def pack_bot_file_id(file):
@@ -1038,13 +1034,13 @@ def pack_bot_file_id(file):
         size = next((x for x in reversed(file.sizes) if isinstance(
             x, (types.PhotoSize, types.PhotoCachedSize))), None)
 
-        if not size or not isinstance(size.location, types.FileLocation):
+        if not size:
             return None
 
         size = size.location
         return _encode_telegram_base64(_rle_encode(struct.pack(
-            '<iiqqqqib', 2, size.dc_id, file.id, file.access_hash,
-            size.volume_id, size.secret, size.local_id, 2
+            '<iiqqqqib', 2, file.dc_id, file.id, file.access_hash,
+            size.volume_id, 0, size.local_id, 2  # 0 = old `secret`
         )))
     else:
         return None

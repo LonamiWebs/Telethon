@@ -180,7 +180,7 @@ class DownloadMethods(UserMethods):
         Downloads the given input location to a file.
 
         Args:
-            input_location (:tl:`FileLocation` | :tl:`InputFileLocation`):
+            input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
                 See `telethon.utils.get_input_location` source for a complete
                 list of supported types.
