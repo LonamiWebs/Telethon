@@ -63,7 +63,6 @@ def setup(app):
 
     :param app: Sphinx application context.
     """
-    app.info('Initializing TL reference plugin')
     app.add_role('tl', tl_role)
     app.add_config_value('tl_ref_url', None, 'env')
     return

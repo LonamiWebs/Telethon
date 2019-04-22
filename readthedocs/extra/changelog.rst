@@ -14,6 +14,138 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+Easier Events (v1.7)
+====================
+
+*Published at 2019/04/22*
+
++-----------------------+
+| Scheme layer used: 98 |
++-----------------------+
+
+If you have been using Telethon for a while, you probably know how annoying
+the "Could not find the input entity for…" error can be. In this new version,
+the library will try harder to find the input entity for you!
+
+That is, instead of doing:
+
+.. code-block:: python
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        await client.download_profile_photo(await event.get_input_sender())
+        # ...... needs await, it's a method ^^^^^                       ^^
+
+You can now do:
+
+.. code-block:: python
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        await client.download_profile_photo(event.input_sender)
+        # ...... no await, it's a property! ^
+        # It's also 12 characters shorter :)
+
+And even the following will hopefully work:
+
+.. code-block:: python
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        await client.download_profile_photo(event.sender_id)
+
+A lot of people use IDs thinking this is the right way of doing it. Ideally,
+you would always use ``input_*``, not ``sender`` or ``sender_id`` (and the
+same applies to chats). But, with this change, IDs will work just the same as
+``input_*`` inside events.
+
+**This feature still needs some more testing**, so please do open an issue
+if you find strange behaviour.
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The layer changed, and a lot of things did too. If you are using
+  raw API, you should be careful with this. In addition, some attributes
+  weren't of type ``datetime`` when they should be, which has been fixed.
+* `client.disconnect()
+  <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
+  is now asynchronous again. This means you need to ``await`` it. You
+  don't need to worry about this if you were using ``with client`` or
+  `client.run_until_disconnected
+  <telethon.client.updates.UpdateMethods.run_until_disconnected>`.
+  This should prevent the "pending task was destroyed" errors.
+
+Additions
+~~~~~~~~~
+
+* New in-memory cache for input entities. This should mean a lot less
+  of disk look-ups.
+* New `client.action <telethon.client.chats.ChatMethods.action>` method
+  to easily indicate that you are doing some chat action:
+
+  .. code-block:: python
+
+        async with client.action(chat, 'typing'):
+            await asyncio.sleep(2)  # type for 2 seconds
+            await client.send_message(chat, 'Hello world! I type slow ^^')
+
+  You can also easily use this for sending files, playing games, etc.
+
+
+Bug fixes
+~~~~~~~~~
+
+* Fix sending photos from streams/bytes.
+* Fix unhandled error when sending requests that were too big.
+* Fix edits that arrive too early on conversations.
+* Fix `client.edit_message()
+  <telethon.client.messages.MessageMethods.edit_message>`
+  when trying to edit a file.
+* Fix method calls on the objects returned by `client.iter_dialogs()
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>`.
+* Attempt at fixing `client.iter_dialogs()
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>` missing many dialogs.
+* ``offset_date`` in `client.iter_messages()
+  <telethon.client.messages.MessageMethods.iter_messages>` was being
+  ignored in some cases. This has been worked around.
+* Fix `callback_query.edit()
+  <telethon.events.callbackquery.CallbackQuery.Event.edit>`.
+* Fix `CallbackQuery(func=...) <telethon.events.callbackquery.CallbackQuery>`
+  was being ignored.
+* Fix `UserUpdate <telethon.events.userupdate.UserUpdate>` not working for
+  "typing" (and uploading file, etc.) status.
+* Fix library was not expecting ``IOError`` from PySocks.
+* Fix library was raising a generic ``ConnectionError``
+  and not the one that actually occurred.
+* Fix the ``blacklist_chats`` parameter in `MessageRead
+  <telethon.events.messageread.MessageRead>` not working as intended.
+* Fix `client.download_media(contact)
+  <telethon.client.downloads.DownloadMethods.download_media>`.
+* Fix mime type when sending ``mp3`` files.
+* Fix forcibly getting the sender or chat from events would
+  not always return all their information.
+* Fix sending albums with `client.send_file()
+  <telethon.client.uploads.UploadMethods.send_file>` was not returning
+  the sent messages.
+* Fix forwarding albums with `client.forward_messages()
+  <telethon.client.messages.MessageMethods.forward_messages>`.
+* Some fixes regarding filtering updates from chats.
+* Attempt at preventing duplicated updates.
+* Prevent double auto-reconnect.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* Some improvements related to proxy connections.
+* Several updates and improvements to the documentation,
+  such as optional dependencies now being properly listed.
+* You can now forward messages from different chats directly with
+  `client.forward_messages <telethon.client.messages.MessageMethods.forward_messages>`.
+
+
 Tidying up Internals (v1.6)
 ===========================
 
