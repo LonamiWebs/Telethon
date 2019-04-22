@@ -321,8 +321,8 @@ class UpdateMethods(UserMethods):
                                               name)
 
     async def _handle_auto_reconnect(self):
-        # Upon reconnection, we want to send getState
-        # for Telegram to keep sending us updates.
+        # TODO Catch-up
+        return
         try:
             self._log[__name__].info(
                 'Asking for the current state after reconnect...')
