@@ -213,7 +213,7 @@ class UpdateMethods(UserMethods):
         self._state_cache.update(update)
 
     def _process_update(self, update, entities=None):
-        update._channel_id = StateCache.get_channel_id(update)
+        update._channel_id = self._state_cache.get_channel_id(update)
         update._pts_date = self._state_cache[update._channel_id]
         update._entities = entities or {}
         if self._updates_queue is None:

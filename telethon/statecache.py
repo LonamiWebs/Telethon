@@ -7,10 +7,11 @@ class StateCache:
     """
     In-memory update state cache, defaultdict-like behaviour.
     """
-    def __init__(self, initial):
+    def __init__(self, initial, loggers):
         # We only care about the pts and the date. By using a tuple which
         # is lightweight and immutable we can easily copy them around to
         # each update in case they need to fetch missing entities.
+        self._logger = loggers[__name__]
         if initial:
             self._pts_date = initial.pts, initial.date
         else:
@@ -82,12 +83,13 @@ class StateCache:
                 channel_id = self.get_channel_id(update)
 
             if channel_id is None:
-                pass  # TODO log, but shouldn't happen
+                self._logger.info(
+                    'Failed to retrieve channel_id from %s', update)
             else:
                 self.__dict__[channel_id] = update.pts
 
-    @staticmethod
     def get_channel_id(
+            self,
             update,
             has_channel_id=(
                 types.UpdateChannelTooLong,
@@ -103,9 +105,12 @@ class StateCache:
         if isinstance(update, has_channel_id):
             return update.channel_id
         elif isinstance(update, has_message):
-            return update.message.to_id.channel_id
-        else:
-            return None
+            if update.message.to_id is None:
+                self._logger.info('Update has None to_id %s', update)
+            else:
+                return update.message.to_id.channel_id
+
+        return None
 
     def __getitem__(self, item):
         """

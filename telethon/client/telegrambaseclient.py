@@ -308,7 +308,8 @@ class TelegramBaseClient(abc.ABC):
 
         # Update state (for catching up after a disconnection)
         # TODO Get state from channels too
-        self._state_cache = StateCache(self.session.get_update_state(0))
+        self._state_cache = StateCache(
+            self.session.get_update_state(0), self._log)
 
         # Some further state for subclasses
         self._event_builders = []
