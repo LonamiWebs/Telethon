@@ -76,7 +76,14 @@ class DownloadMethods(UserMethods):
             photo = entity.photo
 
         if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
-            loc = photo.photo_big if download_big else photo.photo_small
+            dc_id = photo.dc_id
+            which = photo.photo_big if download_big else photo.photo_small
+            loc = types.InputPeerPhotoFileLocation(
+                peer=await self.get_input_entity(entity),
+                local_id=which.local_id,
+                volume_id=which.volume_id,
+                big=download_big
+            )
         else:
             # It doesn't make any sense to check if `photo` can be used
             # as input location, because then this method would be able
@@ -90,7 +97,7 @@ class DownloadMethods(UserMethods):
         )
 
         try:
-            result = await self.download_file(loc, file)
+            result = await self.download_file(loc, file, dc_id=dc_id)
             return result if file is bytes else file
         except errors.LocationInvalidError:
             # See issue #500, Android app fails as of v4.6.0 (1155).
@@ -168,7 +175,7 @@ class DownloadMethods(UserMethods):
 
     async def download_file(
             self, input_location, file=None, *, part_size_kb=None,
-            file_size=None, progress_callback=None):
+            file_size=None, progress_callback=None, dc_id=None):
         """
         Downloads the given input location to a file.
 
@@ -197,6 +204,10 @@ class DownloadMethods(UserMethods):
                 A callback function accepting two parameters:
                 ``(downloaded bytes, total)``. Note that the
                 ``total`` is the provided ``file_size``.
+
+            dc_id (`int`, optional):
+                The data center the library should connect to in order
+                to download the file. You shouldn't worry about this.
         """
         if not part_size_kb:
             if not file_size:
@@ -225,7 +236,11 @@ class DownloadMethods(UserMethods):
         else:
             f = file
 
+        old_dc = dc_id
         dc_id, input_location = utils.get_input_location(input_location)
+        if dc_id is None:
+            dc_id = old_dc
+
         exported = dc_id and self.session.dc_id != dc_id
         if exported:
             try:

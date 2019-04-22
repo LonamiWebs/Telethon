@@ -630,22 +630,25 @@ def get_input_location(location):
 
     if isinstance(location, types.Document):
         return (location.dc_id, types.InputDocumentFileLocation(
-            location.id, location.access_hash,
-            file_reference=location.file_reference
+            id=location.id,
+            access_hash=location.access_hash,
+            file_reference=location.file_reference,
+            thumb_size=''  # Presumably to download one of its thumbnails
         ))
     elif isinstance(location, types.Photo):
-        try:
-            location = next(
-                x for x in reversed(location.sizes)
-                if not isinstance(x, types.PhotoSizeEmpty)
-            ).location
-        except StopIteration:
-            pass
+        return (location.dc_id, types.InputPhotoFileLocation(
+            id=location.id,
+            access_hash=location.access_hash,
+            file_reference=location.file_reference,
+            thumb_size=''  # Presumably to download one of its thumbnails
+        ))
 
-    if isinstance(location, types.FileLocation):
-        return (location.dc_id, types.InputFileLocation(
-            location.volume_id, location.local_id, location.secret,
-            file_reference=location.file_reference
+    if isinstance(location, types.FileLocationToBeDeprecated):
+        return (None, types.InputFileLocation(
+            volume_id=location.volume_id,
+            local_id=location.local_id,
+            secret=0,
+            file_reference=b''
         ))
     elif isinstance(location, types.FileLocationUnavailable):
         raise TypeError('Unavailable location cannot be used as input')

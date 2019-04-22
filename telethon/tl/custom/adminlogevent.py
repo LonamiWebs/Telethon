@@ -159,7 +159,7 @@ class AdminLogEvent:
         """
         Whether the channel's photo was changed in this event or not.
 
-        If ``True``, `old` and `new` will be present as :tl:`ChatPhoto`.
+        If ``True``, `old` and `new` will be present as :tl:`Photo`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangePhoto)
