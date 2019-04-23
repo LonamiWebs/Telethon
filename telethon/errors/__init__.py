@@ -34,7 +34,13 @@ def rpc_message_to_error(rpc_error, request):
             capture = int(m.group(1)) if m.groups() else None
             return cls(request, capture=capture)
 
-    cls = base_errors.get(rpc_error.error_code)
+    # Some errors are negative:
+    # * -500 for "No workers running",
+    # * -503 for "Timeout"
+    #
+    # We treat them as if they were positive, so -500 will be treated
+    # as a `ServerError`, etc.
+    cls = base_errors.get(abs(rpc_error.error_code))
     if cls:
         return cls(request, rpc_error.error_message)
 

@@ -100,7 +100,7 @@ class ServerError(RPCError):
     for example, there was a disruption while accessing a database or file
     storage.
     """
-    code = 500
+    code = 500  # Also witnessed as -500
     message = 'INTERNAL'
 
     def __init__(self, request, message):
@@ -113,7 +113,7 @@ class BotTimeout(RPCError):
     Clicking the inline buttons of bots that never (or take to long to)
     call ``answerCallbackQuery`` will result in this "special" RPCError.
     """
-    code = -503
+    code = 503  # Only witnessed as -503
     message = 'Timeout'
 
     def __init__(self, request, message):
