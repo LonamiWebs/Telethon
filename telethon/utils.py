@@ -634,7 +634,7 @@ def get_input_location(location):
             id=location.id,
             access_hash=location.access_hash,
             file_reference=location.file_reference,
-            thumb_size=''  # Presumably to download one of its thumbnails
+            thumb_size=location.sizes[-1].type
         ))
 
     if isinstance(location, types.FileLocationToBeDeprecated):
