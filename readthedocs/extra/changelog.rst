@@ -13,6 +13,20 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Fix-up for Photo Downloads (v1.7.1)
+===================================
+
+*Published at 2019/04/24*
+
+Telegram changed the way thumbnails (which includes photos) are downloaded,
+so you can no longer use a :tl:`PhotoSize` alone to download a particular
+thumbnail size (this is a **breaking change**).
+
+Instead, you will have to specify the new ``thumb`` parameter in
+`client.download_media() <telethon.client.downloads.DownloadMethods.download_media>`
+to download a particular thumbnail size. This addition enables you to easily
+download thumbnails from documents, something you couldn't do easily before.
+
 
 Easier Events (v1.7)
 ====================
@@ -69,6 +83,9 @@ Breaking Changes
 * The layer changed, and a lot of things did too. If you are using
   raw API, you should be careful with this. In addition, some attributes
   weren't of type ``datetime`` when they should be, which has been fixed.
+* Due to the layer change, you can no longer download photos with just
+  their :tl:`PhotoSize`. Version 1.7.1 introduces a new way to download
+  thumbnails to work around this issue.
 * `client.disconnect()
   <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
   is now asynchronous again. This means you need to ``await`` it. You
@@ -93,6 +110,11 @@ Additions
 
   You can also easily use this for sending files, playing games, etc.
 
+
+New bugs
+~~~~~~~~
+
+* Downloading photos is broken. This is fixed in v1.7.1.
 
 Bug fixes
 ~~~~~~~~~

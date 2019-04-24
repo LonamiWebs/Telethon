@@ -53,3 +53,12 @@ TelegramTUI
 `Author's website <https://github.com/bad-day>`_
 
 A Telegram client on your terminal.
+
+spotify_telegram_bio_updater
+****************************
+
+`Link <https://github.com/Poolitzer/spotify_telegram_bio_updater>`_ /
+`Author's website <https://t.me/pooltalks>`_
+
+Small project that updates the biography of a telegram user according
+to their current Spotify playback, or revert it if no playback is active.
