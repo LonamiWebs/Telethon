@@ -77,9 +77,9 @@ def _write_modules(
             # Add the relative imports to the namespaces,
             # unless we already are in a namespace.
             if not ns:
-                builder.writeln('from . import {}', ', '.join(
+                builder.writeln('from . import {}', ', '.join(sorted(
                     x for x in namespace_tlobjects.keys() if x
-                ))
+                )))
 
             # Import 'os' for those needing access to 'os.urandom()'
             # Currently only 'random_id' needs 'os' to be imported,
@@ -147,7 +147,7 @@ def _write_modules(
                 builder.writeln('if TYPE_CHECKING:')
                 for namespace, names in imports.items():
                     builder.writeln('from {} import {}',
-                                    namespace, ', '.join(names))
+                                    namespace, ', '.join(sorted(names)))
 
                 builder.end_block()
 
