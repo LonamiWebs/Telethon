@@ -107,14 +107,15 @@ class DownloadMethods(UserMethods):
                 full = await self(functions.channels.GetFullChannelRequest(ie))
                 return await self._download_photo(
                     full.full_chat.chat_photo, file,
-                    date=None, progress_callback=None
+                    date=None, progress_callback=None,
+                    thumb=-1 if download_big else 0
                 )
             else:
                 # Until there's a report for chats, no need to.
                 return None
 
     async def download_media(self, message, file=None,
-                             *, progress_callback=None):
+                             *, thumb=None, progress_callback=None):
         """
         Downloads the given media, or the media from a specified Message.
 
@@ -135,6 +136,23 @@ class DownloadMethods(UserMethods):
             A callback function accepting two parameters:
             ``(received bytes, total)``.
 
+        thumb (`int` | :tl:`PhotoSize`, optional):
+            Which thumbnail size from the document or photo to download,
+            instead of downloading the document or photo itself.
+
+            If it's specified but the file does not have a thumbnail,
+            this method will return ``None``.
+
+            The parameter should be an integer index between ``0`` and
+            ``len(sizes)``. ``0`` will download the smallest thumbnail,
+            and ``len(sizes) - 1`` will download the largest thumbnail.
+            You can also use negative indices.
+
+            You can also pass the :tl:`PhotoSize` instance to use.
+
+            In short, use ``thumb=0`` if you want the smallest thumbnail
+            and ``thumb=-1`` if you want the largest thumbnail.
+
         Returns:
             ``None`` if no media was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
@@ -154,21 +172,19 @@ class DownloadMethods(UserMethods):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
 
-        if isinstance(media, (types.MessageMediaPhoto, types.Photo,
-                              types.PhotoSize, types.PhotoCachedSize,
-                              types.PhotoStrippedSize)):
+        if isinstance(media, (types.MessageMediaPhoto, types.Photo)):
             return await self._download_photo(
-                media, file, date, progress_callback
+                media, file, date, thumb, progress_callback
             )
         elif isinstance(media, (types.MessageMediaDocument, types.Document)):
             return await self._download_document(
-                media, file, date, progress_callback
+                media, file, date, thumb, progress_callback
             )
-        elif isinstance(media, types.MessageMediaContact):
+        elif isinstance(media, types.MessageMediaContact) and thumb is None:
             return self._download_contact(
                 media, file
             )
-        elif isinstance(media, (types.WebDocument, types.WebDocumentNoProxy)):
+        elif isinstance(media, (types.WebDocument, types.WebDocumentNoProxy)) and thumb is None:
             return await self._download_web_document(
                 media, file, progress_callback
             )
@@ -305,43 +321,62 @@ class DownloadMethods(UserMethods):
 
     # region Private methods
 
-    async def _download_photo(self, photo, file, date, progress_callback):
+    @staticmethod
+    def _get_thumb(thumbs, thumb):
+        if thumb is None:
+            return thumbs[-1]
+        elif isinstance(thumb, int):
+            return thumbs[thumb]
+        elif isinstance(thumb, (types.PhotoSize, types.PhotoCachedSize,
+                                types.PhotoStrippedSize)):
+            return thumb
+        else:
+            return None
+
+    def _download_cached_photo_size(self, size, file):
+        # No need to download anything, simply write the bytes
+        if file is bytes:
+            return size.bytes
+        elif isinstance(file, str):
+            helpers.ensure_parent_dir_exists(file)
+            f = open(file, 'wb')
+        else:
+            f = file
+
+        try:
+            f.write(size.bytes)
+        finally:
+            if isinstance(file, str):
+                f.close()
+        return file
+
+    async def _download_photo(self, photo, file, date, thumb, progress_callback):
         """Specialized version of .download_media() for photos"""
         # Determine the photo and its largest size
         if isinstance(photo, types.MessageMediaPhoto):
             photo = photo.photo
-        if isinstance(photo, types.Photo):
-            for size in reversed(photo.sizes):
-                if not isinstance(size, types.PhotoSizeEmpty):
-                    photo = size
-                    break
-            else:
-                return
-        if not isinstance(photo, (types.PhotoSize, types.PhotoCachedSize,
-                                  types.PhotoStrippedSize)):
+        if not isinstance(photo, types.Photo):
+            return
+
+        size = self._get_thumb(photo.sizes, thumb)
+        if not size or isinstance(size, types.PhotoSizeEmpty):
             return
 
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
-        if isinstance(photo, (types.PhotoCachedSize, types.PhotoStrippedSize)):
-            # No need to download anything, simply write the bytes
-            if file is bytes:
-                return photo.bytes
-            elif isinstance(file, str):
-                helpers.ensure_parent_dir_exists(file)
-                f = open(file, 'wb')
-            else:
-                f = file
-
-            try:
-                f.write(photo.bytes)
-            finally:
-                if isinstance(file, str):
-                    f.close()
-            return file
+        if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
+            return self._download_cached_photo_size(size, file)
 
         result = await self.download_file(
-            photo.location, file, file_size=photo.size,
-            progress_callback=progress_callback)
+            types.InputPhotoFileLocation(
+                id=photo.id,
+                access_hash=photo.access_hash,
+                file_reference=photo.file_reference,
+                thumb_size=size.type
+            ),
+            file,
+            file_size=size.size,
+            progress_callback=progress_callback
+        )
         return result if file is bytes else file
 
     @staticmethod
@@ -369,7 +404,7 @@ class DownloadMethods(UserMethods):
         return kind, possible_names
 
     async def _download_document(
-            self, document, file, date, progress_callback):
+            self, document, file, date, thumb, progress_callback):
         """Specialized version of .download_media() for documents."""
         if isinstance(document, types.MessageMediaDocument):
             document = document.document
@@ -382,9 +417,25 @@ class DownloadMethods(UserMethods):
             date=date, possible_names=possible_names
         )
 
+        if thumb is None:
+            size = None
+        else:
+            size = self._get_thumb(document.thumbs, thumb)
+            if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
+                return self._download_cached_photo_size(size, file)
+
         result = await self.download_file(
-            document, file, file_size=document.size,
-            progress_callback=progress_callback)
+            types.InputDocumentFileLocation(
+                id=document.id,
+                access_hash=document.access_hash,
+                file_reference=document.file_reference,
+                thumb_size=size.type if size else ''
+            ),
+            file,
+            file_size=size.size if size else document.size,
+            progress_callback=progress_callback
+        )
+
         return result if file is bytes else file
 
     @classmethod
