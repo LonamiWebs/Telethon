@@ -2,6 +2,7 @@ import abc
 import asyncio
 import socket
 import ssl as ssl_mod
+import sys
 
 from ...errors import InvalidChecksumError
 from ... import helpers
@@ -108,6 +109,8 @@ class Connection(abc.ABC):
 
         if self._writer:
             self._writer.close()
+            if sys.version_info >= (3, 7):
+                await self._writer.wait_closed()
 
     def send(self, data):
         """
