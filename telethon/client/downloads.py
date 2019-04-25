@@ -342,10 +342,11 @@ class DownloadMethods(UserMethods):
             f = open(file, 'wb')
         else:
             f = file
-        if isinstance(size, types.PhotoStrippedSize):
-            size.bytes = utils.stripped_to_photo(size.bytes)
+
         try:
-            f.write(size.bytes)
+            f.write(utils.stripped_photo_to_jpg(size.bytes)
+                    if isinstance(size, types.PhotoStrippedSize)
+                    else size.bytes)
         finally:
             if isinstance(file, str):
                 f.close()
