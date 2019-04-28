@@ -11,6 +11,9 @@ __log__ = logging.getLogger(__name__)
 
 lib = ctypes.util.find_library('ssl')
 try:
+    if not lib:
+        raise OSError('no library called "ssl" found')
+
     _libssl = ctypes.cdll.LoadLibrary(lib)
 except OSError as e:
     # See https://github.com/LonamiWebs/Telethon/issues/1167
