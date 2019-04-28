@@ -3,15 +3,25 @@ Helper module around the system's libssl library if available for IGE mode.
 """
 import ctypes
 import ctypes.util
+import logging
+
+
+__log__ = logging.getLogger(__name__)
 
 
 lib = ctypes.util.find_library('ssl')
-if not lib:
+try:
+    _libssl = ctypes.cdll.LoadLibrary(lib)
+except OSError as e:
+    # See https://github.com/LonamiWebs/Telethon/issues/1167
+    # Sometimes `find_library` returns improper filenames.
+    __log__.info('Failed to load %s: %s (%s)', lib, type(e), e)
+    _libssl = None
+
+if not _libssl:
     decrypt_ige = None
     encrypt_ige = None
 else:
-    _libssl = ctypes.cdll.LoadLibrary(lib)
-
     # https://github.com/openssl/openssl/blob/master/include/openssl/aes.h
     AES_ENCRYPT = ctypes.c_int(1)
     AES_DECRYPT = ctypes.c_int(0)
