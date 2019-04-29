@@ -323,7 +323,7 @@ class UpdateMethods(UserMethods):
                 # `await` for `check_entities_and_get_difference` causes
                 # unnecessary work. So we need to call a function that
                 # doesn't cause a task switch.
-                if not event._load_entities():
+                if isinstance(event, EventCommon) and not event._load_entities():
                     await event._get_difference(channel_id, pts_date)
 
                 await callback(event)
