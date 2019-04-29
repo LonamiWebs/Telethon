@@ -4,7 +4,7 @@ import time
 
 from .chatgetter import ChatGetter
 from ... import helpers, utils, errors
-
+from ...events.common import EventCommon
 
 # Sometimes the edits arrive very fast (within the same second).
 # In that case we add a small delta so that the age is older, for
@@ -298,7 +298,7 @@ class Conversation(ChatGetter):
         for i, (ev, fut) in self._custom.items():
             ev_type = type(ev)
             if built[ev_type] and ev.filter(built[ev_type]):
-                if not ev._load_entities():
+                if isinstance(ev, EventCommon) and not ev._load_entities():
                     await ev._get_difference(channel_id, pts_date)
 
                 fut.set_result(built[ev_type])
