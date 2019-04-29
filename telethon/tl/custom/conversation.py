@@ -369,7 +369,7 @@ class Conversation(ChatGetter):
             del self._pending_reads[to_remove]
 
     def _get_message_id(self, message):
-        if message:
+        if message is not None:  # 0 is valid but false-y, check for None
             return message if isinstance(message, int) else message.id
         elif self._last_outgoing:
             return self._last_outgoing
