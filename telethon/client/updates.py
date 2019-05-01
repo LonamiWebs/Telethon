@@ -282,25 +282,22 @@ class UpdateMethods(UserMethods):
         self._dispatching_updates_queue.clear()
 
     async def _dispatch_update(self, update, channel_id, pts_date):
+        if not self._entity_cache.ensure_cached(update):
+            await self._get_difference(update, channel_id, pts_date)
+
         built = EventBuilderDict(self, update)
         if self._conversations:
             for conv in self._conversations.values():
                 ev = built[events.NewMessage]
                 if ev:
-                    if not ev._load_entities():
-                        await ev._get_difference(channel_id, pts_date)
                     conv._on_new_message(ev)
 
                 ev = built[events.MessageEdited]
                 if ev:
-                    if not ev._load_entities():
-                        await ev._get_difference(channel_id, pts_date)
                     conv._on_edit(ev)
 
                 ev = built[events.MessageRead]
                 if ev:
-                    if not ev._load_entities():
-                        await ev._get_difference(channel_id, pts_date)
                     conv._on_read(ev)
 
                 if conv._custom:
@@ -318,14 +315,6 @@ class UpdateMethods(UserMethods):
                 continue
 
             try:
-                # Although needing to do this constantly is annoying and
-                # error-prone, this part is somewhat hot, and always doing
-                # `await` for `check_entities_and_get_difference` causes
-                # unnecessary work. So we need to call a function that
-                # doesn't cause a task switch.
-                if isinstance(event, EventCommon) and not event._load_entities():
-                    await event._get_difference(channel_id, pts_date)
-
                 await callback(event)
             except errors.AlreadyInConversationError:
                 name = getattr(callback, '__name__', repr(callback))
@@ -343,6 +332,46 @@ class UpdateMethods(UserMethods):
                 name = getattr(callback, '__name__', repr(callback))
                 self._log[__name__].exception('Unhandled exception on %s',
                                               name)
+
+    async def _get_difference(self, update, channel_id, pts_date):
+        """
+        Get the difference for this `channel_id` if any, then load entities.
+
+        Calls :tl:`updates.getDifference`, which fills the entities cache
+        (always done by `__call__`) and lets us know about the full entities.
+        """
+        # Fetch since the last known pts/date before this update arrived,
+        # in order to fetch this update at full, including its entities.
+        self._log[__name__].debug('Getting difference for entities '
+                                  'for %r', update.__class__)
+        if channel_id:
+            try:
+                where = await self.get_input_entity(channel_id)
+            except ValueError:
+                return
+
+            result = await self(functions.updates.GetChannelDifferenceRequest(
+                channel=where,
+                filter=types.ChannelMessagesFilterEmpty(),
+                pts=pts_date,  # just pts
+                limit=100,
+                force=True
+            ))
+        else:
+            result = await self(functions.updates.GetDifferenceRequest(
+                pts=pts_date[0],
+                date=pts_date[1],
+                qts=0
+            ))
+
+        if isinstance(result, (types.updates.Difference,
+                               types.updates.DifferenceSlice,
+                               types.updates.ChannelDifference,
+                               types.updates.ChannelDifferenceTooLong)):
+            update._entities.update({
+                utils.get_peer_id(x): x for x in
+                itertools.chain(result.users, result.chats)
+            })
 
     async def _handle_auto_reconnect(self):
         # TODO Catch-up
@@ -398,6 +427,7 @@ class EventBuilderDict:
             if isinstance(event, EventCommon):
                 event.original_update = self.update
                 event._set_client(self.client)
+                event._load_entities()
             elif event:
                 event._client = self.client
 

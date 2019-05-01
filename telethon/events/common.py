@@ -175,51 +175,6 @@ class EventCommon(ChatGetter, abc.ABC):
         self._chat, self._input_chat = self._get_entity_pair(self.chat_id)
         return self._input_chat is not None
 
-    async def _get_difference(self, channel_id, pts_date):
-        """
-        Get the difference for this `channel_id` if any, then load entities.
-
-        Calls :tl:`updates.getDifference`, which fills the entities cache
-        (always done by `__call__`) and lets us know about the full entities.
-        """
-        # Fetch since the last known pts/date before this update arrived,
-        # in order to fetch this update at full, including its entities.
-        self.client._log[__name__].debug('Getting difference for entities')
-        if channel_id:
-            try:
-                where = await self.client.get_input_entity(channel_id)
-            except ValueError:
-                return
-
-            result = await self.client(functions.updates.GetChannelDifferenceRequest(
-                channel=where,
-                filter=types.ChannelMessagesFilterEmpty(),
-                pts=pts_date,  # just pts
-                limit=100,
-                force=True
-            ))
-        else:
-            result = await self.client(functions.updates.GetDifferenceRequest(
-                pts=pts_date[0],
-                date=pts_date[1],
-                qts=0
-            ))
-
-        if isinstance(result, (types.updates.Difference,
-                               types.updates.DifferenceSlice,
-                               types.updates.ChannelDifference,
-                               types.updates.ChannelDifferenceTooLong)):
-            self.original_update._entities.update({
-                utils.get_peer_id(x): x for x in
-                itertools.chain(result.users, result.chats)
-            })
-
-        if not self._load_entities():
-            self.client._log[__name__].info(
-                'Could not find all entities for update.pts = %s',
-                getattr(self.original_update, 'pts', None)
-            )
-
     @property
     def client(self):
         """
