@@ -123,13 +123,16 @@ class InlineBuilder:
         try:
             fh = utils.get_input_photo(file)
         except TypeError:
-            fh = await self._client.upload_file(file, use_cache=types.InputPhoto)
-
-        if not isinstance(fh, types.InputPhoto):
-            r = await self._client(functions.messages.UploadMediaRequest(
-                types.InputPeerSelf(), media=types.InputMediaUploadedPhoto(fh)
-            ))
-            fh = utils.get_input_photo(r.photo)
+            _, media, _ = await self._client._file_to_media(
+                file, allow_cache=True, as_image=True
+            )
+            if isinstance(media, types.InputPhoto):
+                fh = media
+            else:
+                r = await self._client(functions.messages.UploadMediaRequest(
+                    types.InputPeerSelf(), media=media
+                ))
+                fh = utils.get_input_photo(r.photo)
 
         result = types.InputBotInlineResultPhoto(
             id=id or '',
@@ -191,27 +194,22 @@ class InlineBuilder:
         try:
             fh = utils.get_input_document(file)
         except TypeError:
-            use_cache = types.InputDocument if use_cache else None
-            fh = await self._client.upload_file(file, use_cache=use_cache)
-
-        if not isinstance(fh, types.InputDocument):
-            attributes, mime_type = utils.get_attributes(
+            _, media, _ = await self._client._file_to_media(
                 file,
                 mime_type=mime_type,
                 attributes=attributes,
-                force_document=force_document,
+                force_document=True,
                 voice_note=voice_note,
-                video_note=video_note
+                video_note=video_note,
+                allow_cache=use_cache
             )
-            r = await self._client(functions.messages.UploadMediaRequest(
-                types.InputPeerSelf(), media=types.InputMediaUploadedDocument(
-                    fh,
-                    mime_type=mime_type,
-                    attributes=attributes,
-                    nosound_video=None,
-                    thumb=None
-            )))
-            fh = utils.get_input_document(r.document)
+            if isinstance(media, types.InputDocument):
+                fh = media
+            else:
+                r = await self._client(functions.messages.UploadMediaRequest(
+                    types.InputPeerSelf(), media=media
+                ))
+                fh = utils.get_input_document(r.document)
 
         result = types.InputBotInlineResultDocument(
             id=id or '',

@@ -515,14 +515,15 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             self, file, force_document=False,
             progress_callback=None, attributes=None, thumb=None,
             allow_cache=True, voice_note=False, video_note=False,
-            supports_streaming=False):
+            supports_streaming=False, mime_type=None, as_image=None):
         if not file:
             return None, None, None
 
         if isinstance(file, pathlib.Path):
             file = str(file.absolute())
 
-        as_image = utils.is_image(file) and not force_document
+        if as_image is None:
+            as_image = utils.is_image(file) and not force_document
 
         if not isinstance(file, (str, bytes, io.IOBase)):
             # The user may pass a Message containing media (or the media,
@@ -584,6 +585,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         else:
             attributes, mime_type = utils.get_attributes(
                 file,
+                mime_type=mime_type,
                 attributes=attributes,
                 force_document=force_document,
                 voice_note=voice_note,
