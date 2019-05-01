@@ -27,7 +27,7 @@ class StateCache:
             update,
             *,
             channel_id=None,
-            has_pts=(
+            has_pts=frozenset(x.CONSTRUCTOR_ID for x in (
                 types.UpdateNewMessage,
                 types.UpdateDeleteMessages,
                 types.UpdateReadHistoryInbox,
@@ -40,8 +40,8 @@ class StateCache:
                 types.UpdateShortMessage,
                 types.UpdateShortChatMessage,
                 types.UpdateShortSentMessage
-            ),
-            has_date=(
+            )),
+            has_date=frozenset(x.CONSTRUCTOR_ID for x in (
                 types.UpdateUserPhoto,
                 types.UpdateEncryption,
                 types.UpdateEncryptedMessagesRead,
@@ -53,8 +53,8 @@ class StateCache:
                 types.UpdatesCombined,
                 types.Updates,
                 types.UpdateShortSentMessage,
-            ),
-            has_channel_pts=(
+            )),
+            has_channel_pts=frozenset(x.CONSTRUCTOR_ID for x in (
                 types.UpdateChannelTooLong,
                 types.UpdateNewChannelMessage,
                 types.UpdateDeleteChannelMessages,
@@ -63,22 +63,21 @@ class StateCache:
                 types.updates.ChannelDifferenceEmpty,
                 types.updates.ChannelDifferenceTooLong,
                 types.updates.ChannelDifference
-            )
+            ))
     ):
         """
         Update the state with the given update.
         """
-        has_pts = isinstance(update, has_pts)
-        has_date = isinstance(update, has_date)
-        has_channel_pts = isinstance(update, has_channel_pts)
-        if has_pts and has_date:
-            self._pts_date = update.pts, update.date
-        elif has_pts:
-            self._pts_date = update.pts, self._pts_date[1]
-        elif has_date:
+        cid = update.CONSTRUCTOR_ID
+        if cid in has_pts:
+            if cid in has_date:
+                self._pts_date = update.pts, update.date
+            else:
+                self._pts_date = update.pts, self._pts_date[1]
+        elif cid in has_date:
             self._pts_date = self._pts_date[0], update.date
 
-        if has_channel_pts:
+        if cid in has_channel_pts:
             if channel_id is None:
                 channel_id = self.get_channel_id(update)
 
@@ -91,20 +90,26 @@ class StateCache:
     def get_channel_id(
             self,
             update,
-            has_channel_id=(
+            has_channel_id=frozenset(x.CONSTRUCTOR_ID for x in (
                 types.UpdateChannelTooLong,
                 types.UpdateDeleteChannelMessages,
                 types.UpdateChannelWebPage
-            ),
-            has_message=(
+            )),
+            has_message=frozenset(x.CONSTRUCTOR_ID for x in (
                 types.UpdateNewChannelMessage,
                 types.UpdateEditChannelMessage
-            )
+            ))
     ):
-        # Will only fail for *difference, where channel_id is known
-        if isinstance(update, has_channel_id):
+        """
+        Gets the **unmarked** channel ID from this update, if it has any.
+
+        Fails for ``*difference`` updates, where ``channel_id``
+        is supposedly already known from the outside.
+        """
+        cid = update.CONSTRUCTOR_ID
+        if cid in has_channel_id:
             return update.channel_id
-        elif isinstance(update, has_message):
+        elif cid in has_message:
             if update.message.to_id is None:
                 self._logger.info('Update has None to_id %s', update)
             else:
@@ -114,7 +119,9 @@ class StateCache:
 
     def __getitem__(self, item):
         """
-        Gets the corresponding ``(pts, date)`` for the given ID or peer,
+        If `item` is ``None``, returns the default ``(pts, date)``.
+
+        If it's an **unmarked** channel ID, returns its ``pts``.
         """
         if item is None:
             return self._pts_date
