@@ -294,14 +294,12 @@ class Conversation(ChatGetter):
         self._custom[counter] = (event, future)
         return await result()
 
-    async def _check_custom(self, built, channel_id, pts_date):
+    async def _check_custom(self, built):
         for i, (ev, fut) in self._custom.items():
             ev_type = type(ev)
-            if built[ev_type] and ev.filter(built[ev_type]):
-                if isinstance(ev, EventCommon) and not ev._load_entities():
-                    await ev._get_difference(channel_id, pts_date)
-
-                fut.set_result(built[ev_type])
+            inst = built[ev_type]
+            if inst and ev.filter(inst):
+                fut.set_result(inst)
 
     def _on_new_message(self, response):
         response = response.message

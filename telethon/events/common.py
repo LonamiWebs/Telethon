@@ -138,8 +138,6 @@ class EventCommon(ChatGetter, abc.ABC):
         self._client = None
         self._chat_peer = chat_peer
         self._message_id = msg_id
-        self._input_chat = None
-        self._chat = None
         self._broadcast = broadcast
         self.original_update = None
 
@@ -148,6 +146,10 @@ class EventCommon(ChatGetter, abc.ABC):
         Setter so subclasses can act accordingly when the client is set.
         """
         self._client = client
+        if self._chat_peer:
+            self._chat, self._input_chat = self._get_entity_pair(self.chat_id)
+        else:
+            self._chat = self._input_chat = None
 
     def _get_entity_pair(self, entity_id):
         """
@@ -163,17 +165,6 @@ class EventCommon(ChatGetter, abc.ABC):
                 input_entity = None
 
         return entity, input_entity
-
-    def _load_entities(self):
-        """
-        Must load all the entities it needs from cache, and
-        return ``False`` if it could not find all of them.
-        """
-        if not self._chat_peer:
-            return True  # Nothing to load (e.g. MessageDeleted)
-
-        self._chat, self._input_chat = self._get_entity_pair(self.chat_id)
-        return self._input_chat is not None
 
     @property
     def client(self):

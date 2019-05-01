@@ -87,9 +87,9 @@ class InlineQuery(EventBuilder):
             self._input_sender = None
             self._sender = None
 
-        def _load_entities(self):
+        def _set_client(self, client):
+            super()._set_client(client)
             self._sender, self._input_sender = self._get_entity_pair(self.sender_id)
-            return super()._load_entities() and self._input_sender is not None
 
         @property
         def id(self):

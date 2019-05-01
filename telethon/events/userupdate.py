@@ -184,10 +184,7 @@ class UserUpdate(EventBuilder):
                     self._chat_peer = types.PeerChannel(self._chat_peer)
 
             super()._set_client(client)
-
-        def _load_entities(self):
-            self._sender, self._input_sender = self._get_entity_pair(self.sender_id)
-            return super()._load_entities() and self._input_sender is not None
+            self._sender, self._input_sender = self._get_entity_pair(self._sender_id)
 
         @property
         def user(self):

@@ -301,7 +301,7 @@ class UpdateMethods(UserMethods):
                     conv._on_read(ev)
 
                 if conv._custom:
-                    await conv._check_custom(built, channel_id, pts_date)
+                    await conv._check_custom(built)
 
         for builder, callback in self._event_builders:
             event = built[type(builder)]
@@ -427,7 +427,6 @@ class EventBuilderDict:
             if isinstance(event, EventCommon):
                 event.original_update = self.update
                 event._set_client(self.client)
-                event._load_entities()
             elif event:
                 event._client = self.client
 
