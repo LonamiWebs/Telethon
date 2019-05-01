@@ -105,7 +105,8 @@ class CallbackQuery(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            self._sender, self._input_sender = self._get_entity_pair(self.sender_id)
+            self._sender, self._input_sender = utils._get_entity_pair(
+                self.sender_id, self._entities, client._entity_cache)
 
         @property
         def id(self):

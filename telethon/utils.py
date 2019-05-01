@@ -469,6 +469,24 @@ def get_input_message(message):
     _raise_cast_fail(message, 'InputMedia')
 
 
+def _get_entity_pair(entity_id, entities, cache,
+                     get_input_peer=get_input_peer):
+    """
+    Returns ``(entity, input_entity)`` for the given entity ID.
+    """
+    entity = entities.get(entity_id)
+    try:
+        input_entity = cache[entity_id]
+    except KeyError:
+        # KeyError is unlikely, so another TypeError won't hurt
+        try:
+            input_entity = get_input_peer(entity)
+        except TypeError:
+            input_entity = None
+
+    return entity, input_entity
+
+
 def get_message_id(message):
     """Similar to :meth:`get_input_peer`, but for message IDs."""
     if message is None:

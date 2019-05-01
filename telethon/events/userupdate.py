@@ -1,6 +1,7 @@
 import datetime
 
 from .common import EventBuilder, EventCommon, name_inner_event
+from .. import utils
 from ..tl import types
 from ..tl.custom.sendergetter import SenderGetter
 
@@ -184,7 +185,8 @@ class UserUpdate(EventBuilder):
                     self._chat_peer = types.PeerChannel(self._chat_peer)
 
             super()._set_client(client)
-            self._sender, self._input_sender = self._get_entity_pair(self._sender_id)
+            self._sender, self._input_sender = utils._get_entity_pair(
+                self.sender_id, self._entities, client._entity_cache)
 
         @property
         def user(self):

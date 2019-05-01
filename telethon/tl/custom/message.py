@@ -210,27 +210,20 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         known entities.
         """
         self._client = client
-        self._sender = entities.get(self._sender_id)
-        if self._sender:
-            try:
-                self._input_sender = utils.get_input_peer(self._sender)
-            except TypeError:
-                self._input_sender = None
+        cache = client._entity_cache
 
-        self._chat = entities.get(self.chat_id)
-        self._input_chat = input_chat
-        if not self._input_chat and self._chat:
-            try:
-                self._input_chat = utils.get_input_peer(self._chat)
-            except TypeError:
-                self._input_chat = None
+        self._sender, self._input_sender = utils._get_entity_pair(
+            self.sender_id, entities, cache)
 
-        self._via_bot = entities.get(self.via_bot_id)
-        if self._via_bot:
-            try:
-                self._via_input_bot = utils.get_input_peer(self._via_bot)
-            except TypeError:
-                self._via_input_bot = None
+        self._chat, self._input_chat = utils._get_entity_pair(
+            self.chat_id, entities, cache)
+
+        if input_chat:  # This has priority
+            self._input_chat = input_chat
+
+        if self.via_bot_id:
+            self._via_bot, self._via_input_bot = utils._get_entity_pair(
+                self.via_bot_id, entities, cache)
 
         if self.fwd_from:
             self._forward = Forward(self._client, self.fwd_from, entities)

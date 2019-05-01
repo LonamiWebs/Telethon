@@ -206,16 +206,6 @@ class NewMessage(EventBuilder):
             super()._set_client(client)
             m = self.message
             m._finish_init(client, self._entities, None)
-
-            # TODO Duplicated work here
-            m._chat, m._input_chat = self._get_entity_pair(m.chat_id)
-            m._sender, m._input_sender = self._get_entity_pair(m.sender_id)
-            m._via_bot, m._via_input_bot = self._get_entity_pair(m.via_bot_id)
-            if m.forward:
-                f = m.forward
-                f._chat, f._input_chat = self._get_entity_pair(f.chat_id)
-                f._sender, f._input_sender = self._get_entity_pair(f.sender_id)
-
             self.__dict__['_init'] = True  # No new attributes can be set
 
         def __getattr__(self, item):
