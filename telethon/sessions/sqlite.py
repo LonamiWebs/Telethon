@@ -50,7 +50,7 @@ class SQLiteSession(MemorySession):
             # Tables already exist, check for the version
             c.execute("select version from version")
             version = c.fetchone()[0]
-            if version != CURRENT_VERSION:
+            if version < CURRENT_VERSION:
                 self._upgrade_database(old=version)
                 c.execute("delete from version")
                 c.execute("insert into version values (?)", (CURRENT_VERSION,))
