@@ -174,7 +174,7 @@ class TLArg:
             'date': 'Optional[datetime]',  # None date = 0 timestamp
             'bytes': 'bytes',
             'true': 'bool',
-        }.get(cls, "Type{}".format(cls))
+        }.get(cls, "'Type{}'".format(cls))
         if self.is_vector:
             result = 'List[{}]'.format(result)
         if self.is_flag and cls != 'date':

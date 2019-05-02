@@ -97,7 +97,7 @@ def parse_tl(file_path, layer, methods=None, ignored_ids=CORE_TYPES):
             if not line:
                 continue
 
-            match = re.match('---(\w+)---', line)
+            match = re.match(r'---(\w+)---', line)
             if match:
                 following_types = match.group(1)
                 is_function = following_types == 'functions'

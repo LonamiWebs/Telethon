@@ -89,6 +89,9 @@ def _write_modules(
             # Import struct for the .__bytes__(self) serialization
             builder.writeln('import struct')
 
+            # Import datetime for type hinting
+            builder.writeln('from datetime import datetime')
+
             tlobjects.sort(key=lambda x: x.name)
 
             type_names = set()
@@ -194,24 +197,17 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     builder.writeln()
 
     # Convert the args to string parameters, flags having =None
-    args = [(a.name if not a.is_flag and not a.can_be_inferred
-             else '{}=None'.format(a.name)) for a in tlobject.real_args]
+    args = ['{}: {}{}'.format(
+        a.name, a.type_hint(), '=None' if a.is_flag or a.can_be_inferred else '')
+        for a in tlobject.real_args
+    ]
 
     # Write the __init__ function if it has any argument
     if not tlobject.real_args:
         return
 
-    builder.writeln('def __init__({}):', ', '.join(['self'] + args))
-    # Write the docstring, to know the type of the args
+    builder.writeln("def __init__({}):", ', '.join(['self'] + args))
     builder.writeln('"""')
-    for arg in tlobject.real_args:
-        if not arg.flag_indicator:
-            builder.writeln(':param {} {}:', arg.type_hint(), arg.name)
-            builder.current_indent -= 1  # It will auto-indent (':')
-
-    # We also want to know what type this request returns
-    # or to which type this constructor belongs to
-    builder.writeln()
     if tlobject.is_function:
         builder.write(':returns {}: ', tlobject.result)
     else:
@@ -232,8 +228,7 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     # Set the arguments
     for arg in tlobject.real_args:
         if not arg.can_be_inferred:
-            builder.writeln('self.{0} = {0}  # type: {1}',
-                            arg.name, arg.type_hint())
+            builder.writeln('self.{0} = {0}', arg.name)
 
         # Currently the only argument that can be
         # inferred are those called 'random_id'
