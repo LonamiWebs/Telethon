@@ -1,15 +1,18 @@
+import inspect
 import itertools
 
 from . import utils
 from .tl import types
 
 # Which updates have the following fields?
-_has_user_id = []
-_has_chat_id = []
-_has_channel_id = []
-_has_peer = []
-_has_dialog_peer = []
-_has_message = []
+_has_field = {
+    ('user_id', int): [],
+    ('chat_id', int): [],
+    ('channel_id', int): [],
+    ('peer', 'TypePeer'): [],
+    ('peer', 'TypeDialogPeer'): [],
+    ('message', 'TypeMessage'): [],
+}
 
 # Note: We don't bother checking for some rare:
 # * `UpdateChatParticipantAdd.inviter_id` integer.
@@ -26,27 +29,18 @@ def _fill():
         update = getattr(types, name)
         if getattr(update, 'SUBCLASS_OF_ID', None) == 0x9f89304e:
             cid = update.CONSTRUCTOR_ID
-            doc = update.__init__.__doc__ or ''
-            if ':param int user_id:' in doc:
-                _has_user_id.append(cid)
-            if ':param int chat_id:' in doc:
-                _has_chat_id.append(cid)
-            if ':param int channel_id:' in doc:
-                _has_channel_id.append(cid)
-            if ':param TypePeer peer:' in doc:
-                _has_peer.append(cid)
-            if ':param TypeDialogPeer peer:' in doc:
-                _has_dialog_peer.append(cid)
-            if ':param TypeMessage message:' in doc:
-                _has_message.append(cid)
+            sig = inspect.signature(update.__init__)
+            for param in sig.parameters.values():
+                vec = _has_field.get((param.name, param.annotation))
+                if vec is not None:
+                    vec.append(cid)
 
     # Future-proof check: if the documentation format ever changes
     # then we won't be able to pick the update types we are interested
     # in, so we must make sure we have at least an update for each field
     # which likely means we are doing it right.
-    if not all((_has_user_id, _has_chat_id, _has_channel_id,
-                _has_peer, _has_dialog_peer)):
-        raise RuntimeError('FIXME: Did the generated docs or updates change?')
+    if not all(_has_field.values()):
+        raise RuntimeError('FIXME: Did the init signature or updates change?')
 
 
 # We use a function to avoid cluttering the globals (with name/update/cid/doc)
@@ -100,10 +94,11 @@ class EntityCache:
     def ensure_cached(
             self,
             update,
-            has_user_id=frozenset(_has_user_id),
-            has_channel_id=frozenset(_has_channel_id),
-            has_peer=frozenset(_has_peer + _has_dialog_peer),
-            has_message=frozenset(_has_message)
+            has_user_id=frozenset(_has_field[('user_id', int)]),
+            has_chat_id=frozenset(_has_field[('chat_id', int)]),
+            has_channel_id=frozenset(_has_field[('channel_id', int)]),
+            has_peer=frozenset(_has_field[('peer', 'TypePeer')] + _has_field[('peer', 'TypeDialogPeer')]),
+            has_message=frozenset(_has_field[('message', 'TypeMessage')])
     ):
         """
         Ensures that all the relevant entities in the given update are cached.
@@ -118,7 +113,7 @@ class EntityCache:
                 update.user_id not in dct:
             return False
 
-        if cid in _has_chat_id and \
+        if cid in has_chat_id and \
                 utils.get_peer_id(types.PeerChat(update.chat_id)) not in dct:
             return False
 
