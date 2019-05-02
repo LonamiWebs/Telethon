@@ -53,8 +53,8 @@ class SenderGetter(abc.ABC):
         """
         if self._input_sender is None and self._sender_id and self._client:
             try:
-                self._input_sender = self._client.session\
-                    .get_input_entity(self._sender_id)
+                self._input_sender = \
+                    self._client._entity_cache[self._sender_id]
             except ValueError:
                 pass
         return self._input_sender
