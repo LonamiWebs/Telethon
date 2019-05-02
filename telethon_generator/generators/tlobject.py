@@ -120,8 +120,8 @@ def _write_modules(
                                                 for c in constructors)))
 
             imports = {}
-            primitives = ('int', 'long', 'int128', 'int256', 'string',
-                          'date', 'bytes', 'true')
+            primitives = {'int', 'long', 'int128', 'int256', 'double',
+                          'string', 'date', 'bytes', 'Bool', 'true'}
             # Find all the types in other files that are used in this file
             # and generate the information required to import those types.
             for t in tlobjects:

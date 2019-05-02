@@ -170,9 +170,11 @@ class TLArg:
             'long': 'int',
             'int128': 'int',
             'int256': 'int',
+            'double': 'float',
             'string': 'str',
             'date': 'Optional[datetime]',  # None date = 0 timestamp
             'bytes': 'bytes',
+            'Bool': 'bool',
             'true': 'bool',
         }.get(cls, "'Type{}'".format(cls))
         if self.is_vector:
