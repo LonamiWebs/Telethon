@@ -49,7 +49,7 @@ class ChatGetter(abc.ABC):
         Note that this might not be available if the library doesn't
         have enough information available.
         """
-        if self._input_chat is None and self._chat_peer:
+        if self._input_chat is None and self._chat_peer and self._client:
             try:
                 self._input_chat = self._client._entity_cache[self._chat_peer]
             except KeyError:
@@ -62,7 +62,7 @@ class ChatGetter(abc.ABC):
         Returns `input_chat`, but will make an API call to find the
         input chat unless it's already cached.
         """
-        if self.input_chat is None and self.chat_id:
+        if self.input_chat is None and self.chat_id and self._client:
             try:
                 # The chat may be recent, look in dialogs
                 target = self.chat_id

@@ -51,7 +51,7 @@ class SenderGetter(abc.ABC):
         Note that this might not be available if the library can't
         find the input chat, or if the message a broadcast on a channel.
         """
-        if self._input_sender is None and self._sender_id:
+        if self._input_sender is None and self._sender_id and self._client:
             try:
                 self._input_sender = self._client.session\
                     .get_input_entity(self._sender_id)
@@ -64,7 +64,7 @@ class SenderGetter(abc.ABC):
         Returns `input_sender`, but will make an API call to find the
         input sender unless it's already cached.
         """
-        if self.input_sender is None and self._sender_id:
+        if self.input_sender is None and self._sender_id and self._client:
             await self._refetch_sender()
         return self._input_sender
 

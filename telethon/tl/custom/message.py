@@ -586,7 +586,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
         The result will be cached after its first use.
         """
-        if self._reply_message is None:
+        if self._reply_message is None and self._client:
             if not self.reply_to_msg_id:
                 return None
 
@@ -614,8 +614,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         `telethon.client.messages.MessageMethods.send_message`
         with ``entity`` already set.
         """
-        return await self._client.send_message(
-            await self.get_input_chat(), *args, **kwargs)
+        if self._client:
+            return await self._client.send_message(
+                await self.get_input_chat(), *args, **kwargs)
 
     async def reply(self, *args, **kwargs):
         """
@@ -623,9 +624,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         `telethon.client.messages.MessageMethods.send_message`
         with both ``entity`` and ``reply_to`` already set.
         """
-        kwargs['reply_to'] = self.id
-        return await self._client.send_message(
-            await self.get_input_chat(), *args, **kwargs)
+        if self._client:
+            kwargs['reply_to'] = self.id
+            return await self._client.send_message(
+                await self.get_input_chat(), *args, **kwargs)
 
     async def forward_to(self, *args, **kwargs):
         """
@@ -637,9 +639,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         this `forward_to` method. Use a
         `telethon.client.telegramclient.TelegramClient` instance directly.
         """
-        kwargs['messages'] = self.id
-        kwargs['from_peer'] = await self.get_input_chat()
-        return await self._client.forward_messages(*args, **kwargs)
+        if self._client:
+            kwargs['messages'] = self.id
+            kwargs['from_peer'] = await self.get_input_chat()
+            return await self._client.forward_messages(*args, **kwargs)
 
     async def edit(self, *args, **kwargs):
         """
@@ -662,7 +665,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             This is generally the most desired and convenient behaviour,
             and will work for link previews and message buttons.
         """
-        if self.fwd_from or not self.out:
+        if self.fwd_from or not self.out or not self._client:
             return None  # We assume self.out was patched for our chat
 
         if 'link_preview' not in kwargs:
@@ -688,10 +691,11 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         this `delete` method. Use a
         `telethon.client.telegramclient.TelegramClient` instance directly.
         """
-        return await self._client.delete_messages(
-            await self.get_input_chat(), [self.id],
-            *args, **kwargs
-        )
+        if self._client:
+            return await self._client.delete_messages(
+                await self.get_input_chat(), [self.id],
+                *args, **kwargs
+            )
 
     async def download_media(self, *args, **kwargs):
         """
@@ -699,7 +703,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         for `telethon.client.downloads.DownloadMethods.download_media`
         with the ``message`` already set.
         """
-        return await self._client.download_media(self, *args, **kwargs)
+        if self._client:
+            return await self._client.download_media(self, *args, **kwargs)
 
     async def click(self, i=None, j=None,
                     *, text=None, filter=None, data=None):
@@ -750,6 +755,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 that if the message does not have this data, it will
                 ``raise DataInvalidError``.
         """
+        if not self._client:
+            return
+
         if data:
             if not await self.get_input_chat():
                 return None
@@ -804,6 +812,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         Re-fetches this message to reload the sender and chat entities,
         along with their input versions.
         """
+        if not self._client:
+            return
+
         try:
             chat = await self.get_input_chat() if self.is_channel else None
             msg = await self._client.get_messages(chat, ids=self.id)
@@ -828,7 +839,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         """
         Helper methods to set the buttons given the input sender and chat.
         """
-        if isinstance(self.reply_markup, (
+        if self._client and isinstance(self.reply_markup, (
                 types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
             self._buttons = [[
                 MessageButton(self._client, button, chat, bot, self.id)
@@ -844,7 +855,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         to know what bot we want to start. Raises ``ValueError`` if the bot
         cannot be found but is needed. Returns ``None`` if it's not needed.
         """
-        if not isinstance(self.reply_markup, (
+        if self._client and  not isinstance(self.reply_markup, (
                 types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
             return None
 
