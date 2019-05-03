@@ -1139,8 +1139,6 @@ class AsyncClassWrapper:
 
         if callable(w):
             return wrapper
-        elif isinstance(w, property):
-            return w.fget(self.wrapped)
         else:
             return w
 

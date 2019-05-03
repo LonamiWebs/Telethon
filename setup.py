@@ -119,19 +119,19 @@ def generate(which):
                     file.unlink()
         else:
             def gen_json(fin, fout):
-                methods = []
+                meths = []
                 constructors = []
                 for tl in parse_tl(fin, layer):
                     if tl.is_function:
-                        methods.append(tl.to_dict())
+                        meths.append(tl.to_dict())
                     else:
                         constructors.append(tl.to_dict())
-                what = {'constructors': constructors, 'methods': methods}
+                what = {'constructors': constructors, 'methods': meths}
                 with open(fout, 'w') as f:
                     json.dump(what, f, indent=2)
 
-            for fin, fout in zip(TLOBJECT_IN_TLS, json_files):
-                gen_json(fin, fout)
+            for fs in zip(TLOBJECT_IN_TLS, json_files):
+                gen_json(*fs)
 
     if which:
         print('The following items were not understood:', which)

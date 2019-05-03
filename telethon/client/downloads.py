@@ -57,6 +57,8 @@ class DownloadMethods(UserMethods):
         if not isinstance(entity, TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
             entity = await self.get_entity(entity)
 
+        thumb = -1 if download_big else 0
+
         possible_names = []
         if entity.SUBCLASS_OF_ID not in ENTITIES:
             photo = entity
@@ -68,7 +70,9 @@ class DownloadMethods(UserMethods):
                     return None
 
                 return await self._download_photo(
-                    entity.chat_photo, file, date=None, progress_callback=None)
+                    entity.chat_photo, file, date=None,
+                    thumb=thumb, progress_callback=None
+                )
 
             for attr in ('username', 'first_name', 'title'):
                 possible_names.append(getattr(entity, attr, None))
@@ -108,7 +112,7 @@ class DownloadMethods(UserMethods):
                 return await self._download_photo(
                     full.full_chat.chat_photo, file,
                     date=None, progress_callback=None,
-                    thumb=-1 if download_big else 0
+                    thumb=thumb
                 )
             else:
                 # Until there's a report for chats, no need to.
@@ -333,7 +337,8 @@ class DownloadMethods(UserMethods):
         else:
             return None
 
-    def _download_cached_photo_size(self, size, file):
+    @staticmethod
+    def _download_cached_photo_size(size, file):
         # No need to download anything, simply write the bytes
         if file is bytes:
             return size.bytes

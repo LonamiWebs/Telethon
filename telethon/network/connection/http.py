@@ -10,10 +10,6 @@ class HttpPacketCodec(PacketCodec):
     tag = None
     obfuscate_tag = None
 
-    def __init__(self, connection):
-        self._ip = connection._ip
-        self._port = connection._port
-
     def encode_packet(self, data):
         return ('POST /api HTTP/1.1\r\n'
                 'Host: {}:{}\r\n'
@@ -21,7 +17,7 @@ class HttpPacketCodec(PacketCodec):
                 'Connection: keep-alive\r\n'
                 'Keep-Alive: timeout=100000, max=10000000\r\n'
                 'Content-Length: {}\r\n\r\n'
-                .format(self._ip, self._port, len(data))
+                .format(self._conn._ip, self._conn._port, len(data))
                 .encode('ascii') + data)
 
     async def read_packet(self, reader):

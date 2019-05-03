@@ -56,6 +56,7 @@ class InlineBuilder:
     def __init__(self, client):
         self._client = client
 
+    # noinspection PyIncorrectDocstring
     async def article(
             self, title, description=None,
             *, url=None, thumb=None, content=None,
@@ -107,6 +108,7 @@ class InlineBuilder:
 
         return result
 
+    # noinspection PyIncorrectDocstring
     async def photo(
             self, file, *, id=None,
             text=None, parse_mode=(), link_preview=True,
@@ -154,6 +156,7 @@ class InlineBuilder:
 
         return result
 
+    # noinspection PyIncorrectDocstring
     async def document(
             self, file, title=None, *, description=None, type=None,
             mime_type=None, attributes=None, force_document=False,
@@ -236,6 +239,7 @@ class InlineBuilder:
 
         return result
 
+    # noinspection PyIncorrectDocstring
     async def game(
             self, short_name, *, id=None,
             text=None, parse_mode=(), link_preview=True,

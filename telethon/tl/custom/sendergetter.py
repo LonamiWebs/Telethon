@@ -11,6 +11,10 @@ class SenderGetter(abc.ABC):
     `_input_sender`, `_sender_id` and `_client`. As an end user, you
     should not worry about this.
     """
+    def __init__(self):
+        self._sender = self._input_sender = self._sender_id = \
+            self._client = None
+
     @property
     def sender(self):
         """
@@ -78,4 +82,10 @@ class SenderGetter(abc.ABC):
     async def _refetch_sender(self):
         """
         Re-fetches sender information through other means.
+        """
+
+    @abc.abstractmethod
+    async def _reload_message(self):
+        """
+        Subclasses should implement message reloading.
         """

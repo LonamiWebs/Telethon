@@ -17,7 +17,8 @@ class ObfuscatedIO:
          self._encrypt,
          self._decrypt) = self.init_header(connection.packet_codec)
 
-    def init_header(self, packet_codec):
+    @staticmethod
+    def init_header(packet_codec):
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee\xee\xee\xee')
         while True:

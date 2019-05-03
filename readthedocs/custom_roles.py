@@ -28,6 +28,7 @@ def make_link_node(rawtext, app, name, options):
     return node
 
 
+# noinspection PyUnusedLocal
 def tl_role(name, rawtext, text, lineno, inliner, options=None, content=None):
     """
     Link to the TL reference.
@@ -45,8 +46,6 @@ def tl_role(name, rawtext, text, lineno, inliner, options=None, content=None):
     """
     if options is None:
         options = {}
-    if content is None:
-        content = []
 
     # TODO Report error on type not found?
     # Usage:

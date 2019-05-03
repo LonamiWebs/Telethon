@@ -26,13 +26,13 @@ def rpc_message_to_error(rpc_error, request):
     # Try to get the error by direct look-up, otherwise regex
     cls = rpc_errors_dict.get(rpc_error.error_message, None)
     if cls:
-        return cls(request)
+        return cls(request=request)
 
     for msg_regex, cls in rpc_errors_re:
         m = re.match(msg_regex, rpc_error.error_message)
         if m:
             capture = int(m.group(1)) if m.groups() else None
-            return cls(request, capture=capture)
+            return cls(request=request, capture=capture)
 
     # Some errors are negative:
     # * -500 for "No workers running",
@@ -40,8 +40,6 @@ def rpc_message_to_error(rpc_error, request):
     #
     # We treat them as if they were positive, so -500 will be treated
     # as a `ServerError`, etc.
-    cls = base_errors.get(abs(rpc_error.error_code))
-    if cls:
-        return cls(request, rpc_error.error_message)
-
-    return RPCError(request, rpc_error.error_message, rpc_error.error_code)
+    cls = base_errors.get(abs(rpc_error.error_code), RPCError)
+    return cls(request=request, message=rpc_error.error_message,
+               code=rpc_error.error_code)

@@ -519,12 +519,12 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def action_entities(self):
         """
-        Returns a list of entities that can took part in this action.
+        Returns a list of entities that took part in this action.
 
         Possible cases for this are :tl:`MessageActionChatAddUser`,
         :tl:`types.MessageActionChatCreate`, :tl:`MessageActionChatDeleteUser`,
         :tl:`MessageActionChatJoinedByLink` :tl:`MessageActionChatMigrateTo`
-        and :tl:`MessageActionChannelMigrateFrom).
+        and :tl:`MessageActionChannelMigrateFrom`.
 
         If the action is neither of those, the result will be ``None``.
         If some entities could not be retrieved, the list may contain

@@ -4,7 +4,8 @@ from .. import utils, events
 
 
 class ButtonMethods(UpdateMethods):
-    def build_reply_markup(self, buttons, inline_only=False):
+    @staticmethod
+    def build_reply_markup(buttons, inline_only=False):
         """
         Builds a :tl`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
         the given buttons, or does nothing if either no buttons are

@@ -27,7 +27,7 @@ def generate_errors(errors, f):
     # Error classes generation
     for error in errors:
         f.write('\n\nclass {}({}):\n'
-                '    def __init__(self, request, **kwargs):\n'
+                '    def __init__(self, **kwargs):\n'
                 '        '.format(error.name, error.subclass))
 
         if error.has_captures:
@@ -40,7 +40,7 @@ def generate_errors(errors, f):
         if error.has_captures:
             f.write('.format({0}=self.{0})'.format(error.capture_name))
 
-        f.write(' + self._fmt_request(request))\n')
+        f.write(" + self._fmt_request(kwargs['request']))\n")
 
     # Create the actual {CODE: ErrorClassName} dict once classes are defined
     f.write('\n\nrpc_errors_dict = {\n')

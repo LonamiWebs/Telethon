@@ -39,6 +39,8 @@ class MTProtoState:
         self._log = loggers[__name__]
         self.time_offset = 0
         self.salt = 0
+
+        self.id = self._sequence = self._last_msg_id = None
         self.reset()
 
     def reset(self):

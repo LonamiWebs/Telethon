@@ -248,7 +248,7 @@ class PacketCodec(abc.ABC):
         """
         Codec is created when connection is just made.
         """
-        pass
+        self._conn = connection
 
     @abc.abstractmethod
     def encode_packet(self, data):

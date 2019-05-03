@@ -28,7 +28,8 @@ class MTProxyIO:
          self._decrypt) = self.init_header(
              connection._secret, connection._dc_id, connection.packet_codec)
 
-    def init_header(self, secret, dc_id, packet_codec):
+    @staticmethod
+    def init_header(secret, dc_id, packet_codec):
         # Validate
         is_dd = (len(secret) == 17) and (secret[0] == 0xDD)
         is_rand_codec = issubclass(
@@ -93,6 +94,14 @@ class TcpMTProxy(ObfuscatedConnection):
     packet_codec = None
     obfuscated_io = MTProxyIO
 
+    # noinspection PyUnusedLocal
+    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
+        # connect to proxy's host and port instead of telegram's ones
+        proxy_host, proxy_port = self.address_info(proxy)
+        self._secret = bytes.fromhex(proxy[2])
+        super().__init__(
+            proxy_host, proxy_port, dc_id, loop=loop, loggers=loggers)
+
     async def _connect(self, timeout=None, ssl=None):
         await super()._connect(timeout=timeout, ssl=ssl)
 
@@ -120,13 +129,6 @@ class TcpMTProxy(ObfuscatedConnection):
         if proxy_info is None:
             raise ValueError("No proxy info specified for MTProxy connection")
         return proxy_info[:2]
-
-    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
-        # connect to proxy's host and port instead of telegram's ones
-        proxy_host, proxy_port = self.address_info(proxy)
-        self._secret = bytes.fromhex(proxy[2])
-        super().__init__(
-            proxy_host, proxy_port, dc_id, loop=loop, loggers=loggers)
 
 
 class ConnectionTcpMTProxyAbridged(TcpMTProxy):

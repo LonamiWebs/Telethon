@@ -86,7 +86,8 @@ class MemorySession(Session):
     def delete(self):
         pass
 
-    def _entity_values_to_row(self, id, hash, username, phone, name):
+    @staticmethod
+    def _entity_values_to_row(id, hash, username, phone, name):
         # While this is a simple implementation it might be overrode by,
         # other classes so they don't need to implement the plural form
         # of the method. Don't remove.

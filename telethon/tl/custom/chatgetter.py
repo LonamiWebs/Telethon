@@ -14,6 +14,10 @@ class ChatGetter(abc.ABC):
     `_input_chat`, `_chat_peer`, `_broadcast` and `_client`. As an end
     user, you should not worry about this.
     """
+    def __init__(self):
+        self._chat = self._input_chat = self._chat_peer = \
+            self._client = self._broadcast = None
+
     @property
     def chat(self):
         """

@@ -9,7 +9,7 @@ If you have a question, ask in https://stackoverflow.com or find the link for th
 
 If you paste code, please put it between three backticks (`):
 ```python
-code here
+# python code here
 ```
 
 Once you have read and understood this, delete all this text and detail whatever issue you are posting.

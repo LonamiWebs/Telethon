@@ -8,7 +8,8 @@ from ...errors import InvalidChecksumError
 class FullPacketCodec(PacketCodec):
     tag = None
 
-    def __init__(self, _conn):
+    def __init__(self, connection):
+        super().__init__(connection)
         self._send_counter = 0  # Important or Telegram won't reply
 
     def encode_packet(self, data):
