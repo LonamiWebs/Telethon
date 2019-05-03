@@ -391,6 +391,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         Returns:
             An instance of :tl:`SentCode`.
         """
+        result = None
         phone = utils.parse_phone(phone) or self._phone
         phone_hash = self._phone_code_hash.get(phone)
 
@@ -399,7 +400,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 result = await self(functions.auth.SendCodeRequest(
                     phone, self.api_id, self.api_hash, types.CodeSettings()))
             except errors.AuthRestartError:
-                return self.send_code_request(phone, force_sms=force_sms)
+                return await self.send_code_request(phone, force_sms=force_sms)
 
             self._tos = result.terms_of_service
             self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
