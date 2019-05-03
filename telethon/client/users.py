@@ -1,18 +1,22 @@
 import asyncio
 import itertools
 import time
+import typing
 
 from .telegrambaseclient import TelegramBaseClient
-from .. import errors, utils
+from .. import errors, utils, hints
 from ..errors import MultiError, RPCError
-from ..tl import TLObject, TLRequest, types, functions
 from ..helpers import retry_range
+from ..tl import TLRequest, types, functions
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
+
 
 class UserMethods(TelegramBaseClient):
-    async def __call__(self, request, ordered=False):
+    async def __call__(self: 'TelegramClient', request, ordered=False):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
@@ -97,7 +101,8 @@ class UserMethods(TelegramBaseClient):
 
     # region Public methods
 
-    async def get_me(self, input_peer=False):
+    async def get_me(self: 'TelegramClient', input_peer: bool = False) \
+            -> typing.Union[types.User, types.InputPeerUser]:
         """
         Gets "me" (the self user) which is currently authenticated,
         or None if the request fails (hence, not authenticated).
@@ -128,7 +133,7 @@ class UserMethods(TelegramBaseClient):
         except errors.UnauthorizedError:
             return None
 
-    async def is_bot(self):
+    async def is_bot(self: 'TelegramClient') -> bool:
         """
         Return ``True`` if the signed-in user is a bot, ``False`` otherwise.
         """
@@ -137,7 +142,7 @@ class UserMethods(TelegramBaseClient):
 
         return self._bot
 
-    async def is_user_authorized(self):
+    async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
         Returns ``True`` if the user is authorized.
         """
@@ -151,7 +156,9 @@ class UserMethods(TelegramBaseClient):
 
         return self._authorized
 
-    async def get_entity(self, entity):
+    async def get_entity(
+            self: 'TelegramClient',
+            entity: hints.EntitiesLike) -> hints.Entity:
         """
         Turns the given entity into a valid Telegram :tl:`User`, :tl:`Chat`
         or :tl:`Channel`. You can also pass a list or iterable of entities,
@@ -243,7 +250,9 @@ class UserMethods(TelegramBaseClient):
 
         return result[0] if single else result
 
-    async def get_input_entity(self, peer):
+    async def get_input_entity(
+            self: 'TelegramClient',
+            peer: hints.EntityLike) -> types.TypeInputPeer:
         """
         Turns the given peer into its input entity version. Most requests
         use this kind of :tl:`InputPeer`, so this is the most suitable call
@@ -366,7 +375,10 @@ class UserMethods(TelegramBaseClient):
             .format(peer)
         )
 
-    async def get_peer_id(self, peer, add_mark=True):
+    async def get_peer_id(
+            self: 'TelegramClient',
+            peer: hints.EntityLike,
+            add_mark: bool = True) -> int:
         """
         Gets the ID for the given peer, which may be anything entity-like.
 
@@ -395,7 +407,7 @@ class UserMethods(TelegramBaseClient):
 
     # region Private methods
 
-    async def _get_entity_from_string(self, string):
+    async def _get_entity_from_string(self: 'TelegramClient', string):
         """
         Gets a full entity from the given string, which may be a phone or
         a username, and processes all the found entities on the session.
@@ -459,7 +471,7 @@ class UserMethods(TelegramBaseClient):
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
-    async def _get_input_dialog(self, dialog):
+    async def _get_input_dialog(self: 'TelegramClient', dialog):
         """
         Returns a :tl:`InputDialogPeer`. This is a bit tricky because
         it may or not need access to the client to convert what's given
@@ -476,7 +488,7 @@ class UserMethods(TelegramBaseClient):
 
         return types.InputDialogPeer(await self.get_input_entity(dialog))
 
-    async def _get_input_notify(self, notify):
+    async def _get_input_notify(self: 'TelegramClient', notify):
         """
         Returns a :tl:`InputNotifyPeer`. This is a bit tricky because
         it may or not need access to the client to convert what's given

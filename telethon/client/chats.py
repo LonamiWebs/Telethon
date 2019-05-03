@@ -3,12 +3,16 @@ import itertools
 import string
 
 from .users import UserMethods
-from .. import helpers, utils
+from .. import helpers, utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
 _MAX_PARTICIPANTS_CHUNK_SIZE = 200
 _MAX_ADMIN_LOG_CHUNK_SIZE = 100
+
+import typing
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class _ChatAction:
@@ -275,9 +279,13 @@ class ChatMethods(UserMethods):
     # region Public methods
 
     def iter_participants(
-            self, entity, limit=None, *, search='',
-            filter=None, aggressive=False
-    ):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            limit: float = None,
+            *,
+            search: str = '',
+            filter: types.TypeChannelParticipantsFilter = None,
+            aggressive: bool = False) -> _ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -330,7 +338,10 @@ class ChatMethods(UserMethods):
             aggressive=aggressive
         )
 
-    async def get_participants(self, *args, **kwargs):
+    async def get_participants(
+            self: 'TelegramClient',
+            *args,
+            **kwargs) -> hints.TotalList:
         """
         Same as `iter_participants`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
@@ -338,10 +349,28 @@ class ChatMethods(UserMethods):
         return await self.iter_participants(*args, **kwargs).collect()
 
     def iter_admin_log(
-            self, entity, limit=None, *, max_id=0, min_id=0, search=None,
-            admins=None, join=None, leave=None, invite=None, restrict=None,
-            unrestrict=None, ban=None, unban=None, promote=None, demote=None,
-            info=None, settings=None, pinned=None, edit=None, delete=None):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            limit: float = None,
+            *,
+            max_id: int = 0,
+            min_id: int = 0,
+            search: str = None,
+            admins: hints.EntitiesLike = None,
+            join: bool = None,
+            leave: bool = None,
+            invite: bool = None,
+            restrict: bool = None,
+            unrestrict: bool = None,
+            ban: bool = None,
+            unban: bool = None,
+            promote: bool = None,
+            demote: bool = None,
+            info: bool = None,
+            settings: bool = None,
+            pinned: bool = None,
+            edit: bool = None,
+            delete: bool = None) -> _AdminLogIter:
         """
         Iterator over the admin log for the specified channel.
 
@@ -453,13 +482,22 @@ class ChatMethods(UserMethods):
             delete=delete
         )
 
-    async def get_admin_log(self, *args, **kwargs):
+    async def get_admin_log(
+            self: 'TelegramClient',
+            *args,
+            **kwargs) -> hints.TotalList:
         """
         Same as `iter_admin_log`, but returns a ``list`` instead.
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
 
-    def action(self, entity, action, *, delay=4, auto_cancel=True):
+    def action(
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            action: typing.Union[str, types.TypeSendMessageAction],
+            *,
+            delay: float = 4,
+            auto_cancel: bool = True) -> typing.Union[_ChatAction, typing.Coroutine]:
         """
         Returns a context-manager object to represent a "chat action".
 

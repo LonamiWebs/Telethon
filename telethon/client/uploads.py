@@ -3,12 +3,13 @@ import io
 import os
 import pathlib
 import re
+import typing
 from io import BytesIO
 
 from .buttons import ButtonMethods
 from .messageparse import MessageParseMethods
 from .users import UserMethods
-from .. import utils, helpers
+from .. import utils, helpers, hints
 from ..tl import types, functions, custom
 
 try:
@@ -16,6 +17,10 @@ try:
     import PIL.Image
 except ImportError:
     PIL = None
+
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class _CacheType:
@@ -83,11 +88,24 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     # region Public methods
 
     async def send_file(
-            self, entity, file, *, caption=None, force_document=False,
-            progress_callback=None, reply_to=None, attributes=None,
-            thumb=None, allow_cache=True, parse_mode=(),
-            voice_note=False, video_note=False, buttons=None, silent=None,
-            supports_streaming=False, **kwargs):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            file: hints.FileLike,
+            *,
+            caption: str = None,
+            force_document: bool = False,
+            progress_callback: hints.ProgressCallback = None,
+            reply_to: hints.MessageIDLike = None,
+            attributes: typing.Sequence[types.TypeDocumentAttribute] = None,
+            thumb: hints.FileLike = None,
+            allow_cache: bool = True,
+            parse_mode: str = (),
+            voice_note: bool = False,
+            video_note: bool = False,
+            buttons: hints.MarkupLike = None,
+            silent: bool = None,
+            supports_streaming: bool = False,
+            **kwargs) -> types.Message:
         """
         Sends a file to the specified entity.
 
@@ -292,7 +310,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         return msg
 
-    async def _send_album(self, entity, files, caption='',
+    async def _send_album(self: 'TelegramClient', entity, files, caption='',
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None):
         """Specialized version of .send_file for albums"""
@@ -360,8 +378,13 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         return [messages[m.media.id.id] for m in media]
 
     async def upload_file(
-            self, file, *, part_size_kb=None, file_name=None, use_cache=None,
-            progress_callback=None):
+            self: 'TelegramClient',
+            file: hints.FileLike,
+            *,
+            part_size_kb: float = None,
+            file_name: str = None,
+            use_cache: type = None,
+            progress_callback: hints.ProgressCallback = None) -> types.TypeInputFile:
         """
         Uploads the specified file and returns a handle (an instance of
         :tl:`InputFile` or :tl:`InputFileBig`, as required) which can be
@@ -607,7 +630,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             )
         return file_handle, media, as_image
 
-    async def _cache_media(self, msg, file, file_handle, image):
+    async def _cache_media(self: 'TelegramClient', msg, file, file_handle, image):
         if file and msg and isinstance(file_handle,
                                        custom.InputSizedFile):
             # There was a response message and we didn't use cached

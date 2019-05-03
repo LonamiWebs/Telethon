@@ -2,7 +2,7 @@
 import asyncio
 import os
 import struct
-from hashlib import sha1, sha256
+from hashlib import sha1
 
 
 # region Multiple utilities

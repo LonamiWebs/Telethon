@@ -1,9 +1,13 @@
 import functools
 import inspect
+import typing
 
 from .users import UserMethods, _NOT_A_REQUEST
 from .. import helpers, utils
 from ..tl import functions, TLRequest
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 # TODO Make use of :tl:`InvokeWithMessagesRange` somehow
@@ -105,8 +109,16 @@ class _TakeoutClient:
 
 class AccountMethods(UserMethods):
     def takeout(
-            self, finalize=True, *, contacts=None, users=None, chats=None,
-            megagroups=None, channels=None, files=None, max_file_size=None):
+            self: 'TelegramClient',
+            finalize: bool = True,
+            *,
+            contacts: bool = None,
+            users: bool = None,
+            chats: bool = None,
+            megagroups: bool = None,
+            channels: bool = None,
+            files: bool = None,
+            max_file_size: bool = None) -> 'TelegramClient':
         """
         Creates a proxy object over the current :ref:`TelegramClient` through
         which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
@@ -146,6 +158,10 @@ class AccountMethods(UserMethods):
         <telethon.sessions.abstract.Session.takeout_id>`.
 
         Args:
+            finalize (`bool`):
+                Whether the takeout session should be finalized upon
+                exit or not.
+
             contacts (`bool`):
                 Set to ``True`` if you plan on downloading contacts.
 
@@ -192,7 +208,7 @@ class AccountMethods(UserMethods):
 
         return _TakeoutClient(finalize, self, request)
 
-    async def end_takeout(self, success):
+    async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
         """
         Finishes a takeout, with specified result sent back to Telegram.
 

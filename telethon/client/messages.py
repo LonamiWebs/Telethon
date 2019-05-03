@@ -1,13 +1,17 @@
 import itertools
+import typing
 
+from .buttons import ButtonMethods
 from .messageparse import MessageParseMethods
 from .uploads import UploadMethods
-from .buttons import ButtonMethods
-from .. import utils, errors
-from ..tl import types, functions
+from .. import utils, errors, hints
 from ..requestiter import RequestIter
+from ..tl import types, functions
 
 _MAX_CHUNK_SIZE = 100
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class _MessagesIter(RequestIter):
@@ -293,10 +297,22 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     # region Message retrieval
 
     def iter_messages(
-            self, entity, limit=None, *, offset_date=None, offset_id=0,
-            max_id=0, min_id=0, add_offset=0, search=None, filter=None,
-            from_user=None, wait_time=None, ids=None, reverse=False
-    ):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            limit: float = None,
+            *,
+            offset_date: hints.DateLike = None,
+            offset_id: int = 0,
+            max_id: int = 0,
+            min_id: int = 0,
+            add_offset: int = 0,
+            search: str = None,
+            filter: typing.Union[types.TypeMessagesFilter, typing.Type[types.TypeMessagesFilter]] = None,
+            from_user: hints.EntityLike = None,
+            wait_time: float = None,
+            ids: typing.Union[int, typing.Sequence[int]] = None,
+            reverse: bool = False
+    ) -> typing.Union[_MessagesIter, _IDsIter]:
         """
         Iterator over the message history for the specified entity.
         If either `search`, `filter` or `from_user` are provided,
@@ -417,7 +433,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             search=search
         )
 
-    async def get_messages(self, *args, **kwargs):
+    async def get_messages(self: 'TelegramClient', *args, **kwargs) -> hints.TotalList:
         """
         Same as `iter_messages`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
@@ -457,10 +473,18 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     # region Message sending/editing/deleting
 
     async def send_message(
-            self, entity, message='', *, reply_to=None,
-            parse_mode=(), link_preview=True, file=None,
-            force_document=False, clear_draft=False, buttons=None,
-            silent=None):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            message: hints.MessageLike = '',
+            *,
+            reply_to: typing.Union[int, types.Message] = None,
+            parse_mode: typing.Optional[str] = (),
+            link_preview: bool = True,
+            file: hints.FileLike = None,
+            force_document: bool = False,
+            clear_draft: bool = False,
+            buttons: hints.MarkupLike = None,
+            silent: bool = None) -> types.Message:
         """
         Sends the given message to the specified entity (user/chat/channel).
 
@@ -609,8 +633,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         return self._get_response_message(request, result, entity)
 
-    async def forward_messages(self, entity, messages, from_peer=None,
-                               *, silent=None, as_album=None):
+    async def forward_messages(
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            messages: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]],
+            from_peer: hints.EntityLike = None,
+            *,
+            silent: bool = None,
+            as_album: bool = None) -> typing.Sequence[types.Message]:
         """
         Forwards the given message(s) to the specified entity.
 
@@ -719,9 +749,15 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         return sent[0] if single else sent
 
     async def edit_message(
-            self, entity, message=None, text=None,
-            *, parse_mode=(), link_preview=True, file=None,
-            buttons=None):
+            self: 'TelegramClient',
+            entity: typing.Union[hints.EntityLike, types.Message],
+            message: hints.MessageLike = None,
+            text: str = None,
+            *,
+            parse_mode: str = (),
+            link_preview: bool = True,
+            file: hints.FileLike = None,
+            buttons: hints.MarkupLike = None) -> types.Message:
         """
         Edits the given message ID (to change its contents or disable preview).
 
@@ -824,7 +860,12 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         await self._cache_media(msg, file, file_handle, image=image)
         return msg
 
-    async def delete_messages(self, entity, message_ids, *, revoke=True):
+    async def delete_messages(
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            message_ids: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]],
+            *,
+            revoke: bool = True) -> typing.Sequence[types.messages.AffectedMessages]:
         """
         Deletes a message from a chat, optionally "for everyone".
 
@@ -877,7 +918,12 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
     # region Miscellaneous
 
     async def send_read_acknowledge(
-            self, entity, message=None, *, max_id=None, clear_mentions=False):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            message: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]] = None,
+            *,
+            max_id: int = None,
+            clear_mentions: bool = False) -> bool:
         """
         Sends a "read acknowledge" (i.e., notifying the given peer that we've
         read their messages, also known as the "double check").
@@ -924,7 +970,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         if max_id is not None:
             if isinstance(entity, types.InputPeerChannel):
                 return await self(functions.channels.ReadHistoryRequest(
-                    entity, max_id=max_id))
+                    utils.get_input_channel(entity), max_id=max_id))
             else:
                 return await self(functions.messages.ReadHistoryRequest(
                     entity, max_id=max_id))

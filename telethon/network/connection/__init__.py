@@ -1,3 +1,4 @@
+from .connection import Connection
 from .tcpfull import ConnectionTcpFull
 from .tcpintermediate import ConnectionTcpIntermediate
 from .tcpabridged import ConnectionTcpAbridged

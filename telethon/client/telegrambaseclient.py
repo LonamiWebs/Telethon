@@ -3,22 +3,25 @@ import asyncio
 import logging
 import platform
 import time
-from datetime import datetime, timezone
+import typing
 
 from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
+from ..entitycache import EntityCache
 from ..extensions import markdown
-from ..network import MTProtoSender, ConnectionTcpFull, TcpMTProxy
+from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
+from ..statecache import StateCache
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
-from ..entitycache import EntityCache
-from ..statecache import StateCache
 
 DEFAULT_DC_ID = 4
 DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 __default_log__ = logging.getLogger(__base_name__)
 __default_log__.addHandler(logging.NullHandler())
@@ -159,25 +162,29 @@ class TelegramBaseClient(abc.ABC):
 
     # region Initialization
 
-    def __init__(self, session, api_id, api_hash,
-                 *,
-                 connection=ConnectionTcpFull,
-                 use_ipv6=False,
-                 proxy=None,
-                 timeout=10,
-                 request_retries=5,
-                 connection_retries=5,
-                 retry_delay=1,
-                 auto_reconnect=True,
-                 sequential_updates=False,
-                 flood_sleep_threshold=60,
-                 device_model=None,
-                 system_version=None,
-                 app_version=None,
-                 lang_code='en',
-                 system_lang_code='en',
-                 loop=None,
-                 base_logger=None):
+    def __init__(
+            self: 'TelegramClient',
+            session: typing.Union[str, Session],
+            api_id: int,
+            api_hash: str,
+            *,
+            connection: typing.Type[Connection] = ConnectionTcpFull,
+            use_ipv6: bool = False,
+            proxy: typing.Union[tuple, dict] = None,
+            timeout: int = 10,
+            request_retries: int = 5,
+            connection_retries: int =5,
+            retry_delay: int =1,
+            auto_reconnect: bool = True,
+            sequential_updates: bool = False,
+            flood_sleep_threshold: int = 60,
+            device_model: str = None,
+            system_version: str = None,
+            app_version: str = None,
+            lang_code: str = 'en',
+            system_lang_code: str = 'en',
+            loop: asyncio.AbstractEventLoop = None,
+            base_logger: typing.Union[str, logging.Logger] = None):
         if not api_id or not api_hash:
             raise ValueError(
                 "Your API ID or Hash cannot be empty or None. "
@@ -334,11 +341,11 @@ class TelegramBaseClient(abc.ABC):
     # region Properties
 
     @property
-    def loop(self):
+    def loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
         return self._loop
 
     @property
-    def disconnected(self):
+    def disconnected(self: 'TelegramClient') -> asyncio.Future:
         """
         Future that resolves when the connection to Telegram
         ends, either by user action or in the background.
@@ -349,7 +356,7 @@ class TelegramBaseClient(abc.ABC):
 
     # region Connecting
 
-    async def connect(self):
+    async def connect(self: 'TelegramClient') -> None:
         """
         Connects to Telegram.
         """
@@ -369,14 +376,14 @@ class TelegramBaseClient(abc.ABC):
 
         self._updates_handle = self._loop.create_task(self._update_loop())
 
-    def is_connected(self):
+    def is_connected(self: 'TelegramClient') -> bool:
         """
         Returns ``True`` if the user has connected.
         """
         sender = getattr(self, '_sender', None)
         return sender and sender.is_connected()
 
-    def disconnect(self):
+    def disconnect(self: 'TelegramClient'):
         """
         Disconnects from Telegram.
 
@@ -389,7 +396,7 @@ class TelegramBaseClient(abc.ABC):
         else:
             self._loop.run_until_complete(self._disconnect_coro())
 
-    async def _disconnect_coro(self):
+    async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
 
         pts, date = self._state_cache[None]
@@ -403,7 +410,7 @@ class TelegramBaseClient(abc.ABC):
 
         self.session.close()
 
-    async def _disconnect(self):
+    async def _disconnect(self: 'TelegramClient'):
         """
         Disconnect only, without closing the session. Used in reconnections
         to different data centers, where we don't want to close the session
@@ -414,7 +421,7 @@ class TelegramBaseClient(abc.ABC):
         await helpers._cancel(self._log[__name__],
                               updates_handle=self._updates_handle)
 
-    async def _switch_dc(self, new_dc):
+    async def _switch_dc(self: 'TelegramClient', new_dc):
         """
         Permanently switches the current connection to the new data center.
         """
@@ -430,7 +437,7 @@ class TelegramBaseClient(abc.ABC):
         await self._disconnect()
         return await self.connect()
 
-    def _auth_key_callback(self, auth_key):
+    def _auth_key_callback(self: 'TelegramClient', auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
@@ -442,7 +449,7 @@ class TelegramBaseClient(abc.ABC):
 
     # region Working with different connections/Data Centers
 
-    async def _get_dc(self, dc_id, cdn=False):
+    async def _get_dc(self: 'TelegramClient', dc_id, cdn=False):
         """Gets the Data Center (DC) associated to 'dc_id'"""
         cls = self.__class__
         if not cls._config:
@@ -459,7 +466,7 @@ class TelegramBaseClient(abc.ABC):
             and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
         )
 
-    async def _create_exported_sender(self, dc_id):
+    async def _create_exported_sender(self: 'TelegramClient', dc_id):
         """
         Creates a new exported `MTProtoSender` for the given `dc_id` and
         returns it. This method should be used by `_borrow_exported_sender`.
@@ -489,7 +496,7 @@ class TelegramBaseClient(abc.ABC):
         await sender.send(req)
         return sender
 
-    async def _borrow_exported_sender(self, dc_id):
+    async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
         """
         Borrows a connected `MTProtoSender` for the given `dc_id`.
         If it's not cached, creates a new one if it doesn't exist yet,
@@ -517,7 +524,7 @@ class TelegramBaseClient(abc.ABC):
 
         return sender
 
-    async def _return_exported_sender(self, sender):
+    async def _return_exported_sender(self: 'TelegramClient', sender):
         """
         Returns a borrowed exported sender. If all borrows have
         been returned, the sender is cleanly disconnected.
@@ -532,7 +539,7 @@ class TelegramBaseClient(abc.ABC):
                     'Disconnecting borrowed sender for DC %d', dc_id)
                 await sender.disconnect()
 
-    async def _get_cdn_client(self, cdn_redirect):
+    async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""
         # TODO Implement
         raise NotImplementedError
@@ -563,7 +570,7 @@ class TelegramBaseClient(abc.ABC):
     # region Invoking Telegram requests
 
     @abc.abstractmethod
-    def __call__(self, request, ordered=False):
+    def __call__(self: 'TelegramClient', request, ordered=False):
         """
         Invokes (sends) one or more MTProtoRequests and returns (receives)
         their result.
@@ -584,15 +591,15 @@ class TelegramBaseClient(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _handle_update(self, update):
+    def _handle_update(self: 'TelegramClient', update):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _update_loop(self):
+    def _update_loop(self: 'TelegramClient'):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def _handle_auto_reconnect(self):
+    async def _handle_auto_reconnect(self: 'TelegramClient'):
         raise NotImplementedError
 
     # endregion

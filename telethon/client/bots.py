@@ -1,9 +1,21 @@
+import typing
+
 from .users import UserMethods
+from .. import hints
 from ..tl import types, functions, custom
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class BotMethods(UserMethods):
-    async def inline_query(self, bot, query, *, offset=None, geo_point=None):
+    async def inline_query(
+            self: 'TelegramClient',
+            bot: hints.EntityLike,
+            query: str,
+            *,
+            offset: str = None,
+            geo_point: types.GeoPoint = None) -> custom.InlineResults:
         """
         Makes the given inline query to the specified bot
         i.e. ``@vote My New Poll`` would be as follows:

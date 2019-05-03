@@ -1,14 +1,16 @@
-import datetime
 import getpass
-import hashlib
 import inspect
 import os
 import sys
+import typing
 
 from .messageparse import MessageParseMethods
 from .users import UserMethods
 from .. import utils, helpers, errors, password as pwd_mod
 from ..tl import types, functions
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class AuthMethods(MessageParseMethods, UserMethods):
@@ -16,12 +18,16 @@ class AuthMethods(MessageParseMethods, UserMethods):
     # region Public methods
 
     def start(
-            self,
-            phone=lambda: input('Please enter your phone (or bot token): '),
-            password=lambda: getpass.getpass('Please enter your password: '),
+            self: 'TelegramClient',
+            phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
+            password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
             *,
-            bot_token=None, force_sms=False, code_callback=None,
-            first_name='New User', last_name='', max_attempts=3):
+            bot_token: str = None,
+            force_sms: bool = False,
+            code_callback: typing.Callable[[], typing.Union[str, int]] = None,
+            first_name: str = 'New User',
+            last_name: str = '',
+            max_attempts: int = 3) -> 'TelegramClient':
         """
         Convenience method to interactively connect and sign in if required,
         also taking into consideration that 2FA may be enabled in the account.
@@ -238,8 +244,13 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return phone, phone_hash
 
     async def sign_in(
-            self, phone=None, code=None, *, password=None,
-            bot_token=None, phone_code_hash=None):
+            self: 'TelegramClient',
+            phone: str = None,
+            code: typing.Union[str, int] = None,
+            *,
+            password: str = None,
+            bot_token: str = None,
+            phone_code_hash: str = None) -> types.User:
         """
         Starts or completes the sign in process with the given phone number
         or code that Telegram sent.
@@ -304,8 +315,14 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return self._on_login(result.user)
 
-    async def sign_up(self, code, first_name, last_name='',
-                      *, phone=None, phone_code_hash=None):
+    async def sign_up(
+            self: 'TelegramClient',
+            code: typing.Union[str, int],
+            first_name: str,
+            last_name: str = '',
+            *,
+            phone: str = None,
+            phone_code_hash: str = None) -> types.User:
         """
         Signs up to Telegram if you don't have an account yet.
         You must call .send_code_request(phone) first.
@@ -377,7 +394,11 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return user
 
-    async def send_code_request(self, phone, *, force_sms=False):
+    async def send_code_request(
+            self: 'TelegramClient',
+            phone: str,
+            *,
+            force_sms: bool = False) -> types.auth.SentCode:
         """
         Sends a code request to the specified phone number.
 
@@ -417,7 +438,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         return result
 
-    async def log_out(self):
+    async def log_out(self: 'TelegramClient') -> bool:
         """
         Logs out Telegram and deletes the current ``*.session`` file.
 
@@ -439,8 +460,13 @@ class AuthMethods(MessageParseMethods, UserMethods):
         return True
 
     async def edit_2fa(
-            self, current_password=None, new_password=None,
-            *, hint='', email=None, email_code_callback=None):
+            self: 'TelegramClient',
+            current_password: str = None,
+            new_password: str = None,
+            *,
+            hint: str = '',
+            email: str = None,
+            email_code_callback: typing.Callable[[int], str] = None) -> bool:
         """
         Changes the 2FA settings of the logged in user, according to the
         passed parameters. Take note of the parameter explanations.

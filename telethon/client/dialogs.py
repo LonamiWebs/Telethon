@@ -1,11 +1,15 @@
 import itertools
+import typing
 
 from .users import UserMethods
-from .. import utils
+from .. import utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
 _MAX_CHUNK_SIZE = 100
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class _DialogsIter(RequestIter):
@@ -98,9 +102,14 @@ class DialogMethods(UserMethods):
     # region Public methods
 
     def iter_dialogs(
-            self, limit=None, *, offset_date=None, offset_id=0,
-            offset_peer=types.InputPeerEmpty(), ignore_migrated=False
-    ):
+            self: 'TelegramClient',
+            limit: float = None,
+            *,
+            offset_date: hints.DateLike = None,
+            offset_id: int = 0,
+            offset_peer: hints.EntityLike = types.InputPeerEmpty(),
+            ignore_migrated: bool = False
+    ) -> _DialogsIter:
         """
         Returns an iterator over the dialogs, yielding 'limit' at most.
         Dialogs are the open "chats" or conversations with other people,
@@ -141,14 +150,14 @@ class DialogMethods(UserMethods):
             ignore_migrated=ignore_migrated
         )
 
-    async def get_dialogs(self, *args, **kwargs):
+    async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> hints.TotalList:
         """
         Same as `iter_dialogs`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
 
-    def iter_drafts(self):
+    def iter_drafts(self: 'TelegramClient') -> _DraftsIter:
         """
         Iterator over all open draft messages.
 
@@ -160,16 +169,21 @@ class DialogMethods(UserMethods):
         # TODO Passing a limit here makes no sense
         return _DraftsIter(self, None)
 
-    async def get_drafts(self):
+    async def get_drafts(self: 'TelegramClient') -> hints.TotalList:
         """
         Same as :meth:`iter_drafts`, but returns a list instead.
         """
         return await self.iter_drafts().collect()
 
     def conversation(
-            self, entity,
-            *, timeout=60, total_timeout=None, max_messages=100,
-            exclusive=True, replies_are_responses=True):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            *,
+            timeout: float = 60,
+            total_timeout: float = None,
+            max_messages: int = 100,
+            exclusive: bool = True,
+            replies_are_responses: bool = True) -> custom.Conversation:
         """
         Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
         with the given entity so you can easily send messages and await for

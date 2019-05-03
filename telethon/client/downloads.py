@@ -2,9 +2,10 @@ import datetime
 import io
 import os
 import pathlib
+import typing
 
 from .users import UserMethods
-from .. import utils, helpers, errors
+from .. import utils, helpers, errors, hints
 from ..tl import TLObject, types, functions
 
 try:
@@ -12,13 +13,20 @@ try:
 except ImportError:
     aiohttp = None
 
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
+
 
 class DownloadMethods(UserMethods):
 
     # region Public methods
 
     async def download_profile_photo(
-            self, entity, file=None, *, download_big=True):
+            self: 'TelegramClient',
+            entity: hints.EntityLike,
+            file: hints.FileLike = None,
+            *,
+            download_big: bool = True) -> typing.Optional[str]:
         """
         Downloads the profile photo of the given entity (user/chat/channel).
 
@@ -118,8 +126,13 @@ class DownloadMethods(UserMethods):
                 # Until there's a report for chats, no need to.
                 return None
 
-    async def download_media(self, message, file=None,
-                             *, thumb=None, progress_callback=None):
+    async def download_media(
+            self: 'TelegramClient',
+            message: hints.MessageLike,
+            file: hints.FileLike = None,
+            *,
+            thumb: hints.FileLike = None,
+            progress_callback: hints.ProgressCallback = None) -> typing.Optional[str]:
         """
         Downloads the given media, or the media from a specified Message.
 
@@ -194,8 +207,14 @@ class DownloadMethods(UserMethods):
             )
 
     async def download_file(
-            self, input_location, file=None, *, part_size_kb=None,
-            file_size=None, progress_callback=None, dc_id=None):
+            self: 'TelegramClient',
+            input_location: hints.FileLike,
+            file: hints.OutFileLike = None,
+            *,
+            part_size_kb: float = None,
+            file_size: int = None,
+            progress_callback: hints.ProgressCallback = None,
+            dc_id: int = None) -> None:
         """
         Downloads the given input location to a file.
 
@@ -337,8 +356,7 @@ class DownloadMethods(UserMethods):
         else:
             return None
 
-    @staticmethod
-    def _download_cached_photo_size(size, file):
+    def _download_cached_photo_size(self: 'TelegramClient', size, file):
         # No need to download anything, simply write the bytes
         if file is bytes:
             return size.bytes
@@ -357,7 +375,7 @@ class DownloadMethods(UserMethods):
                 f.close()
         return file
 
-    async def _download_photo(self, photo, file, date, thumb, progress_callback):
+    async def _download_photo(self: 'TelegramClient', photo, file, date, thumb, progress_callback):
         """Specialized version of .download_media() for photos"""
         # Determine the photo and its largest size
         if isinstance(photo, types.MessageMediaPhoto):

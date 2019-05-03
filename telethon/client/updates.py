@@ -2,20 +2,22 @@ import asyncio
 import itertools
 import random
 import time
-import datetime
+import typing
 
 from .users import UserMethods
 from .. import events, utils, errors
+from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
-from ..events.common import EventCommon
-from ..statecache import StateCache
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class UpdateMethods(UserMethods):
 
     # region Public methods
 
-    async def _run_until_disconnected(self):
+    async def _run_until_disconnected(self: 'TelegramClient'):
         try:
             await self.disconnected
         except KeyboardInterrupt:
@@ -23,7 +25,7 @@ class UpdateMethods(UserMethods):
         finally:
             await self.disconnect()
 
-    def run_until_disconnected(self):
+    def run_until_disconnected(self: 'TelegramClient'):
         """
         Runs the event loop until `disconnect` is called or if an error
         while connecting/sending/receiving occurs in the background. In
@@ -43,7 +45,7 @@ class UpdateMethods(UserMethods):
             # No loop.run_until_complete; it's already syncified
             self.disconnect()
 
-    def on(self, event):
+    def on(self: 'TelegramClient', event: EventBuilder):
         """
         Decorator helper method around `add_event_handler`. Example:
 
@@ -67,7 +69,10 @@ class UpdateMethods(UserMethods):
 
         return decorator
 
-    def add_event_handler(self, callback, event=None):
+    def add_event_handler(
+            self: 'TelegramClient',
+            callback: callable,
+            event: EventBuilder = None):
         """
         Registers the given callback to be called on the specified event.
 
@@ -100,7 +105,10 @@ class UpdateMethods(UserMethods):
 
         self._event_builders.append((event, callback))
 
-    def remove_event_handler(self, callback, event=None):
+    def remove_event_handler(
+            self: 'TelegramClient',
+            callback: callable,
+            event: EventBuilder = None) -> int:
         """
         Inverse operation of :meth:`add_event_handler`.
 
@@ -121,14 +129,15 @@ class UpdateMethods(UserMethods):
 
         return found
 
-    def list_event_handlers(self):
+    def list_event_handlers(self: 'TelegramClient')\
+            -> typing.Sequence[typing.Tuple[callable, EventBuilder]]:
         """
         Lists all added event handlers, returning a list of pairs
         consisting of (callback, event).
         """
         return [(callback, event) for event, callback in self._event_builders]
 
-    async def catch_up(self):
+    async def catch_up(self: 'TelegramClient'):
         """
         "Catches up" on the missed updates while the client was offline.
         You should call this method after registering the event handlers
@@ -196,7 +205,7 @@ class UpdateMethods(UserMethods):
     # It is important to not make _handle_update async because we rely on
     # the order that the updates arrive in to update the pts and date to
     # be always-increasing. There is also no need to make this async.
-    def _handle_update(self, update):
+    def _handle_update(self: 'TelegramClient', update):
         self.session.process_entities(update)
         self._entity_cache.add(update)
 
@@ -212,7 +221,7 @@ class UpdateMethods(UserMethods):
 
         self._state_cache.update(update)
 
-    def _process_update(self, update, entities=None):
+    def _process_update(self: 'TelegramClient', update, entities=None):
         update._entities = entities or {}
 
         # This part is somewhat hot so we don't bother patching
@@ -230,7 +239,7 @@ class UpdateMethods(UserMethods):
 
         self._state_cache.update(update)
 
-    async def _update_loop(self):
+    async def _update_loop(self: 'TelegramClient'):
         # Pings' ID don't really need to be secure, just "random"
         rnd = lambda: random.randrange(-2**63, 2**63)
         while self.is_connected():
@@ -275,13 +284,13 @@ class UpdateMethods(UserMethods):
                 except (ConnectionError, asyncio.CancelledError):
                     return
 
-    async def _dispatch_queue_updates(self):
+    async def _dispatch_queue_updates(self: 'TelegramClient'):
         while not self._updates_queue.empty():
             await self._dispatch_update(*self._updates_queue.get_nowait())
 
         self._dispatching_updates_queue.clear()
 
-    async def _dispatch_update(self, update, channel_id, pts_date):
+    async def _dispatch_update(self: 'TelegramClient', update, channel_id, pts_date):
         if not self._entity_cache.ensure_cached(update):
             await self._get_difference(update, channel_id, pts_date)
 
@@ -333,7 +342,7 @@ class UpdateMethods(UserMethods):
                 self._log[__name__].exception('Unhandled exception on %s',
                                               name)
 
-    async def _get_difference(self, update, channel_id, pts_date):
+    async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
         """
         Get the difference for this `channel_id` if any, then load entities.
 
@@ -373,7 +382,7 @@ class UpdateMethods(UserMethods):
                 itertools.chain(result.users, result.chats)
             })
 
-    async def _handle_auto_reconnect(self):
+    async def _handle_auto_reconnect(self: 'TelegramClient'):
         # TODO Catch-up
         return
         try:
@@ -415,7 +424,7 @@ class EventBuilderDict:
     """
     Helper "dictionary" to return events from types and cache them.
     """
-    def __init__(self, client, update):
+    def __init__(self, client: 'TelegramClient', update):
         self.client = client
         self.update = update
 

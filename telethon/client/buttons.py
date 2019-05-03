@@ -1,11 +1,18 @@
+import typing
+
 from .updates import UpdateMethods
+from .. import utils, hints
 from ..tl import types, custom
-from .. import utils, events
+
+if typing.TYPE_CHECKING:
+    from .telegramclient import TelegramClient
 
 
 class ButtonMethods(UpdateMethods):
-    @staticmethod
-    def build_reply_markup(buttons, inline_only=False):
+    def build_reply_markup(
+            self: 'TelegramClient',
+            buttons: typing.Optional[hints.MarkupLike],
+            inline_only: bool = False) -> typing.Optional[types.TypeReplyMarkup]:
         """
         Builds a :tl`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
         the given buttons, or does nothing if either no buttons are
