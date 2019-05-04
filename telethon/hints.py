@@ -32,7 +32,7 @@ MarkupLike = typing.Union[
 
 TotalList = helpers.TotalList
 
-DateLike = typing.Optional[float, datetime.datetime, datetime.date, datetime.timedelta]
+DateLike = typing.Optional[typing.Union[float, datetime.datetime, datetime.date, datetime.timedelta]]
 
 
 LocalPath = str
