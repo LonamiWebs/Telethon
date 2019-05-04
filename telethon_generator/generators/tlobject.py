@@ -737,7 +737,7 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
 
 
 def clean_tlobjects(output_dir):
-    for d in ('functions', 'types'):
+    for d in ('functions', 'types', 'patched'):
         d = output_dir / d
         if d.is_dir():
             shutil.rmtree(str(d))
