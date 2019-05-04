@@ -292,6 +292,9 @@ class UpdateMethods(UserMethods):
 
     async def _dispatch_update(self: 'TelegramClient', update, channel_id, pts_date):
         if not self._entity_cache.ensure_cached(update):
+            # We could add a lock to not fetch the same pts twice if we are
+            # already fetching it. However this does not happen in practice,
+            # which makes sense, because different updates have different pts.
             await self._get_difference(update, channel_id, pts_date)
 
         built = EventBuilderDict(self, update)
@@ -357,6 +360,16 @@ class UpdateMethods(UserMethods):
             try:
                 where = await self.get_input_entity(channel_id)
             except ValueError:
+                # There's a high chance that this fails, since
+                # we are getting the difference to fetch entities.
+                return
+
+            if not pts_date:
+                # First-time, can't get difference. Get pts instead.
+                result = await self(functions.messages.GetPeerDialogsRequest([
+                    utils.get_input_dialog(where)
+                ]))
+                self._state_cache[channel_id] = result.dialogs[0].pts
                 return
 
             result = await self(functions.updates.GetChannelDifferenceRequest(
@@ -367,6 +380,12 @@ class UpdateMethods(UserMethods):
                 force=True
             ))
         else:
+            if not pts_date[0]:
+                # First-time, can't get difference. Get pts instead.
+                result = await self(functions.updates.GetStateRequest())
+                self._state_cache[None] = result.pts, result.date
+                return
+
             result = await self(functions.updates.GetDifferenceRequest(
                 pts=pts_date[0],
                 date=pts_date[1],
