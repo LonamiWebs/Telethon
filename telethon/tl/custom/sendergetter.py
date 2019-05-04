@@ -59,7 +59,7 @@ class SenderGetter(abc.ABC):
             try:
                 self._input_sender = \
                     self._client._entity_cache[self._sender_id]
-            except ValueError:
+            except KeyError:
                 pass
         return self._input_sender
 
