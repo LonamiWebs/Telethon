@@ -87,12 +87,16 @@ class StateCache:
                 types.updates.ChannelDifferenceEmpty,
                 types.updates.ChannelDifferenceTooLong,
                 types.updates.ChannelDifference
-            ))
+            )),
+            check_only=False
     ):
         """
         Update the state with the given update.
         """
         cid = update.CONSTRUCTOR_ID
+        if check_only:
+            return cid in has_pts or cid in has_date or cid in has_channel_pts
+
         if cid in has_pts:
             if cid in has_date:
                 self._pts_date = update.pts, update.date

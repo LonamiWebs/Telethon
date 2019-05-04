@@ -295,7 +295,10 @@ class UpdateMethods(UserMethods):
             # We could add a lock to not fetch the same pts twice if we are
             # already fetching it. However this does not happen in practice,
             # which makes sense, because different updates have different pts.
-            await self._get_difference(update, channel_id, pts_date)
+            if self._state_cache.update(update, check_only=True):
+                # If the update doesn't have pts, fetching won't do anything.
+                # For example, UpdateUserStatus or UpdateChatUserTyping.
+                await self._get_difference(update, channel_id, pts_date)
 
         built = EventBuilderDict(self, update)
         if self._conversations:
