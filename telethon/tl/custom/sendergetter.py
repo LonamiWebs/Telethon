@@ -42,7 +42,7 @@ class SenderGetter(abc.ABC):
                 self._sender =\
                     await self._client.get_entity(self._input_sender)
             except ValueError:
-                await self._reload_message()
+                await self._refetch_sender()
         return self._sender
 
     @property
@@ -82,10 +82,4 @@ class SenderGetter(abc.ABC):
     async def _refetch_sender(self):
         """
         Re-fetches sender information through other means.
-        """
-
-    @abc.abstractmethod
-    async def _reload_message(self):
-        """
-        Subclasses should implement message reloading.
         """
