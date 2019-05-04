@@ -308,7 +308,9 @@ class TelegramBaseClient(abc.ABC):
             self._updates_queue = asyncio.Queue(loop=self._loop)
             self._dispatching_updates_queue = asyncio.Event(loop=self._loop)
         else:
-            self._updates_queue = None
+            # Use a set of pending instead of a queue so we can properly
+            # terminate all pending updates on disconnect.
+            self._updates_queue = set()
             self._dispatching_updates_queue = None
 
         self._authorized = None  # None = unknown, False = no, True = yes
@@ -394,10 +396,27 @@ class TelegramBaseClient(abc.ABC):
         if self._loop.is_running():
             return self._disconnect_coro()
         else:
-            self._loop.run_until_complete(self._disconnect_coro())
+            try:
+                self._loop.run_until_complete(self._disconnect_coro())
+            except RuntimeError:
+                # Python 3.5.x complains when called from
+                # `__aexit__` and there were pending updates with:
+                #   "Event loop stopped before Future completed."
+                #
+                # However, it doesn't really make a lot of sense.
+                pass
 
     async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
+
+        # trio's nurseries would handle this for us, but this is asyncio.
+        # All tasks spawned in the background should properly be terminated.
+        if self._dispatching_updates_queue is None and self._updates_queue:
+            for task in self._updates_queue:
+                task.cancel()
+
+            await asyncio.wait(self._updates_queue, loop=self._loop)
+            self._updates_queue.clear()
 
         pts, date = self._state_cache[None]
         self.session.set_update_state(0, types.updates.State(

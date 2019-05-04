@@ -229,8 +229,10 @@ class UpdateMethods(UserMethods):
         # arguments which is faster.
         channel_id = self._state_cache.get_channel_id(update)
         args = (update, channel_id, self._state_cache[channel_id])
-        if self._updates_queue is None:
-            self._loop.create_task(self._dispatch_update(*args))
+        if self._dispatching_updates_queue is None:
+            task = self._loop.create_task(self._dispatch_update(*args))
+            self._updates_queue.add(task)
+            task.add_done_callback(lambda _: self._updates_queue.discard(task))
         else:
             self._updates_queue.put_nowait(args)
             if not self._dispatching_updates_queue.is_set():
@@ -343,10 +345,11 @@ class UpdateMethods(UserMethods):
                     'for event %s.', name, type(event).__name__
                 )
                 break
-            except Exception:
-                name = getattr(callback, '__name__', repr(callback))
-                self._log[__name__].exception('Unhandled exception on %s',
-                                              name)
+            except Exception as e:
+                if not isinstance(e, asyncio.CancelledError) or self.is_connected():
+                    name = getattr(callback, '__name__', repr(callback))
+                    self._log[__name__].exception('Unhandled exception on %s',
+                                                  name)
 
     async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
         """
