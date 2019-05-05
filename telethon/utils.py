@@ -1085,8 +1085,15 @@ def resolve_invite_link(link):
         # Perhaps the user passed the link hash directly
         link_hash = link
 
+    # Little known fact, but invite links with a
+    # hex-string of bytes instead of base64 also works.
+    if re.match(r'[a-fA-F\d]{32}', link_hash):
+        payload = bytes.fromhex(link_hash)
+    else:
+        payload = _decode_telegram_base64(link_hash)
+
     try:
-        return struct.unpack('>LLQ', _decode_telegram_base64(link_hash))
+        return struct.unpack('>LLQ', payload)
     except (struct.error, TypeError):
         return None, None, None
 
