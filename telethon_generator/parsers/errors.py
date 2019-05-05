@@ -13,6 +13,7 @@ KNOWN_BASE_CLASSES = {
     406: 'AuthKeyError',
     420: 'FloodError',
     500: 'ServerError',
+    503: 'TimedOutError'
 }
 
 
@@ -23,7 +24,7 @@ def _get_class_name(error_code):
     """
     if isinstance(error_code, int):
         return KNOWN_BASE_CLASSES.get(
-            error_code, 'RPCError' + str(error_code).replace('-', 'Neg')
+            abs(error_code), 'RPCError' + str(error_code).replace('-', 'Neg')
         )
 
     return snake_to_camel_case(
@@ -38,7 +39,7 @@ class Error:
         self.int_code = codes[0]
         self.str_code = name
         self.subclass = _get_class_name(codes[0])
-        self.subclass_exists = codes[0] in KNOWN_BASE_CLASSES
+        self.subclass_exists = abs(codes[0]) in KNOWN_BASE_CLASSES
         self.description = description
 
         self.has_captures = '_X' in name

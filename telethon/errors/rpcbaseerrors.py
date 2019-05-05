@@ -108,7 +108,7 @@ class ServerError(RPCError):
         self.message = message
 
 
-class BotTimeout(RPCError):
+class TimedOutError(RPCError):
     """
     Clicking the inline buttons of bots that never (or take to long to)
     call ``answerCallbackQuery`` will result in this "special" RPCError.
@@ -119,6 +119,9 @@ class BotTimeout(RPCError):
     def __init__(self, request, message):
         super().__init__(request, message)
         self.message = message
+
+
+BotTimeout = TimedOutError
 
 
 class BadMessageError(Exception):
