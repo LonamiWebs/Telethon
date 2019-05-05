@@ -54,7 +54,7 @@ DOCS_IN_RES = GENERATOR_DIR / 'data/html'
 DOCS_OUT = Path('docs')
 
 
-def generate(action, which):
+def generate(which, action='gen'):
     from telethon_generator.parsers import\
         parse_errors, parse_methods, parse_tl, find_layer
 
@@ -140,7 +140,7 @@ def generate(action, which):
 
 def main():
     if len(argv) >= 2 and argv[1] in ('gen', 'clean'):
-        generate(argv[1], argv[2:])
+        generate(argv[2:], argv[1])
 
     elif len(argv) >= 2 and argv[1] == 'pypi':
         # (Re)generate the code to make sure we don't push without it
