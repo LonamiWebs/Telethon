@@ -419,13 +419,14 @@ class TelegramBaseClient(abc.ABC):
             self._updates_queue.clear()
 
         pts, date = self._state_cache[None]
-        self.session.set_update_state(0, types.updates.State(
-            pts=pts,
-            qts=0,
-            date=date,
-            seq=0,
-            unread_count=0
-        ))
+        if pts and date:
+            self.session.set_update_state(0, types.updates.State(
+                pts=pts,
+                qts=0,
+                date=date,
+                seq=0,
+                unread_count=0
+            ))
 
         self.session.close()
 
