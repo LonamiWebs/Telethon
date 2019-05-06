@@ -22,6 +22,14 @@ class Session(ABC):
 
     @property
     @abstractmethod
+    def dc_id(self):
+        """
+        Returns the currently-used data center ID.
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def server_address(self):
         """
         Returns the server address where the library should connect to.
