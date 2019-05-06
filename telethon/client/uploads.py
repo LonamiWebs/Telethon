@@ -107,7 +107,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             supports_streaming: bool = False,
             **kwargs) -> types.Message:
         """
-        Sends a file to the specified entity.
+        Sends message with the given file to the specified entity.
 
         Args:
             entity (`entity`):
@@ -386,9 +386,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             use_cache: type = None,
             progress_callback: hints.ProgressCallback = None) -> types.TypeInputFile:
         """
-        Uploads the specified file and returns a handle (an instance of
-        :tl:`InputFile` or :tl:`InputFileBig`, as required) which can be
-        later used before it expires (they are usable during less than a day).
+        Uploads a file to Telegram's servers, without sending it.
+
+        This method returns a handle (an instance of :tl:`InputFile` or
+        :tl:`InputFileBig`, as required) which can be later used before
+        it expires (they are usable during less than a day).
 
         Uploading a file will simply return a "handle" to the file stored
         remotely in the Telegram servers, which can be later used on. This

@@ -9,20 +9,21 @@ if typing.TYPE_CHECKING:
 
 
 class ButtonMethods(UpdateMethods):
+    @staticmethod
     def build_reply_markup(
-            self: 'TelegramClient',
             buttons: typing.Optional[hints.MarkupLike],
             inline_only: bool = False) -> typing.Optional[types.TypeReplyMarkup]:
         """
-        Builds a :tl`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
-        the given buttons, or does nothing if either no buttons are
-        provided or the provided argument is already a reply markup.
+        Builds a :tl:`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
+        the given buttons.
 
-        This will add any event handlers defined in the
-        buttons and delete old ones not to call them twice,
-        so you should probably call this method manually for
-        serious bots instead re-adding handlers every time you
-        send a message. Magic can only go so far.
+        Does nothing if either no buttons are provided or the provided
+        argument is already a reply markup.
+
+        You should consider using this method if you are going to reuse
+        the markup very often. Otherwise, it is not necessary.
+
+        This method is **not** asynchronous (don't use ``await`` on it).
         """
         if buttons is None:
             return None

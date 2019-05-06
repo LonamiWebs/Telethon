@@ -17,7 +17,7 @@ when you upgrade!
 .. important::
 
     * Are you new here? Jump straight into :ref:`getting-started`!
-    * Looking for available friendly methods? See :ref:`telethon-client`.
+    * Looking for available friendly methods? See :ref:`ref-summary`.
     * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
     * Need the full API reference? https://lonamiwebs.github.io/Telethon/.
 
@@ -41,6 +41,7 @@ heavy job for you, so you can focus on developing an application.
    extra/basic/installation
    extra/basic/creating-a-client
    extra/basic/telegram-client
+   extra/reference
    extra/basic/entities
    extra/basic/working-with-updates
    extra/basic/compatibility-and-convenience

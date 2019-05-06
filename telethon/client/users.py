@@ -104,8 +104,9 @@ class UserMethods(TelegramBaseClient):
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
             -> typing.Union[types.User, types.InputPeerUser]:
         """
-        Gets "me" (the self user) which is currently authenticated,
-        or None if the request fails (hence, not authenticated).
+        Gets "me", the current :tl:`User` who is logged in.
+
+        If the user has not logged in yet, this method returns ``None``.
 
         Args:
             input_peer (`bool`, optional):
@@ -144,7 +145,7 @@ class UserMethods(TelegramBaseClient):
 
     async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
-        Returns ``True`` if the user is authorized.
+        Returns ``True`` if the user is authorized (i.e. has logged in).
         """
         if self._authorized is None:
             try:
@@ -254,11 +255,13 @@ class UserMethods(TelegramBaseClient):
             self: 'TelegramClient',
             peer: hints.EntityLike) -> types.TypeInputPeer:
         """
-        Turns the given peer into its input entity version. Most requests
-        use this kind of :tl:`InputPeer`, so this is the most suitable call
-        to make for those cases. **Generally you should let the library do
-        its job** and don't worry about getting the input entity first, but
-        if you're going to use an entity often, consider making the call:
+        Turns the given entity into its input entity version.
+
+        Most requests use this kind of :tl:`InputPeer`, so this is the most
+        suitable call to make for those cases. **Generally you should let the
+        library do its job** and don't worry about getting the input entity
+        first, but if you're going to use an entity often, consider making the
+        call:
 
         >>> import asyncio
         >>> rc = asyncio.get_event_loop().run_until_complete
@@ -380,7 +383,7 @@ class UserMethods(TelegramBaseClient):
             peer: hints.EntityLike,
             add_mark: bool = True) -> int:
         """
-        Gets the ID for the given peer, which may be anything entity-like.
+        Gets the ID for the given entity.
 
         This method needs to be ``async`` because `peer` supports usernames,
         invite-links, phone numbers (from people in your contact list), etc.

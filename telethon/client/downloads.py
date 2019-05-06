@@ -28,7 +28,7 @@ class DownloadMethods(UserMethods):
             *,
             download_big: bool = True) -> typing.Optional[str]:
         """
-        Downloads the profile photo of the given entity (user/chat/channel).
+        Downloads the profile photo from the given user, chat or channel.
 
         Args:
             entity (`entity`):
@@ -134,7 +134,7 @@ class DownloadMethods(UserMethods):
             thumb: hints.FileLike = None,
             progress_callback: hints.ProgressCallback = None) -> typing.Optional[str]:
         """
-        Downloads the given media, or the media from a specified Message.
+        Downloads the given media from a message object.
 
         Note that if the download is too slow, you should consider installing
         ``cryptg`` (through ``pip install cryptg``) so that decrypting the
@@ -216,7 +216,7 @@ class DownloadMethods(UserMethods):
             progress_callback: hints.ProgressCallback = None,
             dc_id: int = None) -> None:
         """
-        Downloads the given input location to a file.
+        Low-level method to download files from their input location.
 
         Args:
             input_location (:tl:`InputFileLocation`):

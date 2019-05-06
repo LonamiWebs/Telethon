@@ -344,13 +344,15 @@ class TelegramBaseClient(abc.ABC):
 
     @property
     def loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
+        """
+        Property with the ``asyncio`` event loop used by this client.
+        """
         return self._loop
 
     @property
     def disconnected(self: 'TelegramClient') -> asyncio.Future:
         """
-        Future that resolves when the connection to Telegram
-        ends, either by user action or in the background.
+        Property with a ``Future`` that resolves upon disconnection.
         """
         return self._sender.disconnected
 
@@ -381,6 +383,8 @@ class TelegramBaseClient(abc.ABC):
     def is_connected(self: 'TelegramClient') -> bool:
         """
         Returns ``True`` if the user has connected.
+
+        This method is **not** asynchronous (don't use ``await`` on it).
         """
         sender = getattr(self, '_sender', None)
         return sender and sender.is_connected()

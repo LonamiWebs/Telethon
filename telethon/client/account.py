@@ -120,7 +120,9 @@ class AccountMethods(UserMethods):
             files: bool = None,
             max_file_size: bool = None) -> 'TelegramClient':
         """
-        Creates a proxy object over the current :ref:`TelegramClient` through
+        Returns a :ref:`TelegramClient` which calls methods behind a takeout session.
+
+        It does so by creating a proxy object over the current client through
         which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
         them. In other words, returns the current client modified so that
         requests are done as a takeout:
@@ -210,7 +212,11 @@ class AccountMethods(UserMethods):
 
     async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
         """
-        Finishes a takeout, with specified result sent back to Telegram.
+        Finishes the current takeout session.
+
+        Args:
+            success (`bool`):
+                Whether the takeout completed successfully or not.
 
         Returns:
             ``True`` if the operation was successful, ``False`` otherwise.

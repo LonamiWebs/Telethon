@@ -29,8 +29,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
             last_name: str = '',
             max_attempts: int = 3) -> 'TelegramClient':
         """
-        Convenience method to interactively connect and sign in if required,
-        also taking into consideration that 2FA may be enabled in the account.
+        Starts the client (connects and logs in if necessary).
+
+        By default, this method will be interactive (asking for
+        user input if needed), and will handle 2FA if enabled too.
 
         If the phone doesn't belong to an existing account (and will hence
         `sign_up` for a new one),  **you are agreeing to Telegram's
@@ -252,8 +254,11 @@ class AuthMethods(MessageParseMethods, UserMethods):
             bot_token: str = None,
             phone_code_hash: str = None) -> types.User:
         """
-        Starts or completes the sign in process with the given phone number
-        or code that Telegram sent.
+        Logs in to Telegram to an existing user or bot account.
+
+        You should only use this if you are not authorized yet.
+
+        This method will send the code if it's not provided.
 
         Args:
             phone (`str` | `int`):
@@ -324,8 +329,11 @@ class AuthMethods(MessageParseMethods, UserMethods):
             phone: str = None,
             phone_code_hash: str = None) -> types.User:
         """
-        Signs up to Telegram if you don't have an account yet.
-        You must call .send_code_request(phone) first.
+        Signs up to Telegram as a new user account.
+
+        Use this if you don't have an account yet.
+
+        You must call `send_code_request` first.
 
         **By using this method you're agreeing to Telegram's
         Terms of Service. This is required and your account
@@ -400,7 +408,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             *,
             force_sms: bool = False) -> types.auth.SentCode:
         """
-        Sends a code request to the specified phone number.
+        Sends the Telegram code needed to login to the given phone number.
 
         Args:
             phone (`str` | `int`):
@@ -468,8 +476,9 @@ class AuthMethods(MessageParseMethods, UserMethods):
             email: str = None,
             email_code_callback: typing.Callable[[int], str] = None) -> bool:
         """
-        Changes the 2FA settings of the logged in user, according to the
-        passed parameters. Take note of the parameter explanations.
+        Changes the 2FA settings of the logged in user.
+
+        Review carefully the parameter explanations before using this method.
 
         Note that this method may be *incredibly* slow depending on the
         prime numbers that must be used during the process to make sure

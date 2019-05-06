@@ -111,9 +111,7 @@ class DialogMethods(UserMethods):
             ignore_migrated: bool = False
     ) -> _DialogsIter:
         """
-        Returns an iterator over the dialogs, yielding 'limit' at most.
-        Dialogs are the open "chats" or conversations with other people,
-        groups you have joined, or channels you are subscribed to.
+        Iterator over the dialogs (open conversations/subscribed channels).
 
         Args:
             limit (`int` | `None`):
@@ -186,7 +184,10 @@ class DialogMethods(UserMethods):
             replies_are_responses: bool = True) -> custom.Conversation:
         """
         Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
-        with the given entity so you can easily send messages and await for
+        with the given entity.
+
+        This is not the same as just sending a message to create a "dialog"
+        with them, but rather a way to easily send messages and await for
         responses or other reactions. Refer to its documentation for more.
 
         Args:

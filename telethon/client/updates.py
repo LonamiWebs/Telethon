@@ -27,9 +27,14 @@ class UpdateMethods(UserMethods):
 
     def run_until_disconnected(self: 'TelegramClient'):
         """
-        Runs the event loop until `disconnect` is called or if an error
-        while connecting/sending/receiving occurs in the background. In
-        the latter case, said error will ``raise`` so you have a chance
+        Runs the event loop until the library is disconnected.
+
+        Disconnections can be manual (by calling `disconnect()
+        <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`)
+        or not (if the library fails to reconnect automatically).
+
+        If a disconnection error occurs (i.e. not manual disconnect),
+        said error will be raised through here, so you have a chance
         to ``except`` it on your own code.
 
         If the loop is already running, this method returns a coroutine
@@ -47,7 +52,7 @@ class UpdateMethods(UserMethods):
 
     def on(self: 'TelegramClient', event: EventBuilder):
         """
-        Decorator helper method around `add_event_handler`. Example:
+        Decorator used to `add_event_handler` more conveniently.
 
         >>> from telethon import TelegramClient, events
         >>> client = TelegramClient(...)
@@ -74,7 +79,9 @@ class UpdateMethods(UserMethods):
             callback: callable,
             event: EventBuilder = None):
         """
-        Registers the given callback to be called on the specified event.
+        Registers a new event handler callback.
+
+        The callback will be called when the specified event occurs.
 
         Args:
             callback (`callable`):
@@ -110,7 +117,7 @@ class UpdateMethods(UserMethods):
             callback: callable,
             event: EventBuilder = None) -> int:
         """
-        Inverse operation of :meth:`add_event_handler`.
+        Inverse operation of `add_event_handler`.
 
         If no event is given, all events for this callback are removed.
         Returns how many callbacks were removed.
@@ -132,8 +139,9 @@ class UpdateMethods(UserMethods):
     def list_event_handlers(self: 'TelegramClient')\
             -> typing.Sequence[typing.Tuple[callable, EventBuilder]]:
         """
-        Lists all added event handlers, returning a list of pairs
-        consisting of (callback, event).
+        Lists all registered event handlers.
+
+        Returns a list of pairs consisting of ``(callback, event)``.
         """
         return [(callback, event) for event, callback in self._event_builders]
 

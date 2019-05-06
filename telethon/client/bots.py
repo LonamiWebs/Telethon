@@ -17,8 +17,7 @@ class BotMethods(UserMethods):
             offset: str = None,
             geo_point: types.GeoPoint = None) -> custom.InlineResults:
         """
-        Makes the given inline query to the specified bot
-        i.e. ``@vote My New Poll`` would be as follows:
+        Makes an inline query to the specified bot (e.g. ``@vote New Poll``).
 
         >>> client = ...
         >>> client.inline_query('vote', 'My New Poll')

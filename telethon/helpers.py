@@ -159,6 +159,23 @@ class TotalList(list):
     A list with an extra `total` property, which may not match its `len`
     since the total represents the total amount of items *available*
     somewhere else, not the items *in this list*.
+
+    Examples:
+
+        .. code-block:: python
+
+            # Telethon returns these lists in some cases (for example,
+            # only when a chunk is returned, but the "total" count
+            # is available).
+            result = client.get_messages(chat, limit=10)
+
+            print(result.total)  # large number
+            print(len(result))  # 10
+            print(result[0])  # latest message
+
+            for x in result:  # show the 10 messages
+                print(x.text)
+
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -40,6 +40,7 @@ tl_ref_url = 'https://lonamiwebs.github.io/Telethon'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'custom_roles'
 ]
 

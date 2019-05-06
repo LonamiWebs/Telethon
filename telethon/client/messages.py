@@ -314,7 +314,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             reverse: bool = False
     ) -> typing.Union[_MessagesIter, _IDsIter]:
         """
-        Iterator over the message history for the specified entity.
+        Iterator over the messages for the given chat.
+
         If either `search`, `filter` or `from_user` are provided,
         :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
@@ -486,7 +487,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             buttons: hints.MarkupLike = None,
             silent: bool = None) -> types.Message:
         """
-        Sends the given message to the specified entity (user/chat/channel).
+        Sends a message to the specified user, chat or channel.
 
         The default parse mode is the same as the official applications
         (a custom flavour of markdown). ``**bold**, `code` or __italic__``
@@ -642,7 +643,11 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             silent: bool = None,
             as_album: bool = None) -> typing.Sequence[types.Message]:
         """
-        Forwards the given message(s) to the specified entity.
+        Forwards the given messages to the specified entity.
+
+        If you want to "forward" a message without the forward header
+        (the "forwarded from" text), you should use `send_message` with
+        the original message instead. This will send a copy of it.
 
         Args:
             entity (`entity`):
@@ -759,7 +764,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             file: hints.FileLike = None,
             buttons: hints.MarkupLike = None) -> types.Message:
         """
-        Edits the given message ID (to change its contents or disable preview).
+        Edits the given message to change its text or media.
 
         Args:
             entity (`entity` | `Message <telethon.tl.custom.message.Message>`):
@@ -867,7 +872,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             *,
             revoke: bool = True) -> typing.Sequence[types.messages.AffectedMessages]:
         """
-        Deletes a message from a chat, optionally "for everyone".
+        Deletes the given messages, optionally "for everyone".
 
         Args:
             entity (`entity`):
@@ -925,8 +930,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             max_id: int = None,
             clear_mentions: bool = False) -> bool:
         """
-        Sends a "read acknowledge" (i.e., notifying the given peer that we've
-        read their messages, also known as the "double check").
+        Marks messages as read and optionally clears mentions.
 
         This effectively marks a message as read (or more than one) in the
         given conversation.
