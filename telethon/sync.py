@@ -14,10 +14,13 @@ import asyncio
 import functools
 import inspect
 
+from . import connection
 from .client.account import _TakeoutClient
 from .client.telegramclient import TelegramClient
+from .tl import types, functions, custom
 from .tl.custom import (
-    Draft, Dialog, MessageButton, Forward, Message, InlineResult, Conversation
+    Draft, Dialog, MessageButton, Forward, Button,
+    Message, InlineResult, Conversation
 )
 from .tl.custom.chatgetter import ChatGetter
 from .tl.custom.sendergetter import SenderGetter
@@ -58,3 +61,10 @@ def syncify(*types):
 
 syncify(TelegramClient, _TakeoutClient, Draft, Dialog, MessageButton,
         ChatGetter, SenderGetter, Forward, Message, InlineResult, Conversation)
+
+
+__all__ = [
+    'TelegramClient', 'Button',
+    'types', 'functions', 'custom', 'errors',
+    'events', 'utils', 'connection'
+]
