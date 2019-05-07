@@ -115,7 +115,7 @@ class Conversation(ChatGetter):
 
     async def get_response(self, message=None, *, timeout=None):
         """
-        Returns a coroutine that will resolve once a response arrives.
+        Gets the next message that responds to a previous one.
 
         Args:
             message (`Message <telethon.tl.custom.message.Message>` | `int`, optional):
@@ -133,9 +133,7 @@ class Conversation(ChatGetter):
 
     async def get_reply(self, message=None, *, timeout=None):
         """
-        Returns a coroutine that will resolve once a reply
-        (that is, a message being a reply) arrives. The
-        arguments are the same as those for `get_response`.
+        Gets the next message that explicitly replies to a previous one.
         """
         return await self._get_message(
             message, self._reply_indices, self._pending_replies, timeout,
@@ -229,9 +227,9 @@ class Conversation(ChatGetter):
 
     async def wait_read(self, message=None, *, timeout=None):
         """
-        Awaits for the sent message to be read. Note that receiving
-        a response doesn't imply the message was read, and this action
-        will also trigger even without a response.
+        Awaits for the sent message to be marked as read. Note that
+        receiving a response doesn't imply the message was read, and
+        this action will also trigger even without a response.
         """
         start_time = time.time()
         future = self._client.loop.create_future()

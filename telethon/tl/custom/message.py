@@ -252,8 +252,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def client(self):
         """
-        Returns the `telethon.client.telegramclient.TelegramClient`
-        that patched this message. This will only be present if you
+        Returns the `TelegramClient <telethon.client.telegramclient.TelegramClient>`
+        that *patched* this message. This will only be present if you
         **use the friendly methods**, it won't be there if you invoke
         raw API methods manually, in which case you should only access
         members, not properties.
@@ -300,7 +300,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def is_reply(self):
         """
-        True if the message is a reply to some other.
+        ``True`` if the message is a reply to some other message.
 
         Remember that you can access the ID of the message
         this one is replying to through `reply_to_msg_id`,
@@ -311,17 +311,19 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def forward(self):
         """
-        Returns `Forward <telethon.tl.custom.forward.Forward>`
-        if the message has been forwarded from somewhere else.
+        The `Forward <telethon.tl.custom.forward.Forward>`
+        information if this message is a forwarded message.
         """
         return self._forward
 
     @property
     def buttons(self):
         """
-        Returns a matrix (list of lists) containing all buttons of the message
-        as `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
-        instances.
+        Returns a list of lists of `MessageButton
+        <telethon.tl.custom.messagebutton.MessageButton>`,
+        if any.
+
+        Otherwise, it returns ``None``.
         """
         if self._buttons is None and self.reply_markup:
             if not self.input_chat:
@@ -337,8 +339,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
     async def get_buttons(self):
         """
-        Returns `buttons`, but will make an API call to find the
-        input chat (needed for the buttons) unless it's already cached.
+        Returns `buttons` when that property fails (this is rarely needed).
         """
         if not self.buttons and self.reply_markup:
             chat = await self.get_input_chat()
@@ -357,7 +358,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def button_count(self):
         """
-        Returns the total button count.
+        Returns the total button count (sum of all `buttons` rows).
         """
         if self._buttons_count is None:
             if isinstance(self.reply_markup, (
@@ -372,9 +373,11 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def photo(self):
         """
-        If the message media is a photo, this returns the :tl:`Photo` object.
-        This will also return the photo for :tl:`MessageService` if their
-        action is :tl:`MessageActionChatEditPhoto`.
+        The :tl:`Photo` media in this message, if any.
+
+        This will also return the photo for :tl:`MessageService` if its
+        action is :tl:`MessageActionChatEditPhoto`, or if the message has
+        a web preview with a photo.
         """
         if isinstance(self.media, types.MessageMediaPhoto):
             if isinstance(self.media.photo, types.Photo):
@@ -389,8 +392,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def document(self):
         """
-        If the message media is a document,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if any.
         """
         if isinstance(self.media, types.MessageMediaDocument):
             if isinstance(self.media.document, types.Document):
@@ -403,8 +405,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def web_preview(self):
         """
-        If the message has a loaded web preview,
-        this returns the :tl:`WebPage` object.
+        The :tl:`WebPage` media in this message, if any.
         """
         if isinstance(self.media, types.MessageMediaWebPage):
             if isinstance(self.media.webpage, types.WebPage):
@@ -413,8 +414,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def audio(self):
         """
-        If the message media is a document with an Audio attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's an audio file.
         """
         return self._document_by_attribute(types.DocumentAttributeAudio,
                                            lambda attr: not attr.voice)
@@ -422,8 +422,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def voice(self):
         """
-        If the message media is a document with a Voice attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's a voice note.
         """
         return self._document_by_attribute(types.DocumentAttributeAudio,
                                            lambda attr: attr.voice)
@@ -431,16 +430,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def video(self):
         """
-        If the message media is a document with a Video attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's a video.
         """
         return self._document_by_attribute(types.DocumentAttributeVideo)
 
     @property
     def video_note(self):
         """
-        If the message media is a document with a Video attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's a video note.
         """
         return self._document_by_attribute(types.DocumentAttributeVideo,
                                            lambda attr: attr.round_message)
@@ -448,24 +445,25 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def gif(self):
         """
-        If the message media is a document with an Animated attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's a "gif".
+
+        "Gif" files by Telegram are normally ``.mp4`` video files without
+        sound, the so called "animated" media. However, it may be the actual
+        gif format if the file is too large.
         """
         return self._document_by_attribute(types.DocumentAttributeAnimated)
 
     @property
     def sticker(self):
         """
-        If the message media is a document with a Sticker attribute,
-        this returns the :tl:`Document` object.
+        The :tl:`Document` media in this message, if it's a sticker.
         """
         return self._document_by_attribute(types.DocumentAttributeSticker)
 
     @property
     def contact(self):
         """
-        If the message media is a contact,
-        this returns the :tl:`MessageMediaContact`.
+        The :tl:`MessageMediaContact` in this message, if it's a contact.
         """
         if isinstance(self.media, types.MessageMediaContact):
             return self.media
@@ -473,7 +471,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def game(self):
         """
-        If the message media is a game, this returns the :tl:`Game`.
+        The :tl:`Game` media in this message, if it's a game.
         """
         if isinstance(self.media, types.MessageMediaGame):
             return self.media.game
@@ -481,8 +479,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def geo(self):
         """
-        If the message media is geo, geo live or a venue,
-        this returns the :tl:`GeoPoint`.
+        The :tl:`GeoPoint` media in this message, if it has a location.
         """
         if isinstance(self.media, (types.MessageMediaGeo,
                                    types.MessageMediaGeoLive,
@@ -492,8 +489,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def invoice(self):
         """
-        If the message media is an invoice,
-        this returns the :tl:`MessageMediaInvoice`.
+        The :tl:`MessageMediaInvoice` in this message, if it's an invoice.
         """
         if isinstance(self.media, types.MessageMediaInvoice):
             return self.media
@@ -501,8 +497,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def poll(self):
         """
-        If the message media is a poll,
-        this returns the :tl:`MessageMediaPoll`.
+        The :tl:`MessageMediaPoll` in this message, if it's a poll.
         """
         if isinstance(self.media, types.MessageMediaPoll):
             return self.media
@@ -510,8 +505,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def venue(self):
         """
-        If the message media is a venue,
-        this returns the :tl:`MessageMediaVenue`.
+        The :tl:`MessageMediaVenue` in this message, if it's a venue.
         """
         if isinstance(self.media, types.MessageMediaVenue):
             return self.media
@@ -535,11 +529,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def via_bot(self):
         """
-        If this message was sent via some bot (i.e. `via_bot_id` is not
-        ``None``), this property returns the :tl:`User` of the bot that
-        was used to send this message.
+        The bot :tl:`User` if the message was sent via said bot.
 
-        Returns ``None`` otherwise (or if the bot entity is unknown).
+        This will only be present if `via_bot_id` is not ``None`` and
+        the entity is known.
         """
         return self._via_bot
 
@@ -556,8 +549,22 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
     def get_entities_text(self, cls=None):
         """
-        Returns a list of tuples [(:tl:`MessageEntity`, `str`)], the string
-        being the inner text of the message entity (like bold, italics, etc).
+        Returns a list of ``(markup entity, inner text)``
+        (like bold or italics).
+
+        The markup entity is a :tl:`MessageEntity` that represents bold,
+        italics, etc., and the inner text is the ``str`` inside that markup
+        entity.
+
+        For example:
+
+        .. code-block:: python
+
+            print(repr(message.text))  # shows: 'Hello **world**!'
+
+            for ent, txt in message.get_entities_text():
+                print(ent)  # shows: MessageEntityBold(offset=6, length=5)
+                print(txt)  # shows: world
 
         Args:
             cls (`type`):
@@ -709,8 +716,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     async def click(self, i=None, j=None,
                     *, text=None, filter=None, data=None):
         """
-        Calls `telethon.tl.custom.messagebutton.MessageButton.click`
-        for the specified button.
+        Calls `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
+        on the specified button.
 
         Does nothing if the message has no buttons.
 
@@ -855,7 +862,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         to know what bot we want to start. Raises ``ValueError`` if the bot
         cannot be found but is needed. Returns ``None`` if it's not needed.
         """
-        if self._client and  not isinstance(self.reply_markup, (
+        if self._client and not isinstance(self.reply_markup, (
                 types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
             return None
 

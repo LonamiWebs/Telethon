@@ -17,7 +17,8 @@ property that you are interested in.
 TelegramClient
 ==============
 
-This is a summary of the methods you will find at :ref:`telethon-client`.
+This is a summary of the methods and
+properties you will find at :ref:`telethon-client`.
 
 Auth
 ----
@@ -185,3 +186,223 @@ Account
 
     takeout
     end_takeout
+
+
+Message
+=======
+
+.. currentmodule:: telethon.tl.custom.message
+
+The `Message` type is very important, mostly because we are working
+with a library for a *messaging* platform, so messages are widely used:
+in events, when fetching history, replies, etc.
+
+Properties
+----------
+
+.. note::
+
+    We document *custom properties* here, not all the attributes of the
+    `Message` (which is the information Telegram actually returns).
+
+.. currentmodule:: telethon.tl.custom.message.Message
+
+.. autosummary::
+    :nosignatures:
+
+    text
+    raw_text
+    is_reply
+    forward
+    buttons
+    button_count
+    photo
+    document
+    web_preview
+    audio
+    voice
+    video
+    video_note
+    gif
+    sticker
+    contact
+    game
+    geo
+    invoice
+    poll
+    venue
+    action_entities
+    via_bot
+    via_input_bot
+    client
+
+
+Methods
+-------
+
+.. autosummary::
+    :nosignatures:
+
+    respond
+    reply
+    forward_to
+    edit
+    delete
+    get_reply_message
+    click
+    download_media
+    get_entities_text
+    get_buttons
+
+
+Conversation
+============
+
+The `Conversation <telethon.tl.custom.conversation.Conversation>` object
+is returned by the `client.conversation()
+<telethon.client.dialogs.DialogMethods.conversation>` method to easily
+send and receive responses like a normal conversation.
+
+.. currentmodule:: telethon.tl.custom.conversation.Conversation
+
+.. autosummary::
+    :nosignatures:
+
+    send_message
+    send_file
+    mark_read
+    get_response
+    get_reply
+    get_edit
+    wait_read
+    wait_event
+    cancel
+
+
+AdminLogEvent
+=============
+
+The `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>` object
+is returned by the `client.iter_admin_log()
+<telethon.client.chats.ChatMethods.iter_admin_log>` method to easily iterate
+over past "events" (deleted messages, edits, title changes, leaving members…)
+
+These are all the properties you can find in it:
+
+.. currentmodule:: telethon.tl.custom.adminlogevent.AdminLogEvent
+
+.. autosummary::
+    :nosignatures:
+
+    id
+    date
+    user_id
+    action
+    old
+    new
+    changed_about
+    changed_title
+    changed_username
+    changed_photo
+    changed_sticker_set
+    changed_message
+    deleted_message
+    changed_admin
+    changed_restrictions
+    changed_invites
+    joined
+    joined_invite
+    left
+    changed_hide_history
+    changed_signatures
+    changed_pin
+    changed_default_banned_rights
+    stopped_poll
+
+
+Button
+======
+
+The `Button <telethon.tl.custom.button.Button>` class is used when you login
+as a bot account to send messages with reply markup, such as inline buttons
+or custom keyboards.
+
+These are the static methods you can use to create instances of the markup:
+
+.. currentmodule:: telethon.tl.custom.button.Button
+
+.. autosummary::
+    :nosignatures:
+
+    inline
+    switch_inline
+    url
+    text
+    request_location
+    request_phone
+    clear
+    force_reply
+
+
+InlineResult
+============
+
+The `InlineResult <telethon.tl.custom.inlineresult.InlineResult>` object
+is returned inside a list by the `client.inline_query()
+<telethon.client.bots.BotMethods.inline_query>` method to make an inline
+query to a bot that supports being used in inline mode, such as ``@like``.
+
+Note that the list returned is in fact a *subclass* of a list called
+`InlineResults <telethon.tl.custom.inlineresults.InlineResults>`, which,
+in addition of being a list (iterator, indexed access, etc.), has extra
+attributes and methods.
+
+These are the constants for the types, properties and methods you
+can find the individual results:
+
+.. currentmodule:: telethon.tl.custom.inlineresult.InlineResult
+
+.. autosummary::
+    :nosignatures:
+
+    ARTICLE
+    PHOTO
+    GIF
+    VIDEO
+    VIDEO_GIF
+    AUDIO
+    DOCUMENT
+    LOCATION
+    VENUE
+    CONTACT
+    GAME
+    type
+    message
+    title
+    description
+    url
+    photo
+    document
+    click
+    download_media
+
+
+Utils
+=====
+
+The `telethon.utils` module has plenty of methods that make using the
+library a lot easier. Only the interesting ones will be listed here.
+
+.. currentmodule:: telethon.utils
+
+.. autosummary::
+    :nosignatures:
+
+    get_display_name
+    get_extension
+    get_inner_text
+    get_peer_id
+    resolve_id
+    pack_bot_file_id
+    resolve_bot_file_id
+    resolve_invite_link

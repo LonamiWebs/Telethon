@@ -54,7 +54,7 @@ class Button:
     @staticmethod
     def inline(text, data=None):
         """
-        Creates a new inline button.
+        Creates a new inline button with some payload data in it.
 
         If `data` is omitted, the given `text` will be used as `data`.
         In any case `data` should be either ``bytes`` or ``str``.
@@ -75,7 +75,7 @@ class Button:
     @staticmethod
     def switch_inline(text, query='', same_peer=False):
         """
-        Creates a new button to switch to inline query.
+        Creates a new inline button to switch to inline query.
 
         If `query` is given, it will be the default text to be used
         when making the inline query.
@@ -89,16 +89,18 @@ class Button:
     @staticmethod
     def url(text, url=None):
         """
-        Creates a new button to open the desired URL upon clicking it.
+        Creates a new inline button to open the desired URL on click.
 
         If no `url` is given, the `text` will be used as said URL instead.
+
+        You cannot detect that the user clicked this button directly.
         """
         return types.KeyboardButtonUrl(text, url or text)
 
     @classmethod
     def text(cls, text, *, resize=None, single_use=None, selective=None):
         """
-        Creates a new button with the given text.
+        Creates a new keyboard button with the given text.
 
         Args:
             resize (`bool`):
@@ -122,8 +124,7 @@ class Button:
     def request_location(cls, text, *,
                          resize=None, single_use=None, selective=None):
         """
-        Creates a new button that will request
-        the user's location upon being clicked.
+        Creates a new keyboard button to request the user's location on click.
 
         ``resize``, ``single_use`` and ``selective`` are documented in `text`.
         """
@@ -134,8 +135,7 @@ class Button:
     def request_phone(cls, text, *,
                       resize=None, single_use=None, selective=None):
         """
-        Creates a new button that will request
-        the user's phone number upon being clicked.
+        Creates a new keyboard button to request the user's phone on click.
 
         ``resize``, ``single_use`` and ``selective`` are documented in `text`.
         """
@@ -145,15 +145,15 @@ class Button:
     @staticmethod
     def clear():
         """
-        Clears all the buttons. When used, no other
-        button should be present or it will be ignored.
+        Clears all keyboard buttons after sending a message with this markup.
+        When used, no other button should be present or it will be ignored.
         """
         return types.ReplyKeyboardHide()
 
     @staticmethod
     def force_reply():
         """
-        Forces a reply. If used, no other button
-        should be present or it will be ignored.
+        Forces a reply to the message with this markup. If used,
+        no other button should be present or it will be ignored.
         """
         return types.ReplyKeyboardForceReply()

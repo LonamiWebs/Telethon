@@ -83,7 +83,7 @@ def chunks(iterable, size=100):
 
 def get_display_name(entity):
     """
-    Gets the display name for the given entity, if it's an :tl:`User`,
+    Gets the display name for the given :tl:`User`,
     :tl:`Chat` or :tl:`Channel`. Returns an empty string otherwise.
     """
     if isinstance(entity, types.User):
@@ -810,9 +810,15 @@ def get_peer(peer):
 
 def get_peer_id(peer, add_mark=True):
     """
-    Finds the ID of the given peer, and converts it to the "bot api" format
-    so it the peer can be identified back. User ID is left unmodified,
-    chat ID is negated, and channel ID is prefixed with -100.
+    Convert the given peer into its marked ID by default.
+
+    This "mark" comes from the "bot api" format, and with it the peer type
+    can be identified back. User ID is left unmodified, chat ID is negated,
+    and channel ID is prefixed with -100:
+
+    * ``user_id``
+    * ``-chat_id``
+    * ``-100channel_id``
 
     The original ID and the peer type class can be returned with
     a call to :meth:`resolve_id(marked_id)`.

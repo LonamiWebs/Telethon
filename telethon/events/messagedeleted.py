@@ -6,6 +6,21 @@ from ..tl import types
 class MessageDeleted(EventBuilder):
     """
     Event fired when one or more messages are deleted.
+
+    .. important::
+
+        Telegram **does not** send information about *where* a message
+        was deleted if it occurs in private conversations with other users
+        or in small group chats, because message IDs are *unique* and you
+        can identify the chat with the message ID alone if you saved it
+        previously.
+
+        Telethon **does not** save information of where messages occur,
+        so it cannot know in which chat a message was deleted (this will
+        only work in channels, where the channel ID *is* present).
+
+        This means that the ``chats=`` parameter will not work reliably,
+        unless you intend on working with channels and super-groups only.
     """
     @classmethod
     def build(cls, update):
