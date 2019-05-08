@@ -280,11 +280,11 @@ class ChatMethods(UserMethods):
 
     def iter_participants(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
+            entity: 'hints.EntityLike',
             limit: float = None,
             *,
             search: str = '',
-            filter: types.TypeChannelParticipantsFilter = None,
+            filter: 'types.TypeChannelParticipantsFilter' = None,
             aggressive: bool = False) -> _ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
@@ -341,7 +341,7 @@ class ChatMethods(UserMethods):
     async def get_participants(
             self: 'TelegramClient',
             *args,
-            **kwargs) -> hints.TotalList:
+            **kwargs) -> 'hints.TotalList':
         """
         Same as `iter_participants`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
@@ -350,13 +350,13 @@ class ChatMethods(UserMethods):
 
     def iter_admin_log(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
+            entity: 'hints.EntityLike',
             limit: float = None,
             *,
             max_id: int = 0,
             min_id: int = 0,
             search: str = None,
-            admins: hints.EntitiesLike = None,
+            admins: 'hints.EntitiesLike' = None,
             join: bool = None,
             leave: bool = None,
             invite: bool = None,
@@ -485,7 +485,7 @@ class ChatMethods(UserMethods):
     async def get_admin_log(
             self: 'TelegramClient',
             *args,
-            **kwargs) -> hints.TotalList:
+            **kwargs) -> 'hints.TotalList':
         """
         Same as `iter_admin_log`, but returns a ``list`` instead.
         """
@@ -493,11 +493,11 @@ class ChatMethods(UserMethods):
 
     def action(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            action: typing.Union[str, types.TypeSendMessageAction],
+            entity: 'hints.EntityLike',
+            action: 'typing.Union[str, types.TypeSendMessageAction]',
             *,
             delay: float = 4,
-            auto_cancel: bool = True) -> typing.Union[_ChatAction, typing.Coroutine]:
+            auto_cancel: bool = True) -> 'typing.Union[_ChatAction, typing.Coroutine]':
         """
         Returns a context-manager object to represent a "chat action".
 

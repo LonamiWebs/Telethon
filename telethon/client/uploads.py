@@ -89,23 +89,23 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     async def send_file(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            file: hints.FileLike,
+            entity: 'hints.EntityLike',
+            file: 'hints.FileLike',
             *,
             caption: str = None,
             force_document: bool = False,
-            progress_callback: hints.ProgressCallback = None,
-            reply_to: hints.MessageIDLike = None,
-            attributes: typing.Sequence[types.TypeDocumentAttribute] = None,
-            thumb: hints.FileLike = None,
+            progress_callback: 'hints.ProgressCallback' = None,
+            reply_to: 'hints.MessageIDLike' = None,
+            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
+            thumb: 'hints.FileLike' = None,
             allow_cache: bool = True,
             parse_mode: str = (),
             voice_note: bool = False,
             video_note: bool = False,
-            buttons: hints.MarkupLike = None,
+            buttons: 'hints.MarkupLike' = None,
             silent: bool = None,
             supports_streaming: bool = False,
-            **kwargs) -> types.Message:
+            **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
 
@@ -379,12 +379,12 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
     async def upload_file(
             self: 'TelegramClient',
-            file: hints.FileLike,
+            file: 'hints.FileLike',
             *,
             part_size_kb: float = None,
             file_name: str = None,
             use_cache: type = None,
-            progress_callback: hints.ProgressCallback = None) -> types.TypeInputFile:
+            progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
 

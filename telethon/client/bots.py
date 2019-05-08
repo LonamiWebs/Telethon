@@ -11,11 +11,11 @@ if typing.TYPE_CHECKING:
 class BotMethods(UserMethods):
     async def inline_query(
             self: 'TelegramClient',
-            bot: hints.EntityLike,
+            bot: 'hints.EntityLike',
             query: str,
             *,
             offset: str = None,
-            geo_point: types.GeoPoint = None) -> custom.InlineResults:
+            geo_point: 'types.GeoPoint' = None) -> custom.InlineResults:
         """
         Makes an inline query to the specified bot (e.g. ``@vote New Poll``).
 

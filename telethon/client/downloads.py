@@ -23,8 +23,8 @@ class DownloadMethods(UserMethods):
 
     async def download_profile_photo(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            file: hints.FileLike = None,
+            entity: 'hints.EntityLike',
+            file: 'hints.FileLike' = None,
             *,
             download_big: bool = True) -> typing.Optional[str]:
         """
@@ -128,11 +128,11 @@ class DownloadMethods(UserMethods):
 
     async def download_media(
             self: 'TelegramClient',
-            message: hints.MessageLike,
-            file: hints.FileLike = None,
+            message: 'hints.MessageLike',
+            file: 'hints.FileLike' = None,
             *,
-            thumb: hints.FileLike = None,
-            progress_callback: hints.ProgressCallback = None) -> typing.Optional[str]:
+            thumb: 'hints.FileLike' = None,
+            progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[str]:
         """
         Downloads the given media from a message object.
 
@@ -208,12 +208,12 @@ class DownloadMethods(UserMethods):
 
     async def download_file(
             self: 'TelegramClient',
-            input_location: hints.FileLike,
-            file: hints.OutFileLike = None,
+            input_location: 'hints.FileLike',
+            file: 'hints.OutFileLike' = None,
             *,
             part_size_kb: float = None,
             file_size: int = None,
-            progress_callback: hints.ProgressCallback = None,
+            progress_callback: 'hints.ProgressCallback' = None,
             dc_id: int = None) -> None:
         """
         Low-level method to download files from their input location.

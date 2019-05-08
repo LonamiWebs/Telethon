@@ -252,7 +252,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             *,
             password: str = None,
             bot_token: str = None,
-            phone_code_hash: str = None) -> types.User:
+            phone_code_hash: str = None) -> 'types.User':
         """
         Logs in to Telegram to an existing user or bot account.
 
@@ -327,7 +327,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             last_name: str = '',
             *,
             phone: str = None,
-            phone_code_hash: str = None) -> types.User:
+            phone_code_hash: str = None) -> 'types.User':
         """
         Signs up to Telegram as a new user account.
 
@@ -406,7 +406,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
             self: 'TelegramClient',
             phone: str,
             *,
-            force_sms: bool = False) -> types.auth.SentCode:
+            force_sms: bool = False) -> 'types.auth.SentCode':
         """
         Sends the Telegram code needed to login to the given phone number.
 

@@ -11,8 +11,8 @@ if typing.TYPE_CHECKING:
 class ButtonMethods(UpdateMethods):
     @staticmethod
     def build_reply_markup(
-            buttons: typing.Optional[hints.MarkupLike],
-            inline_only: bool = False) -> typing.Optional[types.TypeReplyMarkup]:
+            buttons: 'typing.Optional[hints.MarkupLike]',
+            inline_only: bool = False) -> 'typing.Optional[types.TypeReplyMarkup]':
         """
         Builds a :tl:`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
         the given buttons.

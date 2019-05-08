@@ -102,7 +102,7 @@ class UserMethods(TelegramBaseClient):
     # region Public methods
 
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
-            -> typing.Union[types.User, types.InputPeerUser]:
+            -> 'typing.Union[types.User, types.InputPeerUser]':
         """
         Gets "me", the current :tl:`User` who is logged in.
 
@@ -159,7 +159,7 @@ class UserMethods(TelegramBaseClient):
 
     async def get_entity(
             self: 'TelegramClient',
-            entity: hints.EntitiesLike) -> hints.Entity:
+            entity: 'hints.EntitiesLike') -> 'hints.Entity':
         """
         Turns the given entity into a valid Telegram :tl:`User`, :tl:`Chat`
         or :tl:`Channel`. You can also pass a list or iterable of entities,
@@ -253,7 +253,7 @@ class UserMethods(TelegramBaseClient):
 
     async def get_input_entity(
             self: 'TelegramClient',
-            peer: hints.EntityLike) -> types.TypeInputPeer:
+            peer: 'hints.EntityLike') -> 'types.TypeInputPeer':
         """
         Turns the given entity into its input entity version.
 
@@ -380,7 +380,7 @@ class UserMethods(TelegramBaseClient):
 
     async def get_peer_id(
             self: 'TelegramClient',
-            peer: hints.EntityLike,
+            peer: 'hints.EntityLike',
             add_mark: bool = True) -> int:
         """
         Gets the ID for the given entity.

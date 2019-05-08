@@ -105,9 +105,9 @@ class DialogMethods(UserMethods):
             self: 'TelegramClient',
             limit: float = None,
             *,
-            offset_date: hints.DateLike = None,
+            offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
-            offset_peer: hints.EntityLike = types.InputPeerEmpty(),
+            offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
             ignore_migrated: bool = False
     ) -> _DialogsIter:
         """
@@ -148,7 +148,7 @@ class DialogMethods(UserMethods):
             ignore_migrated=ignore_migrated
         )
 
-    async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> hints.TotalList:
+    async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
         """
         Same as `iter_dialogs`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
@@ -167,7 +167,7 @@ class DialogMethods(UserMethods):
         # TODO Passing a limit here makes no sense
         return _DraftsIter(self, None)
 
-    async def get_drafts(self: 'TelegramClient') -> hints.TotalList:
+    async def get_drafts(self: 'TelegramClient') -> 'hints.TotalList':
         """
         Same as :meth:`iter_drafts`, but returns a list instead.
         """
@@ -175,7 +175,7 @@ class DialogMethods(UserMethods):
 
     def conversation(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
+            entity: 'hints.EntityLike',
             *,
             timeout: float = 60,
             total_timeout: float = None,

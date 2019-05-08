@@ -298,21 +298,21 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     def iter_messages(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
+            entity: 'hints.EntityLike',
             limit: float = None,
             *,
-            offset_date: hints.DateLike = None,
+            offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
             max_id: int = 0,
             min_id: int = 0,
             add_offset: int = 0,
             search: str = None,
-            filter: typing.Union[types.TypeMessagesFilter, typing.Type[types.TypeMessagesFilter]] = None,
-            from_user: hints.EntityLike = None,
+            filter: 'typing.Union[types.TypeMessagesFilter, typing.Type[types.TypeMessagesFilter]]' = None,
+            from_user: 'hints.EntityLike' = None,
             wait_time: float = None,
-            ids: typing.Union[int, typing.Sequence[int]] = None,
+            ids: 'typing.Union[int, typing.Sequence[int]]' = None,
             reverse: bool = False
-    ) -> typing.Union[_MessagesIter, _IDsIter]:
+    ) -> 'typing.Union[_MessagesIter, _IDsIter]':
         """
         Iterator over the messages for the given chat.
 
@@ -434,7 +434,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             search=search
         )
 
-    async def get_messages(self: 'TelegramClient', *args, **kwargs) -> hints.TotalList:
+    async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
         """
         Same as `iter_messages`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
@@ -475,17 +475,17 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def send_message(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            message: hints.MessageLike = '',
+            entity: 'hints.EntityLike',
+            message: 'hints.MessageLike' = '',
             *,
-            reply_to: typing.Union[int, types.Message] = None,
+            reply_to: 'typing.Union[int, types.Message]' = None,
             parse_mode: typing.Optional[str] = (),
             link_preview: bool = True,
-            file: hints.FileLike = None,
+            file: 'hints.FileLike' = None,
             force_document: bool = False,
             clear_draft: bool = False,
-            buttons: hints.MarkupLike = None,
-            silent: bool = None) -> types.Message:
+            buttons: 'hints.MarkupLike' = None,
+            silent: bool = None) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
 
@@ -636,12 +636,12 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def forward_messages(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            messages: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]],
-            from_peer: hints.EntityLike = None,
+            entity: 'hints.EntityLike',
+            messages: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
+            from_peer: 'hints.EntityLike' = None,
             *,
             silent: bool = None,
-            as_album: bool = None) -> typing.Sequence[types.Message]:
+            as_album: bool = None) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
 
@@ -755,14 +755,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def edit_message(
             self: 'TelegramClient',
-            entity: typing.Union[hints.EntityLike, types.Message],
-            message: hints.MessageLike = None,
+            entity: 'typing.Union[hints.EntityLike, types.Message]',
+            message: 'hints.MessageLike' = None,
             text: str = None,
             *,
             parse_mode: str = (),
             link_preview: bool = True,
-            file: hints.FileLike = None,
-            buttons: hints.MarkupLike = None) -> types.Message:
+            file: 'hints.FileLike' = None,
+            buttons: 'hints.MarkupLike' = None) -> 'types.Message':
         """
         Edits the given message to change its text or media.
 
@@ -867,10 +867,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def delete_messages(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            message_ids: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]],
+            entity: 'hints.EntityLike',
+            message_ids: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
             *,
-            revoke: bool = True) -> typing.Sequence[types.messages.AffectedMessages]:
+            revoke: bool = True) -> 'typing.Sequence[types.messages.AffectedMessages]':
         """
         Deletes the given messages, optionally "for everyone".
 
@@ -924,8 +924,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def send_read_acknowledge(
             self: 'TelegramClient',
-            entity: hints.EntityLike,
-            message: typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]] = None,
+            entity: 'hints.EntityLike',
+            message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = None,
             *,
             max_id: int = None,
             clear_mentions: bool = False) -> bool:

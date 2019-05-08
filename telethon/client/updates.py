@@ -137,7 +137,7 @@ class UpdateMethods(UserMethods):
         return found
 
     def list_event_handlers(self: 'TelegramClient')\
-            -> typing.Sequence[typing.Tuple[callable, EventBuilder]]:
+            -> 'typing.Sequence[typing.Tuple[callable, EventBuilder]]':
         """
         Lists all registered event handlers.
 
