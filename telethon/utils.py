@@ -1162,6 +1162,7 @@ def stripped_photo_to_jpg(stripped):
 
     Ported from https://github.com/telegramdesktop/tdesktop/blob/bec39d89e19670eb436dc794a8f20b657cb87c71/Telegram/SourceFiles/ui/image/image.cpp#L225
     """
+    # NOTE: Changes here should update _stripped_real_length
     if len(stripped) < 3 or stripped[0] != 1:
         return stripped
 
@@ -1170,3 +1171,10 @@ def stripped_photo_to_jpg(stripped):
     header[164] = stripped[1]
     header[166] = stripped[2]
     return bytes(header) + stripped[3:] + footer
+
+
+def _stripped_real_length(stripped):
+    if len(stripped) < 3 or stripped[0] != 1:
+        return len(stripped)
+
+    return len(stripped) + 622

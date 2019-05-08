@@ -18,6 +18,14 @@ telethon\.tl\.custom\.dialog module
     :undoc-members:
     :show-inheritance:
 
+telethon\.tl\.custom\.file module
+---------------------------------
+
+.. automodule:: telethon.tl.custom.file
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 telethon\.tl\.custom\.message module
 ------------------------------------
 

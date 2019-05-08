@@ -3,8 +3,10 @@ from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
+from .file import File
 from .. import TLObject, types, functions
 from ... import utils, errors
+
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
@@ -174,8 +176,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self.action = action
 
         # Convenient storage for custom functions
+        # TODO This is becoming a bit of bloat
         self._client = None
         self._text = None
+        self._file = None
         self._reply_message = None
         self._buttons = None
         self._buttons_flat = None
@@ -369,6 +373,25 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 self._buttons_count = 0
 
         return self._buttons_count
+
+    @property
+    def file(self):
+        """
+        Returns a `File <telethon.tl.custom.file.File>` wrapping the
+        `photo` or `document` in this message. If the media type is different
+        (polls, games, none, etc.), this property will be ``None``.
+
+        This instance lets you easily access other properties, such as
+        `file.id <telethon.tl.custom.file.File.id>`,
+        `file.name <telethon.tl.custom.file.File.name>`,
+        etc., without having to manually inspect the ``document.attributes``.
+        """
+        if not self._file:
+            media = self.photo or self.document
+            if media:
+                self._file = File(media)
+
+        return self._file
 
     @property
     def photo(self):

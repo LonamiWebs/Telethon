@@ -216,6 +216,7 @@ Properties
     forward
     buttons
     button_count
+    file
     photo
     document
     web_preview
@@ -253,6 +254,31 @@ Methods
     download_media
     get_entities_text
     get_buttons
+
+
+File
+====
+
+The `File <telethon.tl.custom.file.File>` type is a wrapper object
+returned by `Message.file <telethon.tl.custom.message.Message.file>`,
+and you can use it to easily access a document's attributes, such as
+its name, bot-API style file ID, etc.
+
+.. currentmodule:: telethon.tl.custom.file.File
+
+.. autosummary::
+    :nosignatures:
+
+    id
+    name
+    width
+    height
+    size
+    duration
+    title
+    performer
+    emoji
+    sticker_set
 
 
 Conversation
