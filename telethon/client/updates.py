@@ -154,6 +154,9 @@ class UpdateMethods(UserMethods):
         This can also be used to forcibly fetch new updates if there are any.
         """
         pts, date = self._state_cache[None]
+        if not pts:
+            return
+
         self.session.catching_up = True
         try:
             while True:
