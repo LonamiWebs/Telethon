@@ -119,7 +119,7 @@ with
 
     TelegramClient('anon', api_id, api_hash, proxy=(socks.SOCKS5, '127.0.0.1', 4444))
 
-(of course, replacing the IP and port with the IP and port of the proxye).
+(of course, replacing the IP and port with the IP and port of the proxy).
 
 The ``proxy=`` argument should be a tuple, a list or a dict,
 consisting of parameters described `in PySocks usage`__.

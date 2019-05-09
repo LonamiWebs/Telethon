@@ -47,12 +47,12 @@ And except them as such:
 
 .. code-block:: python
 
-    import time
     try:
         client.send_message(chat, 'Hi')
-    except FloodWaitError as e:
+    except errors.FloodWaitError as e:
+        # e.seconds is how many seconds you have
+        # to wait before making the request again.
         print('Flood for', e.seconds)
-        time.sleep(e.seconds)
 
 
 My account was deleted/limited when using the library

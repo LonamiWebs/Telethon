@@ -55,7 +55,7 @@ WELCOME = {
 
 READ_FULL = (
     'Please read [Accessing the Full API](https://telethon.readthedocs.io'
-    '/en/latest/extra/advanced-usage/accessing-the-full-api.html)'
+    '/en/latest/concepts/full-api.html)'
 )
 
 SEARCH = (
@@ -68,12 +68,12 @@ RTD = '[Read The Docs!](https://telethon.readthedocs.io)'
 RTFD = '[Read The F* Docs!](https://telethon.readthedocs.io)'
 UPDATES = (
     'Check out [Working with Updates](https://telethon.readthedocs.io'
-    '/en/latest/extra/basic/working-with-updates.html) in the documentation.'
+    '/en/latest/basic/updates.html) in the documentation.'
 )
-DOCS_CLIENT = 'https://telethon.readthedocs.io/en/latest/telethon.client.html#'
+DOCS_CLIENT = 'https://telethon.readthedocs.io/en/latest/modules/client.html#'
 DOCS_MESSAGE = (
     'https://telethon.readthedocs.io/en/latest/'
-    'telethon.tl.custom.html#telethon.tl.custom.message.Message.'
+    'modules/custom.html#telethon.tl.custom.message.Message.'
 )
 
 SPAM = (

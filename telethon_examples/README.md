@@ -116,4 +116,4 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 [`asyncio`]: https://docs.python.org/3/library/asyncio.html
 [`tkinter`]: https://docs.python.org/3/library/tkinter.html
 [tkinter GUI]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/screenshot-gui.jpg
-[`events.NewMessage`]: https://telethon.readthedocs.io/en/stable/telethon.events.html#telethon.events.newmessage.NewMessage
+[`events.NewMessage`]: https://telethon.readthedocs.io/en/latest/modules/events.html#telethon.events.newmessage.NewMessage
