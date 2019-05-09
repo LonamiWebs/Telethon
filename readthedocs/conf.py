@@ -20,14 +20,13 @@
 import re
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath(os.curdir))
 sys.path.insert(0, os.path.abspath(os.pardir))
-
 
 root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
 
 tl_ref_url = 'https://lonamiwebs.github.io/Telethon'
-
 
 # -- General configuration ------------------------------------------------
 
@@ -89,7 +88,7 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'friendly'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -115,7 +114,7 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -186,6 +185,4 @@ texinfo_documents = [
      author, 'Telethon', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
 
