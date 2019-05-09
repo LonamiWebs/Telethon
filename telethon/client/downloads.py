@@ -376,8 +376,13 @@ class DownloadMethods(UserMethods):
 
     def _download_cached_photo_size(self: 'TelegramClient', size, file):
         # No need to download anything, simply write the bytes
+        if isinstance(size, types.PhotoStrippedSize):
+            data = utils.stripped_photo_to_jpg(size.bytes)
+        else:
+            data = size.bytes
+
         if file is bytes:
-            return size.bytes
+            return data
         elif isinstance(file, str):
             helpers.ensure_parent_dir_exists(file)
             f = open(file, 'wb')
@@ -385,9 +390,7 @@ class DownloadMethods(UserMethods):
             f = file
 
         try:
-            f.write(utils.stripped_photo_to_jpg(size.bytes)
-                    if isinstance(size, types.PhotoStrippedSize)
-                    else size.bytes)
+            f.write(data)
         finally:
             if isinstance(file, str):
                 f.close()
