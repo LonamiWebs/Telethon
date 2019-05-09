@@ -232,6 +232,32 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         Returns:
             The `telethon.tl.custom.message.Message` (or messages) containing
             the sent file, or messages if a list of them was passed.
+
+        Example:
+
+            .. code-block:: python
+
+                # Normal files like photos
+                client.send_file(chat, '/my/photos/me.jpg', caption="It's me!")
+                # or
+                client.send_message(chat, "It's me!", file='/my/photos/me.jpg')
+
+                # Voice notes or round videos
+                client.send_file(chat, '/my/songs/song.mp3', voice_note=True)
+                client.send_file(chat, '/my/videos/video.mp4', video_note=True)
+
+                # Custom thumbnails
+                client.send_file(chat, '/my/documents/doc.txt', thumb='photo.jpg')
+
+                # Only documents
+                client.send_file(chat, '/my/photos/photo.png', force_document=True)
+
+                # Albums
+                client.send_file(chat, [
+                    '/my/photos/holiday1.jpg',
+                    '/my/photos/holiday2.jpg',
+                    '/my/drawings/portrait.png'
+                ])
         """
         # i.e. ``None`` was used
         if not file:
@@ -427,6 +453,23 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             :tl:`InputFileBig` if the file size is larger than 10MB,
             `telethon.tl.custom.inputsizedfile.InputSizedFile`
             (subclass of :tl:`InputFile`) otherwise.
+
+        Example:
+
+            .. code-block:: python
+
+                # Photos as photo and document
+                file = client.upload_file('photo.jpg')
+                client.send_file(chat, file)                       # sends as photo
+                client.send_file(chat, file, force_document=True)  # sends as document
+
+                file.name = 'not a photo.jpg'
+                client.send_file(chat, file, force_document=True)  # document, new name
+
+                # As song or as voice note
+                file = client.upload_file('song.ogg')
+                client.send_file(chat, file)                   # sends as song
+                client.send_file(chat, file, voice_note=True)  # sends as voice note
         """
         if isinstance(file, (types.InputFile, types.InputFileBig)):
             return file  # Already uploaded

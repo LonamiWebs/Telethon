@@ -40,13 +40,6 @@ class AuthMethods(MessageParseMethods, UserMethods):
         will be banned otherwise.** See https://telegram.org/tos
         and https://core.telegram.org/api/terms.
 
-        Example usage:
-            >>> client = ...
-            >>> client.start(phone)
-            Please enter the code you received: 12345
-            Please enter your password: *******
-            (You are now logged in)
-
         If the event loop is already running, this method returns a
         coroutine that you should await on your own code; otherwise
         the loop is ran until said coroutine completes.
@@ -91,6 +84,24 @@ class AuthMethods(MessageParseMethods, UserMethods):
         Returns:
             This `TelegramClient`, so initialization
             can be chained with ``.start()``.
+
+        Example:
+            .. code-block:: python
+
+                client = TelegramClient('anon', api_id, api_hash)
+
+                # Starting as a bot account
+                client.start(bot_token=bot_token)
+
+                # Starting as an user account
+                client.start(phone)
+                # Please enter the code you received: 12345
+                # Please enter your password: *******
+                # (You are now logged in)
+
+                # Starting using a context manager (this calls start()):
+                with client:
+                    pass
         """
         if code_callback is None:
             def code_callback():
@@ -452,6 +463,13 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         Returns:
             ``True`` if the operation was successful.
+
+        Example:
+
+            .. code-block:: python
+
+                # Note: you will need to login again!
+                client.log_out()
         """
         try:
             await self(functions.auth.LogOutRequest())

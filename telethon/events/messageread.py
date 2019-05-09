@@ -95,7 +95,7 @@ class MessageRead(EventBuilder):
 
         async def get_messages(self):
             """
-            Returns the list of `telethon.tl.custom.message.Message`
+            Returns the list of `Message <telethon.tl.custom.message.Message>`
             **which contents'** were read.
 
             Use :meth:`is_read` if you need to check whether a message

@@ -56,6 +56,13 @@ class DownloadMethods(UserMethods):
         Returns:
             ``None`` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
+
+        Example:
+
+            .. code-block:: python
+
+                path = client.download_profile_photo('me')
+                print(path)
         """
         # hex(crc32(x.encode('ascii'))) for x in
         # ('User', 'Chat', 'UserFull', 'ChatFull')
@@ -173,6 +180,17 @@ class DownloadMethods(UserMethods):
         Returns:
             ``None`` if no media was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
+
+        Example:
+
+            .. code-block:: python
+
+                path = client.download_media(message)
+                client.download_media(message, filename)
+                # or
+                path = message.download_media()
+                message.download_media(filename)
+
         """
         # TODO This won't work for messageService
         if isinstance(message, types.Message):

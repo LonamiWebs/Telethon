@@ -42,7 +42,7 @@ class StopPropagation(Exception):
 def register(event=None):
     """
     Decorator method to *register* event handlers. This is the client-less
-    `add_event_handler
+    `add_event_handler()
     <telethon.client.updates.UpdateMethods.add_event_handler>` variant.
 
     Note that this method only registers callbacks as handlers,

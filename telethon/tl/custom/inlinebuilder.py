@@ -33,11 +33,11 @@ class InlineBuilder:
             May be ``True`` to indicate that the game will be sent.
 
         buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`, optional):
-            Same as ``buttons`` for `client.send_message
+            Same as ``buttons`` for `client.send_message()
             <telethon.client.messages.MessageMethods.send_message>`.
 
         parse_mode (`str`, optional):
-            Same as ``parse_mode`` for `client.send_message
+            Same as ``parse_mode`` for `client.send_message()
             <telethon.client.messageparse.MessageParseMethods.parse_mode>`.
 
         id (`str`, optional):
@@ -119,7 +119,7 @@ class InlineBuilder:
 
         Args:
             file (`obj`, optional):
-                Same as ``file`` for `client.send_file
+                Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
         """
         try:
@@ -173,7 +173,7 @@ class InlineBuilder:
 
         Args:
             file (`obj`):
-                Same as ``file`` for `client.send_file
+                Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
 
             title (`str`, optional):

@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Telethon'
-copyright = '2017, Lonami'
+copyright = '2017 - 2019, Lonami'
 author = 'Lonami'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -937,11 +937,12 @@ def _encode_telegram_base64(string):
 
 def resolve_bot_file_id(file_id):
     """
-    Given a Bot API-style `file_id`, returns the media it represents.
-    If the `file_id` is not valid, ``None`` is returned instead.
+    Given a Bot API-style `file_id <telethon.tl.custom.file.File.id>`,
+    returns the media it represents. If the `file_id <telethon.tl.custom.file.File.id>`
+    is not valid, ``None`` is returned instead.
 
-    Note that the `file_id` does not have information such as image
-    dimensions or file size, so these will be zero if present.
+    Note that the `file_id <telethon.tl.custom.file.File.id>` does not have information
+    such as image dimensions or file size, so these will be zero if present.
 
     For thumbnails, the photo ID and hash will always be zero.
     """

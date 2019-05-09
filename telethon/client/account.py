@@ -120,7 +120,7 @@ class AccountMethods(UserMethods):
             files: bool = None,
             max_file_size: bool = None) -> 'TelegramClient':
         """
-        Returns a :ref:`TelegramClient` which calls methods behind a takeout session.
+        Returns a :ref:`telethon-client` which calls methods behind a takeout session.
 
         It does so by creating a proxy object over the current client through
         which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
@@ -190,6 +190,20 @@ class AccountMethods(UserMethods):
             max_file_size (`int`):
                 The maximum file size, in bytes, that you plan
                 to download for each message with media.
+
+        Example:
+
+            .. code-block:: python
+
+                from telethon import errors
+
+                try:
+                    with client.takeout() as takeout:
+                        for message in takeout.iter_messages(chat, wait_time=0):
+                            ...  # Do something with the message
+
+                except errors.TakeoutInitDelayError as e:
+                    print('Must wait', e.seconds, 'before takeout')
         """
         request_kwargs = dict(
             contacts=contacts,

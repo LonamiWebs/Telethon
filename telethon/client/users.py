@@ -191,6 +191,27 @@ class UserMethods(TelegramBaseClient):
         Returns:
             :tl:`User`, :tl:`Chat` or :tl:`Channel` corresponding to the
             input entity. A list will be returned if more than one was given.
+
+        Example:
+
+            .. code-block:: python
+
+                from telethon import utils
+
+                me = client.get_entity('me')
+                print(utils.get_display_name(me))
+
+                chat = client.get_input_entity('username')
+                for message in client.iter_messages(chat):
+                    ...
+
+                # Note that you could have used the username directly, but it's
+                # good to use get_input_entity if you will reuse it a lot.
+                for message in client.iter_messages('username'):
+                    ...
+
+                # Note that for this to work the phone number must be in your contacts
+                some_id = client.get_peer_id('+34123456789')
         """
         single = not utils.is_list_like(entity)
         if single:

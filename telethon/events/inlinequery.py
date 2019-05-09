@@ -178,6 +178,20 @@ class InlineQuery(EventBuilder):
                 switch_pm_param (`str`, optional):
                     Optional parameter to start the bot with if
                     `switch_pm` was used.
+
+            Example:
+
+                .. code-block:: python
+
+                    @bot.on(events.InlineQuery)
+                    async def handler(event):
+                        builder = event.builder
+
+                        rev_text = event.text[::-1]
+                        await event.answer([
+                            builder.article('Reverse text', text=rev_text),
+                            builder.photo('/path/to/photo.jpg')
+                        ])
             """
             if self._answered:
                 return

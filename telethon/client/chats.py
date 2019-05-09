@@ -328,6 +328,23 @@ class ChatMethods(UserMethods):
             with an additional ``.participant`` attribute which is the
             matched :tl:`ChannelParticipant` type for channels/megagroups
             or :tl:`ChatParticipants` for normal chats.
+
+        Example:
+
+            .. code-block:: python
+
+                # Show all user IDs in a chat
+                for user in client.iter_participants(chat):
+                    print(user.id)
+
+                # Search by name
+                for user in client.iter_participants(chat, search='name'):
+                    print(user.username)
+
+                # Filter by admins
+                from telethon.tl.types import ChannelParticipantsAdmins
+                for user in client.iter_participants(chat, filter=ChannelParticipantsAdmins):
+                    print(user.first_name)
         """
         return _ParticipantsIter(
             self,
@@ -343,7 +360,7 @@ class ChatMethods(UserMethods):
             *args,
             **kwargs) -> 'hints.TotalList':
         """
-        Same as `iter_participants`, but returns a
+        Same as `iter_participants()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
         """
         return await self.iter_participants(*args, **kwargs).collect()
@@ -457,6 +474,20 @@ class ChatMethods(UserMethods):
 
         Yields:
             Instances of `telethon.tl.custom.adminlogevent.AdminLogEvent`.
+
+        Example:
+
+            .. code-block:: python
+
+                for event in client.iter_admin_log(channel):
+                    if event.changed_title:
+                        print('The title changed from', event.old, 'to', event.new)
+
+                # Get a list of deleted message events which said "heck"
+                events = client.get_admin_log(channel, search='heck', delete=True)
+
+                # Print the old message before it was deleted
+                print(events[0].old)
         """
         return _AdminLogIter(
             self,
@@ -487,7 +518,7 @@ class ChatMethods(UserMethods):
             *args,
             **kwargs) -> 'hints.TotalList':
         """
-        Same as `iter_admin_log`, but returns a ``list`` instead.
+        Same as `iter_admin_log()`, but returns a ``list`` instead.
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
 

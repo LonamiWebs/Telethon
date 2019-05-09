@@ -190,23 +190,23 @@ class UserUpdate(EventBuilder):
 
         @property
         def user(self):
-            """Alias for `sender`."""
+            """Alias for `sender <telethon.tl.custom.sendergetter.SenderGetter.sender>`."""
             return self.sender
 
         async def get_user(self):
-            """Alias for `get_sender`."""
+            """Alias for `get_sender <telethon.tl.custom.sendergetter.SenderGetter.get_sender>`."""
             return await self.get_sender()
 
         @property
         def input_user(self):
-            """Alias for `input_sender`."""
+            """Alias for `input_sender <telethon.tl.custom.sendergetter.SenderGetter.input_sender>`."""
             return self.input_sender
 
         async def get_input_user(self):
-            """Alias for `get_input_sender`."""
+            """Alias for `get_input_sender <telethon.tl.custom.sendergetter.SenderGetter.get_input_sender>`."""
             return await self.get_input_sender()
 
         @property
         def user_id(self):
-            """Alias for `sender_id`."""
+            """Alias for `sender_id <telethon.tl.custom.sendergetter.SenderGetter.sender_id>`."""
             return self.sender_id

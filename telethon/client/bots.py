@@ -39,6 +39,16 @@ class BotMethods(UserMethods):
         Returns:
             A list of `custom.InlineResult
             <telethon.tl.custom.inlineresult.InlineResult>`.
+
+        Example:
+
+            .. code-block:: python
+
+                # Make an inline query to @like
+                results = client.inline_query('like', 'Do you like Telethon?')
+
+                # Send the first result to some chat
+                message = results[0].click('TelethonOffTopic')
         """
         bot = await self.get_input_entity(bot)
         result = await self(functions.messages.GetInlineBotResultsRequest(

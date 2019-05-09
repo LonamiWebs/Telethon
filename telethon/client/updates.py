@@ -117,7 +117,7 @@ class UpdateMethods(UserMethods):
             callback: callable,
             event: EventBuilder = None) -> int:
         """
-        Inverse operation of `add_event_handler`.
+        Inverse operation of `add_event_handler()`.
 
         If no event is given, all events for this callback are removed.
         Returns how many callbacks were removed.

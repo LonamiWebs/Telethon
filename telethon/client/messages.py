@@ -413,6 +413,31 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
             be around 30 seconds per 10 requests, therefore a sleep of 1
             second is the default for this limit (or above).
+
+        Example:
+
+            .. code-block:: python
+
+                # From most-recent to oldest
+                for message in client.iter_messages(chat):
+                    print(message.id, message.text)
+
+                # From oldest to most-recent
+                for message in client.iter_messages(chat, reverse=True):
+                    print(message.id, message.text)
+
+                # Filter by sender
+                for message in client.iter_messages(chat, from_user='me'):
+                    print(message.text)
+
+                # Server-side search with fuzzy text
+                for message in client.iter_messages(chat, search='hello'):
+                    print(message.id)
+
+                # Filter by message type:
+                from telethon.tl.types import InputMessagesFilterPhotos
+                for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
+                    print(message.photo)
         """
 
         if ids is not None:
@@ -436,7 +461,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
     async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
         """
-        Same as `iter_messages`, but returns a
+        Same as `iter_messages()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
 
         If the `limit` is not set, it will be 1 by default unless both
@@ -450,6 +475,21 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         If `ids` is present in the *named* arguments and is not a list,
         a single `Message <telethon.tl.custom.message.Message>` will be
         returned for convenience instead of a list.
+
+        Example:
+
+            .. code-block:: python
+
+                # Get 0 photos and print the total to show how many photos there are
+                from telethon.tl.types import InputMessagesFilterPhotos
+                photos = client.get_messages(chat, 0, filter=InputMessagesFilterPhotos)
+                print(photos.total)
+
+                # Get all the photos
+                photos = client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
+
+                # Get messages by ID:
+                message_1337 = client.get_messages(chats, ids=1337)
         """
         if len(args) == 1 and 'limit' not in kwargs:
             if 'min_id' in kwargs and 'max_id' in kwargs:
@@ -501,6 +541,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         the bot.
 
         Args:
+
             entity (`entity`):
                 To who will it be sent.
 
@@ -556,7 +597,65 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 notify them. Set it to ``True`` to alter this behaviour.
 
         Returns:
+
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
+
+        Example:
+
+            .. code-block:: python
+
+                client.send_message('lonami', 'Thanks for the Telethon library!')
+
+                # Replies and responses
+                message = client.send_message('me', 'Trying out **markdown**')
+                message.reply('Trying replies')
+                message.respond('Trying responses')
+
+                # Default to another parse mode
+                client.parse_mode = 'html'
+
+                client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
+                client.send_message('me', 'An <a href="https://example.com">URL</a>')
+                client.send_message('me', '<code>code</code> and <pre>pre\nblocks</pre>')
+                client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
+
+                # Explicit parse mode
+                # No parse mode by default
+                client.parse_mode = None
+
+                # ...but here I want markdown
+                client.send_message('me', 'Hello, **world**!', parse_mode='md')
+
+                # ...and here I need HTML
+                client.send_message('me', 'Hello, <i>world</i>!', parse_mode='html')
+
+                # If you logged in as a bot account, you can send buttons
+                from telethon import events, Button
+
+                @client.on(events.CallbackQuery)
+                async def callback(event):
+                    await event.edit('Thank you for clicking {}!'.format(event.data))
+
+                # Single inline button
+                client.send_message(chat, 'A single button, with "clk1" as data',
+                                    buttons=Button.inline('Click me', b'clk1'))
+
+                # Matrix of inline buttons
+                client.send_message(chat, 'Pick one from this grid', buttons=[
+                    [Button.inline('Left'), Button.inline('Right')],
+                    [Button.url('Check this site!', 'https://lonamiwebs.github.io')]
+                ])
+
+                # Reply keyboard
+                client.send_message(chat, 'Welcome', buttons=[
+                    Button.text('Thanks!', resize=True, single_use=True),
+                    Button.request_phone('Send phone'),
+                    Button.request_location('Send location')
+                ])
+
+                # Forcing replies or clearing buttons.
+                client.send_message(chat, 'Reply to me', buttons=Button.force_reply())
+                client.send_message(chat, 'Bye Keyboard!', buttons=Button.clear())
         """
         if file is not None:
             return await self.send_file(
@@ -685,6 +784,25 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             Note that if all messages are invalid (i.e. deleted) the call
             will fail with ``MessageIdInvalidError``. If only some are
             invalid, the list will have ``None`` instead of those messages.
+
+        Example:
+
+            .. code-block:: python
+
+                # a single one
+                client.forward_messages(chat, message)
+                # or
+                client.forward_messages(chat, message_id, from_chat)
+                # or
+                message.forward_to(chat)
+
+                # multiple
+                client.forward_messages(chat, messages)
+                # or
+                client.forward_messages(chat, message_ids, from_chat)
+
+                # Forwarding as a copy
+                client.send_message(chat, message)
         """
         single = not utils.is_list_like(messages)
         if single:
@@ -829,6 +947,16 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             The edited `telethon.tl.custom.message.Message`, unless
             `entity` was a :tl:`InputBotInlineMessageID` in which
             case this method returns a boolean.
+
+        Example:
+
+            .. code-block:: python
+
+                client.edit_message(message, 'New text')
+                # or
+                message.edit('New text')
+                # or
+                client.edit_message(chat, message_id, 'New text')
         """
         if isinstance(entity, types.InputBotInlineMessageID):
             text = message
@@ -900,6 +1028,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         Returns:
             A list of :tl:`AffectedMessages`, each item being the result
             for the delete calls of the messages in chunks of 100 each.
+
+        Example:
+
+            .. code-block:: python
+
+                client.delete_messages(chat, messages)
+                # or
+                message.delete()
         """
         if not utils.is_list_like(message_ids):
             message_ids = (message_ids,)
@@ -955,6 +1091,16 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
                 If no message is provided, this will be the only action
                 taken.
+
+        Example:
+
+            .. code-block:: python
+
+                client.send_read_acknowledge(last_message)
+                # or
+                client.send_read_acknowledge(last_message_id)
+                # or
+                client.send_read_acknowledge(messages)
         """
         if max_id is None:
             if not message:

@@ -138,6 +138,21 @@ class DialogMethods(UserMethods):
 
         Yields:
             Instances of `telethon.tl.custom.dialog.Dialog`.
+
+        Example:
+
+            .. code-block:: python
+
+                # Get all open conversation, print the title of the first
+                dialogs = client.get_dialogs()
+                first = dialogs[0]
+                print(first.title)
+
+                # Use the dialog somewhere else
+                client.send_message(first, 'hi')
+
+                # Get drafts
+                drafts = client.get_drafts()
         """
         return _DialogsIter(
             self,
@@ -150,7 +165,7 @@ class DialogMethods(UserMethods):
 
     async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
         """
-        Same as `iter_dialogs`, but returns a
+        Same as `iter_dialogs()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
@@ -169,7 +184,7 @@ class DialogMethods(UserMethods):
 
     async def get_drafts(self: 'TelegramClient') -> 'hints.TotalList':
         """
-        Same as :meth:`iter_drafts`, but returns a list instead.
+        Same as `iter_drafts()`, but returns a list instead.
         """
         return await self.iter_drafts().collect()
 
@@ -257,6 +272,35 @@ class DialogMethods(UserMethods):
 
         Returns:
             A `Conversation <telethon.tl.custom.conversation.Conversation>`.
+
+        Example:
+
+            .. code-block:: python
+
+                # <you> denotes outgoing messages you sent
+                # <usr> denotes incoming response messages
+                with bot.conversation(chat) as conv:
+                    # <you> Hi!
+                    conv.send_message('Hi!')
+
+                    # <usr> Hello!
+                    hello = conv.get_response()
+
+                    # <you> Please tell me your name
+                    conv.send_message('Please tell me your name')
+
+                    # <usr> ?
+                    name = conv.get_response().raw_text
+
+                    while not any(x.isalpha() for x in name):
+                        # <you> Your name didn't have any letters! Try again
+                        conv.send_message("Your name didn't have any letters! Try again")
+
+                        # <usr> Lonami
+                        name = conv.get_response().raw_text
+
+                    # <you> Thanks Lonami!
+                    conv.send_message('Thanks {}!'.format(name))
         """
         return custom.Conversation(
             self,

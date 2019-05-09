@@ -1,29 +1,31 @@
-.. Telethon documentation master file, created by
-   sphinx-quickstart on Fri Nov 17 15:36:11 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+========================
+Telethon's Documentation
+========================
 
-====================================
-Welcome to Telethon's documentation!
-====================================
+.. code-block:: python
+
+   from telethon.sync import TelegramClient, events
+
+   with TelegramClient('name', api_id, api_hash) as client:
+      client.send_message('me', 'Hello, myself!')
+      print(client.download_profile_photo('me'))
+
+      @client.on(events.NewMessage(pattern='(?i).*Hello'))
+      async def handler(event):
+         await event.reply('Hey!')
+
+      client.run_until_disconnected()
 
 
-Pure Python 3 Telegram client library.
-Official Site `here <https://lonamiwebs.github.io/Telethon>`_.
-Please follow the links on the index below to navigate from here,
-or use the menu on the left. Remember to read the :ref:`changelog`
-when you upgrade!
-
-.. important::
-
-    * Are you new here? Jump straight into :ref:`getting-started`!
-    * Looking for available friendly methods? See :ref:`ref-summary`.
-    * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
-    * Need the full API reference? https://lonamiwebs.github.io/Telethon/.
+* Are you new here? Jump straight into :ref:`installation`!
+* Looking for the method reference? See :ref:`client-ref`.
+* Did you upgrade the library? Please read :ref:`changelog`.
+* Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
+* Need the full API reference? https://lonamiwebs.github.io/Telethon/.
 
 
 What is this?
-*************
+-------------
 
 Telegram is a popular messaging application. This library is meant
 to make it easy for you to write Python programs that can interact
@@ -31,93 +33,84 @@ with Telegram. Think of it as a wrapper that has already done the
 heavy job for you, so you can focus on developing an application.
 
 
-.. _installation-and-usage:
+How should I use the documentation?
+-----------------------------------
+
+If you are getting started with the library, you should follow the
+documentation in order by pressing the "Next" button at the bottom-right
+of every page.
+
+You can also use the menu on the left to quickly skip over sections.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Installation and Simple Usage
+    :hidden:
+    :caption: First Steps
 
-   extra/basic/getting-started
-   extra/basic/installation
-   extra/basic/creating-a-client
-   extra/basic/telegram-client
-   extra/reference
-   extra/basic/entities
-   extra/basic/working-with-updates
-   extra/basic/compatibility-and-convenience
-
-
-.. _Advanced-usage:
+    basic/installation
+    basic/signing-in
+    basic/quick-start
+    basic/updates
+    basic/next-steps
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Advanced Usage
+    :hidden:
+    :caption: Quick References
 
-   extra/advanced-usage/accessing-the-full-api
-   extra/advanced-usage/sessions
-   extra/advanced-usage/update-modes
-   extra/advanced-usage/mastering-telethon
-   extra/advanced-usage/mastering-asyncio
-
-
-.. _Examples:
+    quick-references/faq
+    quick-references/client-reference
+    quick-references/events-reference
+    quick-references/objects-reference
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Examples
+    :hidden:
+    :caption: Concepts
 
-   extra/examples/telegram-client
-   extra/examples/working-with-messages
-   extra/examples/chats-and-channels
-   extra/examples/users
-   extra/examples/projects-using-telethon
-
-
-.. _Troubleshooting:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Troubleshooting
-
-   extra/troubleshooting/enable-logging
-   extra/troubleshooting/deleted-limited-or-deactivated-accounts
-   extra/troubleshooting/rpc-errors
-
-
-.. _Developing:
+    concepts/strings
+    concepts/entities
+    concepts/updates
+    concepts/sessions
+    concepts/full-api
+    concepts/errors
+    concepts/asyncio
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Developing
+    :hidden:
+    :caption: Full API Examples
 
-   extra/developing/philosophy.rst
-   extra/developing/test-servers.rst
-   extra/developing/project-structure.rst
-   extra/developing/coding-style.rst
-   extra/developing/understanding-the-type-language.rst
-   extra/developing/tips-for-porting-the-project.rst
-   extra/developing/telegram-api-in-other-languages.rst
-
-
-.. _More:
+    examples/word-of-warning
+    examples/chats-and-channels
+    examples/users
+    examples/working-with-messages
+    examples/projects-using-telethon
 
 .. toctree::
-   :maxdepth: 2
-   :caption: More
+    :hidden:
+    :caption: Developing
 
-   extra/changelog
-   extra/wall-of-shame.rst
-
+    developing/philosophy.rst
+    developing/test-servers.rst
+    developing/project-structure.rst
+    developing/coding-style.rst
+    developing/understanding-the-type-language.rst
+    developing/tips-for-porting-the-project.rst
+    developing/telegram-api-in-other-languages.rst
 
 .. toctree::
-   :caption: Telethon modules
+    :hidden:
+    :caption: Miscellaneous
 
-   modules
+    misc/changelog
+    misc/wall-of-shame.rst
+    misc/compatibility-and-convenience
 
+.. toctree::
+    :hidden:
+    :caption: Telethon Modules
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    modules/client
+    modules/events
+    modules/custom
+    modules/utils
+    modules/errors
+    modules/sessions
+    modules/network

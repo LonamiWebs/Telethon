@@ -784,6 +784,22 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 behave as if it clicked a button with said data. Note
                 that if the message does not have this data, it will
                 ``raise DataInvalidError``.
+
+            Example:
+
+                .. code-block:: python
+
+                    # Click the first button
+                    message.click(0)
+
+                    # Click some row/column
+                    message.click(row, column)
+
+                    # Click by text
+                    message.click(text='👍')
+
+                    # Click by data
+                    message.click(data=b'payload')
         """
         if not self._client:
             return

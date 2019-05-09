@@ -396,6 +396,13 @@ class TelegramBaseClient(abc.ABC):
         If the event loop is already running, this method returns a
         coroutine that you should await on your own code; otherwise
         the loop is ran until said coroutine completes.
+
+        Example:
+
+            .. code-block:: python
+
+                # You don't need to use this if you used "with client"
+                client.disconnect()
         """
         if self._loop.is_running():
             return self._disconnect_coro()
