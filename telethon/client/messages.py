@@ -616,7 +616,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
                 client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
                 client.send_message('me', 'An <a href="https://example.com">URL</a>')
-                client.send_message('me', '<code>code</code> and <pre>pre\nblocks</pre>')
+                # code and pre tags also work, but those break the documentation :)
                 client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
 
                 # Explicit parse mode

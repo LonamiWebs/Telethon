@@ -114,3 +114,4 @@ You can also use the menu on the left to quickly skip over sections.
     modules/errors
     modules/sessions
     modules/network
+    modules/helpers
