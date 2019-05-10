@@ -110,7 +110,12 @@ class Connection(abc.ABC):
         if self._writer:
             self._writer.close()
             if sys.version_info >= (3, 7):
-                await self._writer.wait_closed()
+                try:
+                    await self._writer.wait_closed()
+                except Exception as e:
+                    # Seen OSError: No route to host
+                    # Disconnecting should never raise
+                    self._log.warning('Unhandled %s on disconnect: %s', type(e), e)
 
     def send(self, data):
         """
