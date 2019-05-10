@@ -14,14 +14,15 @@ if typing.TYPE_CHECKING:
 
 class _DialogsIter(RequestIter):
     async def _init(
-            self, offset_date, offset_id, offset_peer, ignore_migrated
+            self, offset_date, offset_id, offset_peer, ignore_migrated, folder
     ):
         self.request = functions.messages.GetDialogsRequest(
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
             limit=1,
-            hash=0
+            hash=0,
+            folder_id=folder
         )
 
         if self.limit <= 0:
@@ -108,7 +109,9 @@ class DialogMethods(UserMethods):
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
             offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
-            ignore_migrated: bool = False
+            ignore_migrated: bool = False,
+            folder: int = None,
+            archived: bool = None
     ) -> _DialogsIter:
         """
         Iterator over the dialogs (open conversations/subscribed channels).
@@ -136,6 +139,25 @@ class DialogMethods(UserMethods):
                 dialogs are returned, but setting this to ``True`` will hide
                 them in the same way official applications do.
 
+            folder (`int`, optional):
+                The folder from which the dialogs should be retrieved.
+
+                If left unspecified, all dialogs (including those from
+                folders) will be returned.
+
+                If set to ``0``, all dialogs that don't belong to any
+                folder will be returned.
+
+                If set to a folder number like ``1``, only those from
+                said folder will be returned.
+
+                By default Telegram assigns the folder ID ``1`` to
+                archived chats, so you should use that if you need
+                to fetch the archived dialogs.
+
+            archived (`bool`, optional):
+                Alias for `folder`. If unspecified, all will be returned,
+                ``False`` implies ``folder=0`` and ``True`` implies ``folder=1``.
         Yields:
             Instances of `telethon.tl.custom.dialog.Dialog`.
 
@@ -153,14 +175,26 @@ class DialogMethods(UserMethods):
 
                 # Get drafts
                 drafts = client.get_drafts()
+
+                # Getting only non-archived dialogs (both equivalent)
+                non_archived = client.get_dialogs(folder=0)
+                non_archived = client.get_dialogs(archived=False)
+
+                # Getting only archived dialogs (both equivalent)
+                archived = client.get_dialogs(folder=1)
+                non_archived = client.get_dialogs(archived=True)
         """
+        if archived is not None:
+            folder = 1 if archived else 0
+
         return _DialogsIter(
             self,
             limit,
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
-            ignore_migrated=ignore_migrated
+            ignore_migrated=ignore_migrated,
+            folder=folder
         )
 
     async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
