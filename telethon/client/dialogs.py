@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import typing
 
@@ -221,6 +222,82 @@ class DialogMethods(UserMethods):
         Same as `iter_drafts()`, but returns a list instead.
         """
         return await self.iter_drafts().collect()
+
+    async def archive(
+            self: 'TelegramClient',
+            entity: 'hints.EntitiesLike' = None,
+            folder: typing.Union[int, typing.Sequence[int]] = 1,
+            *,
+            unpack=None
+    ) -> types.Updates:
+        """
+        Archives (or un-archives) one or more dialogs.
+
+        Args:
+            entity (entities):
+                The entity or list of entities to move to the desired
+                archive folder.
+
+            folder (`int`, optional):
+                The folder to which the dialog should be archived to.
+
+                If you want to "un-archive" it, use ``folder=0``.
+
+                You may also pass a list with the same length as
+                `entities` if you want to control where each entity
+                will go.
+
+            unpack (`int`, optional):
+                If you want to unpack an archived folder, set this
+                parameter to the folder number that you want to
+                delete.
+
+                When you unpack a folder, all the dialogs inside are
+                moved to the folder number 0.
+
+                You can only use this parameter if the other two
+                are not set.
+
+        Returns:
+            The :tl:`Updates` object that the request produces.
+
+        Example:
+
+            .. code-block:: python
+
+                # Archiving the first 5 dialogs
+                dialogs = client.get_dialogs(5)
+                client.archive(dialogs)
+
+                # Un-archiving the third dialog (archiving to folder 0)
+                client.archive(dialog[2], 0)
+
+                # Un-archiving all dialogs
+                client.archive(unpack=1)
+        """
+        if (entity is None) == (unpack is None):
+            raise ValueError('You can only set either entities or unpack, not both')
+
+        if unpack is not None:
+            return await self(functions.folders.DeleteFolderRequest(
+                folder_id=unpack
+            ))
+
+        if not utils.is_list_like(entity):
+            entities = [await self.get_input_entity(entity)]
+        else:
+            entities = await asyncio.gather(
+                *(self.get_input_entity(x) for x in entity), loop=self.loop)
+
+        if not utils.is_list_like(folder):
+            folder = [folder] * len(entities)
+        elif len(entities) != len(folder):
+            raise ValueError('Number of folders does not match number of entities')
+
+        return await self(functions.folders.EditPeerFoldersRequest([
+            types.InputFolderPeer(x, folder_id=y)
+            for x, y in zip(entities, folder)
+        ]))
 
     def conversation(
             self: 'TelegramClient',

@@ -98,6 +98,7 @@ Dialogs
 
     iter_dialogs
     get_dialogs
+    archive
     iter_drafts
     get_drafts
     conversation

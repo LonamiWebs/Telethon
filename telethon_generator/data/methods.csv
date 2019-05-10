@@ -114,6 +114,8 @@ contacts.search,user,QUERY_TOO_SHORT SEARCH_QUERY_EMPTY Timeout
 contacts.toggleTopPeers,user,
 contacts.unblock,user,CONTACT_ID_INVALID
 contest.saveDeveloperInfo,both,
+folders.deleteFolder,user,FOLDER_ID_EMPTY
+folders.editPeerFolders,user,FOLDER_ID_INVALID
 help.acceptTermsOfService,user,
 help.editUserInfo,user,USER_INVALID
 help.getAppChangelog,user,
