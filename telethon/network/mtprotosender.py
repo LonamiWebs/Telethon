@@ -251,12 +251,17 @@ class MTProtoSender:
         self._log.info('Connection to %s complete!', self._connection)
 
     async def _disconnect(self, error=None):
+        if self._connection is None:
+            self._log.info('Not disconnecting (already have no connection)')
+            return
+
         self._log.info('Disconnecting from %s...', self._connection)
         self._user_connected = False
         try:
             self._log.debug('Closing current connection...')
             await self._connection.disconnect()
         finally:
+            self._connection = None
             self._log.debug('Cancelling {} pending message(s)...'
                             .format(len(self._pending_state)))
             for state in self._pending_state.values():
