@@ -611,5 +611,69 @@ class ChatMethods(UserMethods):
 
         return _ChatAction(
             self, entity, action, delay=delay, auto_cancel=auto_cancel)
+    
+    async def edit_admin(self, entity, user, change_info=None, post_messages=None, edit_messages=None,
+                         delete_messages=None, ban_users=None, invite_users=None, pin_messages=None, add_admins=None, is_admin=None):
+        """
+        Edits admin permissions for the given entity
+        will raise an error if wrong comibnation of rights are given
 
+        :param entity (`entity`):
+            either a channel or a supergroup or a chat
+
+        :param user (`entity`):
+            the user to be promoted
+
+        :param change_info (`bool`, optional):
+            wether the user will be able to change info. works in channels and supergrous.
+
+        :param post_messages (`bool`, optional):
+            wether the user will be able to post in the channel. only works in channels.
+
+        :param edit_messages (`bool`, optional):
+            wether the user will be able to edit messages in the channel. only works in channels.
+
+        :param delete_messages (`bool`, optional):
+            wether the user will be able to delete messages. works in channels and supergroups.
+
+        :param ban_users (`bool`, optional):
+            wether the user will be able to ban users. works in channels and supergroups.
+
+        :param invite_users (`bool`, optional):
+            wether the user will be able to invite users. Needs some testing.
+
+        :param pin_messages (`bool`, optional):
+            wether the user will be able to pin messages. works in channels and supergroups.
+
+        :param add_admins (`bool`, optional):
+            wether the user will be able to add admins. works in channels and supergroups.
+
+        :param is_admin (`bool`, optional):
+            wether the user will be an admin in the chat. only works in chats.
+
+        :return: returns None
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+        if not isinstance(user, types.InputPeerUser):
+            raise ValueError("You must pass a user")
+        if isinstance(entity, types.InputPeerChannel):
+            await self(functions.channels.EditAdminRequest(
+                entity,
+                user,
+                types.ChatAdminRights(
+                    change_info=change_info,
+                    post_messages=post_messages,
+                    edit_messages=edit_messages,
+                    delete_messages=delete_messages,
+                    ban_users=ban_users,
+                    invite_users=invite_users,
+                    pin_messages=pin_messages,
+                    add_admins=add_admins
+                )
+            ))
+        elif isinstance(entity, types.InputPeerChat):
+            await self(functions.messages.EditChatAdminRequest(entity,user,is_admin=is_admin))
+        else:
+            raise ValueError("you must pass either a channel or a supergroup or a normal group")
     # endregion
