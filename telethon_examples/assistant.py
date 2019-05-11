@@ -378,9 +378,18 @@ bot.start(bot_token=TOKEN)
 #       the now downloaded `plugins/` folder). We try importing them so
 #       that the example runs fine without them, but optionally load them.
 try:
+    # Standalone script assistant.py with folder plugins/
     import plugins
     plugins.init(bot)
 except ImportError:
-    pass
+    try:
+        # Running as a module with `python -m assistant` and structure:
+        # assistant/
+        #   __main__.py (this file)
+        #   plugins/    (cloned)
+        from . import plugins
+        plugins.init(bot)
+    except ImportError:
+        plugins = None
 
 bot.run_until_disconnected()
