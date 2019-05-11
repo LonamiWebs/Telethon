@@ -75,6 +75,11 @@ This example is the actual bot account [@TelethonianBot] running in the
 [official Telethon's chat] to help people out. The file is a bit big and
 assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
+In addition, it has optional plugins, which may be useful for your own code.
+The plugins can be found at https://github.com/Lonami/TelethonianBotExt and
+should be cloned into a `plugins` folder next to `assistant.py` for them to
+work.
+
 ### [`interactive_telegram_client.py`]
 
 * Usable as: **user**.
