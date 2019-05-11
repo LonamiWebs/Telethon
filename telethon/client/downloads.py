@@ -139,7 +139,7 @@ class DownloadMethods(UserMethods):
             file: 'hints.FileLike' = None,
             *,
             thumb: 'hints.FileLike' = None,
-            progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[str]:
+            progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
         """
         Downloads the given media from a message object.
 
@@ -232,7 +232,7 @@ class DownloadMethods(UserMethods):
             part_size_kb: float = None,
             file_size: int = None,
             progress_callback: 'hints.ProgressCallback' = None,
-            dc_id: int = None) -> None:
+            dc_id: int = None) -> typing.Optional[typing.Union[str, bytes]]:
         """
         Low-level method to download files from their input location.
 

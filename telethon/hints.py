@@ -45,7 +45,8 @@ FileLike = typing.Union[
     bytes,
     io.IOBase,
     types.TypeMessageMedia,
-    types.TypeInputFile
+    types.TypeInputFile,
+    types.TypeInputFileLocation
 ]
 
 OutFileLike = typing.Union[
