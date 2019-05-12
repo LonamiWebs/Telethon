@@ -53,7 +53,7 @@ USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(joinchat/)?'
 )
 TG_JOIN_RE = re.compile(
-    r'tg://(join)?invite='
+    r'tg://(join)\?invite='
 )
 
 # The only shorter-than-five-characters usernames are those used for some
