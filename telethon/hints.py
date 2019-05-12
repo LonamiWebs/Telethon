@@ -1,5 +1,4 @@
 import datetime
-import io
 import typing
 
 from . import helpers
@@ -35,6 +34,8 @@ TotalList = helpers.TotalList
 DateLike = typing.Optional[typing.Union[float, datetime.datetime, datetime.date, datetime.timedelta]]
 
 
+# Note: we can't use `io.BytesIO` directly due to a bug in
+# Python 3.5.2's `typing`: https://github.com/python/typing/issues/266
 LocalPath = str
 ExternalUrl = str
 BotFileID = str
@@ -43,7 +44,7 @@ FileLike = typing.Union[
     ExternalUrl,
     BotFileID,
     bytes,
-    io.IOBase,
+    typing.BinaryIO,
     types.TypeMessageMedia,
     types.TypeInputFile,
     types.TypeInputFileLocation
@@ -52,7 +53,7 @@ FileLike = typing.Union[
 OutFileLike = typing.Union[
     str,
     typing.Type[bytes],
-    io.IOBase
+    typing.BinaryIO
 ]
 
 MessageLike = typing.Union[str, types.Message]
