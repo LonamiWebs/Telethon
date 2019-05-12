@@ -30,15 +30,13 @@ class Conversation(ChatGetter):
     def __init__(self, client, input_chat,
                  *, timeout, total_timeout, max_messages,
                  exclusive, replies_are_responses):
+        # This call resets the client
+        ChatGetter.__init__(self, input_chat=input_chat)
+
         self._id = Conversation._id_counter
         Conversation._id_counter += 1
 
         self._client = client
-        self._chat = None
-        self._input_chat = input_chat
-        self._chat_peer = None
-        self._broadcast = None
-
         self._timeout = timeout
         self._total_timeout = total_timeout
         self._total_due = None

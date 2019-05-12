@@ -101,9 +101,7 @@ class UserUpdate(EventBuilder):
                 # We need the client to actually figure out its type.
                 super().__init__(chat_id)
 
-            self._sender_id = user_id
-            self._input_sender = None
-            self._sender = None
+            SenderGetter.__init__(self, user_id)
 
             self.online = None if status is None else \
                 isinstance(status, types.UserStatusOnline)

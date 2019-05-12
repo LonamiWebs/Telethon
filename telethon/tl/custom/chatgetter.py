@@ -9,14 +9,13 @@ class ChatGetter(abc.ABC):
     Helper base class that introduces the `chat`, `input_chat`
     and `chat_id` properties and `get_chat` and `get_input_chat`
     methods.
-
-    Subclasses **must** have the following private members: `_chat`,
-    `_input_chat`, `_chat_peer`, `_broadcast` and `_client`. As an end
-    user, you should not worry about this.
     """
-    def __init__(self):
-        self._chat = self._input_chat = self._chat_peer = \
-            self._client = self._broadcast = None
+    def __init__(self, chat_peer=None, *, input_chat=None, chat=None, broadcast=None):
+        self._chat_peer = chat_peer
+        self._input_chat = input_chat
+        self._chat = chat
+        self._broadcast = broadcast
+        self._client = None
 
     @property
     def chat(self):

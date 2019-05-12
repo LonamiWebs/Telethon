@@ -95,11 +95,9 @@ class CallbackQuery(EventBuilder):
         """
         def __init__(self, query, peer, msg_id):
             super().__init__(peer, msg_id=msg_id)
+            SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.data_match = None
-            self._sender_id = query.user_id
-            self._input_sender = None
-            self._sender = None
             self._message = None
             self._answered = False
 

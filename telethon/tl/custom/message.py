@@ -184,27 +184,25 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._buttons = None
         self._buttons_flat = None
         self._buttons_count = None
-        self._sender_id = from_id
-        self._sender = None
-        self._input_sender = None
         self._via_bot = None
         self._via_input_bot = None
         self._action_entities = None
 
         if not out and isinstance(to_id, types.PeerUser):
-            self._chat_peer = types.PeerUser(from_id)
+            chat_peer = types.PeerUser(from_id)
             if from_id == to_id.user_id:
                 self.out = not self.fwd_from  # Patch out in our chat
         else:
-            self._chat_peer = to_id
+            chat_peer = to_id
 
-        if post and not from_id and self._chat_peer:
+        # Note that these calls would reset the client
+        ChatGetter.__init__(self, chat_peer, broadcast=post)
+        SenderGetter.__init__(self, from_id)
+
+        if post and not from_id and chat_peer:
             # If the message comes from a Channel, let the sender be it
-            self._sender_id = utils.get_peer_id(self._chat_peer)
+            self._sender_id = utils.get_peer_id(chat_peer)
 
-        self._broadcast = post
-        self._chat = None
-        self._input_chat = None
         self._forward = None
 
     def _finish_init(self, client, entities, input_chat):

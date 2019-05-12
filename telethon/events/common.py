@@ -134,11 +134,10 @@ class EventCommon(ChatGetter, abc.ABC):
     _event_name = 'Event'
 
     def __init__(self, chat_peer=None, msg_id=None, broadcast=False):
+        super().__init__(self, chat_peer, broadcast=broadcast)
         self._entities = {}
         self._client = None
-        self._chat_peer = chat_peer
         self._message_id = msg_id
-        self._broadcast = broadcast
         self.original_update = None
 
     def _set_client(self, client):

@@ -80,12 +80,10 @@ class InlineQuery(EventBuilder):
         """
         def __init__(self, query):
             super().__init__(chat_peer=types.PeerUser(query.user_id))
+            SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.pattern_match = None
             self._answered = False
-            self._sender_id = query.user_id
-            self._input_sender = None
-            self._sender = None
 
         def _set_client(self, client):
             super()._set_client(client)

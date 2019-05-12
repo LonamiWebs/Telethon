@@ -28,17 +28,17 @@ class Forward(ChatGetter, SenderGetter):
         self._client = client
         self.original_fwd = original
 
-        self._sender_id = original.from_id
-        self._sender, self._input_sender = utils._get_entity_pair(
+        sender, input_sender = utils._get_entity_pair(
             original.from_id, entities, client._entity_cache)
 
-        self._broadcast = None
-        if original.channel_id:
-            self._chat_peer = types.PeerChannel(original.channel_id)
-
-            self._chat, self._input_chat = utils._get_entity_pair(
-                 self.chat_id, entities, client._entity_cache)
+        if not original.channel_id:
+            peer = chat = input_chat = None
         else:
-            self._chat = self._input_chat = self._chat_peer = None
+            peer = types.PeerChannel(original.channel_id)
+            chat, input_chat = utils._get_entity_pair(
+                 utils.get_peer_id(peer), entities, client._entity_cache)
+
+        ChatGetter.__init__(self, peer, chat=chat, input_chat=input_chat)
+        SenderGetter.__init__(self, original.from_id, sender=sender, input_sender=input_sender)
 
     # TODO We could reload the message

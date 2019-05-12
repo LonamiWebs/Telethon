@@ -6,14 +6,12 @@ class SenderGetter(abc.ABC):
     Helper base class that introduces the `sender`, `input_sender`
     and `sender_id` properties and `get_sender` and `get_input_sender`
     methods.
-
-    Subclasses **must** have the following private members: `_sender`,
-    `_input_sender`, `_sender_id` and `_client`. As an end user, you
-    should not worry about this.
     """
-    def __init__(self):
-        self._sender = self._input_sender = self._sender_id = \
-            self._client = None
+    def __init__(self, sender_id=None, *, sender=None, input_sender=None):
+        self._sender_id = sender_id
+        self._sender = sender
+        self._input_sender = input_sender
+        self._client = None
 
     @property
     def sender(self):
