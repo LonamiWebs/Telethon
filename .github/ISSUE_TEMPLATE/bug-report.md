@@ -7,10 +7,6 @@ assignees: ''
 
 ---
 
-QUESTIONS ARE NOT BUGS AND DON'T BELONG HERE.
-
-If you have a question, ask in https://stackoverflow.com or find the link for the Telegram group in the description of https://t.me/TelethonUpdates.
-
 **Checklist**
 * [ ] The error is in the library's code, and not in my own.
 * [ ] I have searched for this issue before posting it and there isn't a duplicate.
