@@ -142,18 +142,23 @@ class MessageParseMethods(UserMethods):
 
         random_id = request if isinstance(request, int) else request.random_id
         if not utils.is_list_like(random_id):
-            if random_id in random_to_id:
-                return id_to_message[random_to_id[random_id]]
-            else:
-                return None
-        else:
-            # ``rnd in random_to_id`` is needed because trying to forward only
-            # deleted messages causes `MESSAGE_ID_INVALID`, but forwarding
-            # valid and invalid messages in the same call makes the call
-            # succeed, although the API won't return those messages thus
-            # `random_to_id[rnd]` would `KeyError`.
-            return [id_to_message[random_to_id[rnd]]
-                    if rnd in random_to_id else None
-                    for rnd in random_id]
+            msg = id_to_message.get(random_to_id.get(random_id))
+            if not msg:
+                self._log[__name__].warning(
+                    'Request %s had missing message mapping %s', request, result)
+
+            return msg
+
+        try:
+            return [id_to_message[random_to_id[rnd]] for rnd in random_id]
+        except KeyError:
+            # Sometimes forwards fail (`MESSAGE_ID_INVALID` if a message gets
+            # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
+            # Telegram), in which case we get some "missing" message mappings.
+            # Log them with the hope that we can better work around them.
+            self._log[__name__].warning(
+                'Request %s had missing message mappings %s', request, result)
+
+            return [id_to_message.get(random_to_id.get(rnd)) for rnd in random_to_id]
 
     # endregion

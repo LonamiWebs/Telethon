@@ -270,4 +270,5 @@ WALLPAPER_INVALID,400,The input wallpaper was not valid
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty
+WORKER_BUSY_TOO_LONG_RETRY,500,Telegram workers are too busy to respond immediately
 YOU_BLOCKED_USER,400,You blocked this user
