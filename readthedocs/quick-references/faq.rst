@@ -141,6 +141,7 @@ Or:
         #    ^^^^^ note the await
         print(me.username)
 
+This error happens frequently when trying to run Telethon-enabled code inside a Python environment like Anaconda/Spyder. Try running the code in a normal commandline instead.
 
 sqlite3.OperationalError: database is locked
 ============================================
@@ -162,6 +163,7 @@ reboot your system.
 If you really dislike SQLite, use a different session storage. There
 is an entire section covering that at :ref:`sessions`.
 
+This error also happens frequently when trying to run Telethon-enabled code inside a Python environment like Anaconda/Spyder. Try running the code in a normal commandline instead.
 
 event.chat or event.sender is None
 ==================================
