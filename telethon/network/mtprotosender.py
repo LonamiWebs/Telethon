@@ -196,17 +196,16 @@ class MTProtoSender:
         self._log.info('Connecting to %s...', self._connection)
         for attempt in retry_range(self._retries):
             try:
-                self._log.debug('Connection attempt {}...'.format(attempt))
+                self._log.debug('Connection attempt %d...', attempt)
                 await self._connection.connect(timeout=self._connect_timeout)
             except (IOError, asyncio.TimeoutError) as e:
-                self._log.warning('Attempt {} at connecting failed: {}: {}'
-                                  .format(attempt, type(e).__name__, e))
+                self._log.warning('Attempt %d at connecting failed: %s: %s',
+                                  attempt, type(e).__name__, e)
                 await asyncio.sleep(self._delay)
             else:
                 break
         else:
-            raise ConnectionError('Connection to Telegram failed {} time(s)'
-                                  .format(attempt))
+            raise ConnectionError('Connection to Telegram failed %d time(s)', attempt)
 
         self._log.debug('Connection success!')
         if not self.auth_key:
@@ -227,12 +226,10 @@ class MTProtoSender:
 
                     break
                 except (SecurityError, AssertionError) as e:
-                    self._log.warning('Attempt {} at new auth_key failed: {}'
-                                      .format(attempt, e))
+                    self._log.warning('Attempt %d at new auth_key failed: %s', attempt, e)
                     await asyncio.sleep(self._delay)
             else:
-                e = ConnectionError('auth_key generation failed {} time(s)'
-                                    .format(attempt))
+                e = ConnectionError('auth_key generation failed %d time(s)', attempt)
                 await self._disconnect(error=e)
                 raise e
 
@@ -262,8 +259,7 @@ class MTProtoSender:
             await self._connection.disconnect()
         finally:
             self._connection = None
-            self._log.debug('Cancelling {} pending message(s)...'
-                            .format(len(self._pending_state)))
+            self._log.debug('Cancelling %d pending message(s)...', len(self._pending_state))
             for state in self._pending_state.values():
                 if error and not state.future.done():
                     state.future.set_exception(error)
@@ -332,8 +328,7 @@ class MTProtoSender:
 
                 break
         else:
-            self._log.error('Automatic reconnection failed {} time(s)'
-                            .format(attempt))
+            self._log.error('Automatic reconnection failed %d time(s)', attempt)
             await self._disconnect(error=last_error.with_traceback(None))
 
     def _start_reconnect(self, error):
@@ -377,7 +372,7 @@ class MTProtoSender:
                 continue
 
             self._log.debug('Encrypting %d message(s) in %d bytes for sending',
-                          len(batch), len(data))
+                            len(batch), len(data))
 
             data = self._state.encrypt_message_data(data)
             try:
@@ -419,13 +414,13 @@ class MTProtoSender:
             except TypeNotFoundError as e:
                 # Received object which we don't know how to deserialize
                 self._log.info('Type %08x not found, remaining data %r',
-                             e.invalid_constructor_id, e.remaining)
+                               e.invalid_constructor_id, e.remaining)
                 continue
             except SecurityError as e:
                 # A step while decoding had the incorrect data. This message
                 # should not be considered safe and it should be ignored.
                 self._log.warning('Security error while unpacking a '
-                                'received message: %s', e)
+                                  'received message: %s', e)
                 continue
             except BufferError as e:
                 if isinstance(e, InvalidBufferError) and e.code == 404:
@@ -497,7 +492,7 @@ class MTProtoSender:
         rpc_result = message.obj
         state = self._pending_state.pop(rpc_result.req_msg_id, None)
         self._log.debug('Handling RPC result for message %d',
-                      rpc_result.req_msg_id)
+                        rpc_result.req_msg_id)
 
         if not state:
             # TODO We should not get responses to things we never sent
@@ -509,8 +504,7 @@ class MTProtoSender:
                     if not isinstance(reader.tgread_object(), upload.File):
                         raise ValueError('Not an upload.File')
             except (TypeNotFoundError, ValueError):
-                self._log.info('Received response without parent request: {}'
-                               .format(rpc_result.body))
+                self._log.info('Received response without parent request: %s', rpc_result.body)
             return
 
         if rpc_result.error:
@@ -549,8 +543,7 @@ class MTProtoSender:
             await self._process_message(message)
 
     async def _handle_update(self, message):
-        self._log.debug('Handling update {}'
-                        .format(message.obj.__class__.__name__))
+        self._log.debug('Handling update %s', message.obj.__class__.__name__)
         if self._update_callback:
             self._update_callback(message.obj)
 
