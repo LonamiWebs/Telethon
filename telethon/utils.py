@@ -947,7 +947,7 @@ def resolve_bot_file_id(file_id):
     For thumbnails, the photo ID and hash will always be zero.
     """
     data = _rle_decode(_decode_telegram_base64(file_id))
-    if not data or data[-1] == b'\x02':
+    if not data or data[-1] != 2:
         return None
 
     data = data[:-1]
