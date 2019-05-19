@@ -21,6 +21,7 @@ Telethon's Documentation
 * Looking for the method reference? See :ref:`client-ref`.
 * Did you upgrade the library? Please read :ref:`changelog`.
 * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
+* Coming from Bot API or want to create new bots? See :ref:`botapi`.
 * Need the full API reference? https://lonamiwebs.github.io/Telethon/.
 
 
@@ -71,6 +72,7 @@ You can also use the menu on the left to quickly skip over sections.
     concepts/sessions
     concepts/full-api
     concepts/errors
+    concepts/botapi-vs-mtproto
     concepts/asyncio
 
 .. toctree::
