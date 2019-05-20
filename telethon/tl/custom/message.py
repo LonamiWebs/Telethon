@@ -268,7 +268,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         The message text, formatted using the client's default
         parse mode. Will be ``None`` for :tl:`MessageService`.
         """
-        if self._text is None and self._client:
+        if self._text is None and self._client and self._client.parse_mode:
             self._text = self._client.parse_mode.unparse(
                 self.message, self.entities)
 
