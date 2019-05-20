@@ -109,11 +109,11 @@ class _ParticipantsIter(RequestIter):
         if search and (filter
                        or not isinstance(entity, types.InputPeerChannel)):
             # We need to 'search' ourselves unless we have a PeerChannel
-            search = search.lower()
+            search = search.casefold()
 
             self.filter_entity = lambda ent: (
-                search in utils.get_display_name(ent).lower() or
-                search in (getattr(ent, 'username', '') or None).lower()
+                search in utils.get_display_name(ent).casefold() or
+                search in (getattr(ent, 'username', None) or '').casefold()
             )
         else:
             self.filter_entity = lambda ent: True
