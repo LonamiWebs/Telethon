@@ -34,7 +34,7 @@ class TelegramBaseClient(abc.ABC):
     basic stuff like connecting, switching data center, etc, and
     leaves the `__call__` unimplemented.
 
-    Args:
+    Arguments
         session (`str` | `telethon.sessions.abstract.Session`, `None`):
             The file name of the session file to be used if a string is
             given (it may be a full path), or the Session instance to be
@@ -346,6 +346,18 @@ class TelegramBaseClient(abc.ABC):
     def loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
         """
         Property with the ``asyncio`` event loop used by this client.
+
+        Example
+            .. code-block:: python
+
+                # Download media in the background
+                task = client.loop_create_task(message.download_media())
+
+                # Do some work
+                ...
+
+                # Join the task (wait for it to complete)
+                await task
         """
         return self._loop
 
@@ -353,6 +365,15 @@ class TelegramBaseClient(abc.ABC):
     def disconnected(self: 'TelegramClient') -> asyncio.Future:
         """
         Property with a ``Future`` that resolves upon disconnection.
+
+        Example
+            .. code-block:: python
+
+                # Wait for a disconnection to occur
+                try:
+                    await client.disconnected
+                except OSError:
+                    print('Error on disconnect')
         """
         return self._sender.disconnected
 
@@ -363,6 +384,14 @@ class TelegramBaseClient(abc.ABC):
     async def connect(self: 'TelegramClient') -> None:
         """
         Connects to Telegram.
+
+        Example
+            .. code-block:: python
+
+                try:
+                    client.connect()
+                except OSError:
+                    print('Failed to connect')
         """
         await self._sender.connect(self._connection(
             self.session.server_address,
@@ -385,6 +414,12 @@ class TelegramBaseClient(abc.ABC):
         Returns ``True`` if the user has connected.
 
         This method is **not** asynchronous (don't use ``await`` on it).
+
+        Example
+            .. code-block:: python
+
+                while client.is_connected():
+                    await asyncio.sleep(1)
         """
         sender = getattr(self, '_sender', None)
         return sender and sender.is_connected()
@@ -397,8 +432,7 @@ class TelegramBaseClient(abc.ABC):
         coroutine that you should await on your own code; otherwise
         the loop is ran until said coroutine completes.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # You don't need to use this if you used "with client"

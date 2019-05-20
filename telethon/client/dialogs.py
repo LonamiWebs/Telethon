@@ -117,7 +117,7 @@ class DialogMethods(UserMethods):
         """
         Iterator over the dialogs (open conversations/subscribed channels).
 
-        Args:
+        Arguments
             limit (`int` | `None`):
                 How many dialogs to be retrieved as maximum. Can be set to
                 ``None`` to retrieve all dialogs. Note that this may take
@@ -159,31 +159,15 @@ class DialogMethods(UserMethods):
             archived (`bool`, optional):
                 Alias for `folder`. If unspecified, all will be returned,
                 ``False`` implies ``folder=0`` and ``True`` implies ``folder=1``.
-        Yields:
+        Yields
             Instances of `telethon.tl.custom.dialog.Dialog`.
 
-        Example:
-
+        Example
             .. code-block:: python
 
-                # Get all open conversation, print the title of the first
-                dialogs = client.get_dialogs()
-                first = dialogs[0]
-                print(first.title)
-
-                # Use the dialog somewhere else
-                client.send_message(first, 'hi')
-
-                # Get drafts
-                drafts = client.get_drafts()
-
-                # Getting only non-archived dialogs (both equivalent)
-                non_archived = client.get_dialogs(folder=0)
-                non_archived = client.get_dialogs(archived=False)
-
-                # Getting only archived dialogs (both equivalent)
-                archived = client.get_dialogs(folder=1)
-                non_archived = client.get_dialogs(archived=True)
+                # Print all dialog IDs and the title, nicely formatted
+                for dialog in client.iter_dialogs():
+                    print('{:>14}: {}'.format(dialog.id, dialog.title))
         """
         if archived is not None:
             folder = 1 if archived else 0
@@ -202,6 +186,25 @@ class DialogMethods(UserMethods):
         """
         Same as `iter_dialogs()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
+
+        Example
+            .. code-block:: python
+
+                # Get all open conversation, print the title of the first
+                dialogs = client.get_dialogs()
+                first = dialogs[0]
+                print(first.title)
+
+                # Use the dialog somewhere else
+                client.send_message(first, 'hi')
+
+                # Getting only non-archived dialogs (both equivalent)
+                non_archived = client.get_dialogs(folder=0)
+                non_archived = client.get_dialogs(archived=False)
+
+                # Getting only archived dialogs (both equivalent)
+                archived = client.get_dialogs(folder=1)
+                non_archived = client.get_dialogs(archived=True)
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
 
@@ -213,6 +216,13 @@ class DialogMethods(UserMethods):
         You can call `telethon.tl.custom.draft.Draft.set_message`
         to change the message or `telethon.tl.custom.draft.Draft.delete`
         among other things.
+
+        Example
+            .. code-block:: python
+
+                # Clear all drafts
+                for draft in client.get_drafts():
+                    draft.delete()
         """
         # TODO Passing a limit here makes no sense
         return _DraftsIter(self, None)
@@ -220,6 +230,13 @@ class DialogMethods(UserMethods):
     async def get_drafts(self: 'TelegramClient') -> 'hints.TotalList':
         """
         Same as `iter_drafts()`, but returns a list instead.
+
+        Example
+            .. code-block:: python
+
+                # Get drafts, print the text of the first
+                drafts = client.get_drafts()
+                print(drafts[0].text)
         """
         return await self.iter_drafts().collect()
 
@@ -233,7 +250,7 @@ class DialogMethods(UserMethods):
         """
         Archives (or un-archives) one or more dialogs.
 
-        Args:
+        Arguments
             entity (entities):
                 The entity or list of entities to move to the desired
                 archive folder.
@@ -258,11 +275,10 @@ class DialogMethods(UserMethods):
                 You can only use this parameter if the other two
                 are not set.
 
-        Returns:
+        Returns
             The :tl:`Updates` object that the request produces.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Archiving the first 5 dialogs
@@ -316,7 +332,7 @@ class DialogMethods(UserMethods):
         with them, but rather a way to easily send messages and await for
         responses or other reactions. Refer to its documentation for more.
 
-        Args:
+        Arguments
             entity (`entity`):
                 The entity with which a new conversation should be opened.
 
@@ -381,11 +397,10 @@ class DialogMethods(UserMethods):
                 With the setting disabled, both ``msg2`` and ``msg3`` will
                 be ``'Hi!'`` since one is a response and also a reply.
 
-        Returns:
+        Returns
             A `Conversation <telethon.tl.custom.conversation.Conversation>`.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # <you> denotes outgoing messages you sent

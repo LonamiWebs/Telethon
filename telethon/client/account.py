@@ -127,13 +127,6 @@ class AccountMethods(UserMethods):
         them. In other words, returns the current client modified so that
         requests are done as a takeout:
 
-        >>> from telethon.sync import TelegramClient
-        >>>
-        >>> with TelegramClient(...) as client:
-        >>>     with client.takeout() as takeout:
-        >>>         client.get_messages('me')  # normal call
-        >>>         takeout.get_messages('me')  # wrapped through takeout
-
         Some of the calls made through the takeout session will have lower
         flood limits. This is useful if you want to export the data from
         conversations or mass-download media, since the rate limits will
@@ -159,7 +152,7 @@ class AccountMethods(UserMethods):
         preserved for future usage as `client.session.takeout_id
         <telethon.sessions.abstract.Session.takeout_id>`.
 
-        Args:
+        Arguments
             finalize (`bool`):
                 Whether the takeout session should be finalized upon
                 exit or not.
@@ -191,14 +184,16 @@ class AccountMethods(UserMethods):
                 The maximum file size, in bytes, that you plan
                 to download for each message with media.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 from telethon import errors
 
                 try:
                     with client.takeout() as takeout:
+                        client.get_messages('me')  # normal call
+                        takeout.get_messages('me')  # wrapped through takeout (less limits)
+
                         for message in takeout.iter_messages(chat, wait_time=0):
                             ...  # Do something with the message
 
@@ -228,12 +223,17 @@ class AccountMethods(UserMethods):
         """
         Finishes the current takeout session.
 
-        Args:
+        Arguments
             success (`bool`):
                 Whether the takeout completed successfully or not.
 
-        Returns:
+        Returns
             ``True`` if the operation was successful, ``False`` otherwise.
+
+        Example
+            .. code-block:: python
+
+                client.end_takeout(success=False)
         """
         try:
             async with _TakeoutClient(True, self, None) as takeout:

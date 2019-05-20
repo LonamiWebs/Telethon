@@ -185,6 +185,7 @@ PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid (hint: `pip instal
 PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
 PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
 PIN_RESTRICTED,400,You can't pin messages in private chats with other people
+POLL_OPTION_DUPLICATE,400,A duplicate option was sent in the same poll
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PTS_CHANGE_EMPTY,500,No PTS change

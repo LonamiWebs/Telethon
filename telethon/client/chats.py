@@ -289,7 +289,7 @@ class ChatMethods(UserMethods):
         """
         Iterator over the participants belonging to the specified chat.
 
-        Args:
+        Arguments
             entity (`entity`):
                 The entity from which to retrieve the participants list.
 
@@ -323,14 +323,13 @@ class ChatMethods(UserMethods):
 
                 This has no effect if a ``filter`` is given.
 
-        Yields:
+        Yields
             The :tl:`User` objects returned by :tl:`GetParticipantsRequest`
             with an additional ``.participant`` attribute which is the
             matched :tl:`ChannelParticipant` type for channels/megagroups
             or :tl:`ChatParticipants` for normal chats.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Show all user IDs in a chat
@@ -362,6 +361,16 @@ class ChatMethods(UserMethods):
         """
         Same as `iter_participants()`, but returns a
         `TotalList <telethon.helpers.TotalList>` instead.
+
+        Example
+            .. code-block:: python
+
+                users = client.get_participants(chat)
+                print(users[0].first_name)
+
+                for user in users:
+                    if user.username is not None:
+                        print(user.username)
         """
         return await self.iter_participants(*args, **kwargs).collect()
 
@@ -397,7 +406,7 @@ class ChatMethods(UserMethods):
         *all* event types will be returned. If at least one of them is
         ``True``, only those that are true will be returned.
 
-        Args:
+        Arguments
             entity (`entity`):
                 The channel entity from which to get its admin log.
 
@@ -472,22 +481,15 @@ class ChatMethods(UserMethods):
             delete (`bool`):
                 If ``True``, events of message deletions will be returned.
 
-        Yields:
+        Yields
             Instances of `telethon.tl.custom.adminlogevent.AdminLogEvent`.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 for event in client.iter_admin_log(channel):
                     if event.changed_title:
                         print('The title changed from', event.old, 'to', event.new)
-
-                # Get a list of deleted message events which said "heck"
-                events = client.get_admin_log(channel, search='heck', delete=True)
-
-                # Print the old message before it was deleted
-                print(events[0].old)
         """
         return _AdminLogIter(
             self,
@@ -519,6 +521,15 @@ class ChatMethods(UserMethods):
             **kwargs) -> 'hints.TotalList':
         """
         Same as `iter_admin_log()`, but returns a ``list`` instead.
+
+        Example
+            .. code-block:: python
+
+                # Get a list of deleted message events which said "heck"
+                events = client.get_admin_log(channel, search='heck', delete=True)
+
+                # Print the old message before it was deleted
+                print(events[0].old)
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
 
@@ -533,22 +544,14 @@ class ChatMethods(UserMethods):
         Returns a context-manager object to represent a "chat action".
 
         Chat actions indicate things like "user is typing", "user is
-        uploading a photo", etc. Normal usage is as follows:
-
-        .. code-block:: python
-
-            async with client.action(chat, 'typing'):
-                await asyncio.sleep(2)  # type for 2 seconds
-                await client.send_message(chat, 'Hello world! I type slow ^^')
+        uploading a photo", etc.
 
         If the action is ``'cancel'``, you should just ``await`` the result,
-        since it makes no sense to use a context-manager for it:
+        since it makes no sense to use a context-manager for it.
 
-        .. code-block:: python
+        See the example below for intended usage.
 
-            await client.action(chat, 'cancel')
-
-        Args:
+        Arguments
             entity (`entity`):
                 The entity where the action should be showed in.
 
@@ -587,10 +590,23 @@ class ChatMethods(UserMethods):
                 you don't want progress to be shown when it has already
                 completed.
 
-        If you are uploading a file, you may do
-        ``progress_callback=chat.progress`` to update the progress of
-        the action. Some clients don't care about this progress, though,
-        so it's mostly not needed, but still available.
+        Returns
+            Either a context-manager object or a coroutine.
+
+        Example
+            .. code-block:: python
+
+                # Type for 2 seconds, then send a message
+                async with client.action(chat, 'typing'):
+                    await asyncio.sleep(2)
+                    await client.send_message(chat, 'Hello world! I type slow ^^')
+
+                # Cancel any previous action
+                await client.action(chat, 'cancel')
+
+                # Upload a document, showing its progress (most clients ignore this)
+                async with client.action(chat, 'document') as action:
+                    client.send_file(chat, zip_file, progress_callback=action.progress)
         """
         if isinstance(action, str):
             try:

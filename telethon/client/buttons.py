@@ -24,6 +24,22 @@ class ButtonMethods(UpdateMethods):
         the markup very often. Otherwise, it is not necessary.
 
         This method is **not** asynchronous (don't use ``await`` on it).
+
+        Arguments
+            buttons (`hints.MarkupLike`):
+                The button, list of buttons, array of buttons or markup
+                to convert into a markup.
+
+            inline_only (`bool`, optional):
+                Whether the buttons **must** be inline buttons only or not.
+
+        Example
+            .. code-block:: python
+
+                from telethon import Button
+
+                markup = client.build_reply_markup(Button.inline('hi'))
+                client.send_message('click me', buttons=markup)
         """
         if buttons is None:
             return None

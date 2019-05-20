@@ -30,7 +30,7 @@ class DownloadMethods(UserMethods):
         """
         Downloads the profile photo from the given user, chat or channel.
 
-        Args:
+        Arguments
             entity (`entity`):
                 From who the photo will be downloaded.
 
@@ -53,14 +53,14 @@ class DownloadMethods(UserMethods):
             download_big (`bool`, optional):
                 Whether to use the big version of the available photos.
 
-        Returns:
+        Returns
             ``None`` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
 
-        Example:
-
+        Example
             .. code-block:: python
 
+                # Download your own profile photo
                 path = client.download_profile_photo('me')
                 print(path)
         """
@@ -147,42 +147,44 @@ class DownloadMethods(UserMethods):
         ``cryptg`` (through ``pip install cryptg``) so that decrypting the
         received data is done in C instead of Python (much faster).
 
-        message (`Message <telethon.tl.custom.message.Message>` | :tl:`Media`):
-            The media or message containing the media that will be downloaded.
+        See also `Message.download_media() <telethon.tl.custom.message.Message.download_media>`.
 
-        file (`str` | `file`, optional):
-            The output file path, directory, or stream-like object.
-            If the path exists and is a file, it will be overwritten.
-            If file is the type `bytes`, it will be downloaded in-memory
-            as a bytestring (e.g. ``file=bytes``).
+        Arguments
+            message (`Message <telethon.tl.custom.message.Message>` | :tl:`Media`):
+                The media or message containing the media that will be downloaded.
 
-        progress_callback (`callable`, optional):
-            A callback function accepting two parameters:
-            ``(received bytes, total)``.
+            file (`str` | `file`, optional):
+                The output file path, directory, or stream-like object.
+                If the path exists and is a file, it will be overwritten.
+                If file is the type `bytes`, it will be downloaded in-memory
+                as a bytestring (e.g. ``file=bytes``).
 
-        thumb (`int` | :tl:`PhotoSize`, optional):
-            Which thumbnail size from the document or photo to download,
-            instead of downloading the document or photo itself.
+            progress_callback (`callable`, optional):
+                A callback function accepting two parameters:
+                ``(received bytes, total)``.
 
-            If it's specified but the file does not have a thumbnail,
-            this method will return ``None``.
+            thumb (`int` | :tl:`PhotoSize`, optional):
+                Which thumbnail size from the document or photo to download,
+                instead of downloading the document or photo itself.
 
-            The parameter should be an integer index between ``0`` and
-            ``len(sizes)``. ``0`` will download the smallest thumbnail,
-            and ``len(sizes) - 1`` will download the largest thumbnail.
-            You can also use negative indices.
+                If it's specified but the file does not have a thumbnail,
+                this method will return ``None``.
 
-            You can also pass the :tl:`PhotoSize` instance to use.
+                The parameter should be an integer index between ``0`` and
+                ``len(sizes)``. ``0`` will download the smallest thumbnail,
+                and ``len(sizes) - 1`` will download the largest thumbnail.
+                You can also use negative indices.
 
-            In short, use ``thumb=0`` if you want the smallest thumbnail
-            and ``thumb=-1`` if you want the largest thumbnail.
+                You can also pass the :tl:`PhotoSize` instance to use.
 
-        Returns:
+                In short, use ``thumb=0`` if you want the smallest thumbnail
+                and ``thumb=-1`` if you want the largest thumbnail.
+
+        Returns
             ``None`` if no media was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 path = client.download_media(message)
@@ -190,7 +192,6 @@ class DownloadMethods(UserMethods):
                 # or
                 path = message.download_media()
                 message.download_media(filename)
-
         """
         # TODO This won't work for messageService
         if isinstance(message, types.Message):
@@ -236,7 +237,7 @@ class DownloadMethods(UserMethods):
         """
         Low-level method to download files from their input location.
 
-        Args:
+        Arguments
             input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
                 See `telethon.utils.get_input_location` source for a complete
@@ -265,6 +266,13 @@ class DownloadMethods(UserMethods):
             dc_id (`int`, optional):
                 The data center the library should connect to in order
                 to download the file. You shouldn't worry about this.
+
+        Example
+            .. code-block:: python
+
+                # Download a file and print its header
+                data = client.download_file(input_file, bytes)
+                print(data[:16])
         """
         if not part_size_kb:
             if not file_size:

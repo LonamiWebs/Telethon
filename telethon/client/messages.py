@@ -319,7 +319,13 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         If either `search`, `filter` or `from_user` are provided,
         :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
-        Args:
+        .. note::
+
+            Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
+            be around 30 seconds per 10 requests, therefore a sleep of 1
+            second is the default for this limit (or above).
+
+        Arguments
             entity (`entity`):
                 The entity from whom to retrieve the message history.
 
@@ -406,16 +412,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
                 You cannot use this if both `entity` and `ids` are ``None``.
 
-        Yields:
+        Yields
             Instances of `telethon.tl.custom.message.Message`.
 
-        Notes:
-            Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
-            be around 30 seconds per 10 requests, therefore a sleep of 1
-            second is the default for this limit (or above).
-
-        Example:
-
+        Example
             .. code-block:: python
 
                 # From most-recent to oldest
@@ -439,7 +439,6 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
                     print(message.photo)
         """
-
         if ids is not None:
             return _IDsIter(self, limit, entity=entity, ids=ids)
 
@@ -476,8 +475,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         a single `Message <telethon.tl.custom.message.Message>` will be
         returned for convenience instead of a list.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Get 0 photos and print the total to show how many photos there are
@@ -540,8 +538,10 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         is also done through this method. Simply send ``'/start data'`` to
         the bot.
 
-        Args:
+        See also `Message.respond() <telethon.tl.custom.message.Message.respond>`
+        and `Message.reply() <telethon.tl.custom.message.Message.reply>`.
 
+        Arguments
             entity (`entity`):
                 To who will it be sent.
 
@@ -596,20 +596,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 channel or not. Defaults to ``False``, which means it will
                 notify them. Set it to ``True`` to alter this behaviour.
 
-        Returns:
-
+        Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
 
-        Example:
-
+        Example
             .. code-block:: python
 
-                client.send_message('lonami', 'Thanks for the Telethon library!')
-
-                # Replies and responses
-                message = client.send_message('me', 'Trying out **markdown**')
-                message.reply('Trying replies')
-                message.respond('Trying responses')
+                # Markdown is the default
+                client.send_message('lonami', 'Thanks for the **Telethon** library!')
 
                 # Default to another parse mode
                 client.parse_mode = 'html'
@@ -748,7 +742,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         (the "forwarded from" text), you should use `send_message` with
         the original message instead. This will send a copy of it.
 
-        Args:
+        See also `Message.forward_to() <telethon.tl.custom.message.Message.forward_to>`.
+
+        Arguments
             entity (`entity`):
                 To which entity the message(s) will be forwarded.
 
@@ -777,7 +773,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 ``True`` will group always (even converting separate
                 images into albums), and ``False`` will never group.
 
-        Returns:
+        Returns
             The list of forwarded `telethon.tl.custom.message.Message`,
             or a single one if a list wasn't provided as input.
 
@@ -785,8 +781,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             will fail with ``MessageIdInvalidError``. If only some are
             invalid, the list will have ``None`` instead of those messages.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # a single one
@@ -884,7 +879,9 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         """
         Edits the given message to change its text or media.
 
-        Args:
+        See also `Message.edit() <telethon.tl.custom.message.Message.edit>`.
+
+        Arguments
             entity (`entity` | `Message <telethon.tl.custom.message.Message>`):
                 From which chat to edit the message. This can also be
                 the message to be edited, and the entity will be inferred
@@ -925,38 +922,28 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
 
-        Examples:
+        Returns
+            The edited `telethon.tl.custom.message.Message`, unless
+            `entity` was a :tl:`InputBotInlineMessageID` in which
+            case this method returns a boolean.
 
-            >>> client = ...
-            >>> message = client.send_message('username', 'hello')
-            >>>
-            >>> client.edit_message('username', message, 'hello!')
-            >>> # or
-            >>> client.edit_message('username', message.id, 'Hello')
-            >>> # or
-            >>> client.edit_message(message, 'Hello!')
-
-        Raises:
+        Raises
             ``MessageAuthorRequiredError`` if you're not the author of the
             message but tried editing it anyway.
 
             ``MessageNotModifiedError`` if the contents of the message were
             not modified at all.
 
-        Returns:
-            The edited `telethon.tl.custom.message.Message`, unless
-            `entity` was a :tl:`InputBotInlineMessageID` in which
-            case this method returns a boolean.
-
-        Example:
-
+        Example
             .. code-block:: python
 
-                client.edit_message(message, 'New text')
+                message = client.send_message(chat, 'hello')
+
+                client.edit_message(chat, message, 'hello!')
                 # or
-                message.edit('New text')
+                client.edit_message(chat, message.id, 'hello!!')
                 # or
-                client.edit_message(chat, message_id, 'New text')
+                client.edit_message(message, 'hello!!!')
         """
         if isinstance(entity, types.InputBotInlineMessageID):
             text = message
@@ -1002,7 +989,16 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         """
         Deletes the given messages, optionally "for everyone".
 
-        Args:
+        See also `Message.delete() <telethon.tl.custom.message.Message.delete>`.
+
+        .. warning::
+
+            This method does **not** validate that the message IDs belong
+            to the chat that you passed! It's possible for the method to
+            delete messages from different private chats and small group
+            chats at once, so make sure to pass the right IDs.
+
+        Arguments
             entity (`entity`):
                 From who the message will be deleted. This can actually
                 be ``None`` for normal chats, but **must** be present
@@ -1025,17 +1021,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 Disabling this has no effect on channels or megagroups,
                 since it will unconditionally delete the message for everyone.
 
-        Returns:
+        Returns
             A list of :tl:`AffectedMessages`, each item being the result
             for the delete calls of the messages in chunks of 100 each.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 client.delete_messages(chat, messages)
-                # or
-                message.delete()
         """
         if not utils.is_list_like(message_ids):
             message_ids = (message_ids,)
@@ -1074,7 +1067,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
         If neither message nor maximum ID are provided, all messages will be
         marked as read by assuming that ``max_id = 0``.
 
-        Args:
+        Arguments
             entity (`entity`):
                 The chat where these messages are located.
 
@@ -1092,8 +1085,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 If no message is provided, this will be the only action
                 taken.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 client.send_read_acknowledge(last_message)

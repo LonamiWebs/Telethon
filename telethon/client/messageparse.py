@@ -38,6 +38,15 @@ class MessageParseMethods(UserMethods):
         that ``assert text == unparse(*parse(text))``.
 
         See :tl:`MessageEntity` for allowed message entities.
+
+        Example
+            .. code-block:: python
+
+                # Disabling default formatting
+                client.parse_mode = None
+
+                # Enabling HTML as the default format
+                client.parse_mode = 'html'
         """
         return self._parse_mode
 

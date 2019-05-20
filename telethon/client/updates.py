@@ -39,6 +39,15 @@ class UpdateMethods(UserMethods):
 
         If the loop is already running, this method returns a coroutine
         that you should await on your own code.
+
+        Example
+            .. code-block:: python
+
+                # Blocks the current task here until a disconnection occurs.
+                #
+                # You will still receive updates, since this prevents the
+                # script from exiting.
+                client.run_until_disconnected()
         """
         if self.loop.is_running():
             return self._run_until_disconnected()
@@ -54,19 +63,22 @@ class UpdateMethods(UserMethods):
         """
         Decorator used to `add_event_handler` more conveniently.
 
-        >>> from telethon import TelegramClient, events
-        >>> client = TelegramClient(...)
-        >>>
-        >>> @client.on(events.NewMessage)
-        ... async def handler(event):
-        ...     ...
-        ...
-        >>>
 
-        Args:
+        Arguments
             event (`_EventBuilder` | `type`):
                 The event builder class or instance to be used,
                 for instance ``events.NewMessage``.
+
+        Example
+            .. code-block:: python
+
+                from telethon import TelegramClient, events
+                client = TelegramClient(...)
+
+                # Here we use client.on
+                @client.on(events.NewMessage)
+                async def handler(event):
+                    ...
         """
         def decorator(f):
             self.add_event_handler(f, event)
@@ -83,7 +95,7 @@ class UpdateMethods(UserMethods):
 
         The callback will be called when the specified event occurs.
 
-        Args:
+        Arguments
             callback (`callable`):
                 The callable function accepting one parameter to be used.
 
@@ -98,6 +110,17 @@ class UpdateMethods(UserMethods):
                 If left unspecified, `telethon.events.raw.Raw` (the
                 :tl:`Update` objects with no further processing) will
                 be passed instead.
+
+        Example
+            .. code-block:: python
+
+                from telethon import TelegramClient, events
+                client = TelegramClient(...)
+
+                async def handler(event):
+                    ...
+
+                client.add_event_handler(handler, events.NewMessage)
         """
         builders = events._get_handlers(callback)
         if builders is not None:
@@ -121,6 +144,21 @@ class UpdateMethods(UserMethods):
 
         If no event is given, all events for this callback are removed.
         Returns how many callbacks were removed.
+
+        Example
+            .. code-block:: python
+
+                @client.on(events.Raw)
+                @client.on(events.NewMessage)
+                async def handler(event):
+                    ...
+
+                # Removes only the "Raw" handling
+                # "handler" will still receive "events.NewMessage"
+                client.remove_event_handler(handler, events.Raw)
+
+                # "handler" will stop receiving anything
+                client.remove_event_handler(handler)
         """
         found = 0
         if event and not isinstance(event, type):
@@ -141,7 +179,19 @@ class UpdateMethods(UserMethods):
         """
         Lists all registered event handlers.
 
-        Returns a list of pairs consisting of ``(callback, event)``.
+        Returns
+            A list of pairs consisting of ``(callback, event)``.
+
+        Example
+            .. code-block:: python
+
+                @client.on(events.NewMessage(pattern='hello'))
+                async def on_greeting(event):
+                    '''Greets someone'''
+                    await event.reply('Hi')
+
+                for callback, event in client.list_event_handlers():
+                    print(id(callback), type(event))
         """
         return [(callback, event) for event, callback in self._event_builders]
 
@@ -152,6 +202,11 @@ class UpdateMethods(UserMethods):
         so that the updates it loads can by processed by your script.
 
         This can also be used to forcibly fetch new updates if there are any.
+
+        Example
+            .. code-block:: python
+
+                client.catch_up()
         """
         pts, date = self._state_cache[None]
         if not pts:

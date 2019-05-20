@@ -109,7 +109,17 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         """
         Sends message with the given file to the specified entity.
 
-        Args:
+        .. note::
+
+            If the ``hachoir3`` package (``hachoir`` module) is installed,
+            it will be used to determine metadata from audio and video files.
+
+            If the ``pillow`` package is installed and you are sending a photo,
+            it will be resized to fit within the maximum dimensions allowed
+            by Telegram to avoid ``errors.PhotoInvalidDimensionsError``. This
+            cannot be done if you are sending :tl:`InputFile`, however.
+
+        Arguments
             entity (`entity`):
                 Who will receive the file.
 
@@ -220,21 +230,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 these to MP4 before sending if you want them to be streamable.
                 Unsupported formats will result in ``VideoContentTypeError``.
 
-        Notes:
-            If the ``hachoir3`` package (``hachoir`` module) is installed,
-            it will be used to determine metadata from audio and video files.
-
-            If the `pillow` package is installed and you are sending a photo,
-            it will be resized to fit within the maximum dimensions allowed
-            by Telegram to avoid ``errors.PhotoInvalidDimensionsError``. This
-            cannot be done if you are sending :tl:`InputFile`, however.
-
-        Returns:
+        Returns
             The `telethon.tl.custom.message.Message` (or messages) containing
             the sent file, or messages if a list of them was passed.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Normal files like photos
@@ -422,7 +422,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         remotely in the Telegram servers, which can be later used on. This
         will **not** upload the file to your own chat or any chat at all.
 
-        Args:
+        Arguments
             file (`str` | `bytes` | `file`):
                 The path of the file, byte array, or stream that will be sent.
                 Note that if a byte array or a stream is given, a filename
@@ -449,13 +449,12 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
-        Returns:
+        Returns
             :tl:`InputFileBig` if the file size is larger than 10MB,
             `telethon.tl.custom.inputsizedfile.InputSizedFile`
             (subclass of :tl:`InputFile`) otherwise.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Photos as photo and document

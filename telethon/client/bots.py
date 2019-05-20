@@ -19,10 +19,7 @@ class BotMethods(UserMethods):
         """
         Makes an inline query to the specified bot (e.g. ``@vote New Poll``).
 
-        >>> client = ...
-        >>> client.inline_query('vote', 'My New Poll')
-
-        Args:
+        Arguments
             bot (`entity`):
                 The bot entity to which the inline query should be made.
 
@@ -36,12 +33,11 @@ class BotMethods(UserMethods):
                 The geo point location information to send to the bot
                 for localised results. Available under some bots.
 
-        Returns:
+        Returns
             A list of `custom.InlineResult
             <telethon.tl.custom.inlineresult.InlineResult>`.
 
-        Example:
-
+        Example
             .. code-block:: python
 
                 # Make an inline query to @like
