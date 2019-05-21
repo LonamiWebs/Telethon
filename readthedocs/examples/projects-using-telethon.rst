@@ -27,6 +27,13 @@ snippets using the library. The main repository also has a folder with
 some cool examples (even a Tkinter GUI!) which you can download, edit
 and run to learn and play with them.
 
+@TelethonSnippets
+=================
+
+`@TelethonSnippets <https://t.me/TelethonSnippets>`_
+
+You can find useful short snippets for Telethon here.
+
 telegram-export
 ===============
 
@@ -64,3 +71,35 @@ spotify_telegram_bio_updater
 
 Small project that updates the biography of a telegram user according
 to their current Spotify playback, or revert it if no playback is active.
+
+Telegram-UserBot
+================
+
+`Telegram-UserBot <https://github.com/raphielgang/telegram-userbot>`_ /
+`baalajimaestro's site <https://baalajimaestro.ooo>`_
+
+A modular telegram Python UserBot running on python3 with an sqlalchemy database.
+
+kantek
+======
+
+`kantek <https://github.com/mojurasu/kantek>`_ /
+`mojurasu's site <https://mojurasu.com>`_
+
+kantek is a userbot written in Python using Telethon.
+
+tgcloud
+=======
+
+`tgcloud <https://github.com/SlavikMIPT/tgcloud>`_ /
+`tgcloud's site <https://dev.tgcloud.xyz/>`_
+
+Opensource Telegram based cloud storage.
+
+tgmount
+=======
+
+`tgmount <https://github.com/nktknshn/tgmount>`_ /
+`nktknshn's GitHub <https://github.com/nktknshn>`_
+
+Mount Telegram dialogs and channels as a Virtual File System.

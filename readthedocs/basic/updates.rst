@@ -133,7 +133,7 @@ Entities
 When you need the user or chat where an event occurred, you **must** use
 the following methods:
 
-.. code-block::
+.. code-block:: python
 
     async def handler(event):
         # Good
