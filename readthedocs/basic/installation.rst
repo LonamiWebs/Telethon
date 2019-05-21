@@ -41,7 +41,7 @@ To verify that the library is installed correctly, run the following command:
 
 .. code-block:: sh
 
-    python3 -c 'import telethon; print(telethon.__version__)'
+    python3 -c "import telethon; print(telethon.__version__)"
 
 The version number of the library should show in the output.
 
@@ -70,8 +70,24 @@ performer, artist, title, duration, and for videos too (including size).
 Otherwise, they will default to empty values, and you can set the attributes
 manually.
 
+.. note::
+
+    Some of the modules may require additional dependencies before being
+    installed through ``pip``. If you have an ``apt``-based system, consider
+    installing the most commonly missing dependencies:
+
+    .. code-block:: sh
+
+        apt update
+        apt install clang lib{jpeg-turbo,webp}-dev python{,-dev} zlib-dev
+        pip install -U --user setuptools
+        pip install -U --user telethon cryptg pillow
+
+    Thanks to `@bb010g`_ for writing down this nice list.
+
 .. _cryptg: https://github.com/Lonami/cryptg
 .. _pyaes: https://github.com/ricmoo/pyaes
 .. _pillow: https://python-pillow.org
 .. _aiohttp: https://docs.aiohttp.org
 .. _hachoir: https://hachoir.readthedocs.io
+.. _@bb010g: https://static.bb010g.com
