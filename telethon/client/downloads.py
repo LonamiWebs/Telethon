@@ -368,7 +368,7 @@ class DownloadMethods(UserMethods):
             part_size_kb: float = None,
             file_size: int = None,
             progress_callback: 'hints.ProgressCallback' = None,
-            dc_id: int = None) -> typing.Optional[typing.Union[str, bytes]]:
+            dc_id: int = None) -> typing.Optional[bytes]:
         """
         Low-level method to download files from their input location.
 
@@ -416,13 +416,7 @@ class DownloadMethods(UserMethods):
                 part_size_kb = utils.get_appropriated_part_size(file_size)
 
         part_size = int(part_size_kb * 1024)
-        # https://core.telegram.org/api/files says:
-        # > part_size % 1024 = 0 (divisible by 1KB)
-        #
-        # But https://core.telegram.org/cdn (more recent) says:
-        # > limit must be divisible by 4096 bytes
-        # So we just stick to the 4096 limit.
-        if part_size % 4096 != 0:
+        if part_size % MIN_CHUNK_SIZE != 0:
             raise ValueError(
                 'The part size must be evenly divisible by 4096.')
 
@@ -436,68 +430,17 @@ class DownloadMethods(UserMethods):
         else:
             f = file
 
-        old_dc = dc_id
-        dc_id, input_location = utils.get_input_location(input_location)
-        if dc_id is None:
-            dc_id = old_dc
-
-        exported = dc_id and self.session.dc_id != dc_id
-        if exported:
-            try:
-                sender = await self._borrow_exported_sender(dc_id)
-            except errors.DcIdInvalidError:
-                # Can't export a sender for the ID we are currently in
-                config = await self(functions.help.GetConfigRequest())
-                for option in config.dc_options:
-                    if option.ip_address == self.session.server_address:
-                        self.session.set_dc(
-                            option.id, option.ip_address, option.port)
-                        self.session.save()
-                        break
-
-                # TODO Figure out why the session may have the wrong DC ID
-                sender = self._sender
-                exported = False
-        else:
-            # The used sender will also change if ``FileMigrateError`` occurs
-            sender = self._sender
-
-        self._log[__name__].info('Downloading file in chunks of %d bytes',
-                                 part_size)
         try:
-            offset = 0
-            while True:
-                try:
-                    result = await sender.send(functions.upload.GetFileRequest(
-                        input_location, offset, part_size
-                    ))
-                    if isinstance(result, types.upload.FileCdnRedirect):
-                        # TODO Implement
-                        raise NotImplementedError
-                except errors.FileMigrateError as e:
-                    self._log[__name__].info('File lives in another DC')
-                    sender = await self._borrow_exported_sender(e.new_dc)
-                    exported = True
-                    continue
-
-                offset += part_size
-                if not result.bytes:
-                    if in_memory:
-                        f.flush()
-                        return f.getvalue()
-                    else:
-                        return getattr(result, 'type', '')
-
-                self._log[__name__].debug('Saving %d more bytes',
-                                          len(result.bytes))
-                f.write(result.bytes)
+            async for chunk in self.iter_download(
+                    input_location, request_size=part_size, dc_id=dc_id):
+                f.write(chunk)
                 if progress_callback:
                     progress_callback(f.tell(), file_size)
+
+            f.flush()
+            if in_memory:
+                return f.getvalue()
         finally:
-            if exported:
-                await self._return_exported_sender(sender)
-            elif sender != self._sender:
-                await sender.disconnect()
             if isinstance(file, str) or in_memory:
                 f.close()
 
