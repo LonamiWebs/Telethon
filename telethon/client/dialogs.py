@@ -240,23 +240,25 @@ class DialogMethods(UserMethods):
         """
         return await self.iter_drafts().collect()
 
-    async def archive(
+    async def edit_folder(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike' = None,
-            folder: typing.Union[int, typing.Sequence[int]] = 1,
+            folder: typing.Union[int, typing.Sequence[int]] = None,
             *,
             unpack=None
     ) -> types.Updates:
         """
-        Archives (or un-archives) one or more dialogs.
+        Edits the folder used by one or more dialogs to archive them.
 
         Arguments
             entity (entities):
                 The entity or list of entities to move to the desired
                 archive folder.
 
-            folder (`int`, optional):
+            folder (`int`):
                 The folder to which the dialog should be archived to.
+
+                If you want to "archive" a dialog, use ``folder=1``.
 
                 If you want to "un-archive" it, use ``folder=0``.
 
@@ -283,10 +285,14 @@ class DialogMethods(UserMethods):
 
                 # Archiving the first 5 dialogs
                 dialogs = client.get_dialogs(5)
-                client.archive(dialogs)
+                client.edit_folder(dialogs, 1)
 
                 # Un-archiving the third dialog (archiving to folder 0)
-                client.archive(dialog[2], 0)
+                client.edit_folder(dialog[2], 0)
+
+                # Moving the first dialog to folder 0 and the second to 1
+                dialogs = client.get_dialogs(2)
+                client.edit_folder(dialogs, [0, 1])
 
                 # Un-archiving all dialogs
                 client.archive(unpack=1)
@@ -305,7 +311,9 @@ class DialogMethods(UserMethods):
             entities = await asyncio.gather(
                 *(self.get_input_entity(x) for x in entity), loop=self.loop)
 
-        if not utils.is_list_like(folder):
+        if folder is None:
+            raise ValueError('You must specify a folder')
+        elif not utils.is_list_like(folder):
             folder = [folder] * len(entities)
         elif len(entities) != len(folder):
             raise ValueError('Number of folders does not match number of entities')
