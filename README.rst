@@ -75,8 +75,8 @@ useful information.
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _MTProto: https://core.telegram.org/mtproto
 .. _Telegram: https://telegram.org
-.. _Compatibility and Convenience: https://telethon.readthedocs.io/en/latest/misc/compatibility-and-convenience.html
-.. _Read The Docs: https://telethon.readthedocs.io
+.. _Compatibility and Convenience: https://docs.telethon.dev/en/latest/misc/compatibility-and-convenience.html
+.. _Read The Docs: https://docs.telethon.dev
 
 .. |logo| image:: logo.svg
     :width: 24pt

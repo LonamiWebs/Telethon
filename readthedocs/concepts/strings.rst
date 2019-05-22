@@ -86,7 +86,7 @@ the ``was_online`` time. It's inside ``status``:
     online_at = user.status.was_online
 
 You don't need to print everything to see what all the possible values
-can be. You can just search in http://lonamiwebs.github.io/Telethon/.
+can be. You can just search in http://tl.telethon.dev/.
 
 Remember that you can use Python's `isinstance
 <https://docs.python.org/3/library/functions.html#isinstance>`_

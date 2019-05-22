@@ -20,7 +20,7 @@ of everything you can do.
 
 .. note::
 
-    The reason to keep both https://lonamiwebs.github.io/Telethon and this
+    The reason to keep both https://tl.telethon.dev and this
     documentation alive is that the former allows instant search results
     as you type, and a "Copy import" button. If you like namespaces, you
     can also do ``from telethon.tl import types, functions``. Both work.
@@ -224,6 +224,6 @@ and still access the successful results:
         # The second request failed.
         second = e.exceptions[1]
 
-.. _check the documentation: https://lonamiwebs.github.io/Telethon
-.. _method you need: https://lonamiwebs.github.io/Telethon/methods/index.html
-.. _use the search: https://lonamiwebs.github.io/Telethon/?q=message&redirect=no
+.. _check the documentation: https://tl.telethon.dev
+.. _method you need: https://tl.telethon.dev/methods/index.html
+.. _use the search: https://tl.telethon.dev/?q=message&redirect=no

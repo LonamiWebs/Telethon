@@ -42,7 +42,7 @@ bot = TelegramClient(NAME, API_ID, API_HASH)
 WELCOME = {
     -1001109500936:
     'Hi and welcome to the group. Before asking any questions, **please** '
-    'read [the docs](https://telethon.readthedocs.io/). Make sure you are '
+    'read [the docs](https://docs.telethon.dev/). Make sure you are '
     'using the latest version with `pip3 install -U telethon`, since most '
     'problems have already been fixed in newer versions.',
 
@@ -53,20 +53,20 @@ WELCOME = {
 }
 
 READ_FULL = (
-    'Please read [Accessing the Full API](https://telethon.readthedocs.io'
+    'Please read [Accessing the Full API](https://docs.telethon.dev'
     '/en/latest/concepts/full-api.html)'
 )
 
 SEARCH = (
     'Remember [search is your friend]'
-    '(https://lonamiwebs.github.io/Telethon/?q={}&redirect=no)'
+    '(https://tl.telethon.dev/?q={}&redirect=no)'
 )
 
-DOCS = 'TL Reference for [{}](https://lonamiwebs.github.io/Telethon/?q={})'
-RTD = '[Read The Docs!](https://telethon.readthedocs.io)'
-RTFD = '[Read The F* Docs!](https://telethon.readthedocs.io)'
+DOCS = 'TL Reference for [{}](https://tl.telethon.dev/?q={})'
+RTD = '[Read The Docs!](https://docs.telethon.dev)'
+RTFD = '[Read The F* Docs!](https://docs.telethon.dev)'
 UPDATES = (
-    'Check out [Working with Updates](https://telethon.readthedocs.io'
+    'Check out [Working with Updates](https://docs.telethon.dev'
     '/en/latest/basic/updates.html) in the documentation.'
 )
 

@@ -86,7 +86,7 @@ class ChatAction(EventBuilder):
         Represents the event of a new chat action.
 
         Members:
-            action_message  (`MessageAction <https://lonamiwebs.github.io/Telethon/types/message_action.html>`_):
+            action_message  (`MessageAction <https://tl.telethon.dev/types/message_action.html>`_):
                 The message invoked by this Chat Action.
 
             new_pin (`bool`):

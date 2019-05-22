@@ -22,7 +22,7 @@ Telethon's Documentation
 * Did you upgrade the library? Please read :ref:`changelog`.
 * Used Telethon before v1.0? See :ref:`compatibility-and-convenience`.
 * Coming from Bot API or want to create new bots? See :ref:`botapi`.
-* Need the full API reference? https://lonamiwebs.github.io/Telethon/.
+* Need the full API reference? https://tl.telethon.dev/.
 
 
 What is this?

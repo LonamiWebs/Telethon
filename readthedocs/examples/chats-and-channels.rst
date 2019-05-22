@@ -37,7 +37,7 @@ to, you can make use of the :tl:`JoinChannelRequest` to join such channel:
 For more on channels, check the `channels namespace`__.
 
 
-__ https://lonamiwebs.github.io/Telethon/methods/channels/index.html
+__ https://tl.telethon.dev/methods/channels/index.html
 
 
 Joining a private chat or channel
@@ -224,7 +224,7 @@ is enough:
 
 __ https://github.com/Kyle2142
 __ https://github.com/LonamiWebs/Telethon/issues/490
-__ https://lonamiwebs.github.io/Telethon/constructors/channel_admin_rights.html
+__ https://tl.telethon.dev/constructors/channel_admin_rights.html
 
 
 Increasing View Count in a Channel

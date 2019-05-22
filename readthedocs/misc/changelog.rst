@@ -292,7 +292,7 @@ Enhancements
 * Saner timeout defaults for conversations.
 * ``Path``-like files are now supported for thumbnails.
 * Added new hot-keys to the online documentation at
-  https://lonamiwebs.github.io/Telethon/ such as ``/`` to search.
+  https://tl.telethon.dev/ such as ``/`` to search.
   Press ``?`` to view them all.
 
 
@@ -1209,7 +1209,7 @@ Additions
 - Telegram's Terms Of Service are now accepted when creating a new account.
   This can possibly help avoid bans. This has no effect for accounts that
   were created before.
-- The `method reference <https://lonamiwebs.github.io/Telethon/>`_ now shows
+- The `method reference <https://tl.telethon.dev/>`_ now shows
   which methods can be used if you sign in with a ``bot_token``.
 - There's a new `client.disconnected
   <telethon.client.telegrambaseclient.TelegramBaseClient.disconnected>` future
@@ -1347,7 +1347,7 @@ Additions
 - New default `telethon.telegram_client.TelegramClient.parse_mode`.
 - You can edit the media of messages that already have some media.
 - New dark theme in the online ``tl`` reference, check it out at
-  https://lonamiwebs.github.io/Telethon/.
+  https://tl.telethon.dev/.
 
 Bug fixes
 ~~~~~~~~~
@@ -1450,7 +1450,7 @@ Now you can use Python's ``pickle`` module to serialize ``RPCError`` and
 any other ``TLObject`` thanks to **@vegeta1k95**! A fix that was fairly
 simple, but still might be useful for many people.
 
-As a side note, the documentation at https://lonamiwebs.github.io/Telethon
+As a side note, the documentation at https://tl.telethon.dev
 now lists known ``RPCError`` for all requests, so you know what to expect.
 This required a major rewrite, but it was well worth it!
 
@@ -1809,7 +1809,7 @@ Enhancements
 - ``client.send_file()`` now accepts ``Message``'s and
   ``MessageMedia``'s as the ``file`` parameter.
 - Some documentation updates and fixed to clarify certain things.
-- New exact match feature on https://lonamiwebs.github.io/Telethon.
+- New exact match feature on https://tl.telethon.dev.
 - Return as early as possible from ``.get_input_entity()`` and similar,
   to avoid penalizing you for doing this right.
 
@@ -2793,11 +2793,11 @@ get_input_* everywhere (v0.11.4)
 *Published at 2017/07/10*
 
 For some reason, Telegram doesn't have enough with the
-`InputPeer <https://lonamiwebs.github.io/Telethon/types/input_peer.html>`__.
+`InputPeer <https://tl.telethon.dev/types/input_peer.html>`__.
 There also exist
-`InputChannel <https://lonamiwebs.github.io/Telethon/types/input_channel.html>`__
+`InputChannel <https://tl.telethon.dev/types/input_channel.html>`__
 and
-`InputUser <https://lonamiwebs.github.io/Telethon/types/input_user.html>`__!
+`InputUser <https://tl.telethon.dev/types/input_user.html>`__!
 You don't have to worry about those anymore, it's handled internally
 now.
 
@@ -3047,7 +3047,7 @@ Additions
 ~~~~~~~~~
 
 - The **documentation**, available online
-  `here <https://lonamiwebs.github.io/Telethon/>`__, has a new search bar.
+  `here <https://tl.telethon.dev/>`__, has a new search bar.
 - Better **cross-thread safety** by using ``threading.Event``.
 - More improvements for running Telethon during a **long period of time**.
 

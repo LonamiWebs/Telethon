@@ -10,7 +10,7 @@ library. Said section is **not** for issues on *your* program but rather
 issues with Telethon itself.
 
 If you have not made the effort to 1. read through the docs and 2.
-`look for the method you need <https://lonamiwebs.github.io/Telethon/>`__,
+`look for the method you need <https://tl.telethon.dev/>`__,
 you will end up on the `Wall of
 Shame <https://github.com/LonamiWebs/Telethon/issues?q=is%3Aissue+label%3ARTFM+is%3Aclosed>`__,
 i.e. all issues labeled

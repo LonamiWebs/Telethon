@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.abspath(os.pardir))
 
 root = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
 
-tl_ref_url = 'https://lonamiwebs.github.io/Telethon'
+tl_ref_url = 'https://tl.telethon.dev'
 
 # -- General configuration ------------------------------------------------
 
