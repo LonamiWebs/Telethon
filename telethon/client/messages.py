@@ -52,7 +52,9 @@ class _MessagesIter(RequestIter):
         if self.reverse:
             if offset_id:
                 offset_id += 1
-            else:
+            elif not offset_date:
+                # offset_id has priority over offset_date, so don't
+                # set offset_id to 1 if we want to offset by date.
                 offset_id = 1
 
         if from_user:
