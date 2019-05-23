@@ -385,6 +385,16 @@ class TelegramBaseClient(abc.ABC):
         """
         Connects to Telegram.
 
+        .. note::
+
+            Connect means connect and nothing else, and only one low-level
+            request is made to notify Telegram about which layer we will be
+            using.
+
+            Before Telegram sends you updates, you need to make a high-level
+            request, like `client.get_me() <telethon.client.users.UserMethods.get_me>`,
+            as described in https://core.telegram.org/api/updates.
+
         Example
             .. code-block:: python
 

@@ -19,7 +19,9 @@ class UpdateMethods(UserMethods):
 
     async def _run_until_disconnected(self: 'TelegramClient'):
         try:
-            await self.disconnected
+            # Make a high-level request to notify that we want updates
+            await self(functions.updates.GetStateRequest())
+            return await self.disconnected
         except KeyboardInterrupt:
             pass
         finally:
@@ -29,16 +31,27 @@ class UpdateMethods(UserMethods):
         """
         Runs the event loop until the library is disconnected.
 
-        Disconnections can be manual (by calling `disconnect()
-        <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`)
-        or not (if the library fails to reconnect automatically).
+        It also notifies Telegram that we want to receive updates
+        as described in https://core.telegram.org/api/updates.
 
-        If a disconnection error occurs (i.e. not manual disconnect),
-        said error will be raised through here, so you have a chance
-        to ``except`` it on your own code.
+        Manual disconnections can be made by calling `disconnect()
+        <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
+        or sending a ``KeyboardInterrupt`` (e.g. by pressing ``Ctrl+C`` on
+        the console window running the script).
+
+        If a disconnection error occurs (i.e. the library fails to reconnect
+        automatically), said error will be raised through here, so you have a
+        chance to ``except`` it on your own code.
 
         If the loop is already running, this method returns a coroutine
         that you should await on your own code.
+
+        .. note::
+
+            If you want to handle ``KeyboardInterrupt`` in your code,
+            simply run the event loop in your code too in any way, such as
+            ``loop.run_forever()`` or ``await client.disconnected`` (e.g.
+            ``loop.run_until_complete(client.disconnected)``).
 
         Example
             .. code-block:: python
@@ -52,7 +65,7 @@ class UpdateMethods(UserMethods):
         if self.loop.is_running():
             return self._run_until_disconnected()
         try:
-            return self.loop.run_until_complete(self.disconnected)
+            return self.loop.run_until_complete(self._run_until_disconnected())
         except KeyboardInterrupt:
             pass
         finally:
