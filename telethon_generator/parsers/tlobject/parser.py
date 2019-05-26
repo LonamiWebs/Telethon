@@ -58,10 +58,13 @@ def _from_line(line, is_function, method_info, layer):
     )
 
     name = match.group(1)
-    if name in method_info:
-        usability = method_info[name].usability
+    method_info = method_info.get(name)
+    if method_info:
+        usability = method_info.usability
+        friendly = method_info.friendly
     else:
         usability = Usability.UNKNOWN
+        friendly = None
 
     return TLObject(
         fullname=name,
@@ -70,6 +73,7 @@ def _from_line(line, is_function, method_info, layer):
         is_function=is_function,
         layer=layer,
         usability=usability,
+        friendly=friendly,
         args=[TLArg(name, arg_type, brace != '')
               for brace, name, arg_type in args_match]
     )

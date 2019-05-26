@@ -1,5 +1,6 @@
 import csv
 import enum
+import warnings
 
 
 class Usability(enum.Enum):
@@ -10,9 +11,10 @@ class Usability(enum.Enum):
 
 
 class MethodInfo:
-    def __init__(self, name, usability, errors):
+    def __init__(self, name, usability, errors, friendly):
         self.name = name
         self.errors = errors
+        self.friendly = friendly
         try:
             self.usability = {
                 'unknown': Usability.UNKNOWN,
@@ -25,11 +27,19 @@ class MethodInfo:
                              'unknown, not {}'.format(usability)) from None
 
 
-def parse_methods(csv_file, errors_dict):
+def parse_methods(csv_file, friendly_csv_file, errors_dict):
     """
     Parses the input CSV file with columns (method, usability, errors)
     and yields `MethodInfo` instances as a result.
     """
+    raw_to_friendly = {}
+    with friendly_csv_file.open(newline='') as f:
+        f = csv.reader(f)
+        next(f, None)  # header
+        for ns, friendly, raw_list in f:
+            for raw in raw_list.split():
+                raw_to_friendly[raw] = (ns, friendly)
+
     with csv_file.open(newline='') as f:
         f = csv.reader(f)
         next(f, None)  # header
@@ -40,4 +50,9 @@ def parse_methods(csv_file, errors_dict):
                 raise ValueError('Method {} references unknown errors {}'
                                  .format(method, errors)) from None
 
-            yield MethodInfo(method, usability, errors)
+            friendly = raw_to_friendly.pop(method, None)
+            yield MethodInfo(method, usability, errors, friendly)
+
+    if raw_to_friendly:
+        warnings.warn('note: unknown raw methods in friendly mapping: {}'
+                      .format(', '.join(raw_to_friendly)))

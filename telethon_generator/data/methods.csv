@@ -58,6 +58,7 @@ auth.dropTempAuthKeys,both,
 auth.exportAuthorization,both,DC_ID_INVALID
 auth.importAuthorization,both,AUTH_BYTES_INVALID USER_ID_INVALID
 auth.importBotAuthorization,both,ACCESS_TOKEN_EXPIRED ACCESS_TOKEN_INVALID API_ID_INVALID
+auth.logOut,both,
 auth.recoverPassword,user,CODE_EMPTY
 auth.requestPasswordRecovery,user,PASSWORD_EMPTY
 auth.resendCode,user,PHONE_NUMBER_INVALID

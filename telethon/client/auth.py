@@ -271,6 +271,10 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
         This method will send the code if it's not provided.
 
+        .. note::
+
+            In most cases, you should simply use `start()` and not this method.
+
         Arguments
             phone (`str` | `int`):
                 The phone to send the code to if no code was provided,

@@ -380,6 +380,24 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
                                     '<code>telethon.errors</code>.')
 
                 docs.write_title('Example', id='examples')
+                if tlobject.friendly:
+                    ns, friendly = tlobject.friendly
+                    docs.write_text(
+                        'Please refer to the documentation of <a href="'
+                        'https://docs.telethon.dev/en/latest/modules/client.html'
+                        '#telethon.client.{0}.{1}"><code>client.{1}()</code></a> '
+                        'to learn about the parameters and see several code '
+                        'examples on how to use it.'
+                        .format(ns, friendly)
+                    )
+                    docs.write_text(
+                        'The method above is the recommended way to do it. '
+                        'If you need more control over the parameters or want '
+                        'to learn how it is implemented, open the details by '
+                        'clicking on the "Details" text.'
+                    )
+                    docs.write('<details>')
+
                 docs.write('''<pre>\
 <strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
 <strong>from</strong> telethon <strong>import</strong> functions, types
@@ -399,6 +417,8 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
                         docs.write('.stringify()')
 
                 docs.write(')</pre>')
+                if tlobject.friendly:
+                    docs.write('</details>')
 
             depth = '../' * (2 if tlobject.namespace else 1)
             docs.add_script(src='prependPath = "{}";'.format(depth))

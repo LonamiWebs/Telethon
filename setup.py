@@ -46,6 +46,9 @@ ERRORS_OUT = LIBRARY_DIR / 'errors/rpcerrorlist.py'
 
 METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 
+# Which raw API methods are covered by *friendly* methods in the client?
+FRIENDLY_IN = GENERATOR_DIR / 'data/friendly.csv'
+
 TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
 TLOBJECT_OUT = LIBRARY_DIR / 'tl'
 IMPORT_DEPTH = 2
@@ -63,7 +66,7 @@ def generate(which, action='gen'):
 
     layer = next(filter(None, map(find_layer, TLOBJECT_IN_TLS)))
     errors = list(parse_errors(ERRORS_IN))
-    methods = list(parse_methods(METHODS_IN, {e.str_code: e for e in errors}))
+    methods = list(parse_methods(METHODS_IN, FRIENDLY_IN, {e.str_code: e for e in errors}))
 
     tlobjects = list(itertools.chain(*(
         parse_tl(file, layer, methods) for file in TLOBJECT_IN_TLS)))
