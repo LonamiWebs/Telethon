@@ -92,6 +92,7 @@ You can also use the menu on the left to quickly skip over sections.
     developing/philosophy.rst
     developing/test-servers.rst
     developing/project-structure.rst
+    developing/tests.rst
     developing/coding-style.rst
     developing/understanding-the-type-language.rst
     developing/tips-for-porting-the-project.rst
