@@ -138,7 +138,7 @@ class Conversation(ChatGetter):
             lambda x, y: x.reply_to_msg_id == y
         )
 
-    def _get_message(
+    async def _get_message(
             self, target_message, indices, pending, timeout, condition):
         """
         Gets the next desired message under the desired condition.
@@ -193,7 +193,10 @@ class Conversation(ChatGetter):
 
         # Otherwise the next incoming response will be the one to use
         pending[target_id] = future
-        return self._get_result(future, start_time, timeout)
+        try:
+            return await self._get_result(future, start_time, timeout)
+        finally:
+            pending.pop(target_id, None)
 
     async def get_edit(self, message=None, *, timeout=None):
         """
@@ -221,7 +224,10 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = asyncio.Future(loop=self._client.loop)
         self._pending_edits[target_id] = future
-        return await self._get_result(future, start_time, timeout)
+        try:
+            return await self._get_result(future, start_time, timeout)
+        finally:
+            self._pending_edits.pop(target_id, None)
 
     async def wait_read(self, message=None, *, timeout=None):
         """
@@ -240,7 +246,10 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        return await self._get_result(future, start_time, timeout)
+        try:
+            return await self._get_result(future, start_time, timeout)
+        finally:
+            self._pending_reads.pop(target_id, None)
 
     async def wait_event(self, event, *, timeout=None):
         """
