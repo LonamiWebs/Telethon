@@ -13,6 +13,121 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Documentation Overhaul (v1.8)
+=============================
+
+*Published at 2019/05/30*
+
++------------------------+
+| Scheme layer used: 100 |
++------------------------+
+
+The documentation has been completely reworked from the ground up,
+with awesome new quick references such as :ref:`client-ref` to help
+you quickly find what you need!
+
+Raw methods also warn you when a friendly variant is available, so
+that you don't accidentally make your life harder than it has to be.
+
+In addition, all methods in the client now are fully annotated with type
+hints! More work needs to be done, but this should already help a lot when
+using Telethon from any IDEs.
+
+You may have noticed that the patch versions between ``v1.7.2`` to ``v1.7.7``
+have not been documented. This is because patch versions should only contain
+bug fixes, no new features or breaking changes. This hasn't been the case in
+the past, but from now on, the library will try to adhere more strictly to
+the `Semantic Versioning <https://semver.org>`_ principles.
+
+If you ever want to look at those bug fixes, please use the appropriated
+``git`` command, such as ``git shortlog v1.7.1...v1.7.4``, but in general,
+they probably just fixed your issue.
+
+With that out of the way, let's look at the full change set:
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The layer changed, so take note if you use the raw API, as it's usual.
+* The way photos are downloaded changed during the layer update of the
+  previous version, and fixing that bug as a breaking change in itself.
+  `client.download_media() <telethon.client.downloads.DownloadMethods.download_media>`
+  now offers a different way to deal with thumbnails.
+
+
+Additions
+~~~~~~~~~
+
+* New `Message.file <telethon.tl.custom.message.Message.file>` property!
+  Now you can trivially access `message.file.id  <telethon.tl.custom.file.File.id>`
+  to get the file ID of some media, or even ``print(message.file.name)``.
+* Archiving dialogs with `Dialog.archive() <telethon.tl.custom.dialog.Dialog.archive>`
+  or `client.edit_folder() <telethon.client.dialogs.DialogMethods.edit_folder>`
+  is now possible.
+* New cleaned-up method to stream downloads with `client.iter_download()
+  <telethon.client.downloads.DownloadMethods.iter_download>`, which offers
+  a lot of flexibility, such as arbitrary offsets for efficient seeking.
+* `Dialog.delete() <telethon.tl.custom.dialog.Dialog.delete>` has existed
+  for a while, and now `client.delete_dialog()
+  <telethon.client.dialogs.DialogMethods.delete_dialog>` exists too so you
+  can easily leave chats or delete dialogs without fetching all dialogs.
+* Some people or chats have a lot of profile photos. You can now iterate
+  over all of them with the new `client.iter_profile_photos()
+  <telethon.client.chats.ChatMethods.iter_profile_photos>` method.
+* You can now annoy everyone with the new `Message.pin(notify=True)
+  <telethon.tl.custom.message.Message.pin>`! The client has its own
+  variant too, called `client.pin_message()
+  <telethon.client.messages.MessageMethods.pin_message>`.
+
+
+Bug fixes
+~~~~~~~~~
+
+* Correctly catch and raise all RPC errors.
+* Downloading stripped photos wouldn't work correctly.
+* Under some systems, ``libssl`` would fail to load earlier than
+  expected, causing the library to fail when being imported.
+* `conv.get_response() <telethon.tl.custom.conversation.Conversation.get_response>`
+  after ID 0 wasn't allowed when it should.
+* `InlineBuilder <telethon.tl.custom.inlinebuilder.InlineBuilder>` only worked
+  with local files, but files from anywhere are supported.
+* Accessing the text property from a raw-API call to fetch :tl:`Message` would fail
+  (any any other property that needed the client).
+* Database is now upgraded if the version was lower, not different.
+  From now on, this should help with upgrades and downgrades slightly.
+* Fixed saving ``pts`` and session-related stuff.
+* Disconnection should not raise any errors.
+* Invite links of the form ``tg://join?invite=`` now work.
+* `client.iter_participants(search=...) <telethon.client.chats.ChatMethods.iter_participants>`
+  now works on private chats again.
+* Iterating over messages in reverse with a date as offset wouldn't work.
+* The conversation would behave weirdly when a timeout occurred.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``telethon`` now re-export all the goodies that you commonly need when
+  using the library, so e.g. ``from telethon import Button`` will now work.
+* ``telethon.sync`` now re-exports everything from ``telethon``, so that
+  you can trivially import from just one place everything that you need.
+* More attempts at reducing CPU usage after automatically fetching missing
+  entities on events. This isn't a big deal, even if it sounds like one.
+* Hexadecimal invite links are now supported. You didn't need them, but
+  they will now work.
+
+Internal Changes
+~~~~~~~~~~~~~~~~
+
+* Deterministic code generation. This is good for ``diff``.
+* On Python 3.7 and above, we properly close the connection.
+* A lot of micro-optimization.
+* Fixes to bugs introduced while making this release.
+* Custom commands on ``setup.py`` are nicer to use.
+
+
+
 Fix-up for Photo Downloads (v1.7.1)
 ===================================
 

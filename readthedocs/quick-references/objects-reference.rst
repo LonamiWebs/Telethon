@@ -239,6 +239,45 @@ can find the individual results:
     download_media
 
 
+Dialog
+======
+
+The `Dialog <telethon.tl.custom.dialog.Dialog>` object is returned when
+you call `client.iter_dialogs() <telethon.client.dialogs.DialogMethods.iter_dialogs>`.
+
+.. currentmodule:: telethon.tl.custom.dialog.Dialog
+
+.. autosummary::
+    :nosignatures:
+
+    send_message
+    archive
+    delete
+
+
+Draft
+======
+
+The `Draft <telethon.tl.custom.draft.Draft>` object is returned when
+you call `client.iter_drafts() <telethon.client.dialogs.DialogMethods.iter_drafts>`.
+
+.. currentmodule:: telethon.tl.custom.draft.Draft
+
+.. autosummary::
+    :nosignatures:
+
+    entity
+    input_entity
+    get_entity
+    get_input_entity
+    text
+    raw_text
+    is_empty
+    set_message
+    send
+    delete
+
+
 Utils
 =====
 
