@@ -323,6 +323,55 @@ class DialogMethods(UserMethods):
             for x, y in zip(entities, folder)
         ]))
 
+    async def delete_dialog(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            *,
+            revoke: bool = False
+    ):
+        """
+        Deletes a dialog (leaves a chat or channel).
+
+        See also `Dialog.delete() <telethon.tl.custom.dialog.Dialog.delete>`.
+
+        Arguments
+            entity (entities):
+                The entity of the dialog to delete. If it's a chat or
+                channel, you will leave it. Note that the chat itself
+                is not deleted, only the dialog, because you left it.
+
+            revoke (`bool`, optional):
+                On private chats, you may revoke the messages from
+                the other peer too. By default, it's ``False``. Set
+                it to ``True`` to delete the history for both.
+
+        Returns
+            The :tl:`Updates` object that the request produces,
+            or nothing for private conversations.
+
+        Example
+            .. code-block:: python
+
+                # Deleting the first dialog
+                dialogs = client.get_dialogs(5)
+                client.delete_dialog(dialogs[0])
+
+                # Leaving a channel by username
+                client.delete_dialog('username')
+        """
+        entity = await self.get_input_entity(entity)
+        if isinstance(entity, types.InputPeerChannel):
+            return await self(functions.channels.LeaveChannelRequest(entity))
+
+        if isinstance(entity, types.InputPeerChat):
+            result = await self(functions.messages.DeleteChatUserRequest(
+                entity.chat_id, types.InputUserSelf()))
+        else:
+            result = None
+
+        await self(functions.messages.DeleteHistoryRequest(entity, 0, revoke=revoke))
+        return result
+
     def conversation(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',

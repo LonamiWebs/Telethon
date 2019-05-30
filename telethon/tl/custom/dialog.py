@@ -104,20 +104,15 @@ class Dialog:
         return await self._client.send_message(
             self.input_entity, *args, **kwargs)
 
-    async def delete(self):
+    async def delete(self, revoke=False):
         """
         Deletes the dialog from your dialog list. If you own the
         channel this won't destroy it, only delete it from the list.
+
+        Shorthand for `telethon.client.dialogs.DialogMethods.delete_dialog`
+        with ``entity`` already set.
         """
-        if self.is_channel:
-            await self._client(functions.channels.LeaveChannelRequest(
-                self.input_entity))
-        else:
-            if self.is_group:
-                await self._client(functions.messages.DeleteChatUserRequest(
-                    self.entity.id, types.InputPeerSelf()))
-            await self._client(functions.messages.DeleteHistoryRequest(
-                self.input_entity, 0))
+        await self._client.delete_dialog(self.input_entity, revoke=revoke)
 
     async def archive(self, folder=1):
         """
