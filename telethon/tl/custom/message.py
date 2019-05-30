@@ -854,6 +854,15 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         else:
             return await self._buttons[i][j].click()
 
+    async def pin(self, *, notify=False):
+        """
+        Pins the message. Shorthand for
+        `telethon.client.messages.MessageMethods.pin_message`
+        with both ``entity`` and ``message`` already set.
+        """
+        await self._client.pin_message(
+            await self.get_input_chat(), self.id, notify=notify)
+
     # endregion Public Methods
 
     # region Private Methods

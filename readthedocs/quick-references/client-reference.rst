@@ -63,6 +63,7 @@ Messages
     forward_messages
     iter_messages
     get_messages
+    pin_message
     send_read_acknowledge
 
 Uploads

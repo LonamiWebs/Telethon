@@ -76,6 +76,7 @@ Methods
     delete
     get_reply_message
     click
+    pin
     download_media
     get_entities_text
     get_buttons

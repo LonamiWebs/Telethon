@@ -1121,6 +1121,49 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
 
         return False
 
+    async def pin_message(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Optional[hints.MessageIDLike]',
+            *,
+            notify: bool = False
+    ):
+        """
+        Pins or unpins a message in a chat.
+
+        The default behaviour is to *not* notify members, unlike the
+        official applications.
+
+        See also `Message.pin() <telethon.tl.custom.message.Message.pin>`.
+
+        Arguments
+            entity (`entity`):
+                The chat where the message should be pinned.
+
+            message (`int` | `Message <telethon.tl.custom.message.Message>`):
+                The message or the message ID to pin. If it's
+                ``None``, the message will be unpinned instead.
+
+            notify (`bool`, optional):
+                Whether the pin should notify people or not.
+
+        Example
+            .. code-block:: python
+
+                # Send and pin a message to annoy everyone
+                message = client.send_message(chat, 'Pinotifying is fun!')
+                client.pin_message(chat, message, notify=True)
+        """
+        if not message:
+            message = 0
+
+        entity = await self.get_input_entity(entity)
+        await self(functions.messages.UpdatePinnedMessageRequest(
+            peer=entity,
+            id=message,
+            silent=not notify
+        ))
+
     # endregion
 
     # endregion
