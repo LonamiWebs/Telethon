@@ -101,6 +101,7 @@ Dialogs
     archive
     iter_drafts
     get_drafts
+    delete_dialog
     conversation
 
 Users
@@ -130,6 +131,8 @@ Chats
     get_participants
     iter_admin_log
     get_admin_log
+    iter_profile_photos
+    get_profile_photos
     action
 
 Parse Mode

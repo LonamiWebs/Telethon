@@ -1,18 +1,19 @@
 import asyncio
 import itertools
 import string
+import typing
 
 from .users import UserMethods
 from .. import helpers, utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
-_MAX_PARTICIPANTS_CHUNK_SIZE = 200
-_MAX_ADMIN_LOG_CHUNK_SIZE = 100
-
-import typing
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
+
+_MAX_PARTICIPANTS_CHUNK_SIZE = 200
+_MAX_ADMIN_LOG_CHUNK_SIZE = 100
+_MAX_PROFILE_PHOTO_CHUNK_SIZE = 100
 
 
 class _ChatAction:
@@ -274,6 +275,76 @@ class _AdminLogIter(RequestIter):
             return True
 
 
+class _ProfilePhotoIter(RequestIter):
+    async def _init(
+            self, entity, offset, max_id
+    ):
+        entity = await self.client.get_input_entity(entity)
+        if isinstance(entity, (types.InputPeerUser, types.InputPeerSelf)):
+            self.request = functions.photos.GetUserPhotosRequest(
+                entity,
+                offset=offset,
+                max_id=max_id,
+                limit=1
+            )
+        else:
+            self.request = functions.messages.SearchRequest(
+                peer=entity,
+                q='',
+                filter=types.InputMessagesFilterChatPhotos(),
+                min_date=None,
+                max_date=None,
+                offset_id=0,
+                add_offset=offset,
+                limit=1,
+                max_id=max_id,
+                min_id=0,
+                hash=0
+            )
+
+        if self.limit == 0:
+            self.request.limit = 1
+            result = await self.client(self.request)
+            if isinstance(result, types.photos.Photos):
+                self.total = len(result.photos)
+            elif isinstance(result, types.messages.Messages):
+                self.total = len(result.messages)
+            else:
+                # Luckily both photosSlice and messages have a count for total
+                self.total = getattr(result, 'count', None)
+
+    async def _load_next_chunk(self):
+        self.request.limit = min(self.left, _MAX_PROFILE_PHOTO_CHUNK_SIZE)
+        result = await self.client(self.request)
+
+        if isinstance(result, types.photos.Photos):
+            self.buffer = result.photos
+            self.left = len(self.buffer)
+            self.total = len(self.buffer)
+        elif isinstance(result, types.messages.Messages):
+            self.buffer = [x.action.photo for x in result.messages
+                           if isinstance(x.action, types.MessageActionChatEditPhoto)]
+
+            self.left = len(self.buffer)
+            self.total = len(self.buffer)
+        elif isinstance(result, types.photos.PhotosSlice):
+            self.buffer = result.photos
+            self.total = result.count
+            if len(self.buffer) < self.request.limit:
+                self.left = len(self.buffer)
+            else:
+                self.request.offset += len(result.photos)
+        else:
+            self.buffer = [x.action.photo for x in result.messages
+                           if isinstance(x.action, types.MessageActionChatEditPhoto)]
+            self.total = getattr(result, 'count', None)
+            if len(result.messages) < self.request.limit:
+                self.left = len(self.buffer)
+            elif result.messages:
+                self.request.add_offset = 0
+                self.request.offset_id = result.messages[-1].id
+
+
 class ChatMethods(UserMethods):
 
     # region Public methods
@@ -532,6 +603,69 @@ class ChatMethods(UserMethods):
                 print(events[0].old)
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
+
+    def iter_profile_photos(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            limit: int = None,
+            *,
+            offset: int = 0,
+            max_id: int = 0) -> _ProfilePhotoIter:
+        """
+        Iterator over a user's profile photos or a chat's photos.
+
+        Arguments
+            entity (`entity`):
+                The entity from which to get the profile or chat photos.
+
+            limit (`int` | `None`, optional):
+                Number of photos to be retrieved.
+
+                The limit may also be ``None``, which would eventually all
+                the photos that are still available.
+
+            offset (`int`):
+                How many photos should be skipped before returning the first one.
+
+            max_id (`int`):
+                The maximum ID allowed when fetching photos.
+
+        Yields
+            Instances of :tl:`Photo`.
+
+        Example
+            .. code-block:: python
+
+                # Download all the profile photos of some user
+                for photo in client.iter_profile_photos(user):
+                    client.download_media(photo)
+        """
+        return _ProfilePhotoIter(
+            self,
+            limit,
+            entity=entity,
+            offset=offset,
+            max_id=max_id
+        )
+
+    async def get_profile_photos(
+            self: 'TelegramClient',
+            *args,
+            **kwargs) -> 'hints.TotalList':
+        """
+        Same as `iter_profile_photos()`, but returns a
+        `TotalList <telethon.helpers.TotalList>` instead.
+
+        Example
+            .. code-block:: python
+
+                # Get the photos of a channel
+                photos = client.get_profile_photos(channel)
+
+                # Download the oldest photo
+                client.download_media(photos[-1])
+        """
+        return await self.iter_profile_photos(*args, **kwargs).collect()
 
     def action(
             self: 'TelegramClient',
