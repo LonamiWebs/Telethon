@@ -71,7 +71,7 @@ class _MessagesIter(RequestIter):
         if not self.entity:
             self.request = functions.messages.SearchGlobalRequest(
                 q=search or '',
-                offset_date=offset_date,
+                offset_rate=offset_date,
                 offset_peer=types.InputPeerEmpty(),
                 offset_id=offset_id,
                 limit=1
