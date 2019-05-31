@@ -44,6 +44,7 @@ CHAT_FORBIDDEN,,You cannot write in this chat
 CHAT_ID_EMPTY,400,The provided chat ID is empty
 CHAT_ID_INVALID,400,"Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead"
 CHAT_INVALID,400,The chat is invalid for this request
+CHAT_LINK_EXISTS,400,The chat is linked to a channel and cannot be used in that request
 CHAT_NOT_MODIFIED,400,"The chat or channel wasn't modified (title, invites, username, admins, etc. are the same)"
 CHAT_RESTRICTED,400,The chat is restricted and cannot be used in that request
 CHAT_SEND_GIFS_FORBIDDEN,403,You can't send gifs in this chat
@@ -130,6 +131,7 @@ MEDIA_EMPTY,400,The provided media object is invalid
 MEDIA_INVALID,400,Media invalid
 MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as stickers or voice notes)
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
+MEGAGROUP_PREHISTORY_HIDDEN,400,You can't set this discussion group because it's history is hidden 
 MEMBER_NO_LOCATION,500,An internal failure occurred while fetching user info (couldn't find location)
 MEMBER_OCCUPY_PRIMARY_LOC_FAILED,500,Occupation of primary member location failed
 MESSAGE_AUTHOR_REQUIRED,403,Message author required
