@@ -231,8 +231,8 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 Unsupported formats will result in ``VideoContentTypeError``.
 
         Returns
-            The `telethon.tl.custom.message.Message` (or messages) containing
-            the sent file, or messages if a list of them was passed.
+            The `Message <telethon.tl.custom.message.Message>` (or messages)
+            containing the sent file, or messages if a list of them was passed.
 
         Example
             .. code-block:: python
@@ -451,7 +451,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         Returns
             :tl:`InputFileBig` if the file size is larger than 10MB,
-            `telethon.tl.custom.inputsizedfile.InputSizedFile`
+            `InputSizedFile <telethon.tl.custom.inputsizedfile.InputSizedFile>`
             (subclass of :tl:`InputFile`) otherwise.
 
         Example

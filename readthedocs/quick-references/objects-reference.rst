@@ -13,6 +13,48 @@ to find out about the attributes.
 .. contents::
 
 
+ChatGetter
+==========
+
+All events base `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`,
+and some of the objects below do too, so it's important to know its methods.
+
+.. currentmodule:: telethon.tl.custom.chatgetter.ChatGetter
+
+.. autosummary::
+    :nosignatures:
+
+    chat
+    input_chat
+    chat_id
+    is_private
+    is_group
+    is_channel
+
+    get_chat
+    get_input_chat
+
+
+SenderGetter
+============
+
+Similar to `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`, a
+`SenderGetter <telethon.tl.custom.sendergetter.SenderGetter>` is the same,
+but it works for senders instead.
+
+.. currentmodule:: telethon.tl.custom.sendergetter.SenderGetter
+
+.. autosummary::
+    :nosignatures:
+
+    sender
+    input_sender
+    sender_id
+
+    get_sender
+    get_input_sender
+
+
 Message
 =======
 
@@ -21,6 +63,9 @@ Message
 The `Message` type is very important, mostly because we are working
 with a library for a *messaging* platform, so messages are widely used:
 in events, when fetching history, replies, etc.
+
+It bases `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>` and
+`SenderGetter <telethon.tl.custom.sendergetter.SenderGetter>`.
 
 Properties
 ----------
@@ -114,6 +159,8 @@ The `Conversation <telethon.tl.custom.conversation.Conversation>` object
 is returned by the `client.conversation()
 <telethon.client.dialogs.DialogMethods.conversation>` method to easily
 send and receive responses like a normal conversation.
+
+It bases `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`.
 
 .. currentmodule:: telethon.tl.custom.conversation.Conversation
 

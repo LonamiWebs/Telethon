@@ -19,7 +19,12 @@ class SenderGetter(abc.ABC):
         Returns the :tl:`User` or :tl:`Channel` that sent this object.
         It may be ``None`` if Telegram didn't send the sender.
 
-        If you're using `telethon.events`, use `get_sender` instead.
+        If you only need the ID, use `sender_id` instead.
+
+        If you need to call a method which needs
+        this chat, use `input_sender` instead.
+
+        If you're using `telethon.events`, use `get_sender()` instead.
         """
         return self._sender
 
@@ -27,6 +32,11 @@ class SenderGetter(abc.ABC):
         """
         Returns `sender`, but will make an API call to find the
         sender unless it's already cached.
+
+        If you only need the ID, use `sender_id` instead.
+
+        If you need to call a method which needs
+        this sender, use `get_input_sender()` instead.
         """
         # ``sender.min`` is present both in :tl:`User` and :tl:`Channel`.
         # It's a flag that will be set if only minimal information is
@@ -47,8 +57,9 @@ class SenderGetter(abc.ABC):
     def input_sender(self):
         """
         This :tl:`InputPeer` is the input version of the user/channel who
-        sent the message. Similarly to `input_chat`, this doesn't have
-        things like username or similar, but still useful in some cases.
+        sent the message. Similarly to `input_chat
+        <telethon.tl.custom.chatgetter.ChatGetter.input_chat>`, this doesn't
+        have things like username or similar, but still useful in some cases.
 
         Note that this might not be available if the library can't
         find the input chat, or if the message a broadcast on a channel.
@@ -74,6 +85,9 @@ class SenderGetter(abc.ABC):
     def sender_id(self):
         """
         Returns the marked sender integer ID, if present.
+
+        If there is a sender in the object, `sender_id` will *always* be set,
+        which is why you should use it instead of `sender.id <sender>`.
         """
         return self._sender_id
 

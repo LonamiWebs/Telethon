@@ -158,18 +158,19 @@ class NewMessage(EventBuilder):
     class Event(EventCommon):
         """
         Represents the event of a new message. This event can be treated
-        to all effects as a `telethon.tl.custom.message.Message`, so please
-        **refer to its documentation** to know what you can do with this event.
+        to all effects as a `Message <telethon.tl.custom.message.Message>`,
+        so please **refer to its documentation** to know what you can do
+        with this event.
 
         Members:
             message (`Message <telethon.tl.custom.message.Message>`):
                 This is the only difference with the received
-                `telethon.tl.custom.message.Message`, and will
+                `Message <telethon.tl.custom.message.Message>`, and will
                 return the `telethon.tl.custom.message.Message` itself,
                 not the text.
 
-                See `telethon.tl.custom.message.Message` for the rest of
-                available members and methods.
+                See `Message <telethon.tl.custom.message.Message>` for
+                the rest of available members and methods.
 
             pattern_match (`obj`):
                 The resulting object from calling the passed ``pattern`` function.

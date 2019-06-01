@@ -160,7 +160,7 @@ class DialogMethods(UserMethods):
                 Alias for `folder`. If unspecified, all will be returned,
                 ``False`` implies ``folder=0`` and ``True`` implies ``folder=1``.
         Yields
-            Instances of `telethon.tl.custom.dialog.Dialog`.
+            Instances of `Dialog <telethon.tl.custom.dialog.Dialog>`.
 
         Example
             .. code-block:: python
@@ -212,10 +212,8 @@ class DialogMethods(UserMethods):
         """
         Iterator over all open draft messages.
 
-        Instances of `telethon.tl.custom.draft.Draft` are yielded.
-        You can call `telethon.tl.custom.draft.Draft.set_message`
-        to change the message or `telethon.tl.custom.draft.Draft.delete`
-        among other things.
+        Yields
+            Instances of `Draft <telethon.tl.custom.draft.Draft>`.
 
         Example
             .. code-block:: python

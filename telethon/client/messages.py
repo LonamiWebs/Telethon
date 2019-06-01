@@ -415,7 +415,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 You cannot use this if both `entity` and `ids` are ``None``.
 
         Yields
-            Instances of `telethon.tl.custom.message.Message`.
+            Instances of `Message <telethon.tl.custom.message.Message>`.
 
         Example
             .. code-block:: python
@@ -776,7 +776,7 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 images into albums), and ``False`` will never group.
 
         Returns
-            The list of forwarded `telethon.tl.custom.message.Message`,
+            The list of forwarded `Message <telethon.tl.custom.message.Message>`,
             or a single one if a list wasn't provided as input.
 
             Note that if all messages are invalid (i.e. deleted) the call
@@ -925,8 +925,8 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 :tl:`ReplyMarkup` here.
 
         Returns
-            The edited `telethon.tl.custom.message.Message`, unless
-            `entity` was a :tl:`InputBotInlineMessageID` in which
+            The edited `Message <telethon.tl.custom.message.Message>`,
+            unless `entity` was a :tl:`InputBotInlineMessageID` in which
             case this method returns a boolean.
 
         Raises

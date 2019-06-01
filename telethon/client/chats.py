@@ -553,7 +553,7 @@ class ChatMethods(UserMethods):
                 If ``True``, events of message deletions will be returned.
 
         Yields
-            Instances of `telethon.tl.custom.adminlogevent.AdminLogEvent`.
+            Instances of `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>`.
 
         Example
             .. code-block:: python

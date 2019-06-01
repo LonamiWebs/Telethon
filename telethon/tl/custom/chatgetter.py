@@ -23,7 +23,12 @@ class ChatGetter(abc.ABC):
         Returns the :tl:`User`, :tl:`Chat` or :tl:`Channel` where this object
         belongs to. It may be ``None`` if Telegram didn't send the chat.
 
-        If you're using `telethon.events`, use `get_chat` instead.
+        If you only need the ID, use `chat_id` instead.
+
+        If you need to call a method which needs
+        this chat, use `input_chat` instead.
+
+        If you're using `telethon.events`, use `get_chat()` instead.
         """
         return self._chat
 
@@ -31,6 +36,11 @@ class ChatGetter(abc.ABC):
         """
         Returns `chat`, but will make an API call to find the
         chat unless it's already cached.
+
+        If you only need the ID, use `chat_id` instead.
+
+        If you need to call a method which needs
+        this chat, use `get_input_chat()` instead.
         """
         # See `get_sender` for information about 'min'.
         if (self._chat is None or getattr(self._chat, 'min', None))\
@@ -46,8 +56,10 @@ class ChatGetter(abc.ABC):
     def input_chat(self):
         """
         This :tl:`InputPeer` is the input version of the chat where the
-        message was sent. Similarly to `input_sender`, this doesn't have
-        things like username or similar, but still useful in some cases.
+        message was sent. Similarly to `input_sender
+        <telethon.tl.custom.sendergetter.SenderGetter.input_sender>`, this
+        doesn't have things like username or similar, but still useful in
+        some cases.
 
         Note that this might not be available if the library doesn't
         have enough information available.
@@ -83,11 +95,14 @@ class ChatGetter(abc.ABC):
     def chat_id(self):
         """
         Returns the marked chat integer ID. Note that this value **will
-        be different** from `to_id` for incoming private messages, since
+        be different** from ``to_id`` for incoming private messages, since
         the chat *to* which the messages go is to your own person, but
         the *chat* itself is with the one who sent the message.
 
         TL;DR; this gets the ID that you expect.
+
+        If there is a chat in the object, `chat_id` will *always* be set,
+        which is why you should use it instead of `chat.id <chat>`.
         """
         return utils.get_peer_id(self._chat_peer) if self._chat_peer else None
 

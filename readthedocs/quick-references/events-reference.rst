@@ -10,32 +10,13 @@ You can access the client that creates this event by doing
 events to find out what arguments it allows on creation and
 its **attributes** (the properties will be shown here).
 
-It is important to remember that **all events subclass**
-`ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`!
+.. important::
+
+    Remember that **all events base** `ChatGetter
+    <telethon.tl.custom.chatgetter.ChatGetter>`! Please see :ref:`faq`
+    if you don't know what this means or the implications of it.
 
 .. contents::
-
-
-ChatGetter
-==========
-
-All events subclass `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`,
-which means all events have (and you can access to):
-
-.. currentmodule:: telethon.tl.custom.chatgetter.ChatGetter
-
-.. autosummary::
-    :nosignatures:
-
-    chat
-    input_chat
-    chat_id
-    is_private
-    is_group
-    is_channel
-
-    get_chat
-    get_input_chat
 
 
 CallbackQuery

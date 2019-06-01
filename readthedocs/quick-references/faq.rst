@@ -1,3 +1,5 @@
+.. _faq:
+
 ===
 FAQ
 ===
@@ -175,6 +177,32 @@ won't do unnecessary work unless you need to:
     async def handler(event):
         chat = await event.get_chat()
         sender = await event.get_sender()
+
+
+What does "bases ChatGetter" mean?
+==================================
+
+In Python, classes can base others. This is called `inheritance
+<https://ddg.gg/python%20inheritance>`_. What it means is that
+"if a class bases another, you can use the other's methods too".
+
+For example, `Message <telethon.tl.custom.message.Message>` *bases*
+`ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`. In turn,
+`ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>` defines
+things like `obj.chat_id <telethon.tl.custom.chatgetter.ChatGetter>`.
+
+So if you have a message, you can access that too:
+
+.. code-block:: python
+
+    # ChatGetter has a chat_id property, and Message bases ChatGetter.
+    # Thus you can use ChatGetter properties and methods from Message
+    print(message.chat_id)
+
+
+Telegram has a lot to offer, and inheritance helps the library reduce
+boilerplate, so it's important to know this concept. For newcomers,
+this may be a problem, so we explain what it means here in the FAQ.
 
 
 Can I use Flask with the library?

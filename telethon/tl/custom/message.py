@@ -781,7 +781,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             filter (`callable`):
                 Clicks the first button for which the callable
                 returns ``True``. The callable should accept a single
-                `telethon.tl.custom.messagebutton.MessageButton` argument.
+                `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
+                argument.
 
             data (`bytes`):
                 This argument overrides the rest and will not search any

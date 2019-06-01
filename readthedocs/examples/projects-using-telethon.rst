@@ -4,15 +4,20 @@
 Projects using Telethon
 =======================
 
-This page lists some real world examples showcasing what can be built with
-the library.
+This page lists some **interesting and useful** real world
+examples showcasing what can be built with the library.
 
 .. note::
 
-    Do you have a project that uses the library or know of any that's not
-    listed here? Feel free to leave a comment at
+    Do you have an interesting project that uses the library or know of any
+    that's not listed here? Feel free to leave a comment at
     `issue 744 <https://github.com/LonamiWebs/Telethon/issues/744>`_
     so it can be included in the next revision of the documentation!
+
+    You can also advertise your bot and its features, in the issue, although
+    it should be a big project which can be useful for others before being
+    included here, so please don't feel offended if it can't be here!
+
 
 .. _projects-telegram-export:
 
@@ -62,31 +67,6 @@ TelegramTUI
 `bad-day's GitHub <https://github.com/bad-day>`_
 
 A Telegram client on your terminal.
-
-spotify_telegram_bio_updater
-============================
-
-`spotify_telegram_bio_updater <https://github.com/Poolitzer/spotify_telegram_bio_updater>`_ /
-`pooltalks' Telegram <https://t.me/pooltalks>`_
-
-Small project that updates the biography of a telegram user according
-to their current Spotify playback, or revert it if no playback is active.
-
-Telegram-UserBot
-================
-
-`Telegram-UserBot <https://github.com/raphielgang/telegram-userbot>`_ /
-`baalajimaestro's site <https://baalajimaestro.ooo>`_
-
-A modular telegram Python UserBot running on python3 with an sqlalchemy database.
-
-kantek
-======
-
-`kantek <https://github.com/mojurasu/kantek>`_ /
-`mojurasu's site <https://mojurasu.com>`_
-
-kantek is a userbot written in Python using Telethon.
 
 tgcloud
 =======

@@ -64,7 +64,7 @@ class MessageButton:
         Emulates the behaviour of clicking this button.
 
         If it's a normal :tl:`KeyboardButton` with text, a message will be
-        sent, and the sent `telethon.tl.custom.message.Message` returned.
+        sent, and the sent `Message <telethon.tl.custom.message.Message>` returned.
 
         If it's an inline :tl:`KeyboardButtonCallback` with text and data,
         it will be "clicked" and the :tl:`BotCallbackAnswer` returned.
