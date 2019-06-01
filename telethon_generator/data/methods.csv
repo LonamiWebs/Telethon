@@ -93,8 +93,9 @@ channels.leaveChannel,both,CHANNEL_INVALID CHANNEL_PRIVATE CHANNEL_PUBLIC_GROUP_
 channels.readHistory,user,CHANNEL_INVALID CHANNEL_PRIVATE
 channels.readMessageContents,user,CHANNEL_INVALID CHANNEL_PRIVATE
 channels.reportSpam,user,CHANNEL_INVALID INPUT_USER_DEACTIVATED
+channels.setDiscussionGroup,user,MEGAGROUP_PREHISTORY_HIDDEN
 channels.setStickers,both,CHANNEL_INVALID PARTICIPANTS_TOO_FEW
-channels.togglePreHistoryHidden,user,
+channels.togglePreHistoryHidden,user,CHAT_LINK_EXISTS
 channels.toggleSignatures,user,CHANNEL_INVALID
 channels.updateUsername,user,CHANNELS_ADMIN_PUBLIC_TOO_MUCH CHANNEL_INVALID CHAT_ADMIN_REQUIRED USERNAME_INVALID USERNAME_OCCUPIED
 contacts.block,user,CONTACT_ID_INVALID
