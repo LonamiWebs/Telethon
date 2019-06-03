@@ -55,6 +55,7 @@ class Conversation(ChatGetter):
         self._pending_reads = {}
 
         self._exclusive = exclusive
+        self._cancelled = False
 
         # The user is able to expect two responses for the same message.
         # {desired message ID: next incoming index}
@@ -354,6 +355,9 @@ class Conversation(ChatGetter):
             raise ValueError('No message was sent previously')
 
     async def _get_result(self, future, start_time, timeout, pending, target_id):
+        if self._cancelled:
+            raise asyncio.CancelledError('The conversation was cancelled before')
+
         due = self._total_due
         if timeout is None:
             timeout = self._timeout
@@ -371,6 +375,7 @@ class Conversation(ChatGetter):
             del pending[target_id]
 
     def _cancel_all(self, exception=None):
+        self._cancelled = True
         for pending in itertools.chain(
                 self._pending_responses.values(),
                 self._pending_replies.values(),
@@ -399,6 +404,7 @@ class Conversation(ChatGetter):
             raise errors.AlreadyInConversationError()
 
         conv_set.add(self)
+        self._cancelled = False
 
         self._last_outgoing = 0
         self._last_incoming = 0
