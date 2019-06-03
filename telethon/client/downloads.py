@@ -743,7 +743,7 @@ class DownloadMethods(UserMethods):
                 file, 'contact', '.vcard',
                 possible_names=[first_name, phone_number, last_name]
             )
-            f = open(file, 'wb', encoding='utf-8')
+            f = open(file, 'wb')
         else:
             f = file
 
