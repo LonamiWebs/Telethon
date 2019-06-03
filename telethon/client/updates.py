@@ -382,8 +382,8 @@ class UpdateMethods(UserMethods):
                 await self._get_difference(update, channel_id, pts_date)
 
         built = EventBuilderDict(self, update)
-        if self._conversations:
-            for conv in self._conversations.values():
+        for conv_set in self._conversations.values():
+            for conv in conv_set:
                 ev = built[events.NewMessage]
                 if ev:
                     conv._on_new_message(ev)

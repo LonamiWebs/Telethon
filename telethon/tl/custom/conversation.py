@@ -394,12 +394,11 @@ class Conversation(ChatGetter):
 
         # Make sure we're the only conversation in this chat if it's exclusive
         chat_id = utils.get_peer_id(self._chat_peer)
-        count = self._client._ids_in_conversations.get(chat_id, 0)
-        if self._exclusive and count:
+        conv_set = self._client._conversations[chat_id]
+        if self._exclusive and conv_set:
             raise errors.AlreadyInConversationError()
 
-        self._client._ids_in_conversations[chat_id] = count + 1
-        self._client._conversations[self._id] = self
+        conv_set.add(self)
 
         self._last_outgoing = 0
         self._last_incoming = 0
@@ -426,14 +425,24 @@ class Conversation(ChatGetter):
         """
         self._cancel_all()
 
+    async def cancel_all(self):
+        """
+        Calls `cancel` on *all* conversations in this chat.
+
+        Note that you should ``await`` this method, since it's meant to be
+        used outside of a context manager, and it needs to resolve the chat.
+        """
+        chat_id = await self._client.get_peer_id(self._input_chat)
+        for conv in self._client._conversations[chat_id]:
+            conv.cancel()
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         chat_id = utils.get_peer_id(self._chat_peer)
-        if self._client._ids_in_conversations[chat_id] == 1:
-            del self._client._ids_in_conversations[chat_id]
-        else:
-            self._client._ids_in_conversations[chat_id] -= 1
+        conv_set = self._client._conversations[chat_id]
+        conv_set.discard(self)
+        if not conv_set:
+            del self._client._conversations[chat_id]
 
-        del self._client._conversations[self._id]
         self._cancel_all()
 
     __enter__ = helpers._sync_enter
