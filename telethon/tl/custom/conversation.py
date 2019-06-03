@@ -418,8 +418,13 @@ class Conversation(ChatGetter):
         return self
 
     def cancel(self):
-        """Cancels the current conversation and exits the context manager."""
-        raise _ConversationCancelled()
+        """
+        Cancels the current conversation. Pending responses and subsequent
+        calls to get a response will raise ``asyncio.CancelledError``.
+
+        This method is synchronous and should not be awaited.
+        """
+        self._cancel_all()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         chat_id = utils.get_peer_id(self._chat_peer)
@@ -430,11 +435,6 @@ class Conversation(ChatGetter):
 
         del self._client._conversations[self._id]
         self._cancel_all()
-        return isinstance(exc_val, _ConversationCancelled)
 
     __enter__ = helpers._sync_enter
     __exit__ = helpers._sync_exit
-
-
-class _ConversationCancelled(InterruptedError):
-    pass
