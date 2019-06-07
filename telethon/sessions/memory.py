@@ -1,27 +1,10 @@
-from enum import Enum
-
 from .abstract import Session
 from .. import utils
 from ..tl import TLObject
 from ..tl.types import (
     PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel,
-    InputPhoto, InputDocument
+    InputPeerUser, InputPeerChat, InputPeerChannel
 )
-
-
-class _SentFileType(Enum):
-    DOCUMENT = 0
-    PHOTO = 1
-
-    @staticmethod
-    def from_type(cls):
-        if cls == InputDocument:
-            return _SentFileType.DOCUMENT
-        elif cls == InputPhoto:
-            return _SentFileType.PHOTO
-        else:
-            raise ValueError('The cls must be either InputDocument/InputPhoto')
 
 
 class MemorySession(Session):
@@ -34,7 +17,6 @@ class MemorySession(Session):
         self._auth_key = None
         self._takeout_id = None
 
-        self._files = {}
         self._entities = set()
         self._update_states = {}
 
@@ -228,17 +210,3 @@ class MemorySession(Session):
                 return InputPeerChannel(entity_id, entity_hash)
         else:
             raise ValueError('Could not find input entity with key ', key)
-
-    def cache_file(self, md5_digest, file_size, instance):
-        if not isinstance(instance, (InputDocument, InputPhoto)):
-            raise TypeError('Cannot cache %s instance' % type(instance))
-        key = (md5_digest, file_size, _SentFileType.from_type(type(instance)))
-        value = (instance.id, instance.access_hash)
-        self._files[key] = value
-
-    def get_file(self, md5_digest, file_size, cls):
-        key = (md5_digest, file_size, _SentFileType.from_type(cls))
-        try:
-            return cls(*self._files[key])
-        except KeyError:
-            return None

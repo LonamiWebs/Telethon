@@ -144,24 +144,3 @@ class Session(ABC):
         to use a cached username to avoid extra RPC).
         """
         raise NotImplementedError
-
-    @abstractmethod
-    def cache_file(self, md5_digest, file_size, instance):
-        """
-        Caches the given file information persistently, so that it
-        doesn't need to be re-uploaded in case the file is used again.
-
-        The ``instance`` will be either an ``InputPhoto`` or ``InputDocument``,
-        both with an ``.id`` and ``.access_hash`` attributes.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_file(self, md5_digest, file_size, cls):
-        """
-        Returns an instance of ``cls`` if the ``md5_digest`` and ``file_size``
-        match an existing saved record. The class will either be an
-        ``InputPhoto`` or ``InputDocument``, both with two parameters
-        ``id`` and ``access_hash`` in that order.
-        """
-        raise NotImplementedError

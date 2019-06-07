@@ -23,18 +23,6 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class _CacheType:
-    """Like functools.partial but pretends to be the wrapped class."""
-    def __init__(self, cls):
-        self._cls = cls
-
-    def __call__(self, *args, **kwargs):
-        return self._cls(*args, file_reference=b'', **kwargs)
-
-    def __eq__(self, other):
-        return self._cls == other
-
-
 def _resize_photo_if_needed(
         file, is_image, width=1280, height=1280, background=(255, 255, 255)):
 
@@ -98,7 +86,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             reply_to: 'hints.MessageIDLike' = None,
             attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
             thumb: 'hints.FileLike' = None,
-            allow_cache: bool = True,
             parse_mode: str = (),
             voice_note: bool = False,
             video_note: bool = False,
@@ -187,12 +174,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 Successful thumbnails were files below 20kb and 200x200px.
                 Width/height and dimensions/size ratios may be important.
 
-            allow_cache (`bool`, optional):
-                Whether to allow using the cached version stored in the
-                database or not. Defaults to ``True`` to avoid re-uploads.
-                Must be ``False`` if you wish to use different attributes
-                or thumb than those that were used when the file was cached.
-
             parse_mode (`object`, optional):
                 See the `TelegramClient.parse_mode
                 <telethon.client.messageparse.MessageParseMethods.parse_mode>`
@@ -202,15 +183,9 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             voice_note (`bool`, optional):
                 If ``True`` the audio will be sent as a voice note.
 
-                Set `allow_cache` to ``False`` if you sent the same file
-                without this setting before for it to work.
-
             video_note (`bool`, optional):
                 If ``True`` the video will be sent as a video note,
                 also known as a round video message.
-
-                Set `allow_cache` to ``False`` if you sent the same file
-                without this setting before for it to work.
 
             buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
@@ -292,7 +267,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
             for x in documents:
                 result.append(await self.send_file(
-                    entity, x, allow_cache=allow_cache,
+                    entity, x,
                     caption=caption, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
@@ -317,7 +292,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         file_handle, media, image = await self._file_to_media(
             file, force_document=force_document,
             progress_callback=progress_callback,
-            attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
+            attributes=attributes, thumb=thumb,
             voice_note=voice_note, video_note=video_note,
             supports_streaming=supports_streaming
         )
@@ -332,7 +307,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
             entities=msg_entities, reply_markup=markup, silent=silent
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle, image=image)
 
         return msg
 
@@ -340,15 +314,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None):
         """Specialized version of .send_file for albums"""
-        # We don't care if the user wants to avoid cache, we will use it
-        # anyway. Why? The cached version will be exactly the same thing
-        # we need to produce right now to send albums (uploadMedia), and
-        # cache only makes a difference for documents where the user may
-        # want the attributes used on them to change.
-        #
-        # In theory documents can be sent inside the albums but they appear
-        # as different messages (not inside the album), and the logic to set
-        # the attributes/avoid cache is already written in .send_file().
         entity = await self.get_input_entity(entity)
         if not utils.is_list_like(caption):
             caption = (caption,)
@@ -359,7 +324,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         reply_to = utils.get_message_id(reply_to)
 
-        # Need to upload the media first, but only if they're not cached yet
         media = []
         for file in files:
             # Albums want :tl:`InputMedia` which, in theory, includes
@@ -371,9 +335,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
-                self.session.cache_file(
-                    fh.md5, fh.size, utils.get_input_photo(r.photo))
-
                 fm = utils.get_input_media(r.photo)
 
             if captions:
@@ -403,13 +364,14 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         # Sent photo IDs -> messages
         return [messages[m.media.id.id] for m in media]
 
+    # TODO Offer a way to easily save media for later use, to replace old caching system
+
     async def upload_file(
             self: 'TelegramClient',
             file: 'hints.FileLike',
             *,
             part_size_kb: float = None,
             file_name: str = None,
-            use_cache: type = None,
             progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
@@ -437,13 +399,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 The file name which will be used on the resulting InputFile.
                 If not specified, the name will be taken from the ``file``
                 and if this is not a ``str``, it will be ``"unnamed"``.
-
-            use_cache (`type`, optional):
-                The type of cache to use (currently either :tl:`InputDocument`
-                or :tl:`InputPhoto`). If present and the file is small enough
-                to need the MD5, it will be checked against the database,
-                and if a match is found, the upload won't be made. Instead,
-                an instance of type ``use_cache`` will be returned.
 
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
@@ -526,19 +481,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         hash_md5 = hashlib.md5()
         if not is_large:
             # Calculate the MD5 hash before anything else.
-            # As this needs to be done always for small files,
-            # might as well do it before anything else and
-            # check the cache.
+            # This needs to be done always for small files.
             if isinstance(file, str):
                 with open(file, 'rb') as stream:
                     file = stream.read()
             hash_md5.update(file)
-            if use_cache:
-                cached = self.session.get_file(
-                    hash_md5.digest(), file_size, cls=_CacheType(use_cache)
-                )
-                if cached:
-                    return cached
 
         part_count = (file_size + part_size - 1) // part_size
         self._log[__name__].info('Uploading file of %d bytes in %d chunks of %d',
@@ -581,7 +528,7 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     async def _file_to_media(
             self, file, force_document=False,
             progress_callback=None, attributes=None, thumb=None,
-            allow_cache=True, voice_note=False, video_note=False,
+            voice_note=False, video_note=False,
             supports_streaming=False, mime_type=None, as_image=None):
         if not file:
             return None, None, None
@@ -615,12 +562,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
 
         media = None
         file_handle = None
-        use_cache = types.InputPhoto if as_image else types.InputDocument
         if not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(
                 _resize_photo_if_needed(file, as_image),
-                progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
+                progress_callback=progress_callback
             )
         elif re.match('https?://', file):
             if as_image:
@@ -641,12 +586,6 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 'Failed to convert {} to media. Not an existing file, '
                 'an HTTP URL or a valid bot-API-like file ID'.format(file)
             )
-        elif isinstance(file_handle, use_cache):
-            # File was cached, so an instance of use_cache was returned
-            if as_image:
-                media = types.InputMediaPhoto(file_handle)
-            else:
-                media = types.InputMediaDocument(file_handle)
         elif as_image:
             media = types.InputMediaUploadedPhoto(file_handle)
         else:
@@ -673,17 +612,5 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 **input_kw
             )
         return file_handle, media, as_image
-
-    async def _cache_media(self: 'TelegramClient', msg, file, file_handle, image):
-        if file and msg and isinstance(file_handle,
-                                       custom.InputSizedFile):
-            # There was a response message and we didn't use cached
-            # version, so cache whatever we just sent to the database.
-            md5, size = file_handle.md5, file_handle.size
-            if image:
-                to_cache = utils.get_input_photo(msg.media.photo)
-            else:
-                to_cache = utils.get_input_document(msg.media.document)
-            self.session.cache_file(md5, size, to_cache)
 
     # endregion

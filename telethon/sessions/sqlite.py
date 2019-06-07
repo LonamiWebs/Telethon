@@ -2,11 +2,11 @@ import datetime
 import os
 
 from telethon.tl import types
-from .memory import MemorySession, _SentFileType
+from .memory import MemorySession
 from .. import utils
 from ..crypto import AuthKey
 from ..tl.types import (
-    InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
+    PeerUser, PeerChat, PeerChannel
 )
 
 try:
@@ -17,7 +17,7 @@ except ImportError as e:
     sqlite3_err = type(e)
 
 EXTENSION = '.session'
-CURRENT_VERSION = 5  # database version
+CURRENT_VERSION = 6  # database version
 
 
 class SQLiteSession(MemorySession):
@@ -87,15 +87,6 @@ class SQLiteSession(MemorySession):
                     name text
                 )"""
                 ,
-                """sent_files (
-                    md5_digest blob,
-                    file_size integer,
-                    type integer,
-                    id integer,
-                    hash integer,
-                    primary key(md5_digest, file_size, type)
-                )"""
-                ,
                 """update_state (
                     id integer primary key,
                     pts integer,
@@ -143,6 +134,9 @@ class SQLiteSession(MemorySession):
         if old == 4:
             old += 1
             c.execute("alter table sessions add column takeout_id integer")
+        if old == 5:
+            old += 1
+            c.execute('drop table sent_files')
         c.close()
 
     @staticmethod
@@ -300,26 +294,3 @@ class SQLiteSession(MemorySession):
                 utils.get_peer_id(PeerChat(id)),
                 utils.get_peer_id(PeerChannel(id))
             )
-
-    # File processing
-
-    def get_file(self, md5_digest, file_size, cls):
-        row = self._execute(
-            'select id, hash from sent_files '
-            'where md5_digest = ? and file_size = ? and type = ?',
-            md5_digest, file_size, _SentFileType.from_type(cls).value
-        )
-        if row:
-            # Both allowed classes have (id, access_hash) as parameters
-            return cls(row[0], row[1])
-
-    def cache_file(self, md5_digest, file_size, instance):
-        if not isinstance(instance, (InputDocument, InputPhoto)):
-            raise TypeError('Cannot cache %s instance' % type(instance))
-
-        self._execute(
-            'insert or replace into sent_files values (?,?,?,?,?)',
-            md5_digest, file_size,
-            _SentFileType.from_type(type(instance)).value,
-            instance.id, instance.access_hash
-        )
