@@ -1,5 +1,6 @@
 import itertools
 import typing
+import warnings
 
 from .buttons import ButtonMethods
 from .messageparse import MessageParseMethods
@@ -1069,65 +1070,71 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
             max_id: int = None,
             clear_mentions: bool = False) -> bool:
         """
-        Marks messages as read and optionally clears mentions.
+        Deprecated, use `mark_read` instead.
+        """
+        warnings.warn('client.send_read_acknowledge is deprecated, use client.mark_read instead')
+        if max_id:
+            message = max_id
 
-        This effectively marks a message as read (or more than one) in the
-        given conversation.
+        return await self.mark_read(entity, message, clear_mentions=clear_mentions)
 
-        If neither message nor maximum ID are provided, all messages will be
-        marked as read by assuming that ``max_id = 0``.
+    async def mark_read(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = (),
+            *,
+            clear_mentions: bool = False) -> bool:
+        """
+        Marks a chat as read, and optionally clears mentions.
+
+        By default, all messages will be marked as read, and mentions won't
+        be cleared. You can also specify up to which message the client has
+        read, and optionally clear mentions.
 
         Arguments
             entity (`entity`):
                 The chat where these messages are located.
 
-            message (`list` | `Message <telethon.tl.custom.message.Message>`):
-                Either a list of messages or a single message.
-
-            max_id (`int`):
-                Overrides messages, until which message should the
-                acknowledge should be sent.
+            message (`int` | `list` | `Message <telethon.tl.custom.message.Message>`):
+                Either a list of messages, a single message or an ID.
+                The chat will be marked as read up to the highest ID.
 
             clear_mentions (`bool`):
                 Whether the mention badge should be cleared (so that
                 there are no more mentions) or not for the given entity.
 
                 If no message is provided, this will be the only action
-                taken.
+                taken. If you want to mark as read *and* clear mentions,
+                pass ``0`` as the message and set this to ``True``.
 
         Example
             .. code-block:: python
 
-                client.send_read_acknowledge(last_message)
+                client.mark_read(chat)
                 # or
-                client.send_read_acknowledge(last_message_id)
+                client.mark_read(chat, some_message)
                 # or
-                client.send_read_acknowledge(messages)
+                client.mark_read(chat, clear_mentions=True)
         """
-        if max_id is None:
-            if not message:
-                max_id = 0
-            else:
-                if utils.is_list_like(message):
-                    max_id = max(msg.id for msg in message)
-                else:
-                    max_id = message.id
-
         entity = await self.get_input_entity(entity)
         if clear_mentions:
             await self(functions.messages.ReadMentionsRequest(entity))
-            if max_id is None:
+            if message == ():
                 return True
 
-        if max_id is not None:
-            if isinstance(entity, types.InputPeerChannel):
-                return await self(functions.channels.ReadHistoryRequest(
-                    utils.get_input_channel(entity), max_id=max_id))
-            else:
-                return await self(functions.messages.ReadHistoryRequest(
-                    entity, max_id=max_id))
+        if not message:
+            message = 0
+        elif utils.is_list_like(message):
+            message = max(map(utils.get_message_id, message))
+        else:
+            message = utils.get_message_id(message)
 
-        return False
+        if isinstance(entity, types.InputPeerChannel):
+            return await self(functions.channels.ReadHistoryRequest(
+                utils.get_input_channel(entity), max_id=message))
+        else:
+            return await self(functions.messages.ReadHistoryRequest(
+                entity, max_id=message))
 
     async def pin_message(
             self: 'TelegramClient',
