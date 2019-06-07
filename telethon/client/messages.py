@@ -636,6 +636,14 @@ class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
                 client.send_message(chat, 'A single button, with "clk1" as data',
                                     buttons=Button.inline('Click me', b'clk1'))
 
+                # Row of inline buttons (just a list)
+                client.send_message(chat, 'Look at this row',
+                                    [Button.inline('Row 1'), Button.inline('Row 2')])
+
+                # Columns of inline buttons (a list of lists)
+                client.send_message(chat, 'Look at this row',
+                                    [[Button.inline('Col 1'), Button.inline('Col 2')]])
+
                 # Matrix of inline buttons
                 client.send_message(chat, 'Pick one from this grid', buttons=[
                     [Button.inline('Left'), Button.inline('Right')],

@@ -53,7 +53,7 @@ class ButtonMethods(UpdateMethods):
         if not utils.is_list_like(buttons):
             buttons = [[buttons]]
         elif not utils.is_list_like(buttons[0]):
-            buttons = [buttons]
+            buttons = [[b] for b in buttons]
 
         is_inline = False
         is_normal = False
