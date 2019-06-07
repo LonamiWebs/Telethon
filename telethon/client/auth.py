@@ -258,29 +258,22 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
     async def sign_in(
             self: 'TelegramClient',
-            phone: str = None,
             code: typing.Union[str, int] = None,
             *,
             password: str = None,
             bot_token: str = None,
+            phone: str = None,
             phone_code_hash: str = None) -> 'types.User':
         """
         Logs in to Telegram to an existing user or bot account.
 
         You should only use this if you are not authorized yet.
 
-        This method will send the code if it's not provided.
-
         .. note::
 
             In most cases, you should simply use `start()` and not this method.
 
         Arguments
-            phone (`str` | `int`):
-                The phone to send the code to if no code was provided,
-                or to override the phone that was previously used with
-                these requests.
-
             code (`str` | `int`):
                 The code that Telegram sent. Note that if you have sent this
                 code through the application itself it will immediately
@@ -295,30 +288,33 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 Used to sign in as a bot. Not all requests will be available.
                 This should be the hash the @BotFather gave you.
 
+            phone (`str` | `int`):
+                By default, the library remembers the phone passed to
+                `send_code_request`. If you are passing the code for
+                a different phone, you should set this parameter.
+
             phone_code_hash (`str`, optional):
-                The hash returned by `send_code_request`. This can be left as
-                ``None`` to use the last hash known for the phone to be used.
+                By default, the library remembers the hash that
+                `send_code_request` returned. If you are passing the
+                code for a different phone, you should set this parameter.
 
         Returns
-            The signed in user, or the information about
-            :meth:`send_code_request`.
+            The signed in user.
 
         Example
             .. code-block:: python
 
                 phone = '+34 123 123 123'
-                client.sign_in(phone)  # send code
+                client.send_code_request(phone)
 
                 code = input('enter code: ')
-                client.sign_in(phone, code)
+                client.sign_in(code)
         """
         me = await self.get_me()
         if me:
             return me
 
-        if phone and not code and not password:
-            return await self.send_code_request(phone)
-        elif code:
+        if code:
             phone, phone_code_hash = \
                 self._parse_phone_and_hash(phone, phone_code_hash)
 
@@ -337,10 +333,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
                 api_id=self.api_id, api_hash=self.api_hash
             ))
         else:
-            raise ValueError(
-                'You must provide a phone and a code the first time, '
-                'and a password only if an RPCError was raised before.'
-            )
+            raise ValueError('You must provide a code, password or bot token')
 
         return self._on_login(result.user)
 
