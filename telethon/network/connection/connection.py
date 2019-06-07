@@ -43,43 +43,19 @@ class Connection(abc.ABC):
 
     async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(
-                    self._ip, self._port, loop=self._loop, ssl=ssl),
-                loop=self._loop, timeout=timeout
-            )
+            connect_coroutine = asyncio.open_connection(
+                self._ip, self._port, loop=self._loop, ssl=ssl)
         else:
-            import socks
-            if ':' in self._ip:
-                mode, address = socket.AF_INET6, (self._ip, self._port, 0, 0)
-            else:
-                mode, address = socket.AF_INET, (self._ip, self._port)
+            import pproxy
 
-            s = socks.socksocket(mode, socket.SOCK_STREAM)
-            if isinstance(self._proxy, dict):
-                s.set_proxy(**self._proxy)
-            else:
-                s.set_proxy(*self._proxy)
+            # FIXME https://github.com/qwj/python-proxy/issues/41
+            connect_coroutine = pproxy.Connection(
+                self._proxy).tcp_connect(self._ip, self._port)
 
-            s.setblocking(False)
-            await asyncio.wait_for(
-                self._loop.sock_connect(s, address),
-                timeout=timeout,
-                loop=self._loop
-            )
-            if ssl:
-                s.settimeout(timeout)
-                s = ssl_mod.wrap_socket(
-                    s,
-                    do_handshake_on_connect=True,
-                    ssl_version=ssl_mod.PROTOCOL_SSLv23,
-                    ciphers='ADH-AES256-SHA'
-                )
-                s.setblocking(False)
-
-            self._reader, self._writer = \
-                await asyncio.open_connection(sock=s, loop=self._loop)
-
+        self._reader, self._writer = await asyncio.wait_for(
+            connect_coroutine,
+            loop=self._loop, timeout=timeout
+        )
         self._codec = self.packet_codec(self)
         self._init_conn()
         await self._writer.drain()

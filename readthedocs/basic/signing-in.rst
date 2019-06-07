@@ -107,7 +107,7 @@ Signing In behind a Proxy
 =========================
 
 If you need to use a proxy to access Telegram,
-you will need to  `install PySocks`__ and then change:
+you will need to  `install python-proxy`__ and then change:
 
 .. code-block:: python
 
@@ -117,12 +117,20 @@ with
 
 .. code-block:: python
 
-    TelegramClient('anon', api_id, api_hash, proxy=(socks.SOCKS5, '127.0.0.1', 4444))
+    TelegramClient('anon', api_id, api_hash, proxy='socks5://127.0.0.1:4444')
+
+    # You can also use a ``dict`` (it will be translated to the same URI as above)
+    TelegramClient('anon', api_id, api_hash, proxy={
+        'scheme': 'socks5',
+        'hostname': '127.0.0.1',
+        'port': 4444
+    })
+
 
 (of course, replacing the IP and port with the IP and port of the proxy).
 
 The ``proxy=`` argument should be a tuple, a list or a dict,
-consisting of parameters described `in PySocks usage`__.
+consisting of parameters described `in python-proxy usage`__.
 
-.. __: https://github.com/Anorov/PySocks#installation
-.. __: https://github.com/Anorov/PySocks#usage-1
+.. __: https://github.com/qwj/python-proxy#quickstart
+.. __: https://github.com/qwj/python-proxy#uri-syntax

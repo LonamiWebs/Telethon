@@ -67,12 +67,11 @@ class TelegramBaseClient(abc.ABC):
             By default this is ``False`` as IPv6 support is not
             too widespread yet.
 
-        proxy (`tuple` | `list` | `dict`, optional):
-            An iterable consisting of the proxy info. If `connection` is
-            one of `MTProxy`, then it should contain MTProxy credentials:
-            ``('hostname', port, 'secret')``. Otherwise, it's meant to store
-            function parameters for PySocks, like ``(type, 'hostname', port)``.
-            See https://github.com/Anorov/PySocks#usage-1 for more.
+        proxy (`str` | `dict`, optional):
+            The URI with all the required proxy information, or a dictionary
+            with the fields to use (like ``schemepython``, ``hostname``, etc.).
+
+            See https://github.com/qwj/python-proxy#uri-syntax for details.
 
         timeout (`int` | `float`, optional):
             The timeout in seconds to be used when connecting.
@@ -171,7 +170,7 @@ class TelegramBaseClient(abc.ABC):
             *,
             connection: 'typing.Type[Connection]' = ConnectionTcpFull,
             use_ipv6: bool = False,
-            proxy: typing.Union[tuple, dict] = None,
+            proxy: typing.Union[str, dict] = None,
             timeout: int = 10,
             request_retries: int = 5,
             connection_retries: int =5,
@@ -254,14 +253,14 @@ class TelegramBaseClient(abc.ABC):
         self._request_retries = request_retries
         self._connection_retries = connection_retries
         self._retry_delay = retry_delay or 0
-        self._proxy = proxy
+        self._proxy = helpers._get_proxy_uri(proxy)
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
 
         assert isinstance(connection, type)
         self._connection = connection
         init_proxy = None if not issubclass(connection, TcpMTProxy) else \
-            types.InputClientProxy(*connection.address_info(proxy))
+            types.InputClientProxy(*connection.address_info(self._proxy))
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.

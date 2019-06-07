@@ -1,4 +1,4 @@
 cryptg
-pysocks
+pproxy
 hachoir3
 pillow

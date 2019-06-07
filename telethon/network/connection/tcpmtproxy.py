@@ -126,6 +126,7 @@ class TcpMTProxy(ObfuscatedConnection):
 
     @staticmethod
     def address_info(proxy_info):
+        raise NotImplementedError('New proxy format is not implemented')
         if proxy_info is None:
             raise ValueError("No proxy info specified for MTProxy connection")
         return proxy_info[:2]
