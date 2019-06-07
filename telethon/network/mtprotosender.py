@@ -122,6 +122,7 @@ class MTProtoSender:
         await self._connect()
         self._user_connected = True
 
+    @property
     def is_connected(self):
         return self._user_connected
 
