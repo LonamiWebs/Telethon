@@ -54,7 +54,7 @@ class _TakeoutClient:
                 self.__success))
             if not result:
                 raise ValueError("Failed to finish the takeout.")
-            self.session.takeout_id = None
+            self._session.takeout_id = None
 
     __enter__ = helpers._sync_enter
     __exit__ = helpers._sync_exit
@@ -211,7 +211,7 @@ class AccountMethods(UserMethods):
         )
         arg_specified = (arg is not None for arg in request_kwargs.values())
 
-        if self.session.takeout_id is None or any(arg_specified):
+        if self._session.takeout_id is None or any(arg_specified):
             request = functions.account.InitTakeoutSessionRequest(
                 **request_kwargs)
         else:

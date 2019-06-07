@@ -330,7 +330,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         elif bot_token:
             result = await self(functions.auth.ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
-                api_id=self.api_id, api_hash=self.api_hash
+                api_id=self._api_id, api_hash=self._api_hash
             ))
         else:
             raise ValueError('You must provide a code, password or bot token')
@@ -465,7 +465,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         if not phone_hash:
             try:
                 result = await self(functions.auth.SendCodeRequest(
-                    phone, self.api_id, self.api_hash, types.CodeSettings()))
+                    phone, self._api_id, self._api_hash, types.CodeSettings()))
             except errors.AuthRestartError:
                 return await self.send_code_request(phone, force_sms=force_sms)
 
@@ -508,7 +508,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
         self._state_cache.reset()
 
         await self.disconnect()
-        self.session.delete()
+        self._session.delete()
         return True
 
     async def edit_2fa(

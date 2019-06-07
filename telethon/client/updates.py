@@ -225,7 +225,7 @@ class UpdateMethods(UserMethods):
         if not pts:
             return
 
-        self.session.catching_up = True
+        self._session.catching_up = True
         try:
             while True:
                 d = await self(functions.updates.GetDifferenceRequest(
@@ -275,7 +275,7 @@ class UpdateMethods(UserMethods):
         finally:
             # TODO Save new pts to session
             self._state_cache._pts_date = (pts, date)
-            self.session.catching_up = False
+            self._session.catching_up = False
 
     # endregion
 
@@ -285,7 +285,7 @@ class UpdateMethods(UserMethods):
     # the order that the updates arrive in to update the pts and date to
     # be always-increasing. There is also no need to make this async.
     def _handle_update(self: 'TelegramClient', update):
-        self.session.process_entities(update)
+        self._session.process_entities(update)
         self._entity_cache.add(update)
 
         if isinstance(update, (types.Updates, types.UpdatesCombined)):
@@ -347,7 +347,7 @@ class UpdateMethods(UserMethods):
             # inserted because this is a rather expensive operation
             # (default's sqlite3 takes ~0.1s to commit changes). Do
             # it every minute instead. No-op if there's nothing new.
-            self.session.save()
+            self._session.save()
 
             # We need to send some content-related request at least hourly
             # for Telegram to keep delivering updates, otherwise they will

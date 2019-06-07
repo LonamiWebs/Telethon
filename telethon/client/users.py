@@ -52,7 +52,7 @@ class UserMethods(TelegramBaseClient):
                             exceptions.append(e)
                             results.append(None)
                             continue
-                        self.session.process_entities(result)
+                        self._session.process_entities(result)
                         self._entity_cache.add(result)
                         exceptions.append(None)
                         results.append(result)
@@ -63,7 +63,7 @@ class UserMethods(TelegramBaseClient):
                         return results
                 else:
                     result = await future
-                    self.session.process_entities(result)
+                    self._session.process_entities(result)
                     self._entity_cache.add(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError,
@@ -377,7 +377,7 @@ class UserMethods(TelegramBaseClient):
 
         # No InputPeer, cached peer, or known string. Fetch from disk cache
         try:
-            return self.session.get_input_entity(peer)
+            return self._session.get_input_entity(peer)
         except ValueError:
             pass
 
@@ -513,7 +513,7 @@ class UserMethods(TelegramBaseClient):
             try:
                 # Nobody with this username, maybe it's an exact name/title
                 return await self.get_entity(
-                    self.session.get_input_entity(string))
+                    self._session.get_input_entity(string))
             except ValueError:
                 pass
 

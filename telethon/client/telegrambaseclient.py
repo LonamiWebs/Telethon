@@ -245,10 +245,10 @@ class TelegramBaseClient(abc.ABC):
         # them to disk, and to save additional useful information.
         # TODO Session should probably return all cached
         #      info of entities, not just the input versions
-        self.session = session
+        self._session = session
         self._entity_cache = EntityCache()
-        self.api_id = int(api_id)
-        self.api_hash = api_hash
+        self._api_id = int(api_id)
+        self._api_hash = api_hash
 
         self._request_retries = request_retries
         self._connection_retries = connection_retries
@@ -267,7 +267,7 @@ class TelegramBaseClient(abc.ABC):
         system = platform.uname()
         self._init_with = lambda x: functions.InvokeWithLayerRequest(
             LAYER, functions.InitConnectionRequest(
-                api_id=self.api_id,
+                api_id=self._api_id,
                 device_model=device_model or system.system or 'Unknown',
                 system_version=system_version or system.release or '1.0',
                 app_version=app_version or self.__version__,
@@ -280,7 +280,7 @@ class TelegramBaseClient(abc.ABC):
         )
 
         self._sender = MTProtoSender(
-            self.session.auth_key, self._loop,
+            self._session.auth_key, self._loop,
             loggers=self._log,
             retries=self._connection_retries,
             delay=self._retry_delay,
@@ -318,7 +318,7 @@ class TelegramBaseClient(abc.ABC):
         # Update state (for catching up after a disconnection)
         # TODO Get state from channels too
         self._state_cache = StateCache(
-            self.session.get_update_state(0), self._log)
+            self._session.get_update_state(0), self._log)
 
         # Some further state for subclasses
         self._event_builders = []
@@ -363,6 +363,18 @@ class TelegramBaseClient(abc.ABC):
         return self._loop
 
     @property
+    def session(self) -> Session:
+        """
+        The ``Session`` instance used by the client.
+
+        Example
+            .. code-block:: python
+
+                client.session.set_dc(dc_id, ip, port)
+        """
+        return self._session
+
+    @property
     def disconnected(self: 'TelegramClient') -> asyncio.Future:
         """
         Property with a ``Future`` that resolves upon disconnection.
@@ -405,15 +417,15 @@ class TelegramBaseClient(abc.ABC):
                     print('Failed to connect')
         """
         await self._sender.connect(self._connection(
-            self.session.server_address,
-            self.session.port,
-            self.session.dc_id,
+            self._session.server_address,
+            self._session.port,
+            self._session.dc_id,
             loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
         ))
-        self.session.auth_key = self._sender.auth_key
-        self.session.save()
+        self._session.auth_key = self._sender.auth_key
+        self._session.save()
 
         await self._sender.send(self._init_with(
             functions.help.GetConfigRequest()))
@@ -476,7 +488,7 @@ class TelegramBaseClient(abc.ABC):
 
         pts, date = self._state_cache[None]
         if pts and date:
-            self.session.set_update_state(0, types.updates.State(
+            self._session.set_update_state(0, types.updates.State(
                 pts=pts,
                 qts=0,
                 date=date,
@@ -484,7 +496,7 @@ class TelegramBaseClient(abc.ABC):
                 unread_count=0
             ))
 
-        self.session.close()
+        self._session.close()
 
     async def _disconnect(self: 'TelegramClient'):
         """
@@ -504,12 +516,12 @@ class TelegramBaseClient(abc.ABC):
         self._log[__name__].info('Reconnecting to new data center %s', new_dc)
         dc = await self._get_dc(new_dc)
 
-        self.session.set_dc(dc.id, dc.ip_address, dc.port)
+        self._session.set_dc(dc.id, dc.ip_address, dc.port)
         # auth_key's are associated with a server, which has now changed
         # so it's not valid anymore. Set to None to force recreating it.
         self._sender.auth_key.key = None
-        self.session.auth_key = None
-        self.session.save()
+        self._session.auth_key = None
+        self._session.save()
         await self._disconnect()
         return await self.connect()
 
@@ -518,8 +530,8 @@ class TelegramBaseClient(abc.ABC):
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
-        self.session.auth_key = auth_key
-        self.session.save()
+        self._session.auth_key = auth_key
+        self._session.save()
 
     # endregion
 
@@ -622,13 +634,13 @@ class TelegramBaseClient(abc.ABC):
         session = self._exported_sessions.get(cdn_redirect.dc_id)
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
-            session = self.session.clone()
+            session = self._session.clone()
             await session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')
         client = TelegramBareClient(
-            session, self.api_id, self.api_hash,
+            session, self._api_id, self._api_hash,
             proxy=self._sender.connection.conn.proxy,
             timeout=self._sender.connection.get_timeout()
         )
