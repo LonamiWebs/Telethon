@@ -93,7 +93,7 @@ channels.leaveChannel,both,CHANNEL_INVALID CHANNEL_PRIVATE CHANNEL_PUBLIC_GROUP_
 channels.readHistory,user,CHANNEL_INVALID CHANNEL_PRIVATE
 channels.readMessageContents,user,CHANNEL_INVALID CHANNEL_PRIVATE
 channels.reportSpam,user,CHANNEL_INVALID INPUT_USER_DEACTIVATED
-channels.setDiscussionGroup,user,MEGAGROUP_PREHISTORY_HIDDEN
+channels.setDiscussionGroup,user,BROADCAST_ID_INVALID LINK_NOT_MODIFIED MEGAGROUP_ID_INVALID MEGAGROUP_PREHISTORY_HIDDEN
 channels.setStickers,both,CHANNEL_INVALID PARTICIPANTS_TOO_FEW
 channels.togglePreHistoryHidden,user,CHAT_LINK_EXISTS
 channels.toggleSignatures,user,CHANNEL_INVALID

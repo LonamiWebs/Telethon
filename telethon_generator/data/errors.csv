@@ -22,6 +22,7 @@ BOT_INVALID,400,This is not a valid bot
 BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method you tried to invoke cannot be executed as a bot
 BOT_MISSING,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
+BROADCAST_ID_INVALID,400,The channel is invalid
 BUTTON_DATA_INVALID,400,The provided button data is invalid
 BUTTON_TYPE_INVALID,400,The type of one of the buttons you provided is invalid
 BUTTON_URL_INVALID,400,Button URL invalid
@@ -122,6 +123,7 @@ INVITE_HASH_INVALID,400,The invite hash is invalid
 LANG_PACK_INVALID,400,The provided language pack is invalid
 LASTNAME_INVALID,,The last name is invalid
 LIMIT_INVALID,400,An invalid limit was provided. See https://core.telegram.org/api/files#downloading-files
+LINK_NOT_MODIFIED,400,The channel is already linked to this group
 LOCATION_INVALID,400,The location given for a file was invalid. See https://core.telegram.org/api/files#downloading-files
 MAX_ID_INVALID,400,The provided max ID is invalid
 MAX_QTS_INVALID,400,The provided QTS were invalid
@@ -131,7 +133,8 @@ MEDIA_EMPTY,400,The provided media object is invalid
 MEDIA_INVALID,400,Media invalid
 MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as stickers or voice notes)
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
-MEGAGROUP_PREHISTORY_HIDDEN,400,You can't set this discussion group because it's history is hidden 
+MEGAGROUP_ID_INVALID,400,The group is invalid
+MEGAGROUP_PREHISTORY_HIDDEN,400,You can't set this discussion group because it's history is hidden
 MEMBER_NO_LOCATION,500,An internal failure occurred while fetching user info (couldn't find location)
 MEMBER_OCCUPY_PRIMARY_LOC_FAILED,500,Occupation of primary member location failed
 MESSAGE_AUTHOR_REQUIRED,403,Message author required
