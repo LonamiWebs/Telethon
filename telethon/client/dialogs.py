@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 
 class _DialogsIter(RequestIter):
     async def _init(
-            self, offset_date, offset_id, offset_peer, ignore_migrated, folder
+            self, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder
     ):
         self.request = functions.messages.GetDialogsRequest(
             offset_date=offset_date,
@@ -23,6 +23,7 @@ class _DialogsIter(RequestIter):
             offset_peer=offset_peer,
             limit=1,
             hash=0,
+            exclude_pinned=ignore_pinned,
             folder_id=folder
         )
 
@@ -110,6 +111,7 @@ class DialogMethods(UserMethods):
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
             offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
+            ignore_pinned: bool = False,
             ignore_migrated: bool = False,
             folder: int = None,
             archived: bool = None
@@ -134,11 +136,15 @@ class DialogMethods(UserMethods):
             offset_peer (:tl:`InputPeer`, optional):
                 The peer to be used as an offset.
 
+            ignore_pinned (`bool`, optional):
+                Whether pinned dialogs should be ignored or not.
+                When set to ``True``, these won't be yielded at all.
+
             ignore_migrated (`bool`, optional):
                 Whether :tl:`Chat` that have ``migrated_to`` a :tl:`Channel`
                 should be included or not. By default all the chats in your
-                dialogs are returned, but setting this to ``True`` will hide
-                them in the same way official applications do.
+                dialogs are returned, but setting this to ``True`` will ignore
+                (i.e. skip) them in the same way official applications do.
 
             folder (`int`, optional):
                 The folder from which the dialogs should be retrieved.
@@ -178,6 +184,7 @@ class DialogMethods(UserMethods):
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
+            ignore_pinned=ignore_pinned,
             ignore_migrated=ignore_migrated,
             folder=folder
         )
