@@ -77,15 +77,19 @@ class _DialogsIter(RequestIter):
             # we didn't get a DialogsSlice which means we got all.
             return True
 
-        # Don't set `request.offset_id` to the last message ID.
-        # Why? It seems to cause plenty of dialogs to be skipped.
-        #
-        # By leaving it to 0 after the first iteration, even if
-        # the user originally passed another ID, we ensure that
-        # it will work correctly.
-        self.request.offset_id = 0
+        # We can't use `messages[-1]` as the offset ID / date.
+        # Why? Because pinned dialogs will mess with the order
+        # in this list. Instead, we find the last dialog which
+        # has a message, and use it as an offset.
+        last_message = next((
+            messages[d.top_message]
+            for d in reversed(r.dialogs)
+            if d.top_message in messages
+        ), None)
+
         self.request.exclude_pinned = True
-        self.request.offset_date = r.messages[-1].date
+        self.request.offset_id = last_message.id if last_message else 0
+        self.request.offset_date = last_message.date if last_message else None
         self.request.offset_peer =\
             entities[utils.get_peer_id(r.dialogs[-1].peer)]
 
