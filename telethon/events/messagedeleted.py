@@ -5,7 +5,9 @@ from ..tl import types
 @name_inner_event
 class MessageDeleted(EventBuilder):
     """
-    Event fired when one or more messages are deleted.
+    Occurs whenever a message is deleted. Note that this event isn't 100%
+    reliable, since Telegram doesn't always notify the clients that a message
+    was deleted.
 
     .. important::
 

@@ -8,7 +8,7 @@ from ..tl import types
 @name_inner_event
 class NewMessage(EventBuilder):
     """
-    Represents a new message event builder.
+    Occurs whenever a new text message or a message with media arrives.
 
     Args:
         incoming (`bool`, optional):

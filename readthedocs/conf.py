@@ -40,8 +40,13 @@ tl_ref_url = 'https://tl.telethon.dev'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
     'custom_roles'
 ]
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None)
+}
 
 # Change the default role so we can avoid prefixing everything with :obj:
 default_role = "py:obj"

@@ -6,7 +6,7 @@ from ..tl import types, functions
 @name_inner_event
 class ChatAction(EventBuilder):
     """
-    Represents an action in a chat (such as user joined, left, or new pin).
+    Occurs whenever a user joins or leaves a chat, or a message is pinned.
     """
     @classmethod
     def build(cls, update):

@@ -10,11 +10,11 @@ Mastering asyncio
 What's asyncio?
 ===============
 
-asyncio_ is a Python 3's built-in library. This means it's already installed if
+`asyncio` is a Python 3's built-in library. This means it's already installed if
 you have Python 3. Since Python 3.5, it is convenient to work with asynchronous
 code. Before (Python 3.4) we didn't have ``async`` or ``await``, but now we do.
 
-asyncio_ stands for *Asynchronous Input Output*. This is a very powerful
+`asyncio` stands for *Asynchronous Input Output*. This is a very powerful
 concept to use whenever you work IO. Interacting with the web or external
 APIs such as Telegram's makes a lot of sense this way.
 
@@ -24,7 +24,7 @@ Why asyncio?
 
 Asynchronous IO makes a lot of sense in a library like Telethon.
 You send a request to the server (such as "get some message"), and
-thanks to asyncio_, your code won't block while a response arrives.
+thanks to `asyncio`, your code won't block while a response arrives.
 
 The alternative would be to spawn a thread for each update so that
 other code can run while the response arrives. That is *a lot* more
@@ -234,7 +234,7 @@ the client:
 
 Generally, **you don't need threads** unless you know what you're doing.
 Just create another task, as shown above. If you're using the Telethon
-with a library that uses threads, you must be careful to use ``threading.Lock``
+with a library that uses threads, you must be careful to use `threading.Lock`
 whenever you use the client, or enable the compatible mode. For that, see
 :ref:`compatibility-and-convenience`.
 
@@ -254,7 +254,7 @@ client.run_until_disconnected() blocks!
 
 All of what `client.run_until_disconnected()
 <telethon.client.updates.UpdateMethods.run_until_disconnected>` does is
-run the asyncio_'s event loop until the client is disconnected. That means
+run the `asyncio`'s event loop until the client is disconnected. That means
 *the loop is running*. And if the loop is running, it will run all the tasks
 in it. So if you want to run *other* code, create tasks for it:
 
@@ -274,9 +274,10 @@ in it. So if you want to run *other* code, create tasks for it:
 This creates a task for a clock that prints the time every second.
 You don't need to use `client.run_until_disconnected()
 <telethon.client.updates.UpdateMethods.run_until_disconnected>` either!
-You just need to make the loop is running, somehow. ``asyncio.run_forever``
-and ``asyncio.run_until_complete`` can also be used to run the loop, and
-Telethon will be happy with any approach.
+You just need to make the loop is running, somehow. `loop.run_forever()
+<asyncio.loop.run_forever()>` and `loop.run_until_complete()
+<asyncio.loop.run_until_complete>` can also be used to run
+the loop, and Telethon will be happy with any approach.
 
 Of course, there are better tools to run code hourly or daily, see below.
 
@@ -285,7 +286,7 @@ What else can asyncio do?
 =========================
 
 Asynchronous IO is a really powerful tool, as we've seen. There are plenty
-of other useful libraries that also use asyncio_ and that you can integrate
+of other useful libraries that also use `asyncio` and that you can integrate
 with Telethon.
 
 * `aiohttp <https://github.com/aio-libs/aiohttp>`_ is like the infamous
@@ -314,7 +315,7 @@ you can run requests in parallel:
 This code will get the 10 last messages from `@TelethonChat
 <https://t.me/TelethonChat>`_, send one to `@TelethonOfftopic
 <https://t.me/TelethonOfftopic>`_, and also download the profile
-photo of the main group. asyncio_ will run all these three tasks
+photo of the main group. `asyncio` will run all these three tasks
 at the same time. You can run all the tasks you want this way.
 
 A different way would be:
@@ -355,8 +356,6 @@ Where can I read more?
 ======================
 
 `Check out my blog post
-<https://lonamiwebs.github.io/blog/asyncio/>`_ about asyncio_, which
+<https://lonamiwebs.github.io/blog/asyncio/>`_ about `asyncio`, which
 has some more examples and pictures to help you understand what happens
 when the loop runs.
-
-.. _asyncio: https://docs.python.org/3/library/asyncio.html

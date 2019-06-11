@@ -6,7 +6,9 @@ from ..tl import types
 @name_inner_event
 class MessageEdited(NewMessage):
     """
-    Event fired when a message has been edited.
+    Occurs whenever a message is edited. Just like `NewMessage
+    <telethon.events.newmessage.NewMessage>`, you should treat
+    this event as a `Message <telethon.tl.custom.message.Message>`.
 
     .. warning::
 

@@ -158,12 +158,12 @@ Understanding asyncio
 =====================
 
 
-With ``asyncio``, the library has several tasks running in the background.
+With `asyncio`, the library has several tasks running in the background.
 One task is used for sending requests, another task is used to receive them,
 and a third one is used to handle updates.
 
 To handle updates, you must keep your script running. You can do this in
-several ways. For instance, if you are *not* running ``asyncio``'s event
+several ways. For instance, if you are *not* running `asyncio`'s event
 loop, you should use `client.run_until_disconnected
 <telethon.client.updates.UpdateMethods.run_until_disconnected>`:
 

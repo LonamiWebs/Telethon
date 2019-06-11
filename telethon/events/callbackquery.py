@@ -10,7 +10,8 @@ from ..tl.custom.sendergetter import SenderGetter
 @name_inner_event
 class CallbackQuery(EventBuilder):
     """
-    Represents a callback query event (when an inline button is clicked).
+    Occurs whenever you sign in as a bot and a user
+    clicks one of the inline buttons on your messages.
 
     Note that the `chats` parameter will **not** work with normal
     IDs or peers if the clicked inline button comes from a "via bot"

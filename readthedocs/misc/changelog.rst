@@ -1152,7 +1152,7 @@ reasons. But there's one more surprise!
 
 There is a new magic ``telethon.sync`` module to let you use **all** the
 methods in the :ref:`TelegramClient <telethon-client>` (and the types returned
-from its functions) in a synchronous way, while using ``asyncio`` behind
+from its functions) in a synchronous way, while using `asyncio` behind
 the scenes! This means you're now able to do both of the following:
 
 .. code-block:: python
@@ -1238,7 +1238,7 @@ Bug fixes
 - "User joined" event was being treated as "User was invited".
 - SQLite's cursor should not be closed properly after usage.
 - ``await`` the updates task upon disconnection.
-- Some bug in Python 3.5.2's ``asyncio`` causing 100% CPU load if you
+- Some bug in Python 3.5.2's `asyncio` causing 100% CPU load if you
   forgot to call `client.disconnect()
   <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`.
   The method is called for you on object destruction, but you still should
@@ -1373,7 +1373,7 @@ Enhancements
 - ``pathlib.Path`` is now supported for downloading and uploading media.
 - Messages you send to yourself are now considered outgoing, unless they
   are forwarded.
-- The documentation has been updated with a brand new ``asyncio`` crash
+- The documentation has been updated with a brand new `asyncio` crash
   course to encourage you use it. You can still use the threaded version
   if you want though.
 - ``.name`` property is now properly supported when sending and downloading

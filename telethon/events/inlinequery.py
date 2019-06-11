@@ -12,7 +12,8 @@ from ..tl.custom.sendergetter import SenderGetter
 @name_inner_event
 class InlineQuery(EventBuilder):
     """
-    Represents an inline query event (when someone writes ``'@my_bot query'``).
+    Occurs whenever you sign in as a bot and a user
+    sends an inline query such as ``@bot query``.
 
     Args:
         users (`entity`, optional):
