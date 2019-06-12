@@ -85,7 +85,7 @@ manually.
 
     Thanks to `@bb010g`_ for writing down this nice list.
 
-.. _cryptg: https://github.com/Lonami/cryptg
+.. _cryptg: https://github.com/cher-nov/cryptg
 .. _pyaes: https://github.com/ricmoo/pyaes
 .. _pillow: https://python-pillow.org
 .. _aiohttp: https://docs.aiohttp.org
