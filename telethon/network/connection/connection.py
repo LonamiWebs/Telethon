@@ -67,7 +67,9 @@ class Connection(abc.ABC):
                 proxy=proxy,
                 proxy_auth=auth,
                 dst=(self._ip, self._port),
-                remote_resolve=self._proxy.get('remote_resolve', True)
+                remote_resolve=self._proxy.get('remote_resolve', True),
+                loop=self._loop,
+                ssl=ssl
             )
 
         self._reader, self._writer = await asyncio.wait_for(
