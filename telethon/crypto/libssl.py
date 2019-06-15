@@ -3,49 +3,62 @@ Helper module around the system's libssl library if available for IGE mode.
 """
 import ctypes
 import ctypes.util
+try:
+    import ctypes.macholib.dyld
+except ImportError:
+    pass
 import logging
 import os
 
 __log__ = logging.getLogger(__name__)
 
 
-lib = ctypes.util.find_library('ssl')
-
-# This is a best-effort attempt at finding the full real path of lib.
-#
-# Unfortunately ctypes doesn't tell us *where* it finds the library,
-# so we have to do that ourselves.
-try:
-    # This is not documented, so it could fail. Be on the safe side.
-    import ctypes.macholib.dyld
-    paths = ctypes.macholib.dyld.DEFAULT_LIBRARY_FALLBACK
-except (ImportError, AttributeError):
-    paths = [
-        os.path.expanduser("~/lib"),
-        "/usr/local/lib",
-        "/lib",
-        "/usr/lib",
-    ]
-
-for path in paths:
-    if os.path.isdir(path):
-        for root, _, files in os.walk(path):
-            if lib in files:
-                # Manually follow symbolic links on *nix systems.
-                # Fix for https://github.com/LonamiWebs/Telethon/issues/1167
-                lib = os.path.realpath(os.path.join(root, lib))
-                break
-
-
-try:
+def _find_ssl_lib():
+    lib = ctypes.util.find_library('ssl')
     if not lib:
         raise OSError('no library called "ssl" found')
 
-    _libssl = ctypes.cdll.LoadLibrary(lib)
+    # First, let ctypes try to handle it itself.
+    try:
+        libssl = ctypes.cdll.LoadLibrary(lib)
+    except OSError:
+        pass
+    else:
+        return libssl
+
+    # This is a best-effort attempt at finding the full real path of lib.
+    #
+    # Unfortunately ctypes doesn't tell us *where* it finds the library,
+    # so we have to do that ourselves.
+    try:
+        # This is not documented, so it could fail. Be on the safe side.
+        paths = ctypes.macholib.dyld.DEFAULT_LIBRARY_FALLBACK
+    except AttributeError:
+        paths = [
+            os.path.expanduser("~/lib"),
+            "/usr/local/lib",
+            "/lib",
+            "/usr/lib",
+        ]
+
+    for path in paths:
+        if os.path.isdir(path):
+            for root, _, files in os.walk(path):
+                if lib in files:
+                    # Manually follow symbolic links on *nix systems.
+                    # Fix for https://github.com/LonamiWebs/Telethon/issues/1167
+                    lib = os.path.realpath(os.path.join(root, lib))
+                    return ctypes.cdll.LoadLibrary(lib)
+    else:
+        raise OSError('no absolute path for "%s" and cannot load by name' % lib)
+
+
+try:
+    _libssl = _find_ssl_lib()
 except OSError as e:
     # See https://github.com/LonamiWebs/Telethon/issues/1167
     # Sometimes `find_library` returns improper filenames.
-    __log__.info('Failed to load %s: %s (%s)', lib, type(e), e)
+    __log__.info('Failed to load SSL library: %s (%s)', type(e), e)
     _libssl = None
 
 if not _libssl:
