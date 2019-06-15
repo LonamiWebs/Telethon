@@ -432,6 +432,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._updates_handle = self._loop.create_task(self._update_loop())
 
+    @property
     def is_connected(self: 'TelegramClient') -> bool:
         """
         Returns ``True`` if the user has connected.
@@ -441,11 +442,11 @@ class TelegramBaseClient(abc.ABC):
         Example
             .. code-block:: python
 
-                while client.is_connected():
+                while client.is_connected:
                     await asyncio.sleep(1)
         """
         sender = getattr(self, '_sender', None)
-        return sender and sender.is_connected()
+        return sender and sender.is_connected
 
     def disconnect(self: 'TelegramClient'):
         """
