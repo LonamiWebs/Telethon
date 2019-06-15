@@ -678,7 +678,8 @@ def _get_extension(file):
         # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase`
         return _get_extension(file.name)
     else:
-        return ''
+        # Maybe it's a Telegram media
+        return get_extension(file)
 
 
 def is_image(file):
