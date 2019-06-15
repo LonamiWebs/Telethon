@@ -549,7 +549,6 @@ class MTProtoSender:
             self._log.warning('Note: %s is not an update, not dispatching it %s', message.obj)
             return
 
-        print(message.obj.__class__.__name__)
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
         if self._update_callback:
             self._update_callback(message.obj)
