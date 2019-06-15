@@ -131,43 +131,6 @@ def _sync_exit(self, *args):
     return loop.run_until_complete(self.__aexit__(*args))
 
 
-def _get_proxy_uri(proxy):
-    if not proxy:
-        return None
-    elif isinstance(proxy, str):
-        return proxy
-    elif isinstance(proxy, dict):
-        fmt = {
-            'scheme': 'socks5',
-            'cipher': '',
-            'netloc': '',
-            'localbind': '',
-            'plugins': '',
-            'rules': '',
-            'auth': ''
-        }
-        fmt.update(proxy)
-        if 'hostname' in fmt:
-            fmt['netloc'] = '{}:{}'.format(fmt.pop('hostname'), fmt.pop('port'))
-        if 'username' in fmt:
-            fmt['auth'] = '{}:{}'.format(fmt.pop('username'), fmt.pop('password'))
-
-        fix = {
-            'cipher': '{}@',
-            'localbind': '@{}',
-            'plugins': ',{}',
-            'rules': '?{}',
-            'auth': '#{}'
-        }
-        for k, v in fix.items():
-            if fmt[k]:
-                fmt[k] = v.format(fmt[k])
-
-        return '{scheme}://{cipher}{netloc}/{localbind}{plugins}{rules}{auth}'.format(**fmt)
-    else:
-        raise TypeError('{!r} is not a valid proxy (must be str URI or dict)'.format(proxy))
-
-
 # endregion
 
 # region Cryptographic related utils

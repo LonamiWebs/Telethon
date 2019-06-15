@@ -22,7 +22,7 @@ def get_env(name, message, cast=str):
 session = os.environ.get('TG_SESSION', 'printer')
 api_id = get_env('TG_API_ID', 'Enter your API ID: ', int)
 api_hash = get_env('TG_API_HASH', 'Enter your API hash: ')
-proxy = None  # https://github.com/qwj/python-proxy#uri-syntax
+proxy = None  # https://docs.telethon.dev/en/latest/basic/signing-in.html#signing-in-behind-a-proxy
 
 # Create and start the client so we can make requests (we don't here)
 client = TelegramClient(session, api_id, api_hash, proxy=proxy).start()

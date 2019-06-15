@@ -46,11 +46,29 @@ class Connection(abc.ABC):
             connect_coroutine = asyncio.open_connection(
                 self._ip, self._port, loop=self._loop, ssl=ssl)
         else:
-            import pproxy
+            import aiosocks
 
-            # FIXME https://github.com/qwj/python-proxy/issues/41
-            connect_coroutine = pproxy.Connection(
-                self._proxy).tcp_connect(self._ip, self._port)
+            auth = None
+            proto = self._proxy.get('protocol', 'socks5').lower()
+            if proto == 'socks5':
+                proxy = aiosocks.Socks5Addr(self._proxy['host'], self._proxy['port'])
+                if 'username' in self._proxy:
+                    auth = aiosocks.Socks5Auth(self._proxy['username'], self._proxy['password'])
+
+            elif proto == 'socks4':
+                proxy = aiosocks.Socks4Addr(self._proxy['host'], self._proxy['port'])
+                if 'username' in self._proxy:
+                    auth = aiosocks.Socks4Auth(self._proxy['username'])
+
+            else:
+                raise ValueError('Unsupported proxy protocol {}'.format(self._proxy['protocol']))
+
+            connect_coroutine = aiosocks.open_connection(
+                proxy=proxy,
+                proxy_auth=auth,
+                dst=(self._ip, self._port),
+                remote_resolve=self._proxy.get('remote_resolve', True)
+            )
 
         self._reader, self._writer = await asyncio.wait_for(
             connect_coroutine,

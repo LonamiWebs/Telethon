@@ -67,11 +67,10 @@ class TelegramBaseClient(abc.ABC):
             By default this is ``False`` as IPv6 support is not
             too widespread yet.
 
-        proxy (`str` | `dict`, optional):
-            The URI with all the required proxy information, or a dictionary
-            with the fields to use (like ``schemepython``, ``hostname``, etc.).
+        proxy (`dict`, optional):
+            A dictionary with information about the proxy to connect to.
 
-            See https://github.com/qwj/python-proxy#uri-syntax for details.
+            See :ref:`signing-in` for details.
 
         timeout (`int` | `float`, optional):
             The timeout in seconds to be used when connecting.
@@ -253,7 +252,7 @@ class TelegramBaseClient(abc.ABC):
         self._request_retries = request_retries
         self._connection_retries = connection_retries
         self._retry_delay = retry_delay or 0
-        self._proxy = helpers._get_proxy_uri(proxy)
+        self._proxy = proxy
         self._timeout = timeout
         self._auto_reconnect = auto_reconnect
 
