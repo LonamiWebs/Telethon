@@ -18,7 +18,7 @@ class IntermediateCodec(BaseCodec):
     def tag():
         return b'\xee\xee\xee\xee'  # same as obfuscate tag
 
-    def encode_packet(self, data):
+    def encode_packet(self, data, ip, port):
         return struct.pack('<i', len(data)) + data
 
     def decode_header(self, header):
@@ -33,7 +33,7 @@ class RandomizedIntermediateCodec(IntermediateCodec):
     tag = None
     obfuscate_tag = b'\xdd\xdd\xdd\xdd'
 
-    def encode_packet(self, data):
+    def encode_packet(self, data, ip, port):
         pad_size = random.randint(0, 3)
         padding = os.urandom(pad_size)
         return super().encode_packet(data + padding)

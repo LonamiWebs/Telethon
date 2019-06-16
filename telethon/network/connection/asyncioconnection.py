@@ -7,6 +7,7 @@ import sys
 from ...errors import InvalidChecksumError
 from ... import helpers
 from .baseconnection import BaseConnection
+from ..codec import HttpCodec
 
 
 class AsyncioConnection(BaseConnection):
@@ -35,10 +36,10 @@ class AsyncioConnection(BaseConnection):
         self._connected = False
         self._obfuscation = None  # TcpObfuscated and MTProxy
 
-    async def _connect(self, timeout=None, ssl=None):
+    async def _connect(self, timeout=None):
         if not self._proxy:
             connect_coroutine = asyncio.open_connection(
-                self._ip, self._port, loop=self._loop, ssl=ssl)
+                self._ip, self._port, loop=self._loop)
         else:
             import aiosocks
 
@@ -62,8 +63,7 @@ class AsyncioConnection(BaseConnection):
                 proxy_auth=auth,
                 dst=(self._ip, self._port),
                 remote_resolve=self._proxy.get('remote_resolve', True),
-                loop=self._loop,
-                ssl=ssl
+                loop=self._loop
             )
 
         self._reader, self._writer = await asyncio.wait_for(
@@ -79,11 +79,11 @@ class AsyncioConnection(BaseConnection):
     def connected(self):
         return self._connected
 
-    async def connect(self, timeout=None, ssl=None):
+    async def connect(self, timeout=None):
         """
         Establishes a connection with the server.
         """
-        await self._connect(timeout=timeout, ssl=ssl)
+        await self._connect(timeout=timeout)
         self._connected = True
 
     async def disconnect(self):

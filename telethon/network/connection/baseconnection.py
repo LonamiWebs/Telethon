@@ -48,7 +48,7 @@ class BaseConnection(abc.ABC):
             raise ConnectionError('Not connected')
 
         # TODO Handle asyncio.CancelledError, IOError, Exception
-        data = self._codec.encode_packet(data)
+        data = self._codec.encode_packet(data, self._ip, self._port)
         async with self._send_lock:
             return await self._send(data)
 

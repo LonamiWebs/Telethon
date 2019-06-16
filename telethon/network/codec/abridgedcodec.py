@@ -17,7 +17,7 @@ class AbridgedCodec(BaseCodec):
     def tag():
         return b'\xef'  # note: obfuscated tag is this 4 times
 
-    def encode_packet(self, data):
+    def encode_packet(self, data, ip, port):
         length = len(data) >> 2
         if length < 127:
             length = struct.pack('B', length)

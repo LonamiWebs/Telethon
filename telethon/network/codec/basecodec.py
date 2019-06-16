@@ -24,7 +24,7 @@ class BaseCodec(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def encode_packet(self, data):
+    def encode_packet(self, data, ip, port):
         """
         Encodes the given data with the current codec instance.
 

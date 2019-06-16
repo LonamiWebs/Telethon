@@ -21,7 +21,7 @@ class FullCodec(BaseCodec):
     def tag():
         return None
 
-    def encode_packet(self, data):
+    def encode_packet(self, data, ip, port):
         # https://core.telegram.org/mtproto#tcp-transport
         # total length, sequence number, packet and checksum (CRC32)
         length = len(data) + 12
