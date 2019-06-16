@@ -6,11 +6,12 @@ import sys
 
 from ...errors import InvalidChecksumError
 from ... import helpers
+from .baseconnection import BaseConnection
 
 
-class Connection(abc.ABC):
+class AsyncioConnection(BaseConnection):
     """
-    The `Connection` class is a wrapper around ``asyncio.open_connection``.
+    The `AsyncioConnection` class is a wrapper around ``asyncio.open_connection``.
 
     Subclasses will implement different transport modes as atomic operations,
     which this class eases doing since the exposed interface simply puts and
@@ -24,22 +25,15 @@ class Connection(abc.ABC):
     # should be one of `PacketCodec` implementations
     packet_codec = None
 
-    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
-        self._ip = ip
-        self._port = port
+    def __init__(self, ip, port, dc_id, *, loop, codec, loggers, proxy=None):
+        super().__init__(ip, port, loop=loop, codec=codec)
         self._dc_id = dc_id  # only for MTProxy, it's an abstraction leak
-        self._loop = loop
         self._log = loggers[__name__]
         self._proxy = proxy
         self._reader = None
         self._writer = None
         self._connected = False
-        self._send_task = None
-        self._recv_task = None
-        self._codec = None
         self._obfuscation = None  # TcpObfuscated and MTProxy
-        self._send_queue = asyncio.Queue(1)
-        self._recv_queue = asyncio.Queue(1)
 
     async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
@@ -76,9 +70,14 @@ class Connection(abc.ABC):
             connect_coroutine,
             loop=self._loop, timeout=timeout
         )
-        self._codec = self.packet_codec(self)
-        self._init_conn()
-        await self._writer.drain()
+
+        self._codec.__init__()  # reset the codec
+        if self._codec.tag():
+            await self._send(self._codec.tag())
+
+    @property
+    def connected(self):
+        return self._connected
 
     async def connect(self, timeout=None, ssl=None):
         """
@@ -87,21 +86,12 @@ class Connection(abc.ABC):
         await self._connect(timeout=timeout, ssl=ssl)
         self._connected = True
 
-        self._send_task = self._loop.create_task(self._send_loop())
-        self._recv_task = self._loop.create_task(self._recv_loop())
-
     async def disconnect(self):
         """
         Disconnects from the server, and clears
         pending outgoing and incoming messages.
         """
         self._connected = False
-
-        await helpers._cancel(
-            self._log,
-            send_task=self._send_task,
-            recv_task=self._recv_task
-        )
 
         if self._writer:
             self._writer.close()
@@ -113,104 +103,16 @@ class Connection(abc.ABC):
                     # Disconnecting should never raise
                     self._log.warning('Unhandled %s on disconnect: %s', type(e), e)
 
-    def send(self, data):
-        """
-        Sends a packet of data through this connection mode.
+    async def _send(self, data):
+        self._writer.write(data)
+        await self._writer.drain()
 
-        This method returns a coroutine.
-        """
-        if not self._connected:
-            raise ConnectionError('Not connected')
+    async def _recv(self, length):
+        return await self._reader.readexactly(length)
 
-        return self._send_queue.put(data)
 
-    async def recv(self):
-        """
-        Receives a packet of data through this connection mode.
-
-        This method returns a coroutine.
-        """
-        while self._connected:
-            result = await self._recv_queue.get()
-            if result:  # None = sentinel value = keep trying
-                return result
-
-        raise ConnectionError('Not connected')
-
-    async def _send_loop(self):
-        """
-        This loop is constantly popping items off the queue to send them.
-        """
-        try:
-            while self._connected:
-                self._send(await self._send_queue.get())
-                await self._writer.drain()
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            if isinstance(e, IOError):
-                self._log.info('The server closed the connection while sending')
-            else:
-                self._log.exception('Unexpected exception in the send loop')
-
-            await self.disconnect()
-
-    async def _recv_loop(self):
-        """
-        This loop is constantly putting items on the queue as they're read.
-        """
-        while self._connected:
-            try:
-                data = await self._recv()
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                if isinstance(e, (IOError, asyncio.IncompleteReadError)):
-                    msg = 'The server closed the connection'
-                    self._log.info(msg)
-                elif isinstance(e, InvalidChecksumError):
-                    msg = 'The server response had an invalid checksum'
-                    self._log.info(msg)
-                else:
-                    msg = 'Unexpected exception in the receive loop'
-                    self._log.exception(msg)
-
-                await self.disconnect()
-
-                # Add a sentinel value to unstuck recv
-                if self._recv_queue.empty():
-                    self._recv_queue.put_nowait(None)
-
-                break
-
-            try:
-                await self._recv_queue.put(data)
-            except asyncio.CancelledError:
-                break
-
-    def _init_conn(self):
-        """
-        This method will be called after `connect` is called.
-        After this method finishes, the writer will be drained.
-
-        Subclasses should make use of this if they need to send
-        data to Telegram to indicate which connection mode will
-        be used.
-        """
-        if self._codec.tag:
-            self._writer.write(self._codec.tag)
-
-    def _send(self, data):
-        self._writer.write(self._codec.encode_packet(data))
-
-    async def _recv(self):
-        return await self._codec.read_packet(self._reader)
-
-    def __str__(self):
-        return '{}:{}/{}'.format(
-            self._ip, self._port,
-            self.__class__.__name__.replace('Connection', '')
-        )
+class Connection(abc.ABC):
+    pass
 
 
 class ObfuscatedConnection(Connection):

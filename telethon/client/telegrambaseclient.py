@@ -10,7 +10,7 @@ from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
 from ..entitycache import EntityCache
 from ..extensions import markdown
-from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
+from ..network import MTProtoSender, AsyncioConnection, BaseCodec, FullCodec
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..statecache import StateCache
 from ..tl import TLObject, functions, types
@@ -167,7 +167,7 @@ class TelegramBaseClient(abc.ABC):
             api_id: int,
             api_hash: str,
             *,
-            connection: 'typing.Type[Connection]' = ConnectionTcpFull,
+            connection: 'typing.Type[BaseCodec]' = FullCodec,  # TODO rename
             use_ipv6: bool = False,
             proxy: typing.Union[str, dict] = None,
             timeout: int = 10,
@@ -257,9 +257,10 @@ class TelegramBaseClient(abc.ABC):
         self._auto_reconnect = auto_reconnect
 
         assert isinstance(connection, type)
-        self._connection = connection
-        init_proxy = None if not issubclass(connection, TcpMTProxy) else \
-            types.InputClientProxy(*connection.address_info(self._proxy))
+        self._codec = connection
+
+        # TODO set types.InputClientProxy if appropriated
+        init_proxy = None
 
         # Used on connection. Capture the variables in a lambda since
         # exporting clients need to create this InvokeWithLayerRequest.
@@ -415,10 +416,11 @@ class TelegramBaseClient(abc.ABC):
                 except OSError:
                     print('Failed to connect')
         """
-        await self._sender.connect(self._connection(
+        await self._sender.connect(AsyncioConnection(
             self._session.server_address,
             self._session.port,
             self._session.dc_id,
+            codec=self._codec(),
             loop=self._loop,
             loggers=self._log,
             proxy=self._proxy

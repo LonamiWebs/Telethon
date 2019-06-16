@@ -1,14 +1,15 @@
 import asyncio
 
-from .connection import Connection, PacketCodec
-
 
 SSL_PORT = 443
 
 
-class HttpPacketCodec(PacketCodec):
+class HttpPacketCodec:
     tag = None
     obfuscate_tag = None
+
+    def __init__(self):
+        raise NotImplementedError('Not migrated yet')
 
     def encode_packet(self, data):
         return ('POST /api HTTP/1.1\r\n'
@@ -32,8 +33,11 @@ class HttpPacketCodec(PacketCodec):
                 return await reader.readexactly(length)
 
 
-class ConnectionHttp(Connection):
+class ConnectionHttp:
     packet_codec = HttpPacketCodec
+
+    def __init__(self):
+        raise NotImplementedError('Not migrated yet')
 
     async def connect(self, timeout=None, ssl=None):
         await super().connect(timeout=timeout, ssl=self._port == SSL_PORT)
