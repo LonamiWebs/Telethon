@@ -249,7 +249,8 @@ InlineResult
 The `InlineResult <telethon.tl.custom.inlineresult.InlineResult>` object
 is returned inside a list by the `client.inline_query()
 <telethon.client.bots.BotMethods.inline_query>` method to make an inline
-query to a bot that supports being used in inline mode, such as ``@like``.
+query to a bot that supports being used in inline mode, such as
+`@like <https://t.me/like>`_.
 
 Note that the list returned is in fact a *subclass* of a list called
 `InlineResults <telethon.tl.custom.inlineresults.InlineResults>`, which,

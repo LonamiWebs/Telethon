@@ -79,7 +79,7 @@ with a ``'hi!'`` message.
 .. note::
 
     Event handlers **must** be ``async def``. After all,
-    Telethon is an asynchronous library based on asyncio_,
+    Telethon is an asynchronous library based on `asyncio`,
     which is a safer and often faster approach to threads.
 
     You **must** ``await`` all method calls that use
@@ -157,5 +157,3 @@ Make sure you understand the code seen here before continuing!
 As a rule of thumb, remember that new message events behave just
 like message objects, so you can do with them everything you can
 do with a message object.
-
-.. _asyncio: https://docs.python.org/3/library/asyncio.html

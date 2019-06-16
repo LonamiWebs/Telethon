@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 
 class _DialogsIter(RequestIter):
     async def _init(
-            self, offset_date, offset_id, offset_peer, ignore_migrated, folder
+            self, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder
     ):
         self.request = functions.messages.GetDialogsRequest(
             offset_date=offset_date,
@@ -23,6 +23,7 @@ class _DialogsIter(RequestIter):
             offset_peer=offset_peer,
             limit=1,
             hash=0,
+            exclude_pinned=ignore_pinned,
             folder_id=folder
         )
 
@@ -76,15 +77,19 @@ class _DialogsIter(RequestIter):
             # we didn't get a DialogsSlice which means we got all.
             return True
 
-        # Don't set `request.offset_id` to the last message ID.
-        # Why? It seems to cause plenty of dialogs to be skipped.
-        #
-        # By leaving it to 0 after the first iteration, even if
-        # the user originally passed another ID, we ensure that
-        # it will work correctly.
-        self.request.offset_id = 0
+        # We can't use `messages[-1]` as the offset ID / date.
+        # Why? Because pinned dialogs will mess with the order
+        # in this list. Instead, we find the last dialog which
+        # has a message, and use it as an offset.
+        last_message = next((
+            messages[d.top_message]
+            for d in reversed(r.dialogs)
+            if d.top_message in messages
+        ), None)
+
         self.request.exclude_pinned = True
-        self.request.offset_date = r.messages[-1].date
+        self.request.offset_id = last_message.id if last_message else 0
+        self.request.offset_date = last_message.date if last_message else None
         self.request.offset_peer =\
             entities[utils.get_peer_id(r.dialogs[-1].peer)]
 
@@ -110,6 +115,7 @@ class DialogMethods(UserMethods):
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
             offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
+            ignore_pinned: bool = False,
             ignore_migrated: bool = False,
             folder: int = None,
             archived: bool = None
@@ -134,11 +140,15 @@ class DialogMethods(UserMethods):
             offset_peer (:tl:`InputPeer`, optional):
                 The peer to be used as an offset.
 
+            ignore_pinned (`bool`, optional):
+                Whether pinned dialogs should be ignored or not.
+                When set to ``True``, these won't be yielded at all.
+
             ignore_migrated (`bool`, optional):
                 Whether :tl:`Chat` that have ``migrated_to`` a :tl:`Channel`
                 should be included or not. By default all the chats in your
-                dialogs are returned, but setting this to ``True`` will hide
-                them in the same way official applications do.
+                dialogs are returned, but setting this to ``True`` will ignore
+                (i.e. skip) them in the same way official applications do.
 
             folder (`int`, optional):
                 The folder from which the dialogs should be retrieved.
@@ -178,6 +188,7 @@ class DialogMethods(UserMethods):
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
+            ignore_pinned=ignore_pinned,
             ignore_migrated=ignore_migrated,
             folder=folder
         )

@@ -171,8 +171,22 @@ function updateSearch(event) {
     var foundTypes = getSearchArray(types, typesu, query);
     var foundConstructors = getSearchArray(constructors, constructorsu, query);
 
+    var original = requests.concat(constructors);
+    var originalu = requestsu.concat(constructorsu);
+    var destination = [];
+    var destinationu = [];
+
+    for (var i = 0; i < original.length; ++i) {
+        if (original[i].toLowerCase().replace("request", "") == query) {
+            destination.push(original[i]);
+            destinationu.push(originalu[i]);
+        }
+    }
+
     if (event && event.keyCode == 13) {
-        if (methodsDetails.open && foundRequests[1].length) {
+        if (destination.length != 0) {
+            window.location = destinationu[0];
+        } else if (methodsDetails.open && foundRequests[1].length) {
             window.location = foundRequests[1][0];
         } else if (typesDetails.open && foundTypes[1].length) {
             window.location = foundTypes[1][0];
@@ -187,18 +201,6 @@ function updateSearch(event) {
     buildList(constructorsCount, constructorsList, foundConstructors);
 
     // Now look for exact matches
-    var original = requests.concat(constructors);
-    var originalu = requestsu.concat(constructorsu);
-    var destination = [];
-    var destinationu = [];
-
-    for (var i = 0; i < original.length; ++i) {
-        if (original[i].toLowerCase().replace("request", "") == query) {
-            destination.push(original[i]);
-            destinationu.push(originalu[i]);
-        }
-    }
-
     if (destination.length == 0) {
         exactMatch.style.display = "none";
     } else {

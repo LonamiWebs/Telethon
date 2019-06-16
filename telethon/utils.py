@@ -106,9 +106,13 @@ def get_extension(media):
     """Gets the corresponding extension for any Telegram media."""
 
     # Photos are always compressed as .jpg by Telegram
-    if isinstance(media, (types.UserProfilePhoto,
-                          types.ChatPhoto, types.MessageMediaPhoto)):
+    try:
+        get_input_photo(media)
         return '.jpg'
+    except TypeError:
+        # These cases are not handled by input photo because it can't
+        if isinstance(media, (types.UserProfilePhoto, types.ChatPhoto)):
+            return '.jpg'
 
     # Documents will come with a mime type
     if isinstance(media, types.MessageMediaDocument):
@@ -290,7 +294,10 @@ def get_input_photo(photo):
     except AttributeError:
         _raise_cast_fail(photo, 'InputPhoto')
 
-    if isinstance(photo, types.photos.Photo):
+    if isinstance(photo, types.Message):
+        photo = photo.media
+
+    if isinstance(photo, (types.photos.Photo, types.MessageMediaPhoto)):
         photo = photo.photo
 
     if isinstance(photo, types.Photo):
@@ -302,6 +309,7 @@ def get_input_photo(photo):
 
     if isinstance(photo, types.messages.ChatFull):
         photo = photo.full_chat
+
     if isinstance(photo, types.ChannelFull):
         return get_input_photo(photo.chat_photo)
     elif isinstance(photo, types.UserFull):
@@ -678,7 +686,8 @@ def _get_extension(file):
         # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase`
         return _get_extension(file.name)
     else:
-        return ''
+        # Maybe it's a Telegram media
+        return get_extension(file)
 
 
 def is_image(file):

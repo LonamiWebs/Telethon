@@ -855,6 +855,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         else:
             return await self._buttons[i][j].click()
 
+    async def mark_read(self):
+        """
+        Marks the message as read. Shorthand for
+        `client.send_read_acknowledge()
+        <telethon.client.messages.MessageMethods.send_read_acknowledge>`
+        with both ``entity`` and ``message`` already set.
+        """
+        await self._client.send_read_acknowledge(
+            await self.get_input_chat(), max_id=self.id)
+
     async def pin(self, *, notify=False):
         """
         Pins the message. Shorthand for

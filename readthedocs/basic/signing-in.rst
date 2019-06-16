@@ -140,3 +140,54 @@ where the following keys are allowed:
     }
 
 .. __: https://github.com/nibrag/aiosocks
+
+
+Using MTProto Proxies
+=====================
+
+MTProto Proxies are Telegram's alternative to normal proxies,
+and work a bit differently. The following protocols are available:
+
+* ``ConnectionTcpMTProxyAbridged``
+* ``ConnectionTcpMTProxyIntermediate``
+* ``ConnectionTcpMTProxyRandomizedIntermediate`` (preferred)
+
+For now, you need to manually specify these special connection modes
+if you want to use a MTProto Proxy. Your code would look like this:
+
+.. code-block:: python
+
+    from telethon import TelegramClient, connection
+    #   we need to change the connection ^^^^^^^^^^
+
+    client = TelegramClient(
+        'anon',
+        api_id,
+        api_hash,
+
+        # Use one of the available connection modes.
+        # Normally, this one works with most proxies.
+        connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
+
+        # Then, pass the proxy details as a tuple:
+        #     (host name, port, proxy secret)
+        #
+        # If the proxy has no secret, the secret must be:
+        #     '00000000000000000000000000000000'
+        proxy=('mtproxy.example.com', 2002, 'secret')
+    )
+
+In future updates, we may make it easier to use MTProto Proxies
+(such as avoiding the need to manually pass ``connection=``).
+
+In short, the same code above but without comments to make it clearer:
+
+.. code-block:: python
+
+    from telethon import TelegramClient, connection
+
+    client = TelegramClient(
+        'anon', api_id, api_hash,
+        connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
+        proxy=('mtproxy.example.com', 2002, 'secret')
+    )

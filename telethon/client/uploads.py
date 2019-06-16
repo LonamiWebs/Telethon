@@ -1,5 +1,6 @@
 import hashlib
 import io
+import itertools
 import os
 import pathlib
 import re
@@ -78,9 +79,9 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
     async def send_file(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            file: 'hints.FileLike',
+            file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]',
             *,
-            caption: str = None,
+            caption: typing.Union[str, typing.Sequence[str]] = None,
             force_document: bool = False,
             progress_callback: 'hints.ProgressCallback' = None,
             reply_to: 'hints.MessageIDLike' = None,
@@ -244,31 +245,41 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
+            image_captions = []
+            document_captions = []
+            if utils.is_list_like(caption):
+                captions = caption
+            else:
+                captions = [caption]
+
             # TODO Fix progress_callback
             images = []
             if force_document:
                 documents = file
             else:
                 documents = []
-                for x in file:
-                    if utils.is_image(x):
-                        images.append(x)
+                for doc, cap in itertools.zip_longest(file, captions):
+                    if utils.is_image(doc):
+                        images.append(doc)
+                        image_captions.append(cap)
                     else:
-                        documents.append(x)
+                        documents.append(doc)
+                        document_captions.append(cap)
 
             result = []
             while images:
                 result += await self._send_album(
-                    entity, images[:10], caption=caption,
+                    entity, images[:10], caption=image_captions[:10],
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode, silent=silent
                 )
                 images = images[10:]
+                image_captions = image_captions[10:]
 
-            for x in documents:
+            for doc, cap in zip(documents, captions):
                 result.append(await self.send_file(
-                    entity, x,
-                    caption=caption, force_document=force_document,
+                    entity, doc,
+                    caption=cap, force_document=force_document,
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, buttons=buttons, silent=silent,

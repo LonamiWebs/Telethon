@@ -282,11 +282,12 @@ class AuthMethods(MessageParseMethods, UserMethods):
 
             password (`str`):
                 2FA password, should be used if a previous call raised
-                SessionPasswordNeededError.
+                ``SessionPasswordNeededError``.
 
             bot_token (`str`):
                 Used to sign in as a bot. Not all requests will be available.
-                This should be the hash the @BotFather gave you.
+                This should be the hash the `@BotFather <https://t.me/BotFather>`_
+                gave you.
 
             phone (`str` | `int`):
                 By default, the library remembers the phone passed to

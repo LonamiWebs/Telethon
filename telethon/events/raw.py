@@ -4,7 +4,9 @@ from .. import utils
 
 class Raw(EventBuilder):
     """
-    Represents a raw event. The event is the update itself.
+    Raw events are not actual events. Instead, they are the raw
+    :tl:`Update` object that Telegram sends. You normally shouldn't
+    need these.
 
     Args:
         types (`list` | `tuple` | `type`, optional):

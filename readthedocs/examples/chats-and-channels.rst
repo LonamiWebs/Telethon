@@ -195,11 +195,11 @@ banned rights of a user through :tl:`EditBannedRequest` and its parameter
     client(EditBannedRequest(channel, user, rights))
 
 
-You can also use a ``datetime`` object for ``until_date=``, or even a
-Unix timestamp. Note that if you ban someone for less than 30 seconds
-or for more than 366 days, Telegram will consider the ban to actually
-last forever. This is officially documented under
-https://core.telegram.org/bots/api#restrictchatmember.
+You can use a `datetime.datetime` object for ``until_date=``,
+a `datetime.timedelta` or even a Unix timestamp. Note that if you ban
+someone for less than 30 seconds or for more than 366 days, Telegram
+will consider the ban to actually last forever. This is officially
+documented under https://core.telegram.org/bots/api#restrictchatmember.
 
 
 Kicking a member

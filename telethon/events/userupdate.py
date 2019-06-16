@@ -9,7 +9,7 @@ from ..tl.custom.sendergetter import SenderGetter
 @name_inner_event
 class UserUpdate(EventBuilder):
     """
-    Represents a user update (gone online, offline, joined Telegram).
+    Occurs whenever a user goes online, starts typing, etc.
     """
     @classmethod
     def build(cls, update):
@@ -32,7 +32,8 @@ class UserUpdate(EventBuilder):
 
     class Event(EventCommon, SenderGetter):
         """
-        Represents the event of a user status update (last seen, joined).
+        Represents the event of a user update
+        such as gone online, started typing, etc.
 
         Members:
             online (`bool`, optional):

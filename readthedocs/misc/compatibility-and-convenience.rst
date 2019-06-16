@@ -4,7 +4,7 @@
 Compatibility and Convenience
 =============================
 
-Telethon is an ``asyncio`` library. Compatibility is an important concern,
+Telethon is an `asyncio` library. Compatibility is an important concern,
 and while it can't always be kept and mistakes happens, the :ref:`changelog`
 is there to tell you when these important changes happen.
 
@@ -16,7 +16,7 @@ Compatibility
 
 Some decisions when developing will inevitable be proven wrong in the future.
 One of these decisions was using threads. Now that Python 3.4 is reaching EOL
-and using ``asyncio`` is usable as of Python 3.5 it makes sense for a library
+and using `asyncio` is usable as of Python 3.5 it makes sense for a library
 like Telethon to make a good use of it.
 
 If you have old code, **just use old versions** of the library! There is
@@ -34,7 +34,7 @@ and clean-ups. Using an older version is the right way to go.
 Sometimes, other small decisions are made. These all will be reflected in the
 :ref:`changelog` which you should read when upgrading.
 
-If you want to jump the ``asyncio`` boat, here are some of the things you will
+If you want to jump the `asyncio` boat, here are some of the things you will
 need to start migrating really old code:
 
 .. code-block:: python
@@ -91,7 +91,7 @@ Convenience
     This makes the examples shorter and easier to think about.
 
 For quick scripts that don't need updates, it's a lot more convenient to
-forget about ``asyncio`` and just work with sequential code. This can prove
+forget about `asyncio` and just work with sequential code. This can prove
 to be a powerful hybrid for running under the Python REPL too.
 
 .. code-block:: python
@@ -178,10 +178,10 @@ overhead you pay if you import it, and what you save if you don't.
 Learning
 ========
 
-You know the library uses ``asyncio`` everywhere, and you want to learn
-how to do things right. Even though ``asyncio`` is its own topic, the
+You know the library uses `asyncio` everywhere, and you want to learn
+how to do things right. Even though `asyncio` is its own topic, the
 documentation wants you to learn how to use Telethon correctly, and for
-that, you need to use ``asyncio`` correctly too. For this reason, there
+that, you need to use `asyncio` correctly too. For this reason, there
 is a section called :ref:`mastering-asyncio` that will introduce you to
-the ``asyncio`` world, with links to more resources for learning how to
+the `asyncio` world, with links to more resources for learning how to
 use it. Feel free to check that section out once you have read the rest.

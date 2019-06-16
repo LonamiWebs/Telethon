@@ -6,7 +6,7 @@ from ..tl import types
 @name_inner_event
 class MessageRead(EventBuilder):
     """
-    Event fired when one or more messages have been read.
+    Occurs whenever one or more messages are read in a chat.
 
     Args:
         inbox (`bool`, optional):
