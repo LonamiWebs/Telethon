@@ -45,7 +45,7 @@ Base
 
     connect
     disconnect
-    is_connected
+    connected
     disconnected
     loop
 

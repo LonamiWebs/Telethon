@@ -137,7 +137,7 @@ class AuthMethods(MessageParseMethods, UserMethods):
     async def _start(
             self, phone, password, bot_token, force_sms,
             code_callback, first_name, last_name, max_attempts):
-        if not self.is_connected:
+        if not self.connected:
             await self.connect()
 
         if await self.is_user_authorized():

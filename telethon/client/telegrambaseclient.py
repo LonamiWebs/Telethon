@@ -432,20 +432,18 @@ class TelegramBaseClient(abc.ABC):
         self._updates_handle = self._loop.create_task(self._update_loop())
 
     @property
-    def is_connected(self: 'TelegramClient') -> bool:
+    def connected(self: 'TelegramClient') -> bool:
         """
-        Returns ``True`` if the user has connected.
-
-        This method is **not** asynchronous (don't use ``await`` on it).
+        Property which is ``True`` if the user has connected.
 
         Example
             .. code-block:: python
 
-                while client.is_connected:
+                while client.connected:
                     await asyncio.sleep(1)
         """
         sender = getattr(self, '_sender', None)
-        return sender and sender.is_connected
+        return sender and sender.connected
 
     def disconnect(self: 'TelegramClient'):
         """

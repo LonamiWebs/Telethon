@@ -123,7 +123,7 @@ class MTProtoSender:
         self._user_connected = True
 
     @property
-    def is_connected(self):
+    def connected(self):
         return self._user_connected
 
     async def disconnect(self):

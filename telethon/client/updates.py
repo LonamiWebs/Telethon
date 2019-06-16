@@ -323,7 +323,7 @@ class UpdateMethods(UserMethods):
     async def _update_loop(self: 'TelegramClient'):
         # Pings' ID don't really need to be secure, just "random"
         rnd = lambda: random.randrange(-2**63, 2**63)
-        while self.is_connected:
+        while self.connected:
             try:
                 await asyncio.wait_for(
                     self.disconnected, timeout=60, loop=self._loop
@@ -425,7 +425,7 @@ class UpdateMethods(UserMethods):
                 )
                 break
             except Exception as e:
-                if not isinstance(e, asyncio.CancelledError) or self.is_connected:
+                if not isinstance(e, asyncio.CancelledError) or self.connected:
                     name = getattr(callback, '__name__', repr(callback))
                     self._log[__name__].exception('Unhandled exception on %s',
                                                   name)
