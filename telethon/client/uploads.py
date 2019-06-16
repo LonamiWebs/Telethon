@@ -143,8 +143,10 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                 To send an album, you should provide a list in this parameter.
 
                 If a list or similar is provided, the files in it will be
-                sent as an album in the order in which they appear, sliced
-                in chunks of 10 if more than 10 are given.
+                sent as an album in the order in which they appear. Currently,
+                only up to 10 files are allowed, and you're responsible for
+                making sure that they are all allowed inside albums (e.g.
+                only photos or only videos, no other documents in between).
 
             caption (`str`, optional):
                 Optional caption for the sent media message. When sending an
@@ -242,52 +244,14 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
         if not caption:
             caption = ''
 
-        # First check if the user passed an iterable, in which case
-        # we may want to send as an album if all are photo files.
+        # First check if the user passed an iterable -> send as album
         if utils.is_list_like(file):
-            image_captions = []
-            document_captions = []
-            if utils.is_list_like(caption):
-                captions = caption
-            else:
-                captions = [caption]
-
             # TODO Fix progress_callback
-            images = []
-            if force_document:
-                documents = file
-            else:
-                documents = []
-                for doc, cap in itertools.zip_longest(file, captions):
-                    if utils.is_image(doc):
-                        images.append(doc)
-                        image_captions.append(cap)
-                    else:
-                        documents.append(doc)
-                        document_captions.append(cap)
-
-            result = []
-            while images:
-                result += await self._send_album(
-                    entity, images[:10], caption=image_captions[:10],
-                    progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode, silent=silent
-                )
-                images = images[10:]
-                image_captions = image_captions[10:]
-
-            for doc, cap in zip(documents, captions):
-                result.append(await self.send_file(
-                    entity, doc,
-                    caption=cap, force_document=force_document,
-                    progress_callback=progress_callback, reply_to=reply_to,
-                    attributes=attributes, thumb=thumb, voice_note=voice_note,
-                    video_note=video_note, buttons=buttons, silent=silent,
-                    supports_streaming=supports_streaming,
-                    **kwargs
-                ))
-
-            return result
+            return await self._send_album(
+                entity, file, caption=file,
+                progress_callback=progress_callback, reply_to=reply_to,
+                parse_mode=parse_mode, silent=silent
+            )
 
         entity = await self.get_input_entity(entity)
         reply_to = utils.get_message_id(reply_to)
