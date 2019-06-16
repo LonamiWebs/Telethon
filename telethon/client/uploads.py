@@ -311,6 +311,11 @@ class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
                     entity, media=fm
                 ))
                 fm = utils.get_input_media(r.photo)
+            elif isinstance(fm, types.InputMediaUploadedDocument):
+                r = await self(functions.messages.UploadMediaRequest(
+                    entity, media=fm
+                ))
+                fm = utils.get_input_media(r.document)
 
             if captions:
                 caption, msg_entities = captions.pop()
