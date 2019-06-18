@@ -5,14 +5,11 @@ import json
 
 loop = asyncio.get_event_loop()
 app = Quart(__name__)
-#
-# TELEGREM_TOKEN = "complete me"
-# API_ID = 0 # complete me
-# API_HASH = 'complete me'
 
-TELEGREM_TOKEN = "814032872:AAFqS3-RyK4ECdzPBRhW1_2nsrmt5Al4UtA"
-API_ID = 669543
-API_HASH = 'ff524b09e88b6c657c6f524697458ff1'
+TELEGREM_TOKEN = "complete me"
+API_ID = 0 # complete me
+API_HASH = 'complete me'
+
 messages_list = []
 
 
