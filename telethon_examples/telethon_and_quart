@@ -1,0 +1,39 @@
+from quart import Quart
+from telethon import TelegramClient, events
+import asyncio
+
+loop = asyncio.get_event_loop()
+app = Quart(__name__)
+
+TELEGREM_TOKEN = "complete me"
+API_ID = 0 # complete me
+API_HASH = 'complete me'
+
+# exapmple class for telegrem
+class Telegrem:
+    def __init__(self, bot_token, api_id, api_hash):
+        self.bot_token = bot_token
+        self.api_id = api_id
+        self.api_hash = api_hash
+        self.client = TelegramClient('bot', api_id, api_hash)
+
+    async def receive_message(self, event):
+        print(f"message is here {event.raw_text}")
+
+    async def start_polling(self):
+        await self.client.start(bot_token=self.bot_token)
+        self.client.add_event_handler(self.receive_message, events.NewMessage)
+
+# create a task that runs in the background and listen to telegrem
+async def background():
+    loop.create_task(Telegrem(TELEGREM_TOKEN, API_ID, API_HASH).start_polling())
+
+
+@app.route('/')
+async def hello():
+    return {'hello': 'world'}
+
+loop.run_until_complete(background())
+
+# simultaneously run a Quart app
+app.run(loop=loop)
