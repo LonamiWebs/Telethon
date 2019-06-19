@@ -108,23 +108,39 @@ class ChatGetter(abc.ABC):
 
     @property
     def is_private(self):
-        """True if the message was sent as a private message."""
-        return isinstance(self._chat_peer, types.PeerUser)
+        """
+        ``True`` if the message was sent as a private message.
+
+        Returns ``None`` if there isn't enough information
+        (e.g. on `events.MessageDeleted <telethon.events.messagedeleted.MessageDeleted>`).
+        """
+        return isinstance(self._chat_peer, types.PeerUser) if self._chat_peer else None
 
     @property
     def is_group(self):
-        """True if the message was sent on a group or megagroup."""
-        if self._broadcast is None and self.chat:
-            self._broadcast = getattr(self.chat, 'broadcast', None)
+        """
+        True if the message was sent on a group or megagroup.
 
-        return (
-            isinstance(self._chat_peer, (types.PeerChat, types.PeerChannel))
-            and not self._broadcast
-        )
+        Returns ``None`` if there isn't enough information
+        (e.g. on `events.MessageDeleted <telethon.events.messagedeleted.MessageDeleted>`).
+        """
+        # TODO Cache could tell us more in the future
+        if self._broadcast is None and hasattr(self.chat, 'broadcast'):
+            self._broadcast = bool(self.chat.broadcast)
+
+        if isinstance(self._chat_peer, types.PeerChannel):
+            if self._broadcast is None:
+                return None
+            else:
+                return not self._broadcast
+
+        return isinstance(self._chat_peer, types.PeerChat)
 
     @property
     def is_channel(self):
-        """True if the message was sent on a megagroup or channel."""
+        """``True`` if the message was sent on a megagroup or channel."""
+        # The only case where chat peer could be none is in MessageDeleted,
+        # however those always have the peer in channels.
         return isinstance(self._chat_peer, types.PeerChannel)
 
     async def _refetch_chat(self):
