@@ -9,12 +9,14 @@ from ..helpers import add_surrogate, del_surrogate, strip_text
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityTextUrl, MessageEntityMentionName
+    MessageEntityPre, MessageEntityTextUrl, MessageEntityMentionName,
+    MessageEntityStrike
 )
 
 DEFAULT_DELIMITERS = {
     '**': MessageEntityBold,
     '__': MessageEntityItalic,
+    '~~': MessageEntityStrike,
     '`': MessageEntityCode,
     '```': MessageEntityPre
 }
