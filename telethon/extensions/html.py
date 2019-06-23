@@ -5,13 +5,15 @@ import struct
 from collections import deque
 from html import escape, unescape
 from html.parser import HTMLParser
+from typing import Iterable, Optional, Tuple, List
 
 from .. import helpers
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
     MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
     MessageEntityTextUrl, MessageEntityMentionName,
-    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote
+    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
+    TypeMessageEntity
 )
 
 
@@ -121,7 +123,7 @@ class HTMLToTelegramParser(HTMLParser):
             self.entities.append(entity)
 
 
-def parse(html):
+def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
     """
     Parses the given HTML message and returns its stripped representation
     plus a list of the MessageEntity's that were found.
@@ -138,7 +140,8 @@ def parse(html):
     return _del_surrogate(text), parser.entities
 
 
-def unparse(text, entities):
+def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
+            _length: Optional[int] = None) -> str:
     """
     Performs the reverse operation to .parse(), effectively returning HTML
     given a normal text and its MessageEntity's.
@@ -147,20 +150,29 @@ def unparse(text, entities):
     :param entities: the MessageEntity's applied to the text.
     :return: a HTML representation of the combination of both inputs.
     """
-    if not text or not entities:
+    if not text:
         return text
+    elif not entities:
+        return escape(text)
 
     text = _add_surrogate(text)
+    if _length is None:
+        _length = len(text)
     html = []
     last_offset = 0
-    for entity in entities:
-        if entity.offset > last_offset:
-            html.append(escape(text[last_offset:entity.offset]))
-        elif entity.offset < last_offset:
+    for i, entity in enumerate(entities):
+        if entity.offset > _offset + _length:
+            break
+        relative_offset = entity.offset - _offset
+        if relative_offset > last_offset:
+            html.append(escape(text[last_offset:relative_offset]))
+        elif relative_offset < last_offset:
             continue
 
         skip_entity = False
-        entity_text = escape(text[entity.offset:entity.offset + entity.length])
+        entity_text = unparse(text=text[relative_offset:relative_offset + entity.length],
+                              entities=entities[i + 1:],
+                              _offset=entity.offset, _length=entity.length)
         entity_type = type(entity)
 
         if entity_type == MessageEntityBold:
@@ -198,6 +210,6 @@ def unparse(text, entities):
                         .format(entity.user_id, entity_text))
         else:
             skip_entity = True
-        last_offset = entity.offset + (0 if skip_entity else entity.length)
-    html.append(text[last_offset:])
+        last_offset = relative_offset + (0 if skip_entity else entity.length)
+    html.append(escape(text[last_offset:]))
     return _del_surrogate(''.join(html))
