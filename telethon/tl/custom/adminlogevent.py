@@ -66,7 +66,8 @@ class AdminLogEvent:
         if isinstance(ori, (
                 types.ChannelAdminLogEventActionChangeAbout,
                 types.ChannelAdminLogEventActionChangeTitle,
-                types.ChannelAdminLogEventActionChangeUsername
+                types.ChannelAdminLogEventActionChangeUsername,
+                types.ChannelAdminLogEventActionChangeLocation
         )):
             return ori.prev_value
         elif isinstance(ori, types.ChannelAdminLogEventActionChangePhoto):
@@ -103,7 +104,8 @@ class AdminLogEvent:
                 types.ChannelAdminLogEventActionChangeUsername,
                 types.ChannelAdminLogEventActionToggleInvites,
                 types.ChannelAdminLogEventActionTogglePreHistoryHidden,
-                types.ChannelAdminLogEventActionToggleSignatures
+                types.ChannelAdminLogEventActionToggleSignatures,
+                types.ChannelAdminLogEventActionChangeLocation
         )):
             return ori.new_value
         elif isinstance(ori, types.ChannelAdminLogEventActionChangePhoto):
@@ -230,6 +232,16 @@ class AdminLogEvent:
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleInvites)
+
+    @property
+    def changed_location(self):
+        """
+        Whether the location setting of the channel has changed or not.
+
+        If ``True``, `old` and `new` will be present as :tl:`ChannelLocation`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionChangeLocation)
 
     @property
     def joined(self):
