@@ -4,8 +4,6 @@ import os
 import sys
 import typing
 
-from .messageparse import MessageParseMethods
-from .users import UserMethods
 from .. import utils, helpers, errors, password as pwd_mod
 from ..tl import types, functions
 
@@ -13,7 +11,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class AuthMethods(MessageParseMethods, UserMethods):
+class AuthMethods:
 
     # region Public methods
 

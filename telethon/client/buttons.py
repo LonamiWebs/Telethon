@@ -1,14 +1,10 @@
 import typing
 
-from .updates import UpdateMethods
 from .. import utils, hints
 from ..tl import types, custom
 
-if typing.TYPE_CHECKING:
-    from .telegramclient import TelegramClient
 
-
-class ButtonMethods(UpdateMethods):
+class ButtonMethods:
     @staticmethod
     def build_reply_markup(
             buttons: 'typing.Optional[hints.MarkupLike]',

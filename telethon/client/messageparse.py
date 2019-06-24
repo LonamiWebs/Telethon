@@ -2,7 +2,6 @@ import itertools
 import re
 import typing
 
-from .users import UserMethods
 from .. import utils
 from ..tl import types
 
@@ -10,7 +9,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class MessageParseMethods(UserMethods):
+class MessageParseMethods:
 
     # region Public properties
 

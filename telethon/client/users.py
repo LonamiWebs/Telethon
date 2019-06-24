@@ -3,7 +3,6 @@ import itertools
 import time
 import typing
 
-from .telegrambaseclient import TelegramBaseClient
 from .. import errors, utils, hints
 from ..errors import MultiError, RPCError
 from ..helpers import retry_range
@@ -15,7 +14,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class UserMethods(TelegramBaseClient):
+class UserMethods:
     async def __call__(self: 'TelegramClient', request, ordered=False):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:

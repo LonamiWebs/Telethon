@@ -1,6 +1,5 @@
 import typing
 
-from .users import UserMethods
 from .. import hints
 from ..tl import types, functions, custom
 
@@ -8,7 +7,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class BotMethods(UserMethods):
+class BotMethods:
     async def inline_query(
             self: 'TelegramClient',
             bot: 'hints.EntityLike',

@@ -4,7 +4,6 @@ import random
 import time
 import typing
 
-from .users import UserMethods
 from .. import events, utils, errors
 from ..events.common import EventBuilder, EventCommon
 from ..tl import types, functions
@@ -13,7 +12,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class UpdateMethods(UserMethods):
+class UpdateMethods:
 
     # region Public methods
 

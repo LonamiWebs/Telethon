@@ -2,7 +2,7 @@ import functools
 import inspect
 import typing
 
-from .users import UserMethods, _NOT_A_REQUEST
+from .users import _NOT_A_REQUEST
 from .. import helpers, utils
 from ..tl import functions, TLRequest
 
@@ -107,7 +107,7 @@ class _TakeoutClient:
         return setattr(self.__client, name, value)
 
 
-class AccountMethods(UserMethods):
+class AccountMethods:
     def takeout(
             self: 'TelegramClient',
             finalize: bool = True,

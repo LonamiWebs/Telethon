@@ -4,7 +4,6 @@ import os
 import pathlib
 import typing
 
-from .users import UserMethods
 from .. import utils, helpers, errors, hints
 from ..requestiter import RequestIter
 from ..tl import TLObject, types, functions
@@ -152,7 +151,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
             self.request.offset -= self._stride
 
 
-class DownloadMethods(UserMethods):
+class DownloadMethods:
 
     # region Public methods
 

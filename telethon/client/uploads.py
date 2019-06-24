@@ -7,9 +7,6 @@ import re
 import typing
 from io import BytesIO
 
-from .buttons import ButtonMethods
-from .messageparse import MessageParseMethods
-from .users import UserMethods
 from .. import utils, helpers, hints
 from ..tl import types, functions, custom
 
@@ -84,7 +81,7 @@ def _resize_photo_if_needed(
             file.seek(before, io.SEEK_SET)
 
 
-class UploadMethods(ButtonMethods, MessageParseMethods, UserMethods):
+class UploadMethods:
 
     # region Public methods
 

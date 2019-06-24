@@ -1,9 +1,6 @@
 import itertools
 import typing
 
-from .buttons import ButtonMethods
-from .messageparse import MessageParseMethods
-from .uploads import UploadMethods
 from .. import utils, errors, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions
@@ -292,7 +289,7 @@ class _IDsIter(RequestIter):
         return True  # no next chunk, all done in init
 
 
-class MessageMethods(UploadMethods, ButtonMethods, MessageParseMethods):
+class MessageMethods:
 
     # region Public methods
 

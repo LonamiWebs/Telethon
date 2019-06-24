@@ -2,7 +2,6 @@ import asyncio
 import itertools
 import typing
 
-from .users import UserMethods
 from .. import utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
@@ -104,7 +103,7 @@ class _DraftsIter(RequestIter):
         return []
 
 
-class DialogMethods(UserMethods):
+class DialogMethods:
 
     # region Public methods
 
