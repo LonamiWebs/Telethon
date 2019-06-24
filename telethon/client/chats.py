@@ -762,4 +762,169 @@ class ChatMethods(UserMethods):
         return _ChatAction(
             self, entity, action, delay=delay, auto_cancel=auto_cancel)
 
+    async def edit_admin(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'hints.EntityLike',
+            change_info: bool = None,
+            post_messages: bool = None,
+            edit_messages: bool = None,
+            delete_messages: bool = None,
+            ban_users: bool = None,
+            invite_users: bool = None,
+            pin_messages: bool = None,
+            add_admins: bool = None,
+            is_admin: bool = None) -> types.Updates:
+        """
+        Edits admin permissions for the given entity
+        will raise an error if wrong combination of rights are given
+        Arguments
+            entity (`entity`):
+                Either a channel or a supergroup or a chat.
+            user (`entity`):
+                the user to be promoted
+            change_info (`bool`, optional):
+                Whether the user will be able to change info. works in channels and supergroups.
+            post_messages (`bool`, optional):
+                Whether the user will be able to post in the channel. only works in channels.
+            edit_messages (`bool`, optional):
+                Whether the user will be able to edit messages in the channel. only works in channels.
+            delete_messages (`bool`, optional):
+                Whether the user will be able to delete messages. works in channels and supergroups.
+            ban_users (`bool`, optional):
+                Whether the user will be able to ban users. works in channels and supergroups.
+            invite_users (`bool`, optional):
+                Whether the user will be able to invite users. Needs some testing.
+            pin_messages (`bool`, optional):
+                Whether the user will be able to pin messages. works in channels and supergroups.
+            add_admins (`bool`, optional):
+                Whether the user will be able to add admins. works in channels and supergroups.
+            is_admin (`bool`, optional):
+                Whether the user will be an admin in the chat. only works in chats.
+        Returns
+            returns an Updates object.
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+        if not isinstance(user, types.InputPeerUser):
+            raise ValueError("You must pass a user entity")
+        if isinstance(entity, types.InputPeerChannel):
+            result = await self(functions.channels.EditAdminRequest(
+                entity,
+                user,
+                types.ChatAdminRights(
+                    change_info=change_info,
+                    post_messages=post_messages,
+                    edit_messages=edit_messages,
+                    delete_messages=delete_messages,
+                    ban_users=ban_users,
+                    invite_users=invite_users,
+                    pin_messages=pin_messages,
+                    add_admins=add_admins
+                )
+            ))
+        elif isinstance(entity, types.InputPeerChat):
+            result = await self(functions.messages.EditChatAdminRequest(entity, user, is_admin=is_admin))
+        else:
+            raise ValueError("You must pass either a channel or a supergroup or a normal group")
+        return result
+
+    async def edit_permission(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'typing.Optional[hints.EntityLike]' = None,
+            until_date: 'hints.DateLike' = None,
+            view_messages: bool = None,
+            send_messages: bool = None,
+            send_media: bool = None,
+            send_stickers: bool = None,
+            send_gifs: bool = None,
+            send_games: bool = None,
+            send_inline: bool = None,
+            send_polls: bool = None,
+            change_info: bool = None,
+            invite_users: bool = None,
+            pin_messages: bool = None) -> types.Updates:
+        """
+        Edits user permissions or channel/supergroup global permission for the given entity
+        will raise an error if wrong combination of rights are given
+        Arguments
+            entity (`entity`):
+                Either a channel or a supergroup.
+            user (`entity`,optional):
+                If passed the permission will be changed for the specific user instead of the whole entity.
+            until_date (`DateLike`, optional):
+                Date when the user will be unbanned, unix time.
+                If user is banned for more than 366 days or less than 30 seconds from the current time they are
+                considered to be banned forever. Defaults to 0 (ban forever).
+            view_messages (`bool`, optional):
+                If this is set to False the user will be banned. only usable when a user entity is passed.
+            send_messages (`bool`, optional):
+                Permission to send messages in the channel/supergroup.
+            send_media (`bool`, optional):
+                Permission to send media files in the channel/supergroup.
+            send_stickers (`bool`, optional):
+                Permission to send stickers in the channel/supergroup.
+            send_gifs (`bool`, optional):
+                Permission to send stickers in the channel/supergroup.
+            send_games (`bool`, optional):
+                Permission to link games in the channel/supergroup.
+            send_inline (`bool`, optional):
+                Permission to use inline bots in the channel/supergroup.
+            send_polls (`bool`, optional):
+                Permission to send polls in the channel/supergroup.
+            change_info (`bool`, optional):
+                Permission to change channel/supergroup info.
+            invite_users (`bool`, optional):
+                Permission to invite users to the channel/supergroup.
+            pin_messages (`bool`, optional):
+                Permission to pin messages in the channel/supergroup.
+        Returns
+            returns an Updates object.
+        """
+        entity = await self.get_input_entity(entity)
+        if not isinstance(entity,types.InputPeerChannel):
+            raise ValueError("You must pass either a channel or a supergroup")
+        else:
+            if user is None:
+                result = await self(functions.messages.EditChatDefaultBannedRightsRequest(
+                        peer=entity,
+                        banned_rights=types.ChatBannedRights(
+                            until_date=until_date,
+                            view_messages=view_messages,
+                            send_messages=send_messages,
+                            send_media=send_media,
+                            send_stickers=send_stickers,
+                            send_gifs=send_gifs,
+                            send_games=send_games,
+                            send_inline=send_inline,
+                            send_polls=send_polls,
+                            change_info=change_info,
+                            invite_users=invite_users,
+                            pin_messages=pin_messages
+                        )
+                    ))
+            else:
+                user = await self.get_input_entity(user)
+                if not isinstance(user, types.InputPeerUser):
+                    raise ValueError("You must pass a user entity")
+                result = await self(functions.channels.EditBannedRequest(
+                    channel=entity,
+                    user_id=user,
+                    banned_rights=types.ChatBannedRights(
+                        until_date=until_date,
+                        view_messages=view_messages,
+                        send_messages=send_messages,
+                        send_media=send_media,
+                        send_stickers=send_stickers,
+                        send_gifs=send_gifs,
+                        send_games=send_games,
+                        send_inline=send_inline,
+                        send_polls=send_polls,
+                        change_info=change_info,
+                        invite_users=invite_users,
+                        pin_messages=pin_messages
+                    )
+                ))
+        return result
     # endregion
