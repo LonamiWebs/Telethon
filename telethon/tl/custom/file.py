@@ -1,4 +1,5 @@
 import mimetypes
+import os
 
 from ... import utils
 from ...tl import types
@@ -35,8 +36,15 @@ class File:
     def ext(self):
         """
         The extension from the mime type of this file.
+
+        If the mime type is unknown, the extension
+        from the file name (if any) will be used.
         """
-        return mimetypes.guess_extension(self.mime_type)
+        return (
+            mimetypes.guess_extension(self.mime_type)
+            or os.path.splitext(self.name or '')[-1]
+            or None
+        )
 
     @property
     def mime_type(self):
