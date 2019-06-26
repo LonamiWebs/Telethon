@@ -861,17 +861,17 @@ class ChatMethods(UserMethods):
             user: 'typing.Optional[hints.EntityLike]' = None,
             until_date: 'hints.DateLike' = None,
             *,
-            view_messages: bool = None,
-            send_messages: bool = None,
-            send_media: bool = None,
-            send_stickers: bool = None,
-            send_gifs: bool = None,
-            send_games: bool = None,
-            send_inline: bool = None,
-            send_polls: bool = None,
-            change_info: bool = None,
-            invite_users: bool = None,
-            pin_messages: bool = None) -> types.Updates:
+            view_messages: bool = True,
+            send_messages: bool = True,
+            send_media: bool = True,
+            send_stickers: bool = True,
+            send_gifs: bool = True,
+            send_games: bool = True,
+            send_inline: bool = True,
+            send_polls: bool = True,
+            change_info: bool = True,
+            invite_users: bool = True,
+            pin_messages: bool = True) -> types.Updates:
         """
         Edits user restrictions in a chat.
 
@@ -945,45 +945,36 @@ class ChatMethods(UserMethods):
         entity = await self.get_input_entity(entity)
         if not isinstance(entity,types.InputPeerChannel):
             raise ValueError('You must pass either a channel or a supergroup')
-        elif user is None:
-            return await self(functions.messages.EditChatDefaultBannedRightsRequest(
-                    peer=entity,
-                    banned_rights=types.ChatBannedRights(
-                        until_date=until_date,
-                        view_messages=False if view_messages is True else True if view_messages is False else None,
-                        send_messages=False if send_messages is True else True if send_messages is False else None,
-                        send_media=False if send_media is True else True if send_media is False else None,
-                        send_stickers=False if send_stickers is True else True if send_stickers is False else None,
-                        send_gifs=False if send_gifs is True else True if send_gifs is False else None,
-                        send_games=False if send_games is True else True if send_games is False else None,
-                        send_inline=False if send_inline is True else True if send_inline is False else None,
-                        send_polls=False if send_polls is True else True if send_polls is False else None,
-                        change_info=False if change_info is True else True if change_info is False else None,
-                        invite_users=False if invite_users is True else True if invite_users is False else None,
-                        pin_messages=False if pin_messages is True else True if pin_messages is False else None
-                    )
-                ))
-        else:
-            user = await self.get_input_entity(user)
-            if not isinstance(user, types.InputPeerUser):
-                raise ValueError('You must pass a user entity')
 
-            return await self(functions.channels.EditBannedRequest(
-                channel=entity,
-                user_id=user,
-                banned_rights=types.ChatBannedRights(
-                    view_messages=False if view_messages is True else True if view_messages is False else None,
-                    send_messages=False if send_messages is True else True if send_messages is False else None,
-                    send_media=False if send_media is True else True if send_media is False else None,
-                    send_stickers=False if send_stickers is True else True if send_stickers is False else None,
-                    send_gifs=False if send_gifs is True else True if send_gifs is False else None,
-                    send_games=False if send_games is True else True if send_games is False else None,
-                    send_inline=False if send_inline is True else True if send_inline is False else None,
-                    send_polls=False if send_polls is True else True if send_polls is False else None,
-                    change_info=False if change_info is True else True if change_info is False else None,
-                    invite_users=False if invite_users is True else True if invite_users is False else None,
-                    pin_messages=False if pin_messages is True else True if pin_messages is False else None
-                )
+        rights = types.ChatBannedRights(
+            until_date=until_date,
+            view_messages=not view_messages,
+            send_messages=not send_messages,
+            send_media=not send_media,
+            send_stickers=not send_stickers,
+            send_gifs=not send_gifs,
+            send_games=not send_games,
+            send_inline=not send_inline,
+            send_polls=not send_polls,
+            change_info=not change_info,
+            invite_users=not invite_users,
+            pin_messages=not pin_messages
+        )
+
+        if user is None:
+            return await self(functions.messages.EditChatDefaultBannedRightsRequest(
+                peer=entity,
+                banned_rights=rights
             ))
+
+        user = await self.get_input_entity(user)
+        if not isinstance(user, types.InputPeerUser):
+            raise ValueError('You must pass a user entity')
+
+        return await self(functions.channels.EditBannedRequest(
+            channel=entity,
+            user_id=user,
+            banned_rights=rights
+        ))
 
     # endregion
