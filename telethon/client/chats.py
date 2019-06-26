@@ -3,6 +3,7 @@ import itertools
 import string
 import typing
 
+from .users import UserMethods
 from .. import helpers, utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
@@ -344,7 +345,7 @@ class _ProfilePhotoIter(RequestIter):
                 self.request.offset_id = result.messages[-1].id
 
 
-class ChatMethods:
+class ChatMethods(UserMethods):
 
     # region Public methods
 
