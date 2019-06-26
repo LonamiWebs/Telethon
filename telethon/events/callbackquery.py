@@ -26,8 +26,12 @@ class CallbackQuery(EventBuilder):
             can use ``re.compile(b'data_')``.
     """
     def __init__(
-            self, chats=None, *, blacklist_chats=False, func=None, data=None):
+            self, chats=None, *, blacklist_chats=False, func=None, data=None, pattern=None):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
+
+        if data is None and pattern is None:
+            self._log.warn("Please don't use both data and pattern.data will be ignored if you do so")
+            data = None
 
         if isinstance(data, bytes):
             self.data = data
@@ -43,6 +47,19 @@ class CallbackQuery(EventBuilder):
             self.data = data.match
         else:
             raise TypeError('Invalid data type given')
+
+        if isinstance(pattern, str):
+            self.pattern = re.compile(pattern).match
+        elif not pattern or callable(pattern):
+            self.pattern = pattern
+        elif hasattr(pattern, 'match') and callable(pattern.match):
+            self.pattern = pattern.match
+        else:
+            raise TypeError('Invalid pattern type given')
+
+        self._no_check = all(x is None for x in (
+            self.chats, self.func, self.data, self.pattern,
+        ))
 
     @classmethod
     def build(cls, update):
@@ -62,6 +79,9 @@ class CallbackQuery(EventBuilder):
 
     def filter(self, event):
         # We can't call super().filter(...) because it ignores chat_instance
+        if self._no_check:
+            return event
+
         if self.chats is not None:
             inside = event.query.chat_instance in self.chats
             if event.chat_id:
@@ -77,6 +97,12 @@ class CallbackQuery(EventBuilder):
                     return None
             elif event.query.data != self.data:
                 return None
+
+        if self.pattern:
+            match = self.pattern(event.message.message or '')
+            if not match:
+                return
+            event.pattern_match = match
 
         if not self.func or self.func(event):
             return event
