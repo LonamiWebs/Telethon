@@ -855,7 +855,7 @@ class ChatMethods(UserMethods):
         else:
             raise ValueError('You must pass either a channel or a supergroup or a normal group')
 
-    async def edit_permission(
+    async def edit_restriction(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             user: 'typing.Optional[hints.EntityLike]' = None,
@@ -950,17 +950,17 @@ class ChatMethods(UserMethods):
                     peer=entity,
                     banned_rights=types.ChatBannedRights(
                         until_date=until_date,
-                        view_messages=view_messages,
-                        send_messages=send_messages,
-                        send_media=send_media,
-                        send_stickers=send_stickers,
-                        send_gifs=send_gifs,
-                        send_games=send_games,
-                        send_inline=send_inline,
-                        send_polls=send_polls,
-                        change_info=change_info,
-                        invite_users=invite_users,
-                        pin_messages=pin_messages
+                        view_messages=False if view_messages is True else True if view_messages is False else None,
+                        send_messages=False if send_messages is True else True if send_messages is False else None,
+                        send_media=False if send_media is True else True if send_media is False else None,
+                        send_stickers=False if send_stickers is True else True if send_stickers is False else None,
+                        send_gifs=False if send_gifs is True else True if send_gifs is False else None,
+                        send_games=False if send_games is True else True if send_games is False else None,
+                        send_inline=False if send_inline is True else True if send_inline is False else None,
+                        send_polls=False if send_polls is True else True if send_polls is False else None,
+                        change_info=False if change_info is True else True if change_info is False else None,
+                        invite_users=False if invite_users is True else True if invite_users is False else None,
+                        pin_messages=False if pin_messages is True else True if pin_messages is False else None
                     )
                 ))
         else:
@@ -972,18 +972,17 @@ class ChatMethods(UserMethods):
                 channel=entity,
                 user_id=user,
                 banned_rights=types.ChatBannedRights(
-                    until_date=until_date,
-                    view_messages=view_messages,
-                    send_messages=send_messages,
-                    send_media=send_media,
-                    send_stickers=send_stickers,
-                    send_gifs=send_gifs,
-                    send_games=send_games,
-                    send_inline=send_inline,
-                    send_polls=send_polls,
-                    change_info=change_info,
-                    invite_users=invite_users,
-                    pin_messages=pin_messages
+                    view_messages=False if view_messages is True else True if view_messages is False else None,
+                    send_messages=False if send_messages is True else True if send_messages is False else None,
+                    send_media=False if send_media is True else True if send_media is False else None,
+                    send_stickers=False if send_stickers is True else True if send_stickers is False else None,
+                    send_gifs=False if send_gifs is True else True if send_gifs is False else None,
+                    send_games=False if send_games is True else True if send_games is False else None,
+                    send_inline=False if send_inline is True else True if send_inline is False else None,
+                    send_polls=False if send_polls is True else True if send_polls is False else None,
+                    change_info=False if change_info is True else True if change_info is False else None,
+                    invite_users=False if invite_users is True else True if invite_users is False else None,
+                    pin_messages=False if pin_messages is True else True if pin_messages is False else None
                 )
             ))
 
