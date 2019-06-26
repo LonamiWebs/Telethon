@@ -24,14 +24,20 @@ class CallbackQuery(EventBuilder):
             A UTF-8 string can also be given, a regex or a callable. For
             instance, to check against ``'data_1'`` and ``'data_2'`` you
             can use ``re.compile(b'data_')``.
+
+        pattern (`str`, `callable`, `Pattern`, optional):
+            If set, only buttons with payload matching this pattern will be handled.
+            You can specify a regex-like string which will be matched
+            against the message, a callable function that returns ``True``
+            if a message is acceptable, or a compiled regex pattern.
+
     """
     def __init__(
             self, chats=None, *, blacklist_chats=False, func=None, data=None, pattern=None):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
 
-        if data is None and pattern is None:
-            self._log.warn("Please don't use both data and pattern.data will be ignored if you do so")
-            data = None
+        if all(x is not None and not x for x in (data, pattern)):
+            raise ValueError("Only pass either data or pattern not both.")
 
         if isinstance(data, bytes):
             self.data = data
@@ -99,7 +105,7 @@ class CallbackQuery(EventBuilder):
                 return None
 
         if self.pattern:
-            match = self.pattern(event.message.message or '')
+            match = self.pattern(event.query.data)
             if not match:
                 return
             event.pattern_match = match
