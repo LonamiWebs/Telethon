@@ -1,6 +1,0 @@
-<!-- Logo hand-made by Lonami (C) LonamiWebs 2018, tidied up by JuanPotato -->
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-  <circle cx="50" cy="50" r="45" fill="#3777b0" />
-  <path d="M20 30 h60 v10 l-2 2 h-17.5 l-10.5 43 l-2 2 l-12.5 -45 h-17.5 v-10" fill="#f0a727"/>
-  <path d="M20 30 h60 v10 h-17.5 l-12.5 45 l-12.5 -45 h-17.5 v-10" fill="#ffd750"/>
-</svg>
