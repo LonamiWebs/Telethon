@@ -28,15 +28,15 @@ class CallbackQuery(EventBuilder):
         pattern (`str`, `callable`, `Pattern`, optional):
             If set, only buttons with payload matching this pattern will be handled.
             You can specify a regex-like string which will be matched
-            against the message, a callable function that returns ``True``
-            if a message is acceptable, or a compiled regex pattern.
+            against the payload data, a callable function that returns ``True``
+            if a the payload data is acceptable, or a compiled regex pattern.
 
     """
     def __init__(
             self, chats=None, *, blacklist_chats=False, func=None, data=None, pattern=None):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
 
-        if all(x is not None and not x for x in (data, pattern)):
+        if data is not None and pattern is not None:
             raise ValueError("Only pass either data or pattern not both.")
 
         if isinstance(data, bytes):
