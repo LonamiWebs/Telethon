@@ -90,6 +90,30 @@ send messages, delete them, and download media. The code is a bit
 long which may make it harder to follow, and requires saving some
 state in order for downloads to work later.
 
+### [`quart_login.py`]
+
+* Usable as: **user**.
+* Difficulty: **medium**.
+
+Web-based application using [Quart](https://pgjones.gitlab.io/quart/index.html)
+(an `asyncio` alternative to [Flask](http://flask.pocoo.org/)) and Telethon
+together.
+
+The example should work as a base for Quart applications *with a single
+global client*, and it should be easy to adapt for multiple clients by
+following the comments in the code.
+
+It showcases how to login manually (ask for phone, code, and login),
+and once the user is logged in, some messages and photos will be shown
+in the page.
+
+There is nothing special about Quart. It was chosen because it's a
+drop-in replacement for Flask, the most popular option for web-apps.
+You can use any `asyncio` library with Telethon just as well,
+like [Sanic](https://sanic.readthedocs.io/en/latest/index.html) or
+[aiohttp](https://docs.aiohttp.org/en/stable/). You can even use Flask,
+if you learn how to use `threading` and `asyncio` together.
+
 ### [`gui.py`]
 
 * Usable as: **user and bot**.
@@ -111,6 +135,7 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 [CC0 License]: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/LICENSE
 [@BotFather]: https://t.me/BotFather
 [`assistant.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/assistant.py
+[`quart_login.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/quart_login.py
 [`gui.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/gui.py
 [`interactive_telegram_client.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/interactive_telegram_client.py
 [`print_messages.py`]: https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/print_messages.py

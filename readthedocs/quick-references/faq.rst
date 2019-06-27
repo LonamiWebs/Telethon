@@ -213,6 +213,9 @@ lot of headaches to get threads and asyncio to work together. Instead,
 consider using `Quart <https://pgjones.gitlab.io/quart/>`_, an asyncio-based
 alternative to `Flask <flask.pocoo.org/>`_.
 
+Check out `quart_login.py`_ for an example web-application based on Quart.
+
 .. _logging: https://docs.python.org/3/library/logging.html
 .. _@SpamBot: https://t.me/SpamBot
 .. _issue 297: https://github.com/LonamiWebs/Telethon/issues/297
+.. _quart_login.py: https://github.com/LonamiWebs/Telethon/tree/master/telethon_examples#quart_loginpy
