@@ -33,9 +33,6 @@ TotalList = helpers.TotalList
 
 DateLike = typing.Optional[typing.Union[float, datetime.datetime, datetime.date, datetime.timedelta]]
 
-
-# Note: we can't use `io.BytesIO` directly due to a bug in
-# Python 3.5.2's `typing`: https://github.com/python/typing/issues/266
 LocalPath = str
 ExternalUrl = str
 BotFileID = str
@@ -50,11 +47,19 @@ FileLike = typing.Union[
     types.TypeInputFileLocation
 ]
 
-OutFileLike = typing.Union[
-    str,
-    typing.Type[bytes],
-    typing.BinaryIO
-]
+# Can't use `typing.Type` in Python 3.5.2
+# See https://github.com/python/typing/issues/266
+try:
+    OutFileLike = typing.Union[
+        str,
+        typing.Type[bytes],
+        typing.BinaryIO
+    ]
+except TypeError:
+    OutFileLike = typing.Union[
+        str,
+        typing.BinaryIO
+    ]
 
 MessageLike = typing.Union[str, types.Message]
 MessageIDLike = typing.Union[int, types.Message, types.TypeInputMessage]
