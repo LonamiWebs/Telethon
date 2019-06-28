@@ -64,7 +64,7 @@ class CallbackQuery(EventBuilder):
             raise TypeError('Invalid pattern type given')
 
         self._no_check = all(x is None for x in (
-            self.chats, self.func, self.data, self.pattern,
+            self.chats, self.func, self.data, self.pattern
         ))
 
     @classmethod
