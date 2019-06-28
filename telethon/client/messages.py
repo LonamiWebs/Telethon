@@ -439,7 +439,7 @@ class MessageMethods:
                     print(message.photo)
         """
         if ids is not None:
-            return _IDsIter(self, limit, entity=entity, ids=ids)
+            return _IDsIter(self, reverse=reverse, limit=limit, entity=entity, ids=ids)
 
         return _MessagesIter(
             client=self,
