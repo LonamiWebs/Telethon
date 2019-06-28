@@ -45,3 +45,7 @@ an index so that they can be imported easily.
 
 Custom documentation can also be generated to easily navigate through
 the vast amount of items offered by the API.
+
+If you clone the repository, you will have to run ``python setup.py gen``
+in order to generate the code. Installing the library runs the generator
+too, but the mentioned command will just generate code.

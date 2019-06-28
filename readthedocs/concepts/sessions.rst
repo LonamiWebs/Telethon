@@ -48,8 +48,12 @@ by setting ``client.session.save_entities = False``.
 Different Session Storage
 =========================
 
-If you don't want to use the default SQLite session storage, you can also use
-one of the other implementations or implement your own storage.
+If you don't want to use the default SQLite session storage, you can also
+use one of the other implementations or implement your own storage.
+
+While it's often not the case, it's possible that SQLite is slow enough to
+be noticeable, in which case you can also use a different storage. Note that
+this is rare and most people won't have this issue, but it's worth a mention.
 
 To use a custom session storage, simply pass the custom session instance to
 :ref:`TelegramClient <telethon-client>` instead of

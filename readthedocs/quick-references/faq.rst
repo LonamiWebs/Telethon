@@ -215,6 +215,27 @@ alternative to `Flask <flask.pocoo.org/>`_.
 
 Check out `quart_login.py`_ for an example web-application based on Quart.
 
+Can I use Anaconda/Spyder/IPython with the library?
+===================================================
+
+Yes, but these interpreters run the asyncio event loop implicitly,
+which interferes with the ``telethon.sync`` magic module.
+
+If you use them, you should **not** import ``sync``:
+
+.. code-block:: python
+
+    # Change any of these...:
+    from telethon import TelegramClient, sync, ...
+    from telethon.sync import TelegramClient, ...
+
+    # ...with this:
+    from telethon import TelegramClient, ...
+
+You are also more likely to get "sqlite3.OperationalError: database is locked"
+with them. If they cause too much trouble, just write your code in a ``.py``
+file and run that, or use the normal ``python`` interpreter.
+
 .. _logging: https://docs.python.org/3/library/logging.html
 .. _@SpamBot: https://t.me/SpamBot
 .. _issue 297: https://github.com/LonamiWebs/Telethon/issues/297
