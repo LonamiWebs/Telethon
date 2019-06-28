@@ -359,6 +359,8 @@ class ChatMethods:
         """
         Iterator over the participants belonging to the specified chat.
 
+        The order is unspecified.
+
         Arguments
             entity (`entity`):
                 The entity from which to retrieve the participants list.
@@ -469,6 +471,8 @@ class ChatMethods:
             delete: bool = None) -> _AdminLogIter:
         """
         Iterator over the admin log for the specified channel.
+
+        The default order is from the most recent event to to the oldest.
 
         Note that you must be an administrator of it to use this method.
 
@@ -612,6 +616,8 @@ class ChatMethods:
             max_id: int = 0) -> _ProfilePhotoIter:
         """
         Iterator over a user's profile photos or a chat's photos.
+
+        The order is from the most recent photo to the oldest.
 
         Arguments
             entity (`entity`):

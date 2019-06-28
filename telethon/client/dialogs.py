@@ -127,6 +127,10 @@ class DialogMethods:
         """
         Iterator over the dialogs (open conversations/subscribed channels).
 
+        The order is the same as the one seen in official applications
+        (first pinned, them from those with the most recent message to
+        those with the oldest message).
+
         Arguments
             limit (`int` | `None`):
                 How many dialogs to be retrieved as maximum. Can be set to
@@ -226,6 +230,8 @@ class DialogMethods:
     def iter_drafts(self: 'TelegramClient') -> _DraftsIter:
         """
         Iterator over all open draft messages.
+
+        The order is unspecified.
 
         Yields
             Instances of `Draft <telethon.tl.custom.draft.Draft>`.

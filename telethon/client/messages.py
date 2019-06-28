@@ -315,6 +315,9 @@ class MessageMethods:
         """
         Iterator over the messages for the given chat.
 
+        The default order is from newest to oldest, but this
+        behaviour can be changed with the `reverse` parameter.
+
         If either `search`, `filter` or `from_user` are provided,
         :tl:`messages.Search` will be used instead of :tl:`messages.getHistory`.
 
