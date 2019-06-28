@@ -96,7 +96,12 @@ class _DialogsIter(RequestIter):
 class _DraftsIter(RequestIter):
     async def _init(self, **kwargs):
         r = await self.client(functions.messages.GetAllDraftsRequest())
-        self.buffer.extend(custom.Draft._from_update(self.client, u)
+
+        # TODO Maybe there should be a helper method for this?
+        entities = {utils.get_peer_id(x): x
+                    for x in itertools.chain(r.users, r.chats)}
+
+        self.buffer.extend(custom.Draft._from_update(self.client, u, entities)
                            for u in r.updates)
 
     async def _load_next_chunk(self):

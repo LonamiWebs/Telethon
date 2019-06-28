@@ -45,10 +45,10 @@ class Draft:
                    draft=dialog.dialog.draft, entity=dialog.entity)
 
     @classmethod
-    def _from_update(cls, client, update, entities=None):
+    def _from_update(cls, client, update, entities):
         assert isinstance(update, UpdateDraftMessage)
         return cls(client=client, peer=update.peer, draft=update.draft,
-                   entity=(entities or {}).get(get_peer_id(update.peer)))
+                   entity=entities.get(get_peer_id(update.peer)))
 
     @property
     def entity(self):
