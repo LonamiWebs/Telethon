@@ -76,7 +76,7 @@ class NewMessage(EventBuilder):
         self.from_users = await _into_id_set(client, self.from_users)
 
     @classmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if not isinstance(update.message, types.Message):

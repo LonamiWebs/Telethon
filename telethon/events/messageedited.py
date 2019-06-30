@@ -33,7 +33,7 @@ class MessageEdited(NewMessage):
         not you).
     """
     @classmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
             return cls.Event(update.message)

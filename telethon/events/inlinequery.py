@@ -46,7 +46,7 @@ class InlineQuery(EventBuilder):
             raise TypeError('Invalid pattern type given')
 
     @classmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         if isinstance(update, types.UpdateBotInlineQuery):
             return cls.Event(update)
 

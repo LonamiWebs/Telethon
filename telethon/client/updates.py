@@ -291,22 +291,22 @@ class UpdateMethods:
             entities = {utils.get_peer_id(x): x for x in
                         itertools.chain(update.users, update.chats)}
             for u in update.updates:
-                self._process_update(u, entities)
+                self._process_update(u, update.updates, entities=entities)
         elif isinstance(update, types.UpdateShort):
-            self._process_update(update.update)
+            self._process_update(update.update, None)
         else:
-            self._process_update(update)
+            self._process_update(update, None)
 
         self._state_cache.update(update)
 
-    def _process_update(self: 'TelegramClient', update, entities=None):
+    def _process_update(self: 'TelegramClient', update, others, entities=None):
         update._entities = entities or {}
 
         # This part is somewhat hot so we don't bother patching
         # update with channel ID/its state. Instead we just pass
         # arguments which is faster.
         channel_id = self._state_cache.get_channel_id(update)
-        args = (update, channel_id, self._state_cache[channel_id])
+        args = (update, others, channel_id, self._state_cache[channel_id])
         if self._dispatching_updates_queue is None:
             task = self._loop.create_task(self._dispatch_update(*args))
             self._updates_queue.add(task)
@@ -370,7 +370,7 @@ class UpdateMethods:
 
         self._dispatching_updates_queue.clear()
 
-    async def _dispatch_update(self: 'TelegramClient', update, channel_id, pts_date):
+    async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, pts_date):
         if not self._entity_cache.ensure_cached(update):
             # We could add a lock to not fetch the same pts twice if we are
             # already fetching it. However this does not happen in practice,
@@ -380,7 +380,7 @@ class UpdateMethods:
                 # For example, UpdateUserStatus or UpdateChatUserTyping.
                 await self._get_difference(update, channel_id, pts_date)
 
-        built = EventBuilderDict(self, update)
+        built = EventBuilderDict(self, update, others)
         for conv_set in self._conversations.values():
             for conv in conv_set:
                 ev = built[events.NewMessage]
@@ -527,15 +527,16 @@ class EventBuilderDict:
     """
     Helper "dictionary" to return events from types and cache them.
     """
-    def __init__(self, client: 'TelegramClient', update):
+    def __init__(self, client: 'TelegramClient', update, others):
         self.client = client
         self.update = update
+        self.others = others
 
     def __getitem__(self, builder):
         try:
             return self.__dict__[builder]
         except KeyError:
-            event = self.__dict__[builder] = builder.build(self.update)
+            event = self.__dict__[builder] = builder.build(self.update, self.others)
             if isinstance(event, EventCommon):
                 event.original_update = self.update
                 event._entities = self.update._entities

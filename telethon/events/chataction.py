@@ -9,7 +9,7 @@ class ChatAction(EventBuilder):
     Occurs whenever a user joins or leaves a chat, or a message is pinned.
     """
     @classmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
             # Telegram does not always send
             # UpdateChannelPinnedMessage for new pins

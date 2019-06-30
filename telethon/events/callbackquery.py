@@ -45,7 +45,7 @@ class CallbackQuery(EventBuilder):
             raise TypeError('Invalid data type given')
 
     @classmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         if isinstance(update, types.UpdateBotCallbackQuery):
             return cls.Event(update, update.peer, update.msg_id)
         elif isinstance(update, types.UpdateInlineBotCallbackQuery):

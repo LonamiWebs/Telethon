@@ -77,7 +77,7 @@ class EventBuilder(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def build(cls, update):
+    def build(cls, update, others=None):
         """
         Builds an event for the given update if possible, or returns None.
 
