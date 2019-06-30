@@ -862,8 +862,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         <telethon.client.messages.MessageMethods.send_read_acknowledge>`
         with both ``entity`` and ``message`` already set.
         """
-        await self._client.send_read_acknowledge(
-            await self.get_input_chat(), max_id=self.id)
+        if self._client:
+            await self._client.send_read_acknowledge(
+                await self.get_input_chat(), max_id=self.id)
 
     async def pin(self, *, notify=False):
         """
@@ -871,8 +872,12 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         `telethon.client.messages.MessageMethods.pin_message`
         with both ``entity`` and ``message`` already set.
         """
-        await self._client.pin_message(
-            await self.get_input_chat(), self.id, notify=notify)
+        # TODO Constantly checking if client is a bit annoying,
+        #      maybe just make it illegal to call messages from raw API?
+        #      That or figure out a way to always set it directly.
+        if self._client:
+            await self._client.pin_message(
+                await self.get_input_chat(), self.id, notify=notify)
 
     # endregion Public Methods
 
