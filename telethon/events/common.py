@@ -78,7 +78,12 @@ class EventBuilder(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def build(cls, update):
-        """Builds an event for the given update if possible, or returns None"""
+        """
+        Builds an event for the given update if possible, or returns None.
+
+        `others` are the rest of updates that came in the same container
+        as the current `update`.
+        """
 
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""

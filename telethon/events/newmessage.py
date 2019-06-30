@@ -128,7 +128,6 @@ class NewMessage(EventBuilder):
             if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
                 event.message.out = True
 
-        event._entities = update._entities
         return event
 
     def filter(self, event):

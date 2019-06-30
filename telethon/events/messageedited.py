@@ -36,12 +36,7 @@ class MessageEdited(NewMessage):
     def build(cls, update):
         if isinstance(update, (types.UpdateEditMessage,
                                types.UpdateEditChannelMessage)):
-            event = cls.Event(update.message)
-        else:
-            return
-
-        event._entities = update._entities
-        return event
+            return cls.Event(update.message)
 
     class Event(NewMessage.Event):
         pass  # Required if we want a different name for it

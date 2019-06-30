@@ -538,6 +538,7 @@ class EventBuilderDict:
             event = self.__dict__[builder] = builder.build(self.update)
             if isinstance(event, EventCommon):
                 event.original_update = self.update
+                event._entities = self.update._entities
                 event._set_client(self.client)
             elif event:
                 event._client = self.client

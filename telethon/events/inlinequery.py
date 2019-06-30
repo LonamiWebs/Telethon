@@ -48,12 +48,7 @@ class InlineQuery(EventBuilder):
     @classmethod
     def build(cls, update):
         if isinstance(update, types.UpdateBotInlineQuery):
-            event = cls.Event(update)
-        else:
-            return
-
-        event._entities = update._entities
-        return event
+            return cls.Event(update)
 
     def filter(self, event):
         if self.pattern:

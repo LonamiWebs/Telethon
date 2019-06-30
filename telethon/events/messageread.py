@@ -22,27 +22,22 @@ class MessageRead(EventBuilder):
     @classmethod
     def build(cls, update):
         if isinstance(update, types.UpdateReadHistoryInbox):
-            event = cls.Event(update.peer, update.max_id, False)
+            return cls.Event(update.peer, update.max_id, False)
         elif isinstance(update, types.UpdateReadHistoryOutbox):
-            event = cls.Event(update.peer, update.max_id, True)
+            return cls.Event(update.peer, update.max_id, True)
         elif isinstance(update, types.UpdateReadChannelInbox):
-            event = cls.Event(types.PeerChannel(update.channel_id),
-                                      update.max_id, False)
+            return cls.Event(types.PeerChannel(update.channel_id),
+                             update.max_id, False)
         elif isinstance(update, types.UpdateReadChannelOutbox):
-            event = cls.Event(types.PeerChannel(update.channel_id),
-                              update.max_id, True)
+            return cls.Event(types.PeerChannel(update.channel_id),
+                             update.max_id, True)
         elif isinstance(update, types.UpdateReadMessagesContents):
-            event = cls.Event(message_ids=update.messages,
-                              contents=True)
+            return cls.Event(message_ids=update.messages,
+                             contents=True)
         elif isinstance(update, types.UpdateChannelReadMessagesContents):
-            event = cls.Event(types.PeerChannel(update.channel_id),
-                              message_ids=update.messages,
-                              contents=True)
-        else:
-            return
-
-        event._entities = update._entities
-        return event
+            return cls.Event(types.PeerChannel(update.channel_id),
+                             message_ids=update.messages,
+                             contents=True)
 
     def filter(self, event):
         if self.inbox == event.outbox:

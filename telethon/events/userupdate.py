@@ -14,21 +14,16 @@ class UserUpdate(EventBuilder):
     @classmethod
     def build(cls, update):
         if isinstance(update, types.UpdateUserStatus):
-            event = cls.Event(update.user_id,
-                              status=update.status)
+            return cls.Event(update.user_id,
+                             status=update.status)
         elif isinstance(update, types.UpdateChatUserTyping):
             # Unfortunately, we can't know whether `chat_id`'s type
-            event = cls.Event(update.user_id,
-                              chat_id=update.chat_id,
-                              typing=update.action)
+            return cls.Event(update.user_id,
+                             chat_id=update.chat_id,
+                             typing=update.action)
         elif isinstance(update, types.UpdateUserTyping):
-            event = cls.Event(update.user_id,
-                              typing=update.action)
-        else:
-            return
-
-        event._entities = update._entities
-        return event
+            return cls.Event(update.user_id,
+                             typing=update.action)
 
     class Event(EventCommon, SenderGetter):
         """
