@@ -54,6 +54,11 @@ so all the methods in it can be used from any event builder/event instance.
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: telethon.events.album
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: telethon.events.raw
     :members:
     :undoc-members:

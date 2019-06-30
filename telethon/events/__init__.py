@@ -1,4 +1,5 @@
 from .raw import Raw
+from .album import Album
 from .chataction import ChatAction
 from .messagedeleted import MessageDeleted
 from .messageedited import MessageEdited

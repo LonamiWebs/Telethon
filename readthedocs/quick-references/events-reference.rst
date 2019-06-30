@@ -194,6 +194,34 @@ Full documentation for the `InlineQuery
 
         answer
 
+Album
+=====
+
+Occurs whenever you receive an entire album.
+
+Full documentation for the `Album
+<telethon.events.album.Album>`.
+
+.. currentmodule:: telethon.events.album.Album.Event
+
+.. autosummary::
+    :nosignatures:
+
+        grouped_id
+        text
+        raw_text
+        is_reply
+        forward
+
+        get_reply_message
+        respond
+        reply
+        forward_to
+        edit
+        delete
+        mark_read
+        pin
+
 Raw
 ===
 
