@@ -99,6 +99,23 @@ pygments_style = 'friendly'
 todo_include_todos = False
 
 
+def skip(app, what, name, obj, would_skip, options):
+    if name.endswith('__'):
+        # We want to show special methods names, except some which add clutter
+        return name in {
+            '__init__',
+            '__abstractmethods__',
+            '__module__',
+            '__doc__'
+        }
+
+    return would_skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
+
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
