@@ -1,4 +1,5 @@
 import datetime
+import functools
 
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
@@ -8,6 +9,28 @@ from ..tl.custom.sendergetter import SenderGetter
 
 # TODO Either the properties are poorly named or they should be
 #      different events, but that would be a breaking change.
+#
+# TODO There are more "user updates", but bundling them all up
+#      in a single place will make it annoying to use (since
+#      the user needs to check for the existence of `None`).
+#
+# TODO Handle UpdateUserBlocked, UpdateUserName, UpdateUserPhone, UpdateUserPhoto
+
+def _requires_action(function):
+    @functools.wraps(function)
+    def wrapped(self):
+        return None if self.action is None else function(self)
+
+    return wrapped
+
+
+def _requires_status(function):
+    @functools.wraps(function)
+    def wrapped(self):
+        return None if self.status is None else function(self)
+
+    return wrapped
+
 
 @name_inner_event
 class UserUpdate(EventBuilder):
@@ -38,14 +61,14 @@ class UserUpdate(EventBuilder):
                 The user status if the update is about going online or offline.
 
                 You should check this attribute first before checking any
-                of the seen within properties, since they will all be `False`
+                of the seen within properties, since they will all be `None`
                 if the status is not set.
 
             action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
                 You should check this attribute first before checking any
-                of the typing properties, since they will all be `False`
+                of the typing properties, since they will all be `None`
                 if the action is not set.
         """
         def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
@@ -105,6 +128,7 @@ class UserUpdate(EventBuilder):
             return self.sender_id
 
         @property
+        @_requires_action
         def typing(self):
             """
             `True` if the action is typing a message.
@@ -112,6 +136,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageTypingAction)
 
         @property
+        @_requires_action
         def uploading(self):
             """
             `True` if the action is uploading something.
@@ -126,6 +151,7 @@ class UserUpdate(EventBuilder):
             ))
 
         @property
+        @_requires_action
         def recording(self):
             """
             `True` if the action is recording something.
@@ -137,6 +163,7 @@ class UserUpdate(EventBuilder):
             ))
 
         @property
+        @_requires_action
         def playing(self):
             """
             `True` if the action is playing a game.
@@ -144,6 +171,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageGamePlayAction)
 
         @property
+        @_requires_action
         def cancel(self):
             """
             `True` if the action was cancelling other actions.
@@ -151,6 +179,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageCancelAction)
 
         @property
+        @_requires_action
         def geo(self):
             """
             `True` if what's being uploaded is a geo.
@@ -158,6 +187,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageGeoLocationAction)
 
         @property
+        @_requires_action
         def audio(self):
             """
             `True` if what's being recorded/uploaded is an audio.
@@ -168,6 +198,7 @@ class UserUpdate(EventBuilder):
             ))
 
         @property
+        @_requires_action
         def round(self):
             """
             `True` if what's being recorded/uploaded is a round video.
@@ -178,6 +209,7 @@ class UserUpdate(EventBuilder):
             ))
 
         @property
+        @_requires_action
         def video(self):
             """
             `True` if what's being recorded/uploaded is an video.
@@ -188,6 +220,7 @@ class UserUpdate(EventBuilder):
             ))
 
         @property
+        @_requires_action
         def contact(self):
             """
             `True` if what's being uploaded (selected) is a contact.
@@ -195,6 +228,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageChooseContactAction)
 
         @property
+        @_requires_action
         def document(self):
             """
             `True` if what's being uploaded is document.
@@ -202,6 +236,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageUploadDocumentAction)
 
         @property
+        @_requires_action
         def photo(self):
             """
             `True` if what's being uploaded is a photo.
@@ -209,6 +244,7 @@ class UserUpdate(EventBuilder):
             return isinstance(self.action, types.SendMessageUploadPhotoAction)
 
         @property
+        @_requires_action
         def last_seen(self):
             """
             Exact `datetime.datetime` when the user was last seen if known.
@@ -217,6 +253,7 @@ class UserUpdate(EventBuilder):
                 return self.status.was_online
 
         @property
+        @_requires_status
         def until(self):
             """
             The `datetime.datetime` until when the user should appear online.
@@ -235,8 +272,11 @@ class UserUpdate(EventBuilder):
                 return datetime.timedelta(days=7)
             elif isinstance(self.status, types.UserStatusLastMonth):
                 return datetime.timedelta(days=30)
+            else:
+                return datetime.timedelta(days=365)
 
         @property
+        @_requires_status
         def online(self):
             """
             `True` if the user is currently online,
@@ -244,6 +284,7 @@ class UserUpdate(EventBuilder):
             return self._last_seen_delta() <= datetime.timedelta(days=0)
 
         @property
+        @_requires_status
         def recently(self):
             """
             `True` if the user was seen within a day.
@@ -251,6 +292,7 @@ class UserUpdate(EventBuilder):
             return self._last_seen_delta() <= datetime.timedelta(days=1)
 
         @property
+        @_requires_status
         def within_weeks(self):
             """
             `True` if the user was seen within 7 days.
@@ -258,6 +300,7 @@ class UserUpdate(EventBuilder):
             return self._last_seen_delta() <= datetime.timedelta(days=7)
 
         @property
+        @_requires_status
         def within_months(self):
             """
             `True` if the user was seen within 30 days.
