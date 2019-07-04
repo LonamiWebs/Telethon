@@ -6,6 +6,9 @@ from ..tl import types
 from ..tl.custom.sendergetter import SenderGetter
 
 
+# TODO Either the properties are poorly named or they should be
+#      different events, but that would be a breaking change.
+
 @name_inner_event
 class UserUpdate(EventBuilder):
     """
@@ -31,63 +34,19 @@ class UserUpdate(EventBuilder):
         such as gone online, started typing, etc.
 
         Members:
-            online (`bool`, optional):
-                ``True`` if the user is currently online, ``False`` otherwise.
-                Might be ``None`` if this information is not present.
+            status (:tl:`UserStatus`, optional):
+                The user status if the update is about going online or offline.
 
-            last_seen (`datetime`, optional):
-                Exact date when the user was last seen if known.
-
-            until (`datetime`, optional):
-                Until when will the user remain online.
-
-            within_months (`bool`):
-                ``True`` if the user was seen within 30 days.
-
-            within_weeks (`bool`):
-                ``True`` if the user was seen within 7 days.
-
-            recently (`bool`):
-                ``True`` if the user was seen within a day.
+                You should check this attribute first before checking any
+                of the seen within properties, since they will all be `False`
+                if the status is not set.
 
             action (:tl:`SendMessageAction`, optional):
                 The "typing" action if any the user is performing if any.
 
-            cancel (`bool`):
-                ``True`` if the action was cancelling other actions.
-
-            typing (`bool`):
-                ``True`` if the action is typing a message.
-
-            recording (`bool`):
-                ``True`` if the action is recording something.
-
-            uploading (`bool`):
-                ``True`` if the action is uploading something.
-
-            playing (`bool`):
-                ``True`` if the action is playing a game.
-
-            audio (`bool`):
-                ``True`` if what's being recorded/uploaded is an audio.
-
-            round (`bool`):
-                ``True`` if what's being recorded/uploaded is a round video.
-
-            video (`bool`):
-                ``True`` if what's being recorded/uploaded is an video.
-
-            document (`bool`):
-                ``True`` if what's being uploaded is document.
-
-            geo (`bool`):
-                ``True`` if what's being uploaded is a geo.
-
-            photo (`bool`):
-                ``True`` if what's being uploaded is a photo.
-
-            contact (`bool`):
-                ``True`` if what's being uploaded (selected) is a contact.
+                You should check this attribute first before checking any
+                of the typing properties, since they will all be `False`
+                if the action is not set.
         """
         def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
             if chat_id is None:
@@ -99,68 +58,8 @@ class UserUpdate(EventBuilder):
 
             SenderGetter.__init__(self, user_id)
 
-            self.online = None if status is None else \
-                isinstance(status, types.UserStatusOnline)
-
-            self.last_seen = status.was_online if \
-                isinstance(status, types.UserStatusOffline) else None
-
-            self.until = status.expires if \
-                isinstance(status, types.UserStatusOnline) else None
-
-            if self.last_seen:
-                now = datetime.datetime.now(tz=datetime.timezone.utc)
-                diff = now - self.last_seen
-                if diff < datetime.timedelta(days=30):
-                    self.within_months = True
-                    if diff < datetime.timedelta(days=7):
-                        self.within_weeks = True
-                        if diff < datetime.timedelta(days=1):
-                            self.recently = True
-            else:
-                self.within_months = self.within_weeks = self.recently = False
-                if isinstance(status, (types.UserStatusOnline,
-                                       types.UserStatusRecently)):
-                    self.within_months = self.within_weeks = True
-                    self.recently = True
-                elif isinstance(status, types.UserStatusLastWeek):
-                    self.within_months = self.within_weeks = True
-                elif isinstance(status, types.UserStatusLastMonth):
-                    self.within_months = True
-
+            self.status = status
             self.action = typing
-            if typing:
-                self.cancel = self.typing = self.recording = self.uploading = \
-                    self.playing = False
-                self.audio = self.round = self.video = self.document = \
-                    self.geo = self.photo = self.contact = False
-
-                if isinstance(typing, types.SendMessageCancelAction):
-                    self.cancel = True
-                elif isinstance(typing, types.SendMessageTypingAction):
-                    self.typing = True
-                elif isinstance(typing, types.SendMessageGamePlayAction):
-                    self.playing = True
-                elif isinstance(typing, types.SendMessageGeoLocationAction):
-                    self.geo = True
-                elif isinstance(typing, types.SendMessageRecordAudioAction):
-                    self.recording = self.audio = True
-                elif isinstance(typing, types.SendMessageRecordRoundAction):
-                    self.recording = self.round = True
-                elif isinstance(typing, types.SendMessageRecordVideoAction):
-                    self.recording = self.video = True
-                elif isinstance(typing, types.SendMessageChooseContactAction):
-                    self.uploading = self.contact = True
-                elif isinstance(typing, types.SendMessageUploadAudioAction):
-                    self.uploading = self.audio = True
-                elif isinstance(typing, types.SendMessageUploadDocumentAction):
-                    self.uploading = self.document = True
-                elif isinstance(typing, types.SendMessageUploadPhotoAction):
-                    self.uploading = self.photo = True
-                elif isinstance(typing, types.SendMessageUploadRoundAction):
-                    self.uploading = self.round = True
-                elif isinstance(typing, types.SendMessageUploadVideoAction):
-                    self.uploading = self.video = True
 
         def _set_client(self, client):
             if isinstance(self._chat_peer, int):
@@ -204,3 +103,163 @@ class UserUpdate(EventBuilder):
         def user_id(self):
             """Alias for `sender_id <telethon.tl.custom.sendergetter.SenderGetter.sender_id>`."""
             return self.sender_id
+
+        @property
+        def typing(self):
+            """
+            `True` if the action is typing a message.
+            """
+            return isinstance(self.action, types.SendMessageTypingAction)
+
+        @property
+        def uploading(self):
+            """
+            `True` if the action is uploading something.
+            """
+            return isinstance(self.action, (
+                types.SendMessageChooseContactAction,
+                types.SendMessageUploadAudioAction,
+                types.SendMessageUploadDocumentAction,
+                types.SendMessageUploadPhotoAction,
+                types.SendMessageUploadRoundAction,
+                types.SendMessageUploadVideoAction
+            ))
+
+        @property
+        def recording(self):
+            """
+            `True` if the action is recording something.
+            """
+            return isinstance(self.action, (
+                types.SendMessageRecordAudioAction,
+                types.SendMessageRecordRoundAction,
+                types.SendMessageRecordVideoAction
+            ))
+
+        @property
+        def playing(self):
+            """
+            `True` if the action is playing a game.
+            """
+            return isinstance(self.action, types.SendMessageGamePlayAction)
+
+        @property
+        def cancel(self):
+            """
+            `True` if the action was cancelling other actions.
+            """
+            return isinstance(self.action, types.SendMessageCancelAction)
+
+        @property
+        def geo(self):
+            """
+            `True` if what's being uploaded is a geo.
+            """
+            return isinstance(self.action, types.SendMessageGeoLocationAction)
+
+        @property
+        def audio(self):
+            """
+            `True` if what's being recorded/uploaded is an audio.
+            """
+            return isinstance(self.action, (
+                types.SendMessageRecordAudioAction,
+                types.SendMessageUploadAudioAction
+            ))
+
+        @property
+        def round(self):
+            """
+            `True` if what's being recorded/uploaded is a round video.
+            """
+            return isinstance(self.action, (
+                types.SendMessageRecordRoundAction,
+                types.SendMessageUploadRoundAction
+            ))
+
+        @property
+        def video(self):
+            """
+            `True` if what's being recorded/uploaded is an video.
+            """
+            return isinstance(self.action, (
+                types.SendMessageRecordVideoAction,
+                types.SendMessageUploadVideoAction
+            ))
+
+        @property
+        def contact(self):
+            """
+            `True` if what's being uploaded (selected) is a contact.
+            """
+            return isinstance(self.action, types.SendMessageChooseContactAction)
+
+        @property
+        def document(self):
+            """
+            `True` if what's being uploaded is document.
+            """
+            return isinstance(self.action, types.SendMessageUploadDocumentAction)
+
+        @property
+        def photo(self):
+            """
+            `True` if what's being uploaded is a photo.
+            """
+            return isinstance(self.action, types.SendMessageUploadPhotoAction)
+
+        @property
+        def last_seen(self):
+            """
+            Exact `datetime.datetime` when the user was last seen if known.
+            """
+            if isinstance(self.status, types.UserStatusOffline):
+                return self.status.was_online
+
+        @property
+        def until(self):
+            """
+            The `datetime.datetime` until when the user should appear online.
+            """
+            if isinstance(self.status, types.UserStatusOnline):
+                return self.status.expires
+
+        def _last_seen_delta(self):
+            if isinstance(self.status, types.UserStatusOffline):
+                return datetime.datetime.now(tz=datetime.timezone.utc) - self.status.was_online
+            elif isinstance(self.status, types.UserStatusOnline):
+                return datetime.timedelta(days=0)
+            elif isinstance(self.status, types.UserStatusRecently):
+                return datetime.timedelta(days=1)
+            elif isinstance(self.status, types.UserStatusLastWeek):
+                return datetime.timedelta(days=7)
+            elif isinstance(self.status, types.UserStatusLastMonth):
+                return datetime.timedelta(days=30)
+
+        @property
+        def online(self):
+            """
+            `True` if the user is currently online,
+            """
+            return self._last_seen_delta() <= datetime.timedelta(days=0)
+
+        @property
+        def recently(self):
+            """
+            `True` if the user was seen within a day.
+            """
+            return self._last_seen_delta() <= datetime.timedelta(days=1)
+
+        @property
+        def within_weeks(self):
+            """
+            `True` if the user was seen within 7 days.
+            """
+            return self._last_seen_delta() <= datetime.timedelta(days=7)
+
+        @property
+        def within_months(self):
+            """
+            `True` if the user was seen within 30 days.
+            """
+            return self._last_seen_delta() <= datetime.timedelta(days=30)

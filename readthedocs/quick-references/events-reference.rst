@@ -126,9 +126,6 @@ UserUpdate
 
 Occurs whenever a user goes online, starts typing, etc.
 
-A lot of fields are attributes and not properties, so they
-are not shown here. Please refer to its full documentation.
-
 Full documentation for the `UserUpdate
 <telethon.events.userupdate.UserUpdate>`.
 
@@ -143,6 +140,25 @@ Full documentation for the `UserUpdate
 
         get_user
         get_input_user
+
+        typing
+        uploading
+        recording
+        playing
+        cancel
+        geo
+        audio
+        round
+        video
+        contact
+        document
+        photo
+        last_seen
+        until
+        online
+        recently
+        within_weeks
+        within_months
 
 
 CallbackQuery
