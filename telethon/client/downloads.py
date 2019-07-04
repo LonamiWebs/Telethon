@@ -3,6 +3,7 @@ import io
 import os
 import pathlib
 import typing
+import inspect
 
 from .. import utils, helpers, errors, hints
 from ..requestiter import RequestIter
@@ -434,7 +435,9 @@ class DownloadMethods:
                     input_location, request_size=part_size, dc_id=dc_id):
                 f.write(chunk)
                 if progress_callback:
-                    progress_callback(f.tell(), file_size)
+                    r = progress_callback(f.tell(), file_size)
+                    if inspect.isawaitable(r):
+                        await r
 
             f.flush()
             if in_memory:
