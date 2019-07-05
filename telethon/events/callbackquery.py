@@ -19,13 +19,13 @@ class CallbackQuery(EventBuilder):
     `chat_instance` which should be used for inline callbacks.
 
     Args:
-        data (`bytes` | `str` | `callable`, optional):
+        data (`bytes`, `str`, `callable`, optional):
             If set, the inline button payload data must match this data.
             A UTF-8 string can also be given, a regex or a callable. For
             instance, to check against ``'data_1'`` and ``'data_2'`` you
             can use ``re.compile(b'data_')``.
 
-        pattern (`str`, `callable`, `Pattern`, optional):
+        pattern (`bytes`, `str`, `callable`, `Pattern`, optional):
             If set, only buttons with payload matching this pattern will be handled.
             You can specify a regex-like string which will be matched
             against the payload data, a callable function that returns ``True``
@@ -36,35 +36,31 @@ class CallbackQuery(EventBuilder):
             self, chats=None, *, blacklist_chats=False, func=None, data=None, pattern=None):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
 
-        if data is not None and pattern is not None:
+        if data and pattern:
             raise ValueError("Only pass either data or pattern not both.")
 
-        if isinstance(data, bytes):
-            self.data = data
-        elif isinstance(data, str):
-            self.data = data.encode('utf-8')
-        elif not data or callable(data):
-            self.data = data
-        elif hasattr(data, 'match') and callable(data.match):
-            if not isinstance(getattr(data, 'pattern', b''), bytes):
-                data = re.compile(data.pattern.encode('utf-8'),
-                                  data.flags & (~re.UNICODE))
-
-            self.data = data.match
-        else:
-            raise TypeError('Invalid data type given')
-
+        if isinstance(data, str):
+            data = data.encode('utf-8')
         if isinstance(pattern, str):
-            self.pattern = re.compile(pattern).match
-        elif not pattern or callable(pattern):
-            self.pattern = pattern
-        elif hasattr(pattern, 'match') and callable(pattern.match):
-            self.pattern = pattern.match
+            pattern = data.encode('utf-8')
+
+        match = data if data else pattern
+
+        if isinstance(match, bytes):
+            self.match = data if data else re.compile(pattern).match
+        elif not match or callable(match):
+            self.match = match
+        elif hasattr(match, 'match') and callable(match.match):
+            if not isinstance(getattr(match, 'pattern', b''), bytes):
+                match = re.compile(match.pattern.encode('utf-8'),
+                                  match.flags & (~re.UNICODE))
+
+            self.match = match.match
         else:
-            raise TypeError('Invalid pattern type given')
+            raise TypeError('Invalid data or pattern type given')
 
         self._no_check = all(x is None for x in (
-            self.chats, self.func, self.data, self.pattern
+            self.chats, self.func, self.match,
         ))
 
     @classmethod
@@ -94,21 +90,15 @@ class CallbackQuery(EventBuilder):
                 inside |= event.chat_id in self.chats
 
             if inside == self.blacklist_chats:
-                return None
-
-        if self.data:
-            if callable(self.data):
-                event.data_match = self.data(event.query.data)
-                if not event.data_match:
-                    return None
-            elif event.query.data != self.data:
-                return None
-
-        if self.pattern:
-            match = self.pattern(event.query.data)
-            if not match:
                 return
-            event.pattern_match = match
+
+        if self.match:
+            if callable(self.match):
+                event.data_match = event.pattern_match = self.match(event.query.data)
+                if not event.data_match:
+                    return
+            elif event.query.data != self.match:
+                return
 
         if not self.func or self.func(event):
             return event
