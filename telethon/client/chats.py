@@ -820,6 +820,13 @@ class ChatMethods(UserMethods):
             is_admin (`bool`, optional):
                 Whether the user will be an admin in the chat.
                 This will only work in small group chats.
+                Whether the user will be an admin in the chat. This is the
+                only permission available in small group chats, and when
+                used in megagroups, all non-explicitly set permissions will
+                have this value.
+
+                Essentially, only passing ``is_admin=True`` will grant all
+                permissions, but you can still disable those you need.
 
         Returns
             The resulting :tl:`Updates` object.
@@ -829,31 +836,40 @@ class ChatMethods(UserMethods):
 
                 # Allowing `user` to pin messages in `chat`
                 client.edit_admin(chat, user, pin_messages=True)
+
+                # Granting all permissions except for `add_admins`
+                client.edit_admin(chat, user, is_admin=True, add_admins=False)
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
         if not isinstance(user, types.InputPeerUser):
             raise ValueError('You must pass a user entity')
 
+        perm_names = (
+            'change_info', 'post_messages', 'edit_messages', 'delete_messages',
+            'ban_users', 'invite_users', 'pin_messages', 'add_admins'
+        )
+
         if isinstance(entity, types.InputPeerChannel):
-            return await self(functions.channels.EditAdminRequest(
-                entity,
-                user,
-                types.ChatAdminRights(
-                    change_info=change_info,
-                    post_messages=post_messages,
-                    edit_messages=edit_messages,
-                    delete_messages=delete_messages,
-                    ban_users=ban_users,
-                    invite_users=invite_users,
-                    pin_messages=pin_messages,
-                    add_admins=add_admins
-                )
-            ))
+            perms = locals()
+            return await self(functions.channels.EditAdminRequest(entity, user, types.ChatAdminRights(**{
+                # A permission is its explicit (not-None) value or `is_admin`.
+                # This essentially makes `is_admin` be the default value.
+                name: perms[name] if perms[name] is not None else is_admin
+                for name in perm_names
+            })))
+
         elif isinstance(entity, types.InputPeerChat):
-            return await self(functions.messages.EditChatAdminRequest(entity, user, is_admin=is_admin))
+            # If the user passed any permission in a small
+            # group chat, they must be a full admin to have it.
+            if is_admin is None:
+                is_admin = any(locals()[x] for x in perm_names)
+
+            return await self(functions.messages.EditChatAdminRequest(
+                entity, user, is_admin=is_admin))
+
         else:
-            raise ValueError('You must pass either a channel or a supergroup or a normal group')
+            raise ValueError('You can only edit permissions in groups and channels')
 
     async def edit_restriction(
             self: 'TelegramClient',
