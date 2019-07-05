@@ -14,7 +14,7 @@ import asyncio
 import functools
 import inspect
 
-from . import connection
+from . import events, errors, utils, connection
 from .client.account import _TakeoutClient
 from .client.telegramclient import TelegramClient
 from .tl import types, functions, custom
