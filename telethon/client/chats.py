@@ -871,7 +871,7 @@ class ChatMethods(UserMethods):
         else:
             raise ValueError('You can only edit permissions in groups and channels')
 
-    async def edit_restriction(
+    async def edit_restrictions(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             user: 'typing.Optional[hints.EntityLike]' = None,
