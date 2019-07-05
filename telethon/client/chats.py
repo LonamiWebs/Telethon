@@ -767,4 +767,235 @@ class ChatMethods:
         return _ChatAction(
             self, entity, action, delay=delay, auto_cancel=auto_cancel)
 
+    async def edit_admin(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'hints.EntityLike',
+            *,
+            change_info: bool = None,
+            post_messages: bool = None,
+            edit_messages: bool = None,
+            delete_messages: bool = None,
+            ban_users: bool = None,
+            invite_users: bool = None,
+            pin_messages: bool = None,
+            add_admins: bool = None,
+            is_admin: bool = None) -> types.Updates:
+        """
+        Edits admin permissions for someone in a chat.
+
+        Raises an error if wrong a combination of rights are given
+        (e.g. you don't have enough permissions to grant one).
+
+        Unless otherwise stated, permissions will work in channels and megagroups.
+
+        Arguments
+            entity (`entity`):
+                The channel, megagroup or chat where the promotion should happen.
+
+            user (`entity`):
+                The user to be promoted.
+
+            change_info (`bool`, optional):
+                Whether the user will be able to change info.
+
+            post_messages (`bool`, optional):
+                Whether the user will be able to post in the channel.
+                This will only work in broadcast channels.
+
+            edit_messages (`bool`, optional):
+                Whether the user will be able to edit messages in the channel.
+                This will only work in broadcast channels.
+
+            delete_messages (`bool`, optional):
+                Whether the user will be able to delete messages.
+
+            ban_users (`bool`, optional):
+                Whether the user will be able to ban users.
+
+            invite_users (`bool`, optional):
+                Whether the user will be able to invite users. Needs some testing.
+
+            pin_messages (`bool`, optional):
+                Whether the user will be able to pin messages.
+
+            add_admins (`bool`, optional):
+                Whether the user will be able to add admins.
+
+            is_admin (`bool`, optional):
+                Whether the user will be an admin in the chat.
+                This will only work in small group chats.
+                Whether the user will be an admin in the chat. This is the
+                only permission available in small group chats, and when
+                used in megagroups, all non-explicitly set permissions will
+                have this value.
+
+                Essentially, only passing ``is_admin=True`` will grant all
+                permissions, but you can still disable those you need.
+
+        Returns
+            The resulting :tl:`Updates` object.
+
+        Example
+            .. code-block:: python
+
+                # Allowing `user` to pin messages in `chat`
+                client.edit_admin(chat, user, pin_messages=True)
+
+                # Granting all permissions except for `add_admins`
+                client.edit_admin(chat, user, is_admin=True, add_admins=False)
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+        if not isinstance(user, types.InputPeerUser):
+            raise ValueError('You must pass a user entity')
+
+        perm_names = (
+            'change_info', 'post_messages', 'edit_messages', 'delete_messages',
+            'ban_users', 'invite_users', 'pin_messages', 'add_admins'
+        )
+
+        if isinstance(entity, types.InputPeerChannel):
+            perms = locals()
+            return await self(functions.channels.EditAdminRequest(entity, user, types.ChatAdminRights(**{
+                # A permission is its explicit (not-None) value or `is_admin`.
+                # This essentially makes `is_admin` be the default value.
+                name: perms[name] if perms[name] is not None else is_admin
+                for name in perm_names
+            })))
+
+        elif isinstance(entity, types.InputPeerChat):
+            # If the user passed any permission in a small
+            # group chat, they must be a full admin to have it.
+            if is_admin is None:
+                is_admin = any(locals()[x] for x in perm_names)
+
+            return await self(functions.messages.EditChatAdminRequest(
+                entity, user, is_admin=is_admin))
+
+        else:
+            raise ValueError('You can only edit permissions in groups and channels')
+
+    async def edit_restrictions(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'typing.Optional[hints.EntityLike]' = None,
+            until_date: 'hints.DateLike' = None,
+            *,
+            view_messages: bool = True,
+            send_messages: bool = True,
+            send_media: bool = True,
+            send_stickers: bool = True,
+            send_gifs: bool = True,
+            send_games: bool = True,
+            send_inline: bool = True,
+            send_polls: bool = True,
+            change_info: bool = True,
+            invite_users: bool = True,
+            pin_messages: bool = True) -> types.Updates:
+        """
+        Edits user restrictions in a chat.
+
+        Raises an error if wrong a combination of rights are given
+        (e.g. you don't have enough permissions to revoke one).
+
+        Arguments
+            entity (`entity`):
+                The channel or megagroup where the restriction should happen.
+
+            user (`entity`, optional):
+                If specified, the permission will be changed for the specific user.
+                If left as ``None``, the default chat permissions will be updated.
+
+            until_date (`DateLike`, optional):
+                When the user will be unbanned.
+
+                If the due date or duration is longer than 366 days or shorter than
+                30 seconds, the ban will be forever. Defaults to ``0`` (ban forever).
+
+            view_messages (`bool`, optional):
+                Whether the user is able to view messages or not.
+                Forbidding someone from viewing messages equals to banning them.
+                This will only work if ``user`` is set.
+
+            send_messages (`bool`, optional):
+                Whether the user is able to send messages or not.
+
+            send_media (`bool`, optional):
+                Whether the user is able to send media or not.
+
+            send_stickers (`bool`, optional):
+                Whether the user is able to send stickers or not.
+
+            send_gifs (`bool`, optional):
+                Whether the user is able to send animated gifs or not.
+
+            send_games (`bool`, optional):
+                Whether the user is able to send games or not.
+
+            send_inline (`bool`, optional):
+                Whether the user is able to use inline bots or not.
+
+            send_polls (`bool`, optional):
+                Whether the user is able to send polls or not.
+
+            change_info (`bool`, optional):
+                Whether the user is able to change info or not.
+
+            invite_users (`bool`, optional):
+                Whether the user is able to invite other users or not.
+
+            pin_messages (`bool`, optional):
+                Whether the user is able to pin messages or not.
+
+        Returns
+            The resulting :tl:`Updates` object.
+
+        Example
+            .. code-block:: python
+
+                from datetime import timedelta
+
+                # Kicking `user` from `chat` for 1 minute
+                client.edit_permission(chat, user, timedelta(minutes=1),
+                                       view_messages=False)
+
+                # Banning `user` from `chat` forever
+                client.edit_permission(chat, user, view_messages=False)
+        """
+        entity = await self.get_input_entity(entity)
+        if not isinstance(entity, types.InputPeerChannel):
+            raise ValueError('You must pass either a channel or a supergroup')
+
+        rights = types.ChatBannedRights(
+            until_date=until_date,
+            view_messages=not view_messages,
+            send_messages=not send_messages,
+            send_media=not send_media,
+            send_stickers=not send_stickers,
+            send_gifs=not send_gifs,
+            send_games=not send_games,
+            send_inline=not send_inline,
+            send_polls=not send_polls,
+            change_info=not change_info,
+            invite_users=not invite_users,
+            pin_messages=not pin_messages
+        )
+
+        if user is None:
+            return await self(functions.messages.EditChatDefaultBannedRightsRequest(
+                peer=entity,
+                banned_rights=rights
+            ))
+
+        user = await self.get_input_entity(user)
+        if not isinstance(user, types.InputPeerUser):
+            raise ValueError('You must pass a user entity')
+
+        return await self(functions.channels.EditBannedRequest(
+            channel=entity,
+            user_id=user,
+            banned_rights=rights
+        ))
+
     # endregion
