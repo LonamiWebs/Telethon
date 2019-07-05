@@ -959,7 +959,7 @@ class ChatMethods(UserMethods):
                 client.edit_permission(chat, user, view_messages=False)
         """
         entity = await self.get_input_entity(entity)
-        if not isinstance(entity,types.InputPeerChannel):
+        if not isinstance(entity, types.InputPeerChannel):
             raise ValueError('You must pass either a channel or a supergroup')
 
         rights = types.ChatBannedRights(
