@@ -53,7 +53,7 @@ class CallbackQuery(EventBuilder):
         elif hasattr(match, 'match') and callable(match.match):
             if not isinstance(getattr(match, 'pattern', b''), bytes):
                 match = re.compile(match.pattern.encode('utf-8'),
-                                  match.flags & (~re.UNICODE))
+                                   match.flags & (~re.UNICODE))
 
             self.match = match.match
         else:
