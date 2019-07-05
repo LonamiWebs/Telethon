@@ -115,12 +115,16 @@ class CallbackQuery(EventBuilder):
                 The object returned by the ``data=`` parameter
                 when creating the event builder, if any. Similar
                 to ``pattern_match`` for the new message event.
+            
+            pattern_match (`obj`, optional):
+                Alias for ``data_match``.
         """
         def __init__(self, query, peer, msg_id):
             super().__init__(peer, msg_id=msg_id)
             SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.data_match = None
+            self.pattern_match = None
             self._message = None
             self._answered = False
 
