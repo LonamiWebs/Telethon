@@ -53,8 +53,11 @@ def parse(message, delimiters=None, url_re=None):
             return message, []
         delimiters = DEFAULT_DELIMITERS
 
-    # Build a regex to efficiently test all delimiters at once
-    delim_re = re.compile('|'.join('({})'.format(re.escape(k)) for k in delimiters))
+    # Build a regex to efficiently test all delimiters at once.
+    # Note that the largest delimiter should go first, we don't
+    # want ``` to be interpreted as a single back-tick in a code block.
+    delim_re = re.compile('|'.join('({})'.format(re.escape(k))
+                                   for k in sorted(delimiters, key=len, reverse=True)))
 
     # Cannot use a for loop because we need to skip some indices
     i = 0
@@ -98,7 +101,7 @@ def parse(message, delimiters=None, url_re=None):
 
                 # No nested entities inside code blocks
                 if ent in (MessageEntityCode, MessageEntityPre):
-                    i = end
+                    i = end - len(delim)
 
                 continue
 
