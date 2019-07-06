@@ -13,6 +13,85 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Animated Stickers (v1.9)
+========================
+
+*Published at 2019/07/06*
+
++------------------------+
+| Scheme layer used: 103 |
++------------------------+
+
+With the layer 103, Telethon is now able to send and receive animated
+stickers! These use the ``'application/x-tgsticker'`` mime-type and for
+now, you can access its raw data, which is a gzipped JSON.
+
+
+Additions
+~~~~~~~~~
+
+* New `events.Album <telethon.events.album.Album>` to easily receive entire albums!
+* New `client.edit_admin() <telethon.client.chats.ChatMethods.edit_admin>`
+  and `client.edit_permissions() <telethon.client.chats.ChatMethods.edit_permissions>`
+  methods to more easily manage your groups.
+* New ``pattern=`` in `CallbackQuery
+  <telethon.events.callbackquery.CallbackQuery>`.
+* New `conversation.cancel_all()
+  <telethon.tl.custom.conversation.Conversation.cancel>` method,
+  to cancel all currently-active conversations in a particular chat.
+* New `telethon.utils.encode_waveform` and `telethon.utils.decode_waveform`
+  methods as implemented by Telegram Desktop, which lets you customize how
+  voice notes will render.
+* New ``ignore_pinned`` parameter in `client.iter_dialogs()
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>`.
+* New `Message.mark_read() <telethon.tl.custom.message.Message.mark_read>`
+  method.
+* You can now use strike-through in markdown with ``~~text~~``, and the
+  corresponding HTML tags for strike-through, quotes and underlined text.
+* You can now nest entities, as in ``**__text__**``.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixed downloading contacts.
+* Fixed `client.iter_dialogs()
+  <telethon.client.dialogs.DialogMethods.iter_dialogs>` missing some under
+  certain circumstances.
+* Fixed incredibly slow imports under some systems due to expensive path
+  resolution when searching for ``libssl``.
+* Fixed captions when sending albums.
+* Fixed invalid states in `Conversation
+  <telethon.tl.custom.conversation.Conversation>`.
+* Fixes to some methods in utils regarding extensions.
+* Fixed memory cycle in `Forward <telethon.tl.custom.forward.Forward>`
+  which let you do things like the following:
+
+  .. code-block:: python
+
+      original_fwd = message.forward.original_fwd.original_fwd.original_fwd.original_fwd.original_fwd.original_fwd
+
+  Hopefully you didn't rely on that in your code.
+* Fixed `File.ext <telethon.tl.custom.file.File.ext>` not working on
+  unknown mime-types, despite the file name having the extension.
+* Fixed ``ids=..., reverse=True`` in `client.iter_messages()
+  <telethon.client.messages.MessageMethods.iter_messages>`.
+* Fixed `Draft <telethon.tl.custom.draft.Draft>` not being aware
+  of the entity.
+* Added missing re-exports in ``telethon.sync``.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Improved `conversation.cancel()
+  <telethon.tl.custom.conversation.Conversation.cancel>`
+  behaviour. Now you can use it from anywhere.
+* The ``progress_callback`` in `client.download_media()
+  <telethon.client.downloads.DownloadMethods.download_media>`
+  now lets you use ``async def``.
+* Improved documentation and the online
+  method reference at https://tl.telethon.dev.
+
+
 Documentation Overhaul (v1.8)
 =============================
 
