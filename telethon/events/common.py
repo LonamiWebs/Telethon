@@ -106,7 +106,7 @@ class EventBuilder(abc.ABC):
     def filter(self, event):
         """
         If the ID of ``event._chat_peer`` isn't in the chats set (or it is
-        but the set is a blacklist) returns ``None``, otherwise the event.
+        but the set is a blacklist) returns `None`, otherwise the event.
 
         The events must have been resolved before this can be called.
         """

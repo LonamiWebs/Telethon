@@ -131,7 +131,7 @@ class Draft:
                                   Preserved if left as None.
 
         :param str parse_mode: The parse mode to be used for the text.
-        :return bool: ``True`` on success.
+        :return bool: `True` on success.
         """
         if text is None:
             text = self._text
@@ -175,7 +175,7 @@ class Draft:
 
     async def delete(self):
         """
-        Deletes this draft, and returns ``True`` on success.
+        Deletes this draft, and returns `True` on success.
         """
         return await self.set_message(text='')
 

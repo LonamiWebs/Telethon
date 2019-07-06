@@ -119,7 +119,7 @@ def unregister(callback, event=None):
 
 def is_handler(callback):
     """
-    Returns ``True`` if the given callback is an
+    Returns `True` if the given callback is an
     event handler (i.e. you used `register` on it).
     """
     return hasattr(callback, _HANDLERS_ATTRIBUTE)
@@ -135,6 +135,6 @@ def list(callback):
 
 def _get_handlers(callback):
     """
-    Like ``list`` but returns ``None`` if the callback was never registered.
+    Like ``list`` but returns `None` if the callback was never registered.
     """
     return getattr(callback, _HANDLERS_ATTRIBUTE, None)

@@ -296,7 +296,7 @@ class AuthMethods:
 
             phone_code_hash (`str`, optional):
                 The hash returned by `send_code_request`. This can be left as
-                ``None`` to use the last hash known for the phone to be used.
+                `None` to use the last hash known for the phone to be used.
 
         Returns
             The signed in user, or the information about
@@ -379,7 +379,7 @@ class AuthMethods:
 
             phone_code_hash (`str`, optional):
                 The hash returned by `send_code_request`. This can be left as
-                ``None`` to use the last hash known for the phone to be used.
+                `None` to use the last hash known for the phone to be used.
 
         Returns
             The new created :tl:`User`.
@@ -495,7 +495,7 @@ class AuthMethods:
         Logs out Telegram and deletes the current ``*.session`` file.
 
         Returns
-            ``True`` if the operation was successful.
+            `True` if the operation was successful.
 
         Example
             .. code-block:: python
@@ -546,7 +546,7 @@ class AuthMethods:
             new_password (`str`, optional):
                 The password to set as 2FA.
                 If 2FA was already enabled, ``current_password`` **must** be set.
-                Leaving this blank or ``None`` will remove the password.
+                Leaving this blank or `None` will remove the password.
 
             hint (`str`, optional):
                 Hint to be displayed by Telegram when it asks for 2FA.
@@ -567,7 +567,7 @@ class AuthMethods:
                 ``CodeInvalidError``.
 
         Returns
-            ``True`` if successful, ``False`` otherwise.
+            `True` if successful, `False` otherwise.
 
         Example
             .. code-block:: python

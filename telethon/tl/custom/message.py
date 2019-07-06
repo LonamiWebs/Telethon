@@ -23,14 +23,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     Members:
         id (`int`):
             The ID of this message. This field is *always* present.
-            Any other member is optional and may be ``None``.
+            Any other member is optional and may be `None`.
 
         out (`bool`):
             Whether the message is outgoing (i.e. you sent it from
             another session) or incoming (i.e. someone else sent it).
 
             Note that messages in your own chat are always incoming,
-            but this member will be ``True`` if you send a message
+            but this member will be `True` if you send a message
             to your own chat. Messages you forward to your chat are
             *not* considered outgoing, just like official clients
             display them.
@@ -72,15 +72,15 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         message (`str`):
             The string text of the message for `Message
             <telethon.tl.custom.message.Message>` instances,
-            which will be ``None`` for other types of messages.
+            which will be `None` for other types of messages.
 
         action (:tl:`MessageAction`):
             The message action object of the message for :tl:`MessageService`
-            instances, which will be ``None`` for other types of messages.
+            instances, which will be `None` for other types of messages.
 
         from_id (`int`):
             The ID of the user who sent this message. This will be
-            ``None`` if the message was sent in a broadcast channel.
+            `None` if the message was sent in a broadcast channel.
 
         reply_to_msg_id (`int`):
             The ID to which this message is replying to, if any.
@@ -101,7 +101,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             etc. properties instead.
 
             If the media was not present or it was :tl:`MessageMediaEmpty`,
-            this member will instead be ``None`` for convenience.
+            this member will instead be `None` for convenience.
 
         reply_markup (:tl:`ReplyMarkup`):
             The reply markup for this message (which was sent
@@ -270,7 +270,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     def text(self):
         """
         The message text, formatted using the client's default
-        parse mode. Will be ``None`` for :tl:`MessageService`.
+        parse mode. Will be `None` for :tl:`MessageService`.
         """
         if self._text is None and self._client:
             if not self._client.parse_mode:
@@ -293,7 +293,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     def raw_text(self):
         """
         The raw message text, ignoring any formatting.
-        Will be ``None`` for :tl:`MessageService`.
+        Will be `None` for :tl:`MessageService`.
 
         Setting a value to this field will erase the
         `entities`, unlike changing the `message` member.
@@ -309,7 +309,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def is_reply(self):
         """
-        ``True`` if the message is a reply to some other message.
+        `True` if the message is a reply to some other message.
 
         Remember that you can access the ID of the message
         this one is replying to through `reply_to_msg_id`,
@@ -332,7 +332,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         <telethon.tl.custom.messagebutton.MessageButton>`,
         if any.
 
-        Otherwise, it returns ``None``.
+        Otherwise, it returns `None`.
         """
         if self._buttons is None and self.reply_markup:
             if not self.input_chat:
@@ -384,7 +384,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         """
         Returns a `File <telethon.tl.custom.file.File>` wrapping the
         `photo` or `document` in this message. If the media type is different
-        (polls, games, none, etc.), this property will be ``None``.
+        (polls, games, none, etc.), this property will be `None`.
 
         This instance lets you easily access other properties, such as
         `file.id <telethon.tl.custom.file.File.id>`,
@@ -548,9 +548,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         :tl:`MessageActionChatJoinedByLink` :tl:`MessageActionChatMigrateTo`
         and :tl:`MessageActionChannelMigrateFrom`.
 
-        If the action is neither of those, the result will be ``None``.
+        If the action is neither of those, the result will be `None`.
         If some entities could not be retrieved, the list may contain
-        some ``None`` items in it.
+        some `None` items in it.
         """
         return self._action_entities
 
@@ -559,7 +559,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         """
         The bot :tl:`User` if the message was sent via said bot.
 
-        This will only be present if `via_bot_id` is not ``None`` and
+        This will only be present if `via_bot_id` is not `None` and
         the entity is known.
         """
         return self._via_bot
@@ -581,7 +581,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         (like bold or italics).
 
         The markup entity is a :tl:`MessageEntity` that represents bold,
-        italics, etc., and the inner text is the ``str`` inside that markup
+        italics, etc., and the inner text is the `str` inside that markup
         entity.
 
         For example:
@@ -617,7 +617,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
     async def get_reply_message(self):
         """
-        The `Message` that this message is replying to, or ``None``.
+        The `Message` that this message is replying to, or `None`.
 
         The result will be cached after its first use.
         """
@@ -685,7 +685,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         `telethon.client.messages.MessageMethods.edit_message`
         with both ``entity`` and ``message`` already set.
 
-        Returns ``None`` if the message was incoming,
+        Returns `None` if the message was incoming,
         or the edited `Message` otherwise.
 
         .. note::
@@ -695,7 +695,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             and **will respect** the previous state of the message.
             For example, if the message didn't have a link preview,
             the edit won't add one by default, and you should force
-            it by setting it to ``True`` if you want it.
+            it by setting it to `True` if you want it.
 
             This is generally the most desired and convenient behaviour,
             and will work for link previews and message buttons.
@@ -780,7 +780,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
             filter (`callable`):
                 Clicks the first button for which the callable
-                returns ``True``. The callable should accept a single
+                returns `True`. The callable should accept a single
                 `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
                 argument.
 
@@ -929,7 +929,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
         This is necessary for :tl:`KeyboardButtonSwitchInline` since we need
         to know what bot we want to start. Raises ``ValueError`` if the bot
-        cannot be found but is needed. Returns ``None`` if it's not needed.
+        cannot be found but is needed. Returns `None` if it's not needed.
         """
         if self._client and not isinstance(self.reply_markup, (
                 types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):

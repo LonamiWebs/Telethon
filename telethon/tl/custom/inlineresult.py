@@ -54,14 +54,14 @@ class InlineResult:
     @property
     def title(self):
         """
-        The title for this inline result. It may be ``None``.
+        The title for this inline result. It may be `None`.
         """
         return self.result.title
 
     @property
     def description(self):
         """
-        The description for this inline result. It may be ``None``.
+        The description for this inline result. It may be `None`.
         """
         return self.result.description
 
@@ -110,11 +110,11 @@ class InlineResult:
                 If present, the sent message will reply to this ID or message.
 
             silent (`bool`, optional):
-                If ``True``, the sent message will not notify the user(s).
+                If `True`, the sent message will not notify the user(s).
 
             clear_draft (`bool`, optional):
                 Whether the draft should be removed after sending the
-                message from this result or not. Defaults to ``False``.
+                message from this result or not. Defaults to `False`.
             
             hide_via (`bool`, optional):
                 Whether the "via @bot" should be hidden or not.

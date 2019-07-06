@@ -122,7 +122,7 @@ class Album(EventBuilder):
         @property
         def is_reply(self):
             """
-            ``True`` if the album is a reply to some other message.
+            `True` if the album is a reply to some other message.
 
             Remember that you can access the ID of the message
             this one is replying to through `reply_to_msg_id`,
@@ -147,7 +147,7 @@ class Album(EventBuilder):
         async def get_reply_message(self):
             """
             The `Message <telethon.tl.custom.message.Message>`
-            that this album is replying to, or ``None``.
+            that this album is replying to, or `None`.
 
             The result will be cached after its first use.
             """
@@ -188,7 +188,7 @@ class Album(EventBuilder):
             `telethon.client.messages.MessageMethods.edit_message`
             with both ``entity`` and ``message`` already set.
 
-            Returns ``None`` if the message was incoming,
+            Returns `None` if the message was incoming,
             or the edited `Message` otherwise.
 
             .. note::
@@ -198,7 +198,7 @@ class Album(EventBuilder):
                 and **will respect** the previous state of the message.
                 For example, if the message didn't have a link preview,
                 the edit won't add one by default, and you should force
-                it by setting it to ``True`` if you want it.
+                it by setting it to `True` if you want it.
 
                 This is generally the most desired and convenient behaviour,
                 and will work for link previews and message buttons.

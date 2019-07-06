@@ -49,7 +49,7 @@ class Session(ABC):
     def auth_key(self):
         """
         Returns an ``AuthKey`` instance associated with the saved
-        data center, or ``None`` if a new one should be generated.
+        data center, or `None` if a new one should be generated.
         """
         raise NotImplementedError
 
@@ -66,7 +66,7 @@ class Session(ABC):
     def takeout_id(self):
         """
         Returns an ID of the takeout process initialized for this session,
-        or ``None`` if there's no were any unfinished takeout requests.
+        or `None` if there's no were any unfinished takeout requests.
         """
         raise NotImplementedError
 

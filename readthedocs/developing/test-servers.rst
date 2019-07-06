@@ -12,7 +12,7 @@ To run Telethon on a test server, use the following code:
 
 You can check your ``'test ip'`` on https://my.telegram.org.
 
-You should set ``None`` session so to ensure you're generating a new
+You should set `None` session so to ensure you're generating a new
 authorization key for it (it would fail if you used a session where you
 had previously connected to another data center).
 

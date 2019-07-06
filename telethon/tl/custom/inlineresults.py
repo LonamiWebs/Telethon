@@ -59,7 +59,7 @@ class InlineResults(list):
 
     def results_valid(self):
         """
-        Returns ``True`` if the cache time has not expired
+        Returns `True` if the cache time has not expired
         yet and the results can still be considered valid.
         """
         return time.time() < self._valid_until

@@ -18,14 +18,14 @@ class MessageParseMethods:
         """
         This property is the default parse mode used when sending messages.
         Defaults to `telethon.extensions.markdown`. It will always
-        be either ``None`` or an object with ``parse`` and ``unparse``
+        be either `None` or an object with ``parse`` and ``unparse``
         methods.
 
         When setting a different value it should be one of:
 
         * Object with ``parse`` and ``unparse`` methods.
         * A ``callable`` to act as the parse method.
-        * A ``str`` indicating the ``parse_mode``. For Markdown ``'md'``
+        * A `str` indicating the ``parse_mode``. For Markdown ``'md'``
           or ``'markdown'`` may be used. For HTML, ``'htm'`` or ``'html'``
           may be used.
 

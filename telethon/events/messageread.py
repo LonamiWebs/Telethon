@@ -10,8 +10,8 @@ class MessageRead(EventBuilder):
 
     Args:
         inbox (`bool`, optional):
-            If this argument is ``True``, then when you read someone else's
-            messages the event will be fired. By default (``False``) only
+            If this argument is `True`, then when you read someone else's
+            messages the event will be fired. By default (`False`) only
             when messages you sent are read by someone else will fire it.
     """
     def __init__(
@@ -55,10 +55,10 @@ class MessageRead(EventBuilder):
                 with an ID equal or lower to it have been read.
 
             outbox (`bool`):
-                ``True`` if someone else has read your messages.
+                `True` if someone else has read your messages.
 
             contents (`bool`):
-                ``True`` if what was read were the contents of a message.
+                `True` if what was read were the contents of a message.
                 This will be the case when e.g. you play a voice note.
                 It may only be set on ``inbox`` events.
         """
@@ -74,7 +74,7 @@ class MessageRead(EventBuilder):
         @property
         def inbox(self):
             """
-            ``True`` if you have read someone else's messages.
+            `True` if you have read someone else's messages.
             """
             return not self.outbox
 
@@ -108,7 +108,7 @@ class MessageRead(EventBuilder):
 
         def is_read(self, message):
             """
-            Returns ``True`` if the given message (or its ID) has been read.
+            Returns `True` if the given message (or its ID) has been read.
 
             If a list-like argument is provided, this method will return a
             list of booleans indicating which messages have been read.
@@ -121,7 +121,7 @@ class MessageRead(EventBuilder):
                         else message.id) <= self.max_id
 
         def __contains__(self, message):
-            """``True`` if the message(s) are read message."""
+            """`True` if the message(s) are read message."""
             if utils.is_list_like(message):
                 return all(self.is_read(message))
             else:

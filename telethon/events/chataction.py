@@ -83,34 +83,34 @@ class ChatAction(EventBuilder):
                 The message invoked by this Chat Action.
 
             new_pin (`bool`):
-                ``True`` if there is a new pin.
+                `True` if there is a new pin.
 
             new_photo (`bool`):
-                ``True`` if there's a new chat photo (or it was removed).
+                `True` if there's a new chat photo (or it was removed).
 
             photo (:tl:`Photo`, optional):
-                The new photo (or ``None`` if it was removed).
+                The new photo (or `None` if it was removed).
 
             user_added (`bool`):
-                ``True`` if the user was added by some other.
+                `True` if the user was added by some other.
 
             user_joined (`bool`):
-                ``True`` if the user joined on their own.
+                `True` if the user joined on their own.
 
             user_left (`bool`):
-                ``True`` if the user left on their own.
+                `True` if the user left on their own.
 
             user_kicked (`bool`):
-                ``True`` if the user was kicked by some other.
+                `True` if the user was kicked by some other.
 
             created (`bool`, optional):
-                ``True`` if this chat was just created.
+                `True` if this chat was just created.
 
             new_title (`str`, optional):
                 The new title string for the chat, if applicable.
 
             unpin (`bool`):
-                ``True`` if the existing pin gets unpinned.
+                `True` if the existing pin gets unpinned.
         """
         def __init__(self, where, new_pin=None, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
@@ -141,7 +141,7 @@ class ChatAction(EventBuilder):
                 self.user_added = True
                 self._added_by = added_by
 
-            # If `from_id` was not present (it's ``True``) or the affected
+            # If `from_id` was not present (it's `True`) or the affected
             # user was "kicked by itself", then it left. Else it was kicked.
             if kicked_by is True or kicked_by == users:
                 self.user_left = True
@@ -205,7 +205,7 @@ class ChatAction(EventBuilder):
 
         async def get_pinned_message(self):
             """
-            If ``new_pin`` is ``True``, this returns the `Message
+            If ``new_pin`` is `True`, this returns the `Message
             <telethon.tl.custom.message.Message>` object that was pinned.
             """
             if self._pinned_message == 0:
@@ -231,7 +231,7 @@ class ChatAction(EventBuilder):
         @property
         def added_by(self):
             """
-            The user who added ``users``, if applicable (``None`` otherwise).
+            The user who added ``users``, if applicable (`None` otherwise).
             """
             if self._added_by and not isinstance(self._added_by, types.User):
                 aby = self._entities.get(utils.get_peer_id(self._added_by))
@@ -252,7 +252,7 @@ class ChatAction(EventBuilder):
         @property
         def kicked_by(self):
             """
-            The user who kicked ``users``, if applicable (``None`` otherwise).
+            The user who kicked ``users``, if applicable (`None` otherwise).
             """
             if self._kicked_by and not isinstance(self._kicked_by, types.User):
                 kby = self._entities.get(utils.get_peer_id(self._kicked_by))
@@ -275,7 +275,7 @@ class ChatAction(EventBuilder):
             """
             The first user that takes part in this action (e.g. joined).
 
-            Might be ``None`` if the information can't be retrieved or
+            Might be `None` if the information can't be retrieved or
             there is no user taking part.
             """
             if self.users:

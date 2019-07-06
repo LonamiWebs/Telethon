@@ -476,9 +476,9 @@ class ChatMethods:
 
         Note that you must be an administrator of it to use this method.
 
-        If none of the filters are present (i.e. they all are ``None``),
+        If none of the filters are present (i.e. they all are `None`),
         *all* event types will be returned. If at least one of them is
-        ``True``, only those that are true will be returned.
+        `True`, only those that are true will be returned.
 
         Arguments
             entity (`entity`):
@@ -487,7 +487,7 @@ class ChatMethods:
             limit (`int` | `None`, optional):
                 Number of events to be retrieved.
 
-                The limit may also be ``None``, which would eventually return
+                The limit may also be `None`, which would eventually return
                 the whole history.
 
             max_id (`int`):
@@ -507,53 +507,53 @@ class ChatMethods:
                 returned.
 
             join (`bool`):
-                If ``True``, events for when a user joined will be returned.
+                If `True`, events for when a user joined will be returned.
 
             leave (`bool`):
-                If ``True``, events for when a user leaves will be returned.
+                If `True`, events for when a user leaves will be returned.
 
             invite (`bool`):
-                If ``True``, events for when a user joins through an invite
+                If `True`, events for when a user joins through an invite
                 link will be returned.
 
             restrict (`bool`):
-                If ``True``, events with partial restrictions will be
+                If `True`, events with partial restrictions will be
                 returned. This is what the API calls "ban".
 
             unrestrict (`bool`):
-                If ``True``, events removing restrictions will be returned.
+                If `True`, events removing restrictions will be returned.
                 This is what the API calls "unban".
 
             ban (`bool`):
-                If ``True``, events applying or removing all restrictions will
+                If `True`, events applying or removing all restrictions will
                 be returned. This is what the API calls "kick" (restricting
                 all permissions removed is a ban, which kicks the user).
 
             unban (`bool`):
-                If ``True``, events removing all restrictions will be
+                If `True`, events removing all restrictions will be
                 returned. This is what the API calls "unkick".
 
             promote (`bool`):
-                If ``True``, events with admin promotions will be returned.
+                If `True`, events with admin promotions will be returned.
 
             demote (`bool`):
-                If ``True``, events with admin demotions will be returned.
+                If `True`, events with admin demotions will be returned.
 
             info (`bool`):
-                If ``True``, events changing the group info will be returned.
+                If `True`, events changing the group info will be returned.
 
             settings (`bool`):
-                If ``True``, events changing the group settings will be
+                If `True`, events changing the group settings will be
                 returned.
 
             pinned (`bool`):
-                If ``True``, events of new pinned messages will be returned.
+                If `True`, events of new pinned messages will be returned.
 
             edit (`bool`):
-                If ``True``, events of message edits will be returned.
+                If `True`, events of message edits will be returned.
 
             delete (`bool`):
-                If ``True``, events of message deletions will be returned.
+                If `True`, events of message deletions will be returned.
 
         Yields
             Instances of `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>`.
@@ -626,7 +626,7 @@ class ChatMethods:
             limit (`int` | `None`, optional):
                 Number of photos to be retrieved.
 
-                The limit may also be ``None``, which would eventually all
+                The limit may also be `None`, which would eventually all
                 the photos that are still available.
 
             offset (`int`):
@@ -725,7 +725,7 @@ class ChatMethods:
 
             auto_cancel (`bool`):
                 Whether the action should be cancelled once the context
-                manager exists or not. The default is ``True``, since
+                manager exists or not. The default is `True`, since
                 you don't want progress to be shown when it has already
                 completed.
 
@@ -905,7 +905,7 @@ class ChatMethods:
 
             user (`entity`, optional):
                 If specified, the permission will be changed for the specific user.
-                If left as ``None``, the default chat permissions will be updated.
+                If left as `None`, the default chat permissions will be updated.
 
             until_date (`DateLike`, optional):
                 When the user will be unbanned.

@@ -134,7 +134,7 @@ class DialogMethods:
         Arguments
             limit (`int` | `None`):
                 How many dialogs to be retrieved as maximum. Can be set to
-                ``None`` to retrieve all dialogs. Note that this may take
+                `None` to retrieve all dialogs. Note that this may take
                 whole minutes if you have hundreds of dialogs, as Telegram
                 will tell the library to slow down through a
                 ``FloodWaitError``.
@@ -150,12 +150,12 @@ class DialogMethods:
 
             ignore_pinned (`bool`, optional):
                 Whether pinned dialogs should be ignored or not.
-                When set to ``True``, these won't be yielded at all.
+                When set to `True`, these won't be yielded at all.
 
             ignore_migrated (`bool`, optional):
                 Whether :tl:`Chat` that have ``migrated_to`` a :tl:`Channel`
                 should be included or not. By default all the chats in your
-                dialogs are returned, but setting this to ``True`` will ignore
+                dialogs are returned, but setting this to `True` will ignore
                 (i.e. skip) them in the same way official applications do.
 
             folder (`int`, optional):
@@ -176,7 +176,7 @@ class DialogMethods:
 
             archived (`bool`, optional):
                 Alias for `folder`. If unspecified, all will be returned,
-                ``False`` implies ``folder=0`` and ``True`` implies ``folder=1``.
+                `False` implies ``folder=0`` and `True` implies ``folder=1``.
         Yields
             Instances of `Dialog <telethon.tl.custom.dialog.Dialog>`.
 
@@ -361,8 +361,8 @@ class DialogMethods:
 
             revoke (`bool`, optional):
                 On private chats, you may revoke the messages from
-                the other peer too. By default, it's ``False``. Set
-                it to ``True`` to delete the history for both.
+                the other peer too. By default, it's `False`. Set
+                it to `True` to delete the history for both.
 
         Returns
             The :tl:`Updates` object that the request produces,

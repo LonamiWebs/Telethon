@@ -21,7 +21,7 @@ class ChatGetter(abc.ABC):
     def chat(self):
         """
         Returns the :tl:`User`, :tl:`Chat` or :tl:`Channel` where this object
-        belongs to. It may be ``None`` if Telegram didn't send the chat.
+        belongs to. It may be `None` if Telegram didn't send the chat.
 
         If you only need the ID, use `chat_id` instead.
 
@@ -109,9 +109,9 @@ class ChatGetter(abc.ABC):
     @property
     def is_private(self):
         """
-        ``True`` if the message was sent as a private message.
+        `True` if the message was sent as a private message.
 
-        Returns ``None`` if there isn't enough information
+        Returns `None` if there isn't enough information
         (e.g. on `events.MessageDeleted <telethon.events.messagedeleted.MessageDeleted>`).
         """
         return isinstance(self._chat_peer, types.PeerUser) if self._chat_peer else None
@@ -121,7 +121,7 @@ class ChatGetter(abc.ABC):
         """
         True if the message was sent on a group or megagroup.
 
-        Returns ``None`` if there isn't enough information
+        Returns `None` if there isn't enough information
         (e.g. on `events.MessageDeleted <telethon.events.messagedeleted.MessageDeleted>`).
         """
         # TODO Cache could tell us more in the future
@@ -138,7 +138,7 @@ class ChatGetter(abc.ABC):
 
     @property
     def is_channel(self):
-        """``True`` if the message was sent on a megagroup or channel."""
+        """`True` if the message was sent on a megagroup or channel."""
         # The only case where chat peer could be none is in MessageDeleted,
         # however those always have the peer in channels.
         return isinstance(self._chat_peer, types.PeerChannel)

@@ -162,7 +162,7 @@ class UploadMethods:
                 assigned to the files pairwise.
 
             force_document (`bool`, optional):
-                If left to ``False`` and the file is a path that ends with
+                If left to `False` and the file is a path that ends with
                 the extension of an image file or a video file, it will be
                 sent as such. Otherwise always as a document.
 
@@ -187,8 +187,8 @@ class UploadMethods:
 
             allow_cache (`bool`, optional):
                 Whether to allow using the cached version stored in the
-                database or not. Defaults to ``True`` to avoid re-uploads.
-                Must be ``False`` if you wish to use different attributes
+                database or not. Defaults to `True` to avoid re-uploads.
+                Must be `False` if you wish to use different attributes
                 or thumb than those that were used when the file was cached.
 
             parse_mode (`object`, optional):
@@ -198,16 +198,16 @@ class UploadMethods:
                 default.
 
             voice_note (`bool`, optional):
-                If ``True`` the audio will be sent as a voice note.
+                If `True` the audio will be sent as a voice note.
 
-                Set `allow_cache` to ``False`` if you sent the same file
+                Set `allow_cache` to `False` if you sent the same file
                 without this setting before for it to work.
 
             video_note (`bool`, optional):
-                If ``True`` the video will be sent as a video note,
+                If `True` the video will be sent as a video note,
                 also known as a round video message.
 
-                Set `allow_cache` to ``False`` if you sent the same file
+                Set `allow_cache` to `False` if you sent the same file
                 without this setting before for it to work.
 
             buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
@@ -218,8 +218,8 @@ class UploadMethods:
 
             silent (`bool`, optional):
                 Whether the message should notify people in a broadcast
-                channel or not. Defaults to ``False``, which means it will
-                notify them. Set it to ``True`` to alter this behaviour.
+                channel or not. Defaults to `False`, which means it will
+                notify them. Set it to `True` to alter this behaviour.
 
             supports_streaming (`bool`, optional):
                 Whether the sent video supports streaming or not. Note that
@@ -257,7 +257,7 @@ class UploadMethods:
                     '/my/drawings/portrait.png'
                 ])
         """
-        # i.e. ``None`` was used
+        # i.e. `None` was used
         if not file:
             raise TypeError('Cannot use {!r} as file'.format(file))
 
@@ -444,7 +444,7 @@ class UploadMethods:
             file_name (`str`, optional):
                 The file name which will be used on the resulting InputFile.
                 If not specified, the name will be taken from the ``file``
-                and if this is not a ``str``, it will be ``"unnamed"``.
+                and if this is not a `str`, it will be ``"unnamed"``.
 
             use_cache (`type`, optional):
                 The type of cache to use (currently either :tl:`InputDocument`

@@ -43,7 +43,7 @@ class Button:
     @staticmethod
     def _is_inline(button):
         """
-        Returns ``True`` if the button belongs to an inline keyboard.
+        Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
             types.KeyboardButtonCallback,
@@ -57,7 +57,7 @@ class Button:
         Creates a new inline button with some payload data in it.
 
         If `data` is omitted, the given `text` will be used as `data`.
-        In any case `data` should be either ``bytes`` or ``str``.
+        In any case `data` should be either `bytes` or `str`.
 
         Note that the given `data` must be less or equal to 64 bytes.
         If more than 64 bytes are passed as data, ``ValueError`` is raised.

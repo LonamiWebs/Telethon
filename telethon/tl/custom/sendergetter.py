@@ -17,7 +17,7 @@ class SenderGetter(abc.ABC):
     def sender(self):
         """
         Returns the :tl:`User` or :tl:`Channel` that sent this object.
-        It may be ``None`` if Telegram didn't send the sender.
+        It may be `None` if Telegram didn't send the sender.
 
         If you only need the ID, use `sender_id` instead.
 

@@ -134,8 +134,8 @@ class AccountMethods:
         to adjust the `wait_time` of methods like `client.iter_messages
         <telethon.client.messages.MessageMethods.iter_messages>`.
 
-        By default, all parameters are ``None``, and you need to enable those
-        you plan to use by setting them to either ``True`` or ``False``.
+        By default, all parameters are `None`, and you need to enable those
+        you plan to use by setting them to either `True` or `False`.
 
         You should ``except errors.TakeoutInitDelayError as e``, since this
         exception will raise depending on the condition of the session. You
@@ -144,10 +144,10 @@ class AccountMethods:
 
         There's also a `success` property available in the takeout proxy
         object, so from the `with` body you can set the boolean result that
-        will be sent back to Telegram. But if it's left ``None`` as by
+        will be sent back to Telegram. But if it's left `None` as by
         default, then the action is based on the `finalize` parameter. If
-        it's ``True`` then the takeout will be finished, and if no exception
-        occurred during it, then ``True`` will be considered as a result.
+        it's `True` then the takeout will be finished, and if no exception
+        occurred during it, then `True` will be considered as a result.
         Otherwise, the takeout will not be finished and its ID will be
         preserved for future usage as `client.session.takeout_id
         <telethon.sessions.abstract.Session.takeout_id>`.
@@ -158,26 +158,26 @@ class AccountMethods:
                 exit or not.
 
             contacts (`bool`):
-                Set to ``True`` if you plan on downloading contacts.
+                Set to `True` if you plan on downloading contacts.
 
             users (`bool`):
-                Set to ``True`` if you plan on downloading information
+                Set to `True` if you plan on downloading information
                 from users and their private conversations with you.
 
             chats (`bool`):
-                Set to ``True`` if you plan on downloading information
+                Set to `True` if you plan on downloading information
                 from small group chats, such as messages and media.
 
             megagroups (`bool`):
-                Set to ``True`` if you plan on downloading information
+                Set to `True` if you plan on downloading information
                 from megagroups (channels), such as messages and media.
 
             channels (`bool`):
-                Set to ``True`` if you plan on downloading information
+                Set to `True` if you plan on downloading information
                 from broadcast channels, such as messages and media.
 
             files (`bool`):
-                Set to ``True`` if you plan on downloading media and
+                Set to `True` if you plan on downloading media and
                 you don't only wish to export messages.
 
             max_file_size (`int`):
@@ -228,7 +228,7 @@ class AccountMethods:
                 Whether the takeout completed successfully or not.
 
         Returns
-            ``True`` if the operation was successful, ``False`` otherwise.
+            `True` if the operation was successful, `False` otherwise.
 
         Example
             .. code-block:: python

@@ -11,7 +11,7 @@ class File:
     supports accessing the attributes in a more convenient way.
 
     If any of the attributes are not present in the current media,
-    the properties will be ``None``.
+    the properties will be `None`.
 
     The original media is available through the ``media`` attribute.
     """

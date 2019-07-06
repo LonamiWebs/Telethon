@@ -43,19 +43,19 @@ class MessageButton:
 
     @property
     def data(self):
-        """The ``bytes`` data for :tl:`KeyboardButtonCallback` objects."""
+        """The `bytes` data for :tl:`KeyboardButtonCallback` objects."""
         if isinstance(self.button, types.KeyboardButtonCallback):
             return self.button.data
 
     @property
     def inline_query(self):
-        """The query ``str`` for :tl:`KeyboardButtonSwitchInline` objects."""
+        """The query `str` for :tl:`KeyboardButtonSwitchInline` objects."""
         if isinstance(self.button, types.KeyboardButtonSwitchInline):
             return self.button.query
 
     @property
     def url(self):
-        """The url ``str`` for :tl:`KeyboardButtonUrl` objects."""
+        """The url `str` for :tl:`KeyboardButtonUrl` objects."""
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
@@ -74,7 +74,7 @@ class MessageButton:
         returned.
 
         If it's a :tl:`KeyboardButtonUrl`, the URL of the button will
-        be passed to ``webbrowser.open`` and return ``True`` on success.
+        be passed to ``webbrowser.open`` and return `True` on success.
         """
         if isinstance(self.button, types.KeyboardButton):
             return await self._client.send_message(

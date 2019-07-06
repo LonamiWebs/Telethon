@@ -374,7 +374,7 @@ def get_input_media(
     """
     Similar to :meth:`get_input_peer`, but for media.
 
-    If the media is :tl:`InputFile` and ``is_photo`` is known to be ``True``,
+    If the media is :tl:`InputFile` and ``is_photo`` is known to be `True`,
     it will be treated as an :tl:`InputMediaUploadedPhoto`. Else, the rest
     of parameters will indicate how to treat it.
     """
@@ -692,7 +692,7 @@ def _get_extension(file):
 
 def is_image(file):
     """
-    Returns ``True`` if the file extension looks like an image file to Telegram.
+    Returns `True` if the file extension looks like an image file to Telegram.
     """
     match = re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
     if match:
@@ -703,26 +703,26 @@ def is_image(file):
 
 def is_gif(file):
     """
-    Returns ``True`` if the file extension looks like a gif file to Telegram.
+    Returns `True` if the file extension looks like a gif file to Telegram.
     """
     return re.match(r'\.gif', _get_extension(file), re.IGNORECASE)
 
 
 def is_audio(file):
-    """Returns ``True`` if the file extension looks like an audio file."""
+    """Returns `True` if the file extension looks like an audio file."""
     file = 'a' + _get_extension(file)
     return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
 
 
 def is_video(file):
-    """Returns ``True`` if the file extension looks like a video file."""
+    """Returns `True` if the file extension looks like a video file."""
     file = 'a' + _get_extension(file)
     return (mimetypes.guess_type(file)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):
     """
-    Returns ``True`` if the given object looks like a list.
+    Returns `True` if the given object looks like a list.
 
     Checking ``if hasattr(obj, '__iter__')`` and ignoring ``str/bytes`` is not
     enough. Things like ``open()`` are also iterable (and probably many
@@ -732,7 +732,7 @@ def is_list_like(obj):
 
 
 def parse_phone(phone):
-    """Parses the given phone, or returns ``None`` if it's invalid."""
+    """Parses the given phone, or returns `None` if it's invalid."""
     if isinstance(phone, int):
         return str(phone)
     else:
@@ -926,7 +926,7 @@ def _decode_telegram_base64(string):
     This is the way Telegram shares binary data as strings,
     such as Bot API-style file IDs or invite links.
 
-    Returns ``None`` if the input string was not valid.
+    Returns `None` if the input string was not valid.
     """
     try:
         return base64.urlsafe_b64decode(string + '=' * (len(string) % 4))
@@ -948,7 +948,7 @@ def resolve_bot_file_id(file_id):
     """
     Given a Bot API-style `file_id <telethon.tl.custom.file.File.id>`,
     returns the media it represents. If the `file_id <telethon.tl.custom.file.File.id>`
-    is not valid, ``None`` is returned instead.
+    is not valid, `None` is returned instead.
 
     Note that the `file_id <telethon.tl.custom.file.File.id>` does not have information
     such as image dimensions or file size, so these will be zero if present.
@@ -1152,7 +1152,7 @@ def get_appropriated_part_size(file_size):
 
 def encode_waveform(waveform):
     """
-    Encodes the input ``bytes`` into a 5-bit byte-string
+    Encodes the input `bytes` into a 5-bit byte-string
     to be used as a voice note's waveform. See `decode_waveform`
     for the reverse operation.
 

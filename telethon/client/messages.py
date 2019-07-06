@@ -19,7 +19,7 @@ class _MessagesIter(RequestIter):
             self, entity, offset_id, min_id, max_id,
             from_user, offset_date, add_offset, filter, search
     ):
-        # Note that entity being ``None`` will perform a global search.
+        # Note that entity being `None` will perform a global search.
         if entity:
             self.entity = await self.client.get_input_entity(entity)
         else:
@@ -331,7 +331,7 @@ class MessageMethods:
             entity (`entity`):
                 The entity from whom to retrieve the message history.
 
-                It may be ``None`` to perform a global search, or
+                It may be `None` to perform a global search, or
                 to get messages by their ID from no particular chat.
                 Note that some of the offsets will not work if this
                 is the case.
@@ -344,7 +344,7 @@ class MessageMethods:
                 the API retrieving more than 3000 messages will take longer
                 than half a minute (or even more based on previous calls).
 
-                The limit may also be ``None``, which would eventually return
+                The limit may also be `None`, which would eventually return
                 the whole history.
 
             offset_date (`datetime`):
@@ -382,7 +382,7 @@ class MessageMethods:
             wait_time (`int`):
                 Wait time (in seconds) between different
                 :tl:`GetHistoryRequest`. Use this parameter to avoid hitting
-                the ``FloodWaitError`` as needed. If left to ``None``, it will
+                the ``FloodWaitError`` as needed. If left to `None`, it will
                 default to 1 second only if the limit is higher than 3000.
 
             ids (`int`, `list`):
@@ -390,7 +390,7 @@ class MessageMethods:
                 should be returned. This parameter takes precedence over
                 the rest (which will be ignored if this is set). This can
                 for instance be used to get the message with ID 123 from
-                a channel. Note that if the message doesn't exist, ``None``
+                a channel. Note that if the message doesn't exist, `None`
                 will appear in its place, so that zipping the list of IDs
                 with the messages can match one-to-one.
 
@@ -404,7 +404,7 @@ class MessageMethods:
                     careful if you use non-integers in this parameter.
 
             reverse (`bool`, optional):
-                If set to ``True``, the messages will be returned in reverse
+                If set to `True`, the messages will be returned in reverse
                 order (from oldest to newest, instead of the default newest
                 to oldest). This also means that the meaning of `offset_id`
                 and `offset_date` parameters is reversed, although they will
@@ -412,7 +412,7 @@ class MessageMethods:
                 instead of being `max_id` as well since messages are returned
                 in ascending order.
 
-                You cannot use this if both `entity` and `ids` are ``None``.
+                You cannot use this if both `entity` and `ids` are `None`.
 
         Yields
             Instances of `Message <telethon.tl.custom.message.Message>`.
@@ -595,8 +595,8 @@ class MessageMethods:
 
             silent (`bool`, optional):
                 Whether the message should notify people in a broadcast
-                channel or not. Defaults to ``False``, which means it will
-                notify them. Set it to ``True`` to alter this behaviour.
+                channel or not. Defaults to `False`, which means it will
+                notify them. Set it to `True` to alter this behaviour.
 
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
@@ -761,8 +761,8 @@ class MessageMethods:
 
             silent (`bool`, optional):
                 Whether the message should notify people in a broadcast
-                channel or not. Defaults to ``False``, which means it will
-                notify them. Set it to ``True`` to alter this behaviour.
+                channel or not. Defaults to `False`, which means it will
+                notify them. Set it to `True` to alter this behaviour.
 
             as_album (`bool`, optional):
                 Whether several image messages should be forwarded as an
@@ -772,8 +772,8 @@ class MessageMethods:
                 are used. If IDs are used it will group by default.
 
                 In short, the default should do what you expect,
-                ``True`` will group always (even converting separate
-                images into albums), and ``False`` will never group.
+                `True` will group always (even converting separate
+                images into albums), and `False` will never group.
 
         Returns
             The list of forwarded `Message <telethon.tl.custom.message.Message>`,
@@ -781,7 +781,7 @@ class MessageMethods:
 
             Note that if all messages are invalid (i.e. deleted) the call
             will fail with ``MessageIdInvalidError``. If only some are
-            invalid, the list will have ``None`` instead of those messages.
+            invalid, the list will have `None` instead of those messages.
 
         Example
             .. code-block:: python
@@ -1003,7 +1003,7 @@ class MessageMethods:
         Arguments
             entity (`entity`):
                 From who the message will be deleted. This can actually
-                be ``None`` for normal chats, but **must** be present
+                be `None` for normal chats, but **must** be present
                 for channels and megagroups.
 
             message_ids (`list` | `int` | `Message <telethon.tl.custom.message.Message>`):
@@ -1142,7 +1142,7 @@ class MessageMethods:
 
             message (`int` | `Message <telethon.tl.custom.message.Message>`):
                 The message or the message ID to pin. If it's
-                ``None``, the message will be unpinned instead.
+                `None`, the message will be unpinned instead.
 
             notify (`bool`, optional):
                 Whether the pin should notify people or not.

@@ -29,7 +29,7 @@ class InlineQuery(EventBuilder):
         pattern (`str`, `callable`, `Pattern`, optional):
             If set, only queries matching this pattern will be handled.
             You can specify a regex-like string which will be matched
-            against the message, a callable function that returns ``True``
+            against the message, a callable function that returns `True`
             if a message is acceptable, or a compiled regex pattern.
     """
     def __init__(

@@ -144,11 +144,11 @@ class StateCache:
 
     def __getitem__(self, item):
         """
-        If `item` is ``None``, returns the default ``(pts, date)``.
+        If `item` is `None`, returns the default ``(pts, date)``.
 
         If it's an **unmarked** channel ID, returns its ``pts``.
 
-        If no information is known, ``pts`` will be ``None``.
+        If no information is known, ``pts`` will be `None`.
         """
         if item is None:
             return self._pts_date

@@ -62,7 +62,7 @@ If you're going to use a lot of these, you may do:
 
 We see that this request must take at least two parameters, a ``peer``
 of type :tl:`InputPeer`, and a ``message`` which is just a Python
-``str``\ ing.
+`str`\ ing.
 
 How can we retrieve this :tl:`InputPeer`? We have two options. We manually
 construct one, for instance:

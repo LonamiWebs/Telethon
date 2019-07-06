@@ -125,7 +125,7 @@ class _GenericDownloadIter(_DirectDownloadIter):
         self.request.offset = before
 
         # 2. Fill the buffer with the data we have
-        # 2.1. Slicing ``bytes`` is expensive, yield ``memoryview`` instead
+        # 2.1. Slicing `bytes` is expensive, yield `memoryview` instead
         mem = memoryview(data)
 
         # 2.2. The current chunk starts at ``bad`` offset into the data,
@@ -189,7 +189,7 @@ class DownloadMethods:
                 Whether to use the big version of the available photos.
 
         Returns
-            ``None`` if no photo was provided, or if it was Empty. On success
+            `None` if no photo was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
 
         Example
@@ -303,7 +303,7 @@ class DownloadMethods:
                 instead of downloading the document or photo itself.
 
                 If it's specified but the file does not have a thumbnail,
-                this method will return ``None``.
+                this method will return `None`.
 
                 The parameter should be an integer index between ``0`` and
                 ``len(sizes)``. ``0`` will download the smallest thumbnail,
@@ -316,7 +316,7 @@ class DownloadMethods:
                 and ``thumb=-1`` if you want the largest thumbnail.
 
         Returns
-            ``None`` if no media was provided, or if it was Empty. On success
+            `None` if no media was provided, or if it was Empty. On success
             the file path is returned since it may differ from the one given.
 
         Example
@@ -382,7 +382,7 @@ class DownloadMethods:
                 The output file path, directory, or stream-like object.
                 If the path exists and is a file, it will be overwritten.
 
-                If the file path is ``None`` or ``bytes``, then the result
+                If the file path is `None` or `bytes`, then the result
                 will be saved in memory and returned as `bytes`.
 
             part_size_kb (`int`, optional):
@@ -519,8 +519,8 @@ class DownloadMethods:
 
         Yields
 
-            ``bytes`` objects representing the chunks of the file if the
-            right conditions are met, or ``memoryview`` objects instead.
+            `bytes` objects representing the chunks of the file if the
+            right conditions are met, or `memoryview` objects instead.
 
         Example
             .. code-block:: python

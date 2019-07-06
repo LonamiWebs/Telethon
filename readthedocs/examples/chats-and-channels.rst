@@ -15,7 +15,7 @@ Joining a chat or channel
 
 Note that :tl:`Chat` are normal groups, and :tl:`Channel` are a
 special form of :tl:`Chat`, which can also be super-groups if
-their ``megagroup`` member is ``True``.
+their ``megagroup`` member is `True`.
 
 
 Joining a public channel
@@ -142,7 +142,7 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
 .. note::
 
     Thanks to `@Kyle2142`__ for `pointing out`__ that you **cannot** set all
-    parameters to ``True`` to give a user full permissions, as not all
+    parameters to `True` to give a user full permissions, as not all
     permissions are related to both broadcast channels/megagroups.
 
     E.g. trying to set ``post_messages=True`` in a megagroup will raise an
@@ -167,8 +167,8 @@ banned rights of a user through :tl:`EditBannedRequest` and its parameter
 
     # Restricting a user for 7 days, only allowing view/send messages.
     #
-    # Note that it's "reversed". You must set to ``True`` the permissions
-    # you want to REMOVE, and leave as ``None`` those you want to KEEP.
+    # Note that it's "reversed". You must set to `True` the permissions
+    # you want to REMOVE, and leave as `None` those you want to KEEP.
     rights = ChatBannedRights(
         until_date=timedelta(days=7),
         view_messages=None,

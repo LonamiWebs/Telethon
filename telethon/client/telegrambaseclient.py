@@ -39,7 +39,7 @@ class TelegramBaseClient(abc.ABC):
         session (`str` | `telethon.sessions.abstract.Session`, `None`):
             The file name of the session file to be used if a string is
             given (it may be a full path), or the Session instance to be
-            used otherwise. If it's ``None``, the session will not be saved,
+            used otherwise. If it's `None`, the session will not be saved,
             and you should call :meth:`.log_out()` when you're done.
 
             Note that if you pass a string it will be a file in the current
@@ -64,7 +64,7 @@ class TelegramBaseClient(abc.ABC):
 
         use_ipv6 (`bool`, optional):
             Whether to connect to the servers through IPv6 or not.
-            By default this is ``False`` as IPv6 support is not
+            By default this is `False` as IPv6 support is not
             too widespread yet.
 
         proxy (`tuple` | `list` | `dict`, optional):
@@ -87,14 +87,14 @@ class TelegramBaseClient(abc.ABC):
             when there is a ``errors.FloodWaitError`` less than
             `flood_sleep_threshold`, or when there's a migrate error.
 
-            May take a negative or ``None`` value for infinite retries, but
+            May take a negative or `None` value for infinite retries, but
             this is not recommended, since some requests can always trigger
             a call fail (such as searching for messages).
 
         connection_retries (`int` | `None`, optional):
             How many times the reconnection should retry, either on the
             initial connection or when Telegram disconnects us. May be
-            set to a negative or ``None`` value for infinite retries, but
+            set to a negative or `None` value for infinite retries, but
             this is not recommended, since the program can get stuck in an
             infinite loop.
 
@@ -111,7 +111,7 @@ class TelegramBaseClient(abc.ABC):
             the order in which updates are processed to be sequential, and
             this setting allows them to do so.
 
-            If set to ``True``, incoming updates will be put in a queue
+            If set to `True`, incoming updates will be put in a queue
             and processed sequentially. This means your event handlers
             should *not* perform long-running operations since new
             updates are put inside of an unbounded queue.
@@ -423,7 +423,7 @@ class TelegramBaseClient(abc.ABC):
 
     def is_connected(self: 'TelegramClient') -> bool:
         """
-        Returns ``True`` if the user has connected.
+        Returns `True` if the user has connected.
 
         This method is **not** asynchronous (don't use ``await`` on it).
 

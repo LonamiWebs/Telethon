@@ -105,7 +105,7 @@ class UserMethods:
         """
         Gets "me", the current :tl:`User` who is logged in.
 
-        If the user has not logged in yet, this method returns ``None``.
+        If the user has not logged in yet, this method returns `None`.
 
         Arguments
             input_peer (`bool`, optional):
@@ -140,7 +140,7 @@ class UserMethods:
 
     async def is_bot(self: 'TelegramClient') -> bool:
         """
-        Return ``True`` if the signed-in user is a bot, ``False`` otherwise.
+        Return `True` if the signed-in user is a bot, `False` otherwise.
 
         Example
             .. code-block:: python
@@ -157,7 +157,7 @@ class UserMethods:
 
     async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
-        Returns ``True`` if the user is authorized (i.e. has logged in).
+        Returns `True` if the user is authorized (i.e. has logged in).
 
         Example
             .. code-block:: python

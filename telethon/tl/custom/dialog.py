@@ -56,18 +56,18 @@ class Dialog:
             this value won't update when new messages arrive.
 
         draft (`Draft <telethon.tl.custom.draft.Draft>`):
-            The draft object in this dialog. It will not be ``None``,
+            The draft object in this dialog. It will not be `None`,
             so you can call ``draft.set_message(...)``.
 
         is_user (`bool`):
-            ``True`` if the `entity` is a :tl:`User`.
+            `True` if the `entity` is a :tl:`User`.
 
         is_group (`bool`):
-            ``True`` if the `entity` is a :tl:`Chat`
+            `True` if the `entity` is a :tl:`Chat`
             or a :tl:`Channel` megagroup.
 
         is_channel (`bool`):
-            ``True`` if the `entity` is a :tl:`Channel`.
+            `True` if the `entity` is a :tl:`Channel`.
     """
     def __init__(self, client, dialog, entities, messages):
         # Both entities and messages being dicts {ID: item}

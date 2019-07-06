@@ -13,7 +13,7 @@ class MessageEdited(NewMessage):
     .. warning::
 
         On channels, `Message.out <telethon.tl.custom.message.Message>`
-        will be ``True`` if you sent the message originally, **not if
+        will be `True` if you sent the message originally, **not if
         you edited it**! This can be dangerous if you run outgoing
         commands on edits.
 

@@ -12,7 +12,7 @@ can access all the properties it has, like ``.sender``.
 **However** events are different to other methods in the client, like
 `client.get_messages <telethon.client.messages.MessageMethods.get_messages>`.
 Events *may not* send information about the sender or chat, which means it
-can be ``None``, but all the methods defined in the client always have this
+can be `None`, but all the methods defined in the client always have this
 information so it doesn't need to be re-fetched. For this reason, you have
 ``get_`` methods, which will make a network call if necessary.
 
@@ -113,7 +113,7 @@ and `client.list_event_handlers
 <telethon.client.updates.UpdateMethods.list_event_handlers>`.
 
 The ``event`` argument is optional in all three methods and defaults to
-`events.Raw <telethon.events.raw.Raw>` for adding, and ``None`` when
+`events.Raw <telethon.events.raw.Raw>` for adding, and `None` when
 removing (so all callbacks would be removed).
 
 .. note::

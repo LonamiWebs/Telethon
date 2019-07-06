@@ -12,11 +12,11 @@ class NewMessage(EventBuilder):
 
     Args:
         incoming (`bool`, optional):
-            If set to ``True``, only **incoming** messages will be handled.
+            If set to `True`, only **incoming** messages will be handled.
             Mutually exclusive with ``outgoing`` (can only set one of either).
 
         outgoing (`bool`, optional):
-            If set to ``True``, only **outgoing** messages will be handled.
+            If set to `True`, only **outgoing** messages will be handled.
             Mutually exclusive with ``incoming`` (can only set one of either).
 
         from_users (`entity`, optional):
@@ -28,14 +28,14 @@ class NewMessage(EventBuilder):
 
         forwards (`bool`, optional):
             Whether forwarded messages should be handled or not. By default,
-            both forwarded and normal messages are included. If it's ``True``
-            *only* forwards will be handled. If it's ``False`` only messages
+            both forwarded and normal messages are included. If it's `True`
+            *only* forwards will be handled. If it's `False` only messages
             that are *not* forwards will be handled.
 
         pattern (`str`, `callable`, `Pattern`, optional):
             If set, only messages matching this pattern will be handled.
             You can specify a regex-like string which will be matched
-            against the message, a callable function that returns ``True``
+            against the message, a callable function that returns `True`
             if a message is acceptable, or a compiled regex pattern.
     """
     def __init__(self, chats=None, *, blacklist_chats=False, func=None,
@@ -181,7 +181,7 @@ class NewMessage(EventBuilder):
                 >>> @client.on(events.NewMessage(pattern=r'hi (\\w+)!'))
                 ... async def handler(event):
                 ...     # In this case, the result is a ``Match`` object
-                ...     # since the ``str`` pattern was converted into
+                ...     # since the `str` pattern was converted into
                 ...     # the ``re.compile(pattern).match`` function.
                 ...     print('Welcomed', event.pattern_match.group(1))
                 ...

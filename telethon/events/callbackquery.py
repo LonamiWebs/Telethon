@@ -28,7 +28,7 @@ class CallbackQuery(EventBuilder):
         pattern (`bytes`, `str`, `callable`, `Pattern`, optional):
             If set, only buttons with payload matching this pattern will be handled.
             You can specify a regex-like string which will be matched
-            against the payload data, a callable function that returns ``True``
+            against the payload data, a callable function that returns `True`
             if a the payload data is acceptable, or a compiled regex pattern.
 
     """
@@ -210,7 +210,7 @@ class CallbackQuery(EventBuilder):
 
                 alert (`bool`, optional):
                     Whether an alert (a pop-up dialog) should be used
-                    instead of showing a toast. Defaults to ``False``.
+                    instead of showing a toast. Defaults to `False`.
             """
             if self._answered:
                 return
@@ -231,11 +231,11 @@ class CallbackQuery(EventBuilder):
             """
             Whether this callback was generated from an inline button sent
             via an inline query or not. If the bot sent the message itself
-            with buttons, and one of those is clicked, this will be ``False``.
+            with buttons, and one of those is clicked, this will be `False`.
             If a user sent the message coming from an inline query to the
-            bot, and one of those is clicked, this will be ``True``.
+            bot, and one of those is clicked, this will be `True`.
 
-            If it's ``True``, it's likely that the bot is **not** in the
+            If it's `True`, it's likely that the bot is **not** in the
             chat, so methods like `respond` or `delete` won't work (but
             `edit` will always work).
             """
@@ -249,7 +249,7 @@ class CallbackQuery(EventBuilder):
 
             This method also creates a task to `answer` the callback.
 
-            This method will likely fail if `via_inline` is ``True``.
+            This method will likely fail if `via_inline` is `True`.
             """
             self._client.loop.create_task(self.answer())
             return await self._client.send_message(
@@ -263,7 +263,7 @@ class CallbackQuery(EventBuilder):
 
             This method also creates a task to `answer` the callback.
 
-            This method will likely fail if `via_inline` is ``True``.
+            This method will likely fail if `via_inline` is `True`.
             """
             self._client.loop.create_task(self.answer())
             kwargs['reply_to'] = self.query.msg_id
@@ -276,7 +276,7 @@ class CallbackQuery(EventBuilder):
             `telethon.client.messages.MessageMethods.edit_message` with
             the ``entity`` set to the correct :tl:`InputBotInlineMessageID`.
 
-            Returns ``True`` if the edit was successful.
+            Returns `True` if the edit was successful.
 
             This method also creates a task to `answer` the callback.
 
@@ -309,7 +309,7 @@ class CallbackQuery(EventBuilder):
 
             This method also creates a task to `answer` the callback.
 
-            This method will likely fail if `via_inline` is ``True``.
+            This method will likely fail if `via_inline` is `True`.
             """
             self._client.loop.create_task(self.answer())
             return await self._client.delete_messages(

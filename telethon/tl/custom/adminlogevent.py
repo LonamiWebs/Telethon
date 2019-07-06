@@ -131,7 +131,7 @@ class AdminLogEvent:
         """
         Whether the channel's about was changed or not.
 
-        If ``True``, `old` and `new` will be present as ``str``.
+        If `True`, `old` and `new` will be present as `str`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeAbout)
@@ -141,7 +141,7 @@ class AdminLogEvent:
         """
         Whether the channel's title was changed or not.
 
-        If ``True``, `old` and `new` will be present as ``str``.
+        If `True`, `old` and `new` will be present as `str`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeTitle)
@@ -151,7 +151,7 @@ class AdminLogEvent:
         """
         Whether the channel's username was changed or not.
 
-        If ``True``, `old` and `new` will be present as ``str``.
+        If `True`, `old` and `new` will be present as `str`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeUsername)
@@ -161,7 +161,7 @@ class AdminLogEvent:
         """
         Whether the channel's photo was changed or not.
 
-        If ``True``, `old` and `new` will be present as :tl:`Photo`.
+        If `True`, `old` and `new` will be present as :tl:`Photo`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangePhoto)
@@ -171,7 +171,7 @@ class AdminLogEvent:
         """
         Whether the channel's sticker set was changed or not.
 
-        If ``True``, `old` and `new` will be present as :tl:`InputStickerSet`.
+        If `True`, `old` and `new` will be present as :tl:`InputStickerSet`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeStickerSet)
@@ -181,7 +181,7 @@ class AdminLogEvent:
         """
         Whether a message in this channel was edited or not.
 
-        If ``True``, `old` and `new` will be present as
+        If `True`, `old` and `new` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
         return isinstance(self.original.action,
@@ -192,7 +192,7 @@ class AdminLogEvent:
         """
         Whether a message in this channel was deleted or not.
 
-        If ``True``, `old` will be present as
+        If `True`, `old` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
         return isinstance(self.original.action,
@@ -204,7 +204,7 @@ class AdminLogEvent:
         Whether the permissions for an admin in this channel
         changed or not.
 
-        If ``True``, `old` and `new` will be present as
+        If `True`, `old` and `new` will be present as
         :tl:`ChannelParticipant`.
         """
         return isinstance(
@@ -216,7 +216,7 @@ class AdminLogEvent:
         """
         Whether a message in this channel was edited or not.
 
-        If ``True``, `old` and `new` will be present as
+        If `True`, `old` and `new` will be present as
         :tl:`ChannelParticipant`.
         """
         return isinstance(
@@ -228,7 +228,7 @@ class AdminLogEvent:
         """
         Whether the invites in the channel were toggled or not.
 
-        If ``True``, `old` and `new` will be present as ``bool``.
+        If `True`, `old` and `new` will be present as `bool`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleInvites)
@@ -238,7 +238,7 @@ class AdminLogEvent:
         """
         Whether the location setting of the channel has changed or not.
 
-        If ``True``, `old` and `new` will be present as :tl:`ChannelLocation`.
+        If `True`, `old` and `new` will be present as :tl:`ChannelLocation`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionChangeLocation)
@@ -258,7 +258,7 @@ class AdminLogEvent:
         Whether a new user joined through an invite
         link to the channel or not.
 
-        If ``True``, `new` will be present as
+        If `True`, `new` will be present as
         :tl:`ChannelParticipant`.
         """
         return isinstance(self.original.action,
@@ -278,7 +278,7 @@ class AdminLogEvent:
         Whether hiding the previous message history for new members
         in the channel was toggled or not.
 
-        If ``True``, `old` and `new` will be present as ``bool``.
+        If `True`, `old` and `new` will be present as `bool`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionTogglePreHistoryHidden)
@@ -289,7 +289,7 @@ class AdminLogEvent:
         Whether the message signatures in the channel were toggled
         or not.
 
-        If ``True``, `old` and `new` will be present as ``bool``.
+        If `True`, `old` and `new` will be present as `bool`.
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleSignatures)
@@ -299,7 +299,7 @@ class AdminLogEvent:
         """
         Whether a new message in this channel was pinned or not.
 
-        If ``True``, `new` will be present as
+        If `True`, `new` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
         return isinstance(self.original.action,
@@ -310,7 +310,7 @@ class AdminLogEvent:
         """
         Whether the default banned rights were changed or not.
 
-        If ``True``, `old` and `new` will
+        If `True`, `old` and `new` will
         be present as :tl:`ChatBannedRights`.
         """
         return isinstance(self.original.action,
@@ -321,7 +321,7 @@ class AdminLogEvent:
         """
         Whether a poll was stopped or not.
 
-        If ``True``, `new` will be present as
+        If `True`, `new` will be present as
         `Message <telethon.tl.custom.message.Message>`.
         """
         return isinstance(self.original.action,

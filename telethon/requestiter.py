@@ -23,7 +23,7 @@ class RequestIter(abc.ABC):
     be more efficient and fetch only as many items as they need.
 
     Iterators may be used with ``reversed``, and their `reverse` flag will
-    be set to ``True`` if that's the case. Note that if this flag is set,
+    be set to `True` if that's the case. Note that if this flag is set,
     `buffer` should be filled in reverse too.
     """
     def __init__(self, client, limit, *, reverse=False, wait_time=None, **kwargs):
@@ -124,7 +124,7 @@ class RequestIter(abc.ABC):
 
         It should extend the `buffer` with new items.
 
-        It should return ``True`` if it's the last chunk,
+        It should return `True` if it's the last chunk,
         after which moment the method won't be called again
         during the same iteration.
         """

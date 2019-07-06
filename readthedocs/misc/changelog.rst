@@ -360,7 +360,7 @@ Enhancements
 
 * Cleared up some parts of the documentation.
 * Improved some auto-casts to make life easier.
-* Improved image detection. Now you can easily send ``bytes``
+* Improved image detection. Now you can easily send `bytes`
   and streams of images as photos, unless you force document.
 * Sending images as photos that are too large will now be resized
   before uploading, reducing the time it takes to upload them and
@@ -479,7 +479,7 @@ object.to_json() (v1.5.1)
 
 The library already had a way to easily convert the objects the API returned
 into dictionaries through ``object.to_dict()``, but some of the fields are
-dates or ``bytes`` which JSON can't serialize directly.
+dates or `bytes` which JSON can't serialize directly.
 
 For convenience, a new ``object.to_json()`` has been added which will by
 default format both of those problematic types into something sensible.
@@ -509,7 +509,7 @@ Enhancements
   <telethon.tl.custom.button.Button>` as a bot.
 * More properties for `Message
   <telethon.tl.custom.message.Message>` to make accessing media convenient.
-* Downloading to ``file=bytes`` will now return a ``bytes`` object
+* Downloading to ``file=bytes`` will now return a `bytes` object
   with the downloaded media.
 
 
@@ -749,7 +749,7 @@ Breaking Changes
 * ``.sender`` is the ``.chat`` when the message is sent in a broadcast
   channel. This makes sense, because the sender of the message was the
   channel itself, but you now must take into consideration that it may
-  be either a :tl:`User` or :tl:`Channel` instead of being ``None``.
+  be either a :tl:`User` or :tl:`Channel` instead of being `None`.
 
 
 Additions
@@ -850,7 +850,7 @@ Additions
   <telethon.client.dialogs.DialogMethods.conversation>`.
 - Implemented global search through `client.iter_messages
   <telethon.client.messages.MessageMethods.iter_messages>`
-  with ``None`` entity.
+  with `None` entity.
 - New `client.inline_query <telethon.client.bots.BotMethods.inline_query>`
   method to perform inline queries.
 - Bot-API-style ``file_id`` can now be used to send files and download media.
@@ -989,7 +989,7 @@ Bug fixes
 
 - Empty ``except`` are no longer used which means
   sending a keyboard interrupt should now work properly.
-- The ``pts`` of incoming updates could be ``None``.
+- The ``pts`` of incoming updates could be `None`.
 - UTC timezone information is properly set for read ``datetime``.
 - Some infinite recursion bugs in the custom message class.
 - :tl:`Updates` was being dispatched to raw handlers when it shouldn't.
@@ -1093,7 +1093,7 @@ Additions
 Bug fixes
 ~~~~~~~~~
 
-- Count was always ``None`` for `message.button_count
+- Count was always `None` for `message.button_count
   <telethon.tl.custom.message.Message.button_count>`.
 - Some fixes when disconnecting upon dropping the client.
 - Support for Python 3.4 in the sync version, and fix media download.
@@ -1297,7 +1297,7 @@ Breaking Changes
   ``telethon.errors.rpc_error_list`` won't work, but you should
   have been using `telethon.errors` all this time instead.
 - `client.connect <telethon.client.telegrambaseclient.TelegramBaseClient.connect>`
-  no longer returns ``True`` on success. Instead, you should ``except`` the
+  no longer returns `True` on success. Instead, you should ``except`` the
   possible ``ConnectionError`` and act accordingly. This makes it easier to
   not ignore the error.
 - You can no longer set ``retries=n`` when calling a request manually. The
@@ -1520,8 +1520,8 @@ Additions
 - Add ``search``, ``filter`` and ``from_user`` parameters to
   `telethon.telegram_client.TelegramClient.iter_messages`.
 - `telethon.telegram_client.TelegramClient.download_file` now
-  supports a ``None`` path to return the file in memory and
-  return its ``bytes``.
+  supports a `None` path to return the file in memory and
+  return its `bytes`.
 - Events now have a ``.original_update`` field.
 
 Bug fixes
@@ -2079,8 +2079,8 @@ Bug fixes
    setting no last name).
 -  Fix invalid assertion regarding flag parameters as well.
 -  Avoid joining the background thread on disconnect, as it would be
-   ``None`` due to a race condition.
--  Correctly handle ``None`` dates when downloading media.
+   `None` due to a race condition.
+-  Correctly handle `None` dates when downloading media.
 -  ``.download_profile_photo`` was failing for some channels.
 -  ``.download_media`` wasn't handling ``Photo``.
 
@@ -2144,7 +2144,7 @@ Bug fixes
 
 -  Getting an entity using their phone wasn't actually working.
 -  Full entities aren't saved unless they have an ``access_hash``, to
-   avoid some ``None`` errors.
+   avoid some `None` errors.
 -  ``.get_message_history`` was failing when retrieving items that had
    messages forwarded from a channel.
 
@@ -2200,7 +2200,7 @@ Internal changes
 
 -  The ``auth_key`` generation has been moved from ``.connect()`` to
    ``.invoke()``. There were some issues were ``.connect()`` failed and
-   the ``auth_key`` was ``None`` so this will ensure to have a valid
+   the ``auth_key`` was `None` so this will ensure to have a valid
    ``auth_key`` when needed, even if ``BrokenAuthKeyError`` is raised.
 -  Support for higher limits on ``.get_history()`` and
    ``.get_dialogs()``.
@@ -2351,7 +2351,7 @@ Enhancements
 -  You can **invoke** requests from **update handlers**. And **any other
    thread**. A new temporary will be made, so that you can be sending
    even several requests at the same time!
--  **Several worker threads** for your updates! By default, ``None``
+-  **Several worker threads** for your updates! By default, `None`
    will spawn. I recommend you to work with ``update_workers=4`` to get
    started, these will be polling constantly for updates.
 -  You can also change the number of workers at any given time.
@@ -2426,8 +2426,8 @@ Bug fixes
 
 - **Important**, related to the serialization. Every object or request
   that had to serialize a ``True/False`` type was always being serialized
-  as ``false``!
-- Another bug that didn't allow you to leave as ``None`` flag parameters
+  as `false`!
+- Another bug that didn't allow you to leave as `None` flag parameters
   that needed a list has been fixed.
 
 Internal changes
@@ -2512,7 +2512,7 @@ should have been on ``v0.13.5`` but were missed. Specifically, the
 Some other additions are a tiny fix when **handling updates**, which was
 ignoring some of them, nicer ``__str__`` and ``.stringify()`` methods
 for the ``TLObject``\ 's, and not stopping the ``ReadThread`` if you try
-invoking something there (now it simply returns ``None``).
+invoking something there (now it simply returns `None`).
 
 Attempts at more stability (v0.13.5)
 ====================================
@@ -2741,7 +2741,7 @@ Additions
    ``TelegramClient`` constructor (using ``**kwargs``).
 -  ``RPCError``\ 's now belong to some request you've made, which makes
    more sense.
--  ``get_input_*`` now handles ``None`` (default) parameters more
+-  ``get_input_*`` now handles `None` (default) parameters more
    gracefully (it used to crash).
 
 .. enhancements-4:
