@@ -134,6 +134,8 @@ Chats
     get_admin_log
     iter_profile_photos
     get_profile_photos
+    edit_admin
+    edit_permissions
     action
 
 Parse Mode

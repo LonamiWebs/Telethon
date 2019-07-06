@@ -876,7 +876,7 @@ class ChatMethods:
         else:
             raise ValueError('You can only edit permissions in groups and channels')
 
-    async def edit_restrictions(
+    async def edit_permissions(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             user: 'typing.Optional[hints.EntityLike]' = None,
@@ -890,14 +890,18 @@ class ChatMethods:
             send_games: bool = True,
             send_inline: bool = True,
             send_polls: bool = True,
-            change_info: bool = True,
-            invite_users: bool = True,
-            pin_messages: bool = True) -> types.Updates:
+            change_info: bool = False,
+            invite_users: bool = False,
+            pin_messages: bool = False) -> types.Updates:
         """
         Edits user restrictions in a chat.
 
         Raises an error if wrong a combination of rights are given
         (e.g. you don't have enough permissions to revoke one).
+
+        Each of the boolean arguments answer the question "can the given
+        user do this?", which by default is `True` for all permissions
+        except those which state otherwise.
 
         Arguments
             entity (`entity`):
@@ -941,12 +945,15 @@ class ChatMethods:
 
             change_info (`bool`, optional):
                 Whether the user is able to change info or not.
+                Unlike the rest of the arguments, this is `False` by default.
 
             invite_users (`bool`, optional):
                 Whether the user is able to invite other users or not.
+                Unlike the rest of the arguments, this is `False` by default.
 
             pin_messages (`bool`, optional):
                 Whether the user is able to pin messages or not.
+                Unlike the rest of the arguments, this is `False` by default.
 
         Returns
             The resulting :tl:`Updates` object.
