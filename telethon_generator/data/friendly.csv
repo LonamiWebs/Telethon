@@ -7,8 +7,8 @@ auth.AuthMethods,log_out,auth.logOut
 auth.AuthMethods,edit_2fa,account.updatePasswordSettings
 bots.BotMethods,inline_query,messages.getInlineBotResults
 chats.ChatMethods,action,messages.setTyping
-chats.ChatMethods,edit_admin,functions.channels.editAdminRequest functions.messages.editChatAdminRequest
-chats.ChatMethods,edit_permissions,functions.channels.editBannedRequest functions.messages.editChatDefaultBannedRightsRequest
+chats.ChatMethods,edit_admin,channels.editAdmin messages.editChatAdmin
+chats.ChatMethods,edit_permissions,channels.editBanned messages.editChatDefaultBannedRights
 chats.ChatMethods,iter_participants,channels.getParticipants
 chats.ChatMethods,iter_admin_log,channels.getAdminLog
 dialogs.DialogMethods,iter_dialogs,messages.getDialogs
