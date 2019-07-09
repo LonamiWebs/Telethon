@@ -439,7 +439,10 @@ class DownloadMethods:
                     if inspect.isawaitable(r):
                         await r
 
-            f.flush()
+            # Not all IO objects have flush (see #1227)
+            if callable(getattr(f, 'flush', None)):
+                f.flush()
+
             if in_memory:
                 return f.getvalue()
         finally:
