@@ -439,7 +439,9 @@ class DownloadMethods:
                     if inspect.isawaitable(r):
                         await r
 
-            f.flush()
+            if hasattr(f, 'flush') and callable(getattr(f, 'flush')):
+                f.flush()
+
             if in_memory:
                 return f.getvalue()
         finally:
