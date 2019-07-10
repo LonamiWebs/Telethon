@@ -207,7 +207,7 @@ REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too 
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs.
 RESULT_TYPE_INVALID,400,Result type invalid
 RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
-RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (Some rights only apply to channels and vice versa)
+RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (some rights only apply to channels and vice versa)
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
