@@ -42,7 +42,7 @@ class CallbackQuery(EventBuilder):
         if isinstance(data, str):
             data = data.encode('utf-8')
         if isinstance(pattern, str):
-            pattern = data.encode('utf-8')
+            pattern = pattern.encode('utf-8')
 
         match = data if data else pattern
 
