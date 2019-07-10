@@ -207,7 +207,7 @@ REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too 
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs.
 RESULT_TYPE_INVALID,400,Result type invalid
 RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
-RIGHT_FORBIDDEN,403,Your admin rights do not allow you to do this
+RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (Some rights only apply to channels and vice versa)
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
@@ -249,7 +249,7 @@ USERNAME_NOT_OCCUPIED,400,The username is not in use by anyone else yet
 USERNAME_OCCUPIED,400,The username is already taken
 USERS_TOO_FEW,400,"Not enough users (to create a chat, for example)"
 USERS_TOO_MUCH,400,"The maximum number of users has been exceeded (to create a chat, for example)"
-USER_ADMIN_INVALID,400,You're not an admin
+USER_ADMIN_INVALID,400,Either you're not an admin or you tried to ban an admin that you didn't promote
 USER_ALREADY_PARTICIPANT,400,The authenticated user is already a participant of the chat
 USER_BANNED_IN_CHANNEL,400,You're banned from sending messages in supergroups/channels
 USER_BLOCKED,400,User blocked
