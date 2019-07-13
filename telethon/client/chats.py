@@ -61,6 +61,7 @@ class _ChatAction:
 
         self._running = True
         self._task = self._client.loop.create_task(self._update())
+        return self
 
     async def __aexit__(self, *args):
         self._running = False
