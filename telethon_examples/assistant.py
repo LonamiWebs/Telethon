@@ -271,17 +271,18 @@ async def handler(event):
 
 @bot.on(events.NewMessage(pattern='(?i)[/#](list|help)', forwards=False))
 async def handler(event):
-    if event.chat_id:
-        text = 'Available commands:\n'
-        for callback, handler in bot.list_event_handlers():
-            if isinstance(handler, events.NewMessage) and callback.__doc__:
-                text += f'\n{callback.__doc__.strip()}'
-        text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
-                'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
-        text.replace('#','/')
-        text += '\nCommand prefixes supports both hastag and forward slash'
-        message = await event.respond(text, link_preview=False)
-
+    text = 'Available commands:\n'
+    for callback, handler in bot.list_event_handlers():
+        if isinstance(handler, events.NewMessage) and callback.__doc__:
+            text += f'\n{callback.__doc__.strip()}'
+    text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
+            'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
+    text.replace('#','/')
+    text += '\nCommand prefixes supports both hastag and forward slash'
+    message = await event.respond(text, link_preview=False)
+    if event.chat_id < 0 :
+        await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
+        await message.delete()
 
 if aiohttp:
     @bot.on(events.NewMessage(pattern='(?i)[/#][hp]aste(bin)?', forwards=False))
