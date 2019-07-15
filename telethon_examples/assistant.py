@@ -269,7 +269,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)[/#](list|help)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](list|help|start)', forwards=False))
 async def handler(event):
     text = 'Available commands:\n'
     for callback, handler in bot.list_event_handlers():
