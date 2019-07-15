@@ -183,7 +183,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#(?:docs|ref) (.+)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](?:docs|ref) (.+)', forwards=False))
 async def handler(event):
     """#docs or #ref query: Like #search but shows the query."""
     q1 = event.pattern_match.group(1)
@@ -213,7 +213,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#(ask|question)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](ask|question)', forwards=False))
 async def handler(event):
     """#ask or #question: Advices the user to ask a better question."""
     await asyncio.wait([
@@ -223,7 +223,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#spam(mer|ming)?', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]spam(mer|ming)?', forwards=False))
 async def handler(event):
     """#spam, #spammer, #spamming: Informs spammers that they are not welcome here."""
     await asyncio.wait([
@@ -232,7 +232,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#(ot|offtopic)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](ot|offtopic)', forwards=False))
 async def handler(event):
     """#ot, #offtopic: Tells the user to move to @TelethonOffTopic."""
     await asyncio.wait([
@@ -241,7 +241,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#log(s|ging)?', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]log(s|ging)?', forwards=False))
 async def handler(event):
     """#log, #logs or #logging: Explains how to enable logging."""
     await asyncio.wait([
@@ -250,7 +250,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#master', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]master', forwards=False))
 async def handler(event):
     """#master: The bug has been fixed in the `master` branch."""
     await asyncio.wait([
@@ -259,7 +259,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#(learn|python)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](learn|python)', forwards=False))
 async def handler(event):
     """#learn or #python: Tells the user to learn some Python first."""
     await asyncio.wait([
@@ -269,7 +269,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='(?i)#(list|help)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](list|help)', forwards=False))
 async def handler(event):
     await event.delete()
     text = 'Available commands:\n'
@@ -278,14 +278,16 @@ async def handler(event):
             text += f'\n{callback.__doc__.strip()}'
     text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
             'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
-
+    text.replace('#','/')
+    text ++ '\nCommand prefixes supports both hastag and forward slash'
     message = await event.respond(text, link_preview=False)
     await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
-    await message.delete()
+    if event.chat_id
+        await message.delete()
 
 
 if aiohttp:
-    @bot.on(events.NewMessage(pattern='(?i)#[hp]aste(bin)?', forwards=False))
+    @bot.on(events.NewMessage(pattern='(?i)[/#][hp]aste(bin)?', forwards=False))
     async def handler(event):
         """
         #haste: Replaces the message you reply to with a hastebin link.
