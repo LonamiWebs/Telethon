@@ -154,7 +154,7 @@ async def handler(event):
 # ==============================  Commands ==============================
 
 
-@bot.on(events.NewMessage(pattern='#ping', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]ping', forwards=False))
 async def handler(event):
     s = time.time()
     message = await event.reply('Pong!')
@@ -164,7 +164,7 @@ async def handler(event):
     await asyncio.wait([event.delete(), message.delete()])
 
 
-@bot.on(events.NewMessage(pattern='#full', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]full', forwards=False))
 async def handler(event):
     """#full: Advises to read "Accessing the full API" in the docs."""
     await asyncio.wait([
@@ -173,7 +173,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='#search (.+)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]search (.+)', forwards=False))
 async def handler(event):
     """#search query: Searches for "query" in the method reference."""
     query = urllib.parse.quote(event.pattern_match.group(1))
@@ -194,7 +194,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='#rt(f)?d', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#]rt(f)?d', forwards=False))
 async def handler(event):
     """#rtd: Tells the user to please read the docs."""
     rtd = RTFD if event.pattern_match.group(1) else RTD
@@ -204,7 +204,7 @@ async def handler(event):
     ])
 
 
-@bot.on(events.NewMessage(pattern='#(updates|events?)', forwards=False))
+@bot.on(events.NewMessage(pattern='(?i)[/#](updates|events?)', forwards=False))
 async def handler(event):
     """#updates: Advices the user to read "Working with Updates"."""
     await asyncio.wait([
@@ -271,19 +271,16 @@ async def handler(event):
 
 @bot.on(events.NewMessage(pattern='(?i)[/#](list|help)', forwards=False))
 async def handler(event):
-    await event.delete()
-    text = 'Available commands:\n'
-    for callback, handler in bot.list_event_handlers():
-        if isinstance(handler, events.NewMessage) and callback.__doc__:
-            text += f'\n{callback.__doc__.strip()}'
-    text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
-            'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
-    text.replace('#','/')
-    text ++ '\nCommand prefixes supports both hastag and forward slash'
-    message = await event.respond(text, link_preview=False)
-    await asyncio.sleep(1 * text.count(' '))  # Sleep ~1 second per word
-    if event.chat_id
-        await message.delete()
+    if event.chat_id:
+        text = 'Available commands:\n'
+        for callback, handler in bot.list_event_handlers():
+            if isinstance(handler, events.NewMessage) and callback.__doc__:
+                text += f'\n{callback.__doc__.strip()}'
+        text += '\n\nYou can suggest new commands [here](https://docs.google.com/'\
+                'spreadsheets/d/12yWwixUu_vB426_toLBAiajXxYKvR2J1DD6yZtQz9l4/edit).'
+        text.replace('#','/')
+        text ++ '\nCommand prefixes supports both hastag and forward slash'
+        message = await event.respond(text, link_preview=False)
 
 
 if aiohttp:
