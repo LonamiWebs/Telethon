@@ -58,6 +58,14 @@ class TLObject:
         self.real_args = list(a for a in self.sorted_args() if not
                               (a.flag_indicator or a.generic_definition))
 
+    @property
+    def innermost_result(self):
+        index = self.result.find('<')
+        if index == -1:
+            return self.result
+        else:
+            return self.result[index + 1:-1]
+
     def sorted_args(self):
         """Returns the arguments properly sorted and ready to plug-in
            into a Python's method header (i.e., flags and those which

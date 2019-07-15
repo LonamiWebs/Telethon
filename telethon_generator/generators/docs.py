@@ -230,7 +230,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     type_to_functions = defaultdict(list)
     for tlobject in tlobjects:
         d = type_to_functions if tlobject.is_function else type_to_constructors
-        d[tlobject.result].append(tlobject)
+        d[tlobject.innermost_result].append(tlobject)
 
     for t, cs in type_to_constructors.items():
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
@@ -295,8 +295,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
             else:
                 if re.search('^vector<', tlobject.result, re.IGNORECASE):
                     docs.write_text('A list of the following type is returned.')
-                    _, inner = tlobject.result.split('<')
-                    inner = inner.strip('>')
+                    inner = tlobject.innermost_result
                 else:
                     inner = tlobject.result
 
@@ -558,7 +557,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
         if not tlobject.result.lower() in CORE_TYPES:
             if re.search('^vector<', tlobject.result, re.IGNORECASE):
-                types.add(tlobject.result.split('<')[1].strip('>'))
+                types.add(tlobject.innermost_result)
             else:
                 types.add(tlobject.result)
 
