@@ -74,6 +74,10 @@ class Button:
         return types.KeyboardButtonCallback(text, data)
 
     @staticmethod
+    def login(text, url, bot, request_write_access=None, fwd_text=None):
+        return types.InputKeyboardButtonUrlAuth(text, url, bot, request_write_access, fwd_text)
+    
+    @staticmethod
     def switch_inline(text, query='', same_peer=False):
         """
         Creates a new inline button to switch to inline query.
