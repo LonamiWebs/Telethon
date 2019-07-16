@@ -48,7 +48,8 @@ class Button:
         return isinstance(button, (
             types.KeyboardButtonCallback,
             types.KeyboardButtonSwitchInline,
-            types.KeyboardButtonUrl
+            types.KeyboardButtonUrl,
+            types.InputKeyboardButtonUrlAuth
         ))
 
     @staticmethod
