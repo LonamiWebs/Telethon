@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import itertools
 import time
 import typing
@@ -12,6 +13,16 @@ _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
+
+
+def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
+    return (
+        'Sleeping%s for %ds (%s) on %s flood wait',
+        ' early' if early else '',
+        delay,
+        td(seconds=delay),
+        request.__class__.__name__
+    )
 
 
 class UserMethods:
@@ -29,8 +40,7 @@ class UserMethods:
                 if diff <= 3:  # Flood waits below 3 seconds are "ignored"
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 elif diff <= self.flood_sleep_threshold:
-                    self._log[__name__].info(
-                        'Sleeping early for %ds on flood wait', diff)
+                    self._log[__name__].info(*_fmt_flood(diff, r, early=True))
                     await asyncio.sleep(diff, loop=self._loop)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
@@ -80,8 +90,7 @@ class UserMethods:
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
                 if e.seconds <= self.flood_sleep_threshold:
-                    self._log[__name__].info('Sleeping for %ds on flood wait',
-                                             e.seconds)
+                    self._log[__name__].info(*_fmt_flood(e.seconds, request))
                     await asyncio.sleep(e.seconds, loop=self._loop)
                 else:
                     raise
