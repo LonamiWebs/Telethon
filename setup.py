@@ -30,8 +30,8 @@ class TempWorkDir:
         self.original = None
 
     def __enter__(self):
-        self.original = Path('.')
-        chdir(str(Path(__file__).parent))
+        self.original = Path('.').resolve()
+        chdir(str(Path(__file__).parent.resolve()))
         return self
 
     def __exit__(self, *args):
