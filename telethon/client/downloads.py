@@ -273,7 +273,7 @@ class DownloadMethods:
             message: 'hints.MessageLike',
             file: 'hints.FileLike' = None,
             *,
-            thumb: 'hints.FileLike' = None,
+            thumb: 'typing.Union[int, types.TypePhotoSize]' = None,
             progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
         """
         Downloads the given media from a message object.

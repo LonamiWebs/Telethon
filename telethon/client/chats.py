@@ -968,11 +968,11 @@ class ChatMethods:
                 from datetime import timedelta
 
                 # Kicking `user` from `chat` for 1 minute
-                client.edit_permission(chat, user, timedelta(minutes=1),
+                client.edit_permissions(chat, user, timedelta(minutes=1),
                                        view_messages=False)
 
                 # Banning `user` from `chat` forever
-                client.edit_permission(chat, user, view_messages=False)
+                client.edit_permissions(chat, user, view_messages=False)
         """
         entity = await self.get_input_entity(entity)
         if not isinstance(entity, types.InputPeerChannel):

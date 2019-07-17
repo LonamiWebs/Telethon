@@ -166,7 +166,7 @@ class UserMethods:
 
     async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
-        Returns `True` if the user is authorized (i.e. has logged in).
+        Returns `True` if the user is authorized (logged in).
 
         Example
             .. code-block:: python
