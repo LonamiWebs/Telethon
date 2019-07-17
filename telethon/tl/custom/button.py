@@ -1,4 +1,5 @@
 from .. import types
+from ... import utils
 
 
 class Button:
@@ -97,6 +98,49 @@ class Button:
         You cannot detect that the user clicked this button directly.
         """
         return types.KeyboardButtonUrl(text, url or text)
+
+    @staticmethod
+    def auth(text, url=None, *, bot=None, write_access=False, fwd_text=None):
+        """
+        Creates a new inline button to authorize the user at the given URL.
+
+        You should set the `url` to be on the same domain as the one configured
+        for the desired `bot` via `@BotFather <https://t.me/BotFather>`_ using
+        the ``/setdomain`` command.
+
+        For more information about letting the user login via Telegram to
+        a certain domain, see https://core.telegram.org/widgets/login.
+
+        If no `url` is specified, it will default to `text`.
+
+        Args:
+            bot (`hints.EntityLike`):
+                The bot that requires this authorization. By default, this
+                is the bot that is currently logged in (itself), although
+                you may pass a different input peer.
+
+                .. note::
+
+                    For now, you cannot use ID or username for this argument.
+                    If you want to use a different bot than the one currently
+                    logged in, you must manually use `client.get_input_entity()
+                    <telethon.client.users.UserMethods.get_input_entity>`.
+
+            write_access (`bool`):
+                Whether write access is required or not.
+                This is `False` by default (read-only access).
+
+            fwd_text (`str`):
+                The new text to show in the button if the message is
+                forwarded. By default, the button text will be the same.
+        """
+        return types.InputKeyboardButtonUrlAuth(
+            text=text,
+            url=url or text,
+            bot=utils.get_input_user(bot or types.InputUserSelf()),
+            request_write_access=write_access,
+            fwd_text=fwd_text
+        )
 
     @classmethod
     def text(cls, text, *, resize=None, single_use=None, selective=None):
