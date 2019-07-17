@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import functools
 import os
+import pathlib
 import re
 import shutil
 from collections import defaultdict
@@ -33,9 +34,9 @@ def get_import_code(tlobject):
         .format(kind, ns, tlobject.class_name)
 
 
-def _get_path_for(root, tlobject):
-    """Creates and returns the path for the given TLObject at root."""
-    out_dir = root / ('methods' if tlobject.is_function else 'constructors')
+def _get_path_for(tlobject):
+    """Returns the path for the given TLObject."""
+    out_dir = pathlib.Path('methods' if tlobject.is_function else 'constructors')
     if tlobject.namespace:
         out_dir /= tlobject.namespace
 
@@ -72,12 +73,13 @@ def _build_menu(docs):
 
     paths = []
     current = docs.filename
-    while current != docs.root:
+    top = pathlib.Path('.')
+    while current != top:
         current = current.parent
         paths.append(current)
 
     for path in reversed(paths):
-        docs.add_menu(path.stem.title(), link=path / 'index.html')
+        docs.add_menu(path.stem.title() or 'API', link=path / 'index.html')
 
     if docs.filename.stem != 'index':
         docs.add_menu(docs.title, link=docs.filename)
@@ -85,7 +87,7 @@ def _build_menu(docs):
     docs.end_menu()
 
 
-def _generate_index(root, folder, paths,
+def _generate_index(folder, paths,
                     bots_index=False, bots_index_paths=()):
     """Generates the index file for the specified folder"""
     # Determine the namespaces listed here (as sub folders)
@@ -103,7 +105,7 @@ def _generate_index(root, folder, paths,
 
     # Now that everything is setup, write the index.html file
     filename = folder / (BOT_INDEX if bots_index else INDEX)
-    with DocsWriter(root, filename, _get_path_for_type) as docs:
+    with DocsWriter(filename, _get_path_for_type) as docs:
         # Title should be the current folder name
         docs.write_head(str(folder).replace(os.path.sep, '/').title(),
                         css_path=paths['css'],
@@ -111,7 +113,7 @@ def _generate_index(root, folder, paths,
 
         docs.set_menu_separator(paths['arrow'])
         _build_menu(docs)
-        docs.write_title(str(filename.parent.relative_to(root))
+        docs.write_title(str(filename.parent)
                          .replace(os.path.sep, '/').title())
 
         if bots_index:
@@ -133,7 +135,7 @@ def _generate_index(root, folder, paths,
                         if item.parent == namespace:
                             namespace_paths.append(item)
 
-                _generate_index(root, namespace, paths,
+                _generate_index(namespace, paths,
                                 bots_index, namespace_paths)
 
                 docs.add_row(
@@ -206,7 +208,7 @@ def _copy_replace(src, dst, replacements):
         ))
 
 
-def _write_html_pages(root, tlobjects, methods, layer, input_res):
+def _write_html_pages(tlobjects, methods, layer, input_res):
     """
     Generates the documentation HTML files from from ``scheme.tl``
     to ``/methods`` and ``/constructors``, etc.
@@ -214,7 +216,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     # Save 'Type: [Constructors]' for use in both:
     # * Seeing the return type or constructors belonging to the same type.
     # * Generating the types documentation, showing available constructors.
-    paths = {k: root / v for k, v in (
+    paths = {k: pathlib.Path(v) for k, v in (
         ('css', 'css'),
         ('arrow', 'img/arrow.svg'),
         ('search.js', 'js/search.js'),
@@ -236,15 +238,11 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
         type_to_constructors[t] = list(sorted(cs, key=lambda c: c.name))
 
     methods = {m.name: m for m in methods}
-
-    # Since the output directory is needed everywhere partially apply it now
-    create_path_for = functools.partial(_get_path_for, root)
-    path_for_type = lambda t: root / _get_path_for_type(t)
     bot_docs_paths = []
 
     for tlobject in tlobjects:
-        filename = create_path_for(tlobject)
-        with DocsWriter(root, filename, path_for_type) as docs:
+        filename = _get_path_for(tlobject)
+        with DocsWriter(filename, _get_path_for_type) as docs:
             docs.write_head(title=tlobject.class_name,
                             css_path=paths['css'],
                             default_css=paths['default_css'])
@@ -300,7 +298,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
                     inner = tlobject.result
 
                 docs.begin_table(column_count=1)
-                docs.add_row(inner, link=path_for_type(inner))
+                docs.add_row(inner, link=_get_path_for_type(inner))
                 docs.end_table()
 
                 cs = type_to_constructors.get(inner, [])
@@ -313,7 +311,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
                 docs.begin_table(column_count=2)
                 for constructor in cs:
-                    link = create_path_for(constructor)
+                    link = _get_path_for(constructor)
                     docs.add_row(constructor.class_name, link=link)
                 docs.end_table()
 
@@ -345,7 +343,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
                     else:
                         docs.add_row(
                             friendly_type, align='center',
-                            link=path_for_type(arg.type)
+                            link=_get_path_for_type(arg.type)
                          )
 
                     # Add a description for this argument
@@ -427,7 +425,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     # Find all the available types (which are not the same as the constructors)
     # Each type has a list of constructors associated to it, hence is a map
     for t, cs in type_to_constructors.items():
-        filename = path_for_type(t)
+        filename = _get_path_for_type(t)
         out_dir = filename.parent
         if out_dir:
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -438,7 +436,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
         else:
             namespace, name = None, t
 
-        with DocsWriter(root, filename, path_for_type) as docs:
+        with DocsWriter(filename, _get_path_for_type) as docs:
             docs.write_head(title=snake_to_camel_case(name),
                             css_path=paths['css'],
                             default_css=paths['default_css'])
@@ -462,7 +460,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
             docs.begin_table(2)
             for constructor in cs:
                 # Constructor full name
-                link = create_path_for(constructor)
+                link = _get_path_for(constructor)
                 docs.add_row(constructor.class_name, link=link)
             docs.end_table()
 
@@ -481,7 +479,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
             docs.begin_table(2)
             for func in functions:
-                link = create_path_for(func)
+                link = _get_path_for(func)
                 docs.add_row(func.class_name, link=link)
             docs.end_table()
 
@@ -505,7 +503,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
             docs.begin_table(2)
             for ot in other_methods:
-                link = create_path_for(ot)
+                link = _get_path_for(ot)
                 docs.add_row(ot.class_name, link=link)
             docs.end_table()
 
@@ -530,7 +528,7 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
             docs.begin_table(2)
             for ot in other_types:
-                link = create_path_for(ot)
+                link = _get_path_for(ot)
                 docs.add_row(ot.class_name, link=link)
             docs.end_table()
             docs.end_body()
@@ -540,9 +538,9 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     # information that we have available, simply a file listing all the others
     # accessible by clicking on their title
     for folder in ['types', 'methods', 'constructors']:
-        _generate_index(root, root / folder, paths)
+        _generate_index(pathlib.Path(folder), paths)
 
-    _generate_index(root, root / 'methods', paths, True,
+    _generate_index(pathlib.Path('methods'), paths, True,
                     bot_docs_paths)
 
     # Write the final core index, the main index for the rest of files
@@ -592,12 +590,9 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
 
     type_names = fmt(types, formatter=lambda x: x)
 
-    # Local URLs shouldn't rely on the output's root, so set empty root
-    get_path_for = functools.partial(_get_path_for, Path())
-
-    request_urls = fmt(methods, get_path_for)
+    request_urls = fmt(methods, _get_path_for)
     type_urls = fmt(types, _get_path_for_type)
-    constructor_urls = fmt(cs, get_path_for)
+    constructor_urls = fmt(cs, _get_path_for)
 
     paths['search.js'].parent.mkdir(parents=True, exist_ok=True)
     _copy_replace(input_res / 'js/search.js', paths['search.js'], {
@@ -610,19 +605,18 @@ def _write_html_pages(root, tlobjects, methods, layer, input_res):
     })
 
 
-def _copy_resources(res_dir, out_dir):
+def _copy_resources(res_dir):
     for dirname, files in [('css', ['docs.light.css', 'docs.dark.css']),
                            ('img', ['arrow.svg'])]:
-        dirpath = out_dir / dirname
+        dirpath = pathlib.Path(dirname)
         dirpath.mkdir(parents=True, exist_ok=True)
         for file in files:
             shutil.copy(str(res_dir / dirname / file), str(dirpath))
 
 
-def _create_structure(tlobjects, output_dir):
+def _create_structure(tlobjects):
     """
-    Pre-create the required directory structure
-    in `output_dir` for the input objects.
+    Pre-create the required directory structure.
     """
     types_ns = set()
     method_ns = set()
@@ -633,8 +627,7 @@ def _create_structure(tlobjects, output_dir):
             else:
                 types_ns.add(obj.namespace)
 
-    output_dir.mkdir(exist_ok=True)
-
+    output_dir = pathlib.Path('.')
     type_dir = output_dir / 'types'
     type_dir.mkdir(exist_ok=True)
 
@@ -650,7 +643,7 @@ def _create_structure(tlobjects, output_dir):
         (meth_dir / ns).mkdir(exist_ok=True)
 
 
-def generate_docs(tlobjects, methods_info, layer, input_res, output_dir):
-    _create_structure(tlobjects, output_dir)
-    _write_html_pages(output_dir, tlobjects, methods_info, layer, input_res)
-    _copy_resources(input_res, output_dir)
+def generate_docs(tlobjects, methods_info, layer, input_res):
+    _create_structure(tlobjects)
+    _write_html_pages(tlobjects, methods_info, layer, input_res)
+    _copy_resources(input_res)

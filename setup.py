@@ -12,9 +12,9 @@ Extra supported commands are:
 
 import itertools
 import json
+import os
 import re
 import shutil
-from os import chdir
 from pathlib import Path
 from subprocess import run
 from sys import argv
@@ -26,16 +26,19 @@ class TempWorkDir:
     """Switches the working directory to be the one on which this file lives,
        while within the 'with' block.
     """
-    def __init__(self):
+    def __init__(self, new=None):
         self.original = None
+        self.new = new or str(Path(__file__).parent.resolve())
 
     def __enter__(self):
-        self.original = Path('.').resolve()
-        chdir(str(Path(__file__).parent.resolve()))
+        # os.chdir does not work with Path in Python 3.5.x
+        self.original = str(Path('.').resolve())
+        os.makedirs(self.new, exist_ok=True)
+        os.chdir(self.new)
         return self
 
     def __exit__(self, *args):
-        chdir(str(self.original))
+        os.chdir(self.original)
 
 
 GENERATOR_DIR = Path('telethon_generator')
@@ -108,7 +111,9 @@ def generate(which, action='gen'):
             if DOCS_OUT.is_dir():
                 shutil.rmtree(str(DOCS_OUT))
         else:
-            generate_docs(tlobjects, methods, layer, DOCS_IN_RES, DOCS_OUT)
+            in_path = DOCS_IN_RES.resolve()
+            with TempWorkDir(DOCS_OUT):
+                generate_docs(tlobjects, methods, layer, in_path)
 
     if 'json' in which:
         which.remove('json')
@@ -223,5 +228,5 @@ def main():
 
 
 if __name__ == '__main__':
-    with TempWorkDir():  # Could just use a try/finally but this is + reusable
+    with TempWorkDir():
         main()
