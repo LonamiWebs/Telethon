@@ -659,10 +659,6 @@ class MessageMethods:
                 parse_mode=parse_mode, force_document=force_document,
                 buttons=buttons
             )
-        elif not message:
-            raise ValueError(
-                'The message cannot be empty unless a file is provided'
-            )
 
         entity = await self.get_input_entity(entity)
         if isinstance(message, types.Message):
@@ -699,8 +695,12 @@ class MessageMethods:
             )
             message = message.message
         else:
-            message, msg_ent = await self._parse_message_text(message,
-                                                              parse_mode)
+            message, msg_ent = await self._parse_message_text(message, parse_mode)
+            if not message:
+                raise ValueError(
+                    'The message cannot be empty unless a file is provided'
+                )
+
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message,
