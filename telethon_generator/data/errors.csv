@@ -142,7 +142,7 @@ MESSAGE_DELETE_FORBIDDEN,403,"You can't delete one of the messages you tried to 
 MESSAGE_EDIT_TIME_EXPIRED,400,"You can't edit this message anymore, too much time has passed since its creation."
 MESSAGE_EMPTY,400,Empty or invalid UTF-8 message was sent
 MESSAGE_IDS_EMPTY,400,No message ids were provided
-MESSAGE_ID_INVALID,400,The specified message ID is invalid
+MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that operation on such message"
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
 MSG_WAIT_FAILED,400,A waiting call returned an error

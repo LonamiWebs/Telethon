@@ -936,6 +936,11 @@ class MessageMethods:
             ``MessageNotModifiedError`` if the contents of the message were
             not modified at all.
 
+            ``MessageIdInvalidError`` if the ID of the message is invalid
+            (the ID itself may be correct, but the message with that ID
+            cannot be edited). For example, when trying to edit messages
+            with a reply markup (or clear markup) this error will be raised.
+
         Example
             .. code-block:: python
 
