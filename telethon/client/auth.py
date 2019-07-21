@@ -317,7 +317,7 @@ class AuthMethods:
 
         if phone and not code and not password:
             return await self.send_code_request(phone)
-        elif code :
+        elif code:
             phone, phone_code_hash = \
                 self._parse_phone_and_hash(phone, phone_code_hash)
 
@@ -327,7 +327,7 @@ class AuthMethods:
                 result = await self(functions.auth.SignInRequest(
                     phone, phone_code_hash, str(code)))
             except errors.RPCError:
-                return self.sign_in(password=password)
+                return await self.sign_in(password=password)
         elif password:
             pwd = await self(functions.account.GetPasswordRequest())
             result = await self(functions.auth.CheckPasswordRequest(
