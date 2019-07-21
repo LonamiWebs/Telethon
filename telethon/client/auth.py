@@ -317,14 +317,17 @@ class AuthMethods:
 
         if phone and not code and not password:
             return await self.send_code_request(phone)
-        elif code:
+        elif code :
             phone, phone_code_hash = \
                 self._parse_phone_and_hash(phone, phone_code_hash)
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-            result = await self(functions.auth.SignInRequest(
-                phone, phone_code_hash, str(code)))
+            try:
+                result = await self(functions.auth.SignInRequest(
+                    phone, phone_code_hash, str(code)))
+            except errors.RPCError:
+                return self.sign_in(password=password)
         elif password:
             pwd = await self(functions.account.GetPasswordRequest())
             result = await self(functions.auth.CheckPasswordRequest(
@@ -338,7 +341,7 @@ class AuthMethods:
         else:
             raise ValueError(
                 'You must provide a phone and a code the first time, '
-                'and a password only if an RPCError was raised before.'
+                'and a password if two-steps verification is enabled '
             )
 
         return self._on_login(result.user)
