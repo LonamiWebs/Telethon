@@ -785,7 +785,7 @@ class ChatMethods:
         """
         Edits admin permissions for someone in a chat.
 
-        Raises an error if wrong a combination of rights are given
+        Raises an error if a wrong combination of rights are given
         (e.g. you don't have enough permissions to grant one).
 
         Unless otherwise stated, permissions will work in channels and megagroups.
@@ -894,18 +894,31 @@ class ChatMethods:
             send_games: bool = True,
             send_inline: bool = True,
             send_polls: bool = True,
-            change_info: bool = False,
-            invite_users: bool = False,
-            pin_messages: bool = False) -> types.Updates:
+            change_info: bool = True,
+            invite_users: bool = True,
+            pin_messages: bool = True) -> types.Updates:
         """
         Edits user restrictions in a chat.
 
-        Raises an error if wrong a combination of rights are given
+        Set an argument to `False` to apply a restriction (i.e. remove
+        the permission), or omit them to use the default `True` (i.e.
+        don't apply a restriction).
+
+        Raises an error if a wrong combination of rights are given
         (e.g. you don't have enough permissions to revoke one).
 
-        Each of the boolean arguments answer the question "can the given
-        user do this?", which by default is `True` for all permissions
-        except those which state otherwise.
+        By default, each boolean argument is `True`, meaning that it
+        is true that the user has access to the default permission
+        and may be able to make use of it.
+
+        If you set an argument to `False`, then a restriction is applied
+        regardless of the default permissions.
+
+        It is important to note that `True` does *not* mean grant, only
+        "don't restrict", and this is where the default permissions come
+        in. A user may have not been revoked the ``pin_messages`` permission
+        (it is `True`) but they won't be able to use it if the default
+        permissions don't allow it either.
 
         Arguments
             entity (`entity`):
@@ -949,15 +962,12 @@ class ChatMethods:
 
             change_info (`bool`, optional):
                 Whether the user is able to change info or not.
-                Unlike the rest of the arguments, this is `False` by default.
 
             invite_users (`bool`, optional):
                 Whether the user is able to invite other users or not.
-                Unlike the rest of the arguments, this is `False` by default.
 
             pin_messages (`bool`, optional):
                 Whether the user is able to pin messages or not.
-                Unlike the rest of the arguments, this is `False` by default.
 
         Returns
             The resulting :tl:`Updates` object.
@@ -967,12 +977,16 @@ class ChatMethods:
 
                 from datetime import timedelta
 
-                # Kicking `user` from `chat` for 1 minute
+                # Banning `user` from `chat` for 1 minute
                 client.edit_permissions(chat, user, timedelta(minutes=1),
                                        view_messages=False)
 
                 # Banning `user` from `chat` forever
                 client.edit_permissions(chat, user, view_messages=False)
+
+                # Kicking someone (ban + un-ban)
+                client.edit_permissions(chat, user, view_messages=False)
+                client.edit_permissions(chat, user)
         """
         entity = await self.get_input_entity(entity)
         if not isinstance(entity, types.InputPeerChannel):
