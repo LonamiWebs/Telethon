@@ -12,6 +12,17 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
+def _dialog_message_key(peer, message_id):
+    """
+    Get the key to get messages from a dialog.
+
+    We cannot just use the message ID because channels share message IDs,
+    and the peer ID is required to distinguish between them. But it is not
+    necessary in small group chats and private chats.
+    """
+    return (peer.channel_id if isinstance(peer, types.PeerChannel) else None), message_id
+
+
 class _DialogsIter(RequestIter):
     async def _init(
             self, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder
@@ -48,21 +59,20 @@ class _DialogsIter(RequestIter):
         messages = {}
         for m in r.messages:
             m._finish_init(self.client, entities, None)
-            messages[m.id] = m
+            messages[_dialog_message_key(m.to_id, m.id)] = m
 
         for d in r.dialogs:
             # We check the offset date here because Telegram may ignore it
+            message = messages.get(_dialog_message_key(d.peer, d.top_message))
             if self.offset_date:
-                date = getattr(messages.get(
-                    d.top_message, None), 'date', None)
-
+                date = getattr(message, 'date', None)
                 if not date or date.timestamp() > self.offset_date.timestamp():
                     continue
 
             peer_id = utils.get_peer_id(d.peer)
             if peer_id not in self.seen:
                 self.seen.add(peer_id)
-                cd = custom.Dialog(self.client, d, entities, messages)
+                cd = custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
 
@@ -80,11 +90,10 @@ class _DialogsIter(RequestIter):
         # Why? Because pinned dialogs will mess with the order
         # in this list. Instead, we find the last dialog which
         # has a message, and use it as an offset.
-        last_message = next((
-            messages[d.top_message]
+        last_message = next(filter(None, (
+            messages.get(_dialog_message_key(d.peer, d.top_message))
             for d in reversed(r.dialogs)
-            if d.top_message in messages
-        ), None)
+        )), None)
 
         self.request.exclude_pinned = True
         self.request.offset_id = last_message.id if last_message else 0

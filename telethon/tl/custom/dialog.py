@@ -69,14 +69,14 @@ class Dialog:
         is_channel (`bool`):
             `True` if the `entity` is a :tl:`Channel`.
     """
-    def __init__(self, client, dialog, entities, messages):
+    def __init__(self, client, dialog, entities, message):
         # Both entities and messages being dicts {ID: item}
         self._client = client
         self.dialog = dialog
         self.pinned = bool(dialog.pinned)
         self.folder_id = dialog.folder_id
         self.archived = dialog.folder_id is not None
-        self.message = messages.get(dialog.top_message, None)
+        self.message = message
         self.date = getattr(self.message, 'date', None)
 
         self.entity = entities[utils.get_peer_id(dialog.peer)]
