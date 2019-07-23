@@ -378,7 +378,10 @@ class UpdateMethods:
             if self._state_cache.update(update, check_only=True):
                 # If the update doesn't have pts, fetching won't do anything.
                 # For example, UpdateUserStatus or UpdateChatUserTyping.
-                await self._get_difference(update, channel_id, pts_date)
+                try:
+                    await self._get_difference(update, channel_id, pts_date)
+                except OSError:
+                    pass  # We were disconnected, that's okay
 
         built = EventBuilderDict(self, update, others)
         for conv_set in self._conversations.values():
