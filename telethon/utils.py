@@ -794,12 +794,10 @@ def get_peer(peer):
             return peer
         elif isinstance(peer, (
                 types.contacts.ResolvedPeer, types.InputNotifyPeer,
-                types.TopPeer)):
+                types.TopPeer, types.Dialog, types.DialogPeer)):
             return peer.peer
         elif isinstance(peer, types.ChannelFull):
             return types.PeerChannel(peer.id)
-        elif isinstance(peer, types.DialogPeer):
-            return peer.peer
 
         if peer.SUBCLASS_OF_ID in (0x7d7c6f86, 0xd9c7fc18):
             # ChatParticipant, ChannelParticipant
