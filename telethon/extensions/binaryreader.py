@@ -120,7 +120,7 @@ class BinaryReader:
            into a Python datetime object.
         """
         value = self.read_int()
-        if value == 0:
+        if value <= 0:
             return None
         else:
             return datetime.fromtimestamp(value, tz=timezone.utc)
