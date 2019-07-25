@@ -2,7 +2,7 @@
 This module contains the BinaryReader utility class.
 """
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BufferedReader, BytesIO
 from struct import unpack
 
@@ -120,10 +120,10 @@ class BinaryReader:
            into a Python datetime object.
         """
         value = self.read_int()
-        if value <= 0:
+        if value == 0:
             return None
         else:
-            return datetime.fromtimestamp(value, tz=timezone.utc)
+            return datetime.fromtimestamp(0, tz=timezone.utc) + timedelta(seconds=value)
 
     def tgread_object(self):
         """Reads a Telegram object."""
