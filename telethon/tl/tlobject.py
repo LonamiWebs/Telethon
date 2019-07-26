@@ -1,8 +1,12 @@
 import base64
 import json
 import struct
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+import time
 
+_EPOCH_NATIVE = datetime(*time.gmtime(0)[:6])
+_EPOCH_NATIVE_LOCAL = datetime(*time.localtime(0)[:6])
+_EPOCH = _EPOCH_NATIVE.replace(tzinfo=timezone.utc)
 
 def _json_default(value):
     if isinstance(value, bytes):
@@ -125,17 +129,21 @@ class TLObject:
             return b'\0\0\0\0'
 
         if isinstance(dt, datetime):
-            dt = int(dt.timestamp())
+            #If no tzinfo is provided then we assume dt is in local timezone
+            epoch_selected = _EPOCH_NATIVE_LOCAL if dt.tzinfo is None else _EPOCH
+            #We use .total_seconds() method instead of simply dt.timestamp(), 
+            #because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
+            dt = int((dt - epoch_selected).total_seconds())
         elif isinstance(dt, date):
-            dt = int(datetime(dt.year, dt.month, dt.day).timestamp())
+            dt = int((datetime(dt.year, dt.month, dt.day) - _EPOCH_NATIVE_LOCAL).total_seconds())
         elif isinstance(dt, float):
             dt = int(dt)
         elif isinstance(dt, timedelta):
             # Timezones are tricky. datetime.now() + ... timestamp() works
-            dt = int((datetime.now() + dt).timestamp())
+            dt = int(((datetime.now() + dt) - _EPOCH_NATIVE_LOCAL).total_seconds())
 
         if isinstance(dt, int):
-            return struct.pack('<I', dt)
+            return struct.pack('<i', dt)
 
         raise TypeError('Cannot interpret "{}" as a date.'.format(dt))
 
