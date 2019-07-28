@@ -4,9 +4,19 @@ import struct
 from datetime import datetime, date, timedelta, timezone
 import time
 
-_EPOCH_NATIVE = datetime(*time.gmtime(0)[:6])
-_EPOCH_NATIVE_LOCAL = datetime(*time.localtime(0)[:6])
-_EPOCH = _EPOCH_NATIVE.replace(tzinfo=timezone.utc)
+_EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
+_EPOCH_NAIVE_LOCAL = datetime(*time.localtime(0)[:6])
+_EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
+
+
+def _datetime_to_timestamp(dt):
+    # If no timezone is specified, it is assumed to be in utc zone
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    # We use .total_seconds() method instead of simply dt.timestamp(), 
+    # because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
+    return int((dt - _EPOCH).total_seconds())
+
 
 def _json_default(value):
     if isinstance(value, bytes):
@@ -125,22 +135,18 @@ class TLObject:
 
     @staticmethod
     def serialize_datetime(dt):
-        if not dt:
+        if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
-
+        
         if isinstance(dt, datetime):
-            #If no tzinfo is provided then we assume dt is in local timezone
-            epoch_selected = _EPOCH_NATIVE_LOCAL if dt.tzinfo is None else _EPOCH
-            #We use .total_seconds() method instead of simply dt.timestamp(), 
-            #because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
-            dt = int((dt - epoch_selected).total_seconds())
+            dt = _datetime_to_timestamp(dt)
         elif isinstance(dt, date):
-            dt = int((datetime(dt.year, dt.month, dt.day) - _EPOCH_NATIVE_LOCAL).total_seconds())
+            dt = _datetime_to_timestamp(datetime(dt.year, dt.month, dt.day))
         elif isinstance(dt, float):
             dt = int(dt)
         elif isinstance(dt, timedelta):
-            # Timezones are tricky. datetime.now() + ... timestamp() works
-            dt = int(((datetime.now() + dt) - _EPOCH_NATIVE_LOCAL).total_seconds())
+            # Timezones are tricky. datetime.utcnow() + ... timestamp() works
+            dt = _datetime_to_timestamp(datetime.utcnow() + dt)
 
         if isinstance(dt, int):
             return struct.pack('<i', dt)
