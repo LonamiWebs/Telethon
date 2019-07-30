@@ -1,13 +1,13 @@
 # Docs
-_build/
-docs/
+/_build/
+/docs/
 
 # Generated code
-telethon/tl/functions/
-telethon/tl/types/
-telethon/tl/patched/
-telethon/tl/alltlobjects.py
-telethon/errors/rpcerrorlist.py
+/telethon/tl/functions/
+/telethon/tl/types/
+/telethon/tl/patched/
+/telethon/tl/alltlobjects.py
+/telethon/errors/rpcerrorlist.py
 
 # User session
 *.session
@@ -79,7 +79,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+/docs/_build/
 
 # PyBuilder
 target/
@@ -106,3 +106,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Nix build results
+result
+result-*

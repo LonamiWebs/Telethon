@@ -1,0 +1,819 @@
+--- a/setup.py
++++ b/setup.py
+@@ -12,10 +12,11 @@
+
+ import itertools
+ import json
+-import os
+ import re
+ import shutil
+-from codecs import open
++from os import chdir
++from pathlib import Path
++from subprocess import run
+ from sys import argv
+
+ from setuptools import find_packages, setup
+@@ -29,30 +30,29 @@
+         self.original = None
+
+     def __enter__(self):
+-        self.original = os.path.abspath(os.path.curdir)
+-        os.chdir(os.path.abspath(os.path.dirname(__file__)))
++        self.original = Path('.')
++        chdir(str(Path(__file__).parent))
+         return self
+
+     def __exit__(self, *args):
+-        os.chdir(self.original)
++        chdir(str(self.original))
+
+
+-GENERATOR_DIR = 'telethon_generator'
+-LIBRARY_DIR = 'telethon'
++GENERATOR_DIR = Path('telethon_generator')
++LIBRARY_DIR = Path('telethon')
+
+-ERRORS_IN_JSON = os.path.join(GENERATOR_DIR, 'data', 'errors.json')
+-ERRORS_IN_DESC = os.path.join(GENERATOR_DIR, 'data', 'error_descriptions')
+-ERRORS_OUT = os.path.join(LIBRARY_DIR, 'errors', 'rpcerrorlist.py')
++ERRORS_IN_JSON = GENERATOR_DIR / 'data/errors.json'
++ERRORS_IN_DESC = GENERATOR_DIR / 'data/error_descriptions'
++ERRORS_OUT = LIBRARY_DIR / 'errors/rpcerrorlist.py'
+
+-INVALID_BM_IN = os.path.join(GENERATOR_DIR, 'data', 'invalid_bot_methods.json')
++INVALID_BM_IN = GENERATOR_DIR / 'data/invalid_bot_methods.json'
+
+-TLOBJECT_IN_CORE_TL = os.path.join(GENERATOR_DIR, 'data', 'mtproto_api.tl')
+-TLOBJECT_IN_TL = os.path.join(GENERATOR_DIR, 'data', 'telegram_api.tl')
+-TLOBJECT_OUT = os.path.join(LIBRARY_DIR, 'tl')
++TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
++TLOBJECT_OUT = LIBRARY_DIR / 'tl'
+ IMPORT_DEPTH = 2
+
+-DOCS_IN_RES = os.path.join(GENERATOR_DIR, 'data', 'html')
+-DOCS_OUT = 'docs'
++DOCS_IN_RES = GENERATOR_DIR / 'data/html'
++DOCS_OUT = Path('docs')
+
+
+ def generate(which):
+@@ -60,15 +60,12 @@
+     from telethon_generator.generators import\
+         generate_errors, generate_tlobjects, generate_docs, clean_tlobjects
+
+-    # Older Python versions open the file as bytes instead (3.4.2)
+-    with open(INVALID_BM_IN, 'r') as f:
++    with INVALID_BM_IN.open('r') as f:
+         invalid_bot_methods = set(json.load(f))
+-
+-    layer = find_layer(TLOBJECT_IN_TL)
++    layer = next(filter(None, map(find_layer, TLOBJECT_IN_TLS)))
+     errors = list(parse_errors(ERRORS_IN_JSON, ERRORS_IN_DESC))
+-    tlobjects = list(itertools.chain(
+-        parse_tl(TLOBJECT_IN_CORE_TL, layer, invalid_bot_methods),
+-        parse_tl(TLOBJECT_IN_TL, layer, invalid_bot_methods)))
++    tlobjects = list(itertools.chain(*(
++        parse_tl(file, layer, invalid_bot_methods) for file in TLOBJECT_IN_TLS)))
+
+     if not which:
+         which.extend(('tl', 'errors'))
+@@ -96,30 +93,29 @@
+         which.remove('errors')
+         print(action, 'RPCErrors...')
+         if clean:
+-            if os.path.isfile(ERRORS_OUT):
+-                os.remove(ERRORS_OUT)
++            if ERRORS_OUT.is_file():
++                ERRORS_OUT.unlink()
+         else:
+-            with open(ERRORS_OUT, 'w', encoding='utf-8') as file:
++            with ERRORS_OUT.open('w') as file:
+                 generate_errors(errors, file)
+
+     if 'docs' in which:
+         which.remove('docs')
+         print(action, 'documentation...')
+         if clean:
+-            if os.path.isdir(DOCS_OUT):
+-                shutil.rmtree(DOCS_OUT)
++            if DOCS_OUT.is_dir():
++                shutil.rmtree(str(DOCS_OUT))
+         else:
+             generate_docs(tlobjects, methods, layer, DOCS_IN_RES, DOCS_OUT)
+
+     if 'json' in which:
+         which.remove('json')
+         print(action, 'JSON schema...')
+-        mtproto = 'mtproto_api.json'
+-        telegram = 'telegram_api.json'
++        json_files = [x.with_suffix('.json') for x in TLOBJECT_IN_TLS]
+         if clean:
+-            for x in (mtproto, telegram):
+-                if os.path.isfile(x):
+-                    os.remove(x)
++            for file in json_files:
++                if file.is_file():
++                    file.unlink()
+         else:
+             def gen_json(fin, fout):
+                 methods = []
+@@ -131,8 +130,8 @@
+                 with open(fout, 'w') as f:
+                     json.dump(what, f, indent=2)
+
+-            gen_json(TLOBJECT_IN_CORE_TL, mtproto)
+-            gen_json(TLOBJECT_IN_TL, telegram)
++            for fin, fout in zip(TLOBJECT_IN_TLS, json_files):
++                gen_json(fin, fout)
+
+     if which:
+         print('The following items were not understood:', which)
+@@ -156,22 +155,17 @@
+             print('Packaging for PyPi aborted, importing the module failed.')
+             return
+
+-        # Need python3.5 or higher, but Telethon is supposed to support 3.x
+-        # Place it here since noone should be running ./setup.py pypi anyway
+-        from subprocess import run
+-        from shutil import rmtree
+-
+         for x in ('build', 'dist', 'Telethon.egg-info'):
+-            rmtree(x, ignore_errors=True)
++            shutil.rmtree(x, ignore_errors=True)
+         run('python3 setup.py sdist', shell=True)
+         run('python3 setup.py bdist_wheel', shell=True)
+         run('twine upload dist/*', shell=True)
+         for x in ('build', 'dist', 'Telethon.egg-info'):
+-            rmtree(x, ignore_errors=True)
++            shutil.rmtree(x, ignore_errors=True)
+
+     else:
+         # e.g. install from GitHub
+-        if os.path.isdir(GENERATOR_DIR):
++        if GENERATOR_DIR.is_dir():
+             generate(['tl', 'errors'])
+
+         # Get the long description from the README file
+--- a/telethon_generator/docswriter.py
++++ b/telethon_generator/docswriter.py
+@@ -2,0 +2,0 @@
+
+
+ class DocsWriter:
+-    """Utility class used to write the HTML files used on the documentation"""
+-    def __init__(self, filename, type_to_path):
+-        """Initializes the writer to the specified output file,
+-           creating the parent directories when used if required.
+-
+-           'type_to_path_function' should be a function which, given a type
+-           name and a named argument relative_to, returns the file path for
+-           the specified type, relative to the given filename
++    """
++    Utility class used to write the HTML files used on the documentation.
++    """
++    def __init__(self, root, filename, type_to_path):
+         """
++        Initializes the writer to the specified output file,
++        creating the parent directories when used if required.
++        """
++        self.root = root
+         self.filename = filename
++        self._parent = str(self.filename.parent)
+         self.handle = None
++        self.title = ''
+
+         # Should be set before calling adding items to the menu
+         self.menu_separator_tag = None
+
+-        # Utility functions TODO There must be a better way
+-        self.type_to_path = lambda t: type_to_path(
+-            t, relative_to=self.filename
+-        )
++        # Utility functions
++        self.type_to_path = lambda t: self._rel(type_to_path(t))
+
+         # Control signals
+         self.menu_began = False
+@@ -30,11 +30,20 @@
+         self.write_copy_script = False
+         self._script = ''
+
++    def _rel(self, path):
++        """
++        Get the relative path for the given path from the current
++        file by working around https://bugs.python.org/issue20012.
++        """
++        return os.path.relpath(str(path), self._parent)
++
+     # High level writing
+-    def write_head(self, title, relative_css_path, default_css):
++    def write_head(self, title, css_path, default_css):
+         """Writes the head part for the generated document,
+            with the given title and CSS
+         """
++        #
++        self.title = title
+         self.write(
+             '''<!DOCTYPE html>
+ <html>
+@@ -54,17 +63,17 @@
+ <body>
+ <div id="main_div">''',
+             title=title,
+-            rel_css=relative_css_path.rstrip('/'),
++            rel_css=self._rel(css_path),
+             def_css=default_css
+         )
+
+-    def set_menu_separator(self, relative_image_path):
++    def set_menu_separator(self, img):
+         """Sets the menu separator.
+            Must be called before adding entries to the menu
+         """
+-        if relative_image_path:
+-            self.menu_separator_tag = \
+-                '<img src="{}" alt="/" />'.format(relative_image_path)
++        if img:
++            self.menu_separator_tag = '<img src="{}" alt="/" />'.format(
++                self._rel(img))
+         else:
+             self.menu_separator_tag = None
+
+@@ -80,7 +89,7 @@
+
+         self.write('<li>')
+         if link:
+-            self.write('<a href="{}">', link)
++            self.write('<a href="{}">', self._rel(link))
+
+         # Write the real menu entry text
+         self.write(name)
+@@ -210,7 +219,7 @@
+         if bold:
+             self.write('<b>')
+         if link:
+-            self.write('<a href="{}">', link)
++            self.write('<a href="{}">', self._rel(link))
+
+         # Finally write the real table data, the given text
+         self.write(text)
+@@ -278,10 +287,7 @@
+     # With block
+     def __enter__(self):
+         # Sanity check
+-        parent = os.path.dirname(self.filename)
+-        if parent:
+-            os.makedirs(parent, exist_ok=True)
+-
++        self.filename.parent.mkdir(parents=True, exist_ok=True)
+         self.handle = open(self.filename, 'w', encoding='utf-8')
+         return self
+
+--- a/telethon_generator/generators/docs.py
++++ b/telethon_generator/generators/docs.py
+@@ -1,7 +1,6 @@
+ #!/usr/bin/env python3
+-import csv
+ import functools
+-import os
+ import re
+ import shutil
+ from collections import defaultdict
++from pathlib import Path
+
+ from ..docswriter import DocsWriter
+ from ..parsers import TLObject, Usability
+@@ -35,41 +34,33 @@
+
+ def _get_create_path_for(root, tlobject, make=True):
+     """Creates and returns the path for the given TLObject at root."""
+-    out_dir = 'methods' if tlobject.is_function else 'constructors'
++    # TODO Can we pre-create all required directories?
++    out_dir = root / ('methods' if tlobject.is_function else 'constructors')
+     if tlobject.namespace:
+-        out_dir = os.path.join(out_dir, tlobject.namespace)
++        out_dir /= tlobject.namespace
+
+-    out_dir = os.path.join(root, out_dir)
+     if make:
+-        os.makedirs(out_dir, exist_ok=True)
+-    return os.path.join(out_dir, _get_file_name(tlobject))
++        out_dir.mkdir(parents=True, exist_ok=True)
+
++    return out_dir / _get_file_name(tlobject)
+
+-def _get_path_for_type(root, type_, relative_to='.'):
++
++def _get_path_for_type(type_):
+     """Similar to `_get_create_path_for` but for only type names."""
+     if type_.lower() in CORE_TYPES:
+-        path = 'index.html#%s' % type_.lower()
++        return Path('index.html#%s' % type_.lower())
+     elif '.' in type_:
+         namespace, name = type_.split('.')
+-        path = 'types/%s/%s' % (namespace, _get_file_name(name))
++        return Path('types', namespace, _get_file_name(name))
+     else:
+-        path = 'types/%s' % _get_file_name(type_)
+-
+-    return _get_relative_path(os.path.join(root, path), relative_to)
+-
+-
+-def _get_relative_path(destination, relative_to, folder=False):
+-    """Return the relative path to destination from relative_to."""
+-    if not folder:
+-        relative_to = os.path.dirname(relative_to)
+-
+-    return os.path.relpath(destination, start=relative_to)
++        return Path('types',  _get_file_name(type_))
+
+
+ def _find_title(html_file):
+     """Finds the <title> for the given HTML file, or (Unknown)."""
+-    with open(html_file, 'r') as fp:
+-        for line in fp:
++    # TODO Is it necessary to read files like this?
++    with html_file.open() as f:
++        for line in f:
+             if '<title>' in line:
+                 # + 7 to skip len('<title>')
+                 return line[line.index('<title>') + 7:line.index('</title>')]
+@@ -77,25 +68,27 @@
+     return '(Unknown)'
+
+
+-def _build_menu(docs, filename, root, relative_main_index):
+-    """Builds the menu using the given DocumentWriter up to 'filename',
+-       which must be a file (it cannot be a directory)"""
+-    filename = _get_relative_path(filename, root)
+-    docs.add_menu('API', relative_main_index)
+-
+-    items = filename.split('/')
+-    for i in range(len(items) - 1):
+-        item = items[i]
+-        link = '../' * (len(items) - (i + 2))
+-        link += 'index.html'
+-        docs.add_menu(item.title(), link=link)
++def _build_menu(docs):
++    """
++    Builds the menu used for the current ``DocumentWriter``.
++    """
++
++    paths = []
++    current = docs.filename
++    while current != docs.root:
++        current = current.parent
++        paths.append(current)
++
++    for path in reversed(paths):
++        docs.add_menu(path.stem.title(), link=path / 'index.html')
++
++    if docs.filename.stem != 'index':
++        docs.add_menu(docs.title, link=docs.filename)
+
+-    if items[-1] != 'index.html':
+-        docs.add_menu(os.path.splitext(items[-1])[0])
+     docs.end_menu()
+
+
+-def _generate_index(folder, original_paths, root,
++def _generate_index(root, folder, paths,
+                     bots_index=False, bots_index_paths=()):
+     """Generates the index file for the specified folder"""
+     # Determine the namespaces listed here (as sub folders)
+@@ -105,38 +98,24 @@
+     INDEX = 'index.html'
+     BOT_INDEX = 'botindex.html'
+
+-    if not bots_index:
+-        for item in os.listdir(folder):
+-            if os.path.isdir(os.path.join(folder, item)):
+-                namespaces.append(item)
+-            elif item not in (INDEX, BOT_INDEX):
+-                files.append(item)
+-    else:
+-        # bots_index_paths should be a list of "namespace/method.html"
+-        # or "method.html"
+-        for item in bots_index_paths:
+-            dirname = os.path.dirname(item)
+-            if dirname and dirname not in namespaces:
+-                namespaces.append(dirname)
+-            elif not dirname and item not in (INDEX, BOT_INDEX):
+-                files.append(item)
+-
+-    paths = {k: _get_relative_path(v, folder, folder=True)
+-             for k, v in original_paths.items()}
++    for item in (bots_index_paths or folder.iterdir()):
++        if item.is_dir():
++            namespaces.append(item)
++        elif item.name not in (INDEX, BOT_INDEX):
++            files.append(item)
+
+     # Now that everything is setup, write the index.html file
+-    filename = os.path.join(folder, BOT_INDEX if bots_index else INDEX)
+-    with DocsWriter(filename, type_to_path=_get_path_for_type) as docs:
++    filename = folder / (BOT_INDEX if bots_index else INDEX)
++    with DocsWriter(root, filename, _get_path_for_type) as docs:
+         # Title should be the current folder name
+-        docs.write_head(folder.title(),
+-                        relative_css_path=paths['css'],
+-                        default_css=original_paths['default_css'])
++        docs.write_head(str(folder).title(),
++                        css_path=paths['css'],
++                        default_css=paths['default_css'])
+
+         docs.set_menu_separator(paths['arrow'])
+-        _build_menu(docs, filename, root,
+-                    relative_main_index=paths['index_all'])
++        _build_menu(docs)
++        docs.write_title(str(filename.parent.relative_to(root)).title())
+
+-        docs.write_title(_get_relative_path(folder, root, folder=True).title())
+         if bots_index:
+             docs.write_text('These are the methods that you may be able to '
+                             'use as a bot. Click <a href="{}">here</a> to '
+@@ -153,24 +132,22 @@
+                 namespace_paths = []
+                 if bots_index:
+                     for item in bots_index_paths:
+-                        if os.path.dirname(item) == namespace:
+-                            namespace_paths.append(os.path.basename(item))
+-                _generate_index(os.path.join(folder, namespace),
+-                                original_paths, root,
++                        if item.parent == namespace:
++                            namespace_paths.append(item)
++
++                _generate_index(root, namespace, paths,
+                                 bots_index, namespace_paths)
+-                if bots_index:
+-                    docs.add_row(namespace.title(),
+-                                 link=os.path.join(namespace, BOT_INDEX))
+-                else:
+-                    docs.add_row(namespace.title(),
+-                                 link=os.path.join(namespace, INDEX))
++
++                docs.add_row(
++                    namespace.stem.title(),
++                    link=namespace / (BOT_INDEX if bots_index else INDEX))
+
+             docs.end_table()
+
+         docs.write_title('Available items')
+         docs.begin_table(2)
+
+-        files = [(f, _find_title(os.path.join(folder, f))) for f in files]
++        files = [(f, _find_title(f)) for f in files]
+         files.sort(key=lambda t: t[1])
+
+         for file, title in files:
+@@ -231,7 +208,7 @@
+         ))
+
+
+-def _write_html_pages(tlobjects, methods, layer, input_res, output_dir):
++def _write_html_pages(root, tlobjects, methods, layer, input_res):
+     """
+     Generates the documentation HTML files from from ``scheme.tl``
+     to ``/methods`` and ``/constructors``, etc.
+@@ -239,21 +216,18 @@
+     # Save 'Type: [Constructors]' for use in both:
+     # * Seeing the return type or constructors belonging to the same type.
+     # * Generating the types documentation, showing available constructors.
+-    original_paths = {
+-        'css': 'css',
+-        'arrow': 'img/arrow.svg',
+-        'search.js': 'js/search.js',
+-        '404': '404.html',
+-        'index_all': 'index.html',
+-        'bot_index': 'botindex.html',
+-        'index_types': 'types/index.html',
+-        'index_methods': 'methods/index.html',
+-        'index_constructors': 'constructors/index.html'
+-    }
+-    original_paths = {k: os.path.join(output_dir, v)
+-                      for k, v in original_paths.items()}
+-
+-    original_paths['default_css'] = 'light'  # docs.<name>.css, local path
++    paths = {k: root / v for k, v in (
++        ('css', 'css'),
++        ('arrow', 'img/arrow.svg'),
++        ('search.js', 'js/search.js'),
++        ('404', '404.html'),
++        ('index_all', 'index.html'),
++        ('bot_index', 'botindex.html'),
++        ('index_types', 'types/index.html'),
++        ('index_methods', 'methods/index.html'),
++        ('index_constructors', 'constructors/index.html')
++    )}
++    paths['default_css'] = 'light'  # docs.<name>.css, local path
+     type_to_constructors = defaultdict(list)
+     type_to_functions = defaultdict(list)
+     for tlobject in tlobjects:
+@@ -266,24 +240,20 @@
+     methods = {m.name: m for m in methods}
+
+     # Since the output directory is needed everywhere partially apply it now
+-    create_path_for = functools.partial(_get_create_path_for, output_dir)
+-    path_for_type = functools.partial(_get_path_for_type, output_dir)
++    create_path_for = functools.partial(_get_create_path_for, root)
++    path_for_type = lambda t: root / _get_path_for_type(t)
+     bot_docs_paths = []
+
+     for tlobject in tlobjects:
+         filename = create_path_for(tlobject)
+-        paths = {k: _get_relative_path(v, filename)
+-                 for k, v in original_paths.items()}
+-
+-        with DocsWriter(filename, type_to_path=path_for_type) as docs:
++        with DocsWriter(root, filename, path_for_type) as docs:
+             docs.write_head(title=tlobject.class_name,
+-                            relative_css_path=paths['css'],
+-                            default_css=original_paths['default_css'])
++                            css_path=paths['css'],
++                            default_css=paths['default_css'])
+
+             # Create the menu (path to the current TLObject)
+             docs.set_menu_separator(paths['arrow'])
+-            _build_menu(docs, filename, output_dir,
+-                        relative_main_index=paths['index_all'])
++            _build_menu(docs)
+
+             # Create the page title
+             docs.write_title(tlobject.class_name)
+@@ -333,9 +303,7 @@
+                     inner = tlobject.result
+
+                 docs.begin_table(column_count=1)
+-                docs.add_row(inner, link=path_for_type(
+-                    inner, relative_to=filename
+-                ))
++                docs.add_row(inner, link=path_for_type(inner))
+                 docs.end_table()
+
+                 cs = type_to_constructors.get(inner, [])
+@@ -349,7 +317,6 @@
+                 docs.begin_table(column_count=2)
+                 for constructor in cs:
+                     link = create_path_for(constructor)
+-                    link = _get_relative_path(link, relative_to=filename)
+                     docs.add_row(constructor.class_name, link=link)
+                 docs.end_table()
+
+@@ -380,8 +347,8 @@
+                         docs.add_row('!' + friendly_type, align='center')
+                     else:
+                         docs.add_row(
+-                            friendly_type, align='center', link=
+-                            path_for_type(arg.type, relative_to=filename)
++                            friendly_type, align='center',
++                            link=path_for_type(arg.type)
+                          )
+
+                     # Add a description for this argument
+@@ -441,18 +408,13 @@
+             docs.add_script(relative_src=paths['search.js'])
+             docs.end_body()
+
+-    temp = []
+-    for item in bot_docs_paths:
+-        temp.append(os.path.sep.join(item.split(os.path.sep)[2:]))
+-    bot_docs_paths = temp
+-
+     # Find all the available types (which are not the same as the constructors)
+     # Each type has a list of constructors associated to it, hence is a map
+     for t, cs in type_to_constructors.items():
+         filename = path_for_type(t)
+-        out_dir = os.path.dirname(filename)
++        out_dir = filename.parent
+         if out_dir:
+-            os.makedirs(out_dir, exist_ok=True)
++            out_dir.mkdir(parents=True, exist_ok=True)
+
+         # Since we don't have access to the full TLObject, split the type
+         if '.' in t:
+@@ -460,17 +422,13 @@
+         else:
+             namespace, name = None, t
+
+-        paths = {k: _get_relative_path(v, out_dir, folder=True)
+-                 for k, v in original_paths.items()}
+-
+-        with DocsWriter(filename, type_to_path=path_for_type) as docs:
++        with DocsWriter(root, filename, path_for_type) as docs:
+             docs.write_head(title=snake_to_camel_case(name),
+-                            relative_css_path=paths['css'],
+-                            default_css=original_paths['default_css'])
++                            css_path=paths['css'],
++                            default_css=paths['default_css'])
+
+             docs.set_menu_separator(paths['arrow'])
+-            _build_menu(docs, filename, output_dir,
+-                        relative_main_index=paths['index_all'])
++            _build_menu(docs)
+
+             # Main file title
+             docs.write_title(snake_to_camel_case(name))
+@@ -489,7 +447,6 @@
+             for constructor in cs:
+                 # Constructor full name
+                 link = create_path_for(constructor)
+-                link = _get_relative_path(link, relative_to=filename)
+                 docs.add_row(constructor.class_name, link=link)
+             docs.end_table()
+
+@@ -509,7 +466,6 @@
+             docs.begin_table(2)
+             for func in functions:
+                 link = create_path_for(func)
+-                link = _get_relative_path(link, relative_to=filename)
+                 docs.add_row(func.class_name, link=link)
+             docs.end_table()
+
+@@ -534,7 +490,6 @@
+             docs.begin_table(2)
+             for ot in other_methods:
+                 link = create_path_for(ot)
+-                link = _get_relative_path(link, relative_to=filename)
+                 docs.add_row(ot.class_name, link=link)
+             docs.end_table()
+
+@@ -560,7 +515,6 @@
+             docs.begin_table(2)
+             for ot in other_types:
+                 link = create_path_for(ot)
+-                link = _get_relative_path(link, relative_to=filename)
+                 docs.add_row(ot.class_name, link=link)
+             docs.end_table()
+             docs.end_body()
+@@ -570,11 +524,10 @@
+     # information that we have available, simply a file listing all the others
+     # accessible by clicking on their title
+     for folder in ['types', 'methods', 'constructors']:
+-        _generate_index(os.path.join(output_dir, folder), original_paths,
+-                        output_dir)
++        _generate_index(root, root / folder, paths)
+
+-    _generate_index(os.path.join(output_dir, 'methods'), original_paths,
+-                    output_dir, True, bot_docs_paths)
++    _generate_index(root, root / 'methods', paths, True,
++                    bot_docs_paths)
+
+     # Write the final core index, the main index for the rest of files
+     types = set()
+@@ -596,9 +549,8 @@
+     methods = sorted(methods, key=lambda m: m.name)
+     cs = sorted(cs, key=lambda c: c.name)
+
+-    shutil.copy(os.path.join(input_res, '404.html'), original_paths['404'])
+-    _copy_replace(os.path.join(input_res, 'core.html'),
+-                  original_paths['index_all'], {
++    shutil.copy(str(input_res / '404.html'), str(paths['404']))
++    _copy_replace(input_res / 'core.html', paths['index_all'], {
+         '{type_count}': len(types),
+         '{method_count}': len(methods),
+         '{constructor_count}': len(tlobjects) - len(methods),
+@@ -624,17 +576,15 @@
+     type_names = fmt(types, formatter=lambda x: x)
+
+     # Local URLs shouldn't rely on the output's root, so set empty root
+-    create_path_for = functools.partial(_get_create_path_for, '', make=False)
+-    path_for_type = functools.partial(_get_path_for_type, '')
++    create_path_for = functools.partial(
++        _get_create_path_for, Path(), make=False)
++
+     request_urls = fmt(methods, create_path_for)
+-    type_urls = fmt(types, path_for_type)
++    type_urls = fmt(types, _get_path_for_type)
+     constructor_urls = fmt(cs, create_path_for)
+
+-    os.makedirs(os.path.abspath(os.path.join(
+-        original_paths['search.js'], os.path.pardir
+-    )), exist_ok=True)
+-    _copy_replace(os.path.join(input_res, 'js', 'search.js'),
+-                  original_paths['search.js'], {
++    paths['search.js'].parent.mkdir(parents=True, exist_ok=True)
++    _copy_replace(input_res / 'js/search.js', paths['search.js'], {
+         '{request_names}': request_names,
+         '{type_names}': type_names,
+         '{constructor_names}': constructor_names,
+@@ -649,11 +599,11 @@
+                            ('img', ['arrow.svg'])]:
+-        dirpath = os.path.join(out_dir, dirname)
+-        os.makedirs(dirpath, exist_ok=True)
++        dirpath = out_dir / dirname
++        dirpath.mkdir(parents=True, exist_ok=True)
+         for file in files:
+-            shutil.copy(os.path.join(res_dir, dirname, file), dirpath)
++            shutil.copy(str(res_dir / dirname / file), str(dirpath))
+
+
+ def generate_docs(tlobjects, methods, layer, input_res, output_dir):
+-    os.makedirs(output_dir, exist_ok=True)
+-    _write_html_pages(tlobjects, methods, layer, input_res, output_dir)
++    output_dir.mkdir(parents=True, exist_ok=True)
++    _write_html_pages(output_dir, tlobjects, methods, layer, input_res)
+     _copy_resources(input_res, output_dir)
+--- a/telethon_generator/generators/tlobject.py
++++ b/telethon_generator/generators/tlobject.py
+@@ -48,9 +48,8 @@
+ def _write_modules(
+         out_dir, depth, kind, namespace_tlobjects, type_constructors):
+     # namespace_tlobjects: {'namespace', [TLObject]}
+-    os.makedirs(out_dir, exist_ok=True)
++    out_dir.mkdir(parents=True, exist_ok=True)
+     for ns, tlobjects in namespace_tlobjects.items():
+-        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
+-        with open(file, 'w', encoding='utf-8') as f,\
+-                SourceBuilder(f) as builder:
++        file = out_dir / '{}.py'.format(ns or '__init__')
++        with file.open('w') as f, SourceBuilder(f) as builder:
+             builder.writeln(AUTO_GEN_NOTICE)
+
+             builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
+@@ -635,11 +634,10 @@
+
+
+ def _write_patched(out_dir, namespace_tlobjects):
+-    os.makedirs(out_dir, exist_ok=True)
++    out_dir.mkdir(parents=True, exist_ok=True)
+     for ns, tlobjects in namespace_tlobjects.items():
+-        file = os.path.join(out_dir, '{}.py'.format(ns or '__init__'))
+-        with open(file, 'w', encoding='utf-8') as f,\
+-                SourceBuilder(f) as builder:
++        file = out_dir / '{}.py'.format(ns or '__init__')
++        with file.open('w') as f, SourceBuilder(f) as builder:
+             builder.writeln(AUTO_GEN_NOTICE)
+
+             builder.writeln('import struct')
+@@ -715,26 +713,24 @@
+             if tlobject.fullname in PATCHED_TYPES:
+                 namespace_patched[tlobject.namespace].append(tlobject)
+
+-    get_file = functools.partial(os.path.join, output_dir)
+-    _write_modules(get_file('functions'), import_depth, 'TLRequest',
++    _write_modules(output_dir / 'functions', import_depth, 'TLRequest',
+                    namespace_functions, type_constructors)
+-    _write_modules(get_file('types'), import_depth, 'TLObject',
++    _write_modules(output_dir / 'types', import_depth, 'TLObject',
+                    namespace_types, type_constructors)
+-    _write_patched(get_file('patched'), namespace_patched)
++    _write_patched(output_dir / 'patched', namespace_patched)
+
+-    filename = os.path.join(get_file('alltlobjects.py'))
+-    with open(filename, 'w', encoding='utf-8') as file:
++    filename = output_dir / 'alltlobjects.py'
++    with filename.open('w') as file:
+         with SourceBuilder(file) as builder:
+             _write_all_tlobjects(tlobjects, layer, builder)
+
+
+ def clean_tlobjects(output_dir):
+-    get_file = functools.partial(os.path.join, output_dir)
+     for d in ('functions', 'types'):
+-        d = get_file(d)
+-        if os.path.isdir(d):
+-            shutil.rmtree(d)
++        d = output_dir / d
++        if d.is_dir():
++            shutil.rmtree(str(d))
+
+-    tl = get_file('alltlobjects.py')
+-    if os.path.isfile(tl):
+-        os.remove(tl)
++    tl = output_dir / 'alltlobjects.py'
++    if tl.is_file():
++        tl.unlink()
+--- a/telethon_generator/parsers/errors.py
++++ b/telethon_generator/parsers/errors.py
+@@ -57,7 +57,7 @@
+     Parses the input CSV file with columns (name, error codes, description)
+     and yields `Error` instances as a result.
+     """
+-    with open(csv_file, newline='') as f:
++    with csv_file.open(newline='') as f:
+         f = csv.reader(f)
+         next(f, None)  # header
+         for line, (name, codes, description) in enumerate(f, start=2):
+--- a/telethon_generator/parsers/methods.py
++++ b/telethon_generator/parsers/methods.py
+@@ -30,7 +30,7 @@
+     Parses the input CSV file with columns (method, usability, errors)
+     and yields `MethodInfo` instances as a result.
+     """
+-    with open(csv_file, newline='') as f:
++    with csv_file.open(newline='') as f:
+         f = csv.reader(f)
+         next(f, None)  # header
+         for line, (method, usability, errors) in enumerate(f, start=2):
+--- a/telethon_generator/parsers/tlobject/parser.py
++++ b/telethon_generator/parsers/tlobject/parser.py
+@@ -86,7 +86,7 @@
+     obj_all = []
+     obj_by_name = {}
+     obj_by_type = collections.defaultdict(list)
+-    with open(file_path, 'r', encoding='utf-8') as file:
++    with file_path.open() as file:
+         is_function = False
+         for line in file:
+             comment_index = line.find('//')
