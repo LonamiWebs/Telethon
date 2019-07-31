@@ -1026,4 +1026,62 @@ class ChatMethods:
             banned_rights=rights
         ))
 
+    async def kick_participant(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'typing.Optional[hints.EntityLike]'
+    ):
+        """
+        Kicks a user from a chat.
+
+        Kicking yourself (``'me'``) will result in leaving the chat.
+
+        .. note::
+
+            Attempting to kick someone who was banned will remove their
+            restrictions (and thus unbanning them), since kicking is just
+            ban + unban.
+
+        Arguments
+            entity (`entity`):
+                The channel or chat where the user should be kicked from.
+
+            user (`entity`, optional):
+                The user to kick.
+
+        Example
+            .. code-block:: python
+
+                # Kick some user from some chat
+                client.kick_participant(chat, user)
+
+                # Leaving chat
+                client.kick_participant(chat, 'me')
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+        if not isinstance(user, (types.InputPeerUser, types.InputPeerSelf)):
+            raise ValueError('You must pass a user entity')
+
+        if isinstance(entity, types.InputPeerChat):
+            await self(functions.messages.DeleteChatUserRequest(entity.chat_id, user))
+        elif isinstance(entity, types.InputPeerChannel):
+            if isinstance(user, types.InputPeerSelf):
+                await self(functions.channels.LeaveChannelRequest(entity))
+            else:
+                await self([
+                    functions.channels.EditBannedRequest(
+                        channel=entity,
+                        user_id=user,
+                        banned_rights=types.ChatBannedRights(until_date=None, view_messages=True)
+                    ),
+                    functions.channels.EditBannedRequest(
+                        channel=entity,
+                        user_id=user,
+                        banned_rights=types.ChatBannedRights(until_date=None)
+                    ),
+                ], ordered=True)
+        else:
+            raise ValueError('You must pass either a channel or a chat')
+
     # endregion
