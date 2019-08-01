@@ -2,13 +2,17 @@
 This module contains the BinaryReader utility class.
 """
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from io import BufferedReader, BytesIO
 from struct import unpack
+import time
 
 from ..errors import TypeNotFoundError
 from ..tl.alltlobjects import tlobjects
 from ..tl.core import core_objects
+
+_EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
+_EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
 
 
 class BinaryReader:
@@ -120,10 +124,7 @@ class BinaryReader:
            into a Python datetime object.
         """
         value = self.read_int()
-        if value == 0:
-            return None
-        else:
-            return datetime.fromtimestamp(value, tz=timezone.utc)
+        return _EPOCH + timedelta(seconds=value)
 
     def tgread_object(self):
         """Reads a Telegram object."""
