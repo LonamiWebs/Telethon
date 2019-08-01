@@ -137,7 +137,7 @@ class TLObject:
     def serialize_datetime(dt):
         if not dt and not isinstance(dt, timedelta):
             return b'\0\0\0\0'
-        
+
         if isinstance(dt, datetime):
             dt = _datetime_to_timestamp(dt)
         elif isinstance(dt, date):
