@@ -1,7 +1,8 @@
 import base64
 import os
 
-from quart import Quart, request
+import hypercorn.asyncio
+from quart import Quart, render_template_string, request
 
 from telethon import TelegramClient, utils
 
@@ -12,24 +13,44 @@ def get_env(name, message):
     return input(message)
 
 
+BASE_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Telethon + Quart</title>
+    </head>
+    <body>{{ content | safe }}</body>
+</html>
+'''
+
+PHONE_FORM = '''
+<form action='/' method='post'>
+    Phone (international format): <input name='phone' type='text' placeholder='+34600000000'>
+    <input type='submit'>
+</form>
+'''
+
+CODE_FORM = '''
+<form action='/' method='post'>
+    Telegram code: <input name='code' type='text' placeholder='70707'>
+    <input type='submit'>
+</form>
+'''
+
 # Session name, API ID and hash to use; loaded from environmental variables
 SESSION = os.environ.get('TG_SESSION', 'quart')
 API_ID = int(get_env('TG_API_ID', 'Enter your API ID: '))
 API_HASH = get_env('TG_API_HASH', 'Enter your API hash: ')
 
+# Telethon client
+client = TelegramClient(SESSION, API_ID, API_HASH)
+client.parse_mode = 'html'  # <- Render things nicely
+phone = None
 
-# Helper method to add the HTML head/body
-def html(inner):
-    return '''
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Telethon + Quart</title>
-    </head>
-    <body>{}</body>
-</html>
-'''.format(inner)
+# Quart app
+app = Quart(__name__)
+app.secret_key = 'CHANGE THIS TO SOMETHING SECRET'
 
 
 # Helper method to format messages nicely
@@ -50,18 +71,20 @@ async def format_message(message):
     )
 
 
-# Define the global phone and Quart app variables
-phone = None
-app = Quart(__name__)
+# Connect the client before we start serving with Quart
+@app.before_serving
+async def startup():
+    await client.connect()
 
 
-# Quart handlers
+# After we're done serving (near shutdown), clean up the client
+@app.after_serving
+async def cleanup():
+    await client.disconnect()
+
+
 @app.route('/', methods=['GET', 'POST'])
 async def root():
-    # Connect if we aren't yet
-    if not client.is_connected():
-        await client.connect()
-
     # We want to update the global phone variable to remember it
     global phone
 
@@ -82,22 +105,18 @@ async def root():
         async for m in client.iter_messages(dialog, 10):
             result += await(format_message(m))
 
-        return html(result)
+        return await render_template_string(BASE_TEMPLATE, content=result)
 
     # Ask for the phone if we don't know it yet
     if phone is None:
-        return html('''
-<form action="/" method="post">
-    Phone (international format): <input name="phone" type="text" placeholder="+34600000000">
-    <input type="submit">
-</form>''')
+        return await render_template_string(BASE_TEMPLATE, content=PHONE_FORM)
 
     # We have the phone, but we're not logged in, so ask for the code
-    return html('''
-<form action="/" method="post">
-    Telegram code: <input name="code" type="text" placeholder="70707">
-    <input type="submit">
-</form>''')
+    return await render_template_string(BASE_TEMPLATE, content=CODE_FORM)
+
+
+async def main():
+    await hypercorn.asyncio.serve(app, hypercorn.Config())
 
 
 # By default, `Quart.run` uses `asyncio.run()`, which creates a new asyncio
@@ -108,13 +127,12 @@ async def root():
 # So, we have to manually pass the same `loop` to both applications to
 # make 100% sure it works and to avoid headaches.
 #
-# Quart doesn't seem to offer a way to run inside `async def`
-# (see https://gitlab.com/pgjones/quart/issues/146) so we must
-# run and block on it last.
+# To run Quart inside `async def`, we must use `hypercorn.asyncio.serve()`
+# directly.
 #
 # This example creates a global client outside of Quart handlers.
 # If you create the client inside the handlers (common case), you
-# won't have to worry about any of this.
-client = TelegramClient(SESSION, API_ID, API_HASH)
-client.parse_mode = 'html'  # <- render things nicely
-app.run(loop=client.loop)  # <- same event loop as telethon
+# won't have to worry about any of this, but it's still good to be
+# explicit about the event loop.
+if __name__ == '__main__':
+    client.loop.run_until_complete(main())
