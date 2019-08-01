@@ -2,10 +2,10 @@ import datetime
 
 from .. import TLObject
 from ..functions.messages import SaveDraftRequest
-from ..types import UpdateDraftMessage, DraftMessage
+from ..types import DraftMessage
 from ...errors import RPCError
 from ...extensions import markdown
-from ...utils import get_peer_id, get_input_peer
+from ...utils import get_input_peer, get_peer
 
 
 class Draft:
@@ -24,9 +24,9 @@ class Draft:
         reply_to_msg_id (`int`):
             The message ID that the draft will reply to.
     """
-    def __init__(self, client, peer, draft, entity):
+    def __init__(self, client, entity, draft):
         self._client = client
-        self._peer = peer
+        self._peer = get_peer(entity)
         self._entity = entity
         self._input_entity = get_input_peer(entity) if entity else None
 
@@ -38,17 +38,6 @@ class Draft:
         self.date = draft.date
         self.link_preview = not draft.no_webpage
         self.reply_to_msg_id = draft.reply_to_msg_id
-
-    @classmethod
-    def _from_dialog(cls, client, dialog):
-        return cls(client=client, peer=dialog.dialog.peer,
-                   draft=dialog.dialog.draft, entity=dialog.entity)
-
-    @classmethod
-    def _from_update(cls, client, update, entities):
-        assert isinstance(update, UpdateDraftMessage)
-        return cls(client=client, peer=update.peer, draft=update.draft,
-                   entity=entities.get(get_peer_id(update.peer)))
 
     @property
     def entity(self):

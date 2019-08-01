@@ -103,15 +103,27 @@ class _DialogsIter(RequestIter):
 
 
 class _DraftsIter(RequestIter):
-    async def _init(self, **kwargs):
-        r = await self.client(functions.messages.GetAllDraftsRequest())
+    async def _init(self, entities, **kwargs):
+        if not entities:
+            r = await self.client(functions.messages.GetAllDraftsRequest())
+            items = r.updates
+        else:
+            peers = []
+            for entity in entities:
+                peers.append(types.InputDialogPeer(
+                    await self.client.get_input_entity(entity)))
+
+            r = await self.client(functions.messages.GetPeerDialogsRequest(peers))
+            items = r.dialogs
 
         # TODO Maybe there should be a helper method for this?
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(r.users, r.chats)}
 
-        self.buffer.extend(custom.Draft._from_update(self.client, u, entities)
-                           for u in r.updates)
+        self.buffer.extend(
+            custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
+            for d in items
+        )
 
     async def _load_next_chunk(self):
         return []
@@ -236,11 +248,19 @@ class DialogMethods:
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
 
-    def iter_drafts(self: 'TelegramClient') -> _DraftsIter:
+    def iter_drafts(
+            self: 'TelegramClient',
+            entity: 'hints.EntitiesLike' = None
+    ) -> _DraftsIter:
         """
-        Iterator over all open draft messages.
+        Iterator over draft messages.
 
         The order is unspecified.
+
+        Arguments
+            entity (`hints.EntitiesLike`, optional):
+                The entity or entities for which to fetch the draft messages.
+                If left unspecified, all draft messages will be returned.
 
         Yields
             Instances of `Draft <telethon.tl.custom.draft.Draft>`.
@@ -251,11 +271,21 @@ class DialogMethods:
                 # Clear all drafts
                 for draft in client.get_drafts():
                     draft.delete()
-        """
-        # TODO Passing a limit here makes no sense
-        return _DraftsIter(self, None)
 
-    async def get_drafts(self: 'TelegramClient') -> 'hints.TotalList':
+                # Getting the drafts with 'bot1' and 'bot2'
+                for draft in client.iter_drafts(['bot1', 'bot2']):
+                    print(draft.text)
+        """
+        if entity and not utils.is_list_like(entity):
+            entity = (entity,)
+
+        # TODO Passing a limit here makes no sense
+        return _DraftsIter(self, None, entities=entity)
+
+    async def get_drafts(
+            self: 'TelegramClient',
+            entity: 'hints.EntitiesLike' = None
+    ) -> 'hints.TotalList':
         """
         Same as `iter_drafts()`, but returns a list instead.
 
@@ -265,8 +295,16 @@ class DialogMethods:
                 # Get drafts, print the text of the first
                 drafts = client.get_drafts()
                 print(drafts[0].text)
+
+                # Get the draft in your chat
+                draft = client.get_drafts('me')
+                print(drafts.text)
         """
-        return await self.iter_drafts().collect()
+        items = await self.iter_drafts(entity).collect()
+        if not entity or utils.is_list_like(entity):
+            return items
+        else:
+            return items[0]
 
     async def edit_folder(
             self: 'TelegramClient',
