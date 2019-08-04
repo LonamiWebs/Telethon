@@ -3,7 +3,7 @@ Simple HTML -> Telegram entity parser.
 """
 import struct
 from collections import deque
-from html import escape, unescape
+from html import escape
 from html.parser import HTMLParser
 from typing import Iterable, Optional, Tuple, List
 
@@ -99,8 +99,6 @@ class HTMLToTelegramParser(HTMLParser):
                 **args)
 
     def handle_data(self, text):
-        text = unescape(text)
-
         previous_tag = self._open_tags[0] if len(self._open_tags) > 0 else ''
         if previous_tag == 'a':
             url = self._open_tags_meta[0]
