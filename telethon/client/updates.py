@@ -383,6 +383,12 @@ class UpdateMethods:
                 except OSError:
                     pass  # We were disconnected, that's okay
 
+        if not self._self_input_peer:
+            # Some updates require our own ID, so we must make sure
+            # that the event builder has offline access to it. Calling
+            # `get_me()` will cache it under `self._self_input_peer`.
+            await self.get_me(input_peer=True)
+
         built = EventBuilderDict(self, update, others)
         for conv_set in self._conversations.values():
             for conv in conv_set:
@@ -539,7 +545,9 @@ class EventBuilderDict:
         try:
             return self.__dict__[builder]
         except KeyError:
-            event = self.__dict__[builder] = builder.build(self.update, self.others)
+            event = self.__dict__[builder] = builder.build(
+                self.update, self.others, self.client._self_input_peer.user_id)
+
             if isinstance(event, EventCommon):
                 event.original_update = self.update
                 event._entities = self.update._entities

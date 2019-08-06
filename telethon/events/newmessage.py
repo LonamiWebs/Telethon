@@ -76,7 +76,7 @@ class NewMessage(EventBuilder):
         self.from_users = await _into_id_set(client, self.from_users)
 
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         if isinstance(update,
                       (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
             if not isinstance(update.message, types.Message):
@@ -91,10 +91,8 @@ class NewMessage(EventBuilder):
                 id=update.id,
                 # Note that to_id/from_id complement each other in private
                 # messages, depending on whether the message was outgoing.
-                to_id=types.PeerUser(
-                    update.user_id if update.out else cls.self_id
-                ),
-                from_id=cls.self_id if update.out else update.user_id,
+                to_id=types.PeerUser(update.user_id if update.out else self_id),
+                from_id=self_id if update.out else update.user_id,
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -127,6 +125,7 @@ class NewMessage(EventBuilder):
         if isinstance(ori.to_id, types.PeerUser):
             if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
                 event.message.out = True
+                print('ooOoOo', ori)
 
         return event
 

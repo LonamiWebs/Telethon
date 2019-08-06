@@ -32,7 +32,7 @@ class Raw(EventBuilder):
         self.resolved = True
 
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         return update
 
     def filter(self, event):

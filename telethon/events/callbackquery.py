@@ -64,7 +64,7 @@ class CallbackQuery(EventBuilder):
         ))
 
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         if isinstance(update, types.UpdateBotCallbackQuery):
             return cls.Event(update, update.peer, update.msg_id)
         elif isinstance(update, types.UpdateInlineBotCallbackQuery):

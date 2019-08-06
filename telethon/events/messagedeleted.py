@@ -25,7 +25,7 @@ class MessageDeleted(EventBuilder):
         unless you intend on working with channels and super-groups only.
     """
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         if isinstance(update, types.UpdateDeleteMessages):
             return cls.Event(
                 deleted_ids=update.messages,

@@ -66,8 +66,6 @@ class EventBuilder(abc.ABC):
                 async def handler(event):
                     pass  # code here
     """
-    self_id = None
-
     def __init__(self, chats=None, *, blacklist_chats=False, func=None):
         self.chats = chats
         self.blacklist_chats = bool(blacklist_chats)
@@ -77,13 +75,17 @@ class EventBuilder(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         """
         Builds an event for the given update if possible, or returns None.
 
         `others` are the rest of updates that came in the same container
         as the current `update`.
+
+        `self_id` should be the current user's ID, since it is required
+        for some events which lack this information but still need it.
         """
+        # TODO So many parameters specific to only some update types seems dirty
 
     async def resolve(self, client):
         """Helper method to allow event builders to be resolved before usage"""
@@ -100,8 +102,6 @@ class EventBuilder(abc.ABC):
 
     async def _resolve(self, client):
         self.chats = await _into_id_set(client, self.chats)
-        if not EventBuilder.self_id:
-            EventBuilder.self_id = await client.get_peer_id('me')
 
     def filter(self, event):
         """

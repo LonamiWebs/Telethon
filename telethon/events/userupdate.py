@@ -38,7 +38,7 @@ class UserUpdate(EventBuilder):
     Occurs whenever a user goes online, starts typing, etc.
     """
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         if isinstance(update, types.UpdateUserStatus):
             return cls.Event(update.user_id,
                              status=update.status)
