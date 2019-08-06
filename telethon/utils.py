@@ -954,12 +954,22 @@ def resolve_bot_file_id(file_id):
     For thumbnails, the photo ID and hash will always be zero.
     """
     data = _rle_decode(_decode_telegram_base64(file_id))
-    if not data or data[-1] != 2:
+    if not data:
         return None
 
-    data = data[:-1]
-    if len(data) == 24:
-        file_type, dc_id, media_id, access_hash = struct.unpack('<iiqq', data)
+    # This isn't officially documented anywhere, but
+    # we assume the last byte is some kind of "version".
+    data, version = data[:-1], data[-1]
+    if version not in (2, 4):
+        return None
+
+    if (version == 2 and len(data) == 24) or (version == 4 and len(data) == 25):
+        if version == 2:
+            file_type, dc_id, media_id, access_hash = struct.unpack('<iiqq', data)
+        # elif version == 4:
+        else:
+            # TODO Figure out what the extra byte means
+            file_type, dc_id, media_id, access_hash, _ = struct.unpack('<iiqqb', data)
 
         if not (1 <= dc_id <= 5):
             # Valid `file_id`'s must have valid DC IDs. Since this method is
@@ -1003,9 +1013,15 @@ def resolve_bot_file_id(file_id):
             attributes=attributes,
             file_reference=b''
         )
-    elif len(data) == 44:
-        (file_type, dc_id, media_id, access_hash,
-            volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
+    elif (version == 2 and len(data) == 44) or (version == 4 and len(data) == 49):
+        if version == 2:
+            (file_type, dc_id, media_id, access_hash,
+                volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
+        # elif version == 4:
+        else:
+            # TODO Figure out what the extra five bytes mean
+            (file_type, dc_id, media_id, access_hash,
+                volume_id, secret, local_id, _) = struct.unpack('<iiqqqqi5s', data)
 
         if not (1 <= dc_id <= 5):
             return None

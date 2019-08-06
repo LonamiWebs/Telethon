@@ -21,6 +21,7 @@ BOT_INLINE_DISABLED,400,This bot can't be used in inline mode
 BOT_INVALID,400,This is not a valid bot
 BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method you tried to invoke cannot be executed as a bot
 BOT_MISSING,400,This method can only be run by a bot
+BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BROADCAST_ID_INVALID,400,The channel is invalid
 BUTTON_DATA_INVALID,400,The provided button data is invalid
@@ -163,6 +164,7 @@ PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to dat
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
+PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
 PEER_FLOOD,,Too many requests
 PEER_ID_INVALID,400,An invalid Peer was used. Make sure to pass the right peer type
 PEER_ID_NOT_SUPPORTED,400,The provided peer ID is not supported
