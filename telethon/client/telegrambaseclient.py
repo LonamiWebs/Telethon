@@ -405,14 +405,17 @@ class TelegramBaseClient(abc.ABC):
                 except OSError:
                     print('Failed to connect')
         """
-        await self._sender.connect(self._connection(
+        if not await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
             self.session.dc_id,
             loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
-        ))
+        )):
+            # We don't want to init or modify anything if we were already connected
+            return
+
         self.session.auth_key = self._sender.auth_key
         self.session.save()
 
