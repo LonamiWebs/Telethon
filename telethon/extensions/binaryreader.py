@@ -2,10 +2,10 @@
 This module contains the BinaryReader utility class.
 """
 import os
-from datetime import datetime, timezone, timedelta
-from io import BufferedReader, BytesIO
-from struct import unpack
 import time
+from datetime import datetime, timezone, timedelta
+from io import BytesIO
+from struct import unpack
 
 from ..errors import TypeNotFoundError
 from ..tl.alltlobjects import tlobjects
@@ -18,18 +18,10 @@ _EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
 class BinaryReader:
     """
     Small utility class to read binary data.
-    Also creates a "Memory Stream" if necessary
     """
 
-    def __init__(self, data=None, stream=None):
-        if data:
-            self.stream = BytesIO(data)
-        elif stream:
-            self.stream = stream
-        else:
-            raise ValueError('Either bytes or a stream must be provided')
-
-        self.reader = BufferedReader(self.stream)
+    def __init__(self, data):
+        self.stream = BytesIO(data)
         self._last = None  # Should come in handy to spot -404 errors
 
     # region Reading
@@ -61,13 +53,10 @@ class BinaryReader:
         return int.from_bytes(
             self.read(bits // 8), byteorder='little', signed=signed)
 
-    def read(self, length=None):
-        """Read the given amount of bytes."""
-        if length is None:
-            return self.reader.read()
-
-        result = self.reader.read(length)
-        if len(result) != length:
+    def read(self, length=-1):
+        """Read the given amount of bytes, or -1 to read all remaining."""
+        result = self.stream.read(length)
+        if (length >= 0) and (len(result) != length):
             raise BufferError(
                 'No more data left to read (need {}, got {}: {}); last read {}'
                 .format(length, len(result), repr(result), repr(self._last))
@@ -164,24 +153,24 @@ class BinaryReader:
 
     def close(self):
         """Closes the reader, freeing the BytesIO stream."""
-        self.reader.close()
+        self.stream.close()
 
     # region Position related
 
     def tell_position(self):
         """Tells the current position on the stream."""
-        return self.reader.tell()
+        return self.stream.tell()
 
     def set_position(self, position):
         """Sets the current position on the stream."""
-        self.reader.seek(position)
+        self.stream.seek(position)
 
     def seek(self, offset):
         """
         Seeks the stream position given an offset from the current position.
         The offset may be negative.
         """
-        self.reader.seek(offset, os.SEEK_CUR)
+        self.stream.seek(offset, os.SEEK_CUR)
 
     # endregion
 
