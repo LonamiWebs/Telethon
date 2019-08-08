@@ -258,7 +258,6 @@ class MTProtoSender:
             self._log.debug('Closing current connection...')
             await self._connection.disconnect()
         finally:
-            self._connection = None
             self._log.debug('Cancelling %d pending message(s)...', len(self._pending_state))
             for state in self._pending_state.values():
                 if error and not state.future.done():
@@ -273,7 +272,9 @@ class MTProtoSender:
                 recv_loop_handle=self._recv_loop_handle
             )
 
-        self._log.info('Disconnection from %s complete!', self._connection)
+            self._log.info('Disconnection from %s complete!', self._connection)
+            self._connection = None
+
         if self._disconnected and not self._disconnected.done():
             if error:
                 self._disconnected.set_exception(error)
