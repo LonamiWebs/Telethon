@@ -44,9 +44,12 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             Whether you have read the media in this message
             or not, e.g. listened to the voice note media.
 
+
         silent (`bool`):
-            Whether this message should notify or not,
-            used in channels.
+            Whether the message should notify people with sound or not.
+            Previously used in channels, but since 9 August 2019, it can
+            also be `used in private chats
+            <https://telegram.org/blog/silent-messages-slow-mode>`_.
 
         post (`bool`):
             Whether this message is a post in a broadcast

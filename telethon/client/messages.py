@@ -760,9 +760,10 @@ class MessageMethods:
                 the entity from which the messages should be forwarded.
 
             silent (`bool`, optional):
-                Whether the message should notify people in a broadcast
-                channel or not. Defaults to `False`, which means it will
-                notify them. Set it to `True` to alter this behaviour.
+                Whether the message should notify people with sound or not.
+                Defaults to `False` (send with a notification sound unless
+                the person has the chat muted). Set it to `True` to alter
+                this behaviour.
 
             as_album (`bool`, optional):
                 Whether several image messages should be forwarded as an

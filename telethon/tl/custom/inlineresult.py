@@ -110,7 +110,10 @@ class InlineResult:
                 If present, the sent message will reply to this ID or message.
 
             silent (`bool`, optional):
-                If `True`, the sent message will not notify the user(s).
+                Whether the message should notify people with sound or not.
+                Defaults to `False` (send with a notification sound unless
+                the person has the chat muted). Set it to `True` to alter
+                this behaviour.
 
             clear_draft (`bool`, optional):
                 Whether the draft should be removed after sending the

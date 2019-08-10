@@ -217,9 +217,10 @@ class UploadMethods:
                 :tl:`ReplyMarkup` here.
 
             silent (`bool`, optional):
-                Whether the message should notify people in a broadcast
-                channel or not. Defaults to `False`, which means it will
-                notify them. Set it to `True` to alter this behaviour.
+                Whether the message should notify people with sound or not.
+                Defaults to `False` (send with a notification sound unless
+                the person has the chat muted). Set it to `True` to alter
+                this behaviour.
 
             supports_streaming (`bool`, optional):
                 Whether the sent video supports streaming or not. Note that
