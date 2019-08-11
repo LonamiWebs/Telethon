@@ -1096,11 +1096,12 @@ class MessageMethods:
         Example
             .. code-block:: python
 
-                client.send_read_acknowledge(last_message)
-                # or
-                client.send_read_acknowledge(last_message_id)
-                # or
-                client.send_read_acknowledge(messages)
+                # using a Message object
+                client.send_read_acknowledge(chat, message)
+                # ...or using the int ID of a Message
+                client.send_read_acknowledge(chat, message_id)
+                # ...or passing a list of messages to mark as read
+                client.send_read_acknowledge(chat, messages)
         """
         if max_id is None:
             if not message:
