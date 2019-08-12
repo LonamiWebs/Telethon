@@ -2,6 +2,7 @@ import abc
 import asyncio
 import itertools
 import warnings
+import inspect
 
 from .. import utils
 from ..tl import TLObject, types, functions
@@ -103,7 +104,7 @@ class EventBuilder(abc.ABC):
     async def _resolve(self, client):
         self.chats = await _into_id_set(client, self.chats)
 
-    def filter(self, event):
+    async def filter(self, event):
         """
         If the ID of ``event._chat_peer`` isn't in the chats set (or it is
         but the set is a blacklist) returns `None`, otherwise the event.
@@ -121,8 +122,14 @@ class EventBuilder(abc.ABC):
                 # If it doesn't match but it's a whitelist ignore.
                 return None
 
-        if not self.func or self.func(event):
+        if await self._check_func(event):
             return event
+
+    async def _check_func(self, event):
+        if not self.func:
+            return True
+        r = self.func(event)
+        return await r if inspect.isawaitable(r) else r
 
 
 class EventCommon(ChatGetter, abc.ABC):

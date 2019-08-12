@@ -50,14 +50,14 @@ class InlineQuery(EventBuilder):
         if isinstance(update, types.UpdateBotInlineQuery):
             return cls.Event(update)
 
-    def filter(self, event):
+    async def filter(self, event):
         if self.pattern:
             match = self.pattern(event.text)
             if not match:
                 return
             event.pattern_match = match
 
-        return super().filter(event)
+        return await super().filter(event)
 
     class Event(EventCommon, SenderGetter):
         """
@@ -156,9 +156,9 @@ class InlineQuery(EventBuilder):
 
                 gallery (`bool`, optional):
                     Whether the results should show as a gallery (grid) or not.
-                
+
                 next_offset (`str`, optional):
-                    The offset the client will send when the user scrolls the 
+                    The offset the client will send when the user scrolls the
                     results and it repeats the request.
 
                 private (`bool`, optional):

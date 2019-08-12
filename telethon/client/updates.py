@@ -415,7 +415,7 @@ class UpdateMethods:
             if not builder.resolved:
                 await builder.resolve(self)
 
-            if not builder.filter(event):
+            if not await builder.filter(event):
                 continue
 
             try:

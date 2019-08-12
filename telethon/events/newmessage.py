@@ -129,7 +129,7 @@ class NewMessage(EventBuilder):
 
         return event
 
-    def filter(self, event):
+    async def filter(self, event):
         if self._no_check:
             return event
 
@@ -151,7 +151,7 @@ class NewMessage(EventBuilder):
                 return
             event.pattern_match = match
 
-        return super().filter(event)
+        return await super().filter(event)
 
     class Event(EventCommon):
         """

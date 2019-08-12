@@ -39,11 +39,11 @@ class MessageRead(EventBuilder):
                              message_ids=update.messages,
                              contents=True)
 
-    def filter(self, event):
+    async def filter(self, event):
         if self.inbox == event.outbox:
             return
 
-        return super().filter(event)
+        return await super().filter(event)
 
     class Event(EventCommon):
         """

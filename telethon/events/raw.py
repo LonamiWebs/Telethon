@@ -35,7 +35,7 @@ class Raw(EventBuilder):
     def build(cls, update, others=None, self_id=None):
         return update
 
-    def filter(self, event):
+    async def filter(self, event):
         if ((not self.types or isinstance(event, self.types))
-                and (not self.func or self.func(event))):
+                and await self._check_func(event)):
             return event

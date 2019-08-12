@@ -74,7 +74,7 @@ class CallbackQuery(EventBuilder):
             peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
             return cls.Event(update, peer, mid)
 
-    def filter(self, event):
+    async def filter(self, event):
         # We can't call super().filter(...) because it ignores chat_instance
         if self._no_check:
             return event
@@ -95,7 +95,7 @@ class CallbackQuery(EventBuilder):
             elif event.query.data != self.match:
                 return
 
-        if not self.func or self.func(event):
+        if await self._check_func(event):
             return event
 
     class Event(EventCommon, SenderGetter):
@@ -110,7 +110,7 @@ class CallbackQuery(EventBuilder):
                 The object returned by the ``data=`` parameter
                 when creating the event builder, if any. Similar
                 to ``pattern_match`` for the new message event.
-            
+
             pattern_match (`obj`, optional):
                 Alias for ``data_match``.
         """
