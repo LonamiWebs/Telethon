@@ -24,7 +24,7 @@ send yourself the very first sticker you have:
 
     # Get all the sticker sets this user has
     from telethon.tl.functions.messages import GetAllStickersRequest
-    sticker_sets = client(GetAllStickersRequest(0))
+    sticker_sets = await client(GetAllStickersRequest(0))
 
     # Choose a sticker set
     from telethon.tl.functions.messages import GetStickerSetRequest
@@ -32,14 +32,14 @@ send yourself the very first sticker you have:
     sticker_set = sticker_sets.sets[0]
 
     # Get the stickers for this sticker set
-    stickers = client(GetStickerSetRequest(
+    stickers = await client(GetStickerSetRequest(
         stickerset=InputStickerSetID(
             id=sticker_set.id, access_hash=sticker_set.access_hash
         )
     ))
 
     # Stickers are nothing more than files, so send that
-    client.send_file('me', stickers.documents[0])
+    await client.send_file('me', stickers.documents[0])
 
 
 .. _issues: https://github.com/LonamiWebs/Telethon/issues/215

@@ -49,7 +49,7 @@ We can finally write some code to log into our account!
 
 .. code-block:: python
 
-    from telethon.sync import TelegramClient
+    from telethon import TelegramClient
 
     # Use your own values from my.telegram.org
     api_id = 12345
@@ -57,7 +57,7 @@ We can finally write some code to log into our account!
 
     # The first parameter is the .session file name (absolute paths allowed)
     with TelegramClient('anon', api_id, api_hash) as client:
-        client.send_message('me', 'Hello, myself!')
+        client.loop.run_until_complete(client.send_message('me', 'Hello, myself!'))
 
 
 In the first line, we import the class name so we can create an instance
@@ -67,6 +67,16 @@ conveniently.
 At last, we create a new `TelegramClient <telethon.client.telegramclient.TelegramClient>`
 instance and call it ``client``. We can now use the client variable
 for anything that we want, such as sending a message to ourselves.
+
+.. note::
+
+    Since Telethon is an asynchronous library, you need to ``await``
+    coroutine functions to have them run (or otherwise, run the loop
+    until they are complete). In this tiny example, we don't bother
+    making an ``async def main()``.
+
+    See :ref:`mastering-asyncio` to find out more.
+
 
 Using a ``with`` block is the preferred way to use the library. It will
 automatically `start() <telethon.client.auth.AuthMethods.start>` the client,

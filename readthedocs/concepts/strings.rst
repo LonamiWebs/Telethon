@@ -8,7 +8,7 @@ does a result have? Well, the easiest thing to do is printing it:
 
 .. code-block:: python
 
-    user = client.get_entity('Lonami')
+    user = await client.get_entity('Lonami')
     print(user)
 
 That will show a huge **string** similar to the following:

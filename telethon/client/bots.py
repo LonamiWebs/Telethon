@@ -40,10 +40,10 @@ class BotMethods:
             .. code-block:: python
 
                 # Make an inline query to @like
-                results = client.inline_query('like', 'Do you like Telethon?')
+                results = await client.inline_query('like', 'Do you like Telethon?')
 
                 # Send the first result to some chat
-                message = results[0].click('TelethonOffTopic')
+                message = await results[0].click('TelethonOffTopic')
         """
         bot = await self.get_input_entity(bot)
         result = await self(functions.messages.GetInlineBotResultsRequest(

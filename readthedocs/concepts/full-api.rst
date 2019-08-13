@@ -78,8 +78,17 @@ Or we call `client.get_input_entity()
 
 .. code-block:: python
 
-    import telethon.sync
-    peer = client.get_input_entity('someone')
+    import telethon
+
+    async def main():
+        peer = await client.get_input_entity('someone')
+
+    client.loop.run_until_complete(main())
+
+.. note::
+
+    Remember that ``await`` must occur inside an ``async def``.
+    Every full API example assumes you already know and do this.
 
 
 When you're going to invoke an API method, most require you to pass an
@@ -92,7 +101,7 @@ instead:
 
 .. code-block:: python
 
-    entity = client.get_entity('someone')
+    entity = await client.get_entity('someone')
 
 In the later case, when you use the entity, the library will cast it to
 its "input" version for you. If you already have the complete user and
@@ -120,7 +129,7 @@ request we do:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest(peer, 'Hello there!'))
+    result = await client(SendMessageRequest(peer, 'Hello there!'))
 
 Message sent! Of course, this is only an example. There are over 250
 methods available as of layer 80, and you can use every single of them
@@ -128,8 +137,8 @@ as you wish. Remember to use the right types! To sum up:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest(
-        client.get_input_entity('username'), 'Hello there!'
+    result = await client(SendMessageRequest(
+        await client.get_input_entity('username'), 'Hello there!'
     ))
 
 
@@ -137,9 +146,9 @@ This can further be simplified to:
 
 .. code-block:: python
 
-    result = client(SendMessageRequest('username', 'Hello there!'))
+    result = await client(SendMessageRequest('username', 'Hello there!'))
     # Or even
-    result = client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
+    result = await client(SendMessageRequest(PeerChannel(id), 'Hello there!'))
 
 .. note::
 
@@ -195,7 +204,7 @@ knows all requests directly:
 
 .. code-block:: python
 
-    client([
+    await client([
         SendMessageRequest('me', 'Hello'),
         SendMessageRequest('me', ', '),
         SendMessageRequest('me', 'World'),
@@ -212,7 +221,7 @@ and still access the successful results:
     from telethon.errors import MultiError
 
     try:
-        client([
+        await client([
             SendMessageRequest('me', 'Hello'),
             SendMessageRequest('me', ''),
             SendMessageRequest('me', 'World')

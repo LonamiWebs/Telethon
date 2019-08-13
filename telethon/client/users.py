@@ -128,7 +128,8 @@ class UserMethods:
         Example
             .. code-block:: python
 
-                print(client.get_me().username)
+                me = await client.get_me()
+                print(me.username)
         """
         if input_peer and self._self_input_peer:
             return self._self_input_peer
@@ -154,7 +155,7 @@ class UserMethods:
         Example
             .. code-block:: python
 
-                if client.is_bot():
+                if await client.is_bot():
                     print('Beep')
                 else:
                     print('Hello')
@@ -171,10 +172,10 @@ class UserMethods:
         Example
             .. code-block:: python
 
-                if not client.is_user_authorized():
-                    client.send_code_request(phone)
+                if not await client.is_user_authorized():
+                    await client.send_code_request(phone)
                     code = input('enter code: ')
-                    client.sign_in(phone, code)
+                    await client.sign_in(phone, code)
         """
         if self._authorized is None:
             try:
@@ -227,20 +228,20 @@ class UserMethods:
 
                 from telethon import utils
 
-                me = client.get_entity('me')
+                me = await client.get_entity('me')
                 print(utils.get_display_name(me))
 
-                chat = client.get_input_entity('username')
-                for message in client.iter_messages(chat):
+                chat = await client.get_input_entity('username')
+                async for message in client.iter_messages(chat):
                     ...
 
                 # Note that you could have used the username directly, but it's
                 # good to use get_input_entity if you will reuse it a lot.
-                for message in client.iter_messages('username'):
+                async for message in client.iter_messages('username'):
                     ...
 
                 # Note that for this to work the phone number must be in your contacts
-                some_id = client.get_peer_id('+34123456789')
+                some_id = await client.get_peer_id('+34123456789')
         """
         single = not utils.is_list_like(entity)
         if single:
@@ -360,10 +361,10 @@ class UserMethods:
                 # If you're going to use "username" often in your code
                 # (make a lot of calls), consider getting its input entity
                 # once, and then using the "user" everywhere instead.
-                user = client.get_input_entity('username')
+                user = await client.get_input_entity('username')
 
                 # The same applies to IDs, chats or channels.
-                chat = client.get_input_entity(-123456789)
+                chat = await client.get_input_entity(-123456789)
         """
         # Short-circuit if the input parameter directly maps to an InputPeer
         try:
@@ -444,7 +445,7 @@ class UserMethods:
         Example
             .. code-block:: python
 
-                print(client.get_peer_id('me'))
+                print(await client.get_peer_id('me'))
         """
         if isinstance(peer, int):
             return utils.get_peer_id(peer, add_mark=add_mark)

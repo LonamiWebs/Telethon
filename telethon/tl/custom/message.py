@@ -762,7 +762,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 >>> # [button1] [button2]
                 >>> # [     button3     ]
                 >>> # [button4] [button5]
-                >>> message.click(2)  # index
+                >>> await message.click(2)  # index
 
             j (`int`):
                 Clicks the button at position (i, j), these being the
@@ -772,7 +772,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 >>> # [button1] [button2]
                 >>> # [     button3     ]
                 >>> # [button4] [button5]
-                >>> message.click(0, 1)  # (row, column)
+                >>> await message.click(0, 1)  # (row, column)
 
                 This is equivalent to ``message.buttons[0][1].click()``.
 
@@ -799,16 +799,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 .. code-block:: python
 
                     # Click the first button
-                    message.click(0)
+                    await message.click(0)
 
                     # Click some row/column
-                    message.click(row, column)
+                    await message.click(row, column)
 
                     # Click by text
-                    message.click(text='👍')
+                    await message.click(text='👍')
 
                     # Click by data
-                    message.click(data=b'payload')
+                    await message.click(data=b'payload')
         """
         if not self._client:
             return

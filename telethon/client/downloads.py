@@ -196,7 +196,7 @@ class DownloadMethods:
             .. code-block:: python
 
                 # Download your own profile photo
-                path = client.download_profile_photo('me')
+                path = await client.download_profile_photo('me')
                 print(path)
         """
         # hex(crc32(x.encode('ascii'))) for x in
@@ -322,11 +322,11 @@ class DownloadMethods:
         Example
             .. code-block:: python
 
-                path = client.download_media(message)
-                client.download_media(message, filename)
+                path = await client.download_media(message)
+                await client.download_media(message, filename)
                 # or
-                path = message.download_media()
-                message.download_media(filename)
+                path = await message.download_media()
+                await message.download_media(filename)
         """
         # TODO This won't work for messageService
         if isinstance(message, types.Message):
@@ -406,7 +406,7 @@ class DownloadMethods:
             .. code-block:: python
 
                 # Download a file and print its header
-                data = client.download_file(input_file, bytes)
+                data = await client.download_file(input_file, bytes)
                 print(data[:16])
         """
         if not part_size_kb:
@@ -531,11 +531,14 @@ class DownloadMethods:
                 # Streaming `media` to an output file
                 # After the iteration ends, the sender is cleaned up
                 with open('photo.jpg', 'wb') as fd:
-                    for chunk client.iter_download(media):
+                    async for chunk client.iter_download(media):
                         fd.write(chunk)
 
                 # Fetching only the header of a file (32 bytes)
                 # You should manually close the iterator in this case.
+                #
+                # telethon.sync must be imported for this to work,
+                # and you must not be inside an "async def".
                 stream = client.iter_download(media, request_size=32)
                 header = next(stream)
                 stream.close()

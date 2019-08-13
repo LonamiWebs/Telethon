@@ -102,33 +102,35 @@ you're able to just do this:
 
 .. code-block:: python
 
+    # (These examples assume you are inside an "async def")
+    #
     # Dialogs are the "conversations you have open".
     # This method returns a list of Dialog, which
     # has the .entity attribute and other information.
     #
     # This part is IMPORTANT, because it feels the entity cache.
-    dialogs = client.get_dialogs()
+    dialogs = await client.get_dialogs()
 
     # All of these work and do the same.
-    lonami = client.get_entity('lonami')
-    lonami = client.get_entity('t.me/lonami')
-    lonami = client.get_entity('https://telegram.dog/lonami')
+    lonami = await client.get_entity('lonami')
+    lonami = await client.get_entity('t.me/lonami')
+    lonami = await client.get_entity('https://telegram.dog/lonami')
 
     # Other kind of entities.
-    channel = client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
-    contact = client.get_entity('+34xxxxxxxxx')
-    friend  = client.get_entity(friend_id)
+    channel = await client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
+    contact = await client.get_entity('+34xxxxxxxxx')
+    friend  = await client.get_entity(friend_id)
 
     # Getting entities through their ID (User, Chat or Channel)
-    entity = client.get_entity(some_id)
+    entity = await client.get_entity(some_id)
 
     # You can be more explicit about the type for said ID by wrapping
     # it inside a Peer instance. This is recommended but not necessary.
     from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 
-    my_user    = client.get_entity(PeerUser(some_id))
-    my_chat    = client.get_entity(PeerChat(some_id))
-    my_channel = client.get_entity(PeerChannel(some_id))
+    my_user    = await client.get_entity(PeerUser(some_id))
+    my_chat    = await client.get_entity(PeerChat(some_id))
+    my_channel = await client.get_entity(PeerChannel(some_id))
 
 
 .. note::
@@ -212,7 +214,7 @@ wherever needed, so you can even do things like:
 
 .. code-block:: python
 
-    client(SendMessageRequest('username', 'hello'))
+    await client(SendMessageRequest('username', 'hello'))
 
 The library will call the ``.resolve()`` method of the request, which will
 resolve ``'username'`` with the appropriated :tl:`InputPeer`. Don't worry if
@@ -258,7 +260,7 @@ That means you can do this:
 
     message.is_private
     message.chat_id
-    message.get_chat()
+    await message.get_chat()
     # ...etc
 
 `SenderGetter <telethon.tl.custom.sendergetter.SenderGetter>` is similar:
@@ -266,7 +268,7 @@ That means you can do this:
 .. code-block:: python
 
     message.user_id
-    message.get_input_user()
+    await message.get_input_user()
     message.user
     # ...etc
 
@@ -285,22 +287,25 @@ applications"? Now do the same with the library. Use what applies:
 
 .. code-block:: python
 
-    with client:
+    # (These examples assume you are inside an "async def")
+    async with client:
         # Does it have an username? Use it!
-        entity = client.get_entity(username)
+        entity = await client.get_entity(username)
 
         # Do you have a conversation open with them? Get dialogs.
-        client.get_dialogs()
+        await client.get_dialogs()
 
         # Are they participant of some group? Get them.
-        client.get_participants('TelethonChat')
+        await client.get_participants('TelethonChat')
 
         # Is the entity the original sender of a forwarded message? Get it.
-        client.get_messages('TelethonChat', 100)
+        await client.get_messages('TelethonChat', 100)
 
         # NOW you can use the ID, anywhere!
-        entity = client.get_entity(123456)
-        client.send_message(123456, 'Hi!')
+        await client.send_message(123456, 'Hi!')
+
+        entity = await client.get_entity(123456)
+        print(entity)
 
 Once the library has "seen" the entity, you can use their **integer** ID.
 You can't use entities from IDs the library hasn't seen. You must make the

@@ -89,10 +89,10 @@ class AuthMethods:
                 client = TelegramClient('anon', api_id, api_hash)
 
                 # Starting as a bot account
-                client.start(bot_token=bot_token)
+                await client.start(bot_token=bot_token)
 
                 # Starting as an user account
-                client.start(phone)
+                await client.start(phone)
                 # Please enter the code you received: 12345
                 # Please enter your password: *******
                 # (You are now logged in)
@@ -306,10 +306,10 @@ class AuthMethods:
             .. code-block:: python
 
                 phone = '+34 123 123 123'
-                client.sign_in(phone)  # send code
+                await client.sign_in(phone)  # send code
 
                 code = input('enter code: ')
-                client.sign_in(phone, code)
+                await client.sign_in(phone, code)
         """
         me = await self.get_me()
         if me:
@@ -388,10 +388,10 @@ class AuthMethods:
             .. code-block:: python
 
                 phone = '+34 123 123 123'
-                client.send_code_request(phone)
+                await client.send_code_request(phone)
 
                 code = input('enter code: ')
-                client.sign_up(code, first_name='Anna', last_name='Banana')
+                await client.sign_up(code, first_name='Anna', last_name='Banana')
         """
         me = await self.get_me()
         if me:
@@ -456,7 +456,7 @@ class AuthMethods:
             .. code-block:: python
 
                 phone = '+34 123 123 123'
-                sent = client.send_code_request(phone)
+                sent = await client.send_code_request(phone)
                 print(sent)
 
                 if sent.phone_registered:
@@ -501,7 +501,7 @@ class AuthMethods:
             .. code-block:: python
 
                 # Note: you will need to login again!
-                client.log_out()
+                await client.log_out()
         """
         try:
             await self(functions.auth.LogOutRequest())
@@ -573,10 +573,10 @@ class AuthMethods:
             .. code-block:: python
 
                 # Setting a password for your account which didn't have
-                client.edit_2fa(new_password='I_<3_Telethon')
+                await client.edit_2fa(new_password='I_<3_Telethon')
 
                 # Removing the password
-                client.edit_2fa(current_password='I_<3_Telethon')
+                await client.edit_2fa(current_password='I_<3_Telethon')
         """
         if new_password is None and current_password is None:
             return False

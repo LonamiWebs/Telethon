@@ -167,7 +167,7 @@ class TotalList(list):
             # Telethon returns these lists in some cases (for example,
             # only when a chunk is returned, but the "total" count
             # is available).
-            result = client.get_messages(chat, limit=10)
+            result = await client.get_messages(chat, limit=10)
 
             print(result.total)  # large number
             print(len(result))  # 10

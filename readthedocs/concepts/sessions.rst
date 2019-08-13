@@ -154,7 +154,7 @@ you can save it in a variable directly:
 
     string = '1aaNk8EX-YRfwoRsebUkugFvht6DUPi_Q25UOCzOAqzc...'
     with TelegramClient(StringSession(string), api_id, api_hash) as client:
-        client.send_message('me', 'Hi')
+        client.loop.run_until_complete(client.send_message('me', 'Hi'))
 
 
 These strings are really convenient for using in places like Heroku since

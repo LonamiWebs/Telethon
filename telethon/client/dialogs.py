@@ -205,7 +205,7 @@ class DialogMethods:
             .. code-block:: python
 
                 # Print all dialog IDs and the title, nicely formatted
-                for dialog in client.iter_dialogs():
+                async for dialog in client.iter_dialogs():
                     print('{:>14}: {}'.format(dialog.id, dialog.title))
         """
         if archived is not None:
@@ -231,20 +231,20 @@ class DialogMethods:
             .. code-block:: python
 
                 # Get all open conversation, print the title of the first
-                dialogs = client.get_dialogs()
+                dialogs = await client.get_dialogs()
                 first = dialogs[0]
                 print(first.title)
 
                 # Use the dialog somewhere else
-                client.send_message(first, 'hi')
+                await client.send_message(first, 'hi')
 
                 # Getting only non-archived dialogs (both equivalent)
-                non_archived = client.get_dialogs(folder=0)
-                non_archived = client.get_dialogs(archived=False)
+                non_archived = await client.get_dialogs(folder=0)
+                non_archived = await client.get_dialogs(archived=False)
 
                 # Getting only archived dialogs (both equivalent)
-                archived = client.get_dialogs(folder=1)
-                non_archived = client.get_dialogs(archived=True)
+                archived = await client.get_dialogs(folder=1)
+                non_archived = await client.get_dialogs(archived=True)
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
 
@@ -269,11 +269,11 @@ class DialogMethods:
             .. code-block:: python
 
                 # Clear all drafts
-                for draft in client.get_drafts():
-                    draft.delete()
+                async for draft in client.get_drafts():
+                    await draft.delete()
 
                 # Getting the drafts with 'bot1' and 'bot2'
-                for draft in client.iter_drafts(['bot1', 'bot2']):
+                async for draft in client.iter_drafts(['bot1', 'bot2']):
                     print(draft.text)
         """
         if entity and not utils.is_list_like(entity):
@@ -293,11 +293,11 @@ class DialogMethods:
             .. code-block:: python
 
                 # Get drafts, print the text of the first
-                drafts = client.get_drafts()
+                drafts = await client.get_drafts()
                 print(drafts[0].text)
 
                 # Get the draft in your chat
-                draft = client.get_drafts('me')
+                draft = await client.get_drafts('me')
                 print(drafts.text)
         """
         items = await self.iter_drafts(entity).collect()
@@ -350,18 +350,18 @@ class DialogMethods:
             .. code-block:: python
 
                 # Archiving the first 5 dialogs
-                dialogs = client.get_dialogs(5)
-                client.edit_folder(dialogs, 1)
+                dialogs = await client.get_dialogs(5)
+                await client.edit_folder(dialogs, 1)
 
                 # Un-archiving the third dialog (archiving to folder 0)
-                client.edit_folder(dialog[2], 0)
+                await client.edit_folder(dialog[2], 0)
 
                 # Moving the first dialog to folder 0 and the second to 1
-                dialogs = client.get_dialogs(2)
-                client.edit_folder(dialogs, [0, 1])
+                dialogs = await client.get_dialogs(2)
+                await client.edit_folder(dialogs, [0, 1])
 
                 # Un-archiving all dialogs
-                client.archive(unpack=1)
+                await client.archive(unpack=1)
         """
         if (entity is None) == (unpack is None):
             raise ValueError('You can only set either entities or unpack, not both')
@@ -419,11 +419,11 @@ class DialogMethods:
             .. code-block:: python
 
                 # Deleting the first dialog
-                dialogs = client.get_dialogs(5)
-                client.delete_dialog(dialogs[0])
+                dialogs = await client.get_dialogs(5)
+                await client.delete_dialog(dialogs[0])
 
                 # Leaving a channel by username
-                client.delete_dialog('username')
+                await client.delete_dialog('username')
         """
         entity = await self.get_input_entity(entity)
         if isinstance(entity, types.InputPeerChannel):

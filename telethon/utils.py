@@ -1177,14 +1177,14 @@ def encode_waveform(waveform):
             file = 'my.ogg'
 
             # Send 'my.ogg' with a ascending-triangle waveform
-            client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
+            await client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
                 duration=7,
                 voice=True,
                 waveform=utils.encode_waveform(bytes(range(2 ** 5))  # 2**5 because 5-bit
             )]
 
             # Send 'my.ogg' with a square waveform
-            client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
+            await client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
                 duration=7,
                 voice=True,
                 waveform=utils.encode_waveform(bytes((31, 31, 15, 15, 15, 15, 31, 31)) * 4)

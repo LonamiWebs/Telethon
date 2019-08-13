@@ -96,8 +96,12 @@ Instead of this:
 
 .. code-block:: python
 
+    me = client.loop.run_until_complete(client.get_me())
+    print(me.username)
+
+    # or, using asyncio's default loop (it's the same)
     import asyncio
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()  # == client.loop
     me = loop.run_until_complete(client.get_me())
     print(me.username)
 

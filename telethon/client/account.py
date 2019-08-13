@@ -190,11 +190,11 @@ class AccountMethods:
                 from telethon import errors
 
                 try:
-                    with client.takeout() as takeout:
-                        client.get_messages('me')  # normal call
-                        takeout.get_messages('me')  # wrapped through takeout (less limits)
+                    async with client.takeout() as takeout:
+                        await client.get_messages('me')  # normal call
+                        await takeout.get_messages('me')  # wrapped through takeout (less limits)
 
-                        for message in takeout.iter_messages(chat, wait_time=0):
+                        async for message in takeout.iter_messages(chat, wait_time=0):
                             ...  # Do something with the message
 
                 except errors.TakeoutInitDelayError as e:
@@ -233,7 +233,7 @@ class AccountMethods:
         Example
             .. code-block:: python
 
-                client.end_takeout(success=False)
+                await client.end_takeout(success=False)
         """
         try:
             async with _TakeoutClient(True, self, None) as takeout:

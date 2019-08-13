@@ -401,7 +401,7 @@ class TelegramBaseClient(abc.ABC):
             .. code-block:: python
 
                 try:
-                    client.connect()
+                    await client.connect()
                 except OSError:
                     print('Failed to connect')
         """
@@ -451,7 +451,7 @@ class TelegramBaseClient(abc.ABC):
             .. code-block:: python
 
                 # You don't need to use this if you used "with client"
-                client.disconnect()
+                await client.disconnect()
         """
         if self._loop.is_running():
             return self._disconnect_coro()

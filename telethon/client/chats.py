@@ -406,16 +406,16 @@ class ChatMethods:
             .. code-block:: python
 
                 # Show all user IDs in a chat
-                for user in client.iter_participants(chat):
+                async for user in client.iter_participants(chat):
                     print(user.id)
 
                 # Search by name
-                for user in client.iter_participants(chat, search='name'):
+                async for user in client.iter_participants(chat, search='name'):
                     print(user.username)
 
                 # Filter by admins
                 from telethon.tl.types import ChannelParticipantsAdmins
-                for user in client.iter_participants(chat, filter=ChannelParticipantsAdmins):
+                async for user in client.iter_participants(chat, filter=ChannelParticipantsAdmins):
                     print(user.first_name)
         """
         return _ParticipantsIter(
@@ -438,7 +438,7 @@ class ChatMethods:
         Example
             .. code-block:: python
 
-                users = client.get_participants(chat)
+                users = await client.get_participants(chat)
                 print(users[0].first_name)
 
                 for user in users:
@@ -562,7 +562,7 @@ class ChatMethods:
         Example
             .. code-block:: python
 
-                for event in client.iter_admin_log(channel):
+                async for event in client.iter_admin_log(channel):
                     if event.changed_title:
                         print('The title changed from', event.old, 'to', event.new)
         """
@@ -601,7 +601,7 @@ class ChatMethods:
             .. code-block:: python
 
                 # Get a list of deleted message events which said "heck"
-                events = client.get_admin_log(channel, search='heck', delete=True)
+                events = await client.get_admin_log(channel, search='heck', delete=True)
 
                 # Print the old message before it was deleted
                 print(events[0].old)
@@ -643,8 +643,8 @@ class ChatMethods:
             .. code-block:: python
 
                 # Download all the profile photos of some user
-                for photo in client.iter_profile_photos(user):
-                    client.download_media(photo)
+                async for photo in client.iter_profile_photos(user):
+                    await client.download_media(photo)
         """
         return _ProfilePhotoIter(
             self,
@@ -666,10 +666,10 @@ class ChatMethods:
             .. code-block:: python
 
                 # Get the photos of a channel
-                photos = client.get_profile_photos(channel)
+                photos = await client.get_profile_photos(channel)
 
                 # Download the oldest photo
-                client.download_media(photos[-1])
+                await client.download_media(photos[-1])
         """
         return await self.iter_profile_photos(*args, **kwargs).collect()
 
@@ -746,7 +746,7 @@ class ChatMethods:
 
                 # Upload a document, showing its progress (most clients ignore this)
                 async with client.action(chat, 'document') as action:
-                    client.send_file(chat, zip_file, progress_callback=action.progress)
+                    await client.send_file(chat, zip_file, progress_callback=action.progress)
         """
         if isinstance(action, str):
             try:
@@ -841,10 +841,10 @@ class ChatMethods:
             .. code-block:: python
 
                 # Allowing `user` to pin messages in `chat`
-                client.edit_admin(chat, user, pin_messages=True)
+                await client.edit_admin(chat, user, pin_messages=True)
 
                 # Granting all permissions except for `add_admins`
-                client.edit_admin(chat, user, is_admin=True, add_admins=False)
+                await client.edit_admin(chat, user, is_admin=True, add_admins=False)
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
@@ -978,15 +978,15 @@ class ChatMethods:
                 from datetime import timedelta
 
                 # Banning `user` from `chat` for 1 minute
-                client.edit_permissions(chat, user, timedelta(minutes=1),
-                                       view_messages=False)
+                await client.edit_permissions(chat, user, timedelta(minutes=1),
+                                              view_messages=False)
 
                 # Banning `user` from `chat` forever
-                client.edit_permissions(chat, user, view_messages=False)
+                await client.edit_permissions(chat, user, view_messages=False)
 
                 # Kicking someone (ban + un-ban)
-                client.edit_permissions(chat, user, view_messages=False)
-                client.edit_permissions(chat, user)
+                await client.edit_permissions(chat, user, view_messages=False)
+                await client.edit_permissions(chat, user)
         """
         entity = await self.get_input_entity(entity)
         if not isinstance(entity, types.InputPeerChannel):
@@ -1053,10 +1053,10 @@ class ChatMethods:
             .. code-block:: python
 
                 # Kick some user from some chat
-                client.kick_participant(chat, user)
+                await client.kick_participant(chat, user)
 
                 # Leaving chat
-                client.kick_participant(chat, 'me')
+                await client.kick_participant(chat, 'me')
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)

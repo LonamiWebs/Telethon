@@ -50,7 +50,7 @@ And except them as such:
 .. code-block:: python
 
     try:
-        client.send_message(chat, 'Hi')
+        await client.send_message(chat, 'Hi')
     except errors.FloodWaitError as e:
         # e.seconds is how many seconds you have
         # to wait before making the request again.
@@ -98,11 +98,11 @@ This is basic Python knowledge. You should use the dot operator:
 
 .. code-block:: python
 
-    me = client.get_me()
+    me = await client.get_me()
     print(me.username)
     #       ^ we used the dot operator to access the username attribute
 
-    result = client(functions.photos.GetUserPhotosRequest(
+    result = await client(functions.photos.GetUserPhotosRequest(
         user_id='me',
         offset=0,
         max_id=0,

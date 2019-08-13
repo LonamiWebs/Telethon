@@ -35,7 +35,7 @@ class ButtonMethods:
                 from telethon import Button
 
                 markup = client.build_reply_markup(Button.inline('hi'))
-                client.send_message('click me', buttons=markup)
+                await client.send_message('click me', buttons=markup)
         """
         if buttons is None:
             return None

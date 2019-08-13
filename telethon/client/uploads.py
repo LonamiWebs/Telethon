@@ -237,22 +237,22 @@ class UploadMethods:
             .. code-block:: python
 
                 # Normal files like photos
-                client.send_file(chat, '/my/photos/me.jpg', caption="It's me!")
+                await client.send_file(chat, '/my/photos/me.jpg', caption="It's me!")
                 # or
-                client.send_message(chat, "It's me!", file='/my/photos/me.jpg')
+                await client.send_message(chat, "It's me!", file='/my/photos/me.jpg')
 
                 # Voice notes or round videos
-                client.send_file(chat, '/my/songs/song.mp3', voice_note=True)
-                client.send_file(chat, '/my/videos/video.mp4', video_note=True)
+                await client.send_file(chat, '/my/songs/song.mp3', voice_note=True)
+                await client.send_file(chat, '/my/videos/video.mp4', video_note=True)
 
                 # Custom thumbnails
-                client.send_file(chat, '/my/documents/doc.txt', thumb='photo.jpg')
+                await client.send_file(chat, '/my/documents/doc.txt', thumb='photo.jpg')
 
                 # Only documents
-                client.send_file(chat, '/my/photos/photo.png', force_document=True)
+                await client.send_file(chat, '/my/photos/photo.png', force_document=True)
 
                 # Albums
-                client.send_file(chat, [
+                await client.send_file(chat, [
                     '/my/photos/holiday1.jpg',
                     '/my/photos/holiday2.jpg',
                     '/my/drawings/portrait.png'
@@ -467,17 +467,17 @@ class UploadMethods:
             .. code-block:: python
 
                 # Photos as photo and document
-                file = client.upload_file('photo.jpg')
-                client.send_file(chat, file)                       # sends as photo
-                client.send_file(chat, file, force_document=True)  # sends as document
+                file = await client.upload_file('photo.jpg')
+                await client.send_file(chat, file)                       # sends as photo
+                await client.send_file(chat, file, force_document=True)  # sends as document
 
                 file.name = 'not a photo.jpg'
-                client.send_file(chat, file, force_document=True)  # document, new name
+                await client.send_file(chat, file, force_document=True)  # document, new name
 
                 # As song or as voice note
-                file = client.upload_file('song.ogg')
-                client.send_file(chat, file)                   # sends as song
-                client.send_file(chat, file, voice_note=True)  # sends as voice note
+                file = await client.upload_file('song.ogg')
+                await client.send_file(chat, file)                   # sends as song
+                await client.send_file(chat, file, voice_note=True)  # sends as voice note
         """
         if isinstance(file, (types.InputFile, types.InputFileBig)):
             return file  # Already uploaded

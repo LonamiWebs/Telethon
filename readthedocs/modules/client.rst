@@ -14,15 +14,16 @@ Each mixin has its own methods, which you all can use.
 
 .. code-block:: python
 
-    import asyncio
     from telethon import TelegramClient
 
+    client = TelegramClient(name, api_id, api_hash)
+
     async def main():
-        client = await TelegramClient(name, api_id, api_hash).start()
         # Now you can use all client methods listed below, like for example...
         await client.send_message('me', 'Hello to myself!')
 
-    asyncio.get_event_loop().run_until_complete(main())
+    with client:
+        client.loop.run_until_complete(main())
 
 
 You **don't** need to import these `AuthMethods`, `MessageMethods`, etc.

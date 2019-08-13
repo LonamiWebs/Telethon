@@ -27,11 +27,11 @@ to, you can make use of the :tl:`JoinChannelRequest` to join such channel:
 .. code-block:: python
 
     from telethon.tl.functions.channels import JoinChannelRequest
-    client(JoinChannelRequest(channel))
+    await client(JoinChannelRequest(channel))
 
     # In the same way, you can also leave such channel
     from telethon.tl.functions.channels import LeaveChannelRequest
-    client(LeaveChannelRequest(input_channel))
+    await client(LeaveChannelRequest(input_channel))
 
 
 For more on channels, check the `channels namespace`__.
@@ -53,7 +53,7 @@ example, is the ``hash`` of the chat or channel. Now you can use
 .. code-block:: python
 
     from telethon.tl.functions.messages import ImportChatInviteRequest
-    updates = client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
+    updates = await client(ImportChatInviteRequest('AAAAAEHbEkejzxUjAUCfYg'))
 
 
 Adding someone else to such chat or channel
@@ -70,7 +70,7 @@ use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
 
     # Note that ``user_to_add`` is NOT the name of the parameter.
     # It's the user you want to add (``user_id=user_to_add``).
-    client(AddChatUserRequest(
+    await client(AddChatUserRequest(
         chat_id,
         user_to_add,
         fwd_limit=10  # Allow the user to see the 10 last messages
@@ -79,7 +79,7 @@ use is very straightforward, or :tl:`InviteToChannelRequest` for channels:
     # For channels (which includes megagroups)
     from telethon.tl.functions.channels import InviteToChannelRequest
 
-    client(InviteToChannelRequest(
+    await client(InviteToChannelRequest(
         channel,
         [users_to_add]
     ))
@@ -127,7 +127,7 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
     #     )
 
     # Once you have a ChatAdminRights, invoke it
-    client(EditAdminRequest(channel, user, rights))
+    await client(EditAdminRequest(channel, user, rights))
 
     # User will now be able to change group info, delete other people's
     # messages and pin messages.
@@ -135,7 +135,7 @@ Giving or revoking admin permissions can be done with the :tl:`EditAdminRequest`
     # In a normal chat, you should do this instead:
     from telethon.tl.functions.messages import EditChatAdminRequest
 
-    client(EditChatAdminRequest(chat_id, user, is_admin=True))
+    await client(EditChatAdminRequest(chat_id, user, is_admin=True))
 
 
 
@@ -192,7 +192,7 @@ banned rights of a user through :tl:`EditBannedRequest` and its parameter
         embed_links=True
     )
 
-    client(EditBannedRequest(channel, user, rights))
+    await client(EditBannedRequest(channel, user, rights))
 
 
 You can use a `datetime.datetime` object for ``until_date=``,
@@ -214,7 +214,7 @@ is enough:
     from telethon.tl.functions.channels import EditBannedRequest
     from telethon.tl.types import ChatBannedRights
 
-    client(EditBannedRequest(
+    await client(EditBannedRequest(
         channel, user, ChatBannedRights(
             until_date=None,
             view_messages=True
@@ -240,7 +240,7 @@ use :tl:`GetMessagesViewsRequest`, setting ``increment=True``:
     # Obtain `channel' through dialogs or through client.get_entity() or anyhow.
     # Obtain `msg_ids' through `.get_messages()` or anyhow. Must be a list.
 
-    client(GetMessagesViewsRequest(
+    await client(GetMessagesViewsRequest(
         peer=channel,
         id=msg_ids,
         increment=True

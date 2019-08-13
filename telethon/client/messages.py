@@ -421,24 +421,24 @@ class MessageMethods:
             .. code-block:: python
 
                 # From most-recent to oldest
-                for message in client.iter_messages(chat):
+                async for message in client.iter_messages(chat):
                     print(message.id, message.text)
 
                 # From oldest to most-recent
-                for message in client.iter_messages(chat, reverse=True):
+                async for message in client.iter_messages(chat, reverse=True):
                     print(message.id, message.text)
 
                 # Filter by sender
-                for message in client.iter_messages(chat, from_user='me'):
+                async for message in client.iter_messages(chat, from_user='me'):
                     print(message.text)
 
                 # Server-side search with fuzzy text
-                for message in client.iter_messages(chat, search='hello'):
+                async for message in client.iter_messages(chat, search='hello'):
                     print(message.id)
 
                 # Filter by message type:
                 from telethon.tl.types import InputMessagesFilterPhotos
-                for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
+                async for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
                     print(message.photo)
         """
         if ids is not None:
@@ -482,14 +482,14 @@ class MessageMethods:
 
                 # Get 0 photos and print the total to show how many photos there are
                 from telethon.tl.types import InputMessagesFilterPhotos
-                photos = client.get_messages(chat, 0, filter=InputMessagesFilterPhotos)
+                photos = await client.get_messages(chat, 0, filter=InputMessagesFilterPhotos)
                 print(photos.total)
 
                 # Get all the photos
-                photos = client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
+                photos = await client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
 
                 # Get messages by ID:
-                message_1337 = client.get_messages(chats, ids=1337)
+                message_1337 = await client.get_messages(chats, ids=1337)
         """
         if len(args) == 1 and 'limit' not in kwargs:
             if 'min_id' in kwargs and 'max_id' in kwargs:
@@ -605,25 +605,25 @@ class MessageMethods:
             .. code-block:: python
 
                 # Markdown is the default
-                client.send_message('lonami', 'Thanks for the **Telethon** library!')
+                await client.send_message('lonami', 'Thanks for the **Telethon** library!')
 
                 # Default to another parse mode
                 client.parse_mode = 'html'
 
-                client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
-                client.send_message('me', 'An <a href="https://example.com">URL</a>')
+                await client.send_message('me', 'Some <b>bold</b> and <i>italic</i> text')
+                await client.send_message('me', 'An <a href="https://example.com">URL</a>')
                 # code and pre tags also work, but those break the documentation :)
-                client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
+                await client.send_message('me', '<a href="tg://user?id=me">Mentions</a>')
 
                 # Explicit parse mode
                 # No parse mode by default
                 client.parse_mode = None
 
                 # ...but here I want markdown
-                client.send_message('me', 'Hello, **world**!', parse_mode='md')
+                await client.send_message('me', 'Hello, **world**!', parse_mode='md')
 
                 # ...and here I need HTML
-                client.send_message('me', 'Hello, <i>world</i>!', parse_mode='html')
+                await client.send_message('me', 'Hello, <i>world</i>!', parse_mode='html')
 
                 # If you logged in as a bot account, you can send buttons
                 from telethon import events, Button
@@ -633,25 +633,25 @@ class MessageMethods:
                     await event.edit('Thank you for clicking {}!'.format(event.data))
 
                 # Single inline button
-                client.send_message(chat, 'A single button, with "clk1" as data',
-                                    buttons=Button.inline('Click me', b'clk1'))
+                await client.send_message(chat, 'A single button, with "clk1" as data',
+                                          buttons=Button.inline('Click me', b'clk1'))
 
                 # Matrix of inline buttons
-                client.send_message(chat, 'Pick one from this grid', buttons=[
+                await client.send_message(chat, 'Pick one from this grid', buttons=[
                     [Button.inline('Left'), Button.inline('Right')],
                     [Button.url('Check this site!', 'https://lonamiwebs.github.io')]
                 ])
 
                 # Reply keyboard
-                client.send_message(chat, 'Welcome', buttons=[
+                await client.send_message(chat, 'Welcome', buttons=[
                     Button.text('Thanks!', resize=True, single_use=True),
                     Button.request_phone('Send phone'),
                     Button.request_location('Send location')
                 ])
 
                 # Forcing replies or clearing buttons.
-                client.send_message(chat, 'Reply to me', buttons=Button.force_reply())
-                client.send_message(chat, 'Bye Keyboard!', buttons=Button.clear())
+                await client.send_message(chat, 'Reply to me', buttons=Button.force_reply())
+                await client.send_message(chat, 'Bye Keyboard!', buttons=Button.clear())
         """
         if file is not None:
             return await self.send_file(
@@ -788,19 +788,19 @@ class MessageMethods:
             .. code-block:: python
 
                 # a single one
-                client.forward_messages(chat, message)
+                await client.forward_messages(chat, message)
                 # or
-                client.forward_messages(chat, message_id, from_chat)
+                await client.forward_messages(chat, message_id, from_chat)
                 # or
-                message.forward_to(chat)
+                await message.forward_to(chat)
 
                 # multiple
-                client.forward_messages(chat, messages)
+                await client.forward_messages(chat, messages)
                 # or
-                client.forward_messages(chat, message_ids, from_chat)
+                await client.forward_messages(chat, message_ids, from_chat)
 
                 # Forwarding as a copy
-                client.send_message(chat, message)
+                await client.send_message(chat, message)
         """
         single = not utils.is_list_like(messages)
         if single:
@@ -945,13 +945,13 @@ class MessageMethods:
         Example
             .. code-block:: python
 
-                message = client.send_message(chat, 'hello')
+                message = await client.send_message(chat, 'hello')
 
-                client.edit_message(chat, message, 'hello!')
+                await client.edit_message(chat, message, 'hello!')
                 # or
-                client.edit_message(chat, message.id, 'hello!!')
+                await client.edit_message(chat, message.id, 'hello!!')
                 # or
-                client.edit_message(message, 'hello!!!')
+                await client.edit_message(message, 'hello!!!')
         """
         if isinstance(entity, types.InputBotInlineMessageID):
             text = message
@@ -1036,7 +1036,7 @@ class MessageMethods:
         Example
             .. code-block:: python
 
-                client.delete_messages(chat, messages)
+                await client.delete_messages(chat, messages)
         """
         if not utils.is_list_like(message_ids):
             message_ids = (message_ids,)
@@ -1097,11 +1097,11 @@ class MessageMethods:
             .. code-block:: python
 
                 # using a Message object
-                client.send_read_acknowledge(chat, message)
+                await client.send_read_acknowledge(chat, message)
                 # ...or using the int ID of a Message
-                client.send_read_acknowledge(chat, message_id)
+                await client.send_read_acknowledge(chat, message_id)
                 # ...or passing a list of messages to mark as read
-                client.send_read_acknowledge(chat, messages)
+                await client.send_read_acknowledge(chat, messages)
         """
         if max_id is None:
             if not message:
@@ -1158,8 +1158,8 @@ class MessageMethods:
             .. code-block:: python
 
                 # Send and pin a message to annoy everyone
-                message = client.send_message(chat, 'Pinotifying is fun!')
-                client.pin_message(chat, message, notify=True)
+                message = await client.send_message(chat, 'Pinotifying is fun!')
+                await client.pin_message(chat, message, notify=True)
         """
         if not message:
             message = 0

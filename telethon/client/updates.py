@@ -59,7 +59,7 @@ class UpdateMethods:
                 #
                 # You will still receive updates, since this prevents the
                 # script from exiting.
-                client.run_until_disconnected()
+                await client.run_until_disconnected()
         """
         if self.loop.is_running():
             return self._run_until_disconnected()
@@ -218,7 +218,7 @@ class UpdateMethods:
         Example
             .. code-block:: python
 
-                client.catch_up()
+                await client.catch_up()
         """
         pts, date = self._state_cache[None]
         if not pts:

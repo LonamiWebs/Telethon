@@ -19,7 +19,8 @@ available in :ref:`telethon-errors`, but some examples are:
        from telethon import errors
 
        try:
-           print(client.get_messages(chat)[0].text)
+           messages = await client.get_messages(chat)
+           print(messages[0].text)
        except errors.FloodWaitError as e:
            print('Have to sleep', e.seconds, 'seconds')
            time.sleep(e.seconds)
