@@ -781,7 +781,8 @@ class ChatMethods:
             invite_users: bool = None,
             pin_messages: bool = None,
             add_admins: bool = None,
-            is_admin: bool = None) -> types.Updates:
+            is_admin: bool = None,
+            title: str = None) -> types.Updates:
         """
         Edits admin permissions for someone in a chat.
 
@@ -834,6 +835,14 @@ class ChatMethods:
                 Essentially, only passing ``is_admin=True`` will grant all
                 permissions, but you can still disable those you need.
 
+            title (`str`, optional):
+                The custom title (also known as "rank") to show for this admin.
+                This text will be shown instead of the "admin" badge.
+                This will only work in channels and megagroups.
+
+                When left unspecified or empty, the default localized "admin"
+                badge will be shown.
+
         Returns
             The resulting :tl:`Updates` object.
 
@@ -866,7 +875,7 @@ class ChatMethods:
                 # This essentially makes `is_admin` be the default value.
                 name: perms[name] if perms[name] is not None else is_admin
                 for name in perm_names
-            })))
+            }), rank=title or ''))
 
         elif isinstance(entity, types.InputPeerChat):
             # If the user passed any permission in a small

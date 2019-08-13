@@ -4,6 +4,8 @@ ACCESS_TOKEN_EXPIRED,400,Bot token expired
 ACCESS_TOKEN_INVALID,400,The provided token is not valid
 ACTIVE_USER_REQUIRED,401,The method is only available to already activated users
 ADMINS_TOO_MUCH,400,Too many admins
+ADMIN_RANK_EMOJI_NOT_ALLOWED,400,Emoji are not allowed in admin titles or ranks
+ADMIN_RANK_INVALID,400,The given admin title or rank was invalid (possibly larger than 16 characters)
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
