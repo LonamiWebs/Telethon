@@ -4,7 +4,6 @@ import time
 
 from .chatgetter import ChatGetter
 from ... import helpers, utils, errors
-from ...events.common import EventCommon
 
 # Sometimes the edits arrive very fast (within the same second).
 # In that case we add a small delta so that the age is older, for
@@ -112,7 +111,7 @@ class Conversation(ChatGetter):
         return self._client.send_read_acknowledge(
             self._input_chat, max_id=message)
 
-    async def get_response(self, message=None, *, timeout=None):
+    def get_response(self, message=None, *, timeout=None):
         """
         Gets the next message that responds to a previous one.
 
@@ -125,16 +124,16 @@ class Conversation(ChatGetter):
                 If present, this `timeout` (in seconds) will override the
                 per-action timeout defined for the conversation.
         """
-        return await self._get_message(
+        return self._get_message(
             message, self._response_indices, self._pending_responses, timeout,
             lambda x, y: True
         )
 
-    async def get_reply(self, message=None, *, timeout=None):
+    def get_reply(self, message=None, *, timeout=None):
         """
         Gets the next message that explicitly replies to a previous one.
         """
-        return await self._get_message(
+        return self._get_message(
             message, self._reply_indices, self._pending_replies, timeout,
             lambda x, y: x.reply_to_msg_id == y
         )
@@ -200,7 +199,7 @@ class Conversation(ChatGetter):
         pending[target_id] = future
         return self._get_result(future, start_time, timeout, pending, target_id)
 
-    async def get_edit(self, message=None, *, timeout=None):
+    def get_edit(self, message=None, *, timeout=None):
         """
         Awaits for an edit after the last message to arrive.
         The arguments are the same as those for `get_response`.
@@ -226,9 +225,9 @@ class Conversation(ChatGetter):
         # Otherwise the next incoming response will be the one to use
         future = self._client.loop.create_future()
         self._pending_edits[target_id] = future
-        return await self._get_result(future, start_time, timeout, self._pending_edits, target_id)
+        return self._get_result(future, start_time, timeout, self._pending_edits, target_id)
 
-    async def wait_read(self, message=None, *, timeout=None):
+    def wait_read(self, message=None, *, timeout=None):
         """
         Awaits for the sent message to be marked as read. Note that
         receiving a response doesn't imply the message was read, and
@@ -245,7 +244,7 @@ class Conversation(ChatGetter):
             return
 
         self._pending_reads[target_id] = future
-        return await self._get_result(future, start_time, timeout, self._pending_reads, target_id)
+        return self._get_result(future, start_time, timeout, self._pending_reads, target_id)
 
     async def wait_event(self, event, *, timeout=None):
         """
@@ -363,7 +362,7 @@ class Conversation(ChatGetter):
         else:
             raise ValueError('No message was sent previously')
 
-    async def _get_result(self, future, start_time, timeout, pending, target_id):
+    def _get_result(self, future, start_time, timeout, pending, target_id):
         if self._cancelled:
             raise asyncio.CancelledError('The conversation was cancelled before')
 
@@ -379,7 +378,7 @@ class Conversation(ChatGetter):
         #       dispatch another update before, and in that case a
         #       response could be set twice. So responses must be
         #       cleared when their futures are set to a result.
-        return await asyncio.wait_for(
+        return asyncio.wait_for(
             future,
             timeout=None if due == float('inf') else due - time.time(),
             loop=self._client.loop

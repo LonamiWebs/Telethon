@@ -63,6 +63,10 @@ syncify(TelegramClient, _TakeoutClient, Draft, Dialog, MessageButton,
         ChatGetter, SenderGetter, Forward, Message, InlineResult, Conversation)
 
 
+# Private special case, since a conversation's methods return
+# futures (but the public function themselves are synchronous).
+_syncify_wrap(Conversation, '_get_result')
+
 __all__ = [
     'TelegramClient', 'Button',
     'types', 'functions', 'custom', 'errors',
