@@ -133,7 +133,7 @@ class AuthMethods:
         )
 
     async def _start(
-            self, phone, password, bot_token, force_sms,
+            self: 'TelegramClient', phone, password, bot_token, force_sms,
             code_callback, first_name, last_name, max_attempts):
         if not self.is_connected():
             await self.connect()
@@ -163,8 +163,8 @@ class AuthMethods:
         attempts = 0
         two_step_detected = False
 
-        sent_code = await self.send_code_request(phone, force_sms=force_sms)
-        sign_up = not sent_code.phone_registered
+        await self.send_code_request(phone, force_sms=force_sms)
+        sign_up = False  # assume login
         while attempts < max_attempts:
             try:
                 value = code_callback()
@@ -261,7 +261,7 @@ class AuthMethods:
             *,
             password: str = None,
             bot_token: str = None,
-            phone_code_hash: str = None) -> 'types.User':
+            phone_code_hash: str = None) -> 'typing.Union[types.User, types.auth.SentCode]':
         """
         Logs in to Telegram to an existing user or bot account.
 
@@ -323,23 +323,30 @@ class AuthMethods:
 
             # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
             # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-            result = await self(functions.auth.SignInRequest(
-                phone, phone_code_hash, str(code)))
+            request = functions.auth.SignInRequest(
+                phone, phone_code_hash, str(code)
+            )
         elif password:
             pwd = await self(functions.account.GetPasswordRequest())
-            result = await self(functions.auth.CheckPasswordRequest(
+            request = functions.auth.CheckPasswordRequest(
                 pwd_mod.compute_check(pwd, password)
-            ))
+            )
         elif bot_token:
-            result = await self(functions.auth.ImportBotAuthorizationRequest(
+            request = functions.auth.ImportBotAuthorizationRequest(
                 flags=0, bot_auth_token=bot_token,
                 api_id=self.api_id, api_hash=self.api_hash
-            ))
+            )
         else:
             raise ValueError(
                 'You must provide a phone and a code the first time, '
                 'and a password only if an RPCError was raised before.'
             )
+
+        result = await self(request)
+        if isinstance(result, types.auth.AuthorizationSignUpRequired):
+            # Emulate pre-layer 104 behaviour
+            self._tos = result.terms_of_service
+            raise errors.PhoneNumberUnoccupiedError(request=request)
 
         return self._on_login(result.user)
 
@@ -411,7 +418,6 @@ class AuthMethods:
         result = await self(functions.auth.SignUpRequest(
             phone_number=phone,
             phone_code_hash=phone_code_hash,
-            phone_code=str(code),
             first_name=first_name,
             last_name=last_name
         ))
@@ -475,7 +481,6 @@ class AuthMethods:
             except errors.AuthRestartError:
                 return await self.send_code_request(phone, force_sms=force_sms)
 
-            self._tos = result.terms_of_service
             self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
         else:
             force_sms = True
