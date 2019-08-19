@@ -573,7 +573,9 @@ class UploadMethods:
                     self._log[__name__].debug('Uploaded %d/%d',
                                               part_index + 1, part_count)
                     if progress_callback:
-                        progress_callback(stream.tell(), file_size)
+                        r = progress_callback(stream.tell(), file_size)
+                        if inspect.isawaitable(r):
+                            await r
                 else:
                     raise RuntimeError(
                         'Failed to upload file part {}.'.format(part_index))
