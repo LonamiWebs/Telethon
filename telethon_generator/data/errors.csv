@@ -205,6 +205,7 @@ RANDOM_ID_DUPLICATE,500,You provided a random ID that was already used
 RANDOM_ID_INVALID,400,A provided random ID is invalid
 RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
+REACTION_INVALID,400,Invalid reaction provided
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
@@ -216,6 +217,7 @@ RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SEARCH_QUERY_EMPTY,400,The search query is empty
+SECONDS_INVALID,400,Seconds invalid
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
