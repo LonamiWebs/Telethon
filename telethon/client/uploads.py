@@ -104,6 +104,7 @@ class UploadMethods:
             buttons: 'hints.MarkupLike' = None,
             silent: bool = None,
             supports_streaming: bool = False,
+            schedule: 'hints.DateLike' = None,
             **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
@@ -230,6 +231,11 @@ class UploadMethods:
                 these to MP4 before sending if you want them to be streamable.
                 Unsupported formats will result in ``VideoContentTypeError``.
 
+            schedule (`hints.DateLike`, optional):
+                If set, the file won't send immediately, and instead
+                it will be scheduled to be automatically sent at a later
+                time.
+
         Returns
             The `Message <telethon.tl.custom.message.Message>` (or messages)
             containing the sent file, or messages if a list of them was passed.
@@ -295,7 +301,7 @@ class UploadMethods:
                 result += await self._send_album(
                     entity, images[:10], caption=image_captions[:10],
                     progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode, silent=silent
+                    parse_mode=parse_mode, silent=silent, schedule=schedule
                 )
                 images = images[10:]
                 image_captions = image_captions[10:]
@@ -307,7 +313,7 @@ class UploadMethods:
                     progress_callback=progress_callback, reply_to=reply_to,
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, buttons=buttons, silent=silent,
-                    supports_streaming=supports_streaming,
+                    supports_streaming=supports_streaming, schedule=schedule,
                     **kwargs
                 ))
 
@@ -339,7 +345,8 @@ class UploadMethods:
         markup = self.build_reply_markup(buttons)
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
-            entities=msg_entities, reply_markup=markup, silent=silent
+            entities=msg_entities, reply_markup=markup, silent=silent,
+            schedule_date=schedule
         )
         msg = self._get_response_message(request, await self(request), entity)
         await self._cache_media(msg, file, file_handle, image=image)
@@ -348,7 +355,7 @@ class UploadMethods:
 
     async def _send_album(self: 'TelegramClient', entity, files, caption='',
                           progress_callback=None, reply_to=None,
-                          parse_mode=(), silent=None):
+                          parse_mode=(), silent=None, schedule=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -398,7 +405,8 @@ class UploadMethods:
 
         # Now we can construct the multi-media request
         result = await self(functions.messages.SendMultiMediaRequest(
-            entity, reply_to_msg_id=reply_to, multi_media=media, silent=silent
+            entity, reply_to_msg_id=reply_to, multi_media=media,
+            silent=silent, schedule_date=schedule
         ))
 
         # We never sent a `random_id` for the messages that resulted from

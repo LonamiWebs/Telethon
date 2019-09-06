@@ -123,6 +123,7 @@ class MessageParseMethods:
 
         random_to_id = {}
         id_to_message = {}
+        sched_to_message = {}  # scheduled IDs may collide with normal IDs
         for update in updates:
             if isinstance(update, types.UpdateMessageID):
                 random_to_id[update.random_id] = update.id
@@ -145,12 +146,30 @@ class MessageParseMethods:
                     update.message._finish_init(self, entities, input_chat)
                     return update.message
 
+            elif isinstance(update, types.UpdateNewScheduledMessage):
+                update.message._finish_init(self, entities, input_chat)
+                sched_to_message[update.message.id] = update.message
+
         if request is None:
             return id_to_message
 
+        # Use the scheduled mapping if we got a request with a scheduled message
+        #
+        # This breaks if the schedule date is too young, however, since the message
+        # is sent immediately, so have a fallback.
+        if getattr(request, 'schedule_date', None) is None:
+            mapping = id_to_message
+            opposite = {}  # if there's no schedule it can never be scheduled
+        else:
+            mapping = sched_to_message
+            opposite = id_to_message  # scheduled may be treated as normal, though
+
         random_id = request if isinstance(request, int) else request.random_id
         if not utils.is_list_like(random_id):
-            msg = id_to_message.get(random_to_id.get(random_id))
+            msg = mapping.get(random_to_id.get(random_id))
+            if not msg:
+                msg = opposite.get(random_to_id.get(random_id))
+
             if not msg:
                 self._log[__name__].warning(
                     'Request %s had missing message mapping %s', request, result)
@@ -158,15 +177,22 @@ class MessageParseMethods:
             return msg
 
         try:
-            return [id_to_message[random_to_id[rnd]] for rnd in random_id]
+            return [mapping[random_to_id[rnd]] for rnd in random_id]
         except KeyError:
-            # Sometimes forwards fail (`MESSAGE_ID_INVALID` if a message gets
-            # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
-            # Telegram), in which case we get some "missing" message mappings.
-            # Log them with the hope that we can better work around them.
-            self._log[__name__].warning(
-                'Request %s had missing message mappings %s', request, result)
+            try:
+                return [opposite[random_to_id[rnd]] for rnd in random_id]
+            except KeyError:
+                # Sometimes forwards fail (`MESSAGE_ID_INVALID` if a message gets
+                # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
+                # Telegram), in which case we get some "missing" message mappings.
+                # Log them with the hope that we can better work around them.
+                self._log[__name__].warning(
+                    'Request %s had missing message mappings %s', request, result)
 
-            return [id_to_message.get(random_to_id.get(rnd)) for rnd in random_to_id]
+        return [
+            mapping.get(random_to_id.get(rnd))
+            or opposite.get(random_to_id.get(rnd))
+            for rnd in random_to_id
+        ]
 
     # endregion

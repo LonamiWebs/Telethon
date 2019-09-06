@@ -536,7 +536,9 @@ class MessageMethods:
             force_document: bool = False,
             clear_draft: bool = False,
             buttons: 'hints.MarkupLike' = None,
-            silent: bool = None) -> 'types.Message':
+            silent: bool = None,
+            schedule: 'hints.DateLike' = None
+    ) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
 
@@ -609,6 +611,11 @@ class MessageMethods:
                 channel or not. Defaults to `False`, which means it will
                 notify them. Set it to `True` to alter this behaviour.
 
+            schedule (`hints.DateLike`, optional):
+                If set, the message won't send immediately, and instead
+                it will be scheduled to be automatically sent at a later
+                time.
+
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
 
@@ -663,6 +670,10 @@ class MessageMethods:
                 # Forcing replies or clearing buttons.
                 await client.send_message(chat, 'Reply to me', buttons=Button.force_reply())
                 await client.send_message(chat, 'Bye Keyboard!', buttons=Button.clear())
+
+                # Scheduling a message to be sent after 5 minutes
+                from datetime import timedelta
+                await client.send_message(chat, 'Hi, future!', schedule=timedelta(minutes=5))
         """
         if file is not None:
             return await self.send_file(
@@ -690,7 +701,8 @@ class MessageMethods:
                     silent=silent,
                     reply_to=reply_to,
                     buttons=markup,
-                    entities=message.entities
+                    entities=message.entities,
+                    schedule=schedule
                 )
 
             request = functions.messages.SendMessageRequest(
@@ -702,7 +714,8 @@ class MessageMethods:
                 entities=message.entities,
                 clear_draft=clear_draft,
                 no_webpage=not isinstance(
-                    message.media, types.MessageMediaWebPage)
+                    message.media, types.MessageMediaWebPage),
+                schedule_date=schedule
             )
             message = message.message
         else:
@@ -720,7 +733,8 @@ class MessageMethods:
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
                 silent=silent,
-                reply_markup=self.build_reply_markup(buttons)
+                reply_markup=self.build_reply_markup(buttons),
+                schedule_date=schedule
             )
 
         result = await self(request)
@@ -747,7 +761,9 @@ class MessageMethods:
             from_peer: 'hints.EntityLike' = None,
             *,
             silent: bool = None,
-            as_album: bool = None) -> 'typing.Sequence[types.Message]':
+            as_album: bool = None,
+            schedule: 'hints.DateLike' = None
+    ) -> 'typing.Sequence[types.Message]':
         """
         Forwards the given messages to the specified entity.
 
@@ -786,6 +802,11 @@ class MessageMethods:
                 In short, the default should do what you expect,
                 `True` will group always (even converting separate
                 images into albums), and `False` will never group.
+
+            schedule (`hints.DateLike`, optional):
+                If set, the message(s) won't forward immediately, and
+                instead they will be scheduled to be automatically sent
+                at a later time.
 
         Returns
             The list of forwarded `Message <telethon.tl.custom.message.Message>`,
@@ -873,7 +894,8 @@ class MessageMethods:
                 # Trying to send a single message as grouped will cause
                 # GROUPED_MEDIA_INVALID. If more than one message is forwarded
                 # (even without media...), this error goes away.
-                grouped=len(chunk) > 1 and grouped
+                grouped=len(chunk) > 1 and grouped,
+                schedule_date=schedule
             )
             result = await self(req)
             sent.extend(self._get_response_message(req, result, entity))
@@ -889,7 +911,9 @@ class MessageMethods:
             parse_mode: str = (),
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
-            buttons: 'hints.MarkupLike' = None) -> 'types.Message':
+            buttons: 'hints.MarkupLike' = None,
+            schedule: 'hints.DateLike' = None
+    ) -> 'types.Message':
         """
         Edits the given message to change its text or media.
 
@@ -935,6 +959,14 @@ class MessageMethods:
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
+
+            schedule (`hints.DateLike`, optional):
+                If set, the message won't be edited immediately, and instead
+                it will be scheduled to be automatically edited at a later
+                time.
+
+                Note that this parameter will have no effect if you are
+                trying to edit a message that was sent via inline bots.
 
         Returns
             The edited `Message <telethon.tl.custom.message.Message>`,
@@ -993,7 +1025,8 @@ class MessageMethods:
             no_webpage=not link_preview,
             entities=msg_entities,
             media=media,
-            reply_markup=self.build_reply_markup(buttons)
+            reply_markup=self.build_reply_markup(buttons),
+            schedule_date=schedule
         )
         msg = self._get_response_message(request, await self(request), entity)
         await self._cache_media(msg, file, file_handle, image=image)
