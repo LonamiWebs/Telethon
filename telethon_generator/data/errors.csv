@@ -205,7 +205,7 @@ RANDOM_ID_DUPLICATE,500,You provided a random ID that was already used
 RANDOM_ID_INVALID,400,A provided random ID is invalid
 RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
-REACTION_INVALID,400,Invalid reaction provided, only emoji
+REACTION_INVALID,400,Invalid reaction provided. only emoji.
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
