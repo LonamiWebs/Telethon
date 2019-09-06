@@ -217,6 +217,7 @@ RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SEARCH_QUERY_EMPTY,400,The search query is empty
+SECONDS_INVALID,400,Seconds invalid
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
