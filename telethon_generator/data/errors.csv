@@ -205,7 +205,7 @@ RANDOM_ID_DUPLICATE,500,You provided a random ID that was already used
 RANDOM_ID_INVALID,400,A provided random ID is invalid
 RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
-REACTION_INVALID,400,Invalid reaction provided
+REACTION_INVALID,400,Invalid reaction provided, only emoji
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
@@ -216,9 +216,9 @@ RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you 
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
-SCHEDULE_TOO_MUCH,400,Too much scheduled messages
+SCHEDULE_TOO_MUCH,400,Too much scheduled messages (max 100 for each chat)
 SEARCH_QUERY_EMPTY,400,The search query is empty
-SECONDS_INVALID,400,Seconds invalid
+SECONDS_INVALID,400,Slowmode only supports some values (0, 10, 30, 60, 300, 900, 3600)
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
