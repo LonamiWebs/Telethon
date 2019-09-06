@@ -430,7 +430,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 return self.media.document
         else:
             web = self.web_preview
-            if web and isinstance(web.photo, types.Document):
+            if web and isinstance(web.document, types.Document):
                 return web.photo
 
     @property
