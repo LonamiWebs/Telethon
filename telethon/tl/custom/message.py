@@ -56,8 +56,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             channel or not.
 
         from_scheduled (`bool`):
-            Whether this message was originated from
-            a scheduled one or not.
+            Whether this message was originated from a previously-scheduled
+            message or not.
 
         legacy (`bool`):
             Whether this is a legacy message or not.
@@ -122,6 +122,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         edit_date (`datetime`):
             The date when this message was last edited.
 
+        edit_hide (`bool`):
+            Whether the edited mark of this message is edited
+            should be hidden (e.g. in GUI clients) or shown.
+
         post_author (`str`):
             The display name of the message sender to
             show in messages sent to broadcast channels.
@@ -130,6 +134,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             If this message belongs to a group of messages
             (photo albums or video albums), all of them will
             have the same value here.
+
+        restriction_reason (List[:tl:`RestrictionReason`])
+            An optional list of reasons why this message was restricted.
+            If the list is `None`, this message has not been restricted.
     """
 
     # region Initialization
@@ -152,6 +160,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             fwd_from=None, via_bot_id=None, media=None, reply_markup=None,
             entities=None, views=None, edit_date=None, post_author=None,
             grouped_id=None, from_scheduled=None, legacy=None,
+            edit_hide=None, restriction_reason=None,
 
             # For MessageAction (mandatory)
             action=None):
@@ -180,6 +189,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self.grouped_id = grouped_id
         self.from_scheduled = from_scheduled
         self.legacy = legacy
+        self.edit_hide = edit_hide
+        self.restriction_reason = restriction_reason
         self.action = action
 
         # Convenient storage for custom functions
