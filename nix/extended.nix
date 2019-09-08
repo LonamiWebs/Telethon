@@ -29,6 +29,8 @@ let
     [ "telethon-devel" "telethon-devel" ]
 
     [ "telethon_1" "telethon_1" ]
+    [ "telethon_1_10" "telethon_1_10" ]
+    [ "telethon_1_10_0" "telethon_1_10_0" ]
     [ "telethon_1_9" "telethon_1_9" ]
     [ "telethon_1_9_0" "telethon_1_9_0" ]
     [ "telethon_1_8" "telethon_1_8" ]

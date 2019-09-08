@@ -25,7 +25,9 @@ rec {
     telethon = telethon_1;
     telethon-devel = self.callPackage ./nix/telethon/devel.nix { };
 
-    telethon_1 = telethon_1_9;
+    telethon_1 = telethon_1_10;
+    telethon_1_10 = telethon_1_10_0;
+    telethon_1_10_0 = telethonPkg "1.10" { version = "1.10.0"; };
     telethon_1_9 = telethon_1_9_0;
     telethon_1_9_0 = telethonPkg "1.9" { version = "1.9.0"; };
     telethon_1_8 = telethon_1_8_0;
