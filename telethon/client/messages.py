@@ -1,3 +1,4 @@
+import inspect
 import itertools
 import typing
 
@@ -519,6 +520,8 @@ class MessageMethods:
                 return None
 
         return await it.collect()
+
+    get_messages.__signature__ = inspect.signature(iter_messages)
 
     # endregion
 

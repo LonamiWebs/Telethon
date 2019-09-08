@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import itertools
 import string
 import typing
@@ -447,6 +448,8 @@ class ChatMethods:
         """
         return await self.iter_participants(*args, **kwargs).collect()
 
+    get_participants.__signature__ = inspect.signature(iter_participants)
+
     def iter_admin_log(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -608,6 +611,8 @@ class ChatMethods:
         """
         return await self.iter_admin_log(*args, **kwargs).collect()
 
+    get_admin_log.__signature__ = inspect.signature(iter_admin_log)
+
     def iter_profile_photos(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -672,6 +677,8 @@ class ChatMethods:
                 await client.download_media(photos[-1])
         """
         return await self.iter_profile_photos(*args, **kwargs).collect()
+
+    get_profile_photos.__signature__ = inspect.signature(iter_profile_photos)
 
     def action(
             self: 'TelegramClient',

@@ -106,7 +106,8 @@ def skip(app, what, name, obj, would_skip, options):
             '__init__',
             '__abstractmethods__',
             '__module__',
-            '__doc__'
+            '__doc__',
+            '__dict__'
         }
 
     return would_skip

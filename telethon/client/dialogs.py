@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import itertools
 import typing
 
@@ -247,6 +248,8 @@ class DialogMethods:
                 non_archived = await client.get_dialogs(archived=True)
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
+
+    get_dialogs.__signature__ = inspect.signature(iter_dialogs)
 
     def iter_drafts(
             self: 'TelegramClient',
