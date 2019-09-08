@@ -13,6 +13,79 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Scheduled Messages (v1.10)
+==========================
+
+*Published at 2019/09/08*
+
++------------------------+
+| Scheme layer used: 105 |
++------------------------+
+
+You can now schedule messages to be sent (or edited, or forwarded…) at a later
+time, which can also work as reminders for yourself when used in your own chat!
+
+.. code-block:: python
+
+    from datetime import timedelta
+
+    # Remind yourself to walk the dog in 10 minutes (after you play with Telethon's update)
+    await client.send_message('me', 'Walk the dog',
+                              schedule=timedelta(minutes=10))
+
+    # Remind your friend tomorrow to update Telethon
+    await client.send_message(friend, 'Update Telethon!',
+                              schedule=timedelta(days=1))
+
+Additions
+~~~~~~~~~
+
+* New `Button.auth <telethon.tl.custom.button.Button.auth>` friendly button
+  you can use to ask users to login to your bot.
+* Telethon's repository now contains ``*.nix`` expressions that you can use.
+* New `client.kick_participant() <telethon.client.chats.ChatMethods.kick_participant>`
+  method to truly kick (not ban) participants.
+* New ``schedule`` parameter in `client.send_message()
+  <telethon.client.messages.MessageMethods.send_message>`, `client.edit_message()
+  <telethon.client.messages.MessageMethods.edit_message>`, `client.forward_messages()
+  <telethon.client.messages.MessageMethods.forward_messages>` and `client.send_file()
+  <telethon.client.uploads.UploadMethods.send_file>`.
+
+Bug fixes
+~~~~~~~~~
+
+* Fix calling ``flush`` on file objects which lack this attribute.
+* Fix `CallbackQuery <telethon.events.callbackquery.CallbackQuery>` pattern.
+* Fix `client.action() <telethon.client.chats.ChatMethods.action>` not returning
+  itself when used in a context manager (so the ``as`` would be `None`).
+* Fix sending :tl:`InputKeyboardButtonUrlAuth` as inline buttons.
+* Fix `client.edit_permissions() <telethon.client.chats.ChatMethods.edit_permissions>`
+  defaults.
+* Fix `Forward <telethon.tl.custom.forward.Forward>` had its ``client`` as `None`.
+* Fix (de)serialization of negative timestamps (caused by the information in some
+  sites with instant view, where the date could be very old).
+* Fix HTML un-parsing.
+* Fix ``to/from_id`` in private messages when using multiple clients.
+* Stop disconnecting from `None` (incorrect logging).
+* Fix double-read on double-connect.
+* Fix `client.get_messages() <telethon.client.messages.MessageMethods.get_messages>`
+  when being passed more than 100 IDs.
+* Fix `Message.document <telethon.tl.custom.message.Message.document>`
+  for documents coming from web-pages.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Some documentation improvements, including the TL reference.
+* Documentation now avoids ``telethon.sync``, which should hopefully be less confusing.
+* Better error messages for flood wait.
+* You can now `client.get_drafts() <telethon.client.dialogs.DialogMethods.get_drafts>`
+  for a single entity (which means you can now get a single draft from a single chat).
+* New-style file IDs now work with Telethon.
+* The ``progress_callback`` for `client.upload_file()
+  <telethon.client.uploads.UploadMethods.upload_file>` can now be an ``async def``.
+
+
 Animated Stickers (v1.9)
 ========================
 
