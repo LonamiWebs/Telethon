@@ -442,7 +442,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         else:
             web = self.web_preview
             if web and isinstance(web.document, types.Document):
-                return web.photo
+                return web.document
 
     @property
     def web_preview(self):
