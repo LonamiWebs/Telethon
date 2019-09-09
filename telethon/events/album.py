@@ -27,7 +27,7 @@ class Album(EventBuilder):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
 
     @classmethod
-    def build(cls, update, others=None):
+    def build(cls, update, others=None, self_id=None):
         if not others:
             return  # We only care about albums which come inside the same Updates
 
