@@ -401,6 +401,10 @@ class DialogMethods:
         """
         Deletes a dialog (leaves a chat or channel).
 
+        This method can be used as a user and as a bot. However,
+        bots will only be able to use it to leave groups and channels
+        (trying to delete a private conversation will do nothing).
+
         See also `Dialog.delete() <telethon.tl.custom.dialog.Dialog.delete>`.
 
         Arguments
@@ -413,6 +417,9 @@ class DialogMethods:
                 On private chats, you may revoke the messages from
                 the other peer too. By default, it's `False`. Set
                 it to `True` to delete the history for both.
+
+                This makes no difference for bot accounts, who can
+                only leave groups and channels.
 
         Returns
             The :tl:`Updates` object that the request produces,
@@ -438,7 +445,9 @@ class DialogMethods:
         else:
             result = None
 
-        await self(functions.messages.DeleteHistoryRequest(entity, 0, revoke=revoke))
+        if not await self.is_bot():
+            await self(functions.messages.DeleteHistoryRequest(entity, 0, revoke=revoke))
+
         return result
 
     def conversation(
