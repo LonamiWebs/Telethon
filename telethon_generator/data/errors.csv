@@ -216,6 +216,7 @@ RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you 
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
+SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (several years long)
 SCHEDULE_TOO_MUCH,400,Too much scheduled messages (max 100 for each chat)
 SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slowmode only supports some values (0, 10, 30, 60, 300, 900, 3600)"
