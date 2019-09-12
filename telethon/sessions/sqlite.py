@@ -17,7 +17,7 @@ except ImportError as e:
     sqlite3_err = type(e)
 
 EXTENSION = '.session'
-CURRENT_VERSION = 5  # database version
+CURRENT_VERSION = 6  # database version
 
 
 class SQLiteSession(MemorySession):
@@ -143,6 +143,12 @@ class SQLiteSession(MemorySession):
         if old == 4:
             old += 1
             c.execute("alter table sessions add column takeout_id integer")
+        if old == 5:
+            # Not really any schema upgrade, but potentially all access
+            # hashes for User and Channel are wrong, so drop them off.
+            old += 1
+            c.execute('delete from entities')
+
         c.close()
 
     @staticmethod

@@ -138,12 +138,34 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
     Gets the input peer for the given "entity" (user, chat or channel).
 
     A ``TypeError`` is raised if the given entity isn't a supported type
-    or if ``check_hash is True`` but the entity's ``access_hash is None``.
+    or if ``check_hash is True`` but the entity's ``access_hash is None``
+    *or* the entity contains ``min`` information. In this case, the hash
+    cannot be used for general purposes, and thus is not returned to avoid
+    any issues which can derive from invalid access hashes.
 
     Note that ``check_hash`` **is ignored** if an input peer is already
     passed since in that case we assume the user knows what they're doing.
     This is key to getting entities by explicitly passing ``hash = 0``.
     """
+    # NOTE: It is important that this method validates the access hashes,
+    #       because it is used when we *require* a valid general-purpose
+    #       access hash. This includes caching, which relies on this method.
+    #       Further, when resolving raw methods, they do e.g.,
+    #           utils.get_input_channel(client.get_input_peer(...))
+    #
+    #       ...which means that the client's method verifies the hashes.
+    #
+    # Excerpt from a conversation with official developers (slightly edited):
+    #     > We send new access_hash for Channel with min flag since layer 102.
+    #     > Previously, we omitted it.
+    #     > That one works just to download the profile picture.
+    #
+    #     < So, min hashes only work for getting files,
+    #     < but the non-min hash is required for any other operation?
+    #
+    #     > Yes.
+    #
+    # More information: https://core.telegram.org/api/min
     try:
         if entity.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
             return entity
@@ -159,19 +181,19 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
     if isinstance(entity, types.User):
         if entity.is_self and allow_self:
             return types.InputPeerSelf()
-        elif entity.access_hash is not None or not check_hash:
+        elif (entity.access_hash is not None and not entity.min) or not check_hash:
             return types.InputPeerUser(entity.id, entity.access_hash)
         else:
-            raise TypeError('User without access_hash cannot be input')
+            raise TypeError('User without access_hash or min info cannot be input')
 
     if isinstance(entity, (types.Chat, types.ChatEmpty, types.ChatForbidden)):
         return types.InputPeerChat(entity.id)
 
     if isinstance(entity, (types.Channel, types.ChannelForbidden)):
-        if entity.access_hash is not None or not check_hash:
+        if (entity.access_hash is not None and not entity.min) or not check_hash:
             return types.InputPeerChannel(entity.id, entity.access_hash)
         else:
-            raise TypeError('Channel without access_hash cannot be input')
+            raise TypeError('Channel without access_hash or min info cannot be input')
 
     if isinstance(entity, types.InputUser):
         return types.InputPeerUser(entity.user_id, entity.access_hash)
@@ -198,7 +220,15 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
 
 
 def get_input_channel(entity):
-    """Similar to :meth:`get_input_peer`, but for :tl:`InputChannel`'s alone."""
+    """
+    Similar to :meth:`get_input_peer`, but for :tl:`InputChannel`'s alone.
+
+    .. important::
+
+        This method does not validate for invalid general-purpose access
+        hashes, unlike `get_input_peer`. Consider using instead:
+        ``get_input_channel(get_input_peer(channel))``.
+    """
     try:
         if entity.SUBCLASS_OF_ID == 0x40f202fd:  # crc32(b'InputChannel')
             return entity
@@ -215,7 +245,15 @@ def get_input_channel(entity):
 
 
 def get_input_user(entity):
-    """Similar to :meth:`get_input_peer`, but for :tl:`InputUser`'s alone."""
+    """
+    Similar to :meth:`get_input_peer`, but for :tl:`InputUser`'s alone.
+
+    .. important::
+
+        This method does not validate for invalid general-purpose access
+        hashes, unlike `get_input_peer`. Consider using instead:
+        ``get_input_channel(get_input_peer(channel))``.
+    """
     try:
         if entity.SUBCLASS_OF_ID == 0xe669bf46:  # crc32(b'InputUser'):
             return entity

@@ -100,8 +100,10 @@ class MemorySession(Session):
             p = utils.get_input_peer(e, allow_self=False)
             marked_id = utils.get_peer_id(p)
         except TypeError:
-            # Note: `get_input_peer` already checks for
-            # non-zero `access_hash`. See issues #354 and #392.
+            # Note: `get_input_peer` already checks for non-zero `access_hash`.
+            #        See issues #354 and #392. It also checks that the entity
+            #        is not `min`, because its `access_hash` cannot be used
+            #        anywhere (since layer 102, there are two access hashes).
             return
 
         if isinstance(p, (InputPeerUser, InputPeerChannel)):
