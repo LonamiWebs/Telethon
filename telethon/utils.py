@@ -189,11 +189,15 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
     if isinstance(entity, (types.Chat, types.ChatEmpty, types.ChatForbidden)):
         return types.InputPeerChat(entity.id)
 
-    if isinstance(entity, (types.Channel, types.ChannelForbidden)):
+    if isinstance(entity, types.Channel):
         if (entity.access_hash is not None and not entity.min) or not check_hash:
             return types.InputPeerChannel(entity.id, entity.access_hash)
         else:
             raise TypeError('Channel without access_hash or min info cannot be input')
+    if isinstance(entity, types.ChannelForbidden):
+        # "channelForbidden are never min", and since their hash is
+        # also not optional, we assume that this truly is the case.
+        return types.InputPeerChannel(entity.id, entity.access_hash)
 
     if isinstance(entity, types.InputUser):
         return types.InputPeerUser(entity.user_id, entity.access_hash)
