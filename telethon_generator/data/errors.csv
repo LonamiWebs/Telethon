@@ -205,6 +205,7 @@ RANDOM_ID_DUPLICATE,500,You provided a random ID that was already used
 RANDOM_ID_INVALID,400,A provided random ID is invalid
 RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
+REACTION_EMPTY,400,No reaction provided
 REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed)
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
@@ -216,7 +217,7 @@ RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you 
 RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
-SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (several years long)
+SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
 SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slow mode only supports certain values (e.g. 0, 10s, 30s, 1m, 5m, 15m and 1h)"
@@ -242,7 +243,7 @@ TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being ab
 TAKEOUT_INVALID,400,The takeout session has been invalidated by another data export session
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
-Timeout,-503,A timeout occurred while fetching data from the bot
+Timeout,-503,A timeout occurred while fetching data from the worker
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TOKEN_INVALID,400,The provided token is invalid
 TTL_DAYS_INVALID,400,The provided TTL is invalid
