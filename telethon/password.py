@@ -173,9 +173,6 @@ def compute_check(request: types.account.Password, password: str):
                 if u > 0:
                     return (a, a_for_hash, u)
 
-            print(A, 'bad for', p)
-            time.sleep(1)
-
     a, a_for_hash, u = generate_and_check_random()
     g_b = (B - kg_x) % p
     if not is_good_mod_exp_first(g_b, p):

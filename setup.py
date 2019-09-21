@@ -140,10 +140,12 @@ def generate(which, action='gen'):
                 gen_json(*fs)
 
     if which:
-        print('The following items were not understood:', which)
-        print('  Consider using only "tl", "errors" and/or "docs".')
-        print('  Using only "clean" will clean them. "all" to act on all.')
-        print('  For instance "gen tl errors".')
+        print(
+            'The following items were not understood:', which,
+            '\n  Consider using only "tl", "errors" and/or "docs".'
+            '\n  Using only "clean" will clean them. "all" to act on all.'
+            '\n  For instance "gen tl errors".'
+        )
 
 
 def main():
