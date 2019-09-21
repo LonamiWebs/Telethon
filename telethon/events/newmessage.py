@@ -125,7 +125,6 @@ class NewMessage(EventBuilder):
         if isinstance(ori.to_id, types.PeerUser):
             if ori.from_id == ori.to_id.user_id and not ori.fwd_from:
                 event.message.out = True
-                print('ooOoOo', ori)
 
         return event
 
