@@ -82,7 +82,7 @@ class UserMethods:
                     e.__class__.__name__, e)
 
                 await asyncio.sleep(2)
-            except (errors.FloodWaitError, errors.FloodTestPhoneWaitError) as e:
+            except (errors.FloodWaitError, errors.SlowmodeWaitError, errors.FloodTestPhoneWaitError) as e:
                 if utils.is_list_like(request):
                     request = request[request_index]
 
