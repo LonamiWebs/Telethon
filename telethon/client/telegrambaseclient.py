@@ -118,7 +118,7 @@ class TelegramBaseClient(abc.ABC):
 
         flood_sleep_threshold (`int` | `float`, optional):
             The threshold below which the library should automatically
-            sleep on flood wait errors (inclusive). For instance, if a
+            sleep on flood wait and slowmode wait errors (inclusive). For instance, if a
             ``FloodWaitError`` for 17s occurs and `flood_sleep_threshold`
             is 20s, the library will ``sleep`` automatically. If the error
             was for 21s, it would ``raise FloodWaitError`` instead. Values
