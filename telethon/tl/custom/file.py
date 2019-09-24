@@ -22,6 +22,14 @@ class File:
     def id(self):
         """
         The bot-API style ``file_id`` representing this file.
+
+        .. note::
+
+            This file ID may not work under user accounts,
+            but should still be usable by bot accounts.
+
+            You can, however, still use it to identify
+            a file in for example a database.
         """
         return utils.pack_bot_file_id(self.media)
 

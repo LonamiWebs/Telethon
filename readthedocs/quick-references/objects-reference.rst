@@ -121,6 +121,7 @@ Methods
     delete
     get_reply_message
     click
+    mark_read
     pin
     download_media
     get_entities_text
@@ -142,6 +143,8 @@ its name, bot-API style file ID, etc.
 
     id
     name
+    ext
+    mime_type
     width
     height
     size
@@ -176,6 +179,7 @@ It bases `ChatGetter <telethon.tl.custom.chatgetter.ChatGetter>`.
     wait_read
     wait_event
     cancel
+    cancel_all
 
 
 AdminLogEvent
@@ -236,6 +240,7 @@ These are the static methods you can use to create instances of the markup:
     inline
     switch_inline
     url
+    auth
     text
     request_location
     request_phone

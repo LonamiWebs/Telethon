@@ -1122,6 +1122,8 @@ class MessageMethods:
         If neither message nor maximum ID are provided, all messages will be
         marked as read by assuming that ``max_id = 0``.
 
+        See also `Message.mark_read() <telethon.tl.custom.message.Message.mark_read>`.
+
         Arguments
             entity (`entity`):
                 The chat where these messages are located.

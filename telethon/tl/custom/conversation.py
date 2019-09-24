@@ -250,6 +250,12 @@ class Conversation(ChatGetter):
         """
         Waits for a custom event to occur. Timeouts still apply.
 
+        .. note::
+
+            Only use this if there isn't another method available!
+            For example, don't use `wait_event` for new messages,
+            since `get_response` already exists, etc.
+
         Unless you're certain that your code will run fast enough,
         generally you should get a "handle" of this special coroutine
         before acting. Generally, you should do this:
