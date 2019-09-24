@@ -228,6 +228,7 @@ SESSION_PASSWORD_NEEDED,401,Two-steps verification is enabled and a password is 
 SESSION_REVOKED,401,"The authorization has been invalidated, because of the user terminating all sessions"
 SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
+SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 START_PARAM_EMPTY,400,The start parameter is empty
 START_PARAM_INVALID,400,Start parameter invalid
 STICKERSET_INVALID,400,The provided sticker set is invalid
