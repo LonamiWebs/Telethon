@@ -29,7 +29,7 @@ def _get_class_name(error_code):
 
     return snake_to_camel_case(
         error_code.replace('FIRSTNAME', 'FIRST_NAME')\
-        .replace('SLOWMODE', 'SLOW_MODE').lower(), suffix='Error')
+                  .replace('SLOWMODE', 'SLOW_MODE').lower(), suffix='Error')
 
 
 class Error:
