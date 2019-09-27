@@ -481,7 +481,13 @@ class AuthMethods:
             except errors.AuthRestartError:
                 return await self.send_code_request(phone, force_sms=force_sms)
 
-            self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
+            # If we already sent a SMS, do not resend the code (hash may be empty)
+            if isinstance(result.type, types.auth.SentCodeTypeSms):
+                force_sms = False
+
+            # phone_code_hash may be empty, if it is, do not save it (#1283)
+            if result.phone_code_hash:
+                self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
         else:
             force_sms = True
 
