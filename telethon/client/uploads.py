@@ -188,10 +188,9 @@ class UploadMethods:
                 Width/height and dimensions/size ratios may be important.
 
             allow_cache (`bool`, optional):
-                Whether to allow using the cached version stored in the
-                database or not. Defaults to `True` to avoid re-uploads.
-                Must be `False` if you wish to use different attributes
-                or thumb than those that were used when the file was cached.
+                This parameter currently does nothing, but is kept for
+                backward-compatibility (and it may get its use back in
+                the future).
 
             parse_mode (`object`, optional):
                 See the `TelegramClient.parse_mode
@@ -202,15 +201,9 @@ class UploadMethods:
             voice_note (`bool`, optional):
                 If `True` the audio will be sent as a voice note.
 
-                Set `allow_cache` to `False` if you sent the same file
-                without this setting before for it to work.
-
             video_note (`bool`, optional):
                 If `True` the video will be sent as a video note,
                 also known as a round video message.
-
-                Set `allow_cache` to `False` if you sent the same file
-                without this setting before for it to work.
 
             buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
@@ -265,6 +258,7 @@ class UploadMethods:
                     '/my/drawings/portrait.png'
                 ])
         """
+        # TODO Properly implement allow_cache to reuse the sha256 of the file
         # i.e. `None` was used
         if not file:
             raise TypeError('Cannot use {!r} as file'.format(file))
@@ -457,11 +451,9 @@ class UploadMethods:
                 and if this is not a `str`, it will be ``"unnamed"``.
 
             use_cache (`type`, optional):
-                The type of cache to use (currently either :tl:`InputDocument`
-                or :tl:`InputPhoto`). If present and the file is small enough
-                to need the MD5, it will be checked against the database,
-                and if a match is found, the upload won't be made. Instead,
-                an instance of type ``use_cache`` will be returned.
+                This parameter currently does nothing, but is kept for
+                backward-compatibility (and it may get its use back in
+                the future).
 
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
@@ -551,12 +543,6 @@ class UploadMethods:
                 with open(file, 'rb') as stream:
                     file = stream.read()
             hash_md5.update(file)
-            if use_cache:
-                cached = self.session.get_file(
-                    hash_md5.digest(), file_size, cls=_CacheType(use_cache)
-                )
-                if cached:
-                    return cached
 
         part_count = (file_size + part_size - 1) // part_size
         self._log[__name__].info('Uploading file of %d bytes in %d chunks of %d',
@@ -635,12 +621,10 @@ class UploadMethods:
 
         media = None
         file_handle = None
-        use_cache = types.InputPhoto if as_image else types.InputDocument
         if not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(
                 _resize_photo_if_needed(file, as_image),
-                progress_callback=progress_callback,
-                use_cache=use_cache if allow_cache else None
+                progress_callback=progress_callback
             )
         elif re.match('https?://', file):
             if as_image:
@@ -661,12 +645,6 @@ class UploadMethods:
                 'Failed to convert {} to media. Not an existing file, '
                 'an HTTP URL or a valid bot-API-like file ID'.format(file)
             )
-        elif isinstance(file_handle, use_cache):
-            # File was cached, so an instance of use_cache was returned
-            if as_image:
-                media = types.InputMediaPhoto(file_handle)
-            else:
-                media = types.InputMediaDocument(file_handle)
         elif as_image:
             media = types.InputMediaUploadedPhoto(file_handle)
         else:
