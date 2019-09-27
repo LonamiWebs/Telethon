@@ -83,3 +83,16 @@ tgmount
 `nktknshn's GitHub <https://github.com/nktknshn>`_
 
 Mount Telegram dialogs and channels as a Virtual File System.
+
+garnet
+======
+
+`garnet <https://github.com/uwinx/pomegranate>`_ /
+`uwinx's GitHub <https://github.com/uwinx>`_
+
+Pomegranate (or ``garnet`` for short) is a small telethon add-on which
+features persistent conversations based on Finite State Machines (FSM),
+a new ``Filter`` to define handlers more conveniently and utilities to
+run code on start and finish of the client. Be sure to check the project
+to learn about its latest features, since this description may be out of
+date.
