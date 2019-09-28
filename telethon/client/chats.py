@@ -1091,7 +1091,7 @@ class ChatMethods:
                         user_id=user,
                         banned_rights=types.ChatBannedRights(until_date=None, view_messages=True)
                     ))
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
                 await self(
                     functions.channels.EditBannedRequest(
                         channel=entity,
