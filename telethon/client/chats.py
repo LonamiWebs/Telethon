@@ -864,8 +864,6 @@ class ChatMethods:
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
-        if isinstance(user, types.InputPeerSelf):
-            raise ValueError('You cannot admin yourself')
 
         if not isinstance(user, types.InputPeerUser):
             raise ValueError('You must pass a user entity')
