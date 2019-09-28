@@ -1085,18 +1085,19 @@ class ChatMethods:
             if isinstance(user, types.InputPeerSelf):
                 await self(functions.channels.LeaveChannelRequest(entity))
             else:
-                await self([
+                await self(
                     functions.channels.EditBannedRequest(
                         channel=entity,
                         user_id=user,
                         banned_rights=types.ChatBannedRights(until_date=None, view_messages=True)
-                    ),
+                    ))
+                await asyncio.sleep(0.1)
+                await self(
                     functions.channels.EditBannedRequest(
                         channel=entity,
                         user_id=user,
                         banned_rights=types.ChatBannedRights(until_date=None)
-                    ),
-                ], ordered=True)
+                    ))
         else:
             raise ValueError('You must pass either a channel or a chat')
 
