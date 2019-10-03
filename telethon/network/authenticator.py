@@ -57,6 +57,14 @@ async def do_authentication(sender):
             break
 
     if cipher_text is None:
+        # Second attempt, but now we're allowed to use old keys
+        for fingerprint in res_pq.server_public_key_fingerprints:
+            cipher_text = rsa.encrypt(fingerprint, pq_inner_data, use_old=True)
+            if cipher_text is not None:
+                target_fingerprint = fingerprint
+                break
+
+    if cipher_text is None:
         raise SecurityError(
             'Step 2 could not find a valid key for fingerprints: {}'
             .format(', '.join(
