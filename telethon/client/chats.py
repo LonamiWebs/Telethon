@@ -873,6 +873,12 @@ class ChatMethods:
         )
 
         if isinstance(entity, types.InputPeerChannel):
+            if post_messages or edit_messages:
+                full_entity = await self.get_entity(entity)
+                if full_entity.megagroup:
+                    post_messages = None
+                    edit_messages = None
+
             perms = locals()
             return await self(functions.channels.EditAdminRequest(entity, user, types.ChatAdminRights(**{
                 # A permission is its explicit (not-None) value or `is_admin`.
