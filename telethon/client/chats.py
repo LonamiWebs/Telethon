@@ -873,6 +873,19 @@ class ChatMethods:
         )
 
         if isinstance(entity, types.InputPeerChannel):
+            # If we try to set these permissions in a megagroup, we
+            # would get a RIGHT_FORBIDDEN. However, it makes sense
+            # that an admin can post messages, so we want to avoid the error
+            if post_messages or edit_messages:
+                # TODO get rid of this once sessions cache this information
+                if entity.channel_id not in self._megagroup_cache:
+                    full_entity = await self.get_entity(entity)
+                    self._megagroup_cache[entity.channel_id] = full_entity.megagroup
+
+                if self._megagroup_cache[entity.channel_id]:
+                    post_messages = None
+                    edit_messages = None
+
             perms = locals()
             return await self(functions.channels.EditAdminRequest(entity, user, types.ChatAdminRights(**{
                 # A permission is its explicit (not-None) value or `is_admin`.
