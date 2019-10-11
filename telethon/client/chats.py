@@ -873,7 +873,7 @@ class ChatMethods:
         )
 
         if isinstance(entity, types.InputPeerChannel):
-            if post_messages is None or edit_messages is None:
+            if post_messages or edit_messages:
                 full_entity = await self.get_entity(entity)
                 if full_entity.megagroup:
                     post_messages = None
