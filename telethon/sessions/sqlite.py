@@ -9,12 +9,8 @@ from ..tl.types import (
     InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
 )
 
-try:
-    import sqlite3
-    sqlite3_err = None
-except ImportError as e:
-    sqlite3 = None
-    sqlite3_err = type(e)
+import sqlite3
+sqlite3_err = None
 
 EXTENSION = '.session'
 CURRENT_VERSION = 6  # database version
@@ -116,11 +112,11 @@ class SQLiteSession(MemorySession):
 
     def _upgrade_database(self, old):
         c = self._cursor()
-        if old == 1:
-            old += 1
+        if old == 4:
+            old += 3
             # old == 1 doesn't have the old sent_files so no need to drop
-        if old == 2:
-            old += 1
+        if old == 5:
+            old += 3
             # Old cache from old sent_files lasts then a day anyway, drop
             c.execute('drop table sent_files')
             self._create_table(c, """sent_files (
@@ -171,12 +167,12 @@ class SQLiteSession(MemorySession):
 
     @MemorySession.auth_key.setter
     def auth_key(self, value):
-        self._auth_key = value
+        self._auth_key = keys
         self._update_session_table()
 
     @MemorySession.takeout_id.setter
     def takeout_id(self, value):
-        self._takeout_id = value
+        self._takeout_id = keys
         self._update_session_table()
 
     def _update_session_table(self):
