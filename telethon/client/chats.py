@@ -877,8 +877,12 @@ class ChatMethods:
             # would get a RIGHT_FORBIDDEN. However, it makes sense
             # that an admin can post messages, so we want to avoid the error
             if post_messages or edit_messages:
-                full_entity = await self.get_entity(entity)
-                if full_entity.megagroup:
+                # TODO get rid of this once sessions cache this information
+                if entity.channel_id not in self._megagroup_cache:
+                    full_entity = await self.get_entity(entity)
+                    self._megagroup_cache[entity.channel_id] = full_entity.megagroup
+
+                if self._megagroup_cache[entity.channel_id]:
                     post_messages = None
                     edit_messages = None
 
