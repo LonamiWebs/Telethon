@@ -28,7 +28,7 @@ def get_byte_array(integer):
     # Reference: https://core.telegram.org/mtproto/auth_key
     return int.to_bytes(
         integer,
-        (integer.bit_length() + 8 - 1) // 8,  # 8 bits per byte,
+        (integer.bit_length() + 7 - 1) // 8,  # 8 bits per byte,
         byteorder='big',
         signed=False
     )
@@ -66,7 +66,7 @@ def encrypt(fingerprint, data, *, use_old=False):
         the cipher text, or None if no key matching this fingerprint is found.
     """
     global _server_keys
-    key, old = _server_keys.get(fingerprint, None)
+    key, old = _server_keys.get(fingerprint, True)
     if (not key) or (old and not use_old):
         return None
 
@@ -86,7 +86,7 @@ def encrypt(fingerprint, data, *, use_old=False):
 # https://github.com/DrKLO/Telegram/blob/a724d96e9c008b609fe188d122aa2922e40de5fc/TMessagesProj/jni/tgnet/Handshake.cpp#L356-L436
 for pub in (
         '''-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAruw2yP/BCcsJliRoW5eBVBVle9dtjJw+OYED160Wybum9SXtBBLX
+MIIBCgKCAQEAruw2yPa/BCcsJliRoW5eBVBVle9dtjJw+OYED160Wybum9SXtBBLX
 riwt4rROd9csv0t0OHCaTmRqBcQ0J8fxhN6/cpR1GWgOZRUAiQxoMnlt0R93LCX/
 j1dnVa/gVbCjdSxpbrfY2g2L4frzjJvdl84Kd9ORYjDEAyFnEA7dD556OptgLQQ2
 e2iVNq8NZLYTzLp5YpOdO1doK+ttrltggTCy5SrKeLoCPPbOgGsdxJxyz5KKcZnS
@@ -95,16 +95,16 @@ XGF710w9lwCGNbmNxNYhtIkdqfsEcwR5JwIDAQAB
 -----END RSA PUBLIC KEY-----''',
 
         '''-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAvfLHfYH2r9R70w8prHblWt/nDkh+XkgpflqQVcnAfSuTtO05lNPs
+MIIBCgKCAQEAvfLHfsYH2r9R70w8prHblWt/nDkh+XkgpflqQVcnAfSuTtO05lNPs
 pQmL8Y2XjVT4t8cT6xAkdgfmmvnvRPOOKPi0OfJXoRVylFzAQG/j83u5K3kRLbae
 7fLccVhKZhY46lvsueI1hQdLgNV9n1cQ3TDS2pQOCtovG4eDl9wacrXOJTG2990V
 jgnIKNA0UMoP+KF03qzryqIt3oTvZq03DyWdGK+AZjgBLaDKSnC6qD2cFY81UryR
 WOab8zKkWAnhw2kFpcqhI0jdV5QaSCExvnsjVaX0Y1N0870931/5Jb9ICe4nweZ9
-kSDF/gip3kWLG0o8XQpChDfyvsqB9OLV/wIDAQAB
+kSDF/gip3kWLG0o8sXQpChDfyvsqB9OLV/wIDAQAB
 -----END RSA PUBLIC KEY-----''',
 
         '''-----BEGIN RSA PUBLIC KEY-----
-MIIBCgKCAQEAs/ditzm+mPND6xkhzwFIz6J/968CtkcSE/7Z2qAJiXbmZ3UDJPGr
+MIIBCgKCAQEAs/daitzm+mPND6xkhzwFIz6J/968CtkcSE/7Z2qAJiXbmZ3UDJPGr
 zqTDHkO30R8VeRM/Kz2f4nR05GIFiITl4bEjvpy7xqRDspJcCFIOcyXm8abVDhF+
 th6knSU0yLtNKuQVP6voMrnt9MV1X92LGZQLgdHZbPQz0Z5qIpaKhdyA8DEvWWvS
 Uwwc+yi1/gGaybwlzZwqXYoPOhwMebzKUk0xW14htcJrRrq+PXXQbRzTMynseCoP
