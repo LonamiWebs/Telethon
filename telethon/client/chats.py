@@ -873,6 +873,9 @@ class ChatMethods:
         )
 
         if isinstance(entity, types.InputPeerChannel):
+            # If we try to set these permissions in a megagroup, we
+            # would get a RIGHT_FORBIDDEN. However, it makes sense
+            # that an admin can post messages, so we want to avoid the error
             if post_messages or edit_messages:
                 full_entity = await self.get_entity(entity)
                 if full_entity.megagroup:
