@@ -238,6 +238,7 @@ STICKER_FILE_INVALID,400,Sticker file invalid
 STICKER_ID_INVALID,400,The provided sticker ID is invalid
 STICKER_INVALID,400,The provided sticker is invalid
 STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
+STICKER_PNG_NOPNG,400,Stickers must be a png file but the used image was not a png
 STORAGE_CHECK_FAILED,500,Server storage check failed
 STORE_INVALID_SCALAR_TYPE,500,
 TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being able to initiate the takeout
