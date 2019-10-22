@@ -72,12 +72,14 @@ class Conversation(ChatGetter):
         for `telethon.client.messages.MessageMethods.send_message` with
         ``entity`` already set.
         """
-        message = await self._client.send_message(
+        sent = await self._client.send_message(
             self._input_chat, *args, **kwargs)
 
-        self._outgoing.add(message.id)
-        self._last_outgoing = message.id
-        return message
+        # Albums will be lists, so handle that
+        ms = sent if isinstance(sent, list) else (sent,)
+        self._outgoing.update(m.id for m in ms)
+        self._last_outgoing = ms[-1].id
+        return sent
 
     async def send_file(self, *args, **kwargs):
         """
@@ -85,12 +87,14 @@ class Conversation(ChatGetter):
         for `telethon.client.uploads.UploadMethods.send_file` with
         ``entity`` already set.
         """
-        message = await self._client.send_file(
+        sent = await self._client.send_file(
             self._input_chat, *args, **kwargs)
 
-        self._outgoing.add(message.id)
-        self._last_outgoing = message.id
-        return message
+        # Albums will be lists, so handle that
+        ms = sent if isinstance(sent, list) else (sent,)
+        self._outgoing.update(m.id for m in ms)
+        self._last_outgoing = ms[-1].id
+        return sent
 
     def mark_read(self, message=None):
         """
