@@ -198,41 +198,17 @@ class MTProtoSender:
         """
         self._log.info('Connecting to %s...', self._connection)
         for attempt in retry_range(self._retries):
-            try:
-                self._log.debug('Connection attempt %d...', attempt)
-                await self._connection.connect(timeout=self._connect_timeout)
-            except (IOError, asyncio.TimeoutError) as e:
-                self._log.warning('Attempt %d at connecting failed: %s: %s',
-                                  attempt, type(e).__name__, e)
-                await asyncio.sleep(self._delay)
-            else:
+            if await self._try_connect(attempt):
                 break
         else:
-            raise ConnectionError('Connection to Telegram failed %d time(s)', attempt)
+            raise ConnectionError('Connection to Telegram failed %d time(s)', self._retries)
 
-        self._log.debug('Connection success!')
         if not self.auth_key:
-            plain = MTProtoPlainSender(self._connection, loggers=self._loggers)
             for attempt in retry_range(self._retries):
-                try:
-                    self._log.debug('New auth_key attempt {}...'
-                                    .format(attempt))
-                    self.auth_key.key, self._state.time_offset =\
-                        await authenticator.do_authentication(plain)
-
-                    # This is *EXTREMELY* important since we don't control
-                    # external references to the authorization key, we must
-                    # notify whenever we change it. This is crucial when we
-                    # switch to different data centers.
-                    if self._auth_key_callback:
-                        self._auth_key_callback(self.auth_key)
-
+                if await self._try_gen_auth_key(attempt):
                     break
-                except (SecurityError, AssertionError) as e:
-                    self._log.warning('Attempt %d at new auth_key failed: %s', attempt, e)
-                    await asyncio.sleep(self._delay)
             else:
-                e = ConnectionError('auth_key generation failed %d time(s)', attempt)
+                e = ConnectionError('auth_key generation failed %d time(s)', self._retries)
                 await self._disconnect(error=e)
                 raise e
 
@@ -249,6 +225,39 @@ class MTProtoSender:
             self._disconnected = self._loop.create_future()
 
         self._log.info('Connection to %s complete!', self._connection)
+
+    async def _try_connect(self, attempt):
+        try:
+            self._log.debug('Connection attempt %d...', attempt)
+            await self._connection.connect(timeout=self._connect_timeout)
+            self._log.debug('Connection success!')
+            return True
+        except (IOError, asyncio.TimeoutError) as e:
+            self._log.warning('Attempt %d at connecting failed: %s: %s',
+                              attempt, type(e).__name__, e)
+            await asyncio.sleep(self._delay)
+            return False
+
+    async def _try_gen_auth_key(self, attempt):
+        plain = MTProtoPlainSender(self._connection, loggers=self._loggers)
+        try:
+            self._log.debug('New auth_key attempt %d...', attempt)
+            self.auth_key.key, self._state.time_offset = \
+                await authenticator.do_authentication(plain)
+
+            # This is *EXTREMELY* important since we don't control
+            # external references to the authorization key, we must
+            # notify whenever we change it. This is crucial when we
+            # switch to different data centers.
+            if self._auth_key_callback:
+                self._auth_key_callback(self.auth_key)
+
+            self._log.debug('auth_key generation success!')
+            return True
+        except (SecurityError, AssertionError) as e:
+            self._log.warning('Attempt %d at new auth_key failed: %s', attempt, e)
+            await asyncio.sleep(self._delay)
+            return False
 
     async def _disconnect(self, error=None):
         if self._connection is None:
