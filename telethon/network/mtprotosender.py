@@ -197,20 +197,26 @@ class MTProtoSender:
         receive loops.
         """
         self._log.info('Connecting to %s...', self._connection)
-        for attempt in retry_range(self._retries):
-            if await self._try_connect(attempt):
-                break
-        else:
-            raise ConnectionError('Connection to Telegram failed %d time(s)', self._retries)
 
-        if not self.auth_key:
-            for attempt in retry_range(self._retries):
-                if await self._try_gen_auth_key(attempt):
-                    break
-            else:
-                e = ConnectionError('auth_key generation failed %d time(s)', self._retries)
-                await self._disconnect(error=e)
-                raise e
+        connected = False
+        for attempt in retry_range(self._retries):
+            if not connected:
+                connected = await self._try_connect(attempt)
+                if not connected:
+                    continue  # skip auth key generation until we're connected
+
+            if not self.auth_key:
+                if not await self._try_gen_auth_key(attempt):
+                    continue  # keep retrying until we have the auth key
+
+            break  # all steps done, break retry loop
+        else:
+            if not connected:
+                raise ConnectionError('Connection to Telegram failed %d time(s)', self._retries)
+
+            e = ConnectionError('auth_key generation failed %d time(s)', self._retries)
+            await self._disconnect(error=e)
+            raise e
 
         self._log.debug('Starting send loop')
         self._send_loop_handle = self._loop.create_task(self._send_loop())
