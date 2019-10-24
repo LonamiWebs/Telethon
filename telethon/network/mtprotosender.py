@@ -206,8 +206,23 @@ class MTProtoSender:
                     continue  # skip auth key generation until we're connected
 
             if not self.auth_key:
-                if not await self._try_gen_auth_key(attempt):
-                    continue  # keep retrying until we have the auth key
+                try:
+                    if not await self._try_gen_auth_key(attempt):
+                        continue  # keep retrying until we have the auth key
+                except (IOError, asyncio.TimeoutError) as e:
+                    # Sometimes, specially during user-DC migrations,
+                    # Telegram may close the connection during auth_key
+                    # generation. If that's the case, we will need to
+                    # connect again.
+                    self._log.warning('Connection error %d during auth_key gen: %s: %s',
+                                      attempt, type(e).__name__, e)
+
+                    # Whatever the IOError was, make sure to disconnect so we can
+                    # reconnect cleanly after.
+                    await self._connection.disconnect()
+                    connected = False
+                    await asyncio.sleep(self._delay, loop=self._loop)
+                    continue  # next iteration we will try to reconnect
 
             break  # all steps done, break retry loop
         else:
