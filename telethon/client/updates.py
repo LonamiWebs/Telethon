@@ -460,7 +460,7 @@ class UpdateMethods:
             if not pts_date:
                 # First-time, can't get difference. Get pts instead.
                 result = await self(functions.channels.GetFullChannelRequest(
-                    channel=where
+                    utils.get_input_channel(where)
                 ))
                 self._state_cache[channel_id] = result.full_chat.pts
                 return
