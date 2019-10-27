@@ -96,6 +96,7 @@ FILE_PART_0_MISSING,,File part 0 missing
 FILE_PART_EMPTY,400,The provided file part is empty
 FILE_PART_INVALID,400,The file part number is invalid
 FILE_PART_LENGTH_INVALID,400,The length of a file part is invalid
+FILE_PART_SIZE_CHANGED,400,The file part size (chunk size) cannot change during upload
 FILE_PART_SIZE_INVALID,400,The provided file part size is invalid
 FILE_PART_X_MISSING,400,Part {which} of the file is missing from storage
 FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
