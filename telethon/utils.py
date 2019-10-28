@@ -63,7 +63,7 @@ TG_JOIN_RE = re.compile(
 # See https://telegram.org/blog/inline-bots#how-does-it-work
 VALID_USERNAME_RE = re.compile(
     r'^([a-z]((?!__)[\w\d]){3,30}[a-z\d]'
-    r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub|ya)$',
+    r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub)$',
     re.IGNORECASE
 )
 
