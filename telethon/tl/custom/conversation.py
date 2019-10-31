@@ -333,6 +333,12 @@ class Conversation(ChatGetter):
         if message.chat_id != self.chat_id or message.out:
             return
 
+        # We have to update our incoming messages with the new edit date
+        for i, m in enumerate(self._incoming):
+            if m.id == message.id:
+                self._incoming[i] = message
+                break
+
         for msg_id, future in list(self._pending_edits.items()):
             if msg_id < message.id:
                 edit_ts = message.edit_date.timestamp()
