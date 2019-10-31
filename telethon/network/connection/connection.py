@@ -1,8 +1,12 @@
 import abc
 import asyncio
 import socket
-import ssl as ssl_mod
 import sys
+
+try:
+    import ssl as ssl_mod
+except ImportError:
+    ssl_mod = None
 
 from ...errors import InvalidChecksumError
 from ... import helpers
@@ -68,6 +72,12 @@ class Connection(abc.ABC):
                 loop=self._loop
             )
             if ssl:
+                if ssl_mod is None:
+                    raise RuntimeError(
+                        'Cannot use proxy that requires SSL'
+                        'without the SSL module being available'
+                    )
+
                 s.settimeout(timeout)
                 s = ssl_mod.wrap_socket(
                     s,
