@@ -551,6 +551,15 @@ class DownloadMethods:
                     await stream.close()
                     assert len(header) == 32
         """
+        info = utils._get_file_info(file)
+        if info.dc_id is not None:
+            dc_id = info.dc_id
+
+        if file_size is None:
+            file_size = info.size
+
+        file = info.location
+
         if chunk_size is None:
             chunk_size = request_size
 
@@ -567,11 +576,6 @@ class DownloadMethods:
             request_size = MIN_CHUNK_SIZE
         elif request_size > MAX_CHUNK_SIZE:
             request_size = MAX_CHUNK_SIZE
-
-        old_dc = dc_id
-        dc_id, file = utils.get_input_location(file)
-        if dc_id is None:
-            dc_id = old_dc
 
         if chunk_size == request_size \
                 and offset % MIN_CHUNK_SIZE == 0 \
