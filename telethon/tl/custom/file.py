@@ -122,20 +122,9 @@ class File:
         The size in bytes of this file.
         """
         if isinstance(self.media, types.Photo):
-            return self._size_for(self.media.sizes[-1])
+            return utils._photo_size_byte_count(self.media.sizes[-1])
         elif isinstance(self.media, types.Document):
             return self.media.size
-
-    @staticmethod
-    def _size_for(kind):
-        if isinstance(kind, types.PhotoSize):
-            return kind.size
-        elif isinstance(kind, types.PhotoStrippedSize):
-            return utils._stripped_real_length(kind.bytes)
-        elif isinstance(kind, types.PhotoCachedSize):
-            return len(kind.bytes)
-        # elif isinstance(kind, types.PhotoSizeEmpty):
-        return 0
 
     def _from_attr(self, cls, field):
         if isinstance(self.media, types.Document):

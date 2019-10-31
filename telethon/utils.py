@@ -14,6 +14,7 @@ import mimetypes
 import os
 import re
 import struct
+from collections import namedtuple
 from mimetypes import guess_extension
 from types import GeneratorType
 
@@ -66,6 +67,8 @@ VALID_USERNAME_RE = re.compile(
     r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub)$',
     re.IGNORECASE
 )
+
+_FileInfo = namedtuple('FileInfo', 'dc_id location size')
 
 _log = logging.getLogger(__name__)
 
@@ -676,9 +679,14 @@ def get_input_location(location):
     Note that this returns a tuple ``(dc_id, location)``, the
     ``dc_id`` being present if known.
     """
+    info = _get_file_info(location)
+    return info.dc_id, info.location
+
+
+def _get_file_info(location):
     try:
         if location.SUBCLASS_OF_ID == 0x1523d462:
-            return None, location  # crc32(b'InputFileLocation'):
+            return _FileInfo(None, location, None)  # crc32(b'InputFileLocation'):
     except AttributeError:
         _raise_cast_fail(location, 'InputFileLocation')
 
@@ -691,19 +699,19 @@ def get_input_location(location):
         location = location.photo
 
     if isinstance(location, types.Document):
-        return (location.dc_id, types.InputDocumentFileLocation(
+        return _FileInfo(location.dc_id, types.InputDocumentFileLocation(
             id=location.id,
             access_hash=location.access_hash,
             file_reference=location.file_reference,
             thumb_size=''  # Presumably to download one of its thumbnails
-        ))
+        ), location.size)
     elif isinstance(location, types.Photo):
-        return (location.dc_id, types.InputPhotoFileLocation(
+        return _FileInfo(location.dc_id, types.InputPhotoFileLocation(
             id=location.id,
             access_hash=location.access_hash,
             file_reference=location.file_reference,
             thumb_size=location.sizes[-1].type
-        ))
+        ), _photo_size_byte_count(location.sizes[-1]))
 
     if isinstance(location, types.FileLocationToBeDeprecated):
         raise TypeError('Unavailable location cannot be used as input')
@@ -1298,7 +1306,7 @@ def stripped_photo_to_jpg(stripped):
 
     Ported from https://github.com/telegramdesktop/tdesktop/blob/bec39d89e19670eb436dc794a8f20b657cb87c71/Telegram/SourceFiles/ui/image/image.cpp#L225
     """
-    # NOTE: Changes here should update _stripped_real_length
+    # NOTE: Changes here should update _photo_size_byte_count
     if len(stripped) < 3 or stripped[0] != 1:
         return stripped
 
@@ -1309,8 +1317,17 @@ def stripped_photo_to_jpg(stripped):
     return bytes(header) + stripped[3:] + footer
 
 
-def _stripped_real_length(stripped):
-    if len(stripped) < 3 or stripped[0] != 1:
-        return len(stripped)
+def _photo_size_byte_count(size):
+    if isinstance(size, types.PhotoSize):
+        return size.size
+    elif isinstance(size, types.PhotoStrippedSize):
+        if len(size.bytes) < 3 or size.bytes[0] != 1:
+            return len(size.bytes)
 
-    return len(stripped) + 622
+        return len(size.bytes) + 622
+    elif isinstance(size, types.PhotoCachedSize):
+        return len(size.bytes)
+    elif isinstance(size, types.PhotoSizeEmpty):
+        return 0
+    else:
+        return None
