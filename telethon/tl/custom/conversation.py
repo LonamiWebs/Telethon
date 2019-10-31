@@ -222,12 +222,13 @@ class Conversation(ChatGetter):
             default=None
         )
 
+        future = self._client.loop.create_future()
         if earliest_edit and earliest_edit.edit_date.timestamp() > target_date:
             self._edit_dates[target_id] = earliest_edit.edit_date.timestamp()
-            return earliest_edit
+            future.set_result(earliest_edit)
+            return future  # we should always return something we can await
 
         # Otherwise the next incoming response will be the one to use
-        future = self._client.loop.create_future()
         self._pending_edits[target_id] = future
         return self._get_result(future, start_time, timeout, self._pending_edits, target_id)
 
