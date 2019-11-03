@@ -1212,6 +1212,10 @@ class MessageMethods:
         """
         if not message:
             message = 0
+        elif hasattr(message, 'id'):
+            message = message.id
+        elif not isinstance(message, int):
+            raise ValueError('Incorrect message argument')
 
         entity = await self.get_input_entity(entity)
         await self(functions.messages.UpdatePinnedMessageRequest(
