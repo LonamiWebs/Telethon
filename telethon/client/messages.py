@@ -1210,9 +1210,7 @@ class MessageMethods:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
-        if not message:
-            message = 0
-
+        message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
         await self(functions.messages.UpdatePinnedMessageRequest(
             peer=entity,
