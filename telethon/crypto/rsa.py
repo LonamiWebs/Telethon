@@ -66,7 +66,7 @@ def encrypt(fingerprint, data, *, use_old=False):
         the cipher text, or None if no key matching this fingerprint is found.
     """
     global _server_keys
-    key, old = _server_keys.get(fingerprint, None)
+    key, old = _server_keys.get(fingerprint, [None, None])
     if (not key) or (old and not use_old):
         return None
 
