@@ -39,7 +39,7 @@ class AdminLogEvent:
     @property
     def date(self):
         """
-        The date when this event occured.
+        The date when this event occurred.
         """
         return self.original.date
 

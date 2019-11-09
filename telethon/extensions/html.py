@@ -126,7 +126,7 @@ def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
     Parses the given HTML message and returns its stripped representation
     plus a list of the MessageEntity's that were found.
 
-    :param message: the message with HTML to be parsed.
+    :param html: the message with HTML to be parsed.
     :return: a tuple consisting of (clean message, [message entities]).
     """
     if not html:

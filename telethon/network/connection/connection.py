@@ -254,7 +254,7 @@ class PacketCodec(abc.ABC):
 
     """
     This attribute should be re-defined by subclass to define if some
-    "magic bytes" should be sent to server right after conection is made to
+    "magic bytes" should be sent to server right after connection is made to
     signal which protocol will be used
     """
     tag = None
