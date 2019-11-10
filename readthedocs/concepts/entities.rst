@@ -108,7 +108,7 @@ you're able to just do this:
     # This method returns a list of Dialog, which
     # has the .entity attribute and other information.
     #
-    # This part is IMPORTANT, because it feels the entity cache.
+    # This part is IMPORTANT, because it fills the entity cache.
     dialogs = await client.get_dialogs()
 
     # All of these work and do the same.
