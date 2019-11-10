@@ -6,7 +6,17 @@ from ..tl import types, functions
 @name_inner_event
 class ChatAction(EventBuilder):
     """
-    Occurs whenever a user joins or leaves a chat, or a message is pinned.
+    Occurs on certain chat actions:
+
+    * Whenever a new chat is created.
+    * Whenever a chat's title or photo is changed or removed.
+    * Whenever a new message is pinned.
+    * Whenever a user joins or is added to the group.
+    * Whenever a user is removed or leaves a group if it has
+      less than 50 members or the removed user was a bot.
+
+    Note that "chat" refers to "small group, megagroup and broadcast
+    channel", whereas "group" refers to "small group and megagroup" only.
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):

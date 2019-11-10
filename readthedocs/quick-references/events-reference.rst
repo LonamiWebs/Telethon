@@ -90,7 +90,8 @@ Full documentation for the `MessageRead
 ChatAction
 ==========
 
-Occurs whenever a user joins or leaves a chat, or a message is pinned.
+Occurs on certain chat actions, such as chat title changes,
+user join or leaves, pinned messages, photo changes, etc.
 
 Full documentation for the `ChatAction
 <telethon.events.chataction.ChatAction>`.
