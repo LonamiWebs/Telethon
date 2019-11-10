@@ -164,7 +164,7 @@ class MessageParseMethods:
             mapping = sched_to_message
             opposite = id_to_message  # scheduled may be treated as normal, though
 
-        random_id = request if isinstance(request, int) else request.random_id
+        random_id = request if isinstance(request, (int, list)) else request.random_id
         if not utils.is_list_like(random_id):
             msg = mapping.get(random_to_id.get(random_id))
             if not msg:
