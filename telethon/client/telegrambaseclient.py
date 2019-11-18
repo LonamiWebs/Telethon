@@ -382,6 +382,15 @@ class TelegramBaseClient(abc.ABC):
         """
         return self._sender.disconnected
 
+    @property
+    def flood_sleep_threshold(self):
+        return self._flood_sleep_threshold
+
+    @flood_sleep_threshold.setter
+    def flood_sleep_threshold(self, value):
+        # None -> 0, negative values don't really matter
+        self._flood_sleep_threshold = min(value or 0, 24 * 60 * 60)
+
     # endregion
 
     # region Connecting
