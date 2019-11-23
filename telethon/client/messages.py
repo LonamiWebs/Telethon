@@ -914,6 +914,7 @@ class MessageMethods:
             parse_mode: str = (),
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
+            force_document: bool = False,
             buttons: 'hints.MarkupLike' = None,
             schedule: 'hints.DateLike' = None
     ) -> 'types.Message':
@@ -956,6 +957,9 @@ class MessageMethods:
             file (`str` | `bytes` | `file` | `media`, optional):
                 The file object that should replace the existing media
                 in the message.
+
+            force_document (`bool`, optional):
+                Whether to send the given file as a document or not.
 
             buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
@@ -1008,7 +1012,8 @@ class MessageMethods:
             entity = entity.to_id
 
         text, msg_entities = await self._parse_message_text(text, parse_mode)
-        file_handle, media, image = await self._file_to_media(file)
+        file_handle, media, image = await self._file_to_media(file,
+                force_document=force_document)
 
         if isinstance(entity, types.InputBotInlineMessageID):
             return await self(functions.messages.EditInlineBotMessageRequest(
