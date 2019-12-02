@@ -335,6 +335,12 @@ class UpdateMethods:
             except Exception:
                 continue  # Any disconnected exception should be ignored
 
+            # Don't bother sending pings until the low-level connection is
+            # ready, otherwise a lot of pings will be batched to be sent upon
+            # reconnect, when we really don't care about that.
+            if not self._sender._transport_connected():
+                continue
+
             # We also don't really care about their result.
             # Just send them periodically.
             try:

@@ -128,6 +128,13 @@ class MTProtoSender:
     def is_connected(self):
         return self._user_connected
 
+    def _transport_connected(self):
+        return (
+            not self._reconnecting
+            and self._connection is not None
+            and self._connection._connected
+        )
+
     async def disconnect(self):
         """
         Cleanly disconnects the instance from the network, cancels
