@@ -3,6 +3,7 @@ import asyncio
 import collections
 import logging
 import platform
+import sys
 import time
 import typing
 
@@ -250,6 +251,30 @@ class TelegramBaseClient(abc.ABC):
         self._entity_cache = EntityCache()
         self.api_id = int(api_id)
         self.api_hash = api_hash
+
+        # Python 3.8 changed the default event loop on Windows,
+        # which is now ProactorEventLoop and has some issues with
+        # the current proxy implementation (it lacks sock_connect).
+        #
+        # If we're using ProactorEventLoop and have a proxy, bail out
+        # early asking the user to consider changing the event loop
+        # TODO until we apply a different fix to this.
+        #
+        # See https://github.com/LonamiWebs/Telethon/issues/1337 for details.
+        proactor = getattr(asyncio, 'ProactorEventLoop', None)
+        if (proxy is not None
+                and proactor is not None
+                and sys.version_info >= (3, 8)
+                and isinstance(self._loop, proactor)):
+            raise TypeError(
+                'Cannot use the event loop of type {} with a proxy.\n\n'
+                'Change the event loop in use to use proxies:\n'
+                '# https://github.com/LonamiWebs/Telethon/issues/1337\n'
+                'import asyncio\n'
+                'asyncio.set_event_loop(asyncio.SelectorEventLoop())'.format(
+                    self._loop.__class__.__name__
+                )
+            )
 
         self._request_retries = request_retries
         self._connection_retries = connection_retries
