@@ -66,6 +66,13 @@ class _MessagesIter(RequestIter):
         else:
             self.from_id = None
 
+        # `messages.searchGlobal` only works with text `search` queries.
+        # If we want to perform global a search with `from_user` or `filter`,
+        # we have to perform a normal `messages.search`, *but* we can make the
+        # entity be `inputPeerEmpty`.
+        if not self.entity and (filter or from_user):
+            self.entity = types.InputPeerEmpty()
+
         if not self.entity:
             self.request = functions.messages.SearchGlobalRequest(
                 q=search or '',
@@ -336,7 +343,8 @@ class MessageMethods:
                 is the case.
 
                 Note that if you want to perform a global search,
-                you **must** set a non-empty `search` string.
+                you **must** set a non-empty `search` string, a `filter`.
+                or `from_user`.
 
             limit (`int` | `None`, optional):
                 Number of messages to be retrieved. Due to limitations with
