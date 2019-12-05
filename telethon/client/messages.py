@@ -501,7 +501,7 @@ class MessageMethods:
                 photos = await client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
 
                 # Get messages by ID:
-                message_1337 = await client.get_messages(chats, ids=1337)
+                message_1337 = await client.get_messages(chat, ids=1337)
         """
         if len(args) == 1 and 'limit' not in kwargs:
             if 'min_id' in kwargs and 'max_id' in kwargs:

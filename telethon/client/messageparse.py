@@ -75,7 +75,7 @@ class MessageParseMethods:
         """
         Returns a (parsed message, entities) tuple depending on ``parse_mode``.
         """
-        if parse_mode is ():
+        if parse_mode == ():
             parse_mode = self._parse_mode
         else:
             parse_mode = utils.sanitize_parse_mode(parse_mode)

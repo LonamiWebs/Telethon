@@ -464,11 +464,6 @@ class AuthMethods:
                 phone = '+34 123 123 123'
                 sent = await client.send_code_request(phone)
                 print(sent)
-
-                if sent.phone_registered:
-                    print('This phone has an existing account registered')
-                else:
-                    print('This phone does not have an account registered')
         """
         result = None
         phone = utils.parse_phone(phone) or self._phone
