@@ -252,22 +252,16 @@ class TelegramBaseClient(abc.ABC):
         self.api_id = int(api_id)
         self.api_hash = api_hash
 
-        # Python 3.8 changed the default event loop on Windows,
-        # which is now ProactorEventLoop and has some issues with
-        # the current proxy implementation (it lacks sock_connect).
+        # Current proxy implementation requires `sock_connect`, and some
+        # event loops lack this method. If the current loop is missing it,
+        # bail out early and suggest an alternative.
         #
-        # If we're using ProactorEventLoop and have a proxy, bail out
-        # early asking the user to consider changing the event loop
-        # TODO until we apply a different fix to this.
+        # TODO A better fix is obviously avoiding the use of `sock_connect`
         #
         # See https://github.com/LonamiWebs/Telethon/issues/1337 for details.
-        proactor = getattr(asyncio, 'ProactorEventLoop', None)
-        if (proxy is not None
-                and proactor is not None
-                and sys.version_info >= (3, 8)
-                and isinstance(self._loop, proactor)):
+        if not callable(getattr(self._loop, 'sock_connect', None)):
             raise TypeError(
-                'Cannot use the event loop of type {} with a proxy.\n\n'
+                'Event loop of type {} lacks `sock_connect`, which is needed to use proxies.\n\n'
                 'Change the event loop in use to use proxies:\n'
                 '# https://github.com/LonamiWebs/Telethon/issues/1337\n'
                 'import asyncio\n'
