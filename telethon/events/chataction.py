@@ -37,6 +37,21 @@ class ChatAction(EventBuilder):
                              kicked_by=True,
                              users=update.user_id)
 
+        elif isinstance(update, types.UpdateChannel):
+            # We rely on the fact that update._entities is set by _process_update
+            # This update only has the channel ID, and Telegram *should* have sent
+            # the entity in the Updates.chats list. If it did, check Channel.left
+            # to determine what happened.
+            peer = types.PeerChannel(update.channel_id)
+            channel = update._entities.get(utils.get_peer_id(peer))
+            if channel is not None:
+                if channel.left:
+                    return cls.Event(peer,
+                                     kicked_by=True)
+                else:
+                    return cls.Event(peer,
+                                     added_by=True)
+
         elif (isinstance(update, (
                 types.UpdateNewMessage, types.UpdateNewChannelMessage))
               and isinstance(update.message, types.MessageService)):
@@ -153,7 +168,7 @@ class ChatAction(EventBuilder):
 
             # If `from_id` was not present (it's `True`) or the affected
             # user was "kicked by itself", then it left. Else it was kicked.
-            if kicked_by is True or kicked_by == users:
+            if kicked_by is True or (users is not None and kicked_by == users):
                 self.user_left = True
             elif kicked_by:
                 self.user_kicked = True
