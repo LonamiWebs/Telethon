@@ -1,4 +1,4 @@
 cryptg
 pysocks
-hachoir3
+hachoir
 pillow

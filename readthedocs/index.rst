@@ -93,6 +93,7 @@ You can also use the menu on the left to quickly skip over sections.
     developing/test-servers.rst
     developing/project-structure.rst
     developing/coding-style.rst
+    developing/testing.rst
     developing/understanding-the-type-language.rst
     developing/tips-for-porting-the-project.rst
     developing/telegram-api-in-other-languages.rst

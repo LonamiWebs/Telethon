@@ -1,0 +1,8 @@
+[run]
+branch = true
+parallel = true
+source =
+    telethon
+
+[report]
+precision = 2
