@@ -184,6 +184,14 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     insert_at.sort(key=lambda t: t[0])
     while insert_at:
         at, what = insert_at.pop()
+
+        # If we are in the middle of a surrogate nudge the position by +1.
+        # Otherwise we would end up with malformed text and fail to encode.
+        # For example of bad input: "Hi \ud83d\ude1c"
+        # https://en.wikipedia.org/wiki/UTF-16#U+010000_to_U+10FFFF
+        if '\ud800' <= text[at] <= '\udfff':
+            at += 1
+
         text = text[:at] + what + text[at:]
 
     return del_surrogate(text)
