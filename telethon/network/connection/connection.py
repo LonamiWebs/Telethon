@@ -123,9 +123,11 @@ class Connection(abc.ABC):
                 try:
                     await self._writer.wait_closed()
                 except Exception as e:
-                    # Seen OSError: No route to host and [Errno 32] Broken pipe
-                    # Disconnecting should never raise
-                    self._log.warning('Unhandled %s on disconnect: %s', type(e), e)
+                    # Disconnecting should never raise. Seen:
+                    # * OSError: No route to host and
+                    # * OSError: [Errno 32] Broken pipe
+                    # * ConnectionResetError
+                    self._log.info('%s during disconnect: %s', type(e), e)
 
     def send(self, data):
         """
