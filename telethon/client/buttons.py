@@ -48,7 +48,7 @@ class ButtonMethods:
 
         if not utils.is_list_like(buttons):
             buttons = [[buttons]]
-        elif not utils.is_list_like(buttons[0]):
+        elif not buttons or not utils.is_list_like(buttons[0]):
             buttons = [buttons]
 
         is_inline = False
