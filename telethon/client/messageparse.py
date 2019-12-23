@@ -2,7 +2,7 @@ import itertools
 import re
 import typing
 
-from .. import utils
+from .. import helpers, utils
 from ..tl import types
 
 if typing.TYPE_CHECKING:
@@ -134,7 +134,7 @@ class MessageParseMethods:
                 id_to_message[update.message.id] = update.message
 
             elif (isinstance(update, types.UpdateEditMessage)
-                  and not isinstance(request.peer, types.InputPeerChannel)):
+                  and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):
                 if request.id == update.message.id:
                     update.message._finish_init(self, entities, input_chat)
                     return update.message

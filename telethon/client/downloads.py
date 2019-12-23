@@ -257,7 +257,8 @@ class DownloadMethods:
             # See issue #500, Android app fails as of v4.6.0 (1155).
             # The fix seems to be using the full channel chat photo.
             ie = await self.get_input_entity(entity)
-            if isinstance(ie, types.InputPeerChannel):
+            ty = helpers._entity_type(ie)
+            if ty == helpers._EntityType.CHANNEL:
                 full = await self(functions.channels.GetFullChannelRequest(ie))
                 return await self._download_photo(
                     full.full_chat.chat_photo, file,

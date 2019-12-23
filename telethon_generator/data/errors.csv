@@ -149,6 +149,7 @@ MESSAGE_IDS_EMPTY,400,No message ids were provided
 MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that operation on such message"
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
+MSG_ID_INVALID,400,The message ID used in the peer was invalid
 MSG_WAIT_FAILED,400,A waiting call returned an error
 MT_SEND_QUEUE_TOO_LONG,500,
 NEED_CHAT_INVALID,500,The provided chat is invalid

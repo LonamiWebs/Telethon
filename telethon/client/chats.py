@@ -108,8 +108,8 @@ class _ParticipantsIter(RequestIter):
                 filter = filter()
 
         entity = await self.client.get_input_entity(entity)
-        if search and (filter
-                       or not isinstance(entity, types.InputPeerChannel)):
+        ty = helpers._entity_type(entity)
+        if search and (filter or ty != helpers._EntityType.CHANNEL):
             # We need to 'search' ourselves unless we have a PeerChannel
             search = search.casefold()
 
@@ -123,7 +123,7 @@ class _ParticipantsIter(RequestIter):
         # Only used for channels, but we should always set the attribute
         self.requests = []
 
-        if isinstance(entity, types.InputPeerChannel):
+        if ty == helpers._EntityType.CHANNEL:
             self.total = (await self.client(
                 functions.channels.GetFullChannelRequest(entity)
             )).full_chat.participants_count
@@ -149,7 +149,7 @@ class _ParticipantsIter(RequestIter):
                     hash=0
                 ))
 
-        elif isinstance(entity, types.InputPeerChat):
+        elif ty == helpers._EntityType.CHAT:
             full = await self.client(
                 functions.messages.GetFullChatRequest(entity.chat_id))
             if not isinstance(
@@ -281,7 +281,8 @@ class _ProfilePhotoIter(RequestIter):
             self, entity, offset, max_id
     ):
         entity = await self.client.get_input_entity(entity)
-        if isinstance(entity, (types.InputPeerUser, types.InputPeerSelf)):
+        ty = helpers._entity_type(entity)
+        if ty == helpers._EntityType.USER:
             self.request = functions.photos.GetUserPhotosRequest(
                 entity,
                 offset=offset,
@@ -864,7 +865,8 @@ class ChatMethods:
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
-        if not isinstance(user, (types.InputPeerUser, types.InputPeerSelf)):
+        ty = helpers._entity_type(user)
+        if ty != helpers._EntityType.USER:
             raise ValueError('You must pass a user entity')
 
         perm_names = (
@@ -872,7 +874,8 @@ class ChatMethods:
             'ban_users', 'invite_users', 'pin_messages', 'add_admins'
         )
 
-        if isinstance(entity, types.InputPeerChannel):
+        ty = helpers._entity_type(entity)
+        if ty == helpers._EntityType.CHANNEL:
             # If we try to set these permissions in a megagroup, we
             # would get a RIGHT_FORBIDDEN. However, it makes sense
             # that an admin can post messages, so we want to avoid the error
@@ -894,7 +897,7 @@ class ChatMethods:
                 for name in perm_names
             }), rank=title or ''))
 
-        elif isinstance(entity, types.InputPeerChat):
+        elif ty == helpers._EntityType.CHAT:
             # If the user passed any permission in a small
             # group chat, they must be a full admin to have it.
             if is_admin is None:
@@ -1015,7 +1018,8 @@ class ChatMethods:
                 await client.edit_permissions(chat, user)
         """
         entity = await self.get_input_entity(entity)
-        if not isinstance(entity, types.InputPeerChannel):
+        ty = helpers._entity_type(entity)
+        if ty != helpers._EntityType.CHANNEL:
             raise ValueError('You must pass either a channel or a supergroup')
 
         rights = types.ChatBannedRights(
@@ -1040,11 +1044,12 @@ class ChatMethods:
             ))
 
         user = await self.get_input_entity(user)
+        ty = helpers._entity_type(user)
+        if ty != helpers._EntityType.USER:
+            raise ValueError('You must pass a user entity')
+
         if isinstance(user, types.InputPeerSelf):
             raise ValueError('You cannot restrict yourself')
-
-        if not isinstance(user, types.InputPeerUser):
-            raise ValueError('You must pass a user entity')
 
         return await self(functions.channels.EditBannedRequest(
             channel=entity,
@@ -1086,12 +1091,13 @@ class ChatMethods:
         """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
-        if not isinstance(user, (types.InputPeerUser, types.InputPeerSelf)):
+        if helpers._entity_type(user) != helpers._EntityType.USER:
             raise ValueError('You must pass a user entity')
 
-        if isinstance(entity, types.InputPeerChat):
+        ty = helpers._entity_type(entity)
+        if ty == helpers._EntityType.CHAT:
             await self(functions.messages.DeleteChatUserRequest(entity.chat_id, user))
-        elif isinstance(entity, types.InputPeerChannel):
+        elif ty == helpers._EntityType.CHANNEL:
             if isinstance(user, types.InputPeerSelf):
                 await self(functions.channels.LeaveChannelRequest(entity))
             else:

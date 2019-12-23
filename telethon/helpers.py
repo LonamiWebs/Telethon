@@ -1,8 +1,15 @@
 """Various helpers not related to the Telegram API itself"""
 import asyncio
+import enum
 import os
 import struct
 from hashlib import sha1
+
+
+class _EntityType(enum.Enum):
+    USER = 0
+    CHAT = 1
+    CHANNEL = 2
 
 
 # region Multiple utilities
@@ -130,6 +137,41 @@ def _sync_exit(self, *args):
 
     return loop.run_until_complete(self.__aexit__(*args))
 
+
+def _entity_type(entity):
+    # This could be a `utils` method that just ran a few `isinstance` on
+    # `utils.get_peer(...)`'s result. However, there are *a lot* of auto
+    # casts going on, plenty of calls and temporary short-lived objects.
+    #
+    # So we just check if a string is in the class name.
+    # Still, assert that it's the right type to not return false results.
+    try:
+        if entity.SUBCLASS_OF_ID not in (
+                0x2d45687,  # crc32(b'Peer')
+                0xc91c90b6,  # crc32(b'InputPeer')
+                0xe669bf46,  # crc32(b'InputUser')
+                0x40f202fd,  # crc32(b'InputChannel')
+                0x2da17977,  # crc32(b'User')
+                0xc5af5d94,  # crc32(b'Chat')
+                0x1f4661b9,  # crc32(b'UserFull')
+                0xd49a2697,  # crc32(b'ChatFull')
+        ):
+            raise TypeError('{} does not have any entity type'.format(entity))
+    except AttributeError:
+        raise TypeError('{} is not a TLObject, cannot determine entity type'.format(entity))
+
+    name = entity.__class__.__name__
+    if 'User' in name:
+        return _EntityType.USER
+    elif 'Chat' in name:
+        return _EntityType.CHAT
+    elif 'Channel' in name:
+        return _EntityType.CHANNEL
+    elif 'Self' in name:
+        return _EntityType.USER
+
+    # 'Empty' in name or not found, we don't care, not a valid entity.
+    raise TypeError('{} does not have any entity type'.format(entity))
 
 # endregion
 

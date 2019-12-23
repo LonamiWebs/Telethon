@@ -3,7 +3,7 @@ import inspect
 import itertools
 import typing
 
-from .. import utils, hints
+from .. import helpers, utils, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
@@ -436,10 +436,11 @@ class DialogMethods:
                 await client.delete_dialog('username')
         """
         entity = await self.get_input_entity(entity)
-        if isinstance(entity, types.InputPeerChannel):
+        ty = helpers._entity_type(entity)
+        if ty == helpers._EntityType.CHANNEL:
             return await self(functions.channels.LeaveChannelRequest(entity))
 
-        if isinstance(entity, types.InputPeerChat):
+        if ty == helpers._EntityType.CHAT:
             result = await self(functions.messages.DeleteChatUserRequest(
                 entity.chat_id, types.InputUserSelf()))
         else:

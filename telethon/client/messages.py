@@ -2,7 +2,7 @@ import inspect
 import itertools
 import typing
 
-from .. import utils, errors, hints
+from .. import helpers, utils, errors, hints
 from ..requestiter import RequestIter
 from ..tl import types, functions
 
@@ -57,8 +57,8 @@ class _MessagesIter(RequestIter):
 
         if from_user:
             from_user = await self.client.get_input_entity(from_user)
-            if not isinstance(from_user, (
-                    types.InputPeerUser, types.InputPeerSelf)):
+            ty = helpers._entity_type(from_user)
+            if ty != helpers._EntityType.USER:
                 from_user = None  # Ignore from_user unless it's a user
 
         if from_user:
@@ -86,8 +86,8 @@ class _MessagesIter(RequestIter):
                 filter = types.InputMessagesFilterEmpty()
 
             # Telegram completely ignores `from_id` in private chats
-            if isinstance(
-                    self.entity, (types.InputPeerUser, types.InputPeerSelf)):
+            ty = helpers._entity_type(self.entity)
+            if ty == helpers._EntityType.USER:
                 # Don't bother sending `from_user` (it's ignored anyway),
                 # but keep `from_id` defined above to check it locally.
                 from_user = None
@@ -246,6 +246,7 @@ class _IDsIter(RequestIter):
         self._ids = list(reversed(ids)) if self.reverse else ids
         self._offset = 0
         self._entity = (await self.client.get_input_entity(entity)) if entity else None
+        self._ty = helpers._EntityType(self._entity) if self._entity else None
 
         # 30s flood wait every 300 messages (3 requests of 100 each, 30 of 10, etc.)
         if self.wait_time is None:
@@ -259,7 +260,7 @@ class _IDsIter(RequestIter):
         self._offset += _MAX_CHUNK_SIZE
 
         from_id = None  # By default, no need to validate from_id
-        if isinstance(self._entity, (types.InputChannel, types.InputPeerChannel)):
+        if self._ty == helpers._EntityType.CHANNEL:
             try:
                 r = await self.client(
                     functions.channels.GetMessagesRequest(self._entity, ids))
@@ -1108,7 +1109,7 @@ class MessageMethods:
         )
 
         entity = await self.get_input_entity(entity) if entity else None
-        if isinstance(entity, types.InputPeerChannel):
+        if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
             return await self([functions.channels.DeleteMessagesRequest(
                          entity, list(c)) for c in utils.chunks(message_ids)])
         else:
@@ -1181,7 +1182,7 @@ class MessageMethods:
                 return True
 
         if max_id is not None:
-            if isinstance(entity, types.InputPeerChannel):
+            if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
                 return await self(functions.channels.ReadHistoryRequest(
                     utils.get_input_channel(entity), max_id=max_id))
             else:

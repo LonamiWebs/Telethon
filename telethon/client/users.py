@@ -4,7 +4,7 @@ import itertools
 import time
 import typing
 
-from .. import errors, utils, hints
+from .. import errors, helpers, utils, hints
 from ..errors import MultiError, RPCError
 from ..helpers import retry_range
 from ..tl import TLRequest, types, functions
@@ -258,12 +258,20 @@ class UserMethods:
             else:
                 inputs.append(await self.get_input_entity(x))
 
-        users = [x for x in inputs
-                 if isinstance(x, (types.InputPeerUser, types.InputPeerSelf))]
-        chats = [x.chat_id for x in inputs
-                 if isinstance(x, types.InputPeerChat)]
-        channels = [x for x in inputs
-                    if isinstance(x, types.InputPeerChannel)]
+        lists = {
+            helpers._EntityType.USER: [],
+            helpers._EntityType.CHAT: [],
+            helpers._EntityType.CHANNEL: [],
+        }
+        for x in inputs:
+            try:
+                lists[helpers._entity_type(x)].append(x)
+            except TypeError:
+                pass
+
+        users = lists[helpers._EntityType.USER]
+        chats = lists[helpers._EntityType.CHAT]
+        channels = lists[helpers._EntityType.CHANNEL]
         if users:
             # GetUsersRequest has a limit of 200 per call
             tmp = []
