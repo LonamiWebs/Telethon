@@ -148,6 +148,7 @@ MESSAGE_EMPTY,400,Empty or invalid UTF-8 message was sent
 MESSAGE_IDS_EMPTY,400,No message ids were provided
 MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that operation on such message"
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
+MESSAGE_POLL_CLOSED,400,The poll was closed and can no longer be voted on
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
 MSG_ID_INVALID,400,The message ID used in the peer was invalid
 MSG_WAIT_FAILED,400,A waiting call returned an error
@@ -159,6 +160,7 @@ NEW_SALT_INVALID,400,The new salt is invalid
 NEW_SETTINGS_INVALID,400,The new settings are invalid
 OFFSET_INVALID,400,"The given offset was invalid, it must be divisible by 1KB. See https://core.telegram.org/api/files#downloading-files"
 OFFSET_PEER_ID_INVALID,400,The provided offset peer is invalid
+OPTION_INVALID,400,The option specified is invalid and does not exist in the target poll
 OPTIONS_TOO_MUCH,400,You defined too many options for the poll
 PACK_SHORT_NAME_INVALID,400,"Invalid sticker pack name. It must begin with a letter, can't contain consecutive underscores and must end in ""_by_<bot username>""."
 PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
@@ -197,6 +199,7 @@ PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Teleg
 PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
 PIN_RESTRICTED,400,You can't pin messages in private chats with other people
 POLL_OPTION_DUPLICATE,400,A duplicate option was sent in the same poll
+POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too long)
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PTS_CHANGE_EMPTY,500,No PTS change
