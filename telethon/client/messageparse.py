@@ -150,6 +150,19 @@ class MessageParseMethods:
                 update.message._finish_init(self, entities, input_chat)
                 sched_to_message[update.message.id] = update.message
 
+            elif isinstance(update, types.UpdateMessagePoll):
+                if request.media.poll.id == update.poll_id:
+                    m = types.Message(
+                        id=request.id,
+                        to_id=utils.get_peer(request.peer),
+                        media=types.MessageMediaPoll(
+                            poll=update.poll,
+                            results=update.results
+                        )
+                    )
+                    m._finish_init(self, entities, input_chat)
+                    return m
+
         if request is None:
             return id_to_message
 
