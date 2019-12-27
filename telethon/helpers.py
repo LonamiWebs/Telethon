@@ -106,8 +106,20 @@ async def _cancel(log, **tasks):
             await task
         except asyncio.CancelledError:
             pass
+        except RuntimeError:
+            # Probably: RuntimeError: await wasn't used with future
+            #
+            # Happens with _asyncio.Task instances (in "Task cancelling" state)
+            # trying to SIGINT the program right during initial connection, on
+            # _recv_loop coroutine (but we're creating its task explicitly with
+            # a loop, so how can it bug out like this?).
+            #
+            # Since we're aware of this error there's no point in logging it.
+            # *May* be https://bugs.python.org/issue37172
+            pass
         except Exception:
-            log.exception('Unhandled exception from %s after cancel', name)
+            log.exception('Unhandled exception from %s after cancelling '
+                          '%s (%s)', name, type(task), task)
 
 
 def _sync_enter(self):
