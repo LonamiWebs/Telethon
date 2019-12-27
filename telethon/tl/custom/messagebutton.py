@@ -78,7 +78,7 @@ class MessageButton:
         """
         if isinstance(self.button, types.KeyboardButton):
             return await self._client.send_message(
-                self._chat, self.button.text, reply_to=self._msg_id, parse_mode=None)
+                self._chat, self.button.text, parse_mode=None)
         elif isinstance(self.button, types.KeyboardButtonCallback):
             req = functions.messages.GetBotCallbackAnswerRequest(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data
