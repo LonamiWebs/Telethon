@@ -500,6 +500,11 @@ class UploadMethods:
             if pos is not None:
                 file.seek(pos)
 
+            if not isinstance(data, bytes):
+                raise TypeError(
+                    'file descriptor returned {}, not bytes (you must '
+                    'open the file in bytes mode)'.format(type(data)))
+
             file = data
             file_size = len(file)
 

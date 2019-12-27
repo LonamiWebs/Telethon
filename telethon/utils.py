@@ -741,7 +741,7 @@ def _get_extension(file):
     elif isinstance(file, bytes):
         kind = imghdr.what(io.BytesIO(file))
         return ('.' + kind) if kind else ''
-    elif isinstance(file, io.IOBase) and file.seekable():
+    elif isinstance(file, io.IOBase) and not isinstance(file, io.TextIOBase) and file.seekable():
         kind = imghdr.what(file)
         return ('.' + kind) if kind is not None else ''
     elif getattr(file, 'name', None):
