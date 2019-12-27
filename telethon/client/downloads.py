@@ -434,7 +434,10 @@ class DownloadMethods:
         try:
             async for chunk in self.iter_download(
                     input_location, request_size=part_size, dc_id=dc_id):
-                f.write(chunk)
+                r = f.write(chunk)
+                if inspect.isawaitable(r):
+                    await r
+
                 if progress_callback:
                     r = progress_callback(f.tell(), file_size)
                     if inspect.isawaitable(r):

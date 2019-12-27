@@ -484,6 +484,9 @@ class UploadMethods:
         elif isinstance(file, bytes):
             file_size = len(file)
         else:
+            # `aiofiles` shouldn't base `IOBase` because they change the
+            # methods' definition. `seekable` would be `async` but since
+            # we won't get to check that, there's no need to maybe-await.
             if isinstance(file, io.IOBase) and file.seekable():
                 pos = file.tell()
             else:
@@ -491,6 +494,9 @@ class UploadMethods:
 
             # TODO Don't load the entire file in memory always
             data = file.read()
+            if inspect.isawaitable(data):
+                data = await data
+
             if pos is not None:
                 file.seek(pos)
 
@@ -591,7 +597,9 @@ class UploadMethods:
         if as_image is None:
             as_image = utils.is_image(file) and not force_document
 
-        if not isinstance(file, (str, bytes, io.IOBase)):
+        # `aiofiles` do not base `io.IOBase` but do have `read`, so we
+        # just check for the read attribute to see if it's file-like.
+        if not isinstance(file, (str, bytes)) and not hasattr(file, 'read'):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
             # getting the input media for whatever they passed and send it.
