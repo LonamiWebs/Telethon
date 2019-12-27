@@ -45,7 +45,7 @@ class ChatAction(EventBuilder):
             peer = types.PeerChannel(update.channel_id)
             channel = update._entities.get(utils.get_peer_id(peer))
             if channel is not None:
-                if channel.left:
+                if isinstance(channel, types.ChannelForbidden) or channel.left:
                     return cls.Event(peer,
                                      kicked_by=True)
                 else:
