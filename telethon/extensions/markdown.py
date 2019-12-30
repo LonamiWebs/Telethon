@@ -189,7 +189,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
         # Otherwise we would end up with malformed text and fail to encode.
         # For example of bad input: "Hi \ud83d\ude1c"
         # https://en.wikipedia.org/wiki/UTF-16#U+010000_to_U+10FFFF
-        if '\ud800' <= text[at] <= '\udfff':
+        while at < len(text) and '\ud800' <= text[at] <= '\udfff':
             at += 1
 
         text = text[:at] + what + text[at:]
