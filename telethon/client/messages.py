@@ -246,7 +246,7 @@ class _IDsIter(RequestIter):
         self._ids = list(reversed(ids)) if self.reverse else ids
         self._offset = 0
         self._entity = (await self.client.get_input_entity(entity)) if entity else None
-        self._ty = helpers._EntityType(self._entity) if self._entity else None
+        self._ty = helpers._entity_type(self._entity) if self._entity else None
 
         # 30s flood wait every 300 messages (3 requests of 100 each, 30 of 10, etc.)
         if self.wait_time is None:
