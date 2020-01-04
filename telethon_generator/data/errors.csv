@@ -106,6 +106,7 @@ FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
 FOLDER_ID_EMPTY,400,The folder you tried to delete was already empty
 FOLDER_ID_INVALID,400,The folder you tried to use was not valid
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
+GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid
@@ -133,7 +134,7 @@ MAX_ID_INVALID,400,The provided max ID is invalid
 MAX_QTS_INVALID,400,The provided QTS were invalid
 MD5_CHECKSUM_INVALID,,The MD5 check-sums do not match
 MEDIA_CAPTION_TOO_LONG,400,The caption is too long
-MEDIA_EMPTY,400,The provided media object is invalid
+MEDIA_EMPTY,400,The provided media object is invalid or the current account may not be able to send it (such as games as users)
 MEDIA_INVALID,400,Media invalid
 MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as stickers or voice notes)
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)

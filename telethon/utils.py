@@ -483,7 +483,10 @@ def get_input_media(
                 file=media, mime_type=mime, attributes=attrs)
 
     if isinstance(media, types.MessageMediaGame):
-        return types.InputMediaGame(id=media.game.id)
+        return types.InputMediaGame(id=types.InputGameID(
+            id=media.game.id,
+            access_hash=media.game.access_hash
+        ))
 
     if isinstance(media, types.MessageMediaContact):
         return types.InputMediaContact(
