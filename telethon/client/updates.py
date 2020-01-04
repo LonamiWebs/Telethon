@@ -502,6 +502,14 @@ class UpdateMethods:
 
     async def _handle_auto_reconnect(self: 'TelegramClient'):
         # TODO Catch-up
+        # For now we make a high-level request to let Telegram
+        # know we are still interested in receiving more updates.
+        try:
+            await self.get_me()
+        except Exception as e:
+            self._log[__name__].warning('Error executing high-level request '
+                                        'after reconnect: %s: %s', type(e), e)
+
         return
         try:
             self._log[__name__].info(
