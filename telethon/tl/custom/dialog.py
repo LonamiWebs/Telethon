@@ -112,7 +112,10 @@ class Dialog:
         Shorthand for `telethon.client.dialogs.DialogMethods.delete_dialog`
         with ``entity`` already set.
         """
-        await self._client.delete_dialog(self.input_entity, revoke=revoke)
+        # Pass the entire entity so the method can determine whether
+        # the `Chat` is deactivated (in which case we don't kick ourselves,
+        # or it would raise `PEER_ID_INVALID`).
+        await self._client.delete_dialog(self.entity, revoke=revoke)
 
     async def archive(self, folder=1):
         """

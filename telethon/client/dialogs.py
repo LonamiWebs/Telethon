@@ -3,7 +3,7 @@ import inspect
 import itertools
 import typing
 
-from .. import helpers, utils, hints
+from .. import helpers, utils, hints, errors
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
@@ -435,14 +435,25 @@ class DialogMethods:
                 # Leaving a channel by username
                 await client.delete_dialog('username')
         """
+        # If we have enough information (`Dialog.delete` gives it to us),
+        # then we know we don't have to kick ourselves in deactivated chats.
+        if isinstance(entity, types.Chat):
+            deactivated = entity.deactivated
+        else:
+            deactivated = False
+
         entity = await self.get_input_entity(entity)
         ty = helpers._entity_type(entity)
         if ty == helpers._EntityType.CHANNEL:
             return await self(functions.channels.LeaveChannelRequest(entity))
 
-        if ty == helpers._EntityType.CHAT:
-            result = await self(functions.messages.DeleteChatUserRequest(
-                entity.chat_id, types.InputUserSelf()))
+        if ty == helpers._EntityType.CHAT and not deactivated:
+            try:
+                result = await self(functions.messages.DeleteChatUserRequest(
+                    entity.chat_id, types.InputUserSelf()))
+            except errors.PeerIdInvalidError:
+                # Happens if we didn't have the deactivated information
+                result = None
         else:
             result = None
 
