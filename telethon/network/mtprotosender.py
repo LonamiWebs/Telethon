@@ -234,9 +234,9 @@ class MTProtoSender:
             break  # all steps done, break retry loop
         else:
             if not connected:
-                raise ConnectionError('Connection to Telegram failed %d time(s)', self._retries)
+                raise ConnectionError('Connection to Telegram failed {} time(s)'.format(self._retries))
 
-            e = ConnectionError('auth_key generation failed %d time(s)', self._retries)
+            e = ConnectionError('auth_key generation failed {} time(s)'.format(self._retries))
             await self._disconnect(error=e)
             raise e
 
