@@ -281,7 +281,7 @@ class UserMethods:
             users = tmp
         if chats:  # TODO Handle chats slice?
             chats = (await self(
-                functions.messages.GetChatsRequest(chats))).chats
+                functions.messages.GetChatsRequest([x.chat_id for x in chats]))).chats
         if channels:
             channels = (await self(
                 functions.channels.GetChannelsRequest(channels))).chats
