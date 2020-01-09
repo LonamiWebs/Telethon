@@ -13,6 +13,8 @@ class Factorization:
         """
         Factorizes the given large integer.
 
+        Implementation from https://comeoncodeon.wordpress.com/2010/09/18/pollard-rho-brent-integer-factorization/.
+
         :param pq: the prime pair pq.
         :return: a tuple containing the two factors p and q.
         """
