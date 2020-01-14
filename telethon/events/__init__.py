@@ -8,7 +8,7 @@ from .newmessage import NewMessage
 from .userupdate import UserUpdate
 from .callbackquery import CallbackQuery
 from .inlinequery import InlineQuery
-
+from .secret import SecretChat
 
 _HANDLERS_ATTRIBUTE = '__tl.handlers'
 

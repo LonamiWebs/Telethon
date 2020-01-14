@@ -362,6 +362,13 @@ class TelegramBaseClient(abc.ABC):
         # A place to store if channels are a megagroup or not (see `edit_admin`)
         self._megagroup_cache = {}
 
+        # Secret chats
+        self.temp_secret_chat = {}
+        self.secret_chats = {}
+        self.dh_config = None
+
+
+
     # endregion
 
     # region Properties

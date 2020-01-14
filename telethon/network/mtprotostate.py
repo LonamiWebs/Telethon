@@ -1,7 +1,7 @@
 import os
 import struct
 import time
-from hashlib import sha256
+from hashlib import sha256, sha1
 
 from ..crypto import AES
 from ..errors import SecurityError, InvalidBufferError
@@ -58,6 +58,25 @@ class MTProtoState:
         used when the time offset changed.
         """
         message.msg_id = self._get_new_msg_id()
+
+    @staticmethod
+    def _old_calc_key(auth_key, msg_key, client):
+        """
+        Calculate the key based on Telegram guidelines for MTProto 1,
+        specifying whether it's the client or not. See
+        https://core.telegram.org/mtproto/description#defining-aes-key-and-initialization-vector
+        """
+        x = 0 if client else 8
+
+        sha1a = sha1(msg_key + auth_key[x:x + 32]).digest()
+        sha1b = sha1(auth_key[x + 32:x + 48] + msg_key + auth_key[x + 48:x + 64]).digest()
+        sha1c = sha1(auth_key[x + 64:x + 96] + msg_key).digest()
+        sha1d = sha1(msg_key + auth_key[x + 96:x + 128]).digest()
+
+        aes_key = sha1a[0:8] + sha1b[8:20] + sha1c[4:16]
+        aes_iv = sha1a[8:20] + sha1b[0:8] + sha1c[16:20] + sha1d[0:8]
+
+        return aes_key, aes_iv
 
     @staticmethod
     def _calc_key(auth_key, msg_key, client):
