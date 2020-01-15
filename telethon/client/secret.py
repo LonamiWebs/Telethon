@@ -103,16 +103,122 @@ class SecretChatMethods:
     def generate_secret_out_seq_no(self, chat_id):
         return self.secret_chats[chat_id].out_seq_no * 2 + self.secret_chats[chat_id].out_seq_no_x
 
+    async def rekey(self, peer):
+        peer = self.get_secret_chat(peer)
+        self._log.debug(f'Rekeying secret chat {peer}')
+        dh_config = await self.get_dh_config()
+        a = int.from_bytes(os.urandom(256), 'big', signed=False)
+        g_a = pow(dh_config.g, a, dh_config.p)
+        self.check_g_a(g_a, dh_config.p)
+        e = random.randint(10000000, 99999999)
+        self.temp_rekeyed_secret_chats[e] = a
+        peer.rekeying = [1, e]
+        message = DecryptedMessageService(action=DecryptedMessageActionRequestKey(
+            g_a=g_a.to_bytes(256, 'big', signed=False),
+            exchange_id=e,
+        ))
+        message = await self.encrypt_secret_message(peer, message)
+        await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+
+        return e
+
+    async def accept_rekey(self, peer, action: DecryptedMessageActionRequestKey):
+        peer = self.get_secret_chat(peer)
+        if peer.rekeying[0] != 0:
+            my_exchange_id = peer.rekeying[1]
+            other_exchange_id = action.exchange_id
+            if my_exchange_id > other_exchange_id:
+                return
+            if my_exchange_id == other_exchange_id:
+                peer.rekeying = [0]
+                return
+        self._log.debug(f'Accepting rekeying secret chat {peer}')
+        dh_config = await self.get_dh_config()
+        random_bytes = os.urandom(256)
+        b = int.from_bytes(random_bytes, byteorder="big", signed=False)
+        g_a = int.from_bytes(action.g_a, 'big', signed=False)
+        self.check_g_a(g_a, dh_config.p)
+        res = pow(g_a, b, dh_config.p)
+        auth_key = res.to_bytes(256, 'big', signed=False)
+        key = ChatKey(auth_key)
+        key.fingerprint = struct.unpack('<q', sha1(key.auth_key).digest()[-8:])[0]
+        self.temp_rekeyed_secret_chats[action.exchange_id] = key
+        peer.rekeying = [2, action.exchange_id]
+        g_b = pow(dh_config.g, b, dh_config.p)
+        self.check_g_a(g_b, dh_config.p)
+        message = DecryptedMessageService(action=DecryptedMessageActionAcceptKey(
+            g_b=g_b.to_bytes(256, 'big', signed=False),
+            exchange_id=action.exchange_id,
+            key_fingerprint=key.fingerprint
+        ))
+        message = await self.encrypt_secret_message(peer, message)
+        await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+
+    async def commit_rekey(self, peer, action: DecryptedMessageActionAcceptKey):
+        peer = self.get_secret_chat(peer)
+        if peer.rekeying[0] != 1 or not self.temp_rekeyed_secret_chats.get(action.exchange_id, None):
+            peer.rekeying = [0]
+            return
+        self._log.debug(f'Committing rekeying secret chat {peer}')
+        dh_config = await self.get_dh_config()
+        g_b = int.from_bytes(action.g_b, 'big', signed=False)
+        self.check_g_a(g_b, dh_config.p)
+        res = pow(g_b, self.temp_rekeyed_secret_chats[action.exchange_id], dh_config.p)
+        auth_key = res.to_bytes(256, 'big', signed=False)
+        key = ChatKey(auth_key)
+        key.fingerprint = struct.unpack('<q', sha1(key.auth_key).digest()[-8:])[0]
+        if key.fingerprint != action.key_fingerprint:
+            message = DecryptedMessageService(action=DecryptedMessageActionAbortKey(
+                exchange_id=action.exchange_id,
+            ))
+            message = await self.encrypt_secret_message(peer, message)
+            await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+            raise SecurityError("Invalid Key fingerprint")
+        message = DecryptedMessageService(action=DecryptedMessageActionCommitKey(
+            exchange_id=action.exchange_id,
+            key_fingerprint=key.fingerprint
+        ))
+        message = await self.encrypt_secret_message(peer, message)
+        await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+        del self.temp_rekeyed_secret_chats[action.exchange_id]
+        peer.rekeying = [0]
+        peer.key = key
+        peer.ttl = 100
+        peer.updated = time()
+
+    async def complete_rekey(self, peer, action: DecryptedMessageActionCommitKey):
+        peer = self.get_secret_chat(peer)
+        if peer.rekeying[0] != 2 or self.temp_rekeyed_secret_chats.get(action.exchange_id, None):
+            return
+        if self.temp_rekeyed_secret_chats.get[action.exchange_id] != action.key_fingerprint:
+            message = DecryptedMessageService(action=DecryptedMessageActionAbortKey(
+                exchange_id=action.exchange_id,
+            ))
+            message = await self.encrypt_secret_message(peer, message)
+            await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+            raise SecurityError("Invalid Key fingerprint")
+
+        self._log.debug(f'Completing rekeying secret chat {peer}')
+        peer.rekeying = [0]
+        peer.key = self.temp_rekeyed_secret_chats[action.exchange_id]
+        peer.ttr = 100
+        peer.updated = time()
+        del self.temp_rekeyed_secret_chats[action.exchange_id]
+        message = DecryptedMessageService(action=DecryptedMessageActionNoop())
+        message = await self.encrypt_secret_message(peer, message)
+        await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
+        self._log.debug(f'Secret chat {peer} rekeyed succrsfully')
+
     async def handle_decrypted_message(self, decrypted_message, peer: Chats):
         if isinstance(decrypted_message, (DecryptedMessageService, DecryptedMessageService8)):
             if isinstance(decrypted_message.action, DecryptedMessageActionRequestKey):
-                # TODO accept rekey
+                await self.accept_rekey(peer, decrypted_message.action)
                 return
             elif isinstance(decrypted_message.action, DecryptedMessageActionAcceptKey):
-                # TODO commit rekey
+                await self.commit_rekey(peer, decrypted_message.action)
                 return
             elif isinstance(decrypted_message.action, DecryptedMessageActionCommitKey):
-                # TODO complete rekey
+                await self.commit_rekey(peer, decrypted_message.action)
                 return
             elif isinstance(decrypted_message.action, DecryptedMessageActionNotifyLayer):
                 peer.layer = decrypted_message.action.layer
@@ -123,8 +229,7 @@ class SecretChatMethods:
                 return
             elif isinstance(decrypted_message.action, DecryptedMessageActionSetMessageTTL):
                 peer.ttl = decrypted_message.action.ttl_seconds
-                self.send_update(decrypted_message)
-                return
+                return decrypted_message
             elif isinstance(decrypted_message.action, DecryptedMessageActionNoop):
                 return
             elif isinstance(decrypted_message.action, DecryptedMessageActionResend):
@@ -188,8 +293,7 @@ class SecretChatMethods:
                 self._log.debug(f"Used MTProto 2 with chat {message.chat_id}")
         peer.ttr -= 1
         if (peer.ttr <= 0 or (time() - peer.updated) > 7 * 24 * 60 * 60) and peer.rekeying[0] == 0:
-            # TODO rekeying
-            raise ValueError("need re_keying")
+            await self.rekey(peer)
         peer.incoming[peer.in_seq_no] = message
         return await self.handle_decrypted_message(decrypted_message, peer)
 
@@ -198,8 +302,7 @@ class SecretChatMethods:
         peer.ttr -= 1
         if peer.layer > 8:
             if (peer.ttr <= 0 or (time() - peer.updated) > 7 * 24 * 60 * 60) and peer.rekeying[0] == 0:
-                # TODO rekeying
-                raise ValueError("need re_keying")
+                await self.rekey(peer)
             message = DecryptedMessageLayer(layer=peer.layer,
                                             random_bytes=os.urandom(15 + 4 * random.randint(0, 2)),
                                             in_seq_no=self.generate_secret_in_seq_no(peer.id),
