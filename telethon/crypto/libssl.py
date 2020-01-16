@@ -3,6 +3,8 @@ Helper module around the system's libssl library if available for IGE mode.
 """
 import ctypes
 import ctypes.util
+import platform
+import sys
 try:
     import ctypes.macholib.dyld
 except ImportError:
@@ -15,6 +17,13 @@ __log__ = logging.getLogger(__name__)
 
 def _find_ssl_lib():
     lib = ctypes.util.find_library('ssl')
+    # macOS catalina traps the use of unversioned crypto libraries.
+    # We therefore add the current stable version here
+    # Credit for fix goes to Sarah Harvey (@worldwise001)
+    # https://www.shh.sh/2020/01/04/python-abort-trap-6.html
+    if sys.platform == 'darwin' and platform.mac_ver()[0].startswith('10.15') and lib.endswith('libssl.dylib'):
+        # libssl.44.dylib is in libressl-2.6 which has a OpenSSL 1.0.1-compatible API
+        lib = lib.replace('libssl.dylib', 'libssl.44.dylib')
     if not lib:
         raise OSError('no library called "ssl" found')
 
