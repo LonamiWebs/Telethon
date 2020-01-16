@@ -270,6 +270,7 @@ class UploadMethods:
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
             media_captions = []
+            document_captions = []
             if utils.is_list_like(caption):
                 captions = caption
             else:
