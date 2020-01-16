@@ -269,51 +269,36 @@ class UploadMethods:
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
-            image_captions = []
-            document_captions = []
-            video_captions = []
+            media_captions = []
             if utils.is_list_like(caption):
                 captions = caption
             else:
                 captions = [caption]
 
             # TODO Fix progress_callback
-            images = []
-            videos = []
+            media = []
             if force_document:
                 documents = file
             else:
                 documents = []
                 for doc, cap in itertools.zip_longest(file, captions):
-                    if utils.is_image(doc):
-                        images.append(doc)
-                        image_captions.append(cap)
-                    elif utils.is_video(doc):
-                        videos.append(doc)
-                        video_captions.append(cap)
+                    if utils.is_image(doc) or utils.is_video(doc):
+                        media.append(doc)
+                        media_captions.append(cap)
                     else:
                         documents.append(doc)
                         document_captions.append(cap)
 
             result = []
-            while images:
+            while media:
                 result += await self._send_album(
-                    entity, images[:10], caption=image_captions[:10],
-                    progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode, silent=silent, schedule=schedule
-                )
-                images = images[10:]
-                image_captions = image_captions[10:]
-
-            while videos:
-                result += await self._send_album(
-                    entity, videos[:10], caption=video_captions[:10],
+                    entity, media[:10], caption=media_captions[:10],
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode, silent=silent, schedule=schedule,
                     supports_streaming=supports_streaming
                 )
-                videos = videos[10:]
-                video_captions = video_captions[10:]
+                media = media[10:]
+                media_captions = media_captions[10:]
 
             for doc, cap in zip(documents, captions):
                 result.append(await self.send_file(
@@ -407,6 +392,7 @@ class UploadMethods:
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
+
                 fm = utils.get_input_media(
                     r.document, supports_streaming=supports_streaming)
 
