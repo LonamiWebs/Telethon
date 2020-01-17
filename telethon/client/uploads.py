@@ -269,7 +269,7 @@ class UploadMethods:
         # First check if the user passed an iterable, in which case
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
-            image_captions = []
+            media_captions = []
             document_captions = []
             if utils.is_list_like(caption):
                 captions = caption
@@ -277,28 +277,29 @@ class UploadMethods:
                 captions = [caption]
 
             # TODO Fix progress_callback
-            images = []
+            media = []
             if force_document:
                 documents = file
             else:
                 documents = []
                 for doc, cap in itertools.zip_longest(file, captions):
-                    if utils.is_image(doc):
-                        images.append(doc)
-                        image_captions.append(cap)
+                    if utils.is_image(doc) or utils.is_video(doc):
+                        media.append(doc)
+                        media_captions.append(cap)
                     else:
                         documents.append(doc)
                         document_captions.append(cap)
 
             result = []
-            while images:
+            while media:
                 result += await self._send_album(
-                    entity, images[:10], caption=image_captions[:10],
+                    entity, media[:10], caption=media_captions[:10],
                     progress_callback=progress_callback, reply_to=reply_to,
-                    parse_mode=parse_mode, silent=silent, schedule=schedule
+                    parse_mode=parse_mode, silent=silent, schedule=schedule,
+                    supports_streaming=supports_streaming
                 )
-                images = images[10:]
-                image_captions = image_captions[10:]
+                media = media[10:]
+                media_captions = media_captions[10:]
 
             for doc, cap in zip(documents, captions):
                 result.append(await self.send_file(
@@ -349,7 +350,8 @@ class UploadMethods:
 
     async def _send_album(self: 'TelegramClient', entity, files, caption='',
                           progress_callback=None, reply_to=None,
-                          parse_mode=(), silent=None, schedule=None):
+                          parse_mode=(), silent=None, schedule=None,
+                          supports_streaming=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -377,7 +379,8 @@ class UploadMethods:
             # :tl:`InputMediaUploadedPhoto`. However using that will
             # make it `raise MediaInvalidError`, so we need to upload
             # it as media and then convert that to :tl:`InputMediaPhoto`.
-            fh, fm, _ = await self._file_to_media(file)
+            fh, fm, _ = await self._file_to_media(
+                file, supports_streaming=supports_streaming)
             if isinstance(fm, types.InputMediaUploadedPhoto):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
@@ -386,6 +389,15 @@ class UploadMethods:
                     fh.md5, fh.size, utils.get_input_photo(r.photo))
 
                 fm = utils.get_input_media(r.photo)
+            elif isinstance(fm, types.InputMediaUploadedDocument):
+                r = await self(functions.messages.UploadMediaRequest(
+                    entity, media=fm
+                ))
+                self.session.cache_file(
+                    fh.md5, fh.size, utils.get_input_document(r.document))
+
+                fm = utils.get_input_media(
+                    r.document, supports_streaming=supports_streaming)
 
             if captions:
                 caption, msg_entities = captions.pop()
