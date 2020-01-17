@@ -3,6 +3,8 @@ Helper module around the system's libssl library if available for IGE mode.
 """
 import ctypes
 import ctypes.util
+import platform
+import sys
 try:
     import ctypes.macholib.dyld
 except ImportError:
@@ -15,6 +17,21 @@ __log__ = logging.getLogger(__name__)
 
 def _find_ssl_lib():
     lib = ctypes.util.find_library('ssl')
+    # macOS 10.15 segfaults on  unversioned crypto libraries.
+    # We therefore pin the current stable version here
+    # Credit for fix goes to Sarah Harvey (@worldwise001)
+    # https://www.shh.sh/2020/01/04/python-abort-trap-6.html
+    if sys.platform == 'darwin':
+        _, major, minor = platform.mac_ver()[0].split('.')
+        # macOS 10.14 "mojave" is the last known major release
+        # to support unversioned libssl.dylib. Anything above
+        # needs specific versions
+        if int(major) > 14:
+            lib = (
+                ctypes.util.find_library('libssl.46') or
+                ctypes.util.find_library('libssl.44') or
+                ctypes.util.find_library('libssl.42')
+            )
     if not lib:
         raise OSError('no library called "ssl" found')
 
