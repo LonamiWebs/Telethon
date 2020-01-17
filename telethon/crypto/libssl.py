@@ -17,13 +17,21 @@ __log__ = logging.getLogger(__name__)
 
 def _find_ssl_lib():
     lib = ctypes.util.find_library('ssl')
-    # macOS catalina traps the use of unversioned crypto libraries.
-    # We therefore add the current stable version here
+    # macOS 10.15 segfaults on  unversioned crypto libraries.
+    # We therefore pin the current stable version here
     # Credit for fix goes to Sarah Harvey (@worldwise001)
     # https://www.shh.sh/2020/01/04/python-abort-trap-6.html
-    if sys.platform == 'darwin' and platform.mac_ver()[0].startswith('10.15') and lib.endswith('libssl.dylib'):
-        # libssl.44.dylib is in libressl-2.6 which has a OpenSSL 1.0.1-compatible API
-        lib = lib.replace('libssl.dylib', 'libssl.44.dylib')
+    if sys.platform == 'darwin':
+        _, major, minor = platform.mac_ver()[0].split('.')
+        # macOS 10.14 "mojave" is the last known major release
+        # to support unversioned libssl.dylib. Anything above
+        # needs specific versions
+        if int(major) > 14:
+            lib = (
+                ctypes.util.find_library('libssl.46') or
+                ctypes.util.find_library('libssl.44') or
+                ctypes.util.find_library('libssl.42')
+            )
     if not lib:
         raise OSError('no library called "ssl" found')
 
