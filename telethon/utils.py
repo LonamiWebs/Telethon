@@ -12,6 +12,7 @@ import logging
 import math
 import mimetypes
 import os
+import pathlib
 import re
 import struct
 from collections import namedtuple
@@ -741,6 +742,8 @@ def _get_extension(file):
     """
     if isinstance(file, str):
         return os.path.splitext(file)[-1]
+    elif isinstance(file, pathlib.Path):
+        return file.suffix
     elif isinstance(file, bytes):
         kind = imghdr.what(io.BytesIO(file))
         return ('.' + kind) if kind else ''
