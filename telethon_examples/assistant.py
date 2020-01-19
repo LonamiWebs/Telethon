@@ -86,6 +86,11 @@ OFFTOPIC = {
     'That seems to be related to Telethon. Try asking in @TelethonChat'
 }
 
+UNKNOWN_OFFTOPIC = (
+    "I don't know of any off-topic group for this chat! Maybe you want to "
+    "visit the on-topic @TelethonChat, or the off-topic @TelethonOffTopic?"
+)
+
 ASK = (
     "Hey, that's not how you ask a question! If you want helpful advice "
     "(or any response at all) [read this first](https://stackoverflow.com"
@@ -237,7 +242,7 @@ async def handler(event):
     """#ot, #offtopic: Tells the user to move to @TelethonOffTopic."""
     await asyncio.wait([
         event.delete(),
-        event.respond(OFFTOPIC[event.chat_id], reply_to=event.reply_to_msg_id)
+        event.respond(OFFTOPIC.get(event.chat_id, UNKNOWN_OFFTOPIC), reply_to=event.reply_to_msg_id)
     ])
 
 
