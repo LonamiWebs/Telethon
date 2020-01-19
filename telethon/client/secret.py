@@ -1,5 +1,6 @@
+import hashlib
 import random
-from hashlib import sha1, sha256
+from hashlib import sha1, sha256, md5
 from time import time
 
 from .. import utils
@@ -7,10 +8,11 @@ from ..crypto import AES
 from ..errors import SecurityError, EncryptionAlreadyDeclinedError
 from ..extensions import BinaryReader
 from ..network.mtprotostate import MTProtoState
-from ..tl.functions.messages import AcceptEncryptionRequest
+from ..tl.functions.messages import AcceptEncryptionRequest, SendEncryptedFileRequest
 from ..tl.functions.messages import GetDhConfigRequest, RequestEncryptionRequest, SendEncryptedServiceRequest, \
     DiscardEncryptionRequest, SendEncryptedRequest
-from ..tl.types import InputEncryptedChat, TypeEncryptedChat
+from ..tl.types import InputEncryptedChat, TypeEncryptedChat, EncryptedFile, InputEncryptedFileLocation, \
+    InputEncryptedFile, InputFileBig, InputFile, InputEncryptedFileBigUploaded, InputEncryptedFileUploaded
 from ..tl.types.messages import DhConfigNotModified
 from ..tl.types.secret import *
 
@@ -105,7 +107,7 @@ class SecretChatMethods:
 
     async def rekey(self, peer):
         peer = self.get_secret_chat(peer)
-        self._log.debug(f'Rekeying secret chat {peer}')
+        self._log[__name__].debug(f'Rekeying secret chat {peer}')
         dh_config = await self.get_dh_config()
         a = int.from_bytes(os.urandom(256), 'big', signed=False)
         g_a = pow(dh_config.g, a, dh_config.p)
@@ -132,7 +134,7 @@ class SecretChatMethods:
             if my_exchange_id == other_exchange_id:
                 peer.rekeying = [0]
                 return
-        self._log.debug(f'Accepting rekeying secret chat {peer}')
+        self._log[__name__].debug(f'Accepting rekeying secret chat {peer}')
         dh_config = await self.get_dh_config()
         random_bytes = os.urandom(256)
         b = int.from_bytes(random_bytes, byteorder="big", signed=False)
@@ -159,7 +161,7 @@ class SecretChatMethods:
         if peer.rekeying[0] != 1 or not self.temp_rekeyed_secret_chats.get(action.exchange_id, None):
             peer.rekeying = [0]
             return
-        self._log.debug(f'Committing rekeying secret chat {peer}')
+        self._log[__name__].debug(f'Committing rekeying secret chat {peer}')
         dh_config = await self.get_dh_config()
         g_b = int.from_bytes(action.g_b, 'big', signed=False)
         self.check_g_a(g_b, dh_config.p)
@@ -198,7 +200,7 @@ class SecretChatMethods:
             await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
             raise SecurityError("Invalid Key fingerprint")
 
-        self._log.debug(f'Completing rekeying secret chat {peer}')
+        self._log[__name__].debug(f'Completing rekeying secret chat {peer}')
         peer.rekeying = [0]
         peer.key = self.temp_rekeyed_secret_chats[action.exchange_id]
         peer.ttr = 100
@@ -207,9 +209,9 @@ class SecretChatMethods:
         message = DecryptedMessageService(action=DecryptedMessageActionNoop())
         message = await self.encrypt_secret_message(peer, message)
         await self(SendEncryptedServiceRequest(InputEncryptedChat(peer.id, peer.access_hash), message))
-        self._log.debug(f'Secret chat {peer} rekeyed succrsfully')
+        self._log[__name__].debug(f'Secret chat {peer} rekeyed succrsfully')
 
-    async def handle_decrypted_message(self, decrypted_message, peer: Chats):
+    async def handle_decrypted_message(self, decrypted_message, peer: Chats, file):
         if isinstance(decrypted_message, (DecryptedMessageService, DecryptedMessageService8)):
             if isinstance(decrypted_message.action, DecryptedMessageActionRequestKey):
                 await self.accept_rekey(peer, decrypted_message.action)
@@ -237,7 +239,7 @@ class SecretChatMethods:
                 decrypted_message.action.end_seq_no -= peer.out_seq_no_x
                 decrypted_message.action.start_seq_no //= 2
                 decrypted_message.action.end_seq_no //= 2
-                self._log.warning(f"Resending messages for {peer.id}")
+                self._log[__name__].warning(f"Resending messages for {peer.id}")
                 for seq, message in peer.outgoing:
                     if decrypted_message.action.start_seq_no <= seq <= decrypted_message.action.end_seq_no:
                         await self.send_secret_message(peer.id, message.message)
@@ -246,6 +248,7 @@ class SecretChatMethods:
                 return decrypted_message
         elif isinstance(decrypted_message,
                         (DecryptedMessage8, DecryptedMessage23, DecryptedMessage46, DecryptedMessage)):
+            decrypted_message.file = file
             return decrypted_message
         elif isinstance(decrypted_message, DecryptedMessageLayer):
             # TODO add checks
@@ -255,13 +258,16 @@ class SecretChatMethods:
             if decrypted_message.layer >= 17 and time() - peer.created > 15:
                 await self.notify_layer(peer)
             decrypted_message = decrypted_message.message
-            return await self.handle_decrypted_message(decrypted_message, peer)
+            return await self.handle_decrypted_message(decrypted_message, peer, file)
 
     async def handle_encrypted_update(self, event):
         if not self.secret_chats.get(event.message.chat_id):
-            self._log.debug("Secret chat not saved. skipping")
+            self._log[__name__].debug("Secret chat not saved. skipping")
             return False
         message = event.message
+
+        file = getattr(message, 'file', None)
+
         auth_key_id = struct.unpack('<q', message.bytes[:8])[0]
         peer = self.get_secret_chat(message.chat_id)
         if not peer.key.fingerprint or \
@@ -279,7 +285,7 @@ class SecretChatMethods:
                 decrypted_message = self.decrypt_mtproto1(bytes.fromhex(message_key.hex()), message.chat_id,
                                                           bytes.fromhex(encrypted_data.hex()))
                 peer.mtproto = 1
-                self._log.debug(f"Used MTProto 1 with chat {message.chat_id}")
+                self._log[__name__].debug(f"Used MTProto 1 with chat {message.chat_id}")
 
         else:
             try:
@@ -290,12 +296,12 @@ class SecretChatMethods:
                 decrypted_message = self.decrypt_mtproto2(bytes.fromhex(message_key.hex()), message.chat_id,
                                                           bytes.fromhex(encrypted_data.hex()))
                 peer.mtproto = 2
-                self._log.debug(f"Used MTProto 2 with chat {message.chat_id}")
+                self._log[__name__].debug(f"Used MTProto 2 with chat {message.chat_id}")
         peer.ttr -= 1
         if (peer.ttr <= 0 or (time() - peer.updated) > 7 * 24 * 60 * 60) and peer.rekeying[0] == 0:
             await self.rekey(peer)
         peer.incoming[peer.in_seq_no] = message
-        return await self.handle_decrypted_message(decrypted_message, peer)
+        return await self.handle_decrypted_message(decrypted_message, peer, file)
 
     async def encrypt_secret_message(self, peer, message):
         peer = self.get_secret_chat(peer)
@@ -335,6 +341,24 @@ class SecretChatMethods:
                                                                                           aes_iv)
         return message
 
+    async def download_secret_media(self, message):
+        if not message.file or not isinstance(message.file, EncryptedFile):
+            return b""
+        key_fingerprint = message.file.key_fingerprint
+        key = message.media.key
+        iv = message.media.iv
+        digest = md5(key + iv).digest()
+
+        fingerprint = int.from_bytes(digest[:4], byteorder="little", signed=True) ^ int.from_bytes(digest[4:8],
+                                                                                                   byteorder="little",
+                                                                                                   signed=True)
+        if fingerprint != key_fingerprint:
+            raise SecurityError("Wrong fingerprint")
+        media = await self.download_file(InputEncryptedFileLocation(message.file.id, message.file.access_hash),
+                                         file=bytes)
+        decrypted_data = AES.decrypt_ige(media, message.media.key, message.media.iv)
+        return decrypted_data
+
     async def send_secret_message(self, peer_id, message, ttl=0, reply_to_id=None):
         peer = self.get_secret_chat(peer_id)
         if peer.layer == 8:
@@ -346,6 +370,104 @@ class SecretChatMethods:
         data = await self.encrypt_secret_message(peer_id, message)
         res = await self(
             SendEncryptedRequest(peer=peer.input_chat, data=data))
+        return res
+
+    async def upload_secret_file(self, file):
+        key = os.urandom(32)
+        iv = os.urandom(32)
+        digest = md5(key + iv).digest()
+        fingerprint = int.from_bytes(digest[:4], byteorder="little", signed=True) ^ int.from_bytes(digest[4:8],
+                                                                                                   byteorder="little",
+                                                                                                   signed=True)
+
+        file = await self.upload_file(file, key=key, iv=iv)
+        if isinstance(file, InputFileBig):
+            file = InputEncryptedFileBigUploaded(file.id, file.parts, fingerprint)
+        elif isinstance(file, InputFile):
+            file = InputEncryptedFileUploaded(file.id, file.parts, "", fingerprint)
+
+        return file, fingerprint, key, iv
+
+    async def send_secret_document(self, peer, document, thumb: bytes, thumb_w: int, thumb_h: int, file_name: str,
+                                   mime_type: str, size: int, attributes=None, ttl=0, caption=""):
+        if attributes is None:
+            attributes = []
+        peer = self.get_secret_chat(peer)
+        file, fingerprint, key, iv = await self.upload_secret_file(document)
+        if peer.layer == 8:
+            message = DecryptedMessage8(os.urandom(8), caption,
+                                        DecryptedMessageMediaDocument23(thumb, thumb_w, thumb_h, file_name, mime_type,
+                                                                        size, key, iv))
+        elif peer.layer == 46:
+            message = DecryptedMessage46(ttl, caption,
+                                         media=DecryptedMessageMediaDocument(thumb, thumb_w, thumb_h, mime_type,
+                                                                             size, key, iv, attributes, caption))
+        else:
+            message = DecryptedMessage(ttl, caption,
+                                       media=DecryptedMessageMediaDocument(thumb, thumb_w, thumb_h, mime_type,
+                                                                           size, key, iv, attributes, caption))
+        data = await self.encrypt_secret_message(peer, message)
+        res = await self(SendEncryptedFileRequest(peer.input_chat, data, file=file))
+        return res
+
+    async def send_secret_audio(self, peer, audio, duration, mime_type, size, ttl=0, caption=""):
+        peer = self.get_secret_chat(peer)
+        file, fingerprint, key, iv = await self.upload_secret_file(audio)
+        if peer.layer == 8:
+            message = DecryptedMessage8(os.urandom(8), caption,
+                                        DecryptedMessageMediaAudio8(duration, size, key, iv))
+        elif peer.layer == 46:
+            message = DecryptedMessage46(ttl, caption,
+                                         media=DecryptedMessageMediaAudio(duration, mime_type, size, key, iv))
+        else:
+            message = DecryptedMessage(ttl, caption,
+                                       media=DecryptedMessageMediaAudio(duration, mime_type, size, key, iv))
+        data = await self.encrypt_secret_message(peer, message)
+        res = await self(SendEncryptedFileRequest(peer.input_chat, data, file=file))
+        return res
+
+    async def send_secret_video(self, peer, video, thumb: bytes, thumb_w: int, thumb_h: int, duration: int,
+                                mime_type: str, w: int,
+                                h: int, size, ttl=0, caption=""):
+        peer = self.get_secret_chat(peer)
+        file, fingerprint, key, iv = await self.upload_secret_file(video)
+
+        if peer.layer == 8:
+            message = DecryptedMessage8(os.urandom(8), caption,
+                                        DecryptedMessageMediaVideo8(thumb, thumb_w, thumb_h, duration, w, h, size, key,
+                                                                    iv))
+        elif peer.layer == 46:
+            message = DecryptedMessage46(ttl, caption,
+                                         media=DecryptedMessageMediaVideo(thumb, thumb_w, thumb_h, duration, mime_type,
+                                                                          w, h, size, key, iv,
+                                                                          caption))
+        else:
+            message = DecryptedMessage(ttl, caption,
+                                       media=DecryptedMessageMediaVideo(thumb, thumb_w, thumb_h, duration, mime_type,
+                                                                        w, h, size, key, iv,
+                                                                        caption))
+        data = await self.encrypt_secret_message(peer, message)
+        res = await self(SendEncryptedFileRequest(peer.input_chat, data, file=file))
+        return res
+
+    async def send_secret_photo(self, peer, image, thumb, thumb_w, thumb_h, w, h, size, caption="",
+                                ttl=0):
+        peer = self.get_secret_chat(peer)
+
+        file, fingerprint, key, iv = await self.upload_secret_file(image)
+        if peer.layer == 8:
+            message = DecryptedMessage8(os.urandom(8), caption,
+                                        DecryptedMessageMediaPhoto23(thumb, thumb_w, thumb_h, w, h, size, key, iv))
+        elif peer.layer == 46:
+            message = DecryptedMessage46(ttl, caption,
+                                         media=DecryptedMessageMediaPhoto(thumb, thumb_w, thumb_h, w, h, size, key, iv,
+                                                                          caption))
+        else:
+            message = DecryptedMessage(ttl, caption,
+                                       media=DecryptedMessageMediaPhoto(thumb, thumb_w, thumb_h, w, h, size, key, iv,
+                                                                        caption))
+        data = await self.encrypt_secret_message(peer, message)
+        res = await self(SendEncryptedFileRequest(peer.input_chat, data, file=file))
         return res
 
     async def notify_layer(self, peer):

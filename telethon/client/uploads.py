@@ -8,6 +8,7 @@ import typing
 import inspect
 from io import BytesIO
 
+from ..crypto import AES
 from .. import utils, helpers, hints
 from ..tl import types, functions, custom
 
@@ -17,13 +18,13 @@ try:
 except ImportError:
     PIL = None
 
-
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
 class _CacheType:
     """Like functools.partial but pretends to be the wrapped class."""
+
     def __init__(self, cls):
         self._cls = cls
 
@@ -327,7 +328,7 @@ class UploadMethods:
         file_handle, media, image = await self._file_to_media(
             file, force_document=force_document,
             progress_callback=progress_callback,
-            attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
+            attributes=attributes, allow_cache=allow_cache, thumb=thumb,
             voice_note=voice_note, video_note=video_note,
             supports_streaming=supports_streaming
         )
@@ -415,7 +416,9 @@ class UploadMethods:
             part_size_kb: float = None,
             file_name: str = None,
             use_cache: type = None,
-            progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
+            progress_callback: 'hints.ProgressCallback' = None,
+            key: bytes = b"",
+            iv: bytes = b"") -> 'types.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
 
@@ -451,6 +454,13 @@ class UploadMethods:
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
+
+            iv ('bytes', optional):
+                In case of an encrypted upload (secret chats) an iv is supplied
+
+            key ('bytes', optional):
+                In case of an encrypted upload (secret chats) a key is supplied
+
 
         Returns
             :tl:`InputFileBig` if the file size is larger than 10MB,
@@ -557,6 +567,10 @@ class UploadMethods:
             for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
                 part = stream.read(part_size)
+
+                # encryption part if needed
+                if key and iv:
+                    part = AES.encrypt_ige(part, key, iv)
 
                 # The SavePartRequest is different depending on whether
                 # the file is too large or not (over or less than 10MB)
