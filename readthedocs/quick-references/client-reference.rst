@@ -88,6 +88,7 @@ Downloads
     download_media
     download_profile_photo
     download_file
+    iter_download
 
 Dialogs
 -------
@@ -130,6 +131,7 @@ Chats
 
     iter_participants
     get_participants
+    kick_participant
     iter_admin_log
     get_admin_log
     iter_profile_photos
