@@ -175,7 +175,14 @@ class ChatAction(EventBuilder):
                 self._kicked_by = kicked_by
 
             self.created = bool(created)
-            self._user_peers = users if isinstance(users, list) else [users]
+
+            if isinstance(users, list):
+                self._user_ids = users
+            elif users:
+                self._user_ids = [users]
+            else:
+                self._user_ids = []
+
             self._users = None
             self._input_users = None
             self.new_title = new_title
@@ -333,8 +340,8 @@ class ChatAction(EventBuilder):
             """
             Returns the marked signed ID of the first user, if any.
             """
-            if self._user_peers:
-                return utils.get_peer_id(self._user_peers[0])
+            if self._user_ids:
+                return self._user_ids[0]
 
         @property
         def users(self):
@@ -344,14 +351,14 @@ class ChatAction(EventBuilder):
             Might be empty if the information can't be retrieved or there
             are no users taking part.
             """
-            if not self._user_peers:
+            if not self._user_ids:
                 return []
 
             if self._users is None:
                 self._users = [
-                    self._entities[utils.get_peer_id(peer)]
-                    for peer in self._user_peers
-                    if utils.get_peer_id(peer) in self._entities
+                    self._entities[user_id]
+                    for user_id in self._user_ids
+                    if user_id in self._entities
                 ]
 
             return self._users
@@ -360,10 +367,10 @@ class ChatAction(EventBuilder):
             """
             Returns `users` but will make an API call if necessary.
             """
-            if not self._user_peers:
+            if not self._user_ids:
                 return []
 
-            if self._users is None or len(self._users) != len(self._user_peers):
+            if self._users is None or len(self._users) != len(self._user_ids):
                 await self.action_message._reload_message()
                 self._users = [
                     u for u in self.action_message.action_entities
@@ -376,11 +383,11 @@ class ChatAction(EventBuilder):
             """
             Input version of the ``self.users`` property.
             """
-            if self._input_users is None and self._user_peers:
+            if self._input_users is None and self._user_ids:
                 self._input_users = []
-                for peer in self._user_peers:
+                for user_id in self._user_ids:
                     try:
-                        self._input_users.append(self._client._entity_cache[peer])
+                        self._input_users.append(self._client._entity_cache[user_id])
                     except KeyError:
                         pass
             return self._input_users or []
@@ -404,5 +411,5 @@ class ChatAction(EventBuilder):
             """
             Returns the marked signed ID of the users, if any.
             """
-            if self._user_peers:
-                return [utils.get_peer_id(u) for u in self._user_peers]
+            if self._user_ids:
+                return self._user_ids[:]
