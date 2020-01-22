@@ -93,6 +93,7 @@ class UploadMethods:
             *,
             caption: typing.Union[str, typing.Sequence[str]] = None,
             force_document: bool = False,
+            clear_draft: bool = False,
             progress_callback: 'hints.ProgressCallback' = None,
             reply_to: 'hints.MessageIDLike' = None,
             attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
@@ -167,6 +168,9 @@ class UploadMethods:
                 If left to `False` and the file is a path that ends with
                 the extension of an image file or a video file, it will be
                 sent as such. Otherwise always as a document.
+
+            clear_draft (`bool`, optional):
+                Whether the existing draft should be cleared or not.
 
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
@@ -296,7 +300,7 @@ class UploadMethods:
                     entity, media[:10], caption=media_captions[:10],
                     progress_callback=progress_callback, reply_to=reply_to,
                     parse_mode=parse_mode, silent=silent, schedule=schedule,
-                    supports_streaming=supports_streaming
+                    supports_streaming=supports_streaming, clear_draft=clear_draft
                 )
                 media = media[10:]
                 media_captions = media_captions[10:]
@@ -309,6 +313,7 @@ class UploadMethods:
                     attributes=attributes, thumb=thumb, voice_note=voice_note,
                     video_note=video_note, buttons=buttons, silent=silent,
                     supports_streaming=supports_streaming, schedule=schedule,
+                    clear_draft=clear_draft,
                     **kwargs
                 ))
 
@@ -341,7 +346,7 @@ class UploadMethods:
         request = functions.messages.SendMediaRequest(
             entity, media, reply_to_msg_id=reply_to, message=caption,
             entities=msg_entities, reply_markup=markup, silent=silent,
-            schedule_date=schedule
+            schedule_date=schedule, clear_draft=clear_draft
         )
         msg = self._get_response_message(request, await self(request), entity)
         await self._cache_media(msg, file, file_handle, image=image)
@@ -351,7 +356,7 @@ class UploadMethods:
     async def _send_album(self: 'TelegramClient', entity, files, caption='',
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None, schedule=None,
-                          supports_streaming=None):
+                          supports_streaming=None, clear_draft=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -413,7 +418,7 @@ class UploadMethods:
         # Now we can construct the multi-media request
         request = functions.messages.SendMultiMediaRequest(
             entity, reply_to_msg_id=reply_to, multi_media=media,
-            silent=silent, schedule_date=schedule
+            silent=silent, schedule_date=schedule, clear_draft=clear_draft
         )
         result = await self(request)
 

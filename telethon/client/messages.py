@@ -602,7 +602,6 @@ class MessageMethods:
 
             clear_draft (`bool`, optional):
                 Whether the existing draft should be cleared or not.
-                Has no effect when sending a file.
 
             buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
@@ -691,7 +690,8 @@ class MessageMethods:
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
                 parse_mode=parse_mode, force_document=force_document,
-                buttons=buttons
+                buttons=buttons, clear_draft=clear_draft, silent=silent,
+                schedule=schedule
             )
 
         entity = await self.get_input_entity(entity)
