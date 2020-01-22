@@ -26,6 +26,7 @@ BOT_MISSING,400,This method can only be run by a bot
 BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BROADCAST_ID_INVALID,400,The channel is invalid
+BROADCAST_PUBLIC_VOTERS_FORBIDDEN,400,You cannot broadcast polls where the voters are public
 BUTTON_DATA_INVALID,400,The provided button data is invalid
 BUTTON_TYPE_INVALID,400,The type of one of the buttons you provided is invalid
 BUTTON_URL_INVALID,400,Button URL invalid
@@ -105,6 +106,7 @@ FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test 
 FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
 FOLDER_ID_EMPTY,400,The folder you tried to delete was already empty
 FOLDER_ID_INVALID,400,The folder you tried to use was not valid
+FRESH_CHANGE_ADMINS_FORBIDDEN,400,Recently logged-in users cannot add or change admins
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
