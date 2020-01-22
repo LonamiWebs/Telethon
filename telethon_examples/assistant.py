@@ -290,10 +290,10 @@ async def handler(event):
 
 
 if aiohttp:
-    @bot.on(events.NewMessage(pattern='(?i)#[hp]aste(bin)?', forwards=False))
+    @bot.on(events.NewMessage(pattern='(?i)#([hp]aste|dog|inu)(bin)?', forwards=False))
     async def handler(event):
         """
-        #haste: Replaces the message you reply to with a hastebin link.
+        #haste: Replaces the message you reply to with a dogbin link.
         """
         await event.delete()
         if not event.reply_to_msg_id:
@@ -324,10 +324,10 @@ if aiohttp:
             text = ''
 
         async with aiohttp.ClientSession() as session:
-            async with session.post('https://hastebin.com/documents',
+            async with session.post('https://del.dog/documents',
                                     data=code.encode('utf-8')) as resp:
                 if resp.status >= 300:
-                    await sent.edit("Hastebin seems to be down… ( ^^')")
+                    await sent.edit("Dogbin seems to be down… ( ^^')")
                     return
 
                 haste = (await resp.json())['key']
@@ -335,7 +335,7 @@ if aiohttp:
         await asyncio.wait([
             msg.delete(),
             sent.edit(f'<a href="tg://user?id={msg.sender_id}">{name}</a> '
-                      f'said: {text} hastebin.com/{haste}.py'
+                      f'said: {text} del.dog/{haste}.py'
                       .replace('  ', ' '), parse_mode='html')
         ])
 
