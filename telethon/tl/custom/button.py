@@ -187,6 +187,25 @@ class Button:
         return cls(types.KeyboardButtonRequestPhone(text),
                    resize=resize, single_use=single_use, selective=selective)
 
+    @classmethod
+    def request_poll(cls, text, *, force_quiz=False,
+                     resize=None, single_use=None, selective=None):
+        """
+        Creates a new keyboard button to request the user to create a poll.
+
+        If `force_quiz` is `False`, the user will be allowed to choose whether
+        they want their poll to be a quiz or not. Otherwise, the user will be
+        forced to create a quiz when creating the poll.
+
+        If a poll is a quiz, there will be only one answer that is valid, and
+        the votes cannot be retracted. Otherwise, users can vote and retract
+        the vote, and the pol might be multiple choice.
+
+        ``resize``, ``single_use`` and ``selective`` are documented in `text`.
+        """
+        return cls(types.KeyboardButtonRequestPoll(text, quiz=force_quiz),
+                   resize=resize, single_use=single_use, selective=selective)
+
     @staticmethod
     def clear():
         """

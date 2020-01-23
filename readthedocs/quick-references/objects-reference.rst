@@ -244,6 +244,7 @@ These are the static methods you can use to create instances of the markup:
     text
     request_location
     request_phone
+    request_poll
     clear
     force_reply
 
