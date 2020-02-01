@@ -135,8 +135,13 @@ class MessageParseMethods:
 
             elif (isinstance(update, types.UpdateEditMessage)
                   and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):
-                if request.id == update.message.id:
-                    update.message._finish_init(self, entities, input_chat)
+                update.message._finish_init(self, entities, input_chat)
+
+                # Live locations use `sendMedia` but Telegram responds with
+                # `updateEditMessage`, which means we won't have `id` field.
+                if hasattr(request, 'random_id'):
+                    id_to_message[update.message.id] = update.message
+                elif request.id == update.message.id:
                     return update.message
 
             elif (isinstance(update, types.UpdateEditChannelMessage)
