@@ -17,7 +17,7 @@ from ..statecache import StateCache
 from ..tl import TLObject, functions, types
 from ..tl.alltlobjects import LAYER
 
-DEFAULT_DC_ID = 4
+DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
 DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
 DEFAULT_PORT = 443
