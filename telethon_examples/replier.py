@@ -43,8 +43,7 @@ def can_react(chat_id):
         # Make sure we updated the last reaction time
         recent_reacts[chat_id] = now
         return True
-    else:
-        return False
+    return False
 
 
 # Register `events.NewMessage` before defining the client.
