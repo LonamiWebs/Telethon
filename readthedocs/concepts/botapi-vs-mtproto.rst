@@ -66,8 +66,8 @@ things, you will be able to easily login as a user and even keep your bot
 without having to learn a new library.
 
 If less overhead and full control didn't convince you to use Telethon yet,
-check out the repository `HTTP Bot API vs MTProto comparison`_ with a more
-exhaustive and up-to-date list of differences.
+check out the wiki page `MTProto vs HTTP Bot API`_ with a more exhaustive
+and up-to-date list of differences.
 
 
 Migrating from Bot API to Telethon
@@ -323,7 +323,7 @@ Key differences:
 .. _Bot FAQ: https://core.telegram.org/bots/faq
 .. _tdlib: https://core.telegram.org/tdlib
 .. _MTProto: https://core.telegram.org/mtproto
-.. _HTTP Bot API vs MTProto comparison: https://github.com/telegram-mtproto/botapi-comparison
+.. _MTProto vs HTTP Bot API: https://github.com/LonamiWebs/Telethon/wiki/MTProto-vs-HTTP-Bot-API
 .. _requests: https://pypi.org/project/requests/
 .. _python-telegram-bot: https://python-telegram-bot.readthedocs.io
 .. _pyTelegramBotAPI: https://github.com/eternnoir/pyTelegramBotAPI

@@ -68,6 +68,10 @@ other library in either one so both can improve.
 Rust
 ====
 
-Yet another work-in-progress implementation, this time for Rust thanks
-to `@JuanPotato <https://github.com/JuanPotato>`__ under the fancy
+The `grammers <https://github.com/Lonami/grammers>`__ library is made by
+the `same author as Telethon's <https://github.com/Lonami>`__! If you are
+looking for a Telethon alternative written in Rust, this is a valid option!
+
+Another older, work-in-progress implementation, on Rust is made by
+`@JuanPotato <https://github.com/JuanPotato>`__ under the fancy
 name of `Vail <https://github.com/JuanPotato/Vail>`__.
