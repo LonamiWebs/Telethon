@@ -7,6 +7,7 @@ class RPCError(Exception):
         super().__init__('RPCError {}: {}{}'.format(
             code or self.code, message, self._fmt_request(request)))
 
+        self.request = request
         self.code = code
         self.message = message
 
@@ -15,7 +16,7 @@ class RPCError(Exception):
         return ' (caused by {})'.format(request.__class__.__name__)
 
     def __reduce__(self):
-        return type(self), (self.code, self.message)
+        return type(self), (self.request, self.message, self.code)
 
 
 class InvalidDCError(RPCError):
