@@ -574,6 +574,7 @@ messageEntityCashtag#4c4e743f offset:int length:int = MessageEntity;
 messageEntityUnderline#9c4e7e8b offset:int length:int = MessageEntity;
 messageEntityStrike#bf0693d4 offset:int length:int = MessageEntity;
 messageEntityBlockquote#20df5d0 offset:int length:int = MessageEntity;
+messageEntityBankCard#761e6af4 offset:int length:int = MessageEntity;
 
 inputChannelEmpty#ee8c1e86 = InputChannel;
 inputChannel#afeb712e channel_id:int access_hash:long = InputChannel;
@@ -1073,6 +1074,7 @@ channelLocationEmpty#bfb5ad8b = ChannelLocation;
 channelLocation#209b82db geo_point:GeoPoint address:string = ChannelLocation;
 
 peerLocated#ca461b5d peer:Peer expires:int distance:int = PeerLocated;
+peerSelfLocated#f8ec284b expires:int = PeerLocated;
 
 restrictionReason#d072acb4 platform:string reason:string text:string = RestrictionReason;
 
@@ -1109,6 +1111,10 @@ messageUserVoteInputOption#36377430 user_id:int date:int = MessageUserVote;
 messageUserVoteMultiple#e8fe0de user_id:int options:Vector<bytes> date:int = MessageUserVote;
 
 messages.votesList#823f649 flags:# count:int votes:Vector<MessageUserVote> users:Vector<User> next_offset:flags.0?string = messages.VotesList;
+
+bankCardOpenUrl#f568028a url:string name:string = BankCardOpenUrl;
+
+payments.bankCardData#3e24e573 title:string open_urls:Vector<BankCardOpenUrl> = payments.BankCardData;
 
 ---functions---
 
@@ -1227,7 +1233,7 @@ contacts.getSaved#82f1e39f = Vector<SavedContact>;
 contacts.toggleTopPeers#8514bdda enabled:Bool = Bool;
 contacts.addContact#e8f463d0 flags:# add_phone_privacy_exception:flags.0?true id:InputUser first_name:string last_name:string phone:string = Updates;
 contacts.acceptContact#f831a20f id:InputUser = Updates;
-contacts.getLocated#a356056 geo_point:InputGeoPoint = Updates;
+contacts.getLocated#d348bc44 flags:# background:flags.1?true geo_point:InputGeoPoint self_expires:flags.0?int = Updates;
 
 messages.getMessages#63c66506 id:Vector<InputMessage> = messages.Messages;
 messages.getDialogs#a0ee3b73 flags:# exclude_pinned:flags.0?true folder_id:flags.1?int offset_date:int offset_id:int offset_peer:InputPeer limit:int hash:int = messages.Dialogs;
@@ -1347,6 +1353,7 @@ messages.getScheduledMessages#bdbb0464 peer:InputPeer id:Vector<int> = messages.
 messages.sendScheduledMessages#bd38850a peer:InputPeer id:Vector<int> = Updates;
 messages.deleteScheduledMessages#59ae2b16 peer:InputPeer id:Vector<int> = Updates;
 messages.getPollVotes#b86e380e flags:# peer:InputPeer id:int option:flags.0?bytes offset:flags.1?string limit:int = messages.VotesList;
+messages.toggleStickerSets#b5052fea flags:# uninstall:flags.0?true archive:flags.1?true unarchive:flags.2?true stickersets:Vector<InputStickerSet> = Bool;
 
 updates.getState#edd4882a = updates.State;
 updates.getDifference#25939651 flags:# pts:int pts_total_limit:flags.0?int date:int qts:int = updates.Difference;
@@ -1431,6 +1438,7 @@ payments.validateRequestedInfo#770a8e74 flags:# save:flags.0?true msg_id:int inf
 payments.sendPaymentForm#2b8879b3 flags:# msg_id:int requested_info_id:flags.0?string shipping_option_id:flags.1?string credentials:InputPaymentCredentials = payments.PaymentResult;
 payments.getSavedInfo#227d824b = payments.SavedInfo;
 payments.clearSavedInfo#d83d70c1 flags:# credentials:flags.0?true info:flags.1?true = Bool;
+payments.getBankCardData#2e79d779 number:string = payments.BankCardData;
 
 stickers.createStickerSet#9bd86e6a flags:# masks:flags.0?true user_id:InputUser title:string short_name:string stickers:Vector<InputStickerSetItem> = messages.StickerSet;
 stickers.removeStickerFromSet#f7760f51 sticker:InputDocument = messages.StickerSet;
@@ -1455,4 +1463,4 @@ langpack.getLanguage#6a596502 lang_pack:string lang_code:string = LangPackLangua
 folders.editPeerFolders#6847d0ab folder_peers:Vector<InputFolderPeer> = Updates;
 folders.deleteFolder#1c295881 folder_id:int = Updates;
 
-// LAYER 109
+// LAYER 110
