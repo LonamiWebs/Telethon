@@ -25,7 +25,7 @@ telethon_examples/
 ==================
 
 `telethon_examples <https://github.com/LonamiWebs/Telethon/tree/master/telethon_examples>`_ /
-`LonamiWebs' site <https://lonamiwebs.github.io>`_
+`Lonami's site <https://lonami.dev>`_
 
 This documentation is not the only place where you can find useful code
 snippets using the library. The main repository also has a folder with

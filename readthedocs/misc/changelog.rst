@@ -1995,7 +1995,7 @@ Internal changes
 ~~~~~~~~~~~~~~~~
 
 - ``libssl`` is no longer an optional dependency. Use ``cryptg`` instead,
-  which you can find on https://github.com/Lonami/cryptg.
+  which you can find on https://pypi.org/project/cryptg/.
 
 
 

@@ -634,7 +634,7 @@ class MessageMethods:
             .. code-block:: python
 
                 # Markdown is the default
-                await client.send_message('lonami', 'Thanks for the **Telethon** library!')
+                await client.send_message('me', 'Hello **world**!')
 
                 # Default to another parse mode
                 client.parse_mode = 'html'
@@ -668,7 +668,7 @@ class MessageMethods:
                 # Matrix of inline buttons
                 await client.send_message(chat, 'Pick one from this grid', buttons=[
                     [Button.inline('Left'), Button.inline('Right')],
-                    [Button.url('Check this site!', 'https://lonamiwebs.github.io')]
+                    [Button.url('Check this site!', 'https://example.com')]
                 ])
 
                 # Reply keyboard

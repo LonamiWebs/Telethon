@@ -360,6 +360,6 @@ Where can I read more?
 ======================
 
 `Check out my blog post
-<https://lonamiwebs.github.io/blog/asyncio/>`_ about `asyncio`, which
+<https://lonami.dev/blog/asyncio/>`_ about `asyncio`, which
 has some more examples and pictures to help you understand what happens
 when the loop runs.

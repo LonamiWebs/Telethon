@@ -569,10 +569,10 @@ class DialogMethods:
                         # <you> Your name didn't have any letters! Try again
                         conv.send_message("Your name didn't have any letters! Try again")
 
-                        # <usr> Lonami
+                        # <usr> Human
                         name = conv.get_response().raw_text
 
-                    # <you> Thanks Lonami!
+                    # <you> Thanks Human!
                     conv.send_message('Thanks {}!'.format(name))
         """
         return custom.Conversation(

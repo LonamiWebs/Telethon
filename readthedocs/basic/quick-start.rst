@@ -47,7 +47,7 @@ use these if possible.
         message = await client.send_message(
             'me',
             'This message has **bold**, `code`, __italics__ and '
-            'a [nice website](https://lonamiwebs.github.io)!',
+            'a [nice website](https://example.com)!',
             link_preview=False
         )
 

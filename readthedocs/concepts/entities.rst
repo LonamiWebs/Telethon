@@ -112,9 +112,9 @@ you're able to just do this:
     dialogs = await client.get_dialogs()
 
     # All of these work and do the same.
-    lonami = await client.get_entity('lonami')
-    lonami = await client.get_entity('t.me/lonami')
-    lonami = await client.get_entity('https://telegram.dog/lonami')
+    username = await client.get_entity('username')
+    username = await client.get_entity('t.me/username')
+    username = await client.get_entity('https://telegram.dog/username')
 
     # Other kind of entities.
     channel = await client.get_entity('telegram.me/joinchat/AAAAAEkk2WdoDrB4-Q8-gg')
@@ -142,7 +142,7 @@ you're able to just do this:
 All methods in the :ref:`telethon-client` call `.get_input_entity()
 <telethon.client.users.UserMethods.get_input_entity>` prior
 to sending the request to save you from the hassle of doing so manually.
-That way, convenience calls such as `client.send_message('lonami', 'hi!')
+That way, convenience calls such as `client.send_message('username', 'hi!')
 <telethon.client.messages.MessageMethods.send_message>`
 become possible.
 
