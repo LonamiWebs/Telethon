@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import struct
 
 from . import authenticator
 from ..extensions.messagepacker import MessagePacker
@@ -169,7 +170,14 @@ class MTProtoSender:
             raise ConnectionError('Cannot send requests while disconnected')
 
         if not utils.is_list_like(request):
-            state = RequestState(request, self._loop)
+            try:
+                state = RequestState(request, self._loop)
+            except struct.error as e:
+                # "struct.error: required argument is not an integer" is not
+                # very helpful; log the request to find out what wasn't int.
+                self._log.error('Request caused struct.error: %s: %s', e, request)
+                raise
+
             self._send_queue.append(state)
             return state.future
         else:
@@ -177,7 +185,12 @@ class MTProtoSender:
             futures = []
             state = None
             for req in request:
-                state = RequestState(req, self._loop, after=ordered and state)
+                try:
+                    state = RequestState(req, self._loop, after=ordered and state)
+                except struct.error as e:
+                    self._log.error('Request caused struct.error: %s: %s', e, request)
+                    raise
+
                 states.append(state)
                 futures.append(state.future)
 
