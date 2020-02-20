@@ -13,6 +13,42 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Bug Fixes (v1.11)
+=================
+
+*Published at 2019/02/20*
+
++------------------------+
+| Scheme layer used: 110 |
++------------------------+
+
+It has been a while since the last release, and a few bug fixes have been
+made since then. This release includes them and updates the scheme layer.
+
+
+Bug fixes
+~~~~~~~~~
+
+* Fix ``MemoryError`` when casting certain media.
+* Fix `client.get_entity() <telethon.client.users.UserMethods.get_entity>`
+  on small group chats.
+* `client.delete_dialog() <telethon.client.dialogs.DialogMethods.delete_dialog>`
+  now handles deactivated chats more gracefully.
+* Fixed some imports on macOS Catalina.
+* Sending a message with ``file=`` would ignore some of the parameters.
+* Errors are now un-pickle-able once again.
+* Fixed some issues regarding markdown and HTML (un)parsing.
+
+
+Enhancements
+~~~~~~~~~~~~
+
+* Videos can now be included when sending albums.
+* Getting updates after reconnect should be more reliable.
+* Updated documentation and added more examples.
+* More security checks during the generation of the authorization key.
+
+
 Scheduled Messages (v1.10)
 ==========================
 
