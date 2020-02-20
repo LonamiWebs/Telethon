@@ -40,6 +40,20 @@ def del_surrogate(text):
     return text.encode('utf-16', 'surrogatepass').decode('utf-16')
 
 
+def within_surrogate(text, index, *, length=None):
+    """
+    `True` if ``index`` is within a surrogate (before and after it, not at!).
+    """
+    if length is None:
+        length = len(text)
+
+    return (
+            1 < index < len(text) and  # in bounds
+            '\ud800' <= text[index - 1] <= '\udfff' and  # previous is
+            '\ud800' <= text[index] <= '\udfff'  # current is
+    )
+
+
 def strip_text(text, entities):
     """
     Strips whitespace from the given text modifying the provided entities.

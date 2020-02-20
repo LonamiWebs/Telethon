@@ -174,12 +174,10 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
         # Otherwise we would end up with malformed text and fail to encode.
         # For example of bad input: "Hi \ud83d\ude1c"
         # https://en.wikipedia.org/wiki/UTF-16#U+010000_to_U+10FFFF
-        while (relative_offset < _length
-                and '\ud800' <= text[relative_offset] <= '\udfff'):
+        while helpers.within_surrogate(text, relative_offset, length=_length):
             relative_offset += 1
 
-        while (relative_offset + length < _length
-                and '\ud800' <= text[relative_offset + length] <= '\udfff'):
+        while helpers.within_surrogate(text, relative_offset + length, length=_length):
             length += 1
 
         entity_text = unparse(text=text[relative_offset:relative_offset + length],
@@ -224,7 +222,7 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
             skip_entity = True
         last_offset = relative_offset + (0 if skip_entity else length)
 
-    while last_offset < _length and '\ud800' <= text[last_offset] <= '\udfff':
+    while helpers.within_surrogate(text, last_offset, length=_length):
         last_offset += 1
 
     html.append(escape(text[last_offset:]))

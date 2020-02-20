@@ -23,7 +23,7 @@ def test_malformed_entities():
     text = '🏆Telegram Official Android Challenge is over🏆.'
     entities = [MessageEntityTextUrl(offset=2, length=43, url='https://example.com')]
     result = html.unparse(text, entities)
-    assert result == '🏆<a href="https://example.com">Telegram Official Android Challenge is over🏆</a>.'
+    assert result == '🏆<a href="https://example.com">Telegram Official Android Challenge is over</a>🏆.'
 
 
 def test_trailing_malformed_entities():
@@ -35,7 +35,7 @@ def test_trailing_malformed_entities():
     text = '🏆Telegram Official Android Challenge is over🏆'
     entities = [MessageEntityTextUrl(offset=2, length=43, url='https://example.com')]
     result = html.unparse(text, entities)
-    assert result == '🏆<a href="https://example.com">Telegram Official Android Challenge is over🏆</a>'
+    assert result == '🏆<a href="https://example.com">Telegram Official Android Challenge is over</a>🏆'
 
 
 def test_entities_together():
@@ -51,3 +51,15 @@ def test_entities_together():
 
     text = html.unparse(text, entities)
     assert text == original
+
+
+def test_offset_at_emoji():
+    """
+    Tests that an entity starting at a emoji preserves the emoji.
+    """
+    text = 'Hi\n👉 See example'
+    entities = [MessageEntityBold(0, 2), MessageEntityItalic(3, 2), MessageEntityBold(10, 7)]
+    parsed = '<strong>Hi</strong>\n<em>👉</em> See <strong>example</strong>'
+
+    assert html.parse(parsed) == (text, entities)
+    assert html.unparse(text, entities) == parsed

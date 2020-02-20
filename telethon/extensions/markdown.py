@@ -6,7 +6,7 @@ since they seem to count as two characters and it's a bit strange.
 import re
 import warnings
 
-from ..helpers import add_surrogate, del_surrogate, strip_text
+from ..helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
 from ..tl import TLObject
 from ..tl.types import (
     MessageEntityBold, MessageEntityItalic, MessageEntityCode,
@@ -185,11 +185,11 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     while insert_at:
         at, what = insert_at.pop()
 
-        # If we are in the middle of a surrogate nudge the position by +1.
+        # If we are in the middle of a surrogate nudge the position by -1.
         # Otherwise we would end up with malformed text and fail to encode.
         # For example of bad input: "Hi \ud83d\ude1c"
         # https://en.wikipedia.org/wiki/UTF-16#U+010000_to_U+10FFFF
-        while at < len(text) and '\ud800' <= text[at] <= '\udfff':
+        while within_surrogate(text, at):
             at += 1
 
         text = text[:at] + what + text[at:]
