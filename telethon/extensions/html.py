@@ -159,7 +159,7 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
     html = []
     last_offset = 0
     for i, entity in enumerate(entities):
-        if entity.offset > _offset + _length:
+        if entity.offset >= _offset + _length:
             break
         relative_offset = entity.offset - _offset
         if relative_offset > last_offset:

@@ -2,7 +2,7 @@
 Tests for `telethon.extensions.markdown`.
 """
 from telethon.extensions import markdown
-from telethon.tl.types import MessageEntityBold, MessageEntityTextUrl
+from telethon.tl.types import MessageEntityBold, MessageEntityItalic, MessageEntityTextUrl
 
 
 def test_entity_edges():
@@ -36,3 +36,18 @@ def test_trailing_malformed_entities():
     entities = [MessageEntityTextUrl(offset=2, length=43, url='https://example.com')]
     result = markdown.unparse(text, entities)
     assert result == "🏆[Telegram Official Android Challenge is over🏆](https://example.com)"
+
+
+def test_entities_together():
+    """
+    Test that an entity followed immediately by a different one behaves well.
+    """
+    original = '**⚙️**__Settings__'
+    stripped = '⚙️Settings'
+
+    text, entities = markdown.parse(original)
+    assert text == stripped
+    assert entities == [MessageEntityBold(0, 2), MessageEntityItalic(2, 8)]
+
+    text = markdown.unparse(text, entities)
+    assert text == original
