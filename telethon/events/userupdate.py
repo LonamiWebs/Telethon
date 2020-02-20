@@ -36,6 +36,17 @@ def _requires_status(function):
 class UserUpdate(EventBuilder):
     """
     Occurs whenever a user goes online, starts typing, etc.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.UserUpdate)
+            async def handler(event):
+                # If someone is uploading, say something
+                if event.uploading:
+                    await client.send_message(event.user_id, 'What are you sending?')
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):

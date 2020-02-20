@@ -37,6 +37,24 @@ class NewMessage(EventBuilder):
             You can specify a regex-like string which will be matched
             against the message, a callable function that returns `True`
             if a message is acceptable, or a compiled regex pattern.
+
+    Example
+        .. code-block:: python
+
+            import asyncio
+            from telethon import events
+
+            @client.on(events.NewMessage(pattern='(?i)hello.+'))
+            async def handler(event):
+                # Respond whenever someone says "Hello" and something else
+                await event.reply('Hey!')
+
+            @client.on(events.NewMessage(outgoing=True, pattern='!ping'))
+            async def handler(event):
+                # Say "!pong" whenever you send "!ping", then delete both messages
+                m = await event.respond('!pong')
+                await asyncio.sleep(5)
+                await client.delete_messages(event.chat_id, [event.id, m.id])
     """
     def __init__(self, chats=None, *, blacklist_chats=False, func=None,
                  incoming=None, outgoing=None,

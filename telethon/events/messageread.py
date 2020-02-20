@@ -13,6 +13,21 @@ class MessageRead(EventBuilder):
             If this argument is `True`, then when you read someone else's
             messages the event will be fired. By default (`False`) only
             when messages you sent are read by someone else will fire it.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.MessageRead)
+            async def handler(event):
+                # Log when someone reads your messages
+                print('Someone has read all your messages until', event.max_id)
+
+            @client.on(events.MessageRead(inbox=True))
+            async def handler(event):
+                # Log when you read message in a chat (from your "inbox")
+                print('You have read messages until', event.max_id)
     """
     def __init__(
             self, chats=None, *, blacklist_chats=False, func=None, inbox=False):

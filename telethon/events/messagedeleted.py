@@ -23,6 +23,17 @@ class MessageDeleted(EventBuilder):
 
         This means that the ``chats=`` parameter will not work reliably,
         unless you intend on working with channels and super-groups only.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.MessageDeleted)
+            async def handler(event):
+                # Log all deleted message IDs
+                for msg_id in event.deleted_ids:
+                    print('Message', msg_id, 'was deleted in', event.chat_id)
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):

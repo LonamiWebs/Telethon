@@ -31,6 +31,29 @@ class CallbackQuery(EventBuilder):
             against the payload data, a callable function that returns `True`
             if a the payload data is acceptable, or a compiled regex pattern.
 
+    Example
+        .. code-block:: python
+
+            from telethon import events, Button
+
+            # Handle all callback queries and check data inside the handler
+            @client.on(events.CallbackQuery)
+            async def handler(event):
+                if event.data == b'yes':
+                    await event.answer('Correct answer!')
+
+            # Handle only callback queries with data being b'no'
+            @client.on(events.CallbackQuery(data=b'no'))
+            async def handler(event):
+                # Pop-up message with alert
+                await event.answer('Wrong answer!', alert=True)
+
+            # Send a message with buttons users can click
+            async def main():
+                await client.send_message(user, 'Yes or no?', buttons=[
+                    Button.inline('Yes!', b'yes')
+                    Button.inline('Nope', b'no')
+                ])
     """
     def __init__(
             self, chats=None, *, blacklist_chats=False, func=None, data=None, pattern=None):

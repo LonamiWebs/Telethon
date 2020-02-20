@@ -31,6 +31,16 @@ class MessageEdited(NewMessage):
         Instead, consider using ``from_users='me'`` (it won't work in
         broadcast channels at all since the sender is the channel and
         not you).
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.MessageEdited)
+            async def handler(event):
+                # Log the date of new edits
+                print('Message', event.id, 'changed at', event.date)
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):

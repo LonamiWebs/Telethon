@@ -20,6 +20,25 @@ class Album(EventBuilder):
     Occurs whenever you receive an album. This event only exists
     to ease dealing with an unknown amount of messages that belong
     to the same album.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.Album)
+            async def handler(event):
+                # Counting how many photos or videos the album has
+                print('Got an album with', len(event), 'items')
+
+                # Forwarding the album as a whole to some chat
+                event.forward_to(chat)
+
+                # Printing the caption
+                print(event.text)
+
+                # Replying to the fifth item in the album
+                await event.messages[4].reply('Cool!')
     """
 
     def __init__(

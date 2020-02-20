@@ -17,6 +17,17 @@ class ChatAction(EventBuilder):
 
     Note that "chat" refers to "small group, megagroup and broadcast
     channel", whereas "group" refers to "small group and megagroup" only.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.ChatAction)
+            async def handler(event):
+                # Welcome every new user
+                if event.user_joined:
+                    await event.reply('Welcome to the group!')
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):

@@ -31,6 +31,21 @@ class InlineQuery(EventBuilder):
             You can specify a regex-like string which will be matched
             against the message, a callable function that returns `True`
             if a message is acceptable, or a compiled regex pattern.
+
+    Example
+        .. code-block:: python
+
+            from telethon import events
+
+            @client.on(events.InlineQuery)
+            async def handler(event):
+                builder = event.builder
+
+                # Two options (convert user text to UPPERCASE or lowercase)
+                await event.answer([
+                    builder.article('UPPERCASE', text=event.text.upper()),
+                    builder.article('lowercase', text=event.text.lower()),
+                ])
     """
     def __init__(
             self, users=None, *, blacklist_users=False, func=None, pattern=None):
