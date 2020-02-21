@@ -22,11 +22,12 @@ def _find_ssl_lib():
     # Credit for fix goes to Sarah Harvey (@worldwise001)
     # https://www.shh.sh/2020/01/04/python-abort-trap-6.html
     if sys.platform == 'darwin':
-        _, major, minor = platform.mac_ver()[0].split('.')
+        release, _version_info, _machine = platform.mac_ver()
+        major = release.split('.', maxsplit=1)[0]
         # macOS 10.14 "mojave" is the last known major release
         # to support unversioned libssl.dylib. Anything above
         # needs specific versions
-        if int(major) > 14:
+        if major and int(major) > 14:
             lib = (
                 ctypes.util.find_library('libssl.46') or
                 ctypes.util.find_library('libssl.44') or
