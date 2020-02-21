@@ -23,7 +23,7 @@ def _find_ssl_lib():
     # https://www.shh.sh/2020/01/04/python-abort-trap-6.html
     if sys.platform == 'darwin':
         release, _version_info, _machine = platform.mac_ver()
-        major = release.split('.', maxsplit=1)[0]
+        ten, major, *minor = release.split('.')
         # macOS 10.14 "mojave" is the last known major release
         # to support unversioned libssl.dylib. Anything above
         # needs specific versions
