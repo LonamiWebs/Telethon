@@ -16,7 +16,7 @@ it can take advantage of new goodies!
 Bug Fixes (v1.11)
 =================
 
-*Published at 2019/02/20*
+*Published at 2020/02/20*
 
 +------------------------+
 | Scheme layer used: 110 |
@@ -25,6 +25,7 @@ Bug Fixes (v1.11)
 It has been a while since the last release, and a few bug fixes have been
 made since then. This release includes them and updates the scheme layer.
 
+Note that most of the bug-fixes are available in the ``v1.10.10`` patch.
 
 Bug fixes
 ~~~~~~~~~
@@ -34,11 +35,20 @@ Bug fixes
   on small group chats.
 * `client.delete_dialog() <telethon.client.dialogs.DialogMethods.delete_dialog>`
   now handles deactivated chats more gracefully.
-* Fixed some imports on macOS Catalina.
 * Sending a message with ``file=`` would ignore some of the parameters.
 * Errors are now un-pickle-able once again.
 * Fixed some issues regarding markdown and HTML (un)parsing.
 
+The following are also present in ``v1.10.10``:
+
+* Fixed some issues with `events.Album <telethon.events.album.Album>`.
+* Fixed some issues with `client.kick_participant()
+  <telethon.client.chats.ChatMethods.kick_participant>` and
+  `client.edit_admin() <telethon.client.chats.ChatMethods.edit_admin>`.
+* Fixed sending albums and more within `client.conversation()
+  <telethon.client.dialogs.DialogMethods.conversation>`.
+* Fixed some import issues.
+* And a lot more minor stuff.
 
 Enhancements
 ~~~~~~~~~~~~
@@ -47,6 +57,16 @@ Enhancements
 * Getting updates after reconnect should be more reliable.
 * Updated documentation and added more examples.
 * More security checks during the generation of the authorization key.
+
+The following are also present in ``v1.10.10``:
+
+* URLs like ``t.me/@username`` are now valid.
+* Auto-sleep now works for slow-mode too.
+* Improved some error messages.
+* Some internal improvements and updating.
+* `client.pin_message() <telethon.client.messages.MessageMethods.pin_message>`
+  now also works with message objects.
+* Asynchronous file descriptors are now allowed during download and upload.
 
 
 Scheduled Messages (v1.10)
