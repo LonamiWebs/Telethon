@@ -99,6 +99,7 @@ channels.togglePreHistoryHidden,user,CHAT_LINK_EXISTS
 channels.toggleSignatures,user,CHANNEL_INVALID
 channels.toggleSlowMode,user,SECONDS_INVALID
 channels.updateUsername,user,CHANNELS_ADMIN_PUBLIC_TOO_MUCH CHANNEL_INVALID CHAT_ADMIN_REQUIRED USERNAME_INVALID USERNAME_OCCUPIED
+contacts.addContact,user,CONTACT_NAME_EMPTY
 contacts.block,user,CONTACT_ID_INVALID
 contacts.deleteByPhones,user,
 contacts.deleteContact,user,CONTACT_ID_INVALID

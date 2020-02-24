@@ -68,6 +68,7 @@ CONNECTION_LAYER_INVALID,400,The very first request must always be InvokeWithLay
 CONNECTION_NOT_INITED,400,Connection not initialized
 CONNECTION_SYSTEM_EMPTY,400,Connection system empty
 CONTACT_ID_INVALID,400,The provided contact ID is invalid
+CONTACT_NAME_EMPTY,400,The provided contact name cannot be empty
 DATA_INVALID,400,Encrypted data invalid
 DATA_JSON_INVALID,400,The provided JSON data is invalid
 DATE_EMPTY,400,Date empty
