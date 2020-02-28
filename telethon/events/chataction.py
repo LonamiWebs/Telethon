@@ -316,7 +316,7 @@ class ChatAction(EventBuilder):
         @property
         def user(self):
             """
-            The first user that takes part in this action (e.g. joined).
+            The first user that takes part in this action. For example, who joined.
 
             Might be `None` if the information can't be retrieved or
             there is no user taking part.
@@ -357,7 +357,7 @@ class ChatAction(EventBuilder):
         @property
         def users(self):
             """
-            A list of users that take part in this action (e.g. joined).
+            A list of users that take part in this action. For example, who joined.
 
             Might be empty if the information can't be retrieved or there
             are no users taking part.

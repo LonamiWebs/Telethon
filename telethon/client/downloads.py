@@ -328,6 +328,13 @@ class DownloadMethods:
                 # or
                 path = await message.download_media()
                 await message.download_media(filename)
+
+                # Printing download progress
+                def callback(current, total):
+                    print('Downloaded', current, 'out of', total,
+                          'bytes: {:.2%}'.format(current / total))
+
+                await client.download_media(message, progress_callback=callback)
         """
         # TODO This won't work for messageService
         if isinstance(message, types.Message):
@@ -372,6 +379,11 @@ class DownloadMethods:
             dc_id: int = None) -> typing.Optional[bytes]:
         """
         Low-level method to download files from their input location.
+
+        .. note::
+
+            Generally, you should instead use `download_media`.
+            This method is intended to be a bit more low-level.
 
         Arguments
             input_location (:tl:`InputFileLocation`):

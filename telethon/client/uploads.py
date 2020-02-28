@@ -261,6 +261,13 @@ class UploadMethods:
                     '/my/photos/holiday2.jpg',
                     '/my/drawings/portrait.png'
                 ])
+
+                # Printing upload progress
+                def callback(current, total):
+                    print('Uploaded', current, 'out of', total,
+                          'bytes: {:.2%}'.format(current / total))
+
+                await client.send_file(chat, file, progress_callback=callback)
         """
         # TODO Properly implement allow_cache to reuse the sha256 of the file
         # i.e. `None` was used
@@ -435,6 +442,10 @@ class UploadMethods:
             progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
+
+        .. note::
+
+            Generally, you want to use `send_file` instead.
 
         This method returns a handle (an instance of :tl:`InputFile` or
         :tl:`InputFileBig`, as required) which can be later used before
