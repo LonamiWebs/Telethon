@@ -186,6 +186,19 @@ class TLObject:
             return json.dumps(d, default=default, **kwargs)
 
     def __bytes__(self):
+        try:
+            return self._bytes()
+        except AttributeError:
+            # If a type is wrong (e.g. expected `TLObject` but `int` was
+            # provided) it will try to access `._bytes()`, which will fail
+            # with `AttributeError`. This occurs in fact because the type
+            # was wrong, so raise the correct error type.
+            raise TypeError('a TLObject was expected but found something else')
+
+    # Custom objects will call `(...)._bytes()` and not `bytes(...)` so that
+    # if the wrong type is used (e.g. `int`) we won't try allocating a huge
+    # amount of data, which would cause a `MemoryError`.
+    def _bytes(self):
         raise NotImplementedError
 
     @classmethod
