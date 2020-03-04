@@ -5,6 +5,8 @@ import pathlib
 import typing
 import inspect
 
+from ..crypto import AES
+
 from .. import utils, helpers, errors, hints
 from ..requestiter import RequestIter
 from ..tl import TLObject, types, functions
@@ -16,7 +18,6 @@ except ImportError:
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
-
 
 # Chunk sizes for upload.getFile must be multiples of the smallest size
 MIN_CHUNK_SIZE = 4096
@@ -376,7 +377,9 @@ class DownloadMethods:
             part_size_kb: float = None,
             file_size: int = None,
             progress_callback: 'hints.ProgressCallback' = None,
-            dc_id: int = None) -> typing.Optional[bytes]:
+            dc_id: int = None,
+            key: bytes = None,
+            iv: bytes = None) -> typing.Optional[bytes]:
         """
         Low-level method to download files from their input location.
 
@@ -415,6 +418,13 @@ class DownloadMethods:
                 The data center the library should connect to in order
                 to download the file. You shouldn't worry about this.
 
+            key ('bytes', optional):
+                In case of an encrypted upload (secret chats) a key is supplied
+
+            iv ('bytes', optional):
+                In case of an encrypted upload (secret chats) an iv is supplied
+
+
         Example
             .. code-block:: python
 
@@ -446,6 +456,8 @@ class DownloadMethods:
         try:
             async for chunk in self.iter_download(
                     input_location, request_size=part_size, dc_id=dc_id):
+                if iv and key:
+                    chunk = AES.decrypt_ige(chunk, key, iv)
                 r = f.write(chunk)
                 if inspect.isawaitable(r):
                     await r

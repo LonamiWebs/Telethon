@@ -8,6 +8,8 @@ import typing
 import inspect
 from io import BytesIO
 
+from ..crypto import AES
+
 from .. import utils, helpers, hints
 from ..tl import types, functions, custom
 
@@ -439,6 +441,8 @@ class UploadMethods:
             part_size_kb: float = None,
             file_name: str = None,
             use_cache: type = None,
+            key: bytes = None,
+            iv: bytes = None,
             progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
@@ -475,6 +479,12 @@ class UploadMethods:
                 This parameter currently does nothing, but is kept for
                 backward-compatibility (and it may get its use back in
                 the future).
+
+            key ('bytes', optional):
+                In case of an encrypted upload (secret chats) a key is supplied
+
+            iv ('bytes', optional):
+                In case of an encrypted upload (secret chats) an iv is supplied
 
             progress_callback (`callable`, optional):
                 A callback function accepting two parameters:
@@ -585,6 +595,10 @@ class UploadMethods:
             for part_index in range(part_count):
                 # Read the file by in chunks of size part_size
                 part = stream.read(part_size)
+
+                # encryption part if needed
+                if key and iv:
+                    part = AES.encrypt_ige(part, key, iv)
 
                 # The SavePartRequest is different depending on whether
                 # the file is too large or not (over or less than 10MB)
