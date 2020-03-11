@@ -96,3 +96,11 @@ a new ``Filter`` to define handlers more conveniently and utilities to
 run code on start and finish of the client. Be sure to check the project
 to learn about its latest features, since this description may be out of
 date.
+
+telethon-secret-chat
+====================
+
+`telethon-secret-chat <https://github.com/painor/telethon-secret-chat>`_ /
+`painor's GitHub <https://github.com/painor>`_
+
+This add-on can be used to work with secret chats in Telethon!
