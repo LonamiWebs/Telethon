@@ -357,10 +357,7 @@ class UploadMethods:
             entities=msg_entities, reply_markup=markup, silent=silent,
             schedule_date=schedule, clear_draft=clear_draft
         )
-        msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle, image=image)
-
-        return msg
+        return self._get_response_message(request, await self(request), entity)
 
     async def _send_album(self: 'TelegramClient', entity, files, caption='',
                           progress_callback=None, reply_to=None,
@@ -399,16 +396,12 @@ class UploadMethods:
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
-                self.session.cache_file(
-                    fh.md5, fh.size, utils.get_input_photo(r.photo))
 
                 fm = utils.get_input_media(r.photo)
             elif isinstance(fm, types.InputMediaUploadedDocument):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
-                self.session.cache_file(
-                    fh.md5, fh.size, utils.get_input_document(r.document))
 
                 fm = utils.get_input_media(
                     r.document, supports_streaming=supports_streaming)
@@ -719,17 +712,5 @@ class UploadMethods:
                 **input_kw
             )
         return file_handle, media, as_image
-
-    async def _cache_media(self: 'TelegramClient', msg, file, file_handle, image):
-        if file and msg and isinstance(file_handle,
-                                       custom.InputSizedFile):
-            # There was a response message and we didn't use cached
-            # version, so cache whatever we just sent to the database.
-            md5, size = file_handle.md5, file_handle.size
-            if image:
-                to_cache = utils.get_input_photo(msg.media.photo)
-            else:
-                to_cache = utils.get_input_document(msg.media.document)
-            self.session.cache_file(md5, size, to_cache)
 
     # endregion
