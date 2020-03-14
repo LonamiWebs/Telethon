@@ -99,7 +99,7 @@ You will still need an API ID and hash, but the process is very similar:
 
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
-    bot_token = '12345:0123456789abcdef0123456789abcdef
+    bot_token = '12345:0123456789abcdef0123456789abcdef'
 
     # We have to manually call "start" if we want an explicit bot token
     bot = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
