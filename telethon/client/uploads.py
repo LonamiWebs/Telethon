@@ -637,6 +637,14 @@ class UploadMethods:
         if as_image is None:
             as_image = utils.is_image(file) and not force_document
 
+        if as_image or not thumb:
+            # Images don't have thumb so don't bother uploading it
+            thumb = None
+        else:
+            if isinstance(thumb, pathlib.Path):
+                thumb = str(thumb.absolute())
+            thumb = await self.upload_file(thumb)
+
         # `aiofiles` do not base `io.IOBase` but do have `read`, so we
         # just check for the read attribute to see if it's file-like.
         if not isinstance(file, (str, bytes)) and not hasattr(file, 'read'):
@@ -654,7 +662,8 @@ class UploadMethods:
                     force_document=force_document,
                     voice_note=voice_note,
                     video_note=video_note,
-                    supports_streaming=supports_streaming
+                    supports_streaming=supports_streaming,
+                    thumb=thumb,
                 ), as_image)
             except TypeError:
                 # Can't turn whatever was given into media
@@ -699,17 +708,11 @@ class UploadMethods:
                 supports_streaming=supports_streaming
             )
 
-            input_kw = {}
-            if thumb:
-                if isinstance(thumb, pathlib.Path):
-                    thumb = str(thumb.absolute())
-                input_kw['thumb'] = await self.upload_file(thumb)
-
             media = types.InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type=mime_type,
                 attributes=attributes,
-                **input_kw
+                thumb=thumb
             )
         return file_handle, media, as_image
 
