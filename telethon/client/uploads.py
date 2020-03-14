@@ -637,17 +637,10 @@ class UploadMethods:
         if as_image is None:
             as_image = utils.is_image(file) and not force_document
 
-        if as_image or not thumb:
-            # Images don't have thumb so don't bother uploading it
-            thumb = None
-        else:
-            if isinstance(thumb, pathlib.Path):
-                thumb = str(thumb.absolute())
-            thumb = await self.upload_file(thumb)
-
         # `aiofiles` do not base `io.IOBase` but do have `read`, so we
         # just check for the read attribute to see if it's file-like.
-        if not isinstance(file, (str, bytes)) and not hasattr(file, 'read'):
+        if not isinstance(file, (str, bytes, types.InputFile, types.InputFileBig))\
+                and not hasattr(file, 'read'):
             # The user may pass a Message containing media (or the media,
             # or anything similar) that should be treated as a file. Try
             # getting the input media for whatever they passed and send it.
@@ -662,8 +655,7 @@ class UploadMethods:
                     force_document=force_document,
                     voice_note=voice_note,
                     video_note=video_note,
-                    supports_streaming=supports_streaming,
-                    thumb=thumb,
+                    supports_streaming=supports_streaming
                 ), as_image)
             except TypeError:
                 # Can't turn whatever was given into media
@@ -671,7 +663,10 @@ class UploadMethods:
 
         media = None
         file_handle = None
-        if not isinstance(file, str) or os.path.isfile(file):
+
+        if isinstance(file, (types.InputFile, types.InputFileBig)):
+            file_handle = file
+        elif not isinstance(file, str) or os.path.isfile(file):
             file_handle = await self.upload_file(
                 _resize_photo_if_needed(file, as_image),
                 progress_callback=progress_callback
@@ -707,6 +702,13 @@ class UploadMethods:
                 video_note=video_note,
                 supports_streaming=supports_streaming
             )
+
+            if not thumb:
+                thumb = None
+            else:
+                if isinstance(thumb, pathlib.Path):
+                    thumb = str(thumb.absolute())
+                thumb = await self.upload_file(thumb)
 
             media = types.InputMediaUploadedDocument(
                 file=file_handle,

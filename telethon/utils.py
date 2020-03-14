@@ -427,8 +427,7 @@ def get_input_geo(geo):
 def get_input_media(
         media, *,
         is_photo=False, attributes=None, force_document=False,
-        voice_note=False, video_note=False, supports_streaming=False,
-        thumb=None,
+        voice_note=False, video_note=False, supports_streaming=False
 ):
     """
     Similar to :meth:`get_input_peer`, but for media.
@@ -482,7 +481,7 @@ def get_input_media(
                 supports_streaming=supports_streaming
             )
             return types.InputMediaUploadedDocument(
-                file=media, mime_type=mime, attributes=attrs, thumb=thumb)
+                file=media, mime_type=mime, attributes=attrs)
 
     if isinstance(media, types.MessageMediaGame):
         return types.InputMediaGame(id=types.InputGameID(
