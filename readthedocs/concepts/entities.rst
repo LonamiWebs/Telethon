@@ -178,7 +178,7 @@ exist, which just have the ID. You cannot get the hash out of them since
 you should not be needing it. The library probably has cached it before.
 
 Peers are enough to identify an entity, but they are not enough to make
-a request with them use them. You need to know their hash before you can
+a request with them. You need to know their hash before you can
 "use them", and to know the hash you need to "encounter" them, let it
 be in your dialogs, participants, message forwards, etc.
 
