@@ -1046,7 +1046,6 @@ class MessageMethods:
             schedule_date=schedule
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle, image=image)
         return msg
 
     async def delete_messages(
