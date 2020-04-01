@@ -4,9 +4,21 @@ Telethon's Documentation
 
 .. code-block:: python
 
+   import sys
+   import os
+   os.chdir(sys.path[0])
+   
+   session_name = "name"
+   
+   if f"{session_name}.session" in os.listdir():
+      os.remove(f"{session_name}.session")
+      
+   import nest_asyncio
+   nest_asyncio.apply()
+
    from telethon.sync import TelegramClient, events
 
-   with TelegramClient('name', api_id, api_hash) as client:
+   async with TelegramClient(session_name, api_id, api_hash) as client:
       client.send_message('me', 'Hello, myself!')
       print(client.download_profile_photo('me'))
 
