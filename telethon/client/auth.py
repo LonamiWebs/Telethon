@@ -25,7 +25,8 @@ class AuthMethods:
             code_callback: typing.Callable[[], typing.Union[str, int]] = None,
             first_name: str = 'New User',
             last_name: str = '',
-            max_attempts: int = 3) -> 'TelegramClient':
+            max_attempts: int = 3,
+            call_hint_callback: typing.Callable[[int], None] = lambda x: print('will call you in {} seconds'.format(x))) -> 'TelegramClient':
         """
         Starts the client (connects and logs in if necessary).
 
@@ -79,6 +80,9 @@ class AuthMethods:
                 How many times the code/password callback should be
                 retried or switching between signing in and signing up.
 
+            call_hint_callback (`callable`, optional):
+                A callable that will receive calling hint. Defaults to
+                print() with an int argument as timeout.
         Returns
             This `TelegramClient`, so initialization
             can be chained with ``.start()``.
@@ -125,7 +129,8 @@ class AuthMethods:
             code_callback=code_callback,
             first_name=first_name,
             last_name=last_name,
-            max_attempts=max_attempts
+            max_attempts=max_attempts,
+            call_hint_callback=call_hint_callback
         )
         return (
             coro if self.loop.is_running()
@@ -134,7 +139,7 @@ class AuthMethods:
 
     async def _start(
             self: 'TelegramClient', phone, password, bot_token, force_sms,
-            code_callback, first_name, last_name, max_attempts):
+            code_callback, first_name, last_name, max_attempts, call_hint_callback):
         if not self.is_connected():
             await self.connect()
 
@@ -163,7 +168,11 @@ class AuthMethods:
         attempts = 0
         two_step_detected = False
 
-        await self.send_code_request(phone, force_sms=force_sms)
+        sent_result = await self.send_code_request(phone, force_sms=force_sms)
+		# If telegram will call the phone number, give a hint to callback.
+        if isinstance(sent_result.next_type, types.auth.CodeTypeCall) \
+            and sent_result.timeout and call_hint_callback:
+            call_hint_callback(sent_result.timeout)
         sign_up = False  # assume login
         while attempts < max_attempts:
             try:
