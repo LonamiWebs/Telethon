@@ -1025,14 +1025,25 @@ class MessageMethods:
                 force_document=force_document)
 
         if isinstance(entity, types.InputBotInlineMessageID):
-            return await self(functions.messages.EditInlineBotMessageRequest(
+            request = functions.messages.EditInlineBotMessageRequest(
                 id=entity,
                 message=text,
                 no_webpage=not link_preview,
                 entities=msg_entities,
                 media=media,
                 reply_markup=self.build_reply_markup(buttons)
-            ))
+            )
+            # Invoke `messages.editInlineBotMessage` from the right datacenter.
+            # Otherwise, Telegram will error with `MESSAGE_ID_INVALID` and do nothing.
+            exported = self.session.dc_id != entity.dc_id
+            if exported:
+                try:
+                    sender = await self._borrow_exported_sender(entity.dc_id)
+                    return await sender.send(request)
+                finally:
+                    await self._return_exported_sender(sender)
+            else:
+                return await self(request)
 
         entity = await self.get_input_entity(entity)
         request = functions.messages.EditMessageRequest(
