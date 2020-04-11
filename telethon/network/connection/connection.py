@@ -65,7 +65,7 @@ class Connection(abc.ABC):
             else:
                 s.set_proxy(*self._proxy)
 
-            s.setblocking(False)
+            s.settimeout(timeout)
             await asyncio.wait_for(
                 self._loop.sock_connect(s, address),
                 timeout=timeout,
@@ -78,14 +78,14 @@ class Connection(abc.ABC):
                         'without the SSL module being available'
                     )
 
-                s.settimeout(timeout)
                 s = ssl_mod.wrap_socket(
                     s,
                     do_handshake_on_connect=True,
                     ssl_version=ssl_mod.PROTOCOL_SSLv23,
                     ciphers='ADH-AES256-SHA'
                 )
-                s.setblocking(False)
+                
+            s.setblocking(False)
 
             self._reader, self._writer = \
                 await asyncio.open_connection(sock=s, loop=self._loop)
