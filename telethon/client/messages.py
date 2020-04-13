@@ -1146,6 +1146,10 @@ class MessageMethods:
         If neither message nor maximum ID are provided, all messages will be
         marked as read by assuming that ``max_id = 0``.
 
+        If a message or maximum ID is provided, all the messages up to and
+        including such ID will be marked as read (for all messages whose ID
+        ≤ max_id).
+
         See also `Message.mark_read() <telethon.tl.custom.message.Message.mark_read>`.
 
         Arguments
@@ -1156,8 +1160,8 @@ class MessageMethods:
                 Either a list of messages or a single message.
 
             max_id (`int`):
-                Overrides messages, until which message should the
-                acknowledge should be sent.
+                Until which message should the read acknowledge be sent for.
+                This has priority over the ``message`` parameter.
 
             clear_mentions (`bool`):
                 Whether the mention badge should be cleared (so that

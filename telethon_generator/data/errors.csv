@@ -250,6 +250,7 @@ SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 START_PARAM_EMPTY,400,The start parameter is empty
 START_PARAM_INVALID,400,Start parameter invalid
+STATS_MIGRATE_X,303,The channel statistics must be fetched from DC {dc}
 STICKERSET_INVALID,400,The provided sticker set is invalid
 STICKERS_EMPTY,400,No sticker provided
 STICKER_EMOJI_INVALID,400,Sticker emoji invalid
