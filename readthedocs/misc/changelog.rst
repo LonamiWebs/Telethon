@@ -13,6 +13,36 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Bug Fixes (v1.12)
+=================
+
+*Published at 2020/04/20*
+
++------------------------+
+| Scheme layer used: 111 |
++------------------------+
+
+Once again nothing major, but a few bug fixes and primarily the new layer
+deserves a new minor release.
+
+Bug fixes
+~~~~~~~~~
+
+These were already included in the ``v1.11.3`` patch:
+
+* ``libssl`` check was failing on macOS.
+* Getting input users would sometimes fail on `events.ChatAction
+  <telethon.events.chataction.ChatAction>`.
+
+These bug fixes are available in this release and beyond:
+
+* Avoid another occurrence of `MemoryError`.
+* Sending large files in albums would fail because it tried to cache them.
+* The ``thumb`` was being ignored when sending files from :tl:`InputFile`.
+* Fixed editing inline messages from callback queries in some cases.
+* Proxy connection is now blocking which should help avoid some errors.
+
+
 Bug Fixes (v1.11)
 =================
 
