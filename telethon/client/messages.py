@@ -1118,8 +1118,14 @@ class MessageMethods:
             else int(m) for m in message_ids
         )
 
-        entity = await self.get_input_entity(entity) if entity else None
-        if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
+        if entity:
+            entity = await self.get_input_entity(entity)
+            ty = helpers._entity_type(entity)
+        else:
+            # no entity (None), set a value that's not a channel for private delete
+            ty = helpers._EntityType.USER
+
+        if ty == helpers._EntityType.CHANNEL:
             return await self([functions.channels.DeleteMessagesRequest(
                          entity, list(c)) for c in utils.chunks(message_ids)])
         else:
