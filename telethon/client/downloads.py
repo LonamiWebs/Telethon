@@ -727,15 +727,15 @@ class DownloadMethods:
         if not isinstance(document, types.Document):
             return
 
-        kind, possible_names = self._get_kind_and_names(document.attributes)
-        file = self._get_proper_filename(
-            file, kind, utils.get_extension(document),
-            date=date, possible_names=possible_names
-        )
-
         if thumb is None:
+            kind, possible_names = self._get_kind_and_names(document.attributes)
+            file = self._get_proper_filename(
+                file, kind, utils.get_extension(document),
+                date=date, possible_names=possible_names
+            )
             size = None
         else:
+            file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
             size = self._get_thumb(document.thumbs, thumb)
             if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
                 return self._download_cached_photo_size(size, file)
