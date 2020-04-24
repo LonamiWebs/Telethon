@@ -78,6 +78,7 @@ EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
 EMAIL_INVALID,400,The given email is invalid
 EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
 EMOTICON_EMPTY,400,The emoticon field cannot be empty
+EMOTICON_INVALID,400,The specified emoticon cannot be used or was not a emoticon
 ENCRYPTED_MESSAGE_INVALID,400,Encrypted message invalid
 ENCRYPTION_ALREADY_ACCEPTED,400,Secret chat already accepted
 ENCRYPTION_ALREADY_DECLINED,400,The secret chat was already declined
