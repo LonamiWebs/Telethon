@@ -29,10 +29,7 @@ published `here <https://core.telegram.org/tdlib/docs/>`__.
 JavaScript
 ==========
 
-`@zerobias <https://github.com/zerobias>`__ is working on
-`telegram-mtproto <https://github.com/zerobias/telegram-mtproto>`__,
-a work-in-progress JavaScript library installable via
-`npm <https://www.npmjs.com/>`__.
+`Ali Gasymov <https://github.com/alik0211>`__ made the `@mtproto/core <https://github.com/alik0211/mtproto-core>`__ library for the browser and nodejs installable via `npm <https://www.npmjs.com/package/@mtproto/core>`__.
 
 Kotlin
 ======
