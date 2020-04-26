@@ -30,13 +30,13 @@ class _ChatAction:
 
         'audio': types.SendMessageUploadAudioAction(1),
         'voice': types.SendMessageUploadAudioAction(1),  # alias
+        'song': types.SendMessageUploadAudioAction(1),  # alias
         'round': types.SendMessageUploadRoundAction(1),
         'video': types.SendMessageUploadVideoAction(1),
 
         'photo': types.SendMessageUploadPhotoAction(1),
         'document': types.SendMessageUploadDocumentAction(1),
         'file': types.SendMessageUploadDocumentAction(1),  # alias
-        'song': types.SendMessageUploadDocumentAction(1),  # alias
 
         'cancel': types.SendMessageCancelAction()
     }
