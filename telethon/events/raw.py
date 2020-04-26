@@ -29,12 +29,12 @@ class Raw(EventBuilder):
             self.types = None
         elif not utils.is_list_like(types):
             if not isinstance(types, type):
-                raise TypeError('Invalid input type given %s', types)
+                raise TypeError('Invalid input type given: {}'.format(types))
 
             self.types = types
         else:
             if not all(isinstance(x, type) for x in types):
-                raise TypeError('Invalid input types given %s', types)
+                raise TypeError('Invalid input types given: {}'.format(types))
 
             self.types = tuple(types)
 
