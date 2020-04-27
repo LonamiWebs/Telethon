@@ -553,6 +553,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             return self.media
 
     @property
+    def dice(self):
+        """
+        The :tl:`MessageMediaDice` in this message, if it's a dice roll.
+        """
+        if isinstance(self.media, types.MessageMediaDice):
+            return self.media
+
+    @property
     def action_entities(self):
         """
         Returns a list of entities that took part in this action.
