@@ -38,6 +38,10 @@ class ChatAction(EventBuilder):
             return cls.Event(types.PeerChannel(update.channel_id),
                              unpin=True)
 
+        elif isinstance(update, types.UpdateChatPinnedMessage) and update.id == 0:
+            return cls.Event(types.PeerChat(update.chat_id),
+                             unpin=True)
+
         elif isinstance(update, types.UpdateChatParticipantAdd):
             return cls.Event(types.PeerChat(update.chat_id),
                              added_by=update.inviter_id or True,
@@ -104,8 +108,9 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            elif isinstance(action, types.MessageActionPinMessage):
-                # Telegram always sends this service message for new pins
+            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to_msg_id:
+                # Seems to not be reliable on unpins, but when pinning
+                # we prefer this because we know who caused it.
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_pin=msg.reply_to_msg_id)
