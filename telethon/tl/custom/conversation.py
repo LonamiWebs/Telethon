@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import itertools
 import time
 
@@ -9,6 +10,16 @@ from ... import helpers, utils, errors
 # In that case we add a small delta so that the age is older, for
 # comparision purposes. This value is enough for up to 1000 messages.
 _EDIT_COLLISION_DELTA = 0.001
+
+
+def _checks_cancelled(f):
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if self._cancelled:
+            raise asyncio.CancelledError('The conversation was cancelled before')
+
+        return f(self, *args, **kwargs)
+    return wrapper
 
 
 class Conversation(ChatGetter):
@@ -66,6 +77,7 @@ class Conversation(ChatGetter):
 
         self._edit_dates = {}
 
+    @_checks_cancelled
     async def send_message(self, *args, **kwargs):
         """
         Sends a message in the context of this conversation. Shorthand
@@ -81,6 +93,7 @@ class Conversation(ChatGetter):
         self._last_outgoing = ms[-1].id
         return sent
 
+    @_checks_cancelled
     async def send_file(self, *args, **kwargs):
         """
         Sends a file in the context of this conversation. Shorthand
@@ -96,6 +109,7 @@ class Conversation(ChatGetter):
         self._last_outgoing = ms[-1].id
         return sent
 
+    @_checks_cancelled
     def mark_read(self, message=None):
         """
         Marks as read the latest received message if ``message is None``.
@@ -379,10 +393,8 @@ class Conversation(ChatGetter):
         else:
             raise ValueError('No message was sent previously')
 
+    @_checks_cancelled
     def _get_result(self, future, start_time, timeout, pending, target_id):
-        if self._cancelled:
-            raise asyncio.CancelledError('The conversation was cancelled before')
-
         due = self._total_due
         if timeout is None:
             timeout = self._timeout
