@@ -68,7 +68,7 @@ class _DirectDownloadIter(RequestIter):
 
     async def _request(self):
         try:
-            result = await self._sender.send(self.request)
+            result = await self.client._call(self._sender, self.request)
             if isinstance(result, types.upload.FileCdnRedirect):
                 raise NotImplementedError  # TODO Implement
             else:

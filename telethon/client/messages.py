@@ -1039,7 +1039,7 @@ class MessageMethods:
             if exported:
                 try:
                     sender = await self._borrow_exported_sender(entity.dc_id)
-                    return await sender.send(request)
+                    return await self._call(sender, request)
                 finally:
                     await self._return_exported_sender(sender)
             else:
