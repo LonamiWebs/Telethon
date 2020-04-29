@@ -86,7 +86,7 @@ class _MessagesIter(RequestIter):
                 filter = types.InputMessagesFilterEmpty()
 
             # Telegram completely ignores `from_id` in private chats
-            if self.entity:
+            if not isinstance(self.entity, types.InputPeerEmpty):
                 ty = helpers._entity_type(self.entity)
                 if ty == helpers._EntityType.USER:
                     # Don't bother sending `from_user` (it's ignored anyway),
