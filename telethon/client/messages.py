@@ -1246,11 +1246,24 @@ class MessageMethods:
         """
         message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
-        await self(functions.messages.UpdatePinnedMessageRequest(
+        request = functions.messages.UpdatePinnedMessageRequest(
             peer=entity,
             id=message,
             silent=not notify
-        ))
+        )
+        result = await self(request)
+
+        # Unpinning does not produce a service message, and technically
+        # users can pass negative IDs which seem to behave as unpinning too.
+        if message <= 0:
+            return
+
+        # Pinning in User chats (just with yourself really) does not produce a service message
+        if helpers._entity_type(entity) == helpers._EntityType.USER:
+            return
+
+        # Pinning a message that doesn't exist would RPC-error earlier
+        return self._get_response_message(request, result, entity)
 
     # endregion
 

@@ -259,7 +259,7 @@ class Album(EventBuilder):
             `telethon.client.messages.MessageMethods.pin_message`
             with both ``entity`` and ``message`` already set.
             """
-            await self.messages[0].pin(notify=notify)
+            return await self.messages[0].pin(notify=notify)
 
         def __len__(self):
             """

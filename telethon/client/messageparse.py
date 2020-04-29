@@ -131,7 +131,14 @@ class MessageParseMethods:
             elif isinstance(update, (
                     types.UpdateNewChannelMessage, types.UpdateNewMessage)):
                 update.message._finish_init(self, entities, input_chat)
-                id_to_message[update.message.id] = update.message
+
+                # Pinning a message with `updatePinnedMessage` seems to
+                # always produce a service message we can't map so return
+                # it directly.
+                if hasattr(request, 'random_id'):
+                    id_to_message[update.message.id] = update.message
+                else:
+                    return update.message
 
             elif (isinstance(update, types.UpdateEditMessage)
                   and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):

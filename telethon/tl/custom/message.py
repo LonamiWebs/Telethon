@@ -898,7 +898,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         #      maybe just make it illegal to call messages from raw API?
         #      That or figure out a way to always set it directly.
         if self._client:
-            await self._client.pin_message(
+            return await self._client.pin_message(
                 await self.get_input_chat(), self.id, notify=notify)
 
     # endregion Public Methods
