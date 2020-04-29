@@ -10,7 +10,7 @@ understand the official Telegram documentation) on several languages
 (even more Python too), listed below:
 
 C
-*
+=
 
 Possibly the most well-known unofficial open source implementation out
 there by `@vysheng <https://github.com/vysheng>`__,
