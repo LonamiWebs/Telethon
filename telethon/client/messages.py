@@ -73,7 +73,7 @@ class _MessagesIter(RequestIter):
         if not self.entity and (filter or from_user):
             self.entity = types.InputPeerEmpty()
 
-        if not self.entity:
+        if not self.entity or isinstance(self.entity, types.InputPeerEmpty):
             self.request = functions.messages.SearchGlobalRequest(
                 q=search or '',
                 offset_rate=offset_date,
@@ -207,7 +207,7 @@ class _MessagesIter(RequestIter):
         it should be ignored (and avoid loading more chunks).
         """
         # No entity means message IDs between chats may vary
-        if self.entity:
+        if self.entity and not isinstance(self.entity, types.InputPeerEmpty):
             if self.reverse:
                 if message.id <= self.last_id or message.id >= self.max_id:
                     return False
