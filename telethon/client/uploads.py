@@ -155,6 +155,10 @@ class UploadMethods:
 
                 * A handle to an uploaded file (from `upload_file`).
 
+                * A :tl:`InputMedia` instance. For example, if you want to
+                  send a dice use :tl:`InputMediaDice`, or if you want to
+                  send a contact use :tl:`InputMediaContact`.
+
                 To send an album, you should provide a list in this parameter.
 
                 If a list or similar is provided, the files in it will be
@@ -270,6 +274,19 @@ class UploadMethods:
                           'bytes: {:.2%}'.format(current / total))
 
                 await client.send_file(chat, file, progress_callback=callback)
+
+                # Dices, including dart and other future emoji
+                from telethon.tl import types
+                await client.send_file(chat, types.InputMediaDice(''))
+                await client.send_file(chat, types.InputMediaDice('🎯'))
+
+                # Contacts
+                await client.send_file(chat, types.InputMediaContact(
+                    phone_number='+34 123 456 789',
+                    first_name='Example',
+                    last_name='',
+                    vcard=''
+                ))
         """
         # TODO Properly implement allow_cache to reuse the sha256 of the file
         # i.e. `None` was used

@@ -512,6 +512,9 @@ def get_input_media(
             venue_type=''
         )
 
+    if isinstance(media, types.MessageMediaDice):
+        return types.InputMediaDice(media.emoticon)
+
     if isinstance(media, (
             types.MessageMediaEmpty, types.MessageMediaUnsupported,
             types.ChatPhotoEmpty, types.UserProfilePhotoEmpty,
