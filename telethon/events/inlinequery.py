@@ -82,7 +82,7 @@ class InlineQuery(EventBuilder):
             query (:tl:`UpdateBotInlineQuery`):
                 The original :tl:`UpdateBotInlineQuery`.
 
-                Make sure to access the `query` property of the query if
+                Make sure to access the `text` property of the query if
                 you want the text rather than the actual query object.
 
             pattern_match (`obj`, optional):
