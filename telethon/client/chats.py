@@ -922,6 +922,7 @@ class ChatMethods:
             send_gifs: bool = True,
             send_games: bool = True,
             send_inline: bool = True,
+            embed_link_previews: bool = True,
             send_polls: bool = True,
             change_info: bool = True,
             invite_users: bool = True,
@@ -986,6 +987,12 @@ class ChatMethods:
             send_inline (`bool`, optional):
                 Whether the user is able to use inline bots or not.
 
+            embed_link_previews (`bool`, optional):
+                Whether the user is able to enable the link preview in the
+                messages they send. Note that the user will still be able to
+                send messages with links if this permission is removed, but
+                these links won't display a link preview.
+
             send_polls (`bool`, optional):
                 Whether the user is able to send polls or not.
 
@@ -1031,6 +1038,7 @@ class ChatMethods:
             send_gifs=not send_gifs,
             send_games=not send_games,
             send_inline=not send_inline,
+            embed_links=not embed_link_previews,
             send_polls=not send_polls,
             change_info=not change_info,
             invite_users=not invite_users,
