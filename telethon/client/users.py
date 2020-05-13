@@ -92,6 +92,9 @@ class UserMethods:
                 self._flood_waited_requests\
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
+                if e.seconds == 0:
+                    e.seconds = 1
+
                 if e.seconds <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(e.seconds, request))
                     await asyncio.sleep(e.seconds, loop=self._loop)
