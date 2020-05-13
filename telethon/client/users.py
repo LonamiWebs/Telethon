@@ -92,6 +92,11 @@ class UserMethods:
                 self._flood_waited_requests\
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
+                # In test servers, FLOOD_WAIT_0 has been observed, and sleeping for
+                # such a short amount will cause retries very fast leading to issues.
+                if e.seconds == 0:
+                    e.seconds = 1
+
                 if e.seconds <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(e.seconds, request))
                     await asyncio.sleep(e.seconds, loop=self._loop)
