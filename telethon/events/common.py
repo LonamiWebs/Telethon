@@ -55,7 +55,7 @@ class EventBuilder(abc.ABC):
             which will be ignored if ``blacklist_chats=True``.
 
         func (`callable`, optional):
-            A callable function that should accept the event as input
+            A callable (async or not) function that should accept the event as input
             parameter, and return a value indicating whether the event
             should be dispatched or not (any truthy value will do, it
             does not need to be a `bool`). It works like a custom filter:
@@ -106,12 +106,13 @@ class EventBuilder(abc.ABC):
     def filter(self, event):
         """
         If the ID of ``event._chat_peer`` isn't in the chats set (or it is
-        but the set is a blacklist) returns `None`, otherwise the event.
+        but the set is a blacklist) returns `True`, otherwise `False`.
+        May also return awaitable which awaits to bool-able value.
 
         The events must have been resolved before this can be called.
         """
         if not self.resolved:
-            return None
+            return
 
         if self.chats is not None:
             # Note: the `event.chat_id` property checks if it's `None` for us
@@ -119,10 +120,12 @@ class EventBuilder(abc.ABC):
             if inside == self.blacklist_chats:
                 # If this chat matches but it's a blacklist ignore.
                 # If it doesn't match but it's a whitelist ignore.
-                return None
+                return
 
-        if not self.func or self.func(event):
-            return event
+        if not self.func:
+            return True
+
+        return self.func(event)
 
 
 class EventCommon(ChatGetter, abc.ABC):

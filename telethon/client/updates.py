@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import itertools
 import random
 import time
@@ -424,7 +425,9 @@ class UpdateMethods:
             if not builder.resolved:
                 await builder.resolve(self)
 
-            if not builder.filter(event):
+            filter = builder.filter(event)
+            filter = (await filter) if inspect.isawaitable(filter) else filter
+            if not filter:
                 continue
 
             try:
