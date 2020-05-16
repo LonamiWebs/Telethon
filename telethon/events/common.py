@@ -105,9 +105,8 @@ class EventBuilder(abc.ABC):
 
     def filter(self, event):
         """
-        If the ID of ``event._chat_peer`` isn't in the chats set (or it is
-        but the set is a blacklist) returns `True`, otherwise `False`.
-        May also return awaitable which awaits to bool-able value.
+        Returns a truthy value if the event passed the filter and should be
+        used, or falsy otherwise. The return value may need to be awaited.
 
         The events must have been resolved before this can be called.
         """

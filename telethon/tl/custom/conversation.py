@@ -316,7 +316,9 @@ class Conversation(ChatGetter):
 
             if inst:
                 filter = ev.filter(inst)
-                filter = (await filter) if inspect.isawaitable(filter) else filter
+                if inspect.isawaitable(filter):
+                    filter = await filter
+
                 if filter:
                     fut.set_result(inst)
                     del self._custom[key]
