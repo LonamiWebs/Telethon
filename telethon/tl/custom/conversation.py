@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import inspect
 import itertools
 import time
 
@@ -312,9 +313,15 @@ class Conversation(ChatGetter):
         for key, (ev, fut) in list(self._custom.items()):
             ev_type = type(ev)
             inst = built[ev_type]
-            if inst and ev.filter(inst):
-                fut.set_result(inst)
-                del self._custom[key]
+
+            if inst:
+                filter = ev.filter(inst)
+                if inspect.isawaitable(filter):
+                    filter = await filter
+
+                if filter:
+                    fut.set_result(inst)
+                    del self._custom[key]
 
     def _on_new_message(self, response):
         response = response.message
