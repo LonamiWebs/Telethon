@@ -125,6 +125,7 @@ class EventBuilder(abc.ABC):
         if not self.func:
             return True
 
+        # Return the result of func directly as it may need to be awaited
         return self.func(event)
 
 

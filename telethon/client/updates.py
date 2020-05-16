@@ -426,7 +426,8 @@ class UpdateMethods:
                 await builder.resolve(self)
 
             filter = builder.filter(event)
-            filter = (await filter) if inspect.isawaitable(filter) else filter
+            if inspect.isawaitable(filter):
+                filter = await filter
             if not filter:
                 continue
 
