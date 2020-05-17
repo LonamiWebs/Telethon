@@ -126,11 +126,13 @@ class UploadMethods:
             entity (`entity`):
                 Who will receive the file.
 
-            file (`str` | `bytes` | `file` | `media`):
+            file (`str` | `list` | `bytes` | `file` | `media`):
                 The file to send, which can be one of:
 
                 * A local file path to an in-disk file. The file name
                   will be the path's base name.
+
+                * A list of files can be passed to send an album.
 
                 * A `bytes` byte array with the file's data to send
                   (for example, by using ``text.encode('utf-8')``).
