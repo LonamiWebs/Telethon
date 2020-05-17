@@ -109,6 +109,7 @@ FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
 FOLDER_ID_EMPTY,400,The folder you tried to delete was already empty
 FOLDER_ID_INVALID,400,The folder you tried to use was not valid
 FRESH_CHANGE_ADMINS_FORBIDDEN,400,Recently logged-in users cannot add or change admins
+FRESH_CHANGE_PHONE_FORBIDDEN,406,Recently logged-in users cannot use this request
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid

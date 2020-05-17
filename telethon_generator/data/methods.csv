@@ -43,7 +43,7 @@ account.saveAutoDownloadSettings,user,
 account.saveSecureValue,user,PASSWORD_REQUIRED
 account.saveTheme,user,
 account.saveWallPaper,user,WALLPAPER_INVALID
-account.sendChangePhoneCode,user,PHONE_NUMBER_INVALID
+account.sendChangePhoneCode,user,FRESH_CHANGE_PHONE_FORBIDDEN PHONE_NUMBER_INVALID
 account.sendConfirmPhoneCode,user,HASH_INVALID
 account.sendVerifyEmailCode,user,EMAIL_INVALID
 account.sendVerifyPhoneCode,user,
