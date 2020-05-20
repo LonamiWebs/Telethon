@@ -3,19 +3,38 @@ from telethon import TelegramClient, events, types, functions
 import asyncio
 import logging
 import tracemalloc
+import os
+import time
+import sys
 
 loop = asyncio.get_event_loop()
 
-api_id = 0
-api_hash = ""
 provider_token = ""  # https://core.telegram.org/bots/payments#getting-a-token
 
 tracemalloc.start()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.WARN)
+                    level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-bot = TelegramClient("bot_test_payment_telethon", api_id, api_hash)
+
+def get_env(name, message, cast=str):
+    if name in os.environ:
+        return os.environ[name]
+    while True:
+        value = input(message)
+        try:
+            return cast(value)
+        except ValueError as e:
+            print(e, file=sys.stderr)
+            time.sleep(1)
+
+
+bot = TelegramClient(
+    os.environ.get('TG_SESSION', 'payment'),
+    get_env('TG_API_ID', 'Enter your API ID: ', int),
+    get_env('TG_API_HASH', 'Enter your API hash: '),
+    proxy=None
+)
 
 
 # That event is handled when customer enters his card/etc, on final pre-checkout
@@ -75,12 +94,16 @@ def generate_invoice(price_label: str, price_amount: int, currency: str, title: 
         prices=[price],  # there could be a couple of prices.
         test=True,  # if you're working with test token
 
-        #  next params are saying for themselves
+        #  params for requesting specific fields
         name_requested=False,
         phone_requested=False,
         email_requested=False,
         shipping_address_requested=False,
+
+        #  if price changes depending on shipping
         flexible=False,
+
+        #  send data to provider
         phone_to_provider=False,
         email_to_provider=False
 
@@ -91,10 +114,16 @@ def generate_invoice(price_label: str, price_amount: int, currency: str, title: 
         invoice=invoice,
         payload=payload.encode("UTF-8"),  # payload, which will be sent to next 2 handlers
         provider=provider_token,
-        provider_data=types.DataJSON("{}"),  # honestly, no idea.
+
+        provider_data=types.DataJSON("{}"),
+        # data about the invoice, which will be shared with the payment provider. A detailed description of
+        # required fields should be provided by the payment provider.
+
         start_param=start_param,
         # start_param will be passed with UpdateBotPrecheckoutQuery,
         # I don't really know why is it needed, I guess like payload.
+        # from PTB docs: Unique deep-linking parameter that can be used to
+        #                 generate this invoice when used as a start parameter.
 
     )
 
@@ -106,38 +135,40 @@ async def start_handler(event: events.NewMessage.Event):
 
 @bot.on(events.NewMessage(pattern="/product_a"))
 async def start_handler(event: events.NewMessage.Event):
-    await event.respond(
-        "here you go!",
+    await bot.send_message(
+        event.chat_id, "Sending invoice A",
         file=generate_invoice(
-            "Pay", 10000, "RUB", "Title A", "description A", "product A", "abc"
+            price_label="Pay", price_amount=10000, currency="RUB", title="Title A", description="description A",
+            payload="product A", start_param="abc"
         )
     )
 
 
 @bot.on(events.NewMessage(pattern="/product_b"))
 async def start_handler(event: events.NewMessage.Event):
-    await event.respond(
-        "here you go!",
+    await bot.send_message(
+        event.chat_id, "Sending invoice B",
         file=generate_invoice(
-            "Pay", 20000, "RUB", "Title B", "description B", "product B", "abc"
+            price_label="Pay", price_amount=20000, currency="RUB", title="Title B", description="description B",
+            payload="product B", start_param="abc"
         )
     )
 
 
 @bot.on(events.NewMessage(pattern="/product_c"))
 async def start_handler(event: events.NewMessage.Event):
-    await event.respond(
-        "here you go!",
+    await bot.send_message(
+        event.chat_id, "Sending invoice C",
         file=generate_invoice(
-            "Pay", 50000, "RUB", "Title C", "description c - shall cause an error", "product C", "abc"
+            price_label="Pay", price_amount=50000, currency="RUB", title="Title C",
+            description="description c - shall cause an error", payload="product C", start_param="abc"
         )
     )
 
 
 async def main():
     await bot.start()
-    print(f"Started.")
-    await asyncio.gather(bot.run_until_disconnected())
+    await bot.run_until_disconnected()
 
 
 loop.run_until_complete(main())
