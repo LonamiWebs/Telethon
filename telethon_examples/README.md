@@ -135,8 +135,8 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 * Usable as: **bot**.
 * Difficulty: **medium**.
 
-This example shows you an example of making invoices (requesting payemnts) via bot without shipping.
-Uses some raw api and some raw request, which can also help you in understanding telethon itself.
+This example shows how to make invoices (Telegram's way of requesting payments) via a bot account. The example does not include how to add shipping information, though.
+It makes use of the ["raw API"](https://tl.telethon.dev) (that is, no friendly `client.` methods), which can be helpful in understanding how it works and how it can be used.
 
 
 [Telethon]: https://github.com/LonamiWebs/Telethon
