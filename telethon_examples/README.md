@@ -130,7 +130,7 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
 ![Screenshot of the tkinter GUI][tkinter GUI]
 
-### [`quart_login.py`]
+### [`payment.py`]
 
 * Usable as: **bot**.
 * Difficulty: **medium**.
