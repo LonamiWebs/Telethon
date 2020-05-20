@@ -130,6 +130,14 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
 ![Screenshot of the tkinter GUI][tkinter GUI]
 
+### [`payment.py`]
+
+* Usable as: **bot**.
+* Difficulty: **medium**.
+
+This example shows you an example of making invoices (requesting payemnts) via bot without shipping.
+Uses some raw api and some raw request, which can also help you in understanding telethon itself.
+
 
 [Telethon]: https://github.com/LonamiWebs/Telethon
 [CC0 License]: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/LICENSE
