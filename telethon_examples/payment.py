@@ -22,6 +22,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
 def get_env(name, message, cast=str):
     if name in os.environ:
         return os.environ[name]
@@ -128,7 +129,6 @@ def generate_invoice(price_label: str, price_amount: int, currency: str, title: 
         # Unique deep-linking parameter. May also be used in UpdateBotPrecheckoutQuery
         # see: https://core.telegram.org/bots#deep-linking
         # it may be the empty string if not needed
-
 
     )
 
