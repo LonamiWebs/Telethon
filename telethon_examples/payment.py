@@ -10,8 +10,8 @@ import sys
 loop = asyncio.get_event_loop()
 
 """
-Provider token can be obtained via @BotFather. more info at https://core.telegram.org/bots/payments
-
+Provider token can be obtained via @BotFather. more info at https://core.telegram.org/bots/payments#getting-a-token
+ 
 If you are using test token, set test=True in generate_invoice function, 
 If you are using real token, set test=False
 """
@@ -20,7 +20,7 @@ provider_token = ''
 tracemalloc.start()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.WARNING)
-
+logger = logging.getLogger(__name__)
 
 def get_env(name, message, cast=str):
     if name in os.environ:
@@ -177,4 +177,7 @@ async def main():
 
 
 if __name__ == '__main__':
+    if not provider_token:
+        logger.log(logging.WARNING, "No provider token supplied.")
+        exit(1)
     loop.run_until_complete(main())
