@@ -9,12 +9,17 @@ import sys
 
 loop = asyncio.get_event_loop()
 
-provider_token = ""  # https://core.telegram.org/bots/payments#getting-a-token
+"""
+Provider token can be obtained via @BotFather. more info at https://core.telegram.org/bots/payments
+
+If you are using test token, set test=True in generate_invoice function, 
+If you are using real token, set test=False
+"""
+provider_token = ''
 
 tracemalloc.start()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.WARNING)
-logger = logging.getLogger(__name__)
 
 
 def get_env(name, message, cast=str):
@@ -41,8 +46,8 @@ bot = TelegramClient(
 # If we don't `SetBotPrecheckoutResultsRequest`, money won't be charged from buyer, and nothing will happen next.
 @bot.on(events.Raw(types.UpdateBotPrecheckoutQuery))
 async def payment_pre_checkout_handler(event: types.UpdateBotPrecheckoutQuery):
-    if event.payload.decode("UTF-8") == 'product A':
-        #  so we have to confirm payment
+    if event.payload.decode('UTF-8') == 'product A':
+        # so we have to confirm payment
         await bot(
             functions.messages.SetBotPrecheckoutResultsRequest(
                 query_id=event.query_id,
@@ -50,7 +55,7 @@ async def payment_pre_checkout_handler(event: types.UpdateBotPrecheckoutQuery):
                 error=None
             )
         )
-    elif event.payload.decode("UTF-8") == 'product B':
+    elif event.payload.decode('UTF-8') == 'product B':
         # same for another
         await bot(
             functions.messages.SetBotPrecheckoutResultsRequest(
@@ -65,7 +70,7 @@ async def payment_pre_checkout_handler(event: types.UpdateBotPrecheckoutQuery):
             functions.messages.SetBotPrecheckoutResultsRequest(
                 query_id=event.query_id,
                 success=False,
-                error="Something went wrong"
+                error='Something went wrong'
             )
         )
 
@@ -78,10 +83,10 @@ async def payment_received_handler(event):
     if isinstance(event.message.action, types.MessageActionPaymentSentMe):
         payment: types.MessageActionPaymentSentMe = event.message.action
         # do something after payment was recieved
-        if payment.payload.decode("UTF-8") == 'product A':
-            await bot.send_message(event.message.from_id, "Thank you for buying product A!")
-        elif payment.payload.decode("UTF-8") == "product B":
-            await bot.send_message(event.message.from_id, "Thank you for buying product B!")
+        if payment.payload.decode('UTF-8') == 'product A':
+            await bot.send_message(event.message.from_id, 'Thank you for buying product A!')
+        elif payment.payload.decode('UTF-8') == 'product B':
+            await bot.send_message(event.message.from_id, 'Thank you for buying product B!')
         raise events.StopPropagation
 
 
@@ -92,76 +97,75 @@ def generate_invoice(price_label: str, price_amount: int, currency: str, title: 
     invoice = types.Invoice(
         currency=currency,  # currency like USD
         prices=[price],  # there could be a couple of prices.
-        test=True,  # if you're working with test token
+        test=True,  # if you're working with test token, else set test=False. More info at #
 
-        #  params for requesting specific fields
+        # params for requesting specific fields
         name_requested=False,
         phone_requested=False,
         email_requested=False,
         shipping_address_requested=False,
 
-        #  if price changes depending on shipping
+        # if price changes depending on shipping
         flexible=False,
 
-        #  send data to provider
+        # send data to provider
         phone_to_provider=False,
         email_to_provider=False
-
     )
     return types.InputMediaInvoice(
         title=title,
         description=description,
         invoice=invoice,
-        payload=payload.encode("UTF-8"),  # payload, which will be sent to next 2 handlers
+        payload=payload.encode('UTF-8'),  # payload, which will be sent to next 2 handlers
         provider=provider_token,
 
-        provider_data=types.DataJSON("{}"),
+        provider_data=types.DataJSON('{}'),
         # data about the invoice, which will be shared with the payment provider. A detailed description of
         # required fields should be provided by the payment provider.
 
         start_param=start_param,
-        # start_param will be passed with UpdateBotPrecheckoutQuery,
-        # I don't really know why is it needed, I guess like payload.
-        # from PTB docs: Unique deep-linking parameter that can be used to
-        #                 generate this invoice when used as a start parameter.
+        # Unique deep-linking parameter. May also be used in UpdateBotPrecheckoutQuery
+        # see: https://core.telegram.org/bots#deep-linking
+        # it may be the empty string if not needed
+
 
     )
 
 
-@bot.on(events.NewMessage(pattern="/start"))
+@bot.on(events.NewMessage(pattern='/start'))
 async def start_handler(event: events.NewMessage.Event):
-    await event.respond("/product_a - product A\n/product_b - product B\n/product_c - product, shall cause an error")
+    await event.respond('/product_a - product A\n/product_b - product B\n/product_c - product, shall cause an error')
 
 
-@bot.on(events.NewMessage(pattern="/product_a"))
+@bot.on(events.NewMessage(pattern='/product_a'))
 async def start_handler(event: events.NewMessage.Event):
     await bot.send_message(
-        event.chat_id, "Sending invoice A",
+        event.chat_id, 'Sending invoice A',
         file=generate_invoice(
-            price_label="Pay", price_amount=10000, currency="RUB", title="Title A", description="description A",
-            payload="product A", start_param="abc"
+            price_label='Pay', price_amount=10000, currency='RUB', title='Title A', description='description A',
+            payload='product A', start_param='abc'
         )
     )
 
 
-@bot.on(events.NewMessage(pattern="/product_b"))
+@bot.on(events.NewMessage(pattern='/product_b'))
 async def start_handler(event: events.NewMessage.Event):
     await bot.send_message(
-        event.chat_id, "Sending invoice B",
+        event.chat_id, 'Sending invoice B',
         file=generate_invoice(
-            price_label="Pay", price_amount=20000, currency="RUB", title="Title B", description="description B",
-            payload="product B", start_param="abc"
+            price_label='Pay', price_amount=20000, currency='RUB', title='Title B', description='description B',
+            payload='product B', start_param='abc'
         )
     )
 
 
-@bot.on(events.NewMessage(pattern="/product_c"))
+@bot.on(events.NewMessage(pattern='/product_c'))
 async def start_handler(event: events.NewMessage.Event):
     await bot.send_message(
-        event.chat_id, "Sending invoice C",
+        event.chat_id, 'Sending invoice C',
         file=generate_invoice(
-            price_label="Pay", price_amount=50000, currency="RUB", title="Title C",
-            description="description c - shall cause an error", payload="product C", start_param="abc"
+            price_label='Pay', price_amount=50000, currency='RUB', title='Title C',
+            description='description c - shall cause an error', payload='product C', start_param='abc'
         )
     )
 
@@ -171,4 +175,5 @@ async def main():
     await bot.run_until_disconnected()
 
 
-loop.run_until_complete(main())
+if __name__ == '__main__':
+    loop.run_until_complete(main())
