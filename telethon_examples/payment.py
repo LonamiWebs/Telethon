@@ -97,7 +97,8 @@ def generate_invoice(price_label: str, price_amount: int, currency: str, title: 
     invoice = types.Invoice(
         currency=currency,  # currency like USD
         prices=[price],  # there could be a couple of prices.
-        test=True,  # if you're working with test token, else set test=False. More info at #
+        test=True,  # if you're working with test token, else set test=False.
+        # More info at https://core.telegram.org/bots/payments
 
         # params for requesting specific fields
         name_requested=False,
