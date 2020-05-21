@@ -130,6 +130,18 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 
 ![Screenshot of the tkinter GUI][tkinter GUI]
 
+### [`payment.py`](https://raw.githubusercontent.com/LonamiWebs/Telethon/master/telethon_examples/payment.py)
+
+* Usable as: **bot**.
+* Difficulty: **medium**.
+
+This example shows how to make invoices (Telegram's way of requesting payments) via a bot account. The example does not include how to add shipping information, though.
+
+You'll need to obtain a "provider token" to use this example, so please read [Telegram's guide on payments](https://core.telegram.org/bots/payments) before using this example.
+
+
+It makes use of the ["raw API"](https://tl.telethon.dev) (that is, no friendly `client.` methods), which can be helpful in understanding how it works and how it can be used.
+
 
 [Telethon]: https://github.com/LonamiWebs/Telethon
 [CC0 License]: https://github.com/LonamiWebs/Telethon/blob/master/telethon_examples/LICENSE
