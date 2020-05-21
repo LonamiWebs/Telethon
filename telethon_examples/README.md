@@ -136,6 +136,7 @@ assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
 * Difficulty: **medium**.
 
 This example shows how to make invoices (Telegram's way of requesting payments) via a bot account. The example does not include how to add shipping information, though.
+You'll need to obtain provider token, more info [here](https://core.telegram.org/bots/payments)
 It makes use of the ["raw API"](https://tl.telethon.dev) (that is, no friendly `client.` methods), which can be helpful in understanding how it works and how it can be used.
 
 
