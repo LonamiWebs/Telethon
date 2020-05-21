@@ -178,6 +178,6 @@ async def main():
 
 if __name__ == '__main__':
     if not provider_token:
-        logger.log(logging.WARNING, "No provider token supplied.")
+        logger.error("No provider token supplied.")
         exit(1)
     loop.run_until_complete(main())
