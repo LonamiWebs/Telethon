@@ -135,7 +135,11 @@ class MessageParseMethods:
                 # Pinning a message with `updatePinnedMessage` seems to
                 # always produce a service message we can't map so return
                 # it directly.
-                if hasattr(request, 'random_id'):
+                #
+                # It could also be a list (e.g. when sending albums).
+                #
+                # TODO this method is getting messier and messier as time goes on
+                if hasattr(request, 'random_id') or utils.is_list_like(request):
                     id_to_message[update.message.id] = update.message
                 else:
                     return update.message
