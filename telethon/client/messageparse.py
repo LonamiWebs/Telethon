@@ -211,13 +211,18 @@ class MessageParseMethods:
                 # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
                 # Telegram), in which case we get some "missing" message mappings.
                 # Log them with the hope that we can better work around them.
+                #
+                # This also happens when trying to forward messages that can't
+                # be forwarded because they don't exist (0, service, deleted)
+                # among others which could be (like deleted or existing).
                 self._log[__name__].warning(
                     'Request %s had missing message mappings %s', request, result)
 
         return [
-            mapping.get(random_to_id.get(rnd))
-            or opposite.get(random_to_id.get(rnd))
-            for rnd in random_to_id
+            (mapping.get(random_to_id[rnd]) or opposite.get(random_to_id[rnd]))
+            if rnd in random_to_id
+            else None
+            for rnd in random_id
         ]
 
     # endregion
