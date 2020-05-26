@@ -13,6 +13,68 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Minor quality of life improvements (v1.14)
+==========================================
+
+*Published at 2020/05/26*
+
++------------------------+
+| Scheme layer used: 113 |
++------------------------+
+
+Some nice things that were missing, along with the usual bug-fixes.
+
+Additions
+~~~~~~~~~
+
+* New `Message.dice <telethon.tl.custom.message.Message.dice>` property.
+* The ``func=`` parameter of events can now be an ``async`` function.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixed `client.action() <telethon.client.chats.ChatMethods.action>`
+  having an alias wrong.
+* Fixed incorrect formatting of some errors.
+* Probably more reliable detection of pin events in small groups.
+* Fixed send methods on `client.conversation()
+  <telethon.client.dialogs.DialogMethods.conversation>` were not honoring
+  cancellation.
+* Flood waits of zero seconds are handled better.
+* Getting the pinned message in a chat was failing.
+* Fixed the return value when forwarding messages if some were missing
+  and also the return value of albums.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``.tgs`` files are now recognised as animated stickers.
+* The service message produced by `Message.pin()
+  <telethon.tl.custom.message.Message.pin>` is now returned.
+* Sending a file with `client.send_file()
+  <telethon.client.uploads.UploadMethods.send_file>` now works fine when
+  you pass an existing dice media (e.g. sending a message copy).
+* `client.edit_permissions() <telethon.client.chats.ChatMethods.edit_permissions>`
+  now has the ``embed_links`` parameter which was missing.
+
+Bug Fixes (v1.13)
+=================
+
+*Published at 2020/04/25*
+
++------------------------+
+| Scheme layer used: 112 |
++------------------------+
+
+Bug fixes and layer bump.
+
+Bug fixes
+~~~~~~~~~
+
+* Passing ``None`` as the entity to `client.delete_messages()
+  <telethon.client.messages.MessageMethods.delete_messages>` would fail.
+* When downloading a thumbnail, the name inferred was wrong.
+
 Bug Fixes (v1.12)
 =================
 
