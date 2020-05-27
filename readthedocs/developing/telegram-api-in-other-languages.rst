@@ -45,6 +45,11 @@ languages for
 `@badoualy <https://github.com/badoualy>`__, currently as a beta–
 yet working.
 
+Language-Agnostic
+=================
+
+`Taas <https://www.t-a-a-s.ru/>`__ is a service that lets you use Telegram API with any HTTP client via API. Using tdlib under the hood, Taas is commercial service, but allows free access if you use under 5000 requests per month.
+
 PHP
 ===
 
