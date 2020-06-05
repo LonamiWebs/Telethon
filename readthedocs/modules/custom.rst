@@ -136,6 +136,15 @@ MessageButton
     :show-inheritance:
 
 
+QRLogin
+=======
+
+.. automodule:: telethon.qrlogin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 SenderGetter
 ============
 

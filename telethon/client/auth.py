@@ -5,6 +5,7 @@ import sys
 import typing
 
 from .. import utils, helpers, errors, password as pwd_mod
+from ..qrlogin import QRLogin
 from ..tl import types, functions
 
 if typing.TYPE_CHECKING:
@@ -495,6 +496,43 @@ class AuthMethods:
             self._phone_code_hash[phone] = result.phone_code_hash
 
         return result
+
+    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> QRLogin:
+        """
+        Initiates the QR login procedure.
+
+        Note that you must be connected before invoking this, as with any
+        other request.
+
+        It is up to the caller to decide how to present the code to the user,
+        whether it's the URL, using the token bytes directly, or generating
+        a QR code and displaying it by other means.
+
+        See the documentation for `QRLogin` to see how to proceed after this.
+
+        Arguments
+            ignored_ids (List[`int`]):
+                List of already logged-in user IDs, to prevent logging in
+                twice with the same user.
+
+        Returns
+            An instance of `QRLogin`.
+
+        Example
+            .. code-block:: python
+
+                def display_url_as_qr(url):
+                    pass  # do whatever to show url as a qr to the user
+
+                qr_login = await client.qr_login()
+                display_url_as_qr(qr_login.url)
+
+                # Important! You need to wait for the login to complete!
+                await qr_login.wait()
+        """
+        qr_login = QRLogin(self, ignored_ids or [])
+        await qr_login.recreate()
+        return qr_login
 
     async def log_out(self: 'TelegramClient') -> bool:
         """
