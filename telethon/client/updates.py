@@ -397,6 +397,9 @@ class UpdateMethods:
             # Some updates require our own ID, so we must make sure
             # that the event builder has offline access to it. Calling
             # `get_me()` will cache it under `self._self_input_peer`.
+            #
+            # It will return `None` if we haven't logged in yet which is
+            # fine, we will just retry next time anyway.
             await self.get_me(input_peer=True)
 
         built = EventBuilderDict(self, update, others)
@@ -566,8 +569,15 @@ class EventBuilderDict:
         try:
             return self.__dict__[builder]
         except KeyError:
+            # Updates may arrive before login (like updateLoginToken) and we
+            # won't have our self ID yet (anyway only new messages need it).
+            self_id = (
+                self.client._self_input_peer.user_id
+                if self.client._self_input_peer
+                else None
+            )
             event = self.__dict__[builder] = builder.build(
-                self.update, self.others, self.client._self_input_peer.user_id)
+                self.update, self.others, self_id)
 
             if isinstance(event, EventCommon):
                 event.original_update = self.update
