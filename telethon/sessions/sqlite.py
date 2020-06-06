@@ -21,12 +21,13 @@ CURRENT_VERSION = 6  # database version
 
 
 class SQLiteSession(MemorySession):
-    """This session contains the required information to login into your
-       Telegram account. NEVER give the saved session file to anyone, since
-       they would gain instant access to all your messages and contacts.
+    """
+    This session contains the required information to login into your
+    Telegram account. NEVER give the saved session file to anyone, since
+    they would gain instant access to all your messages and contacts.
 
-       If you think the session has been compromised, close all the sessions
-       through an official Telegram client to revoke the authorization.
+    If you think the session has been compromised, close all the sessions
+    through an official Telegram client to revoke the authorization.
     """
 
     def __init__(self, session_id=None):
