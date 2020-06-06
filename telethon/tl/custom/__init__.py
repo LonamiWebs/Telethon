@@ -10,3 +10,4 @@ from .inlinebuilder import InlineBuilder
 from .inlineresult import InlineResult
 from .inlineresults import InlineResults
 from .conversation import Conversation
+from .qrlogin import QRLogin

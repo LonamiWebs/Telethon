@@ -2,8 +2,8 @@ import asyncio
 import base64
 import datetime
 
-from telethon import events
-from telethon.tl import types, functions
+from .. import types, functions
+from ... import events
 
 
 class QRLogin:

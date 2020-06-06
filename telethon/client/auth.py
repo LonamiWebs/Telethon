@@ -5,8 +5,7 @@ import sys
 import typing
 
 from .. import utils, helpers, errors, password as pwd_mod
-from ..qrlogin import QRLogin
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -497,7 +496,7 @@ class AuthMethods:
 
         return result
 
-    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> QRLogin:
+    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> custom.QRLogin:
         """
         Initiates the QR login procedure.
 
@@ -530,7 +529,7 @@ class AuthMethods:
                 # Important! You need to wait for the login to complete!
                 await qr_login.wait()
         """
-        qr_login = QRLogin(self, ignored_ids or [])
+        qr_login = custom.QRLogin(self, ignored_ids or [])
         await qr_login.recreate()
         return qr_login
 
