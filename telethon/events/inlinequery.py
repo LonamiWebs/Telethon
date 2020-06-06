@@ -79,11 +79,11 @@ class InlineQuery(EventBuilder):
         Represents the event of a new callback query.
 
         Members:
-            query (:tl:`UpdateBotCallbackQuery`):
-                The original :tl:`UpdateBotCallbackQuery`.
+            query (:tl:`UpdateBotInlineQuery`):
+                The original :tl:`UpdateBotInlineQuery`.
 
-                Make sure to access the `text` of the query if
-                that's what you want instead working with this.
+                Make sure to access the `text` property of the query if
+                you want the text rather than the actual query object.
 
             pattern_match (`obj`, optional):
                 The resulting object from calling the passed ``pattern``
