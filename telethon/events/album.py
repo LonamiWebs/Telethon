@@ -1,4 +1,6 @@
+import asyncio
 import time
+import weakref
 
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
@@ -12,6 +14,54 @@ _IGNORE_MAX_AGE = 5  # seconds
 # remove old entries. Although it should generally not be bigger than 10,
 # it may be possible some updates are not processed and thus not removed.
 _IGNORE_DICT = {}
+
+
+_HACK_DELAY = 0.5
+
+
+class AlbumHack:
+    """
+    When receiving an album from a different data-center, they will come in
+    separate `Updates`, so we need to temporarily remember them for a while
+    and only after produce the event.
+
+    Of course events are not designed for this kind of wizardy, so this is
+    a dirty hack that gets the job done.
+
+    When cleaning up the code base we may want to figure out a better way
+    to do this, or just leave the album problem to the users; the update
+    handling code is bad enough as it is.
+    """
+    def __init__(self, client, event):
+        # It's probably silly to use a weakref here because this object is
+        # very short-lived but might as well try to do "the right thing".
+        self._client = weakref.ref(client)
+        self._event = event  # parent event
+        self._due = client.loop.time() + _HACK_DELAY
+
+        client.loop.create_task(self.deliver_event())
+
+    def extend(self, messages):
+        client = self._client()
+        if client:  # weakref may be dead
+            self._event.messages.extend(messages)
+            self._due = client.loop.time() + _HACK_DELAY
+
+    async def deliver_event(self):
+        while True:
+            client = self._client()
+            if client is None:
+                return  # weakref is dead, nothing to deliver
+
+            diff = self._due - client.loop.time()
+            if diff <= 0:
+                # We've hit our due time, deliver event. It won't respect
+                # sequential updates but fixing that would just worsen this.
+                await client._dispatch_event(self._event)
+                return
+
+            del client  # Clear ref and sleep until our due time
+            await asyncio.sleep(diff)
 
 
 @name_inner_event
@@ -66,6 +116,7 @@ class Album(EventBuilder):
                 return
 
             # Check if the ignore list is too big, and if it is clean it
+            # TODO time could technically go backwards; time is not monotonic
             now = time.time()
             if len(_IGNORE_DICT) > _IGNORE_MAX_SIZE:
                 for i in [i for i, t in _IGNORE_DICT.items() if now - t > _IGNORE_MAX_AGE]:
@@ -83,6 +134,11 @@ class Album(EventBuilder):
                     and isinstance(u.message, types.Message)
                     and u.message.grouped_id == group)
             ])
+
+    def filter(self, event):
+        # Albums with less than two messages require a few hacks to work.
+        if len(event.messages) > 1:
+            return super().filter(event)
 
     class Event(EventCommon, SenderGetter):
         """
@@ -114,6 +170,14 @@ class Album(EventBuilder):
 
             for msg in self.messages:
                 msg._finish_init(client, self._entities, None)
+
+            if len(self.messages) == 1:
+                # This will require hacks to be a proper album event
+                hack = client._albums.get(self.grouped_id)
+                if hack is None:
+                    client._albums[self.grouped_id] = AlbumHack(client, self)
+                else:
+                    hack.extend(self.messages)
 
         @property
         def grouped_id(self):

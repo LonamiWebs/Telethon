@@ -379,6 +379,15 @@ class TelegramBaseClient(abc.ABC):
         # {chat_id: {Conversation}}
         self._conversations = collections.defaultdict(set)
 
+        # Hack to workaround the fact Telegram may send album updates as
+        # different Updates when being sent from a different data center.
+        # {grouped_id: AlbumHack}
+        #
+        # FIXME: We don't bother cleaning this up because it's not really
+        #        worth it, albums are pretty rare and this only holds them
+        #        for a second at most.
+        self._albums = {}
+
         # Default parse mode
         self._parse_mode = markdown
 

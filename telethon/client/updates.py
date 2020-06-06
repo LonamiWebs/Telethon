@@ -459,6 +459,46 @@ class UpdateMethods:
                     self._log[__name__].exception('Unhandled exception on %s',
                                                   name)
 
+    async def _dispatch_event(self: 'TelegramClient', event):
+        """
+        Dispatches a single, out-of-order event. Used by `AlbumHack`.
+        """
+        # We're duplicating a most logic from `_dispatch_update`, but all in
+        # the name of speed; we don't want to make it worse for all updates
+        # just because albums may need it.
+        for builder, callback in self._event_builders:
+            if not isinstance(event, builder.Event):
+                continue
+
+            if not builder.resolved:
+                await builder.resolve(self)
+
+            filter = builder.filter(event)
+            if inspect.isawaitable(filter):
+                filter = await filter
+            if not filter:
+                continue
+
+            try:
+                await callback(event)
+            except errors.AlreadyInConversationError:
+                name = getattr(callback, '__name__', repr(callback))
+                self._log[__name__].debug(
+                    'Event handler "%s" already has an open conversation, '
+                    'ignoring new one', name)
+            except events.StopPropagation:
+                name = getattr(callback, '__name__', repr(callback))
+                self._log[__name__].debug(
+                    'Event handler "%s" stopped chain of propagation '
+                    'for event %s.', name, type(event).__name__
+                )
+                break
+            except Exception as e:
+                if not isinstance(e, asyncio.CancelledError) or self.is_connected():
+                    name = getattr(callback, '__name__', repr(callback))
+                    self._log[__name__].exception('Unhandled exception on %s',
+                                                  name)
+
     async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
         """
         Get the difference for this `channel_id` if any, then load entities.
