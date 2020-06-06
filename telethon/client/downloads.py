@@ -443,6 +443,9 @@ class DownloadMethods:
             raise ValueError(
                 'The part size must be evenly divisible by 4096.')
 
+        if isinstance(file, pathlib.Path):
+            file = str(file.absolute())
+
         in_memory = file is None or file is bytes
         if in_memory:
             f = io.BytesIO()
