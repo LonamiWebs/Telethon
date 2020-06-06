@@ -392,6 +392,11 @@ class UpdateMethods:
                     await self._get_difference(update, channel_id, pts_date)
                 except OSError:
                     pass  # We were disconnected, that's okay
+                except errors.RPCError:
+                    # There's a high chance the request fails because we lack
+                    # the channel. Because these "happen sporadically" (#1428)
+                    # we should be okay (no flood waits) even if more occur.
+                    pass
 
         if not self._self_input_peer:
             # Some updates require our own ID, so we must make sure
