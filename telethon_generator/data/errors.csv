@@ -183,7 +183,9 @@ PARTICIPANT_CALL_FAILED,500,Failure while making call
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
+PASSWORD_MISSING,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
+PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
 PEER_FLOOD,,Too many requests
 PEER_ID_INVALID,400,An invalid Peer was used. Make sure to pass the right peer type
@@ -253,6 +255,7 @@ SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
 SESSION_PASSWORD_NEEDED,401,Two-steps verification is enabled and a password is required
 SESSION_REVOKED,401,"The authorization has been invalidated, because of the user terminating all sessions"
+SESSION_TOO_FRESH_X,400,The session logged in too recently and {seconds} seconds must pass before calling the method
 SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
