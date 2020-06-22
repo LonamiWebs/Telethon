@@ -108,6 +108,7 @@ FILE_PART_SIZE_CHANGED,400,The file part size (chunk size) cannot change during 
 FILE_PART_SIZE_INVALID,400,The provided file part size is invalid
 FILE_PART_X_MISSING,400,Part {which} of the file is missing from storage
 FILE_REFERENCE_EMPTY,400,The file reference must exist to access the media and it cannot be empty
+FILE_REFERENCE_EXPIRED,400,The file reference has expired and is no longer valid or it belongs to self-destructing media and cannot be resent
 FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
@@ -163,6 +164,7 @@ MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_POLL_CLOSED,400,The poll was closed and can no longer be voted on
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
+METHOD_INVALID,400,The API method is invalid and cannot be used
 MSGID_DECREASE_RETRY,500,The request should be retried with a lower message ID
 MSG_ID_INVALID,400,The message ID used in the peer was invalid
 MSG_WAIT_FAILED,400,A waiting call returned an error

@@ -568,19 +568,12 @@ class DownloadMethods:
                 # Fetching only the header of a file (32 bytes)
                 # You should manually close the iterator in this case.
                 #
-                # telethon.sync must be imported for this to work,
-                # and you must not be inside an "async def".
+                # "stream" is a common name for asynchronous generators,
+                # and iter_download will yield `bytes` (chunks of the file).
                 stream = client.iter_download(media, request_size=32)
-                header = next(stream)
-                stream.close()
+                header = await stream.__anext__()  # "manual" version of `async for`
+                await stream.close()
                 assert len(header) == 32
-
-                # Fetching only the header, inside of an ``async def``
-                async def main():
-                    stream = client.iter_download(media, request_size=32)
-                    header = await stream.__anext__()
-                    await stream.close()
-                    assert len(header) == 32
         """
         info = utils._get_file_info(file)
         if info.dc_id is not None:

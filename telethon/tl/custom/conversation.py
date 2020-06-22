@@ -132,7 +132,8 @@ class Conversation(ChatGetter):
 
     def get_response(self, message=None, *, timeout=None):
         """
-        Gets the next message that responds to a previous one.
+        Gets the next message that responds to a previous one. This is
+        the method you need most of the time, along with `get_edit`.
 
         Args:
             message (`Message <telethon.tl.custom.message.Message>` | `int`, optional):
@@ -142,6 +143,16 @@ class Conversation(ChatGetter):
             timeout (`int` | `float`, optional):
                 If present, this `timeout` (in seconds) will override the
                 per-action timeout defined for the conversation.
+
+        .. code-block:: python
+
+            async with client.conversation(...) as conv:
+                await conv.send_message('Hey, what is your name?')
+
+                response = await conv.get_response()
+                name = response.text
+
+                await conv.send_message('Nice to meet you, {}!'.format(name))
         """
         return self._get_message(
             message, self._response_indices, self._pending_responses, timeout,
@@ -272,23 +283,41 @@ class Conversation(ChatGetter):
 
         .. note::
 
-            Only use this if there isn't another method available!
+            **Only use this if there isn't another method available!**
             For example, don't use `wait_event` for new messages,
             since `get_response` already exists, etc.
 
         Unless you're certain that your code will run fast enough,
         generally you should get a "handle" of this special coroutine
-        before acting. Generally, you should do this:
+        before acting. In this example you will see how to wait for a user
+        to join a group with proper use of `wait_event`:
 
-        >>> from telethon import TelegramClient, events
-        >>>
-        >>> client = TelegramClient(...)
-        >>>
-        >>> async def main():
-        >>>     async with client.conversation(...) as conv:
-        >>>         response = conv.wait_event(events.NewMessage(incoming=True))
-        >>>         await conv.send_message('Hi')
-        >>>         response = await response
+        .. code-block:: python
+
+            from telethon import TelegramClient, events
+
+            client = TelegramClient(...)
+            group_id = ...
+
+            async def main():
+                # Could also get the user id from an event; this is just an example
+                user_id = ...
+
+                async with client.conversation(user_id) as conv:
+                    # Get a handle to the future event we'll wait for
+                    handle = conv.wait_event(events.ChatAction(
+                        group_id,
+                        func=lambda e: e.user_joined and e.user_id == user_id
+                    ))
+
+                    # Perform whatever action in between
+                    await conv.send_message('Please join this group before speaking to me!')
+
+                    # Wait for the event we registered above to fire
+                    event = await handle
+
+                    # Continue with the conversation
+                    await conv.send_message('Thanks!')
 
         This way your event can be registered before acting,
         since the response may arrive before your event was
