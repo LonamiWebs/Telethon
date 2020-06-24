@@ -54,7 +54,7 @@ class QRLogin:
 
         The URL simply consists of `token` base64-encoded.
         """
-        return 'tg://login?token={}'.format(base64.b64encode(self._resp.token))
+        return 'tg://login?token={}'.format(base64.b64encode(self._resp.token).decode('utf-8'))
 
     @property
     def expires(self) -> datetime.datetime:
