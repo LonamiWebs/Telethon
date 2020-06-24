@@ -417,7 +417,7 @@ class TelegramBaseClient(abc.ABC):
             .. code-block:: python
 
                 # Download media in the background
-                task = client.loop_create_task(message.download_media())
+                task = client.loop.create_task(message.download_media())
 
                 # Do some work
                 ...
