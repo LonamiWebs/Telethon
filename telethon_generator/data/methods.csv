@@ -199,7 +199,7 @@ messages.getAllDrafts,user,
 messages.getAllStickers,user,
 messages.getArchivedStickers,user,
 messages.getAttachedStickers,user,
-messages.getBotCallbackAnswer,user,CHANNEL_INVALID DATA_INVALID MESSAGE_ID_INVALID PEER_ID_INVALID Timeout
+messages.getBotCallbackAnswer,user,BOT_RESPONSE_TIMEOUT CHANNEL_INVALID DATA_INVALID MESSAGE_ID_INVALID PEER_ID_INVALID Timeout
 messages.getChats,both,CHAT_ID_INVALID PEER_ID_INVALID
 messages.getCommonChats,user,USER_ID_INVALID
 messages.getDhConfig,user,RANDOM_LENGTH_INVALID

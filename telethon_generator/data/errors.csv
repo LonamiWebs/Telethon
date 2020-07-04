@@ -29,6 +29,7 @@ BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method yo
 BOT_MISSING,400,This method can only be run by a bot
 BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
+BOT_RESPONSE_TIMEOUT,400,The bot did not answer to the callback query in time
 BROADCAST_ID_INVALID,400,The channel is invalid
 BROADCAST_PUBLIC_VOTERS_FORBIDDEN,400,You cannot broadcast polls where the voters are public
 BUTTON_DATA_INVALID,400,The provided button data is invalid

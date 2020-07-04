@@ -844,7 +844,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                         data=data
                     )
                 )
-            except errors.BotTimeout:
+            except errors.BotResponseTimeoutError:
                 return None
 
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:

@@ -1,5 +1,5 @@
 from .. import types, functions
-from ...errors import BotTimeout
+from ...errors import BotResponseTimeoutError
 import webbrowser
 
 
@@ -85,7 +85,7 @@ class MessageButton:
             )
             try:
                 return await self._client(req)
-            except BotTimeout:
+            except BotResponseTimeoutError:
                 return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
             return await self._client(functions.messages.StartBotRequest(
@@ -99,5 +99,5 @@ class MessageButton:
             )
             try:
                 return await self._client(req)
-            except BotTimeout:
+            except BotResponseTimeoutError:
                 return None
