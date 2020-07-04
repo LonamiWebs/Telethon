@@ -162,7 +162,6 @@ def compute_check(request: types.account.Password, password: str):
 
     def generate_and_check_random():
         random_size = 256
-        import time
         while True:
             random = os.urandom(random_size)
             a = int.from_bytes(random, 'big')

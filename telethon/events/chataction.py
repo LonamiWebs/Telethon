@@ -1,6 +1,6 @@
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils, helpers
-from ..tl import types, functions
+from .. import utils
+from ..tl import types
 
 
 @name_inner_event
@@ -398,7 +398,7 @@ class ChatAction(EventBuilder):
                     try:
                         self._input_users.append(utils.get_input_peer(self._entities[user_id]))
                         continue
-                    except (KeyError, TypeError) as e:
+                    except (KeyError, TypeError):
                         pass
 
                     # If missing, try from the entity cache

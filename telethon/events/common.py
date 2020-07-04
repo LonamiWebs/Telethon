@@ -1,10 +1,9 @@
 import abc
 import asyncio
-import itertools
 import warnings
 
 from .. import utils
-from ..tl import TLObject, types, functions
+from ..tl import TLObject, types
 from ..tl.custom.chatgetter import ChatGetter
 
 

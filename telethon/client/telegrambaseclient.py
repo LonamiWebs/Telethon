@@ -3,7 +3,6 @@ import asyncio
 import collections
 import logging
 import platform
-import sys
 import time
 import typing
 
@@ -14,7 +13,7 @@ from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..statecache import StateCache
-from ..tl import TLObject, functions, types
+from ..tl import functions, types
 from ..tl.alltlobjects import LAYER
 
 DEFAULT_DC_ID = 2

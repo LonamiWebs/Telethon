@@ -1,4 +1,3 @@
-import asyncio
 import re
 
 from .common import EventBuilder, EventCommon, name_inner_event, _into_id_set

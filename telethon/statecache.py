@@ -1,4 +1,3 @@
-import datetime
 import inspect
 
 from .tl import types
