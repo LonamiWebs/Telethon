@@ -13,6 +13,44 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+QR login (v1.15)
+================
+
+*Published at 2020/07/04*
+
++------------------------+
+| Scheme layer used: 114 |
++------------------------+
+
+The library now has a friendly method to perform QR-login, as detailed in
+https://core.telegram.org/api/qr-login. It won't generate QR images, but it
+provides a way for you to easily do so with any other library of your choice.
+
+Additions
+~~~~~~~~~
+
+* New `client.qr_login() <telethon.client.auth.AuthMethods.qr_login>`.
+* `message.click <telethon.tl.custom.message.Message.click>` now lets you
+  click on buttons requesting phone or location.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Updated documentation and list of known errors.
+* `events.Album <telethon.events.album.Album>` should now handle albums from
+  different data centers more gracefully.
+* `client.download_file()
+  <telethon.client.downloads.DownloadMethods.download_file>` now supports
+  `pathlib.Path` as the destination.
+
+Bug fixes
+~~~~~~~~~
+
+* No longer crash on updates received prior to logging in.
+* Server-side changes caused clicking on inline buttons to trigger a different
+  error, which is now handled correctly.
+
+
 Minor quality of life improvements (v1.14)
 ==========================================
 
