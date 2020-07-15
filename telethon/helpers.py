@@ -3,6 +3,7 @@ import asyncio
 import enum
 import os
 import struct
+import inspect
 from hashlib import sha1
 
 
@@ -105,6 +106,13 @@ def retry_range(retries):
     while attempt != retries:
         attempt += 1
         yield 1 + attempt
+
+
+async def _maybe_await(value):
+    if inspect.isawaitable(value):
+        return await value
+    else:
+        return value
 
 
 async def _cancel(log, **tasks):
