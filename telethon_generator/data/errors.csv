@@ -223,6 +223,7 @@ POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too lon
 POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
+PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
 PTS_CHANGE_EMPTY,500,No PTS change
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid

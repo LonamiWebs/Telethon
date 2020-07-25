@@ -50,7 +50,7 @@ account.sendVerifyPhoneCode,user,
 account.setAccountTTL,user,TTL_DAYS_INVALID
 account.setContactSignUpNotification,user,
 account.setContentSettings,user,
-account.setPrivacy,user,PRIVACY_KEY_INVALID
+account.setPrivacy,user,PRIVACY_KEY_INVALID PRIVACY_TOO_LONG
 account.unregisterDevice,user,TOKEN_INVALID
 account.updateDeviceLocked,user,
 account.updateNotifySettings,user,PEER_ID_INVALID
