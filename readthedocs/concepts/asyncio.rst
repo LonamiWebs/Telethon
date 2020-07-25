@@ -219,19 +219,21 @@ Can I use threads?
 ==================
 
 Yes, you can, but you must understand that the loops themselves are
-not thread safe. and you must be sure to know what is happening. You
-may want to create a loop in a new thread and make sure to pass it to
-the client:
+not thread safe. and you must be sure to know what is happening. The
+easiest and cleanest option is to use `asyncio.run` to create and manage
+the new event loop for you:
 
 .. code-block:: python
 
     import asyncio
     import threading
 
-    def go():
-        loop = asyncio.new_event_loop()
+    async def actual_work():
         client = TelegramClient(..., loop=loop)
-        ...
+        ...  # can use `await` here
+
+    def go():
+        asyncio.run(actual_work())
 
     threading.Thread(target=go).start()
 

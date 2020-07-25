@@ -92,7 +92,7 @@ class EventBuilder(abc.ABC):
             return
 
         if not self._resolve_lock:
-            self._resolve_lock = asyncio.Lock(loop=client.loop)
+            self._resolve_lock = asyncio.Lock()
 
         async with self._resolve_lock:
             if not self.resolved:

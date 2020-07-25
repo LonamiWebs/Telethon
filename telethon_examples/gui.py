@@ -341,8 +341,8 @@ class App(tkinter.Tk):
             self.chat.configure(bg='yellow')
 
 
-async def main(loop, interval=0.05):
-    client = TelegramClient(SESSION, API_ID, API_HASH, loop=loop)
+async def main(interval=0.05):
+    client = TelegramClient(SESSION, API_ID, API_HASH)
     try:
         await client.connect()
     except Exception as e:
@@ -372,7 +372,7 @@ if __name__ == "__main__":
     # Some boilerplate code to set up the main method
     aio_loop = asyncio.get_event_loop()
     try:
-        aio_loop.run_until_complete(main(aio_loop))
+        aio_loop.run_until_complete(main())
     finally:
         if not aio_loop.is_closed():
             aio_loop.close()

@@ -28,11 +28,10 @@ class Connection(abc.ABC):
     # should be one of `PacketCodec` implementations
     packet_codec = None
 
-    def __init__(self, ip, port, dc_id, *, loop, loggers, proxy=None):
+    def __init__(self, ip, port, dc_id, *, loggers, proxy=None):
         self._ip = ip
         self._port = port
         self._dc_id = dc_id  # only for MTProxy, it's an abstraction leak
-        self._loop = loop
         self._log = loggers[__name__]
         self._proxy = proxy
         self._reader = None
@@ -48,9 +47,8 @@ class Connection(abc.ABC):
     async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
             self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(
-                    self._ip, self._port, loop=self._loop, ssl=ssl),
-                loop=self._loop, timeout=timeout
+                asyncio.open_connection(self._ip, self._port, ssl=ssl),
+                timeout=timeout
             )
         else:
             import socks
@@ -67,9 +65,8 @@ class Connection(abc.ABC):
 
             s.settimeout(timeout)
             await asyncio.wait_for(
-                self._loop.sock_connect(s, address),
-                timeout=timeout,
-                loop=self._loop
+                asyncio.get_event_loop().sock_connect(s, address),
+                timeout=timeout
             )
             if ssl:
                 if ssl_mod is None:
@@ -87,8 +84,7 @@ class Connection(abc.ABC):
                 
             s.setblocking(False)
 
-            self._reader, self._writer = \
-                await asyncio.open_connection(sock=s, loop=self._loop)
+            self._reader, self._writer = await asyncio.open_connection(sock=s)
 
         self._codec = self.packet_codec(self)
         self._init_conn()
@@ -101,8 +97,9 @@ class Connection(abc.ABC):
         await self._connect(timeout=timeout, ssl=ssl)
         self._connected = True
 
-        self._send_task = self._loop.create_task(self._send_loop())
-        self._recv_task = self._loop.create_task(self._recv_loop())
+        loop = asyncio.get_event_loop()
+        self._send_task = loop.create_task(self._send_loop())
+        self._recv_task = loop.create_task(self._recv_loop())
 
     async def disconnect(self):
         """

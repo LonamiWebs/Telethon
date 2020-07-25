@@ -378,7 +378,7 @@ class DialogMethods:
             entities = [await self.get_input_entity(entity)]
         else:
             entities = await asyncio.gather(
-                *(self.get_input_entity(x) for x in entity), loop=self.loop)
+                *(self.get_input_entity(x) for x in entity))
 
         if folder is None:
             raise ValueError('You must specify a folder')

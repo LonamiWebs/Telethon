@@ -22,11 +22,10 @@ class MessagePacker:
     point where outgoing requests are put, and where ready-messages are get.
     """
 
-    def __init__(self, state, loop, loggers):
+    def __init__(self, state, loggers):
         self._state = state
-        self._loop = loop
         self._deque = collections.deque()
-        self._ready = asyncio.Event(loop=loop)
+        self._ready = asyncio.Event()
         self._log = loggers[__name__]
 
     def append(self, state):

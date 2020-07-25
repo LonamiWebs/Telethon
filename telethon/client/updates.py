@@ -326,7 +326,7 @@ class UpdateMethods:
         while self.is_connected():
             try:
                 await asyncio.wait_for(
-                    self.disconnected, timeout=60, loop=self._loop
+                    self.disconnected, timeout=60
                 )
                 continue  # We actually just want to act upon timeout
             except asyncio.TimeoutError:

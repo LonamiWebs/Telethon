@@ -445,8 +445,7 @@ class Conversation(ChatGetter):
         #       cleared when their futures are set to a result.
         return asyncio.wait_for(
             future,
-            timeout=None if due == float('inf') else due - time.time(),
-            loop=self._client.loop
+            timeout=None if due == float('inf') else due - time.time()
         )
 
     def _cancel_all(self, exception=None):

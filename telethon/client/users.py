@@ -44,7 +44,7 @@ class UserMethods:
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 elif diff <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(diff, r, early=True))
-                    await asyncio.sleep(diff, loop=self._loop)
+                    await asyncio.sleep(diff)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
                     raise errors.FloodWaitError(request=r, capture=diff)
@@ -99,7 +99,7 @@ class UserMethods:
 
                 if e.seconds <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(e.seconds, request))
-                    await asyncio.sleep(e.seconds, loop=self._loop)
+                    await asyncio.sleep(e.seconds)
                 else:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,

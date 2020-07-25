@@ -180,7 +180,8 @@ class TelegramBaseClient(abc.ABC):
             Defaults to `lang_code`.
 
         loop (`asyncio.AbstractEventLoop`, optional):
-            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`
+            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`.
+            This argument is ignored.
 
         base_logger (`str` | `logging.Logger`, optional):
             Base logger name or instance to use.
@@ -227,7 +228,7 @@ class TelegramBaseClient(abc.ABC):
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        self._loop = loop or asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()
 
         if isinstance(base_logger, str):
             base_logger = logging.getLogger(base_logger)
@@ -334,7 +335,7 @@ class TelegramBaseClient(abc.ABC):
         )
 
         self._sender = MTProtoSender(
-            self.session.auth_key, self._loop,
+            self.session.auth_key,
             loggers=self._log,
             retries=self._connection_retries,
             delay=self._retry_delay,
@@ -350,15 +351,15 @@ class TelegramBaseClient(abc.ABC):
 
         # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders
         self._borrowed_senders = {}
-        self._borrow_sender_lock = asyncio.Lock(loop=self._loop)
+        self._borrow_sender_lock = asyncio.Lock()
 
         self._updates_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
 
         if sequential_updates:
-            self._updates_queue = asyncio.Queue(loop=self._loop)
-            self._dispatching_updates_queue = asyncio.Event(loop=self._loop)
+            self._updates_queue = asyncio.Queue()
+            self._dispatching_updates_queue = asyncio.Event()
         else:
             # Use a set of pending instead of a queue so we can properly
             # terminate all pending updates on disconnect.
@@ -481,7 +482,6 @@ class TelegramBaseClient(abc.ABC):
             self.session.server_address,
             self.session.port,
             self.session.dc_id,
-            loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
         )):
@@ -556,7 +556,7 @@ class TelegramBaseClient(abc.ABC):
             for task in self._updates_queue:
                 task.cancel()
 
-            await asyncio.wait(self._updates_queue, loop=self._loop)
+            await asyncio.wait(self._updates_queue)
             self._updates_queue.clear()
 
         pts, date = self._state_cache[None]
@@ -639,12 +639,11 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(None, self._loop, loggers=self._log)
+        sender = MTProtoSender(None, loggers=self._log)
         await sender.connect(self._connection(
             dc.ip_address,
             dc.port,
             dc.id,
-            loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
         ))
@@ -680,7 +679,6 @@ class TelegramBaseClient(abc.ABC):
                     dc.ip_address,
                     dc.port,
                     dc.id,
-                    loop=self._loop,
                     loggers=self._log,
                     proxy=self._proxy
                 ))
