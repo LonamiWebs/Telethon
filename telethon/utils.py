@@ -483,7 +483,7 @@ def get_input_media(
                 supports_streaming=supports_streaming
             )
             return types.InputMediaUploadedDocument(
-                file=media, mime_type=mime, attributes=attrs)
+                file=media, mime_type=mime, attributes=attrs, force_file=force_document)
 
     if isinstance(media, types.MessageMediaGame):
         return types.InputMediaGame(id=types.InputGameID(
