@@ -139,6 +139,7 @@ Chats
     get_profile_photos
     edit_admin
     edit_permissions
+    get_stats
     action
 
 Parse Mode
