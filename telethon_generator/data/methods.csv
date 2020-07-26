@@ -312,14 +312,15 @@ phone.setCallRating,user,CALL_PEER_INVALID
 photos.deletePhotos,user,
 photos.getUserPhotos,both,MAX_ID_INVALID USER_ID_INVALID
 photos.updateProfilePhoto,user,
-photos.uploadProfilePhoto,user,FILE_PARTS_INVALID IMAGE_PROCESS_FAILED PHOTO_CROP_SIZE_SMALL PHOTO_EXT_INVALID
+photos.uploadProfilePhoto,user,FILE_PARTS_INVALID IMAGE_PROCESS_FAILED PHOTO_CROP_SIZE_SMALL PHOTO_EXT_INVALID VIDEO_FILE_INVALID
 ping,both,
 reqDHParams,both,
 reqPq,both,
 reqPqMulti,both,
 rpcDropAnswer,both,
 setClientDHParams,both,
-stats.getBroadcastStats,user,
+stats.getBroadcastStats,user,BROADCAST_REQUIRED CHAT_ADMIN_REQUIRED STATS_MIGRATE_X
+stats.getMegagroupStats,user,CHAT_ADMIN_REQUIRED MEGAGROUP_REQUIRED STATS_MIGRATE_X
 stats.loadAsyncGraph,user,
 stickers.addStickerToSet,bot,BOT_MISSING STICKERSET_INVALID
 stickers.changeStickerPosition,bot,BOT_MISSING STICKER_INVALID

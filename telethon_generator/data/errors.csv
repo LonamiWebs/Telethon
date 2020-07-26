@@ -32,6 +32,7 @@ BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BOT_RESPONSE_TIMEOUT,400,The bot did not answer to the callback query in time
 BROADCAST_ID_INVALID,400,The channel is invalid
 BROADCAST_PUBLIC_VOTERS_FORBIDDEN,400,You cannot broadcast polls where the voters are public
+BROADCAST_REQUIRED,400,The request can only be used with a broadcast channel
 BUTTON_DATA_INVALID,400,The provided button data is invalid
 BUTTON_TYPE_INVALID,400,The type of one of the buttons you provided is invalid
 BUTTON_URL_INVALID,400,Button URL invalid
@@ -154,6 +155,7 @@ MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
 MEGAGROUP_ID_INVALID,400,The group is invalid
 MEGAGROUP_PREHISTORY_HIDDEN,400,You can't set this discussion group because it's history is hidden
+MEGAGROUP_REQUIRED,400,The request can only be used with a megagroup channel
 MEMBER_NO_LOCATION,500,An internal failure occurred while fetching user info (couldn't find location)
 MEMBER_OCCUPY_PRIMARY_LOC_FAILED,500,Occupation of primary member location failed
 MESSAGE_AUTHOR_REQUIRED,403,Message author required
@@ -317,6 +319,7 @@ USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagr
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
+VIDEO_FILE_INVALID,400,The given video cannot be used
 WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
 WALLPAPER_INVALID,400,The input wallpaper was not valid
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
