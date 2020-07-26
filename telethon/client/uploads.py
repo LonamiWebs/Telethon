@@ -728,8 +728,6 @@ class UploadMethods:
         elif re.match('https?://', file):
             if as_image:
                 media = types.InputMediaPhotoExternal(file)
-            elif not force_document and utils.is_gif(file):
-                media = types.InputMediaGifExternal(file, '')
             else:
                 media = types.InputMediaDocumentExternal(file)
         else:
