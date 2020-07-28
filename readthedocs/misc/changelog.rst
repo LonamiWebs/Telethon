@@ -13,6 +13,38 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Channel Statistics (v1.16)
+==========================
+
++------------------------+
+| Scheme layer used: 116 |
++------------------------+
+
+The newest Telegram update has a new method to also retrieve megagroup
+statistics, which can now be used with `client.get_stats()
+<telethon.client.chats.ChatMethods.get_stats>`. This way you'll be able
+to access the raw data about your channel or megagroup statistics.
+
+The maximum file size limit has also been increased to 2GB on the server,
+so you can send even larger files.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* Besides the obvious layer change, the ``loop`` argument **is now ignored**.
+  It has been deprecated since Python 3.8 and will be removed in Python 3.10,
+  and also caused some annoying warning messages when using certain parts of
+  the library. If you were (incorrectly) relying on using a different loop
+  from the one that was set, things may break.
+
+Enhancements
+~~~~~~~~~~~~
+
+* `client.upload_file() <telethon.client.uploads.UploadMethods.upload_file>`
+  now works better when streaming files (anything that has a ``.read()``),
+  instead of reading it all into memory when possible.
+
+
 QR login (v1.15)
 ================
 
