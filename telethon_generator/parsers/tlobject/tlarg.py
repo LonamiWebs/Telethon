@@ -36,7 +36,8 @@ KNOWN_NAMED_EXAMPLES = {
     ('lang_pack', 'string'): "''",
     ('lang_code', 'string'): "'en'",
     ('chat_id', 'int'): '478614198',
-    ('client_id', 'long'): 'random.randrange(-2**63, 2**63)'
+    ('client_id', 'long'): 'random.randrange(-2**63, 2**63)',
+    ('video', 'InputFile'): "client.upload_file('/path/to/file.mp4')",
 }
 
 KNOWN_TYPED_EXAMPLES = {
