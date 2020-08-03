@@ -79,7 +79,8 @@ class UserMethods:
                     self._entity_cache.add(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError,
-                    errors.RpcMcgetFailError) as e:
+                    errors.RpcMcgetFailError, errors.InterdcCallErrorError,
+                    errors.InterdcCallRichErrorError) as e:
                 self._log[__name__].warning(
                     'Telegram is having internal issues %s: %s',
                     e.__class__.__name__, e)
