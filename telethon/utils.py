@@ -525,6 +525,27 @@ def get_input_media(
     if isinstance(media, types.Message):
         return get_input_media(media.media, is_photo=is_photo)
 
+    if isinstance(media, types.MessageMediaPoll):
+        if media.poll.quiz:
+            if not media.results.results:
+                # A quiz has correct answers, which we don't know until answered.
+                # If the quiz hasn't been answered we can't reconstruct it properly.
+                raise TypeError('Cannot cast unanswered quiz to any kind of InputMedia.')
+
+            correct_answers = [r.option for r in media.results.results if r.correct]
+        else:
+            correct_answers = None
+
+        return types.InputMediaPoll(
+            poll=media.poll,
+            correct_answers=correct_answers,
+            solution=media.results.solution,
+            solution_entities=media.results.solution_entities,
+        )
+
+    if isinstance(media, types.Poll):
+        return types.InputMediaPoll(media)
+
     _raise_cast_fail(media, 'InputMedia')
 
 
