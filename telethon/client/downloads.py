@@ -562,7 +562,7 @@ class DownloadMethods:
                 # Streaming `media` to an output file
                 # After the iteration ends, the sender is cleaned up
                 with open('photo.jpg', 'wb') as fd:
-                    async for chunk client.iter_download(media):
+                    async for chunk in client.iter_download(media):
                         fd.write(chunk)
 
                 # Fetching only the header of a file (32 bytes)

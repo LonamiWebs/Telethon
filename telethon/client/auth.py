@@ -3,6 +3,7 @@ import inspect
 import os
 import sys
 import typing
+import warnings
 
 from .. import utils, helpers, errors, password as pwd_mod
 from ..tl import types, functions, custom
@@ -138,7 +139,29 @@ class AuthMethods:
         if not self.is_connected():
             await self.connect()
 
-        if await self.is_user_authorized():
+        # Rather than using `is_user_authorized`, use `get_me`. While this is
+        # more expensive and needs to retrieve more data from the server, it
+        # enables the library to warn users trying to login to a different
+        # account. See #1172.
+        me = await self.get_me()
+        if me is not None:
+            # The warnings here are on a best-effort and may fail.
+            if bot_token:
+                # bot_token's first part has the bot ID, but it may be invalid
+                # so don't try to parse as int (instead cast our ID to string).
+                if bot_token[:bot_token.find(':')] != str(me.id):
+                    warnings.warn(
+                        'the session already had an authorized user so it did '
+                        'not login to the bot account using the provided '
+                        'bot_token (it may not be using the user you expect)'
+                    )
+            elif not callable(phone) and phone != me.phone:
+                warnings.warn(
+                    'the session already had an authorized user so it did '
+                    'not login to the user account using the provided '
+                    'phone (it may not be using the user you expect)'
+                )
+
             return self
 
         if not bot_token:
