@@ -13,6 +13,36 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Bug Fixes (v1.16.1)
+===================
+
+The last release added support to ``force_file`` on any media, including
+things that were not possible before like ``.webp`` files. However, the
+``force_document`` toggle commonly used for photos was applied "twice"
+(one told the library to send it as a document, and then to send that
+document as file), which prevented Telegram for analyzing the images. Long
+story short, sending files to the stickers bot stopped working, but that's
+been fixed now, and sending photos as documents include the size attribute
+again as long as Telegram adds it.
+
+Enhancements
+~~~~~~~~~~~~
+
+* When trying to `client.start() <telethon.client.auth.AuthMethods.start>` to
+  another account if you were previously logged in, the library will now warn
+  you because this is probably not intended. To avoid the warning, make sure
+  you're logging in to the right account or logout from the other first.
+* Sending a copy of messages with polls will now work when possible.
+* The library now automatically retries on inter-dc call errors (which occur
+  when Telegram has internal issues).
+
+Bug Fixes
+~~~~~~~~~
+
+* The aforementioned issue with ``force_document``.
+* Square brackets removed from IPv6 addresses. This may fix IPv6 support.
+
+
 Channel Statistics (v1.16)
 ==========================
 
