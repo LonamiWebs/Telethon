@@ -687,8 +687,9 @@ class UploadMethods:
         if isinstance(file, pathlib.Path):
             file = str(file.absolute())
 
+        is_image = utils.is_image(file)
         if as_image is None:
-            as_image = utils.is_image(file) and not force_document
+            as_image = is_image and not force_document
 
         # `aiofiles` do not base `io.IOBase` but do have `read`, so we
         # just check for the read attribute to see if it's file-like.
@@ -749,7 +750,7 @@ class UploadMethods:
                 file,
                 mime_type=mime_type,
                 attributes=attributes,
-                force_document=force_document,
+                force_document=force_document and not is_image,
                 voice_note=voice_note,
                 video_note=video_note,
                 supports_streaming=supports_streaming
@@ -767,7 +768,7 @@ class UploadMethods:
                 mime_type=mime_type,
                 attributes=attributes,
                 thumb=thumb,
-                force_file=force_document
+                force_file=force_document and not is_image
             )
         return file_handle, media, as_image
 
