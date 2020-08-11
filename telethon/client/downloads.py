@@ -634,8 +634,10 @@ class DownloadMethods:
             return thumbs[-1]
         elif isinstance(thumb, int):
             return thumbs[thumb]
+        elif isinstance(thumb, str):
+            return next((t for t in thumbs if t.type == thumb), None)
         elif isinstance(thumb, (types.PhotoSize, types.PhotoCachedSize,
-                                types.PhotoStrippedSize)):
+                                types.PhotoStrippedSize, types.VideoSize)):
             return thumb
         else:
             return None
@@ -670,11 +672,16 @@ class DownloadMethods:
         if not isinstance(photo, types.Photo):
             return
 
-        size = self._get_thumb(photo.sizes, thumb)
+        # Include video sizes here (but they may be None so provide an empty list)
+        size = self._get_thumb(photo.sizes + (photo.video_sizes or []), thumb)
         if not size or isinstance(size, types.PhotoSizeEmpty):
             return
 
-        file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
+        if isinstance(size, types.VideoSize):
+            file = self._get_proper_filename(file, 'video', '.mp4', date=date)
+        else:
+            file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
+
         if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
             return self._download_cached_photo_size(size, file)
 
