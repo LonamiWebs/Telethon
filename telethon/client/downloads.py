@@ -310,12 +310,19 @@ class DownloadMethods:
                 The parameter should be an integer index between ``0`` and
                 ``len(sizes)``. ``0`` will download the smallest thumbnail,
                 and ``len(sizes) - 1`` will download the largest thumbnail.
-                You can also use negative indices.
+                You can also use negative indices, which work the same as
+                they do in Python's `list`.
 
                 You can also pass the :tl:`PhotoSize` instance to use.
+                Alternatively, the thumb size type `str` may be used.
 
                 In short, use ``thumb=0`` if you want the smallest thumbnail
                 and ``thumb=-1`` if you want the largest thumbnail.
+
+                .. note::
+                    The largest thumbnail may be a video instead of a photo,
+                    as they are available since layer 116 and are bigger than
+                    any of the photos.
 
         Returns
             `None` if no media was provided, or if it was Empty. On success
@@ -630,6 +637,24 @@ class DownloadMethods:
 
     @staticmethod
     def _get_thumb(thumbs, thumb):
+        # Seems Telegram has changed the order and put `PhotoStrippedSize`
+        # last while this is the smallest (layer 116). Ensure we have the
+        # sizes sorted correctly with a custom function.
+        def sort_thumbs(thumb):
+            if isinstance(thumb, types.PhotoStrippedSize):
+                return 1, len(thumb.bytes)
+            if isinstance(thumb, types.PhotoCachedSize):
+                return 1, len(thumb.bytes)
+            if isinstance(thumb, types.PhotoSize):
+                return 1, thumb.size
+            if isinstance(thumb, types.VideoSize):
+                return 2, thumb.size
+
+            # Empty size or invalid should go last
+            return 0, 0
+
+        thumbs = list(sorted(thumbs, key=sort_thumbs))
+
         if thumb is None:
             return thumbs[-1]
         elif isinstance(thumb, int):
