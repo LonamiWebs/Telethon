@@ -69,6 +69,5 @@ through :tl:`UploadProfilePhoto`:
 
     from telethon.tl.functions.photos import UploadProfilePhotoRequest
 
-    await client(UploadProfilePhotoRequest(
-        await client.upload_file('/path/to/some/file')
-    )))
+    await client(UploadProfilePhotoRequest(await client.upload_file("/path/to/some/file")))
+   
