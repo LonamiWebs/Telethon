@@ -337,9 +337,25 @@ class _ProfilePhotoIter(RequestIter):
             else:
                 self.request.offset += len(result.photos)
         else:
+            self.total = getattr(result, 'count', None)
+            if self.total == 0 and isinstance(result, types.messages.ChannelMessages):
+                # There are some broadcast channels that have a photo but this
+                # request doesn't retrieve it for some reason. Work around this
+                # issue by fetching the channel.
+                #
+                # We can't use the normal entity because that gives `ChatPhoto`
+                # but we want a proper `Photo`, so fetch full channel instead.
+                channel = await self.client(functions.channels.GetFullChannelRequest(self.request.peer))
+                photo = channel.full_chat.chat_photo
+                if isinstance(photo, types.Photo):
+                    self.buffer = [photo]
+                    self.total = 1
+
+                self.left = len(self.buffer)
+                return
+
             self.buffer = [x.action.photo for x in result.messages
                            if isinstance(x.action, types.MessageActionChatEditPhoto)]
-            self.total = getattr(result, 'count', None)
             if len(result.messages) < self.request.limit:
                 self.left = len(self.buffer)
             elif result.messages:
