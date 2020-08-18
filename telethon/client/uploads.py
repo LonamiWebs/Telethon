@@ -423,7 +423,7 @@ class UploadMethods:
                 ))
 
                 fm = utils.get_input_media(r.photo)
-            elif isinstance(fm, types.InputMediaUploadedDocument):
+            elif isinstance(fm, types.InputMediaUploadedDocument) or isinstance(fm, types.InputMediaDocumentExternal):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
