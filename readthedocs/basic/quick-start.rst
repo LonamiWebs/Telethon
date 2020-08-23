@@ -41,7 +41,7 @@ use these if possible.
         # ...to your contacts
         await client.send_message('+34600123123', 'Hello, friend!')
         # ...or even to any username
-        await client.send_message('TelethonChat', 'Hello, Telethon!')
+        await client.send_message('username', 'Testing Telethon!')
 
         # You can, of course, use markdown in your messages:
         message = await client.send_message(

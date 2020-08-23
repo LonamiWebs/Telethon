@@ -296,10 +296,10 @@ applications"? Now do the same with the library. Use what applies:
         await client.get_dialogs()
 
         # Are they participant of some group? Get them.
-        await client.get_participants('TelethonChat')
+        await client.get_participants('username')
 
         # Is the entity the original sender of a forwarded message? Get it.
-        await client.get_messages('TelethonChat', 100)
+        await client.get_messages('username', 100)
 
         # NOW you can use the ID, anywhere!
         await client.send_message(123456, 'Hi!')

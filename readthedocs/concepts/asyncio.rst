@@ -310,27 +310,26 @@ you can run requests in parallel:
 
     async def main():
         last, sent, download_path = await asyncio.gather(
-            client.get_messages('TelethonChat', 10),
-            client.send_message('TelethonOfftopic', 'Hey guys!'),
-            client.download_profile_photo('TelethonChat')
+            client.get_messages('telegram', 10),
+            client.send_message('me', 'Using asyncio!'),
+            client.download_profile_photo('telegram')
         )
 
     loop.run_until_complete(main())
 
 
-This code will get the 10 last messages from `@TelethonChat
-<https://t.me/TelethonChat>`_, send one to `@TelethonOfftopic
-<https://t.me/TelethonOfftopic>`_, and also download the profile
-photo of the main group. `asyncio` will run all these three tasks
-at the same time. You can run all the tasks you want this way.
+This code will get the 10 last messages from `@telegram
+<https://t.me/telegram>`_, send one to the chat with yourself, and also
+download the profile photo of the channel. `asyncio` will run all these
+three tasks at the same time. You can run all the tasks you want this way.
 
 A different way would be:
 
 .. code-block:: python
 
-    loop.create_task(client.get_messages('TelethonChat', 10))
-    loop.create_task(client.send_message('TelethonOfftopic', 'Hey guys!'))
-    loop.create_task(client.download_profile_photo('TelethonChat'))
+    loop.create_task(client.get_messages('telegram', 10))
+    loop.create_task(client.send_message('me', 'Using asyncio!'))
+    loop.create_task(client.download_profile_photo('telegram'))
 
 They will run in the background as long as the loop is running too.
 
