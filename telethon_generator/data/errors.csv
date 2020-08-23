@@ -100,7 +100,7 @@ EXPORT_CARD_INVALID,400,Provided card is invalid
 EXTERNAL_URL_INVALID,400,External URL invalid
 FIELD_NAME_EMPTY,,The field with the name FIELD_NAME is missing
 FIELD_NAME_INVALID,,The field with the name FIELD_NAME is invalid
-FILE_ID_INVALID,400,The provided file id is invalid. Verify parameters file id, access hash (expires!), file reference, and thumbnail (non-empty).
+FILE_ID_INVALID,400,"The provided file id is invalid. Make sure all parameters are present, have the correct type and are not empty (ID, access hash, file reference, thumb size ...)"
 FILE_MIGRATE_X,303,The file to be accessed is currently stored in DC {new_dc}
 FILE_PARTS_INVALID,400,The number of file parts is invalid
 FILE_PART_0_MISSING,,File part 0 missing
