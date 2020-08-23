@@ -227,7 +227,7 @@ messages.getPeerDialogs,user,CHANNEL_PRIVATE PEER_ID_INVALID
 messages.getPeerSettings,user,CHANNEL_INVALID PEER_ID_INVALID
 messages.getPinnedDialogs,user,
 messages.getPollResults,user,
-messages.getPollVotes,user,
+messages.getPollVotes,user,BROADCAST_FORBIDDEN
 messages.getRecentLocations,user,
 messages.getRecentStickers,user,
 messages.getSavedGifs,user,
