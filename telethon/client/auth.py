@@ -155,7 +155,7 @@ class AuthMethods:
                         'not login to the bot account using the provided '
                         'bot_token (it may not be using the user you expect)'
                     )
-            elif not callable(phone) and phone != me.phone:
+            elif phone and not callable(phone) and "".join(c for c in str(phone) if c in string.digits) != me.phone:
                 warnings.warn(
                     'the session already had an authorized user so it did '
                     'not login to the user account using the provided '
