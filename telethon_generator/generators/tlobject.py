@@ -330,7 +330,7 @@ def _write_to_dict(tlobject, builder):
 
 
 def _write_to_bytes(tlobject, builder):
-    builder.writeln('def __bytes__(self):')
+    builder.writeln('def _bytes(self):')
 
     # Some objects require more than one flag parameter to be set
     # at the same time. In this case, add an assertion.
@@ -509,7 +509,7 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
 
     else:
         # Else it may be a custom type
-        builder.write('bytes({})', name)
+        builder.write('{}._bytes()', name)
 
         # If the type is not boxed (i.e. starts with lowercase) we should
         # not serialize the constructor ID (so remove its first 4 bytes).

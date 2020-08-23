@@ -1,4 +1,6 @@
 import asyncio
+import functools
+import inspect
 import itertools
 import time
 
@@ -9,6 +11,16 @@ from ... import helpers, utils, errors
 # In that case we add a small delta so that the age is older, for
 # comparision purposes. This value is enough for up to 1000 messages.
 _EDIT_COLLISION_DELTA = 0.001
+
+
+def _checks_cancelled(f):
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if self._cancelled:
+            raise asyncio.CancelledError('The conversation was cancelled before')
+
+        return f(self, *args, **kwargs)
+    return wrapper
 
 
 class Conversation(ChatGetter):
@@ -66,6 +78,7 @@ class Conversation(ChatGetter):
 
         self._edit_dates = {}
 
+    @_checks_cancelled
     async def send_message(self, *args, **kwargs):
         """
         Sends a message in the context of this conversation. Shorthand
@@ -81,6 +94,7 @@ class Conversation(ChatGetter):
         self._last_outgoing = ms[-1].id
         return sent
 
+    @_checks_cancelled
     async def send_file(self, *args, **kwargs):
         """
         Sends a file in the context of this conversation. Shorthand
@@ -96,6 +110,7 @@ class Conversation(ChatGetter):
         self._last_outgoing = ms[-1].id
         return sent
 
+    @_checks_cancelled
     def mark_read(self, message=None):
         """
         Marks as read the latest received message if ``message is None``.
@@ -117,7 +132,8 @@ class Conversation(ChatGetter):
 
     def get_response(self, message=None, *, timeout=None):
         """
-        Gets the next message that responds to a previous one.
+        Gets the next message that responds to a previous one. This is
+        the method you need most of the time, along with `get_edit`.
 
         Args:
             message (`Message <telethon.tl.custom.message.Message>` | `int`, optional):
@@ -127,6 +143,16 @@ class Conversation(ChatGetter):
             timeout (`int` | `float`, optional):
                 If present, this `timeout` (in seconds) will override the
                 per-action timeout defined for the conversation.
+
+        .. code-block:: python
+
+            async with client.conversation(...) as conv:
+                await conv.send_message('Hey, what is your name?')
+
+                response = await conv.get_response()
+                name = response.text
+
+                await conv.send_message('Nice to meet you, {}!'.format(name))
         """
         return self._get_message(
             message, self._response_indices, self._pending_responses, timeout,
@@ -257,23 +283,41 @@ class Conversation(ChatGetter):
 
         .. note::
 
-            Only use this if there isn't another method available!
+            **Only use this if there isn't another method available!**
             For example, don't use `wait_event` for new messages,
             since `get_response` already exists, etc.
 
         Unless you're certain that your code will run fast enough,
         generally you should get a "handle" of this special coroutine
-        before acting. Generally, you should do this:
+        before acting. In this example you will see how to wait for a user
+        to join a group with proper use of `wait_event`:
 
-        >>> from telethon import TelegramClient, events
-        >>>
-        >>> client = TelegramClient(...)
-        >>>
-        >>> async def main():
-        >>>     async with client.conversation(...) as conv:
-        >>>         response = conv.wait_event(events.NewMessage(incoming=True))
-        >>>         await conv.send_message('Hi')
-        >>>         response = await response
+        .. code-block:: python
+
+            from telethon import TelegramClient, events
+
+            client = TelegramClient(...)
+            group_id = ...
+
+            async def main():
+                # Could also get the user id from an event; this is just an example
+                user_id = ...
+
+                async with client.conversation(user_id) as conv:
+                    # Get a handle to the future event we'll wait for
+                    handle = conv.wait_event(events.ChatAction(
+                        group_id,
+                        func=lambda e: e.user_joined and e.user_id == user_id
+                    ))
+
+                    # Perform whatever action in between
+                    await conv.send_message('Please join this group before speaking to me!')
+
+                    # Wait for the event we registered above to fire
+                    event = await handle
+
+                    # Continue with the conversation
+                    await conv.send_message('Thanks!')
 
         This way your event can be registered before acting,
         since the response may arrive before your event was
@@ -298,9 +342,15 @@ class Conversation(ChatGetter):
         for key, (ev, fut) in list(self._custom.items()):
             ev_type = type(ev)
             inst = built[ev_type]
-            if inst and ev.filter(inst):
-                fut.set_result(inst)
-                del self._custom[key]
+
+            if inst:
+                filter = ev.filter(inst)
+                if inspect.isawaitable(filter):
+                    filter = await filter
+
+                if filter:
+                    fut.set_result(inst)
+                    del self._custom[key]
 
     def _on_new_message(self, response):
         response = response.message
@@ -379,10 +429,8 @@ class Conversation(ChatGetter):
         else:
             raise ValueError('No message was sent previously')
 
+    @_checks_cancelled
     def _get_result(self, future, start_time, timeout, pending, target_id):
-        if self._cancelled:
-            raise asyncio.CancelledError('The conversation was cancelled before')
-
         due = self._total_due
         if timeout is None:
             timeout = self._timeout
@@ -397,8 +445,7 @@ class Conversation(ChatGetter):
         #       cleared when their futures are set to a result.
         return asyncio.wait_for(
             future,
-            timeout=None if due == float('inf') else due - time.time(),
-            loop=self._client.loop
+            timeout=None if due == float('inf') else due - time.time()
         )
 
     def _cancel_all(self, exception=None):

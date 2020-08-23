@@ -245,7 +245,7 @@ class DialogMethods:
 
                 # Getting only archived dialogs (both equivalent)
                 archived = await client.get_dialogs(folder=1)
-                non_archived = await client.get_dialogs(archived=True)
+                archived = await client.get_dialogs(archived=True)
         """
         return await self.iter_dialogs(*args, **kwargs).collect()
 
@@ -378,7 +378,7 @@ class DialogMethods:
             entities = [await self.get_input_entity(entity)]
         else:
             entities = await asyncio.gather(
-                *(self.get_input_entity(x) for x in entity), loop=self.loop)
+                *(self.get_input_entity(x) for x in entity))
 
         if folder is None:
             raise ValueError('You must specify a folder')

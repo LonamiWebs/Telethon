@@ -100,6 +100,9 @@ There are other community-maintained implementations available:
 * `Redis <https://github.com/ezdev128/telethon-session-redis>`_:
   stores all sessions in a single Redis data store.
 
+* `MongoDB <https://github.com/watzon/telethon-session-mongo>`_:
+  stores the current session in a MongoDB database.
+
 
 Creating your Own Storage
 =========================

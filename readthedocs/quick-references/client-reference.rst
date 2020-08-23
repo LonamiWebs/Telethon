@@ -31,6 +31,7 @@ Auth
     start
     send_code_request
     sign_in
+    qr_login
     sign_up
     log_out
     edit_2fa
@@ -138,6 +139,7 @@ Chats
     get_profile_photos
     edit_admin
     edit_permissions
+    get_stats
     action
 
 Parse Mode

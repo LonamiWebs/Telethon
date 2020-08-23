@@ -13,6 +13,198 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Bug Fixes (v1.16.1)
+===================
+
+The last release added support to ``force_file`` on any media, including
+things that were not possible before like ``.webp`` files. However, the
+``force_document`` toggle commonly used for photos was applied "twice"
+(one told the library to send it as a document, and then to send that
+document as file), which prevented Telegram for analyzing the images. Long
+story short, sending files to the stickers bot stopped working, but that's
+been fixed now, and sending photos as documents include the size attribute
+again as long as Telegram adds it.
+
+Enhancements
+~~~~~~~~~~~~
+
+* When trying to `client.start() <telethon.client.auth.AuthMethods.start>` to
+  another account if you were previously logged in, the library will now warn
+  you because this is probably not intended. To avoid the warning, make sure
+  you're logging in to the right account or logout from the other first.
+* Sending a copy of messages with polls will now work when possible.
+* The library now automatically retries on inter-dc call errors (which occur
+  when Telegram has internal issues).
+
+Bug Fixes
+~~~~~~~~~
+
+* The aforementioned issue with ``force_document``.
+* Square brackets removed from IPv6 addresses. This may fix IPv6 support.
+
+
+Channel Statistics (v1.16)
+==========================
+
++------------------------+
+| Scheme layer used: 116 |
++------------------------+
+
+The newest Telegram update has a new method to also retrieve megagroup
+statistics, which can now be used with `client.get_stats()
+<telethon.client.chats.ChatMethods.get_stats>`. This way you'll be able
+to access the raw data about your channel or megagroup statistics.
+
+The maximum file size limit has also been increased to 2GB on the server,
+so you can send even larger files.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* Besides the obvious layer change, the ``loop`` argument **is now ignored**.
+  It has been deprecated since Python 3.8 and will be removed in Python 3.10,
+  and also caused some annoying warning messages when using certain parts of
+  the library. If you were (incorrectly) relying on using a different loop
+  from the one that was set, things may break.
+
+Enhancements
+~~~~~~~~~~~~
+
+* `client.upload_file() <telethon.client.uploads.UploadMethods.upload_file>`
+  now works better when streaming files (anything that has a ``.read()``),
+  instead of reading it all into memory when possible.
+
+
+QR login (v1.15)
+================
+
+*Published at 2020/07/04*
+
++------------------------+
+| Scheme layer used: 114 |
++------------------------+
+
+The library now has a friendly method to perform QR-login, as detailed in
+https://core.telegram.org/api/qr-login. It won't generate QR images, but it
+provides a way for you to easily do so with any other library of your choice.
+
+Additions
+~~~~~~~~~
+
+* New `client.qr_login() <telethon.client.auth.AuthMethods.qr_login>`.
+* `message.click <telethon.tl.custom.message.Message.click>` now lets you
+  click on buttons requesting phone or location.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Updated documentation and list of known errors.
+* `events.Album <telethon.events.album.Album>` should now handle albums from
+  different data centers more gracefully.
+* `client.download_file()
+  <telethon.client.downloads.DownloadMethods.download_file>` now supports
+  `pathlib.Path` as the destination.
+
+Bug fixes
+~~~~~~~~~
+
+* No longer crash on updates received prior to logging in.
+* Server-side changes caused clicking on inline buttons to trigger a different
+  error, which is now handled correctly.
+
+
+Minor quality of life improvements (v1.14)
+==========================================
+
+*Published at 2020/05/26*
+
++------------------------+
+| Scheme layer used: 113 |
++------------------------+
+
+Some nice things that were missing, along with the usual bug-fixes.
+
+Additions
+~~~~~~~~~
+
+* New `Message.dice <telethon.tl.custom.message.Message.dice>` property.
+* The ``func=`` parameter of events can now be an ``async`` function.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixed `client.action() <telethon.client.chats.ChatMethods.action>`
+  having an alias wrong.
+* Fixed incorrect formatting of some errors.
+* Probably more reliable detection of pin events in small groups.
+* Fixed send methods on `client.conversation()
+  <telethon.client.dialogs.DialogMethods.conversation>` were not honoring
+  cancellation.
+* Flood waits of zero seconds are handled better.
+* Getting the pinned message in a chat was failing.
+* Fixed the return value when forwarding messages if some were missing
+  and also the return value of albums.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``.tgs`` files are now recognised as animated stickers.
+* The service message produced by `Message.pin()
+  <telethon.tl.custom.message.Message.pin>` is now returned.
+* Sending a file with `client.send_file()
+  <telethon.client.uploads.UploadMethods.send_file>` now works fine when
+  you pass an existing dice media (e.g. sending a message copy).
+* `client.edit_permissions() <telethon.client.chats.ChatMethods.edit_permissions>`
+  now has the ``embed_links`` parameter which was missing.
+
+Bug Fixes (v1.13)
+=================
+
+*Published at 2020/04/25*
+
++------------------------+
+| Scheme layer used: 112 |
++------------------------+
+
+Bug fixes and layer bump.
+
+Bug fixes
+~~~~~~~~~
+
+* Passing ``None`` as the entity to `client.delete_messages()
+  <telethon.client.messages.MessageMethods.delete_messages>` would fail.
+* When downloading a thumbnail, the name inferred was wrong.
+
+Bug Fixes (v1.12)
+=================
+
+*Published at 2020/04/20*
+
++------------------------+
+| Scheme layer used: 111 |
++------------------------+
+
+Once again nothing major, but a few bug fixes and primarily the new layer
+deserves a new minor release.
+
+Bug fixes
+~~~~~~~~~
+
+These were already included in the ``v1.11.3`` patch:
+
+* ``libssl`` check was failing on macOS.
+* Getting input users would sometimes fail on `events.ChatAction
+  <telethon.events.chataction.ChatAction>`.
+
+These bug fixes are available in this release and beyond:
+
+* Avoid another occurrence of `MemoryError`.
+* Sending large files in albums would fail because it tried to cache them.
+* The ``thumb`` was being ignored when sending files from :tl:`InputFile`.
+* Fixed editing inline messages from callback queries in some cases.
+* Proxy connection is now blocking which should help avoid some errors.
+
+
 Bug Fixes (v1.11)
 =================
 

@@ -1,7 +1,7 @@
 import gzip
 import struct
 
-from .. import TLObject, TLRequest
+from .. import TLObject
 
 
 class GzipPacked(TLObject):

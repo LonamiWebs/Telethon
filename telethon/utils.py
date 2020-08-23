@@ -51,6 +51,8 @@ mimetypes.add_type('audio/aac', '.aac')
 mimetypes.add_type('audio/ogg', '.ogg')
 mimetypes.add_type('audio/flac', '.flac')
 
+mimetypes.add_type('application/x-tgsticker', '.tgs')
+
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(@|joinchat/)?'
 )
@@ -64,7 +66,7 @@ TG_JOIN_RE = re.compile(
 #
 # See https://telegram.org/blog/inline-bots#how-does-it-work
 VALID_USERNAME_RE = re.compile(
-    r'^([a-z]((?!__)[\w\d]){3,30}[a-z\d]'
+    r'^([a-z](?:(?!__)\w){3,30}[a-z\d]'
     r'|gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub)$',
     re.IGNORECASE
 )
@@ -481,7 +483,7 @@ def get_input_media(
                 supports_streaming=supports_streaming
             )
             return types.InputMediaUploadedDocument(
-                file=media, mime_type=mime, attributes=attrs)
+                file=media, mime_type=mime, attributes=attrs, force_file=force_document)
 
     if isinstance(media, types.MessageMediaGame):
         return types.InputMediaGame(id=types.InputGameID(
@@ -510,6 +512,9 @@ def get_input_media(
             venue_type=''
         )
 
+    if isinstance(media, types.MessageMediaDice):
+        return types.InputMediaDice(media.emoticon)
+
     if isinstance(media, (
             types.MessageMediaEmpty, types.MessageMediaUnsupported,
             types.ChatPhotoEmpty, types.UserProfilePhotoEmpty,
@@ -519,6 +524,27 @@ def get_input_media(
 
     if isinstance(media, types.Message):
         return get_input_media(media.media, is_photo=is_photo)
+
+    if isinstance(media, types.MessageMediaPoll):
+        if media.poll.quiz:
+            if not media.results.results:
+                # A quiz has correct answers, which we don't know until answered.
+                # If the quiz hasn't been answered we can't reconstruct it properly.
+                raise TypeError('Cannot cast unanswered quiz to any kind of InputMedia.')
+
+            correct_answers = [r.option for r in media.results.results if r.correct]
+        else:
+            correct_answers = None
+
+        return types.InputMediaPoll(
+            poll=media.poll,
+            correct_answers=correct_answers,
+            solution=media.results.solution,
+            solution_entities=media.results.solution_entities,
+        )
+
+    if isinstance(media, types.Poll):
+        return types.InputMediaPoll(media)
 
     _raise_cast_fail(media, 'InputMedia')
 
@@ -1230,7 +1256,7 @@ def get_appropriated_part_size(file_size):
         return 128
     if file_size <= 786432000:  # 750MB
         return 256
-    if file_size <= 1572864000:  # 1500MB
+    if file_size <= 2097152000:  # 2000MB
         return 512
 
     raise ValueError('File size too large')

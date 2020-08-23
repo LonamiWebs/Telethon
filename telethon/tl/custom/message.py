@@ -553,6 +553,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             return self.media
 
     @property
+    def dice(self):
+        """
+        The :tl:`MessageMediaDice` in this message, if it's a dice roll.
+        """
+        if isinstance(self.media, types.MessageMediaDice):
+            return self.media
+
+    @property
     def action_entities(self):
         """
         Returns a list of entities that took part in this action.
@@ -756,7 +764,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             return await self._client.download_media(self, *args, **kwargs)
 
     async def click(self, i=None, j=None,
-                    *, text=None, filter=None, data=None):
+                    *, text=None, filter=None, data=None, share_phone=None,
+                    share_geo=None):
         """
         Calls `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
         on the specified button.
@@ -805,6 +814,28 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 that if the message does not have this data, it will
                 ``raise DataInvalidError``.
 
+            share_phone (`bool` | `str` | tl:`InputMediaContact`):
+                When clicking on a keyboard button requesting a phone number
+                (:tl:`KeyboardButtonRequestPhone`), this argument must be
+                explicitly set to avoid accidentally sharing the number.
+
+                It can be `True` to automatically share the current user's
+                phone, a string to share a specific phone number, or a contact
+                media to specify all details.
+
+                If the button is pressed without this, `ValueError` is raised.
+
+            share_geo (`tuple` | `list` | tl:`InputMediaGeoPoint`):
+                When clicking on a keyboard button requesting a geo location
+                (:tl:`KeyboardButtonRequestGeoLocation`), this argument must
+                be explicitly set to avoid accidentally sharing the location.
+
+                It must be a `tuple` of `float` as ``(longitude, latitude)``,
+                or a :tl:`InputGeoPoint` instance to avoid accidentally using
+                the wrong roder.
+
+                If the button is pressed without this, `ValueError` is raised.
+
             Example:
 
                 .. code-block:: python
@@ -820,6 +851,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
                     # Click by data
                     await message.click(data=b'payload')
+
+                    # Click on a button requesting a phone
+                    await message.click(0, share_phone=True)
         """
         if not self._client:
             return
@@ -836,7 +870,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                         data=data
                     )
                 )
-            except errors.BotTimeout:
+            except errors.BotResponseTimeoutError:
                 return None
 
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
@@ -845,29 +879,35 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         if not await self.get_buttons():
             return  # Accessing the property sets self._buttons[_flat]
 
-        if text is not None:
-            if callable(text):
+        def find_button():
+            nonlocal i
+            if text is not None:
+                if callable(text):
+                    for button in self._buttons_flat:
+                        if text(button.text):
+                            return button
+                else:
+                    for button in self._buttons_flat:
+                        if button.text == text:
+                            return button
+                return
+
+            if filter is not None:
                 for button in self._buttons_flat:
-                    if text(button.text):
-                        return await button.click()
+                    if filter(button):
+                        return button
+                return
+
+            if i is None:
+                i = 0
+            if j is None:
+                return self._buttons_flat[i]
             else:
-                for button in self._buttons_flat:
-                    if button.text == text:
-                        return await button.click()
-            return
+                return self._buttons[i][j]
 
-        if filter is not None:
-            for button in self._buttons_flat:
-                if filter(button):
-                    return await button.click()
-            return
-
-        if i is None:
-            i = 0
-        if j is None:
-            return await self._buttons_flat[i].click()
-        else:
-            return await self._buttons[i][j].click()
+        button = find_button()
+        if button:
+            return await button.click(share_phone=share_phone, share_geo=share_geo)
 
     async def mark_read(self):
         """
@@ -890,7 +930,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         #      maybe just make it illegal to call messages from raw API?
         #      That or figure out a way to always set it directly.
         if self._client:
-            await self._client.pin_message(
+            return await self._client.pin_message(
                 await self.get_input_chat(), self.id, notify=notify)
 
     # endregion Public Methods

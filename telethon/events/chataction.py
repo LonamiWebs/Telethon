@@ -1,6 +1,6 @@
 from .common import EventBuilder, EventCommon, name_inner_event
 from .. import utils
-from ..tl import types, functions
+from ..tl import types
 
 
 @name_inner_event
@@ -36,6 +36,10 @@ class ChatAction(EventBuilder):
             # UpdateChannelPinnedMessage for new pins
             # but always for unpin, with update.id = 0
             return cls.Event(types.PeerChannel(update.channel_id),
+                             unpin=True)
+
+        elif isinstance(update, types.UpdateChatPinnedMessage) and update.id == 0:
+            return cls.Event(types.PeerChat(update.chat_id),
                              unpin=True)
 
         elif isinstance(update, types.UpdateChatParticipantAdd):
@@ -104,8 +108,9 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            elif isinstance(action, types.MessageActionPinMessage):
-                # Telegram always sends this service message for new pins
+            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to_msg_id:
+                # Seems to not be reliable on unpins, but when pinning
+                # we prefer this because we know who caused it.
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_pin=msg.reply_to_msg_id)
@@ -256,17 +261,8 @@ class ChatAction(EventBuilder):
 
             if isinstance(self._pinned_message, int)\
                     and await self.get_input_chat():
-                r = await self._client(functions.channels.GetMessagesRequest(
-                    self._input_chat, [self._pinned_message]
-                ))
-                try:
-                    self._pinned_message = next(
-                        x for x in r.messages
-                        if isinstance(x, types.Message)
-                        and x.id == self._pinned_message
-                    )
-                except StopIteration:
-                    pass
+                self._pinned_message = await self._client.get_messages(
+                    self._input_chat, ids=self._pinned_message)
 
             if isinstance(self._pinned_message, types.Message):
                 return self._pinned_message
@@ -316,7 +312,7 @@ class ChatAction(EventBuilder):
         @property
         def user(self):
             """
-            The first user that takes part in this action (e.g. joined).
+            The first user that takes part in this action. For example, who joined.
 
             Might be `None` if the information can't be retrieved or
             there is no user taking part.
@@ -357,7 +353,7 @@ class ChatAction(EventBuilder):
         @property
         def users(self):
             """
-            A list of users that take part in this action (e.g. joined).
+            A list of users that take part in this action. For example, who joined.
 
             Might be empty if the information can't be retrieved or there
             are no users taking part.
@@ -381,7 +377,8 @@ class ChatAction(EventBuilder):
             if not self._user_ids:
                 return []
 
-            if self._users is None or len(self._users) != len(self._user_ids):
+            # Note: we access the property first so that it fills if needed
+            if (self.users is None or len(self._users) != len(self._user_ids)) and self.action_message:
                 await self.action_message._reload_message()
                 self._users = [
                     u for u in self.action_message.action_entities
@@ -397,19 +394,31 @@ class ChatAction(EventBuilder):
             if self._input_users is None and self._user_ids:
                 self._input_users = []
                 for user_id in self._user_ids:
+                    # First try to get it from our entities
+                    try:
+                        self._input_users.append(utils.get_input_peer(self._entities[user_id]))
+                        continue
+                    except (KeyError, TypeError):
+                        pass
+
+                    # If missing, try from the entity cache
                     try:
                         self._input_users.append(self._client._entity_cache[user_id])
+                        continue
                     except KeyError:
                         pass
+
             return self._input_users or []
 
         async def get_input_users(self):
             """
             Returns `input_users` but will make an API call if necessary.
             """
-            self._input_users = None
-            if self._input_users is None:
-                await self.action_message._reload_message()
+            if not self._user_ids:
+                return []
+
+            # Note: we access the property first so that it fills if needed
+            if (self.input_users is None or len(self._input_users) != len(self._user_ids)) and self.action_message:
                 self._input_users = [
                     utils.get_input_peer(u)
                     for u in self.action_message.action_entities

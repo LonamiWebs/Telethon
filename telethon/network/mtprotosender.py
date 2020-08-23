@@ -40,12 +40,11 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, auth_key, loop, *, loggers,
+    def __init__(self, auth_key, *, loggers,
                  retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
                  auth_key_callback=None,
                  update_callback=None, auto_reconnect_callback=None):
         self._connection = None
-        self._loop = loop
         self._loggers = loggers
         self._log = loggers[__name__]
         self._retries = retries
@@ -55,7 +54,7 @@ class MTProtoSender:
         self._auth_key_callback = auth_key_callback
         self._update_callback = update_callback
         self._auto_reconnect_callback = auto_reconnect_callback
-        self._connect_lock = asyncio.Lock(loop=loop)
+        self._connect_lock = asyncio.Lock()
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -65,7 +64,7 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._disconnected = self._loop.create_future()
+        self._disconnected = asyncio.get_event_loop().create_future()
         self._disconnected.set_result(None)
 
         # We need to join the loops upon disconnection
@@ -78,8 +77,7 @@ class MTProtoSender:
 
         # Outgoing messages are put in a queue and sent in a batch.
         # Note that here we're also storing their ``_RequestState``.
-        self._send_queue = MessagePacker(self._state, self._loop,
-                                         loggers=self._loggers)
+        self._send_queue = MessagePacker(self._state, loggers=self._loggers)
 
         # Sent states are remembered until a response is received.
         self._pending_state = {}
@@ -171,7 +169,7 @@ class MTProtoSender:
 
         if not utils.is_list_like(request):
             try:
-                state = RequestState(request, self._loop)
+                state = RequestState(request)
             except struct.error as e:
                 # "struct.error: required argument is not an integer" is not
                 # very helpful; log the request to find out what wasn't int.
@@ -186,7 +184,7 @@ class MTProtoSender:
             state = None
             for req in request:
                 try:
-                    state = RequestState(req, self._loop, after=ordered and state)
+                    state = RequestState(req, after=ordered and state)
                 except struct.error as e:
                     self._log.error('Request caused struct.error: %s: %s', e, request)
                     raise
@@ -206,7 +204,7 @@ class MTProtoSender:
         Note that it may resolve in either a ``ConnectionError``
         or any other unexpected error that could not be handled.
         """
-        return asyncio.shield(self._disconnected, loop=self._loop)
+        return asyncio.shield(self._disconnected)
 
     # Private methods
 
@@ -241,7 +239,7 @@ class MTProtoSender:
                     # reconnect cleanly after.
                     await self._connection.disconnect()
                     connected = False
-                    await asyncio.sleep(self._delay, loop=self._loop)
+                    await asyncio.sleep(self._delay)
                     continue  # next iteration we will try to reconnect
 
             break  # all steps done, break retry loop
@@ -253,17 +251,18 @@ class MTProtoSender:
             await self._disconnect(error=e)
             raise e
 
+        loop = asyncio.get_event_loop()
         self._log.debug('Starting send loop')
-        self._send_loop_handle = self._loop.create_task(self._send_loop())
+        self._send_loop_handle = loop.create_task(self._send_loop())
 
         self._log.debug('Starting receive loop')
-        self._recv_loop_handle = self._loop.create_task(self._recv_loop())
+        self._recv_loop_handle = loop.create_task(self._recv_loop())
 
         # _disconnected only completes after manual disconnection
         # or errors after which the sender cannot continue such
         # as failing to reconnect or any unexpected error.
         if self._disconnected.done():
-            self._disconnected = self._loop.create_future()
+            self._disconnected = loop.create_future()
 
         self._log.info('Connection to %s complete!', self._connection)
 
@@ -378,7 +377,7 @@ class MTProtoSender:
                 self._pending_state.clear()
 
                 if self._auto_reconnect_callback:
-                    self._loop.create_task(self._auto_reconnect_callback())
+                    asyncio.get_event_loop().create_task(self._auto_reconnect_callback())
 
                 break
         else:
@@ -398,7 +397,7 @@ class MTProtoSender:
             # gets stuck.
             # TODO It still gets stuck? Investigate where and why.
             self._reconnecting = True
-            self._loop.create_task(self._reconnect(error))
+            asyncio.get_event_loop().create_task(self._reconnect(error))
 
     # Loops
 
@@ -411,7 +410,7 @@ class MTProtoSender:
         """
         while self._user_connected and not self._reconnecting:
             if self._pending_ack:
-                ack = RequestState(MsgsAck(list(self._pending_ack)), self._loop)
+                ack = RequestState(MsgsAck(list(self._pending_ack)))
                 self._send_queue.append(ack)
                 self._last_acks.append(ack)
                 self._pending_ack.clear()
@@ -564,7 +563,7 @@ class MTProtoSender:
         if rpc_result.error:
             error = rpc_message_to_error(rpc_result.error, state.request)
             self._send_queue.append(
-                RequestState(MsgsAck([state.msg_id]), loop=self._loop))
+                RequestState(MsgsAck([state.msg_id])))
 
             if not state.future.cancelled():
                 state.future.set_exception(error)
@@ -751,8 +750,8 @@ class MTProtoSender:
         enqueuing a :tl:`MsgsStateInfo` to be sent at a later point.
         """
         self._send_queue.append(RequestState(MsgsStateInfo(
-            req_msg_id=message.msg_id, info=chr(1) * len(message.obj.msg_ids)),
-            loop=self._loop))
+            req_msg_id=message.msg_id, info=chr(1) * len(message.obj.msg_ids)
+        )))
 
     async def _handle_msg_all(self, message):
         """

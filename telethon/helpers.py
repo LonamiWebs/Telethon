@@ -3,6 +3,7 @@ import asyncio
 import enum
 import os
 import struct
+import inspect
 from hashlib import sha1
 
 
@@ -107,6 +108,13 @@ def retry_range(retries):
         yield 1 + attempt
 
 
+async def _maybe_await(value):
+    if inspect.isawaitable(value):
+        return await value
+    else:
+        return value
+
+
 async def _cancel(log, **tasks):
     """
     Helper to cancel one or more tasks gracefully, logging exceptions.
@@ -123,6 +131,8 @@ async def _cancel(log, **tasks):
         except RuntimeError:
             # Probably: RuntimeError: await wasn't used with future
             #
+            # See: https://github.com/python/cpython/blob/12d3061c7819a73d891dcce44327410eaf0e1bc2/Lib/asyncio/futures.py#L265
+            #
             # Happens with _asyncio.Task instances (in "Task cancelling" state)
             # trying to SIGINT the program right during initial connection, on
             # _recv_loop coroutine (but we're creating its task explicitly with
@@ -131,6 +141,12 @@ async def _cancel(log, **tasks):
             # Since we're aware of this error there's no point in logging it.
             # *May* be https://bugs.python.org/issue37172
             pass
+        except AssertionError as e:
+            # In Python 3.6, the above RuntimeError is an AssertionError
+            # See https://github.com/python/cpython/blob/7df32f844efed33ca781a016017eab7050263b90/Lib/asyncio/futures.py#L328
+            if e.args != ("yield from wasn't used with future",):
+                log.exception('Unhandled exception from %s after cancelling '
+                              '%s (%s)', name, type(task), task)
         except Exception:
             log.exception('Unhandled exception from %s after cancelling '
                           '%s (%s)', name, type(task), task)

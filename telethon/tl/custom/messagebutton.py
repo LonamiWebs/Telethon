@@ -1,5 +1,5 @@
 from .. import types, functions
-from ...errors import BotTimeout
+from ...errors import BotResponseTimeoutError
 import webbrowser
 
 
@@ -59,7 +59,7 @@ class MessageButton:
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
-    async def click(self):
+    async def click(self, share_phone=None, share_geo=None):
         """
         Emulates the behaviour of clicking this button.
 
@@ -75,6 +75,19 @@ class MessageButton:
 
         If it's a :tl:`KeyboardButtonUrl`, the URL of the button will
         be passed to ``webbrowser.open`` and return `True` on success.
+
+        If it's a :tl:`KeyboardButtonRequestPhone`, you must indicate that you
+        want to ``share_phone=True`` in order to share it. Sharing it is not a
+        default because it is a privacy concern and could happen accidentally.
+
+        You may also use ``share_phone=phone`` to share a specific number, in
+        which case either `str` or :tl:`InputMediaContact` should be used.
+
+        If it's a :tl:`KeyboardButtonRequestGeoLocation`, you must pass a
+        tuple in ``share_geo=(longitude, latitude)``. Note that Telegram seems
+        to have some heuristics to determine impossible locations, so changing
+        this value a lot quickly may not work as expected. You may also pass a
+        :tl:`InputGeoPoint` if you find the order confusing.
         """
         if isinstance(self.button, types.KeyboardButton):
             return await self._client.send_message(
@@ -85,7 +98,7 @@ class MessageButton:
             )
             try:
                 return await self._client(req)
-            except BotTimeout:
+            except BotResponseTimeoutError:
                 return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
             return await self._client(functions.messages.StartBotRequest(
@@ -99,5 +112,28 @@ class MessageButton:
             )
             try:
                 return await self._client(req)
-            except BotTimeout:
+            except BotResponseTimeoutError:
                 return None
+        elif isinstance(self.button, types.KeyboardButtonRequestPhone):
+            if not share_phone:
+                raise ValueError('cannot click on phone buttons unless share_phone=True')
+
+            if share_phone == True or isinstance(share_phone, str):
+                me = await self._client.get_me()
+                share_phone = types.InputMediaContact(
+                    phone_number=me.phone if share_phone == True else share_phone,
+                    first_name=me.first_name or '',
+                    last_name=me.last_name or '',
+                    vcard=''
+                )
+
+            return await self._client.send_file(self._chat, share_phone)
+        elif isinstance(self.button, types.KeyboardButtonRequestGeoLocation):
+            if not share_geo:
+                raise ValueError('cannot click on geo buttons unless share_geo=(longitude, latitude)')
+
+            if isinstance(share_geo, (tuple, list)):
+                long, lat = share_geo
+                share_geo = types.InputMediaGeoPoint(types.InputGeoPoint(lat=lat, long=long))
+
+            return await self._client.send_file(self._chat, share_geo)

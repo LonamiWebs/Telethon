@@ -51,7 +51,7 @@ class CallbackQuery(EventBuilder):
             # Send a message with buttons users can click
             async def main():
                 await client.send_message(user, 'Yes or no?', buttons=[
-                    Button.inline('Yes!', b'yes')
+                    Button.inline('Yes!', b'yes'),
                     Button.inline('Nope', b'no')
                 ])
     """
@@ -118,8 +118,10 @@ class CallbackQuery(EventBuilder):
             elif event.query.data != self.match:
                 return
 
-        if not self.func or self.func(event):
-            return event
+        if self.func:
+            # Return the result of func directly as it may need to be awaited
+            return self.func(event)
+        return True
 
     class Event(EventCommon, SenderGetter):
         """

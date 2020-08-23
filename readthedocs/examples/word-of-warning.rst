@@ -13,4 +13,5 @@ Full API **will** break between different minor versions of the library,
 since Telegram changes very often. The friendly methods will be kept
 compatible between major versions.
 
-If you need to see real-world examples, please refer to :ref:`telethon_projects`.
+If you need to see real-world examples, please refer to the
+`wiki page of projects using Telethon <https://github.com/LonamiWebs/Telethon/wiki/Projects-using-Telethon>`__.

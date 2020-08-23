@@ -15,9 +15,13 @@ AUTH_KEY_INVALID,401,The key is invalid
 AUTH_KEY_PERM_EMPTY,401,"The method is unavailable for temporary authorization key, not bound to permanent"
 AUTH_KEY_UNREGISTERED,401,The key is not registered in the system
 AUTH_RESTART,500,Restart the authorization process
+AUTH_TOKEN_ALREADY_ACCEPTED,400,The authorization token was already used
+AUTH_TOKEN_EXPIRED,400,The provided authorization token has expired and the updated QR-code must be re-scanned
+AUTH_TOKEN_INVALID,400,An invalid authorization token was provided
 BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this request, i.e. restricting view_messages as a default"
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
+BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
 BOT_GROUPS_BLOCKED,400,This bot can't be added to groups
 BOT_INLINE_DISABLED,400,This bot can't be used in inline mode
 BOT_INVALID,400,This is not a valid bot
@@ -25,8 +29,11 @@ BOT_METHOD_INVALID,400,The API access for bot users is restricted. The method yo
 BOT_MISSING,400,This method can only be run by a bot
 BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
+BOT_RESPONSE_TIMEOUT,400,The bot did not answer to the callback query in time
+BROADCAST_FORBIDDEN,403,The request cannot be used in broadcast channels
 BROADCAST_ID_INVALID,400,The channel is invalid
 BROADCAST_PUBLIC_VOTERS_FORBIDDEN,400,You cannot broadcast polls where the voters are public
+BROADCAST_REQUIRED,400,The request can only be used with a broadcast channel
 BUTTON_DATA_INVALID,400,The provided button data is invalid
 BUTTON_TYPE_INVALID,400,The type of one of the buttons you provided is invalid
 BUTTON_URL_INVALID,400,Button URL invalid
@@ -67,7 +74,9 @@ CONNECTION_LANG_PACK_INVALID,400,"The specified language pack is not valid. This
 CONNECTION_LAYER_INVALID,400,The very first request must always be InvokeWithLayerRequest
 CONNECTION_NOT_INITED,400,Connection not initialized
 CONNECTION_SYSTEM_EMPTY,400,Connection system empty
+CONNECTION_SYSTEM_LANG_CODE_EMPTY,400,The system language string was empty during connection
 CONTACT_ID_INVALID,400,The provided contact ID is invalid
+CONTACT_NAME_EMPTY,400,The provided contact name cannot be empty
 DATA_INVALID,400,Encrypted data invalid
 DATA_JSON_INVALID,400,The provided JSON data is invalid
 DATE_EMPTY,400,Date empty
@@ -77,6 +86,7 @@ EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
 EMAIL_INVALID,400,The given email is invalid
 EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
 EMOTICON_EMPTY,400,The emoticon field cannot be empty
+EMOTICON_INVALID,400,The specified emoticon cannot be used or was not a emoticon
 ENCRYPTED_MESSAGE_INVALID,400,Encrypted message invalid
 ENCRYPTION_ALREADY_ACCEPTED,400,Secret chat already accepted
 ENCRYPTION_ALREADY_DECLINED,400,The secret chat was already declined
@@ -100,6 +110,8 @@ FILE_PART_LENGTH_INVALID,400,The length of a file part is invalid
 FILE_PART_SIZE_CHANGED,400,The file part size (chunk size) cannot change during upload
 FILE_PART_SIZE_INVALID,400,The provided file part size is invalid
 FILE_PART_X_MISSING,400,Part {which} of the file is missing from storage
+FILE_REFERENCE_EMPTY,400,The file reference must exist to access the media and it cannot be empty
+FILE_REFERENCE_EXPIRED,400,The file reference has expired and is no longer valid or it belongs to self-destructing media and cannot be resent
 FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
@@ -107,6 +119,7 @@ FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
 FOLDER_ID_EMPTY,400,The folder you tried to delete was already empty
 FOLDER_ID_INVALID,400,The folder you tried to use was not valid
 FRESH_CHANGE_ADMINS_FORBIDDEN,400,Recently logged-in users cannot add or change admins
+FRESH_CHANGE_PHONE_FORBIDDEN,406,Recently logged-in users cannot use this request
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
@@ -114,6 +127,7 @@ GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid
 HISTORY_GET_FAILED,500,Fetching of history failed
 IMAGE_PROCESS_FAILED,400,Failure while processing image
+INLINE_BOT_REQUIRED,403,The action must be performed through an inline bot callback
 INLINE_RESULT_EXPIRED,400,The inline query expired
 INPUT_CONSTRUCTOR_INVALID,400,The provided constructor is invalid
 INPUT_FETCH_ERROR,,An error occurred while deserializing TL parameters
@@ -142,6 +156,7 @@ MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
 MEGAGROUP_ID_INVALID,400,The group is invalid
 MEGAGROUP_PREHISTORY_HIDDEN,400,You can't set this discussion group because it's history is hidden
+MEGAGROUP_REQUIRED,400,The request can only be used with a megagroup channel
 MEMBER_NO_LOCATION,500,An internal failure occurred while fetching user info (couldn't find location)
 MEMBER_OCCUPY_PRIMARY_LOC_FAILED,500,Occupation of primary member location failed
 MESSAGE_AUTHOR_REQUIRED,403,Message author required
@@ -153,6 +168,7 @@ MESSAGE_ID_INVALID,400,"The specified message ID is invalid or you can't do that
 MESSAGE_NOT_MODIFIED,400,Content of the message was not modified
 MESSAGE_POLL_CLOSED,400,The poll was closed and can no longer be voted on
 MESSAGE_TOO_LONG,400,Message was too long. Current maximum length is 4096 UTF-8 characters
+METHOD_INVALID,400,The API method is invalid and cannot be used
 MSGID_DECREASE_RETRY,500,The request should be retried with a lower message ID
 MSG_ID_INVALID,400,The message ID used in the peer was invalid
 MSG_WAIT_FAILED,400,A waiting call returned an error
@@ -173,7 +189,9 @@ PARTICIPANT_CALL_FAILED,500,Failure while making call
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
+PASSWORD_MISSING,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
+PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
 PEER_FLOOD,,Too many requests
 PEER_ID_INVALID,400,An invalid Peer was used. Make sure to pass the right peer type
@@ -208,6 +226,7 @@ POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too lon
 POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
+PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
 PTS_CHANGE_EMPTY,500,No PTS change
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
@@ -234,6 +253,7 @@ RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SCHEDULE_BOT_NOT_ALLOWED,400,Bots are not allowed to schedule messages
 SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
+SCHEDULE_STATUS_PRIVATE,400,You cannot schedule a message until the person comes online if their privacy does not show this information
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
 SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slow mode only supports certain values (e.g. 0, 10s, 30s, 1m, 5m, 15m and 1h)"
@@ -242,11 +262,13 @@ SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SESSION_EXPIRED,401,The authorization has expired
 SESSION_PASSWORD_NEEDED,401,Two-steps verification is enabled and a password is required
 SESSION_REVOKED,401,"The authorization has been invalidated, because of the user terminating all sessions"
+SESSION_TOO_FRESH_X,400,The session logged in too recently and {seconds} seconds must pass before calling the method
 SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 START_PARAM_EMPTY,400,The start parameter is empty
 START_PARAM_INVALID,400,Start parameter invalid
+STATS_MIGRATE_X,303,The channel statistics must be fetched from DC {dc}
 STICKERSET_INVALID,400,The provided sticker set is invalid
 STICKERS_EMPTY,400,No sticker provided
 STICKER_EMOJI_INVALID,400,Sticker emoji invalid
@@ -298,9 +320,11 @@ USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagr
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
+VIDEO_FILE_INVALID,400,The given video cannot be used
 WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
 WALLPAPER_INVALID,400,The input wallpaper was not valid
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
+WEBDOCUMENT_URL_INVALID,400,The given URL cannot be used
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty
 WORKER_BUSY_TOO_LONG_RETRY,500,Telegram workers are too busy to respond immediately

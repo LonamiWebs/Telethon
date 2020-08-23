@@ -4,7 +4,7 @@ import itertools
 import string
 import typing
 
-from .. import helpers, utils, hints
+from .. import helpers, utils, hints, errors
 from ..requestiter import RequestIter
 from ..tl import types, functions, custom
 
@@ -30,13 +30,13 @@ class _ChatAction:
 
         'audio': types.SendMessageUploadAudioAction(1),
         'voice': types.SendMessageUploadAudioAction(1),  # alias
+        'song': types.SendMessageUploadAudioAction(1),  # alias
         'round': types.SendMessageUploadRoundAction(1),
         'video': types.SendMessageUploadVideoAction(1),
 
         'photo': types.SendMessageUploadPhotoAction(1),
         'document': types.SendMessageUploadDocumentAction(1),
         'file': types.SendMessageUploadDocumentAction(1),  # alias
-        'song': types.SendMessageUploadDocumentAction(1),  # alias
 
         'cancel': types.SendMessageCancelAction()
     }
@@ -337,9 +337,25 @@ class _ProfilePhotoIter(RequestIter):
             else:
                 self.request.offset += len(result.photos)
         else:
+            self.total = getattr(result, 'count', None)
+            if self.total == 0 and isinstance(result, types.messages.ChannelMessages):
+                # There are some broadcast channels that have a photo but this
+                # request doesn't retrieve it for some reason. Work around this
+                # issue by fetching the channel.
+                #
+                # We can't use the normal entity because that gives `ChatPhoto`
+                # but we want a proper `Photo`, so fetch full channel instead.
+                channel = await self.client(functions.channels.GetFullChannelRequest(self.request.peer))
+                photo = channel.full_chat.chat_photo
+                if isinstance(photo, types.Photo):
+                    self.buffer = [photo]
+                    self.total = 1
+
+                self.left = len(self.buffer)
+                return
+
             self.buffer = [x.action.photo for x in result.messages
                            if isinstance(x.action, types.MessageActionChatEditPhoto)]
-            self.total = getattr(result, 'count', None)
             if len(result.messages) < self.request.limit:
                 self.left = len(self.buffer)
             elif result.messages:
@@ -922,6 +938,7 @@ class ChatMethods:
             send_gifs: bool = True,
             send_games: bool = True,
             send_inline: bool = True,
+            embed_link_previews: bool = True,
             send_polls: bool = True,
             change_info: bool = True,
             invite_users: bool = True,
@@ -986,6 +1003,12 @@ class ChatMethods:
             send_inline (`bool`, optional):
                 Whether the user is able to use inline bots or not.
 
+            embed_link_previews (`bool`, optional):
+                Whether the user is able to enable the link preview in the
+                messages they send. Note that the user will still be able to
+                send messages with links if this permission is removed, but
+                these links won't display a link preview.
+
             send_polls (`bool`, optional):
                 Whether the user is able to send polls or not.
 
@@ -1031,6 +1054,7 @@ class ChatMethods:
             send_gifs=not send_gifs,
             send_games=not send_games,
             send_inline=not send_inline,
+            embed_links=not embed_link_previews,
             send_polls=not send_polls,
             change_info=not change_info,
             invite_users=not invite_users,
@@ -1114,5 +1138,68 @@ class ChatMethods:
                 ))
         else:
             raise ValueError('You must pass either a channel or a chat')
+
+    async def get_stats(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+    ):
+        """
+        Retrieves statistics from the given megagroup or broadcast channel.
+
+        Note that some restrictions apply before being able to fetch statistics,
+        in particular the channel must have enough members (for megagroups, this
+        requires `at least 500 members`_).
+
+        Arguments
+            entity (`entity`):
+                The channel from which to get statistics.
+
+        Raises
+            If the given entity is not a channel (broadcast or megagroup),
+            a `TypeError` is raised.
+
+            If there are not enough members (poorly named) errors such as
+            ``telethon.errors.ChatAdminRequiredError`` will appear.
+
+        Returns
+            Either :tl:`BroadcastStats` or :tl:`MegagroupStats`, depending on
+            whether the input belonged to a broadcast channel or megagroup.
+
+        Example
+            .. code-block:: python
+
+                # Some megagroup or channel username or ID to fetch
+                channel = -100123
+                stats = await client.get_stats(channel)
+                print('Stats from', stats.period.min_date, 'to', stats.period.max_date, ':')
+                print(stats.stringify())
+
+        .. _`at least 500 members`: https://telegram.org/blog/profile-videos-people-nearby-and-more
+        """
+        entity = await self.get_input_entity(entity)
+        if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
+            raise TypeError('You must pass a user entity')
+
+        # Don't bother fetching the Channel entity (costs a request), instead
+        # try to guess and if it fails we know it's the other one (best case
+        # no extra request, worst just one).
+        try:
+            req = functions.stats.GetBroadcastStatsRequest(entity)
+            return await self(req)
+        except errors.StatsMigrateError as e:
+            dc = e.dc
+        except errors.BroadcastRequiredError:
+            req = functions.stats.GetMegagroupStatsRequest(entity)
+            try:
+                return await self(req)
+            except errors.StatsMigrateError as e:
+                dc = e.dc
+
+        sender = await self._borrow_exported_sender(dc)
+        try:
+            # req will be resolved to use the right types inside by now
+            return await sender.send(req)
+        finally:
+            await self._return_exported_sender(sender)
 
     # endregion

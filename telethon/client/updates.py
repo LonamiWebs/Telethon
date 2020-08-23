@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import itertools
 import random
 import time
@@ -325,7 +326,7 @@ class UpdateMethods:
         while self.is_connected():
             try:
                 await asyncio.wait_for(
-                    self.disconnected, timeout=60, loop=self._loop
+                    self.disconnected, timeout=60
                 )
                 continue  # We actually just want to act upon timeout
             except asyncio.TimeoutError:
@@ -334,6 +335,9 @@ class UpdateMethods:
                 return
             except Exception:
                 continue  # Any disconnected exception should be ignored
+
+            # Check if we have any exported senders to clean-up periodically
+            await self._clean_exported_senders()
 
             # Don't bother sending pings until the low-level connection is
             # ready, otherwise a lot of pings will be batched to be sent upon
@@ -388,11 +392,19 @@ class UpdateMethods:
                     await self._get_difference(update, channel_id, pts_date)
                 except OSError:
                     pass  # We were disconnected, that's okay
+                except errors.RPCError:
+                    # There's a high chance the request fails because we lack
+                    # the channel. Because these "happen sporadically" (#1428)
+                    # we should be okay (no flood waits) even if more occur.
+                    pass
 
         if not self._self_input_peer:
             # Some updates require our own ID, so we must make sure
             # that the event builder has offline access to it. Calling
             # `get_me()` will cache it under `self._self_input_peer`.
+            #
+            # It will return `None` if we haven't logged in yet which is
+            # fine, we will just retry next time anyway.
             await self.get_me(input_peer=True)
 
         built = EventBuilderDict(self, update, others)
@@ -421,7 +433,50 @@ class UpdateMethods:
             if not builder.resolved:
                 await builder.resolve(self)
 
-            if not builder.filter(event):
+            filter = builder.filter(event)
+            if inspect.isawaitable(filter):
+                filter = await filter
+            if not filter:
+                continue
+
+            try:
+                await callback(event)
+            except errors.AlreadyInConversationError:
+                name = getattr(callback, '__name__', repr(callback))
+                self._log[__name__].debug(
+                    'Event handler "%s" already has an open conversation, '
+                    'ignoring new one', name)
+            except events.StopPropagation:
+                name = getattr(callback, '__name__', repr(callback))
+                self._log[__name__].debug(
+                    'Event handler "%s" stopped chain of propagation '
+                    'for event %s.', name, type(event).__name__
+                )
+                break
+            except Exception as e:
+                if not isinstance(e, asyncio.CancelledError) or self.is_connected():
+                    name = getattr(callback, '__name__', repr(callback))
+                    self._log[__name__].exception('Unhandled exception on %s',
+                                                  name)
+
+    async def _dispatch_event(self: 'TelegramClient', event):
+        """
+        Dispatches a single, out-of-order event. Used by `AlbumHack`.
+        """
+        # We're duplicating a most logic from `_dispatch_update`, but all in
+        # the name of speed; we don't want to make it worse for all updates
+        # just because albums may need it.
+        for builder, callback in self._event_builders:
+            if not isinstance(event, builder.Event):
+                continue
+
+            if not builder.resolved:
+                await builder.resolve(self)
+
+            filter = builder.filter(event)
+            if inspect.isawaitable(filter):
+                filter = await filter
+            if not filter:
                 continue
 
             try:
@@ -559,8 +614,15 @@ class EventBuilderDict:
         try:
             return self.__dict__[builder]
         except KeyError:
+            # Updates may arrive before login (like updateLoginToken) and we
+            # won't have our self ID yet (anyway only new messages need it).
+            self_id = (
+                self.client._self_input_peer.user_id
+                if self.client._self_input_peer
+                else None
+            )
             event = self.__dict__[builder] = builder.build(
-                self.update, self.others, self.client._self_input_peer.user_id)
+                self.update, self.others, self_id)
 
             if isinstance(event, EventCommon):
                 event.original_update = self.update

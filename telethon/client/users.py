@@ -27,6 +27,9 @@ def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
 
 class UserMethods:
     async def __call__(self: 'TelegramClient', request, ordered=False):
+        return await self._call(self._sender, request, ordered=ordered)
+
+    async def _call(self: 'TelegramClient', sender, request, ordered=False):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
@@ -41,7 +44,7 @@ class UserMethods:
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 elif diff <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(diff, r, early=True))
-                    await asyncio.sleep(diff, loop=self._loop)
+                    await asyncio.sleep(diff)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
                 else:
                     raise errors.FloodWaitError(request=r, capture=diff)
@@ -50,7 +53,7 @@ class UserMethods:
         self._last_request = time.time()
         for attempt in retry_range(self._request_retries):
             try:
-                future = self._sender.send(request, ordered=ordered)
+                future = sender.send(request, ordered=ordered)
                 if isinstance(future, list):
                     results = []
                     exceptions = []
@@ -76,7 +79,8 @@ class UserMethods:
                     self._entity_cache.add(result)
                     return result
             except (errors.ServerError, errors.RpcCallFailError,
-                    errors.RpcMcgetFailError) as e:
+                    errors.RpcMcgetFailError, errors.InterdcCallErrorError,
+                    errors.InterdcCallRichErrorError) as e:
                 self._log[__name__].warning(
                     'Telegram is having internal issues %s: %s',
                     e.__class__.__name__, e)
@@ -89,9 +93,14 @@ class UserMethods:
                 self._flood_waited_requests\
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
+                # In test servers, FLOOD_WAIT_0 has been observed, and sleeping for
+                # such a short amount will cause retries very fast leading to issues.
+                if e.seconds == 0:
+                    e.seconds = 1
+
                 if e.seconds <= self.flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(e.seconds, request))
-                    await asyncio.sleep(e.seconds, loop=self._loop)
+                    await asyncio.sleep(e.seconds)
                 else:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,

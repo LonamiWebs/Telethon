@@ -3,9 +3,10 @@ import inspect
 import os
 import sys
 import typing
+import warnings
 
 from .. import utils, helpers, errors, password as pwd_mod
-from ..tl import types, functions
+from ..tl import types, functions, custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -138,7 +139,29 @@ class AuthMethods:
         if not self.is_connected():
             await self.connect()
 
-        if await self.is_user_authorized():
+        # Rather than using `is_user_authorized`, use `get_me`. While this is
+        # more expensive and needs to retrieve more data from the server, it
+        # enables the library to warn users trying to login to a different
+        # account. See #1172.
+        me = await self.get_me()
+        if me is not None:
+            # The warnings here are on a best-effort and may fail.
+            if bot_token:
+                # bot_token's first part has the bot ID, but it may be invalid
+                # so don't try to parse as int (instead cast our ID to string).
+                if bot_token[:bot_token.find(':')] != str(me.id):
+                    warnings.warn(
+                        'the session already had an authorized user so it did '
+                        'not login to the bot account using the provided '
+                        'bot_token (it may not be using the user you expect)'
+                    )
+            elif not callable(phone) and phone != me.phone:
+                warnings.warn(
+                    'the session already had an authorized user so it did '
+                    'not login to the user account using the provided '
+                    'phone (it may not be using the user you expect)'
+                )
+
             return self
 
         if not bot_token:
@@ -495,6 +518,43 @@ class AuthMethods:
             self._phone_code_hash[phone] = result.phone_code_hash
 
         return result
+
+    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> custom.QRLogin:
+        """
+        Initiates the QR login procedure.
+
+        Note that you must be connected before invoking this, as with any
+        other request.
+
+        It is up to the caller to decide how to present the code to the user,
+        whether it's the URL, using the token bytes directly, or generating
+        a QR code and displaying it by other means.
+
+        See the documentation for `QRLogin` to see how to proceed after this.
+
+        Arguments
+            ignored_ids (List[`int`]):
+                List of already logged-in user IDs, to prevent logging in
+                twice with the same user.
+
+        Returns
+            An instance of `QRLogin`.
+
+        Example
+            .. code-block:: python
+
+                def display_url_as_qr(url):
+                    pass  # do whatever to show url as a qr to the user
+
+                qr_login = await client.qr_login()
+                display_url_as_qr(qr_login.url)
+
+                # Important! You need to wait for the login to complete!
+                await qr_login.wait()
+        """
+        qr_login = custom.QRLogin(self, ignored_ids or [])
+        await qr_login.recreate()
+        return qr_login
 
     async def log_out(self: 'TelegramClient') -> bool:
         """

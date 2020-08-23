@@ -3,7 +3,6 @@ import asyncio
 import collections
 import logging
 import platform
-import sys
 import time
 import typing
 
@@ -14,12 +13,12 @@ from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..statecache import StateCache
-from ..tl import TLObject, functions, types
+from ..tl import functions, types
 from ..tl.alltlobjects import LAYER
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
-DEFAULT_IPV6_IP = '[2001:67c:4e8:f002::a]'
+DEFAULT_IPV6_IP = '2001:67c:4e8:f002::a'
 DEFAULT_PORT = 443
 
 if typing.TYPE_CHECKING:
@@ -27,6 +26,41 @@ if typing.TYPE_CHECKING:
 
 __default_log__ = logging.getLogger(__base_name__)
 __default_log__.addHandler(logging.NullHandler())
+
+
+# In seconds, how long to wait before disconnecting a exported sender.
+_DISCONNECT_EXPORTED_AFTER = 60
+
+
+class _ExportState:
+    def __init__(self):
+        # ``n`` is the amount of borrows a given sender has;
+        # once ``n`` reaches ``0``, disconnect the sender after a while.
+        self._n = 0
+        self._zero_ts = 0
+        self._connected = False
+
+    def add_borrow(self):
+        self._n += 1
+        self._connected = True
+
+    def add_return(self):
+        self._n -= 1
+        assert self._n >= 0, 'returned sender more than it was borrowed'
+        if self._n == 0:
+            self._zero_ts = time.time()
+
+    def should_disconnect(self):
+        return (self._n == 0
+                and self._connected
+                and (time.time() - self._zero_ts) > _DISCONNECT_EXPORTED_AFTER)
+
+    def need_connect(self):
+        return not self._connected
+
+    def mark_disconnected(self):
+        assert self.should_disconnect(), 'marked as disconnected when it was borrowed'
+        self._connected = False
 
 
 # TODO How hard would it be to support both `trio` and `asyncio`?
@@ -146,7 +180,8 @@ class TelegramBaseClient(abc.ABC):
             Defaults to `lang_code`.
 
         loop (`asyncio.AbstractEventLoop`, optional):
-            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`
+            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`.
+            This argument is ignored.
 
         base_logger (`str` | `logging.Logger`, optional):
             Base logger name or instance to use.
@@ -193,7 +228,7 @@ class TelegramBaseClient(abc.ABC):
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        self._loop = loop or asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()
 
         if isinstance(base_logger, str):
             base_logger = logging.getLogger(base_logger)
@@ -300,7 +335,7 @@ class TelegramBaseClient(abc.ABC):
         )
 
         self._sender = MTProtoSender(
-            self.session.auth_key, self._loop,
+            self.session.auth_key,
             loggers=self._log,
             retries=self._connection_retries,
             delay=self._retry_delay,
@@ -314,19 +349,17 @@ class TelegramBaseClient(abc.ABC):
         # Remember flood-waited requests to avoid making them again
         self._flood_waited_requests = {}
 
-        # Cache ``{dc_id: (n, MTProtoSender)}`` for all borrowed senders,
-        # being ``n`` the amount of borrows a given sender has; once ``n``
-        # reaches ``0`` it should be disconnected and removed.
+        # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders
         self._borrowed_senders = {}
-        self._borrow_sender_lock = asyncio.Lock(loop=self._loop)
+        self._borrow_sender_lock = asyncio.Lock()
 
         self._updates_handle = None
         self._last_request = time.time()
         self._channel_pts = {}
 
         if sequential_updates:
-            self._updates_queue = asyncio.Queue(loop=self._loop)
-            self._dispatching_updates_queue = asyncio.Event(loop=self._loop)
+            self._updates_queue = asyncio.Queue()
+            self._dispatching_updates_queue = asyncio.Event()
         else:
             # Use a set of pending instead of a queue so we can properly
             # terminate all pending updates on disconnect.
@@ -345,6 +378,15 @@ class TelegramBaseClient(abc.ABC):
 
         # {chat_id: {Conversation}}
         self._conversations = collections.defaultdict(set)
+
+        # Hack to workaround the fact Telegram may send album updates as
+        # different Updates when being sent from a different data center.
+        # {grouped_id: AlbumHack}
+        #
+        # FIXME: We don't bother cleaning this up because it's not really
+        #        worth it, albums are pretty rare and this only holds them
+        #        for a second at most.
+        self._albums = {}
 
         # Default parse mode
         self._parse_mode = markdown
@@ -375,7 +417,7 @@ class TelegramBaseClient(abc.ABC):
             .. code-block:: python
 
                 # Download media in the background
-                task = client.loop_create_task(message.download_media())
+                task = client.loop.create_task(message.download_media())
 
                 # Do some work
                 ...
@@ -440,7 +482,6 @@ class TelegramBaseClient(abc.ABC):
             self.session.server_address,
             self.session.port,
             self.session.dc_id,
-            loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
         )):
@@ -500,13 +541,22 @@ class TelegramBaseClient(abc.ABC):
     async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
 
+        # Also clean-up all exported senders because we're done with them
+        async with self._borrow_sender_lock:
+            for state, sender in self._borrowed_senders.values():
+                if state.should_disconnect():
+                    # disconnect should never raise
+                    await sender.disconnect()
+
+            self._borrowed_senders.clear()
+
         # trio's nurseries would handle this for us, but this is asyncio.
         # All tasks spawned in the background should properly be terminated.
         if self._dispatching_updates_queue is None and self._updates_queue:
             for task in self._updates_queue:
                 task.cancel()
 
-            await asyncio.wait(self._updates_queue, loop=self._loop)
+            await asyncio.wait(self._updates_queue)
             self._updates_queue.clear()
 
         pts, date = self._state_cache[None]
@@ -589,17 +639,15 @@ class TelegramBaseClient(abc.ABC):
         #
         # If one were to do that, Telegram would reset the connection
         # with no further clues.
-        sender = MTProtoSender(None, self._loop, loggers=self._log)
+        sender = MTProtoSender(None, loggers=self._log)
         await sender.connect(self._connection(
             dc.ip_address,
             dc.port,
             dc.id,
-            loop=self._loop,
             loggers=self._log,
             proxy=self._proxy
         ))
-        self._log[__name__].info('Exporting authorization for data center %s',
-                                 dc)
+        self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
         req = self._init_with(functions.auth.ImportAuthorizationRequest(
             id=auth.id, bytes=auth.bytes
@@ -616,24 +664,27 @@ class TelegramBaseClient(abc.ABC):
         Once its job is over it should be `_return_exported_sender`.
         """
         async with self._borrow_sender_lock:
-            n, sender = self._borrowed_senders.get(dc_id, (0, None))
-            if not sender:
+            self._log[__name__].debug('Borrowing sender for dc_id %d', dc_id)
+            state, sender = self._borrowed_senders.get(dc_id, (None, None))
+
+            if state is None:
+                state = _ExportState()
                 sender = await self._create_exported_sender(dc_id)
                 sender.dc_id = dc_id
-            elif not n:
+                self._borrowed_senders[dc_id] = (state, sender)
+
+            elif state.need_connect():
                 dc = await self._get_dc(dc_id)
                 await sender.connect(self._connection(
                     dc.ip_address,
                     dc.port,
                     dc.id,
-                    loop=self._loop,
                     loggers=self._log,
                     proxy=self._proxy
                 ))
 
-            self._borrowed_senders[dc_id] = (n + 1, sender)
-
-        return sender
+            state.add_borrow()
+            return sender
 
     async def _return_exported_sender(self: 'TelegramClient', sender):
         """
@@ -641,14 +692,23 @@ class TelegramBaseClient(abc.ABC):
         been returned, the sender is cleanly disconnected.
         """
         async with self._borrow_sender_lock:
-            dc_id = sender.dc_id
-            n, _ = self._borrowed_senders[dc_id]
-            n -= 1
-            self._borrowed_senders[dc_id] = (n, sender)
-            if not n:
-                self._log[__name__].info(
-                    'Disconnecting borrowed sender for DC %d', dc_id)
-                await sender.disconnect()
+            self._log[__name__].debug('Returning borrowed sender for dc_id %d', sender.dc_id)
+            state, _ = self._borrowed_senders[sender.dc_id]
+            state.add_return()
+
+    async def _clean_exported_senders(self: 'TelegramClient'):
+        """
+        Cleans-up all unused exported senders by disconnecting them.
+        """
+        async with self._borrow_sender_lock:
+            for dc_id, (state, sender) in self._borrowed_senders.items():
+                if state.should_disconnect():
+                    self._log[__name__].info(
+                        'Disconnecting borrowed sender for DC %d', dc_id)
+
+                    # Disconnect should never raise
+                    await sender.disconnect()
+                    state.mark_disconnected()
 
     async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
         """Similar to ._borrow_exported_client, but for CDNs"""

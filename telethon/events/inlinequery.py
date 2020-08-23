@@ -79,11 +79,11 @@ class InlineQuery(EventBuilder):
         Represents the event of a new callback query.
 
         Members:
-            query (:tl:`UpdateBotCallbackQuery`):
-                The original :tl:`UpdateBotCallbackQuery`.
+            query (:tl:`UpdateBotInlineQuery`):
+                The original :tl:`UpdateBotInlineQuery`.
 
-                Make sure to access the `text` of the query if
-                that's what you want instead working with this.
+                Make sure to access the `text` property of the query if
+                you want the text rather than the actual query object.
 
             pattern_match (`obj`, optional):
                 The resulting object from calling the passed ``pattern``
@@ -206,10 +206,9 @@ class InlineQuery(EventBuilder):
                 return
 
             if results:
-                futures = [self._as_future(x, self._client.loop)
-                           for x in results]
+                futures = [self._as_future(x) for x in results]
 
-                await asyncio.wait(futures, loop=self._client.loop)
+                await asyncio.wait(futures)
 
                 # All futures will be in the `done` *set* that `wait` returns.
                 #
@@ -236,10 +235,10 @@ class InlineQuery(EventBuilder):
             )
 
         @staticmethod
-        def _as_future(obj, loop):
+        def _as_future(obj):
             if inspect.isawaitable(obj):
-                return asyncio.ensure_future(obj, loop=loop)
+                return asyncio.ensure_future(obj)
 
-            f = loop.create_future()
+            f = asyncio.get_event_loop().create_future()
             f.set_result(obj)
             return f

@@ -1025,14 +1025,25 @@ class MessageMethods:
                 force_document=force_document)
 
         if isinstance(entity, types.InputBotInlineMessageID):
-            return await self(functions.messages.EditInlineBotMessageRequest(
+            request = functions.messages.EditInlineBotMessageRequest(
                 id=entity,
                 message=text,
                 no_webpage=not link_preview,
                 entities=msg_entities,
                 media=media,
                 reply_markup=self.build_reply_markup(buttons)
-            ))
+            )
+            # Invoke `messages.editInlineBotMessage` from the right datacenter.
+            # Otherwise, Telegram will error with `MESSAGE_ID_INVALID` and do nothing.
+            exported = self.session.dc_id != entity.dc_id
+            if exported:
+                try:
+                    sender = await self._borrow_exported_sender(entity.dc_id)
+                    return await self._call(sender, request)
+                finally:
+                    await self._return_exported_sender(sender)
+            else:
+                return await self(request)
 
         entity = await self.get_input_entity(entity)
         request = functions.messages.EditMessageRequest(
@@ -1046,7 +1057,6 @@ class MessageMethods:
             schedule_date=schedule
         )
         msg = self._get_response_message(request, await self(request), entity)
-        await self._cache_media(msg, file, file_handle, image=image)
         return msg
 
     async def delete_messages(
@@ -1108,8 +1118,14 @@ class MessageMethods:
             else int(m) for m in message_ids
         )
 
-        entity = await self.get_input_entity(entity) if entity else None
-        if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
+        if entity:
+            entity = await self.get_input_entity(entity)
+            ty = helpers._entity_type(entity)
+        else:
+            # no entity (None), set a value that's not a channel for private delete
+            ty = helpers._EntityType.USER
+
+        if ty == helpers._EntityType.CHANNEL:
             return await self([functions.channels.DeleteMessagesRequest(
                          entity, list(c)) for c in utils.chunks(message_ids)])
         else:
@@ -1136,6 +1152,10 @@ class MessageMethods:
         If neither message nor maximum ID are provided, all messages will be
         marked as read by assuming that ``max_id = 0``.
 
+        If a message or maximum ID is provided, all the messages up to and
+        including such ID will be marked as read (for all messages whose ID
+        ≤ max_id).
+
         See also `Message.mark_read() <telethon.tl.custom.message.Message.mark_read>`.
 
         Arguments
@@ -1146,8 +1166,8 @@ class MessageMethods:
                 Either a list of messages or a single message.
 
             max_id (`int`):
-                Overrides messages, until which message should the
-                acknowledge should be sent.
+                Until which message should the read acknowledge be sent for.
+                This has priority over the ``message`` parameter.
 
             clear_mentions (`bool`):
                 Whether the mention badge should be cleared (so that
@@ -1226,11 +1246,24 @@ class MessageMethods:
         """
         message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
-        await self(functions.messages.UpdatePinnedMessageRequest(
+        request = functions.messages.UpdatePinnedMessageRequest(
             peer=entity,
             id=message,
             silent=not notify
-        ))
+        )
+        result = await self(request)
+
+        # Unpinning does not produce a service message, and technically
+        # users can pass negative IDs which seem to behave as unpinning too.
+        if message <= 0:
+            return
+
+        # Pinning in User chats (just with yourself really) does not produce a service message
+        if helpers._entity_type(entity) == helpers._EntityType.USER:
+            return
+
+        # Pinning a message that doesn't exist would RPC-error earlier
+        return self._get_response_message(request, result, entity)
 
     # endregion
 
