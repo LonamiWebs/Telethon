@@ -3,7 +3,7 @@ String-based Debugging
 ======================
 
 Debugging is *really* important. Telegram's API is really big and there
-is a lot of things that you should know. Such as, what attributes or fields
+are a lot of things that you should know. Such as, what attributes or fields
 does a result have? Well, the easiest thing to do is printing it:
 
 .. code-block:: python
@@ -32,7 +32,7 @@ Can we get better than the shown string, though? Yes!
 
     print(entity.stringify())
 
-Will show a much better:
+Will show a much better representation:
 
 .. code-block:: python
 
