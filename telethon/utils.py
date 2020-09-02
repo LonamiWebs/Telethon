@@ -805,8 +805,9 @@ def is_gif(file):
 
 def is_audio(file):
     """Returns `True` if the file has an audio mime type."""
-    filename = 'a' + _get_extension(file)
-    if filename == 'a':
+    ext = _get_extension(file)
+    filename = 'a' + ext
+    if not ext:
         metadata = _get_metadata(file)
         if metadata and metadata.has('mime_type'):
             return metadata.get('mime_type').startswith('audio/')
@@ -818,8 +819,9 @@ def is_audio(file):
 
 def is_video(file):
     """Returns `True` if the file has a video mime type."""
-    filename = 'a' + _get_extension(file)
-    if filename == 'a':
+    ext = _get_extension(file)
+    filename = 'a' + ext
+    if not ext:
         metadata = _get_metadata(file)
         if metadata and metadata.has('mime_type'):
             return metadata.get('mime_type').startswith('video/')
