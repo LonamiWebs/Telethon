@@ -815,9 +815,16 @@ def is_audio(file):
 
 
 def is_video(file):
-    """Returns `True` if the file extension looks like a video file."""
-    file = 'a' + _get_extension(file)
-    return (mimetypes.guess_type(file)[0] or '').startswith('video/')
+    """Returns `True` if the file has a video mime type."""
+    filename = 'a' + _get_extension(file)
+    if filename == 'a':
+        metadata = _get_metadata(file)
+        if metadata and metadata.has('mime_type'):
+            return metadata.get('mime_type').startswith('video/')
+        else:
+            return False
+    else:
+        return (mimetypes.guess_type(filename)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):
