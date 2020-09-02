@@ -601,14 +601,13 @@ def get_message_id(message):
 
 
 def _get_metadata(file):
-    # `hachoir` only deals with paths to in-disk files, while
-    # `_get_extension` supports a few other things. The parser
-    # may also fail in any case and we don't want to crash if
+    # The parser may fail and we don't want to crash if
     # the extraction process fails.
-    if hachoir and isinstance(file, str) and os.path.isfile(file):
+    if hachoir:
         try:
-            with hachoir.parser.createParser(file) as parser:
-                return hachoir.metadata.extractMetadata(parser)
+            file = io.BytesIO(file) if isinstance(file, bytes) else file
+            parser = hachoir.parser.createParser(file)
+            return hachoir.metadata.extractMetadata(parser)
         except Exception as e:
             _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
 
@@ -803,9 +802,16 @@ def is_gif(file):
 
 
 def is_audio(file):
-    """Returns `True` if the file extension looks like an audio file."""
-    file = 'a' + _get_extension(file)
-    return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
+    """Returns `True` if the file has an audio mime type."""
+    filename = 'a' + _get_extension(file)
+    if filename == 'a':
+        metadata = _get_metadata(file)
+        if metadata and metadata.has('mime_type'):
+            return metadata.get('mime_type').startswith('audio/')
+        else:
+            return False
+    else:
+        return (mimetypes.guess_type(filename)[0] or '').startswith('audio/')
 
 
 def is_video(file):
