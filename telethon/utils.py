@@ -607,6 +607,8 @@ def _get_metadata(file):
         try:
             file = io.BytesIO(file) if isinstance(file, bytes) else file
             parser = hachoir.parser.createParser(file)
+            if isinstance(file, str):
+                parser.close()
             return hachoir.metadata.extractMetadata(parser)
         except Exception as e:
             _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
