@@ -610,6 +610,10 @@ def _get_metadata(file):
             if isinstance(file, str):
                 parser.close()
             return hachoir.metadata.extractMetadata(parser)
+        except AssertionError:
+            msg = ('Your version of Hachoir can only open in-disk files.'
+                   'Update it to read byte arrays/streams.')
+            _log.warning('Failed to analyze %s: %s', file, msg)
         except Exception as e:
             _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
 
@@ -806,7 +810,6 @@ def is_gif(file):
 def is_audio(file):
     """Returns `True` if the file has an audio mime type."""
     ext = _get_extension(file)
-    filename = 'a' + ext
     if not ext:
         metadata = _get_metadata(file)
         if metadata and metadata.has('mime_type'):
@@ -814,13 +817,13 @@ def is_audio(file):
         else:
             return False
     else:
-        return (mimetypes.guess_type(filename)[0] or '').startswith('audio/')
+        file = 'a' + ext
+        return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
 
 
 def is_video(file):
     """Returns `True` if the file has a video mime type."""
     ext = _get_extension(file)
-    filename = 'a' + ext
     if not ext:
         metadata = _get_metadata(file)
         if metadata and metadata.has('mime_type'):
@@ -828,7 +831,8 @@ def is_video(file):
         else:
             return False
     else:
-        return (mimetypes.guess_type(filename)[0] or '').startswith('video/')
+        file = 'a' + ext
+        return (mimetypes.guess_type(file)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):
