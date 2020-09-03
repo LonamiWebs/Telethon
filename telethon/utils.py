@@ -601,26 +601,38 @@ def get_message_id(message):
 
 
 def _get_metadata(file):
+    if not hachoir:
+        return
+
+    stream = None
+    close_stream = True
+
     # The parser may fail and we don't want to crash if
     # the extraction process fails.
-    if hachoir:
-        try:
-            original_filetype = type(file)
-            file = io.BytesIO(file) if isinstance(file, bytes) else file
-            file = open(file, 'rb') if isinstance(file, str) else file
-            filename = getattr(file, 'name', '')
-            stream = hachoir.stream.InputIOStream(file,
-                                                  source='file:' + filename,
-                                                  tags=[],
-                                                  filename=filename)
-            parser = hachoir.parser.guess.guessParser(stream)
-            metadata = hachoir.metadata.extractMetadata(parser)
-            if original_filetype is str:
-                file.close()
-            return metadata
+    try:
+        if isinstance(file, str):
+            stream = open(file, 'rb')
+        elif isinstance(file, bytes):
+            stream = io.BytesIO(file)
+        else:
+            stream = file
+            close_stream = False
 
-        except Exception as e:
-            _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
+        filename = getattr(file, 'name', '')
+        parser = hachoir.parser.guess.guessParser(hachoir.stream.InputIOStream(
+            stream,
+            source='file:' + filename,
+            tags=[],
+            filename=filename
+        ))
+        return hachoir.metadata.extractMetadata(parser)
+
+    except Exception as e:
+        _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
+
+    finally:
+        if stream and close_stream:
+            stream.close()
 
 
 def get_attributes(file, *, attributes=None, mime_type=None,
