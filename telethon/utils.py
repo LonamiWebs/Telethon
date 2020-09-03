@@ -605,15 +605,20 @@ def _get_metadata(file):
     # the extraction process fails.
     if hachoir:
         try:
+            original_filetype = type(file)
             file = io.BytesIO(file) if isinstance(file, bytes) else file
-            parser = hachoir.parser.createParser(file)
-            if isinstance(file, str):
-                parser.close()
-            return hachoir.metadata.extractMetadata(parser)
-        except AssertionError:
-            msg = ('Your version of Hachoir can only open in-disk files.'
-                   'Update it to read byte arrays/streams.')
-            _log.warning('Failed to analyze %s: %s', file, msg)
+            file = open(file, 'rb') if isinstance(file, str) else file
+            filename = getattr(file, 'name', '')
+            stream = hachoir.stream.InputIOStream(file,
+                                                  source='file:' + filename,
+                                                  tags=[],
+                                                  filename=filename)
+            parser = hachoir.parser.guess.guessParser(stream)
+            metadata = hachoir.metadata.extractMetadata(parser)
+            if original_filetype is str:
+                file.close()
+            return metadata
+
         except Exception as e:
             _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
 
