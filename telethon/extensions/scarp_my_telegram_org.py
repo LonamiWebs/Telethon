@@ -16,6 +16,9 @@ The below steps were copied from https://GitHub.com/SpEcHiDe/MyTelegramOrgRoBot
 9) appropriately, call "scarp_tg_existing_app" or "s_create_new_tg_app" depending on the previous condition
 10) finally we get app_id and api_hash from the webpage"""
 
+import aiohttp
+import typing
+from bs4 import BeautifulSoup
 
 
 async def request_tg_code_get_random_hash(session, input_phone_number):
@@ -137,3 +140,44 @@ async def s_create_new_tg_app(
     )
     return response_c
 
+
+async def auto_scarp_my_tg_api_hash(
+    phone: typing.Callable[[], str] = lambda: input("Enter your Phone Number: [this should be a number already registered on Telegram] "),
+    web_login_code: typing.Callable[[], str] = lambda: input("Please send the code that you received from Telegram: "),
+    my_tg_app_title: typing.Callable[[], str] = lambda: input("Enter the title of your application: "),
+    my_tg_app_shortname: typing.Callable[[], str] = lambda: input("Enter a short_name for your application: "),
+    my_tg_app_url: typing.Callable[[], str] = lambda: input("Enter the URL of your application: "),
+    my_tg_app_platform: typing.Callable[[], str] = lambda: input("Enter the Platform for your application: "),
+    my_tg_app_description: typing.Callable[[], str] = lambda: input("Enter a description of your application: ")
+) -> (int, str):
+    async with aiohttp.ClientSession() as session:
+        phone = phone()
+        random_hash = await request_tg_code_get_random_hash(session, phone)
+        vo, no = await login_step_get_stel_cookie(
+            session,
+            phone,
+            random_hash,
+            web_login_code()
+        )
+
+        if not vo:
+            raise ValueError(no)
+
+        vmo, vno = await scarp_tg_existing_app(session, no)
+        if not vmo:
+            await s_create_new_tg_app(
+                session,
+                no,
+                vno,
+                my_tg_app_title(),
+                my_tg_app_shortname(),
+                my_tg_app_url(),
+                my_tg_app_platform(),
+                my_tg_app_description()
+            )
+        vmo, vno = await scarp_tg_existing_app(session, no)
+        if not vmo:
+            """this should usually not happen but will happen when the scarpper breaks, but never happened, yet """
+            raise ValueError("-_-")
+
+    return int(vno["App Configuration"]["app_id"]), vno["App Configuration"]["api_hash"]

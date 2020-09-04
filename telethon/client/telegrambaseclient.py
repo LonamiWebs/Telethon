@@ -9,7 +9,7 @@ import typing
 from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
 from ..entitycache import EntityCache
-from ..extensions import markdown
+from ..extensions import markdown, scarp_my_telegram_org
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..statecache import StateCache
@@ -202,8 +202,8 @@ class TelegramBaseClient(abc.ABC):
     def __init__(
             self: 'TelegramClient',
             session: 'typing.Union[str, Session]',
-            api_id: int,
-            api_hash: str,
+            api_id: typing.Union[int, None] = None,
+            api_hash: typing.Union[str, None] = None,
             *,
             connection: 'typing.Type[Connection]' = ConnectionTcpFull,
             use_ipv6: bool = False,
@@ -222,13 +222,20 @@ class TelegramBaseClient(abc.ABC):
             system_lang_code: str = 'en',
             loop: asyncio.AbstractEventLoop = None,
             base_logger: typing.Union[str, logging.Logger] = None):
-        if not api_id or not api_hash:
-            raise ValueError(
-                "Your API ID or Hash cannot be empty or None. "
-                "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
         self._loop = asyncio.get_event_loop()
+
+        if not api_id or not api_hash:
+            """raise ValueError(
+                "Your API ID or Hash cannot be empty or None. "
+                "Refer to telethon.rtfd.io for more information.")
+            should there be another variable, to check if the automatic function should be called?"""
+            coro = scarp_my_telegram_org.auto_scarp_my_tg_api_hash()
+            api_id, api_hash = (
+    	        coro if self._loop.is_running()
+     	        else self._loop.run_until_complete(coro)
+            )
 
         if isinstance(base_logger, str):
             base_logger = logging.getLogger(base_logger)
