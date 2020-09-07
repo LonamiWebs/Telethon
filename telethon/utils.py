@@ -611,6 +611,7 @@ def _get_metadata(file):
     # The parser may fail and we don't want to crash if
     # the extraction process fails.
     try:
+        # Note: aiofiles are intentionally left out for simplicity
         if isinstance(file, str):
             stream = open(file, 'rb')
         elif isinstance(file, bytes):
@@ -624,22 +625,18 @@ def _get_metadata(file):
                 seekable = False
 
         if not seekable:
-            _log.warning(
-                'Could not read metadata since the file is not '
-                'seekable so the entire file will be read in-memory')
-
-            data = file.read()
-            stream = io.BytesIO(data)
-            close_stream = True
+            return None
 
         pos = stream.tell()
         filename = getattr(file, 'name', '')
+
         parser = hachoir.parser.guess.guessParser(hachoir.stream.InputIOStream(
             stream,
             source='file:' + filename,
             tags=[],
             filename=filename
         ))
+
         return hachoir.metadata.extractMetadata(parser)
 
     except Exception as e:
