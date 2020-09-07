@@ -606,6 +606,7 @@ def _get_metadata(file):
 
     stream = None
     close_stream = True
+    seekable = True
 
     # The parser may fail and we don't want to crash if
     # the extraction process fails.
@@ -617,7 +618,21 @@ def _get_metadata(file):
         else:
             stream = file
             close_stream = False
+            if getattr(file, 'seekable', None):
+                seekable = file.seekable()
+            else:
+                seekable = False
 
+        if not seekable:
+            _log.warning(
+                'Could not read metadata since the file is not '
+                'seekable so the entire file will be read in-memory')
+
+            data = file.read()
+            stream = io.BytesIO(data)
+            close_stream = True
+
+        pos = stream.tell()
         filename = getattr(file, 'name', '')
         parser = hachoir.parser.guess.guessParser(hachoir.stream.InputIOStream(
             stream,
@@ -633,6 +648,8 @@ def _get_metadata(file):
     finally:
         if stream and close_stream:
             stream.close()
+        elif stream and seekable:
+            stream.seek(pos)
 
 
 def get_attributes(file, *, attributes=None, mime_type=None,
