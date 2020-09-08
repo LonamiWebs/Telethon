@@ -1,4 +1,5 @@
 import abc
+import re
 import asyncio
 import collections
 import logging
@@ -161,7 +162,7 @@ class TelegramBaseClient(abc.ABC):
 
         device_model (`str`, optional):
             "Device model" to be sent when creating the initial connection.
-            Defaults to 'PC (n)bit' derived from ``platform.uname().machine``, or his direct value if unknown.
+            Defaults to 'PC (n)bit' derived from ``platform.uname().machine``, or its direct value if unknown.
 
         system_version (`str`, optional):
             "System version" to be sent when creating the initial connection.
@@ -321,14 +322,13 @@ class TelegramBaseClient(abc.ABC):
         # exporting clients need to create this InvokeWithLayerRequest.
         system = platform.uname()
 
-        if system.machine in ['x86_64','AMD64']:
+        if system.machine in ('x86_64', 'AMD64'):
             default_device_model = 'PC 64bit'
-        elif system.machine in ['i386','i686','x86']:
+        elif system.machine in ('i386','i686','x86'):
             default_device_model = 'PC 32bit'
         else:
             default_device_model = system.machine
-        get_system_version = lambda x : x[:x.index('-')] if '-' in x else x
-        default_system_version = get_system_version(system.release)
+        default_system_version = re.sub(r'-.+','',system.release)
         self._init_with = lambda x: functions.InvokeWithLayerRequest(
             LAYER, functions.InitConnectionRequest(
                 api_id=self.api_id,
