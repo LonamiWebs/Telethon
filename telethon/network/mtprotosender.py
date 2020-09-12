@@ -217,7 +217,7 @@ class MTProtoSender:
         self._log.info('Connecting to %s...', self._connection)
 
         connected = False
-        attempt = 0
+        
         for attempt in retry_range(self._retries):
             if not connected:
                 connected = await self._try_connect(attempt)
@@ -360,22 +360,24 @@ class MTProtoSender:
         retries = self._retries if self._auto_reconnect else 0
         
         attempt = 0
-        for attempt in retry_range(retries,reconnect=True):
+        for attempt in retry_range(retries, False):
             try:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:
                 last_error = e
                 self._log.info('Failed reconnection attempt %d with %s',
-                            attempt, e.__class__.__name__)
+                                attempt, e.__class__.__name__)
                 await asyncio.sleep(self._delay)
             except Exception as e:
                 last_error = e
                 self._log.exception('Unexpected exception reconnecting on '
                                     'attempt %d', attempt)
+
                 await asyncio.sleep(self._delay)
             else:
                 self._send_queue.extend(self._pending_state.values())
                 self._pending_state.clear()
+
                 if self._auto_reconnect_callback:
                     asyncio.get_event_loop().create_task(self._auto_reconnect_callback())
 
@@ -383,7 +385,6 @@ class MTProtoSender:
         else:
             self._log.error('Automatic reconnection failed %d time(s)', attempt)
             await self._disconnect(error=last_error.with_traceback(None))
-
 
     def _start_reconnect(self, error):
         """Starts a reconnection in the background."""
