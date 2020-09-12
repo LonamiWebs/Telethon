@@ -95,12 +95,15 @@ def strip_text(text, entities):
     return text
 
 
-def retry_range(retries):
+def retry_range(retries, reconnect=False):
     """
     Generates an integer sequence starting from 1. If `retries` is
     not a zero or a positive integer value, the sequence will be
     infinite, otherwise it will end at `retries + 1`.
     """
+
+    if retries == 0 and not reconnect:
+        yield 1
 
     attempt = 0
     while attempt != retries:
