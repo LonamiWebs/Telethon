@@ -101,11 +101,11 @@ def retry_range(retries):
     not a zero or a positive integer value, the sequence will be
     infinite, otherwise it will end at `retries + 1`.
     """
-    yield 1
+
     attempt = 0
     while attempt != retries:
-        attempt += 1
         yield 1 + attempt
+        attempt += 1
 
 
 async def _maybe_await(value):
