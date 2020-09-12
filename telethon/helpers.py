@@ -107,11 +107,12 @@ def retry_range(retries, force_retry=True):
     if retries == 0 and force_retry:
         yield 1
 
-    # If retries are non 0 then itetrate
+    # If retries are non 0 then iterate
     attempt = 0
     while attempt != retries:
-        yield 1 + attempt
         attempt += 1
+        yield attempt
+        
 
 
 async def _maybe_await(value):
