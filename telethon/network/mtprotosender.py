@@ -360,13 +360,14 @@ class MTProtoSender:
         retries = self._retries if self._auto_reconnect else 0
         
         attempt = 0
-        for attempt in retry_range(retries, False):
+        # We're already "retrying" to connect, so we don't want to force retries
+        for attempt in retry_range(retries, force_retry=False):
             try:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:
                 last_error = e
                 self._log.info('Failed reconnection attempt %d with %s',
-                                attempt, e.__class__.__name__)
+                               attempt, e.__class__.__name__)
                 await asyncio.sleep(self._delay)
             except Exception as e:
                 last_error = e

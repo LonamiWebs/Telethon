@@ -102,12 +102,11 @@ def retry_range(retries, force_retry=True):
     infinite, otherwise it will end at `retries + 1`.
     """
 
-    # We need atleast one iteration even if the retries are 0
-    # when force_retry is True. 
-    if retries == 0 and force_retry:
-        yield 1
+    # We need at least one iteration even if the retries are 0
+    # when force_retry is True.
+    if force_retry:
+        retries+=1
 
-    # If retries are non 0 then iterate
     attempt = 0
     while attempt != retries:
         attempt += 1
