@@ -51,6 +51,7 @@ class UserMethods:
 
         request_index = 0
         self._last_request = time.time()
+        
         for attempt in retry_range(self._request_retries):
             try:
                 future = sender.send(request, ordered=ordered)

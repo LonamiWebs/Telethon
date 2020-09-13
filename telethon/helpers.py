@@ -95,17 +95,23 @@ def strip_text(text, entities):
     return text
 
 
-def retry_range(retries):
+def retry_range(retries, force_retry=True):
     """
     Generates an integer sequence starting from 1. If `retries` is
     not a zero or a positive integer value, the sequence will be
     infinite, otherwise it will end at `retries + 1`.
     """
-    yield 1
+
+    # We need at least one iteration even if the retries are 0
+    # when force_retry is True.
+    if force_retry and not (retries is None or retries < 0):
+        retries += 1
+
     attempt = 0
     while attempt != retries:
         attempt += 1
-        yield 1 + attempt
+        yield attempt
+        
 
 
 async def _maybe_await(value):
