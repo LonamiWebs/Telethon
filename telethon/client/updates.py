@@ -467,6 +467,8 @@ class UpdateMethods:
         # the name of speed; we don't want to make it worse for all updates
         # just because albums may need it.
         for builder, callback in self._event_builders:
+            if isinstance(builder, events.Raw):
+                continue
             if not isinstance(event, builder.Event):
                 continue
 
