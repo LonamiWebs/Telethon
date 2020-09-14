@@ -611,7 +611,9 @@ def _get_metadata(file):
     # The parser may fail and we don't want to crash if
     # the extraction process fails.
     try:
-        # Note: aiofiles are intentionally left out for simplicity
+        # Note: aiofiles are intentionally left out for simplicity.
+        # `helpers._FileStream` is async only for simplicity too, so can't
+        # reuse it here.
         if isinstance(file, str):
             stream = open(file, 'rb')
         elif isinstance(file, bytes):

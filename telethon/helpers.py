@@ -1,9 +1,13 @@
 """Various helpers not related to the Telegram API itself"""
 import asyncio
+import io
 import enum
 import os
 import struct
 import inspect
+import logging
+import functools
+from pathlib import Path
 from hashlib import sha1
 
 
@@ -11,6 +15,9 @@ class _EntityType(enum.Enum):
     USER = 0
     CHAT = 1
     CHANNEL = 2
+
+
+_log = logging.getLogger(__name__)
 
 
 # region Multiple utilities
@@ -279,5 +286,106 @@ class TotalList(list):
         return '[{}, total={}]'.format(
             ', '.join(repr(x) for x in self), self.total)
 
+
+class _FileStream(io.IOBase):
+    """
+    Proxy around things that represent a file and need to be used as streams
+    which may or not need to be closed.
+
+    This will handle `pathlib.Path`, `str` paths, in-memory `bytes`, and
+    anything IO-like (including `aiofiles`).
+
+    It also provides access to the name and file size (also necessary).
+    """
+    def __init__(self, file, *, file_size=None):
+        if isinstance(file, Path):
+            file = str(file.absolute())
+
+        self._file = file
+        self._name = None
+        self._size = file_size
+        self._stream = None
+        self._close_stream = None
+
+    async def __aenter__(self):
+        if isinstance(self._file, str):
+            self._name = os.path.basename(self._file)
+            self._size = os.path.getsize(self._file)
+            self._stream = open(self._file, 'rb')
+            self._close_stream = True
+
+        elif isinstance(self._file, bytes):
+            self._size = len(self._file)
+            self._stream = io.BytesIO(self._file)
+            self._close_stream = True
+
+        elif not callable(getattr(self._file, 'read', None)):
+            raise TypeError('file description should have a `read` method')
+
+        elif self._size is not None:
+            self._name = getattr(self._file, 'name', None)
+            self._stream = self._file
+            self._close_stream = False
+
+        else:
+            if callable(getattr(self._file, 'seekable', None)):
+                seekable = await _maybe_await(self._file.seekable())
+            else:
+                seekable = False
+
+            if seekable:
+                pos = await _maybe_await(self._file.tell())
+                await _maybe_await(self._file.seek(0, os.SEEK_END))
+                self._size = await _maybe_await(self._file.tell())
+                await _maybe_await(self._file.seek(pos, os.SEEK_SET))
+                self._stream = self._file
+                self._close_stream = False
+            else:
+                _log.warning(
+                    'Could not determine file size beforehand so the entire '
+                    'file will be read in-memory')
+
+                data = await _maybe_await(self._file.read())
+                self._size = len(data)
+                self._stream = io.BytesIO(data)
+                self._close_stream = True
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._close_stream and self._stream:
+            await _maybe_await(self._stream.close())
+
+    @property
+    def file_size(self):
+        return self._size
+
+    @property
+    def name(self):
+        return self._name
+
+    # Proxy all the methods. Doesn't need to be readable (makes multiline edits easier)
+    def read(self, *args, **kwargs): return self._stream.read(*args, **kwargs)
+    def readinto(self, *args, **kwargs): return self._stream.readinto(*args, **kwargs)
+    def write(self, *args, **kwargs): return self._stream.write(*args, **kwargs)
+    def fileno(self, *args, **kwargs): return self._stream.fileno(*args, **kwargs)
+    def flush(self, *args, **kwargs): return self._stream.flush(*args, **kwargs)
+    def isatty(self, *args, **kwargs): return self._stream.isatty(*args, **kwargs)
+    def readable(self, *args, **kwargs): return self._stream.readable(*args, **kwargs)
+    def readline(self, *args, **kwargs): return self._stream.readline(*args, **kwargs)
+    def readlines(self, *args, **kwargs): return self._stream.readlines(*args, **kwargs)
+    def seek(self, *args, **kwargs): return self._stream.seek(*args, **kwargs)
+    def seekable(self, *args, **kwargs): return self._stream.seekable(*args, **kwargs)
+    def tell(self, *args, **kwargs): return self._stream.tell(*args, **kwargs)
+    def truncate(self, *args, **kwargs): return self._stream.truncate(*args, **kwargs)
+    def writable(self, *args, **kwargs): return self._stream.writable(*args, **kwargs)
+    def writelines(self, *args, **kwargs): return self._stream.writelines(*args, **kwargs)
+
+    # close is special because it will be called by __del__ but we do NOT
+    # want to close the file unless we have to (we're just a wrapper).
+    # Instead, we do nothing (we should be used through the decorator which
+    # has its own mechanism to close the file correctly).
+    def close(self, *args, **kwargs):
+        pass
 
 # endregion
