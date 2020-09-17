@@ -71,14 +71,20 @@ not really needed for the previous two trivial examples.
 * Usable as a: **bot**.
 * Difficulty: **medium**.
 
-This example is the actual bot account [@TelethonianBot] running in the
-[official Telethon's chat] to help people out. The file is a bit big and
-assumes some [`asyncio`] knowledge, but otherwise is easy to follow.
+This example is the core of the actual bot account [@TelethonianBot] running
+in the [official Telethon's chat] to help people out. It showcases how to
+create an extremely simple "plugins" system with Telethon, but you're free
+to borrow ideas from it and make it as fancy as you like (perhaps you want
+to add hot reloading?).
 
-In addition, it has optional plugins, which may be useful for your own code.
-The plugins can be found at https://github.com/Lonami/TelethonianBotExt and
-should be cloned into a `plugins` folder next to `assistant.py` for them to
-work.
+The plugins are a separate Python file each which get loaded dynamically and
+can be found at <https://github.com/Lonami/TelethonianBotExt>. To use them,
+clone the repository into a `plugins` folder next to `assistant.py` and then
+run `assistant.py`.
+
+The content of the plugins or how they work is not really relevant. You can
+disable them by moving them elsewhere or deleting the file entirely. The point
+is to learn how you can build fancy things with your own code and Telethon.
 
 ### [`interactive_telegram_client.py`]
 
