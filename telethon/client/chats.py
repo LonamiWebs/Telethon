@@ -337,25 +337,31 @@ class _ProfilePhotoIter(RequestIter):
             else:
                 self.request.offset += len(result.photos)
         else:
+            # Some broadcast channels have a photo that this request doesn't
+            # retrieve for whatever random reason the Telegram server feels.
+            #
+            # This means the `total` count may be wrong but there's not much
+            # that can be done around it (perhaps there are too many photos
+            # and this is only a partial result so it's not possible to just
+            # use the len of the result).
             self.total = getattr(result, 'count', None)
-            if self.total == 0 and isinstance(result, types.messages.ChannelMessages):
-                # There are some broadcast channels that have a photo but this
-                # request doesn't retrieve it for some reason. Work around this
-                # issue by fetching the channel.
-                #
-                # We can't use the normal entity because that gives `ChatPhoto`
-                # but we want a proper `Photo`, so fetch full channel instead.
+
+            # Unconditionally fetch the full channel to obtain this photo and
+            # yield it with the rest (unless it's a duplicate).
+            seen_id = None
+            if isinstance(result, types.messages.ChannelMessages):
                 channel = await self.client(functions.channels.GetFullChannelRequest(self.request.peer))
                 photo = channel.full_chat.chat_photo
                 if isinstance(photo, types.Photo):
-                    self.buffer = [photo]
-                    self.total = 1
+                    self.buffer.append(photo)
+                    seen_id = photo.id
 
-                self.left = len(self.buffer)
-                return
+            self.buffer.extend(
+                x.action.photo for x in result.messages
+                if isinstance(x.action, types.MessageActionChatEditPhoto)
+                and x.action.photo.id != seen_id
+            )
 
-            self.buffer = [x.action.photo for x in result.messages
-                           if isinstance(x.action, types.MessageActionChatEditPhoto)]
             if len(result.messages) < self.request.limit:
                 self.left = len(self.buffer)
             elif result.messages:
