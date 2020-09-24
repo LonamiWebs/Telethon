@@ -761,6 +761,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         with the ``message`` already set.
         """
         if self._client:
+            # Passing the entire message is important, in case it has to be
+            # refetched for a fresh file reference.
             return await self._client.download_media(self, *args, **kwargs)
 
     async def click(self, i=None, j=None,
