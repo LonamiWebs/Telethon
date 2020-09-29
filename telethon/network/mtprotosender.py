@@ -431,13 +431,12 @@ class MTProtoSender:
                             len(batch), len(data))
 
             data = self._state.encrypt_message_data(data)
-            try:
-                await self._connection.send(data)
-            except IOError as e:
-                self._log.info('Connection closed while sending data')
-                self._start_reconnect(e)
-                return
 
+            # Whether sending succeeds or not, the popped requests are now
+            # pending because they're removed from the queue. If a reconnect
+            # occurs, they will be removed from pending state and re-enqueued
+            # so even if the network fails they won't be lost. If they were
+            # never re-enqueued, the future waiting for a response "locks".
             for state in batch:
                 if not isinstance(state, list):
                     if isinstance(state.request, TLRequest):
@@ -446,6 +445,13 @@ class MTProtoSender:
                     for s in state:
                         if isinstance(s.request, TLRequest):
                             self._pending_state[s.msg_id] = s
+
+            try:
+                await self._connection.send(data)
+            except IOError as e:
+                self._log.info('Connection closed while sending data')
+                self._start_reconnect(e)
+                return
 
             self._log.debug('Encrypted messages put in a queue to be sent')
 
