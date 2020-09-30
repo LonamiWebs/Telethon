@@ -26,10 +26,10 @@ def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
 
 
 class UserMethods:
-    async def __call__(self: 'TelegramClient', request, ordered=False):
-        return await self._call(self._sender, request, ordered=ordered)
+    async def __call__(self: 'TelegramClient', request, ordered=False, raise_last=False):
+        return await self._call(self._sender, request, ordered=ordered, raise_last=raise_last)
 
-    async def _call(self: 'TelegramClient', sender, request, ordered=False):
+    async def _call(self: 'TelegramClient', sender, request, ordered=False, raise_last=False):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
@@ -50,6 +50,7 @@ class UserMethods:
                     raise errors.FloodWaitError(request=r, capture=diff)
 
         request_index = 0
+        last_error = None
         self._last_request = time.time()
         
         for attempt in retry_range(self._request_retries):
@@ -82,12 +83,14 @@ class UserMethods:
             except (errors.ServerError, errors.RpcCallFailError,
                     errors.RpcMcgetFailError, errors.InterdcCallErrorError,
                     errors.InterdcCallRichErrorError) as e:
+                last_error = e
                 self._log[__name__].warning(
                     'Telegram is having internal issues %s: %s',
                     e.__class__.__name__, e)
 
                 await asyncio.sleep(2)
             except (errors.FloodWaitError, errors.SlowModeWaitError, errors.FloodTestPhoneWaitError) as e:
+                last_error = e
                 if utils.is_list_like(request):
                     request = request[request_index]
 
@@ -106,6 +109,7 @@ class UserMethods:
                     raise
             except (errors.PhoneMigrateError, errors.NetworkMigrateError,
                     errors.UserMigrateError) as e:
+                last_error = e
                 self._log[__name__].info('Phone migrated to %d', e.new_dc)
                 should_raise = isinstance(e, (
                     errors.PhoneMigrateError, errors.NetworkMigrateError
@@ -114,6 +118,8 @@ class UserMethods:
                     raise
                 await self._switch_dc(e.new_dc)
 
+        if raise_last and last_error is not None:
+            raise last_error
         raise ValueError('Request was unsuccessful {} time(s)'
                          .format(attempt))
 
