@@ -1145,6 +1145,23 @@ class ChatMethods:
         else:
             raise ValueError('You must pass either a channel or a chat')
 
+    async def get_permissions(
+            self: 'TelegramClient',
+            channel: 'hints.EntityLike',
+            user: 'hints.EntityLike'
+    ) -> 'custom.ParticipantPermissions':
+        channel = await self.get_input_entity(channel)
+        user = await self.get_input_entity(user)
+        if helpers._entity_type(user) != helpers._EntityType.USER:
+            raise ValueError('You must pass a user entity')
+        if helpers._entity_type(channel) != helpers._EntityType.CHANNEL:
+            raise ValueError('You must pass a channel entity')
+        participant = await self(functions.channels.GetParticipantRequest(
+            channel,
+            user
+        ))
+        return custom.ParticipantPermissions(participant.participant)
+
     async def get_stats(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
