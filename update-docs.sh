@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 python setup.py gen docs
 rm -rf /tmp/docs
 mv docs/ /tmp/docs
