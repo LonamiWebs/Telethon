@@ -95,7 +95,7 @@ class ChatGetter(abc.ABC):
     def chat_id(self):
         """
         Returns the marked chat integer ID. Note that this value **will
-        be different** from ``to_id`` for incoming private messages, since
+        be different** from ``peer_id`` for incoming private messages, since
         the chat *to* which the messages go is to your own person, but
         the *chat* itself is with the one who sent the message.
 

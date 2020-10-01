@@ -165,7 +165,7 @@ class Conversation(ChatGetter):
         """
         return self._get_message(
             message, self._reply_indices, self._pending_replies, timeout,
-            lambda x, y: x.reply_to_msg_id == y
+            lambda x, y: x.reply_to and x.reply_to.reply_to_msg_id == y
         )
 
     def _get_message(
@@ -374,7 +374,7 @@ class Conversation(ChatGetter):
             del self._pending_responses[msg_id]
 
         for msg_id, future in list(self._pending_replies.items()):
-            if msg_id == response.reply_to_msg_id:
+            if response.reply_to and msg_id == response.reply_to.reply_to_msg_id:
                 self._reply_indices[msg_id] = len(self._incoming)
                 future.set_result(response)
                 del self._pending_replies[msg_id]

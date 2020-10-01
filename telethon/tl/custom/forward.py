@@ -1,6 +1,6 @@
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
-from ... import utils
+from ... import utils, helpers
 from ...tl import types
 
 
@@ -30,19 +30,24 @@ class Forward(ChatGetter, SenderGetter):
         self.__dict__.update(original.__dict__)
         self.original_fwd = original
 
-        sender, input_sender = utils._get_entity_pair(
-            original.from_id, entities, client._entity_cache)
-
-        if not original.channel_id:
-            peer = chat = input_chat = None
+        sender_id = sender = input_sender = peer = chat = input_chat = None
+        if not original.from_id:
+            pass
         else:
-            peer = types.PeerChannel(original.channel_id)
-            chat, input_chat = utils._get_entity_pair(
-                 utils.get_peer_id(peer), entities, client._entity_cache)
+            ty = helpers._entity_type(original.from_id)
+            if ty == helpers._EntityType.USER:
+                sender_id = utils.get_peer_id(original.from_id)
+                sender, input_sender = utils._get_entity_pair(
+                    sender_id, entities, client._entity_cache)
+
+            elif ty in (helpers._EntityType.CHAT, helpers._EntityType.CHANNEL):
+                peer = original.from_id
+                chat, input_chat = utils._get_entity_pair(
+                    utils.get_peer_id(peer), entities, client._entity_cache)
 
         # This call resets the client
         ChatGetter.__init__(self, peer, chat=chat, input_chat=input_chat)
-        SenderGetter.__init__(self, original.from_id, sender=sender, input_sender=input_sender)
+        SenderGetter.__init__(self, sender_id, sender=sender, input_sender=input_sender)
         self._client = client
 
     # TODO We could reload the message

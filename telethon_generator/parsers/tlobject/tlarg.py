@@ -156,7 +156,7 @@ class TLArg:
             # treated as a "date" object. Note that this is not a valid
             # Telegram object, but it's easier to work with
             if self.type == 'int' and (
-                        re.search(r'(\b|_)([dr]ate|until|since)(\b|_)', name) or
+                        re.search(r'(\b|_)(date|until|since)(\b|_)', name) or
                         name in ('expires', 'expires_at', 'was_online')):
                 self.type = 'date'
 

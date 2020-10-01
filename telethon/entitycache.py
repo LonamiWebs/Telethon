@@ -127,12 +127,12 @@ class EntityCache:
 
         if cid in has_message:
             x = update.message
-            y = getattr(x, 'to_id', None)  # handle MessageEmpty
+            y = getattr(x, 'peer_id', None)  # handle MessageEmpty
             if y and utils.get_peer_id(y) not in dct:
                 return False
 
             y = getattr(x, 'from_id', None)
-            if y and y not in dct:
+            if y and utils.get_peer_id(y) not in dct:
                 return False
 
             # We don't quite worry about entities anywhere else.

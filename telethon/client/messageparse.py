@@ -157,7 +157,7 @@ class MessageParseMethods:
 
             elif (isinstance(update, types.UpdateEditChannelMessage)
                   and utils.get_peer_id(request.peer) ==
-                  utils.get_peer_id(update.message.to_id)):
+                  utils.get_peer_id(update.message.peer_id)):
                 if request.id == update.message.id:
                     update.message._finish_init(self, entities, input_chat)
                     return update.message
@@ -170,7 +170,7 @@ class MessageParseMethods:
                 if request.media.poll.id == update.poll_id:
                     m = types.Message(
                         id=request.id,
-                        to_id=utils.get_peer(request.peer),
+                        peer_id=utils.get_peer(request.peer),
                         media=types.MessageMediaPoll(
                             poll=update.poll,
                             results=update.results

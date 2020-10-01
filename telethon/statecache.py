@@ -134,10 +134,10 @@ class StateCache:
         if cid in has_channel_id:
             return update.channel_id
         elif cid in has_message:
-            if update.message.to_id is None:
-                self._logger.info('Update has None to_id %s', update)
+            if update.message.peer_id is None:
+                self._logger.info('Update has None peer_id %s', update)
             else:
-                return update.message.to_id.channel_id
+                return update.message.peer_id.channel_id
 
         return None
 

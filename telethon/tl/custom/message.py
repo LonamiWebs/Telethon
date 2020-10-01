@@ -85,7 +85,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             The peer who sent this message, which is either
             :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
 
-        reply_to (`int`):
+        reply_to (:tl:`MessageReplyHeader`):
             The original reply header if this message is replying to another.
 
         fwd_from (:tl:`MessageFwdHeader`):
@@ -210,15 +210,15 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._action_entities = None
 
         if not out and isinstance(peer_id, types.PeerUser):
-            chat_peer = types.PeerUser(from_id)
-            if from_id == peer_id.user_id:
+            chat_peer = from_id
+            if from_id == peer_id:
                 self.out = not self.fwd_from  # Patch out in our chat
         else:
             chat_peer = peer_id
 
         # Note that these calls would reset the client
         ChatGetter.__init__(self, chat_peer, broadcast=post)
-        SenderGetter.__init__(self, from_id)
+        SenderGetter.__init__(self, utils.get_peer_id(from_id) if from_id else None)
 
         if post and not from_id and chat_peer:
             # If the message comes from a Channel, let the sender be it
@@ -329,10 +329,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         `True` if the message is a reply to some other message.
 
         Remember that you can access the ID of the message
-        this one is replying to through `reply_to_msg_id`,
+        this one is replying to through `reply_to.reply_to_msg_id`,
         and the `Message` object with `get_reply_message()`.
         """
-        return bool(self.reply_to_msg_id)
+        return self.reply_to is not None
 
     @property
     def forward(self):
@@ -647,7 +647,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         The result will be cached after its first use.
         """
         if self._reply_message is None and self._client:
-            if not self.reply_to_msg_id:
+            if not self.reply_to:
                 return None
 
             # Bots cannot access other bots' messages by their ID.
@@ -663,7 +663,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 # directly by its ID.
                 self._reply_message = await self._client.get_messages(
                     self._input_chat if self.is_channel else None,
-                    ids=self.reply_to_msg_id
+                    ids=self.reply_to.reply_to_msg_id
                 )
 
         return self._reply_message

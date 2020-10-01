@@ -60,7 +60,7 @@ class _DialogsIter(RequestIter):
         messages = {}
         for m in r.messages:
             m._finish_init(self.client, entities, None)
-            messages[_dialog_message_key(m.to_id, m.id)] = m
+            messages[_dialog_message_key(m.peer_id, m.id)] = m
 
         for d in r.dialogs:
             # We check the offset date here because Telegram may ignore it

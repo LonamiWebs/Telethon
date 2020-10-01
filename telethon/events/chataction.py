@@ -78,7 +78,7 @@ class ChatAction(EventBuilder):
                                  users=msg.from_id)
             elif isinstance(action, types.MessageActionChatAddUser):
                 # If a user adds itself, it means they joined
-                added_by = ([msg.from_id] == action.users) or msg.from_id
+                added_by = ([utils.get_peer_id(msg.from_id)] == action.users) or msg.from_id
                 return cls.Event(msg,
                                  added_by=added_by,
                                  users=action.users)
@@ -108,12 +108,12 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to_msg_id:
+            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
                 # Seems to not be reliable on unpins, but when pinning
                 # we prefer this because we know who caused it.
                 return cls.Event(msg,
                                  users=msg.from_id,
-                                 new_pin=msg.reply_to_msg_id)
+                                 new_pin=msg.reply_to.reply_to_msg_id)
 
     class Event(EventCommon):
         """
@@ -158,7 +158,7 @@ class ChatAction(EventBuilder):
                      users=None, new_title=None, unpin=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
-                where = where.to_id
+                where = where.peer_id
             else:
                 self.action_message = None
 
@@ -193,9 +193,9 @@ class ChatAction(EventBuilder):
             self.created = bool(created)
 
             if isinstance(users, list):
-                self._user_ids = users
+                self._user_ids = [utils.get_peer_id(u) for u in users]
             elif users:
-                self._user_ids = [users]
+                self._user_ids = [utils.get_peer_id(users)]
             else:
                 self._user_ids = []
 
