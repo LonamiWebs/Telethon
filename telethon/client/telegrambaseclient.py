@@ -160,6 +160,12 @@ class TelegramBaseClient(abc.ABC):
             was for 21s, it would ``raise FloodWaitError`` instead. Values
             larger than a day (like ``float('inf')``) will be changed to a day.
 
+        raise_last_call_error (`bool`, optional):
+            When API calls fail in a way that causes Telethon to retry
+            automatically, should the RPC error of the last attempt be raised
+            instead of a generic ValueError. This is mostly useful for
+            detecting when Telegram has internal issues.
+
         device_model (`str`, optional):
             "Device model" to be sent when creating the initial connection.
             Defaults to 'PC (n)bit' derived from ``platform.uname().machine``, or its direct value if unknown.
@@ -216,6 +222,7 @@ class TelegramBaseClient(abc.ABC):
             auto_reconnect: bool = True,
             sequential_updates: bool = False,
             flood_sleep_threshold: int = 60,
+            raise_last_call_error: bool = False,
             device_model: str = None,
             system_version: str = None,
             app_version: str = None,
@@ -305,6 +312,8 @@ class TelegramBaseClient(abc.ABC):
                     self._loop.__class__.__name__
                 )
             )
+
+        self._raise_last_call_error = raise_last_call_error
 
         self._request_retries = request_retries
         self._connection_retries = connection_retries

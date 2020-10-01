@@ -26,10 +26,10 @@ def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
 
 
 class UserMethods:
-    async def __call__(self: 'TelegramClient', request, ordered=False, raise_last=False):
-        return await self._call(self._sender, request, ordered=ordered, raise_last=raise_last)
+    async def __call__(self: 'TelegramClient', request, ordered=False):
+        return await self._call(self._sender, request, ordered=ordered)
 
-    async def _call(self: 'TelegramClient', sender, request, ordered=False, raise_last=False):
+    async def _call(self: 'TelegramClient', sender, request, ordered=False):
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
@@ -52,7 +52,7 @@ class UserMethods:
         request_index = 0
         last_error = None
         self._last_request = time.time()
-        
+
         for attempt in retry_range(self._request_retries):
             try:
                 future = sender.send(request, ordered=ordered)
@@ -118,7 +118,7 @@ class UserMethods:
                     raise
                 await self._switch_dc(e.new_dc)
 
-        if raise_last and last_error is not None:
+        if self._raise_last_call_error and last_error is not None:
             raise last_error
         raise ValueError('Request was unsuccessful {} time(s)'
                          .format(attempt))
