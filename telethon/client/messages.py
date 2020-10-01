@@ -240,7 +240,11 @@ class _MessagesIter(RequestIter):
             self.request.offset_date = last_message.date
 
         if isinstance(self.request, functions.messages.SearchGlobalRequest):
-            self.request.offset_peer = last_message.input_chat
+            if last_message.input_chat:
+                self.request.offset_peer = last_message.input_chat
+            else:
+                self.request.offset_peer = types.InputPeerEmpty()
+
             self.request.offset_rate = getattr(response, 'next_rate', None)
 
 
