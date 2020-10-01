@@ -135,7 +135,10 @@ class StateCache:
             return update.channel_id
         elif cid in has_message:
             if update.message.peer_id is None:
-                self._logger.info('Update has None peer_id %s', update)
+                # Telegram sometimes sends empty messages to give a newer pts:
+                # UpdateNewChannelMessage(message=MessageEmpty(id), pts=pts, pts_count=1)
+                # Not sure why, but it's safe to ignore them.
+                self._logger.debug('Update has None peer_id %s', update)
             else:
                 return update.message.peer_id.channel_id
 
