@@ -194,7 +194,7 @@ PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a p
 PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
 PEER_FLOOD,,Too many requests
-PEER_ID_INVALID,400,An invalid Peer was used. Make sure to pass the right peer type
+PEER_ID_INVALID,400,"An invalid Peer was used. Make sure to pass the right peer type and that the value is valid (for instance, bots cannot start conversations)"
 PEER_ID_NOT_SUPPORTED,400,The provided peer ID is not supported
 PERSISTENT_TIMESTAMP_EMPTY,400,Persistent timestamp empty
 PERSISTENT_TIMESTAMP_INVALID,400,Persistent timestamp invalid
