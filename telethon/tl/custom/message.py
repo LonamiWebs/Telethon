@@ -210,20 +210,20 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self._via_input_bot = None
         self._action_entities = None
 
-        if not out and isinstance(peer_id, types.PeerUser):
-            chat_peer = from_id
-            if from_id == peer_id:
-                self.out = not self.fwd_from  # Patch out in our chat
-        else:
-            chat_peer = peer_id
+        sender_id = None
+        if from_id is not None:
+            sender_id = utils.get_peer_id(from_id)
+        elif peer_id:
+            # If the message comes from a Channel, let the sender be it
+            # ...or...
+            # incoming messages in private conversations no longer have from_id
+            # (layer 119+), but the sender can only be the chat we're in.
+            if post or (not out and isinstance(peer_id, types.PeerUser)):
+                sender_id = utils.get_peer_id(peer_id)
 
         # Note that these calls would reset the client
-        ChatGetter.__init__(self, chat_peer, broadcast=post)
-        SenderGetter.__init__(self, utils.get_peer_id(from_id) if from_id else None)
-
-        if post and not from_id and chat_peer:
-            # If the message comes from a Channel, let the sender be it
-            self._sender_id = utils.get_peer_id(chat_peer)
+        ChatGetter.__init__(self, peer_id, broadcast=post)
+        SenderGetter.__init__(self, sender_id)
 
         self._forward = None
 

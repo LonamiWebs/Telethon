@@ -107,9 +107,7 @@ class NewMessage(EventBuilder):
                 media_unread=update.media_unread,
                 silent=update.silent,
                 id=update.id,
-                # Note that peer_id/from_id complement each other in private
-                # messages, depending on whether the message was outgoing.
-                peer_id=types.PeerUser(update.user_id if update.out else self_id),
+                peer_id=types.PeerUser(update.user_id),
                 from_id=types.PeerUser(self_id if update.out else update.user_id),
                 message=update.message,
                 date=update.date,
@@ -125,7 +123,7 @@ class NewMessage(EventBuilder):
                 media_unread=update.media_unread,
                 silent=update.silent,
                 id=update.id,
-                from_id=types.PeerUser(update.from_id),
+                from_id=types.PeerUser(self_id if update.out else update.from_id),
                 peer_id=types.PeerChat(update.chat_id),
                 message=update.message,
                 date=update.date,
