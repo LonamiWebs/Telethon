@@ -84,6 +84,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         from_id (:tl:`Peer`):
             The peer who sent this message, which is either
             :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
+            This value will be `None` for anonymous messages.
 
         reply_to (:tl:`MessageReplyHeader`):
             The original reply header if this message is replying to another.

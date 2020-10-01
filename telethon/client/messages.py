@@ -67,16 +67,19 @@ class _MessagesIter(RequestIter):
         else:
             self.from_id = None
 
-        # `messages.searchGlobal` only works with text `search` queries.
-        # If we want to perform global a search with `from_user` or `filter`,
-        # we have to perform a normal `messages.search`, *but* we can make the
-        # entity be `inputPeerEmpty`.
-        if not self.entity and (filter or from_user):
+        # `messages.searchGlobal` only works with text `search` or `filter` queries.
+        # If we want to perform global a search with `from_user` we have to perform
+        # a normal `messages.search`, *but* we can make the entity be `inputPeerEmpty`.
+        if not self.entity and from_user:
             self.entity = types.InputPeerEmpty()
+
+        if filter is None:
+            filter = types.InputMessagesFilterEmpty()
 
         if not self.entity:
             self.request = functions.messages.SearchGlobalRequest(
                 q=search or '',
+                filter=filter,
                 min_date=None,
                 max_date=offset_date,
                 offset_rate=None,
@@ -85,9 +88,6 @@ class _MessagesIter(RequestIter):
                 limit=1
             )
         elif search is not None or filter or from_user:
-            if filter is None:
-                filter = types.InputMessagesFilterEmpty()
-
             # Telegram completely ignores `from_id` in private chats
             ty = helpers._entity_type(self.entity)
             if ty == helpers._EntityType.USER:
@@ -194,7 +194,7 @@ class _MessagesIter(RequestIter):
         # Get the last message that's not empty (in some rare cases
         # it can happen that the last message is :tl:`MessageEmpty`)
         if self.buffer:
-            self._update_offset(self.buffer[-1])
+            self._update_offset(self.buffer[-1], r)
         else:
             # There are some cases where all the messages we get start
             # being empty. This can happen on migrated mega-groups if
@@ -220,7 +220,7 @@ class _MessagesIter(RequestIter):
 
         return True
 
-    def _update_offset(self, last_message):
+    def _update_offset(self, last_message, response):
         """
         After making the request, update its offset with the last message.
         """
@@ -241,6 +241,7 @@ class _MessagesIter(RequestIter):
 
         if isinstance(self.request, functions.messages.SearchGlobalRequest):
             self.request.offset_peer = last_message.input_chat
+            self.request.offset_rate = getattr(response, 'next_rate', None)
 
 
 class _IDsIter(RequestIter):
