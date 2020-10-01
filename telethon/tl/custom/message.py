@@ -597,6 +597,22 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         """
         return self._via_input_bot
 
+    @property
+    def reply_to_msg_id(self):
+        """
+        Returns the message ID this message is replying to, if any.
+        This is equivalent to accessing ``.reply_to.reply_to_msg_id``.
+        """
+        return self.reply_to.reply_to_msg_id if self.reply_to else None
+
+    @property
+    def to_id(self):
+        """
+        Alias for ``.peer_id``. Telegram renamed the field, and this property
+        exists to avoid breaking code.
+        """
+        return self.peer_id
+
     # endregion Public Properties
 
     # region Public Methods
