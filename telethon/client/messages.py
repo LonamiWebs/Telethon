@@ -551,6 +551,7 @@ class MessageMethods:
             *,
             reply_to: 'typing.Union[int, types.Message]' = None,
             parse_mode: typing.Optional[str] = (),
+            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
             force_document: bool = False,
@@ -597,6 +598,9 @@ class MessageMethods:
                 <telethon.client.messageparse.MessageParseMethods.parse_mode>`
                 property for allowed values. Markdown parsing will be used by
                 default.
+
+            formatting_entities (`list`, optional):
+                A list of message formatting entities. When provided, the ``parse_mode`` is ignored.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -699,7 +703,7 @@ class MessageMethods:
                 entity, file, caption=message, reply_to=reply_to,
                 parse_mode=parse_mode, force_document=force_document,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
-                schedule=schedule
+                schedule=schedule, entities=formatting_entities
             )
 
         entity = await self.get_input_entity(entity)
@@ -739,7 +743,8 @@ class MessageMethods:
             )
             message = message.message
         else:
-            message, msg_ent = await self._parse_message_text(message, parse_mode)
+            if formatting_entities is None:
+                message, formatting_entities = await self._parse_message_text(message, parse_mode)
             if not message:
                 raise ValueError(
                     'The message cannot be empty unless a file is provided'
@@ -748,7 +753,7 @@ class MessageMethods:
             request = functions.messages.SendMessageRequest(
                 peer=entity,
                 message=message,
-                entities=msg_ent,
+                entities=formatting_entities,
                 no_webpage=not link_preview,
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
@@ -900,6 +905,7 @@ class MessageMethods:
             text: str = None,
             *,
             parse_mode: str = (),
+            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
             force_document: bool = False,
@@ -938,6 +944,9 @@ class MessageMethods:
                 <telethon.client.messageparse.MessageParseMethods.parse_mode>`
                 property for allowed values. Markdown parsing will be used by
                 default.
+
+            formatting_entities (`list`, optional):
+                A list of message formatting entities. When provided, the ``parse_mode`` is ignored.
 
             link_preview (`bool`, optional):
                 Should the link preview be shown?
@@ -999,7 +1008,8 @@ class MessageMethods:
             message = entity
             entity = entity.peer_id
 
-        text, msg_entities = await self._parse_message_text(text, parse_mode)
+        if formatting_entities is None:
+            text, formatting_entities = await self._parse_message_text(text, parse_mode)
         file_handle, media, image = await self._file_to_media(file,
                 force_document=force_document)
 
@@ -1008,7 +1018,7 @@ class MessageMethods:
                 id=entity,
                 message=text,
                 no_webpage=not link_preview,
-                entities=msg_entities,
+                entities=formatting_entities,
                 media=media,
                 reply_markup=self.build_reply_markup(buttons)
             )
@@ -1030,7 +1040,7 @@ class MessageMethods:
             id=utils.get_message_id(message),
             message=text,
             no_webpage=not link_preview,
-            entities=msg_entities,
+            entities=formatting_entities,
             media=media,
             reply_markup=self.build_reply_markup(buttons),
             schedule_date=schedule
