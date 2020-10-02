@@ -703,7 +703,7 @@ class MessageMethods:
                 entity, file, caption=message, reply_to=reply_to,
                 parse_mode=parse_mode, force_document=force_document,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
-                schedule=schedule, entities=formatting_entities
+                schedule=schedule, formatting_entities=formatting_entities
             )
 
         entity = await self.get_input_entity(entity)
