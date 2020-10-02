@@ -5,25 +5,93 @@ class ParticipantPermissions:
     """
     Participant permissions information
     """
-    def __init__(self, participant):
+    def __init__(self, participant, chat):
         self.participant = participant
+        self.is_chat: bool = chat
 
     @property
     def is_admin(self):
-        return self.is_creator or isinstance(self.participant, types.ChannelParticipantAdmin)
+        return self.is_creator or isinstance(self.participant, (
+            types.ChannelParticipantAdmin,
+            types.ChatParticipantAdmin
+        ))
 
     @property
     def is_creator(self):
         return isinstance(self.participant, types.ChannelParticipantCreator)
 
     @property
-    def is_default_permissions(self):
-        return isinstance(self.participant, types.ChannelParticipant)
+    def has_default_permissions(self):
+        return isinstance(self.participant, (
+            types.ChannelParticipant,
+            types.ChatParticipant,
+            types.ChannelParticipantSelf
+        ))
 
     @property
     def is_banned(self):
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
     @property
-    def is_self(self):
-        return isinstance(self.participant, types.ChannelParticipantSelf)
+    def ban_users(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.ban_users
+
+    @property
+    def pin_messages(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.pin_messages
+
+    @property
+    def add_admins(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat and not self.is_creator:
+            return False
+        return self.participant.admin_rights.add_admins
+
+    @property
+    def invite_users(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.invite_users
+
+    @property
+    def delete_messages(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.delete_messages
+
+    @property
+    def edit_messages(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.edit_messages
+
+    @property
+    def post_messages(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.post_messages
+
+    @property
+    def change_info(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.change_info
