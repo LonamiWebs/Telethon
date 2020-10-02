@@ -725,7 +725,7 @@ class MessageMethods:
                     silent=silent,
                     reply_to=reply_to,
                     buttons=markup,
-                    entities=message.entities,
+                    formatting_entities=message.entities,
                     schedule=schedule
                 )
 
