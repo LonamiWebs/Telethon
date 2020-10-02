@@ -102,6 +102,7 @@ class UploadMethods:
             thumb: 'hints.FileLike' = None,
             allow_cache: bool = True,
             parse_mode: str = (),
+            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             voice_note: bool = False,
             video_note: bool = False,
             buttons: 'hints.MarkupLike' = None,
@@ -214,6 +215,9 @@ class UploadMethods:
                 <telethon.client.messageparse.MessageParseMethods.parse_mode>`
                 property for allowed values. Markdown parsing will be used by
                 default.
+
+            formatting_entities (`list`, optional):
+                A list of message formatting entities. When provided, the ``parse_mode`` is ignored.
 
             voice_note (`bool`, optional):
                 If `True` the audio will be sent as a voice note.
@@ -355,10 +359,8 @@ class UploadMethods:
         entity = await self.get_input_entity(entity)
         reply_to = utils.get_message_id(reply_to)
 
-        # Not document since it's subject to change.
-        # Needed when a Message is passed to send_message and it has media.
-        if 'entities' in kwargs:
-            msg_entities = kwargs['entities']
+        if formatting_entities is not None:
+            msg_entities = formatting_entities
         else:
             caption, msg_entities =\
                 await self._parse_message_text(caption, parse_mode)
