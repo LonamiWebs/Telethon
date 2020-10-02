@@ -164,6 +164,16 @@ class UserMethods:
         except errors.UnauthorizedError:
             return None
 
+    @property
+    def _self_id(self: 'TelegramClient') -> typing.Optional[int]:
+        """
+        Returns the ID of the logged-in user, if known.
+
+        This property is used in every update, and some like `updateLoginToken`
+        occur prior to login, so it gracefully handles when no ID is known yet.
+        """
+        return self._self_input_peer.user_id if self._self_input_peer else None
+
     async def is_bot(self: 'TelegramClient') -> bool:
         """
         Return `True` if the signed-in user is a bot, `False` otherwise.

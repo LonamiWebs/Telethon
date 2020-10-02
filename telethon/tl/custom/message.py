@@ -608,9 +608,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     @property
     def to_id(self):
         """
-        Alias for ``.peer_id``. Telegram renamed the field, and this property
-        exists to avoid breaking code.
+        Returns the peer to which this message was sent to. This used to exist
+        to infer the ``.peer_id``.
         """
+        # If the client wasn't set we can't emulate the behaviour correctly,
+        # so as a best-effort simply return the chat peer.
+        if self._client and not self.out and self.is_private:
+            return types.PeerUser(self._client._self_id)
+
         return self.peer_id
 
     # endregion Public Properties

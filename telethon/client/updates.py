@@ -616,15 +616,8 @@ class EventBuilderDict:
         try:
             return self.__dict__[builder]
         except KeyError:
-            # Updates may arrive before login (like updateLoginToken) and we
-            # won't have our self ID yet (anyway only new messages need it).
-            self_id = (
-                self.client._self_input_peer.user_id
-                if self.client._self_input_peer
-                else None
-            )
             event = self.__dict__[builder] = builder.build(
-                self.update, self.others, self_id)
+                self.update, self.others, self.client._self_id)
 
             if isinstance(event, EventCommon):
                 event.original_update = self.update
