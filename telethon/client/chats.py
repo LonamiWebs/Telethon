@@ -1184,7 +1184,7 @@ class ChatMethods:
             for participant in chat.participants.participants:
                 if participant.user_id == user.id:
                     return custom.ParticipantPermissions(participant.participant, True)
-            return None
+            raise errors.UserNotParticipantError(None)
 
         raise ValueError('You must pass either a channel or a chat')
 
