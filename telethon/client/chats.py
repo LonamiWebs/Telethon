@@ -1151,7 +1151,7 @@ class ChatMethods:
             user: 'hints.EntityLike'
     ) -> 'typing.Optional[custom.ParticipantPermissions]':
         """
-        Getting a user's permissions from a chat or channel.
+        Fetches the permissions of a user in a specific chat or channel.
 
         Arguments
             entity (`entity`):
