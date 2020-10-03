@@ -18,7 +18,10 @@ class ParticipantPermissions:
 
     @property
     def is_creator(self):
-        return isinstance(self.participant, types.ChannelParticipantCreator)
+        return isinstance(self.participant, (
+            types.ChannelParticipantCreator,
+            types.ChatParticipantCreator
+        ))
 
     @property
     def has_default_permissions(self):
