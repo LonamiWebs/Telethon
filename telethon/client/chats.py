@@ -1149,7 +1149,24 @@ class ChatMethods:
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             user: 'hints.EntityLike'
-    ) -> 'custom.ParticipantPermissions':
+    ) -> 'typing.Optional[custom.ParticipantPermissions]':
+        """
+        Getting a user's permissions from a chat or channel.
+
+        Arguments
+            entity (`entity`):
+                The channel or chat.
+
+            user (`entity`):
+                Target user.
+
+        Example
+            .. code-block:: python
+
+                permissions = await client.get_permissions(chat, user)
+                if permissions.is_admin:
+                    # do something
+        """
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
         if helpers._entity_type(user) != helpers._EntityType.USER:
@@ -1167,6 +1184,7 @@ class ChatMethods:
             for participant in chat.participants.participants:
                 if participant.user_id == user.id:
                     return custom.ParticipantPermissions(participant.participant, True)
+            return None
 
         raise ValueError('You must pass either a channel or a chat')
 
