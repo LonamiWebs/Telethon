@@ -1145,6 +1145,49 @@ class ChatMethods:
         else:
             raise ValueError('You must pass either a channel or a chat')
 
+    async def get_permissions(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'hints.EntityLike'
+    ) -> 'typing.Optional[custom.ParticipantPermissions]':
+        """
+        Fetches the permissions of a user in a specific chat or channel.
+
+        Arguments
+            entity (`entity`):
+                The channel or chat the user is participant of.
+
+            user (`entity`):
+                Target user.
+
+        Example
+            .. code-block:: python
+
+                permissions = await client.get_permissions(chat, user)
+                if permissions.is_admin:
+                    # do something
+        """
+        entity = await self.get_input_entity(entity)
+        user = await self.get_input_entity(user)
+        if helpers._entity_type(user) != helpers._EntityType.USER:
+            raise ValueError('You must pass a user entity')
+        if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
+            participant = await self(functions.channels.GetParticipantRequest(
+                entity,
+                user
+            ))
+            return custom.ParticipantPermissions(participant.participant, False)
+        elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
+            chat = await self(functions.messages.GetFullChatRequest(
+                entity
+            ))
+            for participant in chat.participants.participants:
+                if participant.user_id == user.id:
+                    return custom.ParticipantPermissions(participant.participant, True)
+            raise errors.UserNotParticipantError(None)
+
+        raise ValueError('You must pass either a channel or a chat')
+
     async def get_stats(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
