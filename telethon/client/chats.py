@@ -1155,7 +1155,7 @@ class ChatMethods:
 
         Arguments
             entity (`entity`):
-                The channel or chat.
+                The channel or chat the user is participant of.
 
             user (`entity`):
                 Target user.
