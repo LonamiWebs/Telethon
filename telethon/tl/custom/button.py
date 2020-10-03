@@ -54,7 +54,7 @@ class Button:
         ))
 
     @staticmethod
-    def inline(text, data=None):
+    def inline(text, data=None, requires_password=False):
         """
         Creates a new inline button with some payload data in it.
 
@@ -72,7 +72,7 @@ class Button:
         if len(data) > 64:
             raise ValueError('Too many bytes for the data')
 
-        return types.KeyboardButtonCallback(text, data)
+        return types.KeyboardButtonCallback(text, data, requires_password)
 
     @staticmethod
     def switch_inline(text, query='', same_peer=False):
