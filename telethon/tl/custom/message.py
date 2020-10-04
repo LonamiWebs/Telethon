@@ -794,14 +794,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                     *, text=None, filter=None, data=None, share_phone=None,
                     share_geo=None):
         """
-        Calls `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
+        Calls `<telethon.tl.functions.messages.SendVoteRequest>` with the specified poll option
+        or `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
         on the specified button.
 
-        Does nothing if the message has no buttons.
+        Does nothing if the message has no buttons and poll.
 
         Args:
-            i (`int`):
-                Clicks the i'th button (starting from the index 0).
+            i (`int` | `list`):
+                Clicks the i'th button or poll option (starting from the index 0).
+                For multiple-choice poll indices can be passed as list.
                 Will ``raise IndexError`` if out of bounds. Example:
 
                 >>> message = ...  # get the message somehow
@@ -824,15 +826,15 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 This is equivalent to ``message.buttons[0][1].click()``.
 
             text (`str` | `callable`):
-                Clicks the first button with the text "text". This may
+                Clicks the first button or poll option with the text "text". This may
                 also be a callable, like a ``re.compile(...).match``,
                 and the text will be passed to it.
 
             filter (`callable`):
-                Clicks the first button for which the callable
+                Clicks the first button or poll option for which the callable
                 returns `True`. The callable should accept a single
                 `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
-                argument.
+                or `PollAnswer <telethon.tl.types.PollAnswer>` argument.
 
             data (`bytes`):
                 This argument overrides the rest and will not search any
@@ -902,6 +904,42 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
+
+        # Finding the desired poll options and sending them
+        if self.poll is not None:
+            def find_options():
+                answers = self.poll.poll.answers
+                if i is not None:
+                    if isinstance(i, list):
+                        return [answers[idx].option for idx in i]
+                    return [answers[i].option]
+                if text is not None:
+                    if callable(text):
+                        for answer in answers:
+                            if text(answer.text):
+                                return [answer.option]
+                    else:
+                        for answer in answers:
+                            if answer.text == text:
+                                return [answer.option]
+                    return
+
+                if filter is not None:
+                    for answer in answers:
+                        if filter(answer):
+                            return [answer.option]
+                    return
+
+            options = find_options()
+            if options is None:
+                return
+            return await self._client(
+                functions.messages.SendVoteRequest(
+                    peer=self._input_chat,
+                    msg_id=self.id,
+                    options=options
+                )
+            )
 
         if not await self.get_buttons():
             return  # Accessing the property sets self._buttons[_flat]
