@@ -513,8 +513,13 @@ class UpdateMethods:
         self._log[__name__].debug('Getting difference for entities '
                                   'for %r', update.__class__)
         if channel_id:
+            # There are reports where we somehow call get channel difference
+            # with `InputPeerEmpty`. Check our assumptions to better debug
+            # this when it happens.
+            assert isinstance(channel_id, int), 'channel_id was {}, not int in {}'.format(type(channel_id), update)
             try:
-                where = await self.get_input_entity(channel_id)
+                # Wrap the ID inside a peer to ensure we get a channel back.
+                where = await self.get_input_entity(types.PeerChannel(channel_id))
             except ValueError:
                 # There's a high chance that this fails, since
                 # we are getting the difference to fetch entities.
