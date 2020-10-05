@@ -10,6 +10,7 @@ legacy_tox_ini = """
 [tox]
 envlist = py35,py36,py37,py38
 
+# run with tox -e py
 [testenv]
 deps =
     -rrequirements.txt
