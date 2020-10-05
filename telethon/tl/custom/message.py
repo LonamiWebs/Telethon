@@ -794,16 +794,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                     *, text=None, filter=None, data=None, share_phone=None,
                     share_geo=None):
         """
-        Calls `<telethon.tl.functions.messages.SendVoteRequest>` with the specified poll option
+        Calls :tl:`SendVote` with the specified poll option
         or `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
         on the specified button.
 
-        Does nothing if the message has no buttons and poll.
+        Does nothing if the message is not a poll or has no buttons.
 
         Args:
             i (`int` | `list`):
                 Clicks the i'th button or poll option (starting from the index 0).
-                For multiple-choice poll indices can be passed as list.
+                For multiple-choice polls, a list with the indices should be used.
                 Will ``raise IndexError`` if out of bounds. Example:
 
                 >>> message = ...  # get the message somehow
@@ -910,7 +910,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             def find_options():
                 answers = self.poll.poll.answers
                 if i is not None:
-                    if isinstance(i, list):
+                    if utils.is_list_like(i):
                         return [answers[idx].option for idx in i]
                     return [answers[i].option]
                 if text is not None:
