@@ -865,6 +865,12 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
 
                 If the button is pressed without this, `ValueError` is raised.
 
+            multiselect_options (`bool`):
+                Allows multiselection of poll options for which the callable
+                `filter` or `text` returns `True`. 
+                
+                Defaults to `False`.
+
             Example:
 
                 .. code-block:: python
@@ -915,6 +921,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                     return [answers[i].option]
                 if text is not None:
                     if callable(text):
+                        if multiselect_options:
+                            return [answer.option for answer in answers if text(answer.text)]
                         for answer in answers:
                             if text(answer.text):
                                 return [answer.option]
@@ -925,6 +933,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                     return
 
                 if filter is not None:
+                    if multiselect_options:
+                        return [answer.option for answer in answers if filter(answer)]
                     for answer in answers:
                         if filter(answer):
                             return [answer.option]
