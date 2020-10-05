@@ -15,12 +15,14 @@ import json
 import os
 import re
 import shutil
+import sys
 from pathlib import Path
 from subprocess import run
-from sys import argv
 
 from setuptools import find_packages, setup
 
+# Needed since we're importing local files
+sys.path.insert(0, os.path.dirname(__file__))
 
 class TempWorkDir:
     """Switches the working directory to be the one on which this file lives,
@@ -148,7 +150,7 @@ def generate(which, action='gen'):
         )
 
 
-def main():
+def main(argv):
     if len(argv) >= 2 and argv[1] in ('gen', 'clean'):
         generate(argv[2:], argv[1])
 
@@ -231,4 +233,4 @@ def main():
 
 if __name__ == '__main__':
     with TempWorkDir():
-        main()
+        main(sys.argv)

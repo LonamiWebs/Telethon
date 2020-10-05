@@ -1,3 +1,12 @@
+# https://snarky.ca/what-the-heck-is-pyproject-toml/
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Need to use legacy format for the time being
+# https://tox.readthedocs.io/en/3.20.0/example/basic.html#pyproject-toml-tox-legacy-ini
+[tool.tox]
+legacy_tox_ini = """
 [tox]
 envlist = py35,py36,py37,py38
 
@@ -22,3 +31,5 @@ commands =
     flake8 telethon/ telethon_generator/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     flake8 telethon/ telethon_generator/ tests/ --count --exit-zero --exclude telethon/tl/,telethon/errors/rpcerrorlist.py --max-complexity=10 --max-line-length=127 --statistics
+
+"""
