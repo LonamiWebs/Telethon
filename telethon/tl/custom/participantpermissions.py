@@ -3,11 +3,24 @@ from .. import types
 
 class ParticipantPermissions:
     """
-    Participant permissions information
+    Participant permissions information.
+
+    The properties in this objects are boolean values indicating whether the
+    user has the permission or not.
+
+    Example
+        .. code-block:: python
+
+            permissions = ...
+
+            if permissions.is_banned:
+                "this user is banned"
+            elif permissions.is_admin:
+                "this user is an administrator"
     """
-    def __init__(self, participant, chat):
+    def __init__(self, participant, chat: bool):
         self.participant = participant
-        self.is_chat: bool = chat
+        self.is_chat = chat
 
     @property
     def is_admin(self):
