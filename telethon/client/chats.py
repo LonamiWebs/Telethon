@@ -1181,9 +1181,11 @@ class ChatMethods:
             chat = await self(functions.messages.GetFullChatRequest(
                 entity
             ))
-            for participant in chat.participants.participants:
-                if participant.user_id == user.id:
-                    return custom.ParticipantPermissions(participant.participant, True)
+            if isinstance(user, types.InputPeerSelf):
+                user = await self.get_me(input_peer=True)
+            for participant in chat.full_chat.participants.participants:
+                if participant.user_id == user.user_id:
+                    return custom.ParticipantPermissions(participant, True)
             raise errors.UserNotParticipantError(None)
 
         raise ValueError('You must pass either a channel or a chat')
