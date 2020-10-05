@@ -156,7 +156,7 @@ class NewMessage(EventBuilder):
                 return
 
         if self.from_users is not None:
-            if utils.get_peer_id(event.message.from_id) not in self.from_users:
+            if event.message.sender_id not in self.from_users:
                 return
 
         if self.pattern:

@@ -31,9 +31,7 @@ class Forward(ChatGetter, SenderGetter):
         self.original_fwd = original
 
         sender_id = sender = input_sender = peer = chat = input_chat = None
-        if not original.from_id:
-            pass
-        else:
+        if original.from_id:
             ty = helpers._entity_type(original.from_id)
             if ty == helpers._EntityType.USER:
                 sender_id = utils.get_peer_id(original.from_id)
