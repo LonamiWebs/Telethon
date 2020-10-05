@@ -1171,6 +1171,8 @@ class ChatMethods:
         user = await self.get_input_entity(user)
         if helpers._entity_type(user) != helpers._EntityType.USER:
             raise ValueError('You must pass a user entity')
+        if isinstance(user, types.InputPeerSelf):
+            user = await self.get_me(input_peer=True)
         if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
             participant = await self(functions.channels.GetParticipantRequest(
                 entity,
@@ -1181,9 +1183,9 @@ class ChatMethods:
             chat = await self(functions.messages.GetFullChatRequest(
                 entity
             ))
-            for participant in chat.participants.participants:
-                if participant.user_id == user.id:
-                    return custom.ParticipantPermissions(participant.participant, True)
+            for participant in chat.full_chat.participants.participants:
+                if participant.user_id == user.user_id:
+                    return custom.ParticipantPermissions(participant, True)
             raise errors.UserNotParticipantError(None)
 
         raise ValueError('You must pass either a channel or a chat')
