@@ -28,12 +28,13 @@ class Connection(abc.ABC):
     # should be one of `PacketCodec` implementations
     packet_codec = None
 
-    def __init__(self, ip, port, dc_id, *, loggers, proxy=None):
+    def __init__(self, ip, port, dc_id, *, loggers, proxy=None, local_addr=None):
         self._ip = ip
         self._port = port
         self._dc_id = dc_id  # only for MTProxy, it's an abstraction leak
         self._log = loggers[__name__]
         self._proxy = proxy
+        self._local_addr = local_addr
         self._reader = None
         self._writer = None
         self._connected = False
@@ -46,8 +47,13 @@ class Connection(abc.ABC):
 
     async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
+            if self._local_addr is not None:
+                local_addr = (self._local_addr, None)
+            else:
+                local_addr = None
+
             self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self._ip, self._port, ssl=ssl),
+                asyncio.open_connection(self._ip, self._port, ssl=ssl, local_addr=local_addr),
                 timeout=timeout
             )
         else:
@@ -64,6 +70,8 @@ class Connection(abc.ABC):
                 s.set_proxy(*self._proxy)
 
             s.settimeout(timeout)
+            if self._local_addr is not None:
+                s.bind((self._local_addr, None))
             await asyncio.wait_for(
                 asyncio.get_event_loop().sock_connect(s, address),
                 timeout=timeout
