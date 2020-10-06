@@ -111,3 +111,11 @@ class ParticipantPermissions:
         if self.is_chat:
             return True
         return self.participant.admin_rights.change_info
+
+    @property
+    def anonymous(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+        return self.participant.admin_rights.anonymous

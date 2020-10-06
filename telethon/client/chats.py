@@ -811,6 +811,7 @@ class ChatMethods:
             invite_users: bool = None,
             pin_messages: bool = None,
             add_admins: bool = None,
+            anonymous: bool = None,
             is_admin: bool = None,
             title: str = None) -> types.Updates:
         """
@@ -854,6 +855,18 @@ class ChatMethods:
             add_admins (`bool`, optional):
                 Whether the user will be able to add admins.
 
+            anonymous (`bool`, optional):
+                Whether the user will remain anonymous when sending messages.
+                The sender of the anonymous messages becomes the group itself.
+
+                .. note::
+
+                    Users may be able to identify the anonymous admin by its
+                    custom title, so additional care is needed when using both
+                    ``anonymous`` and custom titles. For example, if multiple
+                    anonymous admins share the same title, users won't be able
+                    to distinguish them.
+
             is_admin (`bool`, optional):
                 Whether the user will be an admin in the chat.
                 This will only work in small group chats.
@@ -893,7 +906,8 @@ class ChatMethods:
 
         perm_names = (
             'change_info', 'post_messages', 'edit_messages', 'delete_messages',
-            'ban_users', 'invite_users', 'pin_messages', 'add_admins'
+            'ban_users', 'invite_users', 'pin_messages', 'add_admins',
+            'anonymous',
         )
 
         ty = helpers._entity_type(entity)
