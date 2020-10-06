@@ -1,6 +1,23 @@
 from .. import types
 
 
+def _admin_prop(field_name, doc):
+    """
+    Helper method to build properties that return `True` if the user is an
+    administrator of a normal chat, or otherwise return `True` if the user
+    has a specific permission being an admin of a channel.
+    """
+    def fget(self):
+        if not self.is_admin:
+            return False
+        if self.is_chat:
+            return True
+
+        return getattr(self.participant.admin_rights, field_name)
+
+    return {'fget': fget, 'doc': doc}
+
+
 class ParticipantPermissions:
     """
     Participant permissions information.
@@ -62,103 +79,40 @@ class ParticipantPermissions:
         """
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
-    @property
-    def ban_users(self):
-        """
+    ban_users = property(**_admin_prop('ban_users', """
         Whether the administrator can ban other users or not.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.ban_users
+    """))
 
-    @property
-    def pin_messages(self):
-        """
+    pin_messages = property(**_admin_prop('pin_messages', """
         Whether the administrator can pin messages or not.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.pin_messages
+    """))
 
-    @property
-    def add_admins(self):
-        """
+    add_admins = property(**_admin_prop('add_admins', """
         Whether the administrator can add new administrators with the same or
         less permissions than them.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat and not self.is_creator:
-            return False
-        return self.participant.admin_rights.add_admins
+    """))
 
-    @property
-    def invite_users(self):
-        """
+    invite_users = property(**_admin_prop('invite_users', """
         Whether the administrator can add new users to the chat.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.invite_users
+    """))
 
-    @property
-    def delete_messages(self):
-        """
+    delete_messages = property(**_admin_prop('delete_messages', """
         Whether the administrator can delete messages from other participants.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.delete_messages
+    """))
 
-    @property
-    def edit_messages(self):
-        """
+    edit_messages = property(**_admin_prop('edit_messages', """
         Whether the administrator can edit messages.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.edit_messages
+    """))
 
-    @property
-    def post_messages(self):
-        """
+    post_messages = property(**_admin_prop('post_messages', """
         Whether the administrator can post messages in the broadcast channel.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.post_messages
+    """))
 
-    @property
-    def change_info(self):
-        """
+    change_info = property(**_admin_prop('change_info', """
         Whether the administrator can change the information about the chat,
         such as title or description.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.change_info
+    """))
 
-    @property
-    def anonymous(self):
-        """
+    anonymous = property(**_admin_prop('anonymous', """
         Whether the administrator will remain anonymous when sending messages.
-        """
-        if not self.is_admin:
-            return False
-        if self.is_chat:
-            return True
-        return self.participant.admin_rights.anonymous
+    """))
