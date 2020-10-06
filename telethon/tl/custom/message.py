@@ -830,8 +830,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 also be a callable, like a ``re.compile(...).match``,
                 and the text will be passed to it.
 
-                Please note that the first option for which the callable
-                returns `True` will be selected.
+                If you need to select multiple options in a poll,
+                pass a list of indices to the ``i`` parameter.
 
             filter (`callable`):
                 Clicks the first button or poll option for which the callable
@@ -839,8 +839,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
                 or `PollAnswer <telethon.tl.types.PollAnswer>` argument.
 
-                Please note that the first option for which the callable
-                returns `True` will be selected.
+                If you need to select multiple options in a poll,
+                pass a list of indices to the ``i`` parameter.
 
             data (`bytes`):
                 This argument overrides the rest and will not search any
