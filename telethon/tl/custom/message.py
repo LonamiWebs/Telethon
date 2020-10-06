@@ -830,11 +830,17 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                 also be a callable, like a ``re.compile(...).match``,
                 and the text will be passed to it.
 
+                Please note that the first option for which the callable
+                returns `True` will be selected.
+
             filter (`callable`):
                 Clicks the first button or poll option for which the callable
                 returns `True`. The callable should accept a single
                 `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
                 or `PollAnswer <telethon.tl.types.PollAnswer>` argument.
+
+                Please note that the first option for which the callable
+                returns `True` will be selected.
 
             data (`bytes`):
                 This argument overrides the rest and will not search any
