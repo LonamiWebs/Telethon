@@ -24,6 +24,10 @@ class ParticipantPermissions:
 
     @property
     def is_admin(self):
+        """
+        Whether the user is an administrator of the chat or not. The creator
+        also counts as begin an administrator, since they have all permissions.
+        """
         return self.is_creator or isinstance(self.participant, (
             types.ChannelParticipantAdmin,
             types.ChatParticipantAdmin
@@ -31,6 +35,9 @@ class ParticipantPermissions:
 
     @property
     def is_creator(self):
+        """
+        Whether the user is the creator of the chat or not.
+        """
         return isinstance(self.participant, (
             types.ChannelParticipantCreator,
             types.ChatParticipantCreator
@@ -38,6 +45,10 @@ class ParticipantPermissions:
 
     @property
     def has_default_permissions(self):
+        """
+        Whether the user is a normal user of the chat (not administrator, but
+        not banned either, and has no restrictions applied).
+        """
         return isinstance(self.participant, (
             types.ChannelParticipant,
             types.ChatParticipant,
@@ -46,10 +57,16 @@ class ParticipantPermissions:
 
     @property
     def is_banned(self):
+        """
+        Whether the user is banned in the chat.
+        """
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
     @property
     def ban_users(self):
+        """
+        Whether the administrator can ban other users or not.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -58,6 +75,9 @@ class ParticipantPermissions:
 
     @property
     def pin_messages(self):
+        """
+        Whether the administrator can pin messages or not.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -66,6 +86,10 @@ class ParticipantPermissions:
 
     @property
     def add_admins(self):
+        """
+        Whether the administrator can add new administrators with the same or
+        less permissions than them.
+        """
         if not self.is_admin:
             return False
         if self.is_chat and not self.is_creator:
@@ -74,6 +98,9 @@ class ParticipantPermissions:
 
     @property
     def invite_users(self):
+        """
+        Whether the administrator can add new users to the chat.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -82,6 +109,9 @@ class ParticipantPermissions:
 
     @property
     def delete_messages(self):
+        """
+        Whether the administrator can delete messages from other participants.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -90,6 +120,9 @@ class ParticipantPermissions:
 
     @property
     def edit_messages(self):
+        """
+        Whether the administrator can edit messages.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -98,6 +131,9 @@ class ParticipantPermissions:
 
     @property
     def post_messages(self):
+        """
+        Whether the administrator can post messages in the broadcast channel.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -106,6 +142,10 @@ class ParticipantPermissions:
 
     @property
     def change_info(self):
+        """
+        Whether the administrator can change the information about the chat,
+        such as title or description.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:
@@ -114,6 +154,9 @@ class ParticipantPermissions:
 
     @property
     def anonymous(self):
+        """
+        Whether the administrator will remain anonymous when sending messages.
+        """
         if not self.is_admin:
             return False
         if self.is_chat:

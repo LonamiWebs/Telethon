@@ -1174,6 +1174,11 @@ class ChatMethods:
             user (`entity`):
                 Target user.
 
+        Returns
+            A `ParticipantPermissions <telethon.tl.custom.participantpermissions.ParticipantPermissions>`
+            instance. Refer to its documentation to see what properties are
+            available.
+
         Example
             .. code-block:: python
 
