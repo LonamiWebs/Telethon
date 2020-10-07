@@ -77,8 +77,8 @@ class ChatAction(EventBuilder):
                                  added_by=True,
                                  users=msg.from_id)
             elif isinstance(action, types.MessageActionChatAddUser):
-                # If a user adds itself, it means they joined
-                added_by = ([utils.get_peer_id(msg.from_id)] == action.users) or msg.from_id
+                # If a user adds itself, it means they joined via the public chat username
+                added_by = ([msg.sender_id] == action.users) or msg.from_id
                 return cls.Event(msg,
                                  added_by=added_by,
                                  users=action.users)
