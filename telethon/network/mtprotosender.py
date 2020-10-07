@@ -338,7 +338,7 @@ class MTProtoSender:
         """
         Cleanly disconnects and then reconnects.
         """
-        self._log.debug('Closing current connection...')
+        self._log.info('Closing current connection to begin reconnect...')
         await self._connection.disconnect()
 
         await helpers._cancel(
@@ -360,6 +360,7 @@ class MTProtoSender:
         retries = self._retries if self._auto_reconnect else 0
         
         attempt = 0
+        ok = True
         # We're already "retrying" to connect, so we don't want to force retries
         for attempt in retry_range(retries, force_retry=False):
             try:
@@ -376,6 +377,9 @@ class MTProtoSender:
                     self.auth_key.key = None
                     if self._auth_key_callback:
                         self._auth_key_callback(None)
+
+                    ok = False
+                    break
                 else:
                     self._log.warning('Invalid buffer %s', e)
 
@@ -394,6 +398,9 @@ class MTProtoSender:
 
                 break
         else:
+            ok = False
+
+        if not ok:
             self._log.error('Automatic reconnection failed %d time(s)', attempt)
             await self._disconnect(error=last_error.with_traceback(None))
 
@@ -500,10 +507,11 @@ class MTProtoSender:
                     self.auth_key.key = None
                     if self._auth_key_callback:
                         self._auth_key_callback(None)
+
+                    await self._disconnect(error=e)
                 else:
                     self._log.warning('Invalid buffer %s', e)
-
-                self._start_reconnect(e)
+                    self._start_reconnect(e)
                 return
             except Exception as e:
                 self._log.exception('Unhandled error while receiving data')
