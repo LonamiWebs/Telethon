@@ -79,17 +79,23 @@ class ParticipantPermissions:
         """
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
+    @property
+    def add_admins(self):
+        """
+        Whether the administrator can add new administrators with the same or
+        less permissions than them.
+        """
+        if not self.is_admin or (self.is_chat and not self.is_creator):
+            return False
+
+        return self.participant.admin_rights.add_admins
+
     ban_users = property(**_admin_prop('ban_users', """
         Whether the administrator can ban other users or not.
     """))
 
     pin_messages = property(**_admin_prop('pin_messages', """
         Whether the administrator can pin messages or not.
-    """))
-
-    add_admins = property(**_admin_prop('add_admins', """
-        Whether the administrator can add new administrators with the same or
-        less permissions than them.
     """))
 
     invite_users = property(**_admin_prop('invite_users', """
