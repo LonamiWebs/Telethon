@@ -110,6 +110,11 @@ class TelegramBaseClient(abc.ABC):
             function parameters for PySocks, like ``(type, 'hostname', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
+        local_addr (`str`, optional):
+            Local host address used to bind the socket to locally.
+            You only need to use this if you have multiple network cards and
+            want to use a specific one.
+
         timeout (`int` | `float`, optional):
             The timeout in seconds to be used when connecting.
             This is **not** the timeout to be used when ``await``'ing for
