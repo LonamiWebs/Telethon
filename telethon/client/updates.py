@@ -311,6 +311,7 @@ class UpdateMethods:
         if self._dispatching_updates_queue is None:
             task = self._loop.create_task(self._dispatch_update(*args))
             self._updates_queue.add(task)
+            task.add_done_callback(lambda _: None if task.cancelled() else task.exception())
             task.add_done_callback(lambda _: self._updates_queue.discard(task))
         else:
             self._updates_queue.put_nowait(args)

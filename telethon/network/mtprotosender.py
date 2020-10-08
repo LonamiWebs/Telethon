@@ -315,6 +315,7 @@ class MTProtoSender:
             for state in self._pending_state.values():
                 if error and not state.future.done():
                     state.future.set_exception(error)
+                    state.future.exception()
                 else:
                     state.future.cancel()
 
@@ -331,6 +332,7 @@ class MTProtoSender:
         if self._disconnected and not self._disconnected.done():
             if error:
                 self._disconnected.set_exception(error)
+                self._disconnected.exception()
             else:
                 self._disconnected.set_result(None)
 
