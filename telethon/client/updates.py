@@ -279,6 +279,30 @@ class UpdateMethods:
 
     # endregion
 
+    async def fetch_updates(self: 'TelegramClient'):
+        """
+        'Synchronous' version of 'catch_up()'. Fetch updates and
+        wait until all of them are processed.
+
+        Additional sanity check for update State.
+        If session missing update state we fetch the latest one.
+
+        Example
+            .. code-block:: python
+
+                await client.fetch_updates()
+
+        """
+        update_state = self.session.get_update_state(0)
+        if not update_state or update_state.pts == 0:
+            state = await self(functions.updates.GetStateRequest())
+            self.session.set_update_state(0, state)
+
+        await self.catch_up()
+        while self._updates_queue:
+            await asyncio.wait(self._updates_queue, return_when=asyncio.ALL_COMPLETED)
+
+
     # region Private methods
 
     # It is important to not make _handle_update async because we rely on
