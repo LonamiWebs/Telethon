@@ -63,7 +63,7 @@ class _MessagesIter(RequestIter):
                 from_user = None  # Ignore from_user unless it's a user
 
         if from_user:
-            self.from_id = utils.get_peer(from_user)
+            self.from_id = await self.client.get_peer_id(from_user)
         else:
             self.from_id = None
 
@@ -174,7 +174,7 @@ class _MessagesIter(RequestIter):
         messages = reversed(r.messages) if self.reverse else r.messages
         for message in messages:
             if (isinstance(message, types.MessageEmpty)
-                    or self.from_id and message.from_id != self.from_id):
+                    or self.from_id and message.sender_id != self.from_id):
                 continue
 
             if not self._message_in_range(message):
