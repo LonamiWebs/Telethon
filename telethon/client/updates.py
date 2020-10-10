@@ -408,7 +408,7 @@ class UpdateMethods:
             try:
                 await self.get_me(input_peer=True)
             except OSError:
-                pass
+                pass  # might not have connection
 
         built = EventBuilderDict(self, update, others)
         for conv_set in self._conversations.values():
