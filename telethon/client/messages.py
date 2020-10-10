@@ -1121,6 +1121,45 @@ class MessageMethods:
             return await self([functions.messages.DeleteMessagesRequest(
                          list(c), revoke) for c in utils.chunks(message_ids)])
 
+    async def delete_user_messages(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            user: 'hints.EntityLike'
+    ):
+        """
+        Deletes the all message history of a particular user from supergroup.
+
+        .. warning::
+            This method cannot by used by bot accounts.
+
+        Arguments
+            entity (`entity`):
+                From which supergroup the message will be deleted.
+
+            user (`entity`):
+                User whose message history should be deleted
+
+        Returns
+            :tl:`AffectedHistory`, with attribute pts_count which contains the count of messages deleted
+
+        Example
+            .. code-block:: python
+
+                await client.delete_user_messages(chat, user)
+        """
+        entity = await self.get_input_entity(entity)
+        user_entity = await self.get_input_entity(user)
+
+        if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
+            raise ValueError('This method can only be used in supergroups')
+        if helpers._entity_type(user_entity) != helpers._EntityType.USER:
+            raise ValueError('You must pass a valid user whose message history you want to delete.')
+
+        return await self(functions.channels.DeleteUserHistoryRequest(
+            channel=entity,
+            user_id=user
+        ))
+
     # endregion
 
     # region Miscellaneous
