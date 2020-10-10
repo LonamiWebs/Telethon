@@ -407,7 +407,7 @@ class UpdateMethods:
             # fine, we will just retry next time anyway.
             try:
                 await self.get_me(input_peer=True)
-            except (OSError, errors.RPCError):
+            except OSError:
                 pass
 
         built = EventBuilderDict(self, update, others)
