@@ -1127,17 +1127,17 @@ class MessageMethods:
             user: 'hints.EntityLike'
     ):
         """
-        Deletes the all message history of a particular user from supergroup.
+        Deletes the message history of a particular user from a supergroup.
 
         .. warning::
-            This method cannot by used by bot accounts.
+            This method will not work when connected from a bot account using bot token.
 
         Arguments
             entity (`entity`):
-                From which supergroup the message will be deleted.
+                The supergroup from which the message will be deleted.
 
             user (`entity`):
-                User whose message history should be deleted
+                User whose message history will be deleted
 
         Returns
             :tl:`AffectedHistory`, with attribute pts_count which contains the count of messages deleted
