@@ -55,8 +55,8 @@ class TLObject:
         self.class_name = snake_to_camel_case(
             self.name, suffix='Request' if self.is_function else '')
 
-        self.real_args = list(a for a in self.sorted_args() if not
-                              (a.flag_indicator or a.generic_definition))
+        self.real_args = [a for a in self.sorted_args() if not
+                                  (a.flag_indicator or a.generic_definition)]
 
     @property
     def innermost_result(self):
@@ -75,16 +75,8 @@ class TLObject:
                       key=lambda x: x.is_flag or x.can_be_inferred)
 
     def __repr__(self, ignore_id=False):
-        if self.id is None or ignore_id:
-            hex_id = ''
-        else:
-            hex_id = '#{:08x}'.format(self.id)
-
-        if self.args:
-            args = ' ' + ' '.join([repr(arg) for arg in self.args])
-        else:
-            args = ''
-
+        hex_id = '' if self.id is None or ignore_id else '#{:08x}'.format(self.id)
+        args = ' ' + ' '.join([repr(arg) for arg in self.args]) if self.args else ''
         return '{}{}{} = {}'.format(self.fullname, hex_id, args, self.result)
 
     def infer_id(self):

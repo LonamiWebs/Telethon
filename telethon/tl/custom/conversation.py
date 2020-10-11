@@ -71,11 +71,7 @@ class Conversation(ChatGetter):
         # The user is able to expect two responses for the same message.
         # {desired message ID: next incoming index}
         self._response_indices = {}
-        if replies_are_responses:
-            self._reply_indices = self._response_indices
-        else:
-            self._reply_indices = {}
-
+        self._reply_indices = self._response_indices if replies_are_responses else {}
         self._edit_dates = {}
 
     @_checks_cancelled
@@ -120,10 +116,7 @@ class Conversation(ChatGetter):
         <telethon.client.messages.MessageMethods.send_read_acknowledge>`.
         """
         if message is None:
-            if self._incoming:
-                message = self._incoming[-1].id
-            else:
-                message = 0
+            message = self._incoming[-1].id if self._incoming else 0
         elif not isinstance(message, int):
             message = message.id
 

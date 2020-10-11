@@ -37,10 +37,10 @@ class TLObject:
         Pretty formats the given object as a string which is returned.
         If indent is None, a single line will be returned.
         """
-        if indent is None:
-            if isinstance(obj, TLObject):
-                obj = obj.to_dict()
+        if isinstance(obj, TLObject):
+            obj = obj.to_dict()
 
+        if indent is None:
             if isinstance(obj, dict):
                 return '{}({})'.format(obj.get('_', 'dict'), ', '.join(
                     '{}={}'.format(k, TLObject.pretty_format(v))
@@ -56,9 +56,6 @@ class TLObject:
                 return repr(obj)
         else:
             result = []
-            if isinstance(obj, TLObject):
-                obj = obj.to_dict()
-
             if isinstance(obj, dict):
                 result.append(obj.get('_', 'dict'))
                 result.append('(')
@@ -115,8 +112,6 @@ class TLObject:
                 padding = 4 - padding
 
             r.append(bytes([len(data)]))
-            r.append(data)
-
         else:
             padding = len(data) % 4
             if padding != 0:
@@ -128,7 +123,7 @@ class TLObject:
                 (len(data) >> 8) % 256,
                 (len(data) >> 16) % 256
             ]))
-            r.append(data)
+        r.append(data)
 
         r.append(bytes(padding))
         return b''.join(r)

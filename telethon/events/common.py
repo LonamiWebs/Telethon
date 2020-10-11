@@ -95,9 +95,8 @@ class EventBuilder(abc.ABC):
             self._resolve_lock = asyncio.Lock()
 
         async with self._resolve_lock:
-            if not self.resolved:
-                await self._resolve(client)
-                self.resolved = True
+            await self._resolve(client)
+            self.resolved = True
 
     async def _resolve(self, client):
         self.chats = await _into_id_set(client, self.chats)

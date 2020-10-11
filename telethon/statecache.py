@@ -35,10 +35,7 @@ class StateCache:
         # is lightweight and immutable we can easily copy them around to
         # each update in case they need to fetch missing entities.
         self._logger = loggers[__name__]
-        if initial:
-            self._pts_date = initial.pts, initial.date
-        else:
-            self._pts_date = None, None
+        self._pts_date = (initial.pts, initial.date) if initial else (None, None)
 
     def reset(self):
         self.__dict__.clear()

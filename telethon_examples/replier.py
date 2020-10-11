@@ -67,16 +67,15 @@ async def handler(event):
                 await event.reply('> chrome\nneeds more firefox')
 
     # Reply always responds as a reply. We can respond without replying too
-    if 'shrug' in event.raw_text:
-        if can_react(event.chat_id):
-            await event.respond(r'¯\_(ツ)_/¯')
-
-    # We can also use client methods from here
-    client = event.client
+    if 'shrug' in event.raw_text and can_react(event.chat_id):
+        await event.respond(r'¯\_(ツ)_/¯')
 
     # If we sent the message, we are replying to someone,
     # and we said "save pic" in the message
     if event.out and event.is_reply and 'save pic' in event.raw_text:
+        # We can also use client methods from here
+        client = event.client
+
         reply_msg = await event.get_reply_message()
         replied_to_user = await reply_msg.get_input_sender()
 

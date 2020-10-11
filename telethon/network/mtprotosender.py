@@ -358,7 +358,7 @@ class MTProtoSender:
         self._state.reset()
 
         retries = self._retries if self._auto_reconnect else 0
-        
+
         attempt = 0
         ok = True
         # We're already "retrying" to connect, so we don't want to force retries
@@ -367,8 +367,12 @@ class MTProtoSender:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:
                 last_error = e
-                self._log.info('Failed reconnection attempt %d with %s',
-                               attempt, e.__class__.__name__)
+                self._log.info(
+                    'Failed reconnection attempt %d with %s',
+                    attempt,
+                    last_error.__class__.__name__,
+                )
+
                 await asyncio.sleep(self._delay)
             except BufferError as e:
                 # TODO there should probably only be one place to except all these errors
@@ -546,10 +550,11 @@ class MTProtoSender:
         if state:
             return [state]
 
-        to_pop = []
-        for state in self._pending_state.values():
-            if state.container_id == msg_id:
-                to_pop.append(state.msg_id)
+        to_pop = [
+            state.msg_id
+            for state in self._pending_state.values()
+            if state.container_id == msg_id
+        ]
 
         if to_pop:
             return [self._pending_state.pop(x) for x in to_pop]

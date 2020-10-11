@@ -44,8 +44,8 @@ class MTProxyIO:
 
         # Obfuscated messages secrets cannot start with any of these
         keywords = (b'PVrG', b'GET ', b'POST', b'\xee\xee\xee\xee')
+        random = os.urandom(64)
         while True:
-            random = os.urandom(64)
             if (random[0] != 0xef and
                     random[:4] not in keywords and
                     random[4:4] != b'\0\0\0\0'):

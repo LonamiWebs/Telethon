@@ -54,9 +54,10 @@ def syncify(*types):
     # about asyncgenfunction's here.
     for t in types:
         for name in dir(t):
-            if not name.startswith('_') or name == '__call__':
-                if inspect.iscoroutinefunction(getattr(t, name)):
-                    _syncify_wrap(t, name)
+            if (
+                not name.startswith('_') or name == '__call__'
+            ) and inspect.iscoroutinefunction(getattr(t, name)):
+                _syncify_wrap(t, name)
 
 
 syncify(TelegramClient, _TakeoutClient, Draft, Dialog, MessageButton,

@@ -621,11 +621,7 @@ def _get_metadata(file):
         else:
             stream = file
             close_stream = False
-            if getattr(file, 'seekable', None):
-                seekable = file.seekable()
-            else:
-                seekable = False
-
+            seekable = file.seekable() if getattr(file, 'seekable', None) else False
         if not seekable:
             return None
 
@@ -645,10 +641,12 @@ def _get_metadata(file):
         _log.warning('Failed to analyze %s: %s %s', file, e.__class__, e)
 
     finally:
-        if stream and close_stream:
-            stream.close()
-        elif stream and seekable:
-            stream.seek(pos)
+        if close_stream:
+            if stream:
+                stream.close()
+        elif seekable:
+            if stream:
+                stream.seek(pos)
 
 
 def get_attributes(file, *, attributes=None, mime_type=None,

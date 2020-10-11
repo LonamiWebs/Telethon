@@ -47,11 +47,7 @@ class Connection(abc.ABC):
 
     async def _connect(self, timeout=None, ssl=None):
         if not self._proxy:
-            if self._local_addr is not None:
-                local_addr = (self._local_addr, None)
-            else:
-                local_addr = None
-
+            local_addr = (self._local_addr, None) if self._local_addr is not None else None
             self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(self._ip, self._port, ssl=ssl, local_addr=local_addr),
                 timeout=timeout
@@ -89,7 +85,7 @@ class Connection(abc.ABC):
                     ssl_version=ssl_mod.PROTOCOL_SSLv23,
                     ciphers='ADH-AES256-SHA'
                 )
-                
+
             s.setblocking(False)
 
             self._reader, self._writer = await asyncio.open_connection(sock=s)
