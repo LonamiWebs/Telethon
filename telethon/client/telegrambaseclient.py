@@ -439,15 +439,6 @@ class TelegramBaseClient(abc.ABC):
         # A place to store if channels are a megagroup or not (see `edit_admin`)
         self._megagroup_cache = {}
 
-    
-    def __del__(self):
-
-        # Use destructor as the last-resort measure against
-        # unretrieved exceptions in the _sender.disconnected future
-
-        if self.disconnected:
-            self.disconnected.exception()
-
     # endregion
 
     # region Properties
