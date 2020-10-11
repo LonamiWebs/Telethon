@@ -13,6 +13,7 @@ class BotMethods:
             bot: 'hints.EntityLike',
             query: str,
             *,
+            entity: 'hints.EntityLike' = None,
             offset: str = None,
             geo_point: 'types.GeoPoint' = None) -> custom.InlineResults:
         """
@@ -24,6 +25,15 @@ class BotMethods:
 
             query (`str`):
                 The query that should be made to the bot.
+
+            entity (`entity`, optional):
+                The entity where the inline query is being made from. Certain
+                bots use this to display different results depending on where
+                it's used, such as private chats, groups or channels.
+
+                If specified, it will also be the default entity where the
+                message will be sent after clicked. Otherwise, the "empty
+                peer" will be used, which some bots may not handle correctly.
 
             offset (`str`, optional):
                 The string offset to use for the bot.
@@ -46,12 +56,17 @@ class BotMethods:
                 message = await results[0].click('TelethonOffTopic')
         """
         bot = await self.get_input_entity(bot)
+        if entity:
+            peer = await self.get_input_entity(entity)
+        else:
+            peer = types.InputPeerEmpty()
+
         result = await self(functions.messages.GetInlineBotResultsRequest(
             bot=bot,
-            peer=types.InputPeerEmpty(),
+            peer=peer,
             query=query,
             offset=offset or '',
             geo_point=geo_point
         ))
 
-        return custom.InlineResults(self, result)
+        return custom.InlineResults(self, result, entity=peer if entity else None)

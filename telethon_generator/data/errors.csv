@@ -22,6 +22,7 @@ BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this reques
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
+BOT_GAMES_DISABLED,400,Bot games cannot be used in this type of chat
 BOT_GROUPS_BLOCKED,400,This bot can't be added to groups
 BOT_INLINE_DISABLED,400,This bot can't be used in inline mode
 BOT_INVALID,400,This is not a valid bot
@@ -244,7 +245,8 @@ REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed)
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
-RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs.
+RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs
+RESULT_ID_INVALID,400,The given result cannot be used to send the selection to the bot
 RESULT_TYPE_INVALID,400,Result type invalid
 RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
 RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (some rights only apply to channels and vice versa)
