@@ -521,11 +521,7 @@ class MessageMethods:
                 message_1337 = await client.get_messages(chat, ids=1337)
         """
         if len(args) == 1 and 'limit' not in kwargs:
-            if 'min_id' in kwargs and 'max_id' in kwargs:
-                kwargs['limit'] = None
-            else:
-                kwargs['limit'] = 1
-
+            kwargs['limit'] = None if 'min_id' in kwargs and 'max_id' in kwargs else 1
         it = self.iter_messages(*args, **kwargs)
 
         ids = kwargs.get('ids')
@@ -1045,8 +1041,7 @@ class MessageMethods:
             reply_markup=self.build_reply_markup(buttons),
             schedule_date=schedule
         )
-        msg = self._get_response_message(request, await self(request), entity)
-        return msg
+        return self._get_response_message(request, await self(request), entity)
 
     async def delete_messages(
             self: 'TelegramClient',

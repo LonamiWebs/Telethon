@@ -158,13 +158,13 @@ class InteractiveTelegramClient(TelegramClient):
         # are much easier to use.
         self.add_event_handler(self.message_handler, events.NewMessage)
 
+        # Retrieve the top dialogs. You can set the limit to None to
+        # retrieve all of them if you wish, but beware that may take
+        # a long time if you have hundreds of them.
+        dialog_count = 15
+
         # Enter a while loop to chat as long as the user wants
         while True:
-            # Retrieve the top dialogs. You can set the limit to None to
-            # retrieve all of them if you wish, but beware that may take
-            # a long time if you have hundreds of them.
-            dialog_count = 15
-
             # Entities represent the user, chat or channel
             # corresponding to the dialog on the same index.
             dialogs = await self.get_dialogs(limit=dialog_count)
@@ -198,7 +198,7 @@ class InteractiveTelegramClient(TelegramClient):
                     return
 
                 try:
-                    i = int(i if i else 0) - 1
+                    i = int(i or 0) - 1
                     # Ensure it is inside the bounds, otherwise retry
                     if not 0 <= i < dialog_count:
                         i = None

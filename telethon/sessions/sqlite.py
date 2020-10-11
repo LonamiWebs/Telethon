@@ -169,10 +169,7 @@ class SQLiteSession(MemorySession):
 
         # Fetch the auth_key corresponding to this data center
         row = self._execute('select auth_key from sessions')
-        if row and row[0]:
-            self._auth_key = AuthKey(data=row[0])
-        else:
-            self._auth_key = None
+        self._auth_key = AuthKey(data=row[0]) if row and row[0] else None
 
     @MemorySession.auth_key.setter
     def auth_key(self, value):
@@ -242,11 +239,10 @@ class SQLiteSession(MemorySession):
 
     def close(self):
         """Closes the connection unless we're working in-memory"""
-        if self.filename != ':memory:':
-            if self._conn is not None:
-                self._conn.commit()
-                self._conn.close()
-                self._conn = None
+        if self.filename != ':memory:' and self._conn is not None:
+            self._conn.commit()
+            self._conn.close()
+            self._conn = None
 
     def delete(self):
         """Deletes the current session file"""

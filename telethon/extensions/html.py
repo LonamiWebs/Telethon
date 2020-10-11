@@ -45,13 +45,13 @@ class HTMLToTelegramParser(HTMLParser):
         attrs = dict(attrs)
         EntityType = None
         args = {}
-        if tag == 'strong' or tag == 'b':
+        if tag in ['strong', 'b']:
             EntityType = MessageEntityBold
-        elif tag == 'em' or tag == 'i':
+        elif tag in ['em', 'i']:
             EntityType = MessageEntityItalic
         elif tag == 'u':
             EntityType = MessageEntityUnderline
-        elif tag == 'del' or tag == 's':
+        elif tag in ['del', 's']:
             EntityType = MessageEntityStrike
         elif tag == 'blockquote':
             EntityType = MessageEntityBlockquote

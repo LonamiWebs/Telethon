@@ -27,13 +27,13 @@ class Factorization:
 
         while g == 1:
             x = y
-            for i in range(r):
+            for _ in range(r):
                 y = (pow(y, 2, pq) + c) % pq
 
             k = 0
             while k < r and g == 1:
                 ys = y
-                for i in range(min(m, r - k)):
+                for _ in range(min(m, r - k)):
                     y = (pow(y, 2, pq) + c) % pq
                     q = q * (abs(x - y)) % pq
 

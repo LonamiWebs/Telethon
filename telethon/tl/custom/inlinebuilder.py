@@ -189,11 +189,7 @@ class InlineBuilder:
                 See "Type of the result" in https://core.telegram.org/bots/api.
         """
         if type is None:
-            if voice_note:
-                type = 'voice'
-            else:
-                type = 'document'
-
+            type = 'voice' if voice_note else 'document'
         try:
             fh = utils.get_input_document(file)
         except TypeError:

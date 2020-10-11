@@ -131,19 +131,19 @@ class BinaryReader:
                 return [self.tgread_object() for _ in range(self.read_int())]
 
             clazz = core_objects.get(constructor_id, None)
-            if clazz is None:
-                # If there was still no luck, give up
-                self.seek(-4)  # Go back
-                pos = self.tell_position()
-                error = TypeNotFoundError(constructor_id, self.read())
-                self.set_position(pos)
-                raise error
+        if clazz is None:
+            # If there was still no luck, give up
+            self.seek(-4)  # Go back
+            pos = self.tell_position()
+            error = TypeNotFoundError(constructor_id, self.read())
+            self.set_position(pos)
+            raise error
 
         return clazz.from_reader(self)
 
     def tgread_vector(self):
         """Reads a vector (a list) of Telegram objects."""
-        if 0x1cb5c415 != self.read_int(signed=False):
+        if self.read_int(signed=False) != 0x1CB5C415:
             raise RuntimeError('Invalid constructor code, vector was expected')
 
         count = self.read_int()

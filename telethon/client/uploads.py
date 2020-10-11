@@ -311,18 +311,14 @@ class UploadMethods:
         # we may want to send as an album if all are photo files.
         if utils.is_list_like(file):
             media_captions = []
-            document_captions = []
-            if utils.is_list_like(caption):
-                captions = caption
-            else:
-                captions = [caption]
-
+            captions = caption if utils.is_list_like(caption) else [caption]
             # TODO Fix progress_callback
             media = []
             if force_document:
                 documents = file
             else:
                 documents = []
+                document_captions = []
                 for doc, cap in itertools.zip_longest(file, captions):
                     if utils.is_image(doc) or utils.is_video(doc):
                         media.append(doc)

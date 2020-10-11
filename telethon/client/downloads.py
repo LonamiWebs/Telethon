@@ -385,9 +385,10 @@ class DownloadMethods:
         if isinstance(media, str):
             media = utils.resolve_bot_file_id(media)
 
-        if isinstance(media, types.MessageMediaWebPage):
-            if isinstance(media.webpage, types.WebPage):
-                media = media.webpage.document or media.webpage.photo
+        if isinstance(media, types.MessageMediaWebPage) and isinstance(
+            media.webpage, types.WebPage
+        ):
+            media = media.webpage.document or media.webpage.photo
 
         if isinstance(media, (types.MessageMediaPhoto, types.Photo)):
             return await self._download_photo(

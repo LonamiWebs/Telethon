@@ -261,36 +261,42 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
 
 
 def _write_resolve(tlobject, builder):
-    if tlobject.is_function and any(
-            (arg.type in AUTO_CASTS
-             or ((arg.name, arg.type) in NAMED_AUTO_CASTS
-                 and tlobject.fullname not in NAMED_BLACKLIST))
-            for arg in tlobject.real_args
+    if not tlobject.is_function or not any(
+        (
+            arg.type in AUTO_CASTS
+            or (
+                (arg.name, arg.type) in NAMED_AUTO_CASTS
+                and tlobject.fullname not in NAMED_BLACKLIST
+            )
+        )
+        for arg in tlobject.real_args
     ):
-        builder.writeln('async def resolve(self, client, utils):')
-        for arg in tlobject.real_args:
-            ac = AUTO_CASTS.get(arg.type)
-            if not ac:
-                ac = NAMED_AUTO_CASTS.get((arg.name, arg.type))
-                if not ac:
-                    continue
+        return
 
-            if arg.is_flag:
-                builder.writeln('if self.{}:', arg.name)
+    builder.writeln('async def resolve(self, client, utils):')
+    for arg in tlobject.real_args:
+        ac = AUTO_CASTS.get(arg.type)
+        if not ac:
+            ac = NAMED_AUTO_CASTS.get((arg.name, arg.type))
+        if not ac:
+            continue
 
-            if arg.is_vector:
-                builder.writeln('_tmp = []')
-                builder.writeln('for _x in self.{0}:', arg.name)
-                builder.writeln('_tmp.append({})', ac.format('_x'))
-                builder.end_block()
-                builder.writeln('self.{} = _tmp', arg.name)
-            else:
-                builder.writeln('self.{} = {}', arg.name,
-                              ac.format('self.' + arg.name))
+        if arg.is_flag:
+            builder.writeln('if self.{}:', arg.name)
 
-            if arg.is_flag:
-                builder.end_block()
-        builder.end_block()
+        if arg.is_vector:
+            builder.writeln('_tmp = []')
+            builder.writeln('for _x in self.{0}:', arg.name)
+            builder.writeln('_tmp.append({})', ac.format('_x'))
+            builder.end_block()
+            builder.writeln('self.{} = _tmp', arg.name)
+        else:
+            builder.writeln('self.{} = {}', arg.name,
+                          ac.format('self.' + arg.name))
+
+        if arg.is_flag:
+            builder.end_block()
+    builder.end_block()
 
 
 def _write_to_dict(tlobject, builder):
