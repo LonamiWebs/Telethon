@@ -405,7 +405,10 @@ class UpdateMethods:
             #
             # It will return `None` if we haven't logged in yet which is
             # fine, we will just retry next time anyway.
-            await self.get_me(input_peer=True)
+            try:
+                await self.get_me(input_peer=True)
+            except OSError:
+                pass  # might not have connection
 
         built = EventBuilderDict(self, update, others)
         for conv_set in self._conversations.values():
