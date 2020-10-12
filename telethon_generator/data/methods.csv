@@ -236,7 +236,7 @@ messages.getScheduledMessages,user,
 messages.getSearchCounters,user,
 messages.getSplitRanges,user,
 messages.getStatsURL,user,
-messages.getStickerSet,both,STICKERSET_INVALID
+messages.getStickerSet,both,EMOTICON_STICKERPACK_MISSING STICKERSET_INVALID
 messages.getStickers,user,EMOTICON_EMPTY
 messages.getSuggestedDialogFilters,user,
 messages.getUnreadMentions,user,PEER_ID_INVALID
