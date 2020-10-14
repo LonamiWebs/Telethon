@@ -153,13 +153,13 @@ class AuthMethods:
                     warnings.warn(
                         'the session already had an authorized user so it did '
                         'not login to the bot account using the provided '
-                        'bot_token (it may not be using the user you expect)'
+                        f'bot_token (it is using ID {me.id})'
                     )
             elif phone and not callable(phone) and utils.parse_phone(phone) != me.phone:
                 warnings.warn(
                     'the session already had an authorized user so it did '
                     'not login to the user account using the provided '
-                    'phone (it may not be using the user you expect)'
+                    f'phone (the account is using phone number {me.phone})'
                 )
 
             return self
