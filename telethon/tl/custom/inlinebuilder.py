@@ -144,6 +144,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
+                media=True,
                 geo=geo,
                 period=period,
                 contact=contact,
@@ -225,6 +226,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
+                media=True,
                 geo=geo,
                 period=period,
                 contact=contact,
@@ -270,7 +272,7 @@ class InlineBuilder:
 
     async def _message(
             self, *,
-            text=None, parse_mode=(), link_preview=True,
+            text=None, parse_mode=(), link_preview=True, media=False,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         # Empty strings are valid but false-y; if they're empty use dummy '\0'
@@ -284,18 +286,25 @@ class InlineBuilder:
 
         markup = self._client.build_reply_markup(buttons, inline_only=True)
         if text is not None:
-            if not text:  # Automatic media on empty string, like stickers
-                return types.InputBotInlineMessageMediaAuto('')
-
             text, msg_entities = await self._client._parse_message_text(
                 text, parse_mode
             )
-            return types.InputBotInlineMessageText(
-                message=text,
-                no_webpage=not link_preview,
-                entities=msg_entities,
-                reply_markup=markup
-            )
+            if media:
+                # "MediaAuto" means it will use whatever media the inline
+                # result itself has (stickers, photos, or documents), while
+                # respecting the user's text (caption) and formatting.
+                return types.InputBotInlineMessageMediaAuto(
+                    message=text,
+                    entities=msg_entities,
+                    reply_markup=markup
+                )
+            else:
+                return types.InputBotInlineMessageText(
+                    message=text,
+                    no_webpage=not link_preview,
+                    entities=msg_entities,
+                    reply_markup=markup
+                )
         elif isinstance(geo, (types.InputGeoPoint, types.GeoPoint)):
             return types.InputBotInlineMessageMediaGeo(
                 geo_point=utils.get_input_geo(geo),
