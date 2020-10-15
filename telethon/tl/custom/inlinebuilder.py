@@ -204,7 +204,7 @@ class InlineBuilder:
             if voice_note:
                 type = 'voice'
             else:
-                type = 'document'
+                type = 'file'
 
         try:
             fh = utils.get_input_document(file)
