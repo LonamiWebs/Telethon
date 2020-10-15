@@ -110,7 +110,7 @@ class InlineBuilder:
 
     # noinspection PyIncorrectDocstring
     async def photo(
-            self, file, *, id=None,
+            self, file, *, id=None, include_media=True,
             text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
@@ -118,6 +118,11 @@ class InlineBuilder:
         Creates a new inline result of photo type.
 
         Args:
+            include_media (`bool`, optional):
+                Whether the photo file used to display the result should be
+                included in the message itself or not. By default, the photo
+                is included, and the text parameter alters the caption.
+
             file (`obj`, optional):
                 Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
@@ -144,7 +149,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
-                media=True,
+                media=include_media,
                 geo=geo,
                 period=period,
                 contact=contact,
@@ -163,7 +168,8 @@ class InlineBuilder:
             mime_type=None, attributes=None, force_document=False,
             voice_note=False, video_note=False, use_cache=True, id=None,
             text=None, parse_mode=(), link_preview=True,
-            geo=None, period=60, contact=None, game=False, buttons=None
+            geo=None, period=60, contact=None, game=False, buttons=None,
+            include_media=True
     ):
         """
         Creates a new inline result of document type.
@@ -188,6 +194,11 @@ class InlineBuilder:
                 mpeg4_gif, video, audio, voice, document, sticker.
 
                 See "Type of the result" in https://core.telegram.org/bots/api.
+
+            include_media (`bool`, optional):
+                Whether the document file used to display the result should be
+                included in the message itself or not. By default, the document
+                is included, and the text parameter alters the caption.
         """
         if type is None:
             if voice_note:
@@ -226,7 +237,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
-                media=True,
+                media=include_media,
                 geo=geo,
                 period=period,
                 contact=contact,
