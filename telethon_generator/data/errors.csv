@@ -9,6 +9,7 @@ ADMIN_RANK_INVALID,400,The given admin title or rank was invalid (possibly large
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
+AUDIO_TITLE_EMPTY,400,The title attribute of the audio must be non-empty
 AUTH_BYTES_INVALID,400,The provided authorization is invalid
 AUTH_KEY_DUPLICATED,406,"The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions"
 AUTH_KEY_INVALID,401,The key is invalid

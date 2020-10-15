@@ -3,6 +3,20 @@ import hashlib
 from .. import functions, types
 from ... import utils
 
+_TYPE_TO_MIMES = {
+    'gif': ['image/gif'],  # 'video/mp4' too, but that's used for video
+    'article': ['text/html'],
+    'audio': ['audio/mpeg'],
+    'contact': [],
+    'file': ['application/pdf', 'application/zip'],  # actually any
+    'geo': [],
+    'photo': ['image/jpeg'],
+    'sticker': ['image/webp', 'application/x-tgsticker'],
+    'venue': [],
+    'video': ['video/mp4'],  # tdlib includes text/html for some reason
+    'voice': ['audio/ogg'],
+}
+
 
 class InlineBuilder:
     """
@@ -239,6 +253,8 @@ class InlineBuilder:
             type (`str`, optional):
                 The type of the document. May be one of: article, audio,
                 contact, file, geo, gif, photo, sticker, venue, video, voice.
+                It will be automatically set if ``mime_type`` is specified,
+                and default to ``'file'`` if no matching mime type is found.
 
             include_media (`bool`, optional):
                 Whether the document file used to display the result should be
@@ -270,7 +286,14 @@ class InlineBuilder:
         if type is None:
             if voice_note:
                 type = 'voice'
-            else:
+            elif mime_type:
+                for ty, mimes in _TYPE_TO_MIMES.items():
+                    for mime in mimes:
+                        if mime_type == mime:
+                            type = ty
+                            break
+
+            if type is None:
                 type = 'file'
 
         try:
