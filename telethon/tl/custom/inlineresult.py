@@ -13,6 +13,10 @@ class InlineResult:
         result (:tl:`BotInlineResult`):
             The original :tl:`BotInlineResult` object.
     """
+    # tdlib types are the following (InlineQueriesManager::answer_inline_query @ 1a4a834):
+    # gif, article, audio, contact, file, geo, photo, sticker, venue, video, voice
+    #
+    # However, those documented in https://core.telegram.org/bots/api#inline-mode are different.
     ARTICLE = 'article'
     PHOTO = 'photo'
     GIF = 'gif'

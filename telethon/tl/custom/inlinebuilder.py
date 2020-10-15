@@ -83,6 +83,31 @@ class InlineBuilder:
             content (:tl:`InputWebDocument`, optional):
                 The content to be shown for this result.
                 For now it has to be a :tl:`InputWebDocument` if present.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Option with title and description sending a message.
+                    builder.article(
+                        title='First option',
+                        description='This is the first option',
+                        text='Text sent after clicking this option',
+                    ),
+                    # Option with title URL to be opened when clicked.
+                    builder.article(
+                        title='Second option',
+                        url='https://example.com',
+                        text='Text sent if the user clicks the option and not the URL',
+                    ),
+                    # Sending a message with buttons.
+                    # You can use a list or a list of lists to include more buttons.
+                    builder.article(
+                        title='Third option',
+                        text='Text sent with buttons below',
+                        buttons=Button.url('https://example.com'),
+                    ),
+                ]
         """
         # TODO Does 'article' work always?
         # article, photo, gif, mpeg4_gif, video, audio,
@@ -126,6 +151,28 @@ class InlineBuilder:
             file (`obj`, optional):
                 Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Sending just the photo when the user selects it.
+                    builder.photo('/path/to/photo.jpg'),
+
+                    # Including a caption with some in-memory photo.
+                    photo_bytesio = ...
+                    builder.photo(
+                        photo_bytesio,
+                        text='This will be the caption of the sent photo',
+                    ),
+
+                    # Sending just the message without including the photo.
+                    builder.photo(
+                        photo,
+                        text='This will be a normal text message',
+                        include_media=False,
+                    ),
+                ]
         """
         try:
             fh = utils.get_input_photo(file)
@@ -190,15 +237,35 @@ class InlineBuilder:
                 Further explanation of what this result means.
 
             type (`str`, optional):
-                The type of the document. May be one of: photo, gif,
-                mpeg4_gif, video, audio, voice, document, sticker.
-
-                See "Type of the result" in https://core.telegram.org/bots/api.
+                The type of the document. May be one of: article, audio,
+                contact, file, geo, gif, photo, sticker, venue, video, voice.
 
             include_media (`bool`, optional):
                 Whether the document file used to display the result should be
                 included in the message itself or not. By default, the document
                 is included, and the text parameter alters the caption.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Sending just the file when the user selects it.
+                    builder.document('/path/to/file.pdf'),
+
+                    # Including a caption with some in-memory file.
+                    file_bytesio = ...
+                    builder.document(
+                        file_bytesio,
+                        text='This will be the caption of the sent file',
+                    ),
+
+                    # Sending just the message without including the file.
+                    builder.document(
+                        photo,
+                        text='This will be a normal text message',
+                        include_media=False,
+                    ),
+                ]
         """
         if type is None:
             if voice_note:
