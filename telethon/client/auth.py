@@ -427,6 +427,23 @@ class AuthMethods:
         if me:
             return me
 
+        # To prevent abuse, one has to try to sign in before signing up. This
+        # is the current way in which Telegram validates the code to sign up.
+        #
+        # `sign_in` will set `_tos`, so if it's set we don't need to call it
+        # because the user already tried to sign in.
+        #
+        # We're emulating pre-layer 104 behaviour so except the right error:
+        if not self._tos:
+            try:
+                return await self.sign_in(
+                    phone=phone,
+                    code=code,
+                    phone_code_hash=phone_code_hash,
+                )
+            except errors.PhoneNumberUnoccupiedError:
+                pass  # code is correct and was used, now need to sign in
+
         if self._tos and self._tos.text:
             if self.parse_mode:
                 t = self.parse_mode.unparse(self._tos.text, self._tos.entities)
