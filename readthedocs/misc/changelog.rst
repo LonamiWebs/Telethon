@@ -3806,7 +3806,7 @@ things with the ``InteractiveTelegramClient``:
 - **Download** any message's media (photos, documents or even contacts!).
 - **Receive message updates** as you talk (i.e., someone sent you a message).
 
-It actually is an usable-enough client for your day by day. You could
+It actually is a usable-enough client for your day by day. You could
 even add ``libnotify`` and pop, you're done! A great cli-client with
 desktop notifications.
 

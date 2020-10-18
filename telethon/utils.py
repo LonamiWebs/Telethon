@@ -1072,7 +1072,7 @@ def _rle_encode(string):
 
 def _decode_telegram_base64(string):
     """
-    Decodes an url-safe base64-encoded string into its bytes
+    Decodes a url-safe base64-encoded string into its bytes
     by first adding the stripped necessary padding characters.
 
     This is the way Telegram shares binary data as strings,

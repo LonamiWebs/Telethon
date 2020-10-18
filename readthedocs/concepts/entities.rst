@@ -289,7 +289,7 @@ applications"? Now do the same with the library. Use what applies:
 
     # (These examples assume you are inside an "async def")
     async with client:
-        # Does it have an username? Use it!
+        # Does it have a username? Use it!
         entity = await client.get_entity(username)
 
         # Do you have a conversation open with them? Get dialogs.

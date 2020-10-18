@@ -844,7 +844,7 @@ class ChatMethods:
                 Whether the user will be able to delete messages.
 
             ban_users (`bool`, optional):
-                Whether the user will be able to ban users.
+                Whether the user will be able to ba users.
 
             invite_users (`bool`, optional):
                 Whether the user will be able to invite users. Needs some testing.
