@@ -92,7 +92,7 @@ class AuthMethods:
                 # Starting as a bot account
                 await client.start(bot_token=bot_token)
 
-                # Starting as an user account
+                # Starting as a user account
                 await client.start(phone)
                 # Please enter the code you received: 12345
                 # Please enter your password: *******

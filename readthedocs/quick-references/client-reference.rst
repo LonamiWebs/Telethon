@@ -9,7 +9,7 @@ you may need when using Telethon. They are sorted by relevance and are not in
 alphabetical order.
 
 You should use this page to learn about which methods are available, and
-if you need an usage example or further description of the arguments, be
+if you need a usage example or further description of the arguments, be
 sure to follow the links.
 
 .. contents::

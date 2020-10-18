@@ -406,7 +406,7 @@ class MessageMethods:
 
             from_user (`entity`):
                 Only messages from this user will be returned.
-                This parameter will be ignored if it is not an user.
+                This parameter will be ignored if it is not a user.
 
             wait_time (`int`):
                 Wait time (in seconds) between different
