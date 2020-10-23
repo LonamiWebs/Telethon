@@ -804,7 +804,7 @@ class MessageMethods:
         if isinstance(result, types.UpdateShortSentMessage):
             message = types.Message(
                 id=result.id,
-                peer_id=await self.get_peer(entity),
+                peer_id=await self._get_peer(entity),
                 message=message,
                 date=result.date,
                 out=result.out,
