@@ -290,7 +290,7 @@ class _IDsIter(RequestIter):
         else:
             r = await self.client(functions.messages.GetMessagesRequest(ids))
             if self._entity:
-                from_id = utils.get_peer(self._entity)
+                from_id = await self.client._get_peer(self._entity)
 
         if isinstance(r, types.messages.MessagesNotModified):
             self.buffer.extend(None for _ in ids)
@@ -804,7 +804,7 @@ class MessageMethods:
         if isinstance(result, types.UpdateShortSentMessage):
             message = types.Message(
                 id=result.id,
-                peer_id=utils.get_peer(entity),
+                peer_id=await self.client.get_peer(entity),
                 message=message,
                 date=result.date,
                 out=result.out,
