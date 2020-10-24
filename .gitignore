@@ -106,7 +106,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# Nix build results
-result
-result-*
