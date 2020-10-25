@@ -133,7 +133,8 @@ class _MessagesIter(RequestIter):
             #
             # Even better, using `filter` and `from_id` seems to always
             # trigger `RPC_CALL_FAIL` which is "internal issues"...
-            if filter and offset_date and not search and not offset_id:
+            if not isinstance(filter, types.InputMessagesFilterEmpty) \
+                    and offset_date and not search and not offset_id:
                 async for m in self.client.iter_messages(
                         self.entity, 1, offset_date=offset_date):
                     self.request.offset_id = m.id + 1
