@@ -12,6 +12,7 @@
 # Builds and testing
 __pycache__/
 /dist/
+/build/
 /*.egg-info/
 /readthedocs/_build/
 /.tox/
