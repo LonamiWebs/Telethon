@@ -230,7 +230,7 @@ def main(argv):
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
-                'telethon_*', 'tests'
+                'telethon_*', 'tests*'
             ]),
             install_requires=['pyaes', 'rsa'],
             extras_require={
