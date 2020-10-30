@@ -31,14 +31,15 @@ class ChatAction(EventBuilder):
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
+        raise RuntimeError('FIXME: handle new pinned updates')
+        if isinstance(update, types.UpdatePinnedChannelMessages) and update.id == 0:
             # Telegram does not always send
             # UpdateChannelPinnedMessage for new pins
             # but always for unpin, with update.id = 0
             return cls.Event(types.PeerChannel(update.channel_id),
                              unpin=True)
 
-        elif isinstance(update, types.UpdateChatPinnedMessage) and update.id == 0:
+        elif isinstance(update, types.UpdatePinnedMessages) and update.id == 0:
             return cls.Event(types.PeerChat(update.chat_id),
                              unpin=True)
 

@@ -1247,7 +1247,7 @@ class MessageMethods:
             notify: bool = False
     ):
         """
-        Pins or unpins a message in a chat.
+        Pins a message in a chat.
 
         The default behaviour is to *not* notify members, unlike the
         official applications.

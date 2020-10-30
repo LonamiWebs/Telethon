@@ -61,6 +61,9 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             Whether the edited mark of this message is edited
             should be hidden (e.g. in GUI clients) or shown.
 
+        pinned (`bool`):
+            Whether this message is currently pinned or not.
+
         id (`int`):
             The ID of this message. This field is *always* present.
             Any other member is optional and may be `None`.
@@ -166,8 +169,8 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             fwd_from=None, via_bot_id=None, media=None, reply_markup=None,
             entities=None, views=None, edit_date=None, post_author=None,
             grouped_id=None, from_scheduled=None, legacy=None,
-            edit_hide=None, restriction_reason=None, forwards=None,
-            replies=None,
+            edit_hide=None, pinned=None, restriction_reason=None,
+            forwards=None, replies=None,
 
             # For MessageAction (mandatory)
             action=None):
@@ -195,6 +198,7 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         self.forwards = forwards
         self.replies = replies
         self.edit_date = edit_date
+        self.pinned = pinned
         self.post_author = post_author
         self.grouped_id = grouped_id
         self.restriction_reason = restriction_reason
