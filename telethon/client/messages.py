@@ -1260,7 +1260,7 @@ class MessageMethods:
 
             message (`int` | `Message <telethon.tl.custom.message.Message>`):
                 The message or the message ID to pin. If it's
-                `None`, the message will be unpinned instead.
+                `None`, all messages will be unpinned instead.
 
             notify (`bool`, optional):
                 Whether the pin should notify people or not.
@@ -1272,18 +1272,55 @@ class MessageMethods:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
+        return await self._pin(entity, message, unpin=False, notify=notify)
+
+    async def unpin_message(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Optional[hints.MessageIDLike]' = None,
+            *,
+            notify: bool = False
+    ):
+        """
+        Unpins a message in a chat.
+
+        If no message ID is specified, all pinned messages will be unpinned.
+
+        See also `Message.unpin() <telethon.tl.custom.message.Message.unpin>`.
+
+        Arguments
+            entity (`entity`):
+                The chat where the message should be pinned.
+
+            message (`int` | `Message <telethon.tl.custom.message.Message>`):
+                The message or the message ID to unpin. If it's
+                `None`, all messages will be unpinned instead.
+
+        Example
+            .. code-block:: python
+
+                # Unpin all messages from a chat
+                await client.unpin_message(chat)
+        """
+        return await self._pin(entity, message, unpin=True, notify=notify)
+
+    async def _pin(self, entity, message, *, unpin, notify=False):
         message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
+        if message <= 0:  # old behaviour accepted negative IDs to unpin
+            await self(functions.messages.UnpinAllMessagesRequest(entity))
+            return
+
         request = functions.messages.UpdatePinnedMessageRequest(
             peer=entity,
             id=message,
-            silent=not notify
+            silent=not notify,
+            unpin=unpin,
         )
         result = await self(request)
 
-        # Unpinning does not produce a service message, and technically
-        # users can pass negative IDs which seem to behave as unpinning too.
-        if message <= 0:
+        # Unpinning does not produce a service message
+        if unpin:
             return
 
         # Pinning in User chats (just with yourself really) does not produce a service message

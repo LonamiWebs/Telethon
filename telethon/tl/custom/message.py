@@ -1011,6 +1011,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             return await self._client.pin_message(
                 await self.get_input_chat(), self.id, notify=notify)
 
+    async def unpin(self):
+        """
+        Unpins the message. Shorthand for
+        `telethon.client.messages.MessageMethods.unpin_message`
+        with both ``entity`` and ``message`` already set.
+        """
+        if self._client:
+            return await self._client.unpin_message(
+                await self.get_input_chat(), self.id)
+
     # endregion Public Methods
 
     # region Private Methods
