@@ -58,11 +58,6 @@ class _MessagesIter(RequestIter):
 
         if from_user:
             from_user = await self.client.get_input_entity(from_user)
-            ty = helpers._entity_type(from_user)
-            if ty != helpers._EntityType.USER:
-                from_user = None  # Ignore from_user unless it's a user
-
-        if from_user:
             self.from_id = await self.client.get_peer_id(from_user)
         else:
             self.from_id = None
@@ -406,8 +401,7 @@ class MessageMethods:
                 containing photos.
 
             from_user (`entity`):
-                Only messages from this user will be returned.
-                This parameter will be ignored if it is not a user.
+                Only messages from this entity will be returned.
 
             wait_time (`int`):
                 Wait time (in seconds) between different
