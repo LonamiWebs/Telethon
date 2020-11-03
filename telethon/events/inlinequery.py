@@ -147,6 +147,9 @@ class InlineQuery(EventBuilder):
             """
             Answers the inline query with the given results.
 
+            See the documentation for `builder` to know what kind of answers
+            can be given.
+
             Args:
                 results (`list`, optional):
                     A list of :tl:`InputBotInlineResult` to use.

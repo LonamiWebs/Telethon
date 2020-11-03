@@ -1167,6 +1167,11 @@ class ChatMethods:
         """
         Fetches the permissions of a user in a specific chat or channel.
 
+        .. note::
+
+            This request has to fetch the entire chat for small group chats,
+            which can get somewhat expensive, so use of a cache is advised.
+
         Arguments
             entity (`entity`):
                 The channel or chat the user is participant of.

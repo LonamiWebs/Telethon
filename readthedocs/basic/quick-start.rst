@@ -19,7 +19,7 @@ use these if possible.
         # Getting information about yourself
         me = await client.get_me()
 
-        # "me" is an User object. You can pretty-print
+        # "me" is a user object. You can pretty-print
         # any Telegram object with the "stringify" method:
         print(me.stringify())
 

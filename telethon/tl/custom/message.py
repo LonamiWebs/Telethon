@@ -21,10 +21,6 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
     have access to all their sender and chat properties and methods.
 
     Members:
-        id (`int`):
-            The ID of this message. This field is *always* present.
-            Any other member is optional and may be `None`.
-
         out (`bool`):
             Whether the message is outgoing (i.e. you sent it from
             another session) or incoming (i.e. someone else sent it).
@@ -44,7 +40,6 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             Whether you have read the media in this message
             or not, e.g. listened to the voice note media.
 
-
         silent (`bool`):
             Whether the message should notify people with sound or not.
             Previously used in channels, but since 9 August 2019, it can
@@ -62,10 +57,37 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         legacy (`bool`):
             Whether this is a legacy message or not.
 
+        edit_hide (`bool`):
+            Whether the edited mark of this message is edited
+            should be hidden (e.g. in GUI clients) or shown.
+
+        pinned (`bool`):
+            Whether this message is currently pinned or not.
+
+        id (`int`):
+            The ID of this message. This field is *always* present.
+            Any other member is optional and may be `None`.
+
+        from_id (:tl:`Peer`):
+            The peer who sent this message, which is either
+            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
+            This value will be `None` for anonymous messages.
+
         peer_id (:tl:`Peer`):
             The peer to which this message was sent, which is either
             :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`. This
             will always be present except for empty messages.
+
+        fwd_from (:tl:`MessageFwdHeader`):
+            The original forward header if this message is a forward.
+            You should probably use the `forward` property instead.
+
+        via_bot_id (`int`):
+            The ID of the bot used to send this message
+            through its inline mode (e.g. "via @like").
+
+        reply_to (:tl:`MessageReplyHeader`):
+            The original reply header if this message is replying to another.
 
         date (`datetime`):
             The UTC+0 `datetime` object indicating when this message
@@ -76,26 +98,6 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             The string text of the message for `Message
             <telethon.tl.custom.message.Message>` instances,
             which will be `None` for other types of messages.
-
-        action (:tl:`MessageAction`):
-            The message action object of the message for :tl:`MessageService`
-            instances, which will be `None` for other types of messages.
-
-        from_id (:tl:`Peer`):
-            The peer who sent this message, which is either
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
-            This value will be `None` for anonymous messages.
-
-        reply_to (:tl:`MessageReplyHeader`):
-            The original reply header if this message is replying to another.
-
-        fwd_from (:tl:`MessageFwdHeader`):
-            The original forward header if this message is a forward.
-            You should probably use the `forward` property instead.
-
-        via_bot_id (`int`):
-            The ID of the bot used to send this message
-            through its inline mode (e.g. "via @like").
 
         media (:tl:`MessageMedia`):
             The media sent with this message if any (such as
@@ -120,12 +122,14 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             The number of views this message from a broadcast
             channel has. This is also present in forwards.
 
+        forwards (`int`):
+            The number of times this message has been forwarded.
+
+        replies (`int`):
+            The number of times another message has replied to this message.
+
         edit_date (`datetime`):
             The date when this message was last edited.
-
-        edit_hide (`bool`):
-            Whether the edited mark of this message is edited
-            should be hidden (e.g. in GUI clients) or shown.
 
         post_author (`str`):
             The display name of the message sender to
@@ -139,6 +143,10 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         restriction_reason (List[:tl:`RestrictionReason`])
             An optional list of reasons why this message was restricted.
             If the list is `None`, this message has not been restricted.
+
+        action (:tl:`MessageAction`):
+            The message action object of the message for :tl:`MessageService`
+            instances, which will be `None` for other types of messages.
     """
 
     # region Initialization
@@ -161,40 +169,39 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
             fwd_from=None, via_bot_id=None, media=None, reply_markup=None,
             entities=None, views=None, edit_date=None, post_author=None,
             grouped_id=None, from_scheduled=None, legacy=None,
-            edit_hide=None, restriction_reason=None, forwards=None,
-            replies=None,
+            edit_hide=None, pinned=None, restriction_reason=None,
+            forwards=None, replies=None,
 
             # For MessageAction (mandatory)
             action=None):
-        # Common properties to all messages
-        self.id = id
-        self.peer_id = peer_id
-        self.date = date
+        # Common properties to messages, then to service (in the order they're defined in the `.tl`)
         self.out = out
         self.mentioned = mentioned
         self.media_unread = media_unread
         self.silent = silent
         self.post = post
-        self.from_id = from_id
-        self.reply_to = reply_to
-        self.message = message
-        self.fwd_from = fwd_from
-        self.via_bot_id = via_bot_id
-        self.media = None if isinstance(
-            media, types.MessageMediaEmpty) else media
-
-        self.reply_markup = reply_markup
-        self.entities = entities
-        self.views = views
-        self.edit_date = edit_date
-        self.post_author = post_author
-        self.grouped_id = grouped_id
         self.from_scheduled = from_scheduled
         self.legacy = legacy
         self.edit_hide = edit_hide
-        self.restriction_reason = restriction_reason
+        self.id = id
+        self.from_id = from_id
+        self.peer_id = peer_id
+        self.fwd_from = fwd_from
+        self.via_bot_id = via_bot_id
+        self.reply_to = reply_to
+        self.date = date
+        self.message = message
+        self.media =  None if isinstance(media, types.MessageMediaEmpty) else media
+        self.reply_markup = reply_markup
+        self.entities = entities
+        self.views = views
         self.forwards = forwards
         self.replies = replies
+        self.edit_date = edit_date
+        self.pinned = pinned
+        self.post_author = post_author
+        self.grouped_id = grouped_id
+        self.restriction_reason = restriction_reason
         self.action = action
 
         # Convenient storage for custom functions
@@ -1003,6 +1010,16 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
         if self._client:
             return await self._client.pin_message(
                 await self.get_input_chat(), self.id, notify=notify)
+
+    async def unpin(self):
+        """
+        Unpins the message. Shorthand for
+        `telethon.client.messages.MessageMethods.unpin_message`
+        with both ``entity`` and ``message`` already set.
+        """
+        if self._client:
+            return await self._client.unpin_message(
+                await self.get_input_chat(), self.id)
 
     # endregion Public Methods
 

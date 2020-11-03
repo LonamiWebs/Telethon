@@ -3,6 +3,20 @@ import hashlib
 from .. import functions, types
 from ... import utils
 
+_TYPE_TO_MIMES = {
+    'gif': ['image/gif'],  # 'video/mp4' too, but that's used for video
+    'article': ['text/html'],
+    'audio': ['audio/mpeg'],
+    'contact': [],
+    'file': ['application/pdf', 'application/zip'],  # actually any
+    'geo': [],
+    'photo': ['image/jpeg'],
+    'sticker': ['image/webp', 'application/x-tgsticker'],
+    'venue': [],
+    'video': ['video/mp4'],  # tdlib includes text/html for some reason
+    'voice': ['audio/ogg'],
+}
+
 
 class InlineBuilder:
     """
@@ -83,6 +97,31 @@ class InlineBuilder:
             content (:tl:`InputWebDocument`, optional):
                 The content to be shown for this result.
                 For now it has to be a :tl:`InputWebDocument` if present.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Option with title and description sending a message.
+                    builder.article(
+                        title='First option',
+                        description='This is the first option',
+                        text='Text sent after clicking this option',
+                    ),
+                    # Option with title URL to be opened when clicked.
+                    builder.article(
+                        title='Second option',
+                        url='https://example.com',
+                        text='Text sent if the user clicks the option and not the URL',
+                    ),
+                    # Sending a message with buttons.
+                    # You can use a list or a list of lists to include more buttons.
+                    builder.article(
+                        title='Third option',
+                        text='Text sent with buttons below',
+                        buttons=Button.url('https://example.com'),
+                    ),
+                ]
         """
         # TODO Does 'article' work always?
         # article, photo, gif, mpeg4_gif, video, audio,
@@ -110,7 +149,7 @@ class InlineBuilder:
 
     # noinspection PyIncorrectDocstring
     async def photo(
-            self, file, *, id=None,
+            self, file, *, id=None, include_media=True,
             text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
@@ -118,9 +157,36 @@ class InlineBuilder:
         Creates a new inline result of photo type.
 
         Args:
+            include_media (`bool`, optional):
+                Whether the photo file used to display the result should be
+                included in the message itself or not. By default, the photo
+                is included, and the text parameter alters the caption.
+
             file (`obj`, optional):
                 Same as ``file`` for `client.send_file()
                 <telethon.client.uploads.UploadMethods.send_file>`.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Sending just the photo when the user selects it.
+                    builder.photo('/path/to/photo.jpg'),
+
+                    # Including a caption with some in-memory photo.
+                    photo_bytesio = ...
+                    builder.photo(
+                        photo_bytesio,
+                        text='This will be the caption of the sent photo',
+                    ),
+
+                    # Sending just the message without including the photo.
+                    builder.photo(
+                        photo,
+                        text='This will be a normal text message',
+                        include_media=False,
+                    ),
+                ]
         """
         try:
             fh = utils.get_input_photo(file)
@@ -144,6 +210,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
+                media=include_media,
                 geo=geo,
                 period=period,
                 contact=contact,
@@ -162,7 +229,8 @@ class InlineBuilder:
             mime_type=None, attributes=None, force_document=False,
             voice_note=False, video_note=False, use_cache=True, id=None,
             text=None, parse_mode=(), link_preview=True,
-            geo=None, period=60, contact=None, game=False, buttons=None
+            geo=None, period=60, contact=None, game=False, buttons=None,
+            include_media=True
     ):
         """
         Creates a new inline result of document type.
@@ -183,16 +251,50 @@ class InlineBuilder:
                 Further explanation of what this result means.
 
             type (`str`, optional):
-                The type of the document. May be one of: photo, gif,
-                mpeg4_gif, video, audio, voice, document, sticker.
+                The type of the document. May be one of: article, audio,
+                contact, file, geo, gif, photo, sticker, venue, video, voice.
+                It will be automatically set if ``mime_type`` is specified,
+                and default to ``'file'`` if no matching mime type is found.
 
-                See "Type of the result" in https://core.telegram.org/bots/api.
+            include_media (`bool`, optional):
+                Whether the document file used to display the result should be
+                included in the message itself or not. By default, the document
+                is included, and the text parameter alters the caption.
+
+        Example:
+            .. code-block:: python
+
+                results = [
+                    # Sending just the file when the user selects it.
+                    builder.document('/path/to/file.pdf'),
+
+                    # Including a caption with some in-memory file.
+                    file_bytesio = ...
+                    builder.document(
+                        file_bytesio,
+                        text='This will be the caption of the sent file',
+                    ),
+
+                    # Sending just the message without including the file.
+                    builder.document(
+                        photo,
+                        text='This will be a normal text message',
+                        include_media=False,
+                    ),
+                ]
         """
         if type is None:
             if voice_note:
                 type = 'voice'
-            else:
-                type = 'document'
+            elif mime_type:
+                for ty, mimes in _TYPE_TO_MIMES.items():
+                    for mime in mimes:
+                        if mime_type == mime:
+                            type = ty
+                            break
+
+            if type is None:
+                type = 'file'
 
         try:
             fh = utils.get_input_document(file)
@@ -225,6 +327,7 @@ class InlineBuilder:
                 text=text or '',
                 parse_mode=parse_mode,
                 link_preview=link_preview,
+                media=include_media,
                 geo=geo,
                 period=period,
                 contact=contact,
@@ -270,7 +373,7 @@ class InlineBuilder:
 
     async def _message(
             self, *,
-            text=None, parse_mode=(), link_preview=True,
+            text=None, parse_mode=(), link_preview=True, media=False,
             geo=None, period=60, contact=None, game=False, buttons=None
     ):
         # Empty strings are valid but false-y; if they're empty use dummy '\0'
@@ -284,18 +387,25 @@ class InlineBuilder:
 
         markup = self._client.build_reply_markup(buttons, inline_only=True)
         if text is not None:
-            if not text:  # Automatic media on empty string, like stickers
-                return types.InputBotInlineMessageMediaAuto('')
-
             text, msg_entities = await self._client._parse_message_text(
                 text, parse_mode
             )
-            return types.InputBotInlineMessageText(
-                message=text,
-                no_webpage=not link_preview,
-                entities=msg_entities,
-                reply_markup=markup
-            )
+            if media:
+                # "MediaAuto" means it will use whatever media the inline
+                # result itself has (stickers, photos, or documents), while
+                # respecting the user's text (caption) and formatting.
+                return types.InputBotInlineMessageMediaAuto(
+                    message=text,
+                    entities=msg_entities,
+                    reply_markup=markup
+                )
+            else:
+                return types.InputBotInlineMessageText(
+                    message=text,
+                    no_webpage=not link_preview,
+                    entities=msg_entities,
+                    reply_markup=markup
+                )
         elif isinstance(geo, (types.InputGeoPoint, types.GeoPoint)):
             return types.InputBotInlineMessageMediaGeo(
                 geo_point=utils.get_input_geo(geo),

@@ -95,7 +95,7 @@ class TcpMTProxy(ObfuscatedConnection):
     obfuscated_io = MTProxyIO
 
     # noinspection PyUnusedLocal
-    def __init__(self, ip, port, dc_id, *, loggers, proxy=None):
+    def __init__(self, ip, port, dc_id, *, loggers, proxy=None, local_addr=None):
         # connect to proxy's host and port instead of telegram's ones
         proxy_host, proxy_port = self.address_info(proxy)
         self._secret = bytes.fromhex(proxy[2])

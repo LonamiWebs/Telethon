@@ -92,7 +92,7 @@ class AuthMethods:
                 # Starting as a bot account
                 await client.start(bot_token=bot_token)
 
-                # Starting as an user account
+                # Starting as a user account
                 await client.start(phone)
                 # Please enter the code you received: 12345
                 # Please enter your password: *******
@@ -426,6 +426,23 @@ class AuthMethods:
         me = await self.get_me()
         if me:
             return me
+
+        # To prevent abuse, one has to try to sign in before signing up. This
+        # is the current way in which Telegram validates the code to sign up.
+        #
+        # `sign_in` will set `_tos`, so if it's set we don't need to call it
+        # because the user already tried to sign in.
+        #
+        # We're emulating pre-layer 104 behaviour so except the right error:
+        if not self._tos:
+            try:
+                return await self.sign_in(
+                    phone=phone,
+                    code=code,
+                    phone_code_hash=phone_code_hash,
+                )
+            except errors.PhoneNumberUnoccupiedError:
+                pass  # code is correct and was used, now need to sign in
 
         if self._tos and self._tos.text:
             if self.parse_mode:

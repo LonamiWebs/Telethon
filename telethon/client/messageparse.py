@@ -193,7 +193,13 @@ class MessageParseMethods:
             mapping = sched_to_message
             opposite = id_to_message  # scheduled may be treated as normal, though
 
-        random_id = request if isinstance(request, (int, list)) else request.random_id
+        random_id = request if isinstance(request, (int, list)) else getattr(request, 'random_id', None)
+        if random_id is None:
+            # Can happen when pinning a message does not actually produce a service message.
+            self._log[__name__].warning(
+                'No random_id in %s to map to, returning None message for %s', request, result)
+            return None
+
         if not utils.is_list_like(random_id):
             msg = mapping.get(random_to_id.get(random_id))
             if not msg:

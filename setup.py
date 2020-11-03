@@ -165,8 +165,14 @@ def main(argv):
             print('Packaging for PyPi aborted, importing the module failed.')
             return
 
-        for x in ('build', 'dist', 'Telethon.egg-info'):
+        remove_dirs = ['__pycache__', 'build', 'dist', 'Telethon.egg-info']
+        for root, _dirs, _files in os.walk(LIBRARY_DIR, topdown=False):
+            # setuptools is including __pycache__ for some reason (#1605)
+            if root.endswith('/__pycache__'):
+                remove_dirs.append(root)
+        for x in remove_dirs:
             shutil.rmtree(x, ignore_errors=True)
+
         run('python3 setup.py sdist', shell=True)
         run('python3 setup.py bdist_wheel', shell=True)
         run('twine upload dist/*', shell=True)
@@ -218,11 +224,13 @@ def main(argv):
 
                 'Programming Language :: Python :: 3',
                 'Programming Language :: Python :: 3.5',
-                'Programming Language :: Python :: 3.6'
+                'Programming Language :: Python :: 3.6',
+                'Programming Language :: Python :: 3.7',
+                'Programming Language :: Python :: 3.8',
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[
-                'telethon_*', 'run_tests.py', 'try_telethon.py'
+                'telethon_*', 'tests*'
             ]),
             install_requires=['pyaes', 'rsa'],
             extras_require={

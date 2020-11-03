@@ -31,16 +31,15 @@ class ChatAction(EventBuilder):
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateChannelPinnedMessage) and update.id == 0:
-            # Telegram does not always send
-            # UpdateChannelPinnedMessage for new pins
-            # but always for unpin, with update.id = 0
+        if isinstance(update, types.UpdatePinnedChannelMessages):
             return cls.Event(types.PeerChannel(update.channel_id),
-                             unpin=True)
+                             pin_ids=update.messages,
+                             pin=update.pinned)
 
-        elif isinstance(update, types.UpdateChatPinnedMessage) and update.id == 0:
-            return cls.Event(types.PeerChat(update.chat_id),
-                             unpin=True)
+        elif isinstance(update, types.UpdatePinnedMessages):
+            return cls.Event(update.peer,
+                             pin_ids=update.messages,
+                             pin=update.pinned)
 
         elif isinstance(update, types.UpdateChatParticipantAdd):
             return cls.Event(types.PeerChat(update.chat_id),
@@ -108,12 +107,8 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
-                # Seems to not be reliable on unpins, but when pinning
-                # we prefer this because we know who caused it.
-                return cls.Event(msg,
-                                 users=msg.from_id,
-                                 new_pin=msg.reply_to.reply_to_msg_id)
+            # Handled by specific updates
+            # elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
 
     class Event(EventCommon):
         """
@@ -153,19 +148,22 @@ class ChatAction(EventBuilder):
             unpin (`bool`):
                 `True` if the existing pin gets unpinned.
         """
-        def __init__(self, where, new_pin=None, new_photo=None,
+        def __init__(self, where, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None, unpin=None):
+                     users=None, new_title=None, pin_ids=None, pin=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.peer_id
             else:
                 self.action_message = None
 
-            super().__init__(chat_peer=where, msg_id=new_pin)
+            # TODO needs some testing (can there be more than one id, and do they follow pin order?)
+            #      same in get_pinned_message
+            super().__init__(chat_peer=where, msg_id=pin_ids[0] if pin_ids else None)
 
-            self.new_pin = isinstance(new_pin, int)
-            self._pinned_message = new_pin
+            self.new_pin = pin_ids is not None
+            self._pin_ids = pin_ids
+            self._pinned_messages = None
 
             self.new_photo = new_photo is not None
             self.photo = \
@@ -202,7 +200,7 @@ class ChatAction(EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
-            self.unpin = unpin
+            self.unpin = not pin
 
         def _set_client(self, client):
             super()._set_client(client)
@@ -256,16 +254,26 @@ class ChatAction(EventBuilder):
             If ``new_pin`` is `True`, this returns the `Message
             <telethon.tl.custom.message.Message>` object that was pinned.
             """
-            if self._pinned_message == 0:
-                return None
+            if self._pinned_messages is None:
+                await self.get_pinned_messages()
 
-            if isinstance(self._pinned_message, int)\
-                    and await self.get_input_chat():
-                self._pinned_message = await self._client.get_messages(
-                    self._input_chat, ids=self._pinned_message)
+            if self._pinned_messages:
+                return self._pinned_messages[0]
 
-            if isinstance(self._pinned_message, types.Message):
-                return self._pinned_message
+        async def get_pinned_messages(self):
+            """
+            If ``new_pin`` is `True`, this returns a `list` of `Message
+            <telethon.tl.custom.message.Message>` objects that were pinned.
+            """
+            if not self._pin_ids:
+                return self._pin_ids  # either None or empty list
+
+            chat = await self.get_input_chat()
+            if chat:
+                self._pinned_messages = await self._client.get_messages(
+                    self._input_chat, ids=self._pin_ids)
+
+            return self._pinned_messages
 
         @property
         def added_by(self):

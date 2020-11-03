@@ -19,7 +19,7 @@ class _MessagesIter(RequestIter):
     """
     async def _init(
             self, entity, offset_id, min_id, max_id,
-            from_user, offset_date, add_offset, filter, search
+            from_user, offset_date, add_offset, filter, search, reply_to
     ):
         # Note that entity being `None` will perform a global search.
         if entity:
@@ -58,11 +58,6 @@ class _MessagesIter(RequestIter):
 
         if from_user:
             from_user = await self.client.get_input_entity(from_user)
-            ty = helpers._entity_type(from_user)
-            if ty != helpers._EntityType.USER:
-                from_user = None  # Ignore from_user unless it's a user
-
-        if from_user:
             self.from_id = await self.client.get_peer_id(from_user)
         else:
             self.from_id = None
@@ -86,6 +81,18 @@ class _MessagesIter(RequestIter):
                 offset_peer=types.InputPeerEmpty(),
                 offset_id=offset_id,
                 limit=1
+            )
+        elif reply_to is not None:
+            self.request = functions.messages.GetRepliesRequest(
+                peer=self.entity,
+                msg_id=reply_to,
+                offset_id=offset_id,
+                offset_date=offset_date,
+                add_offset=add_offset,
+                limit=1,
+                max_id=0,
+                min_id=0,
+                hash=0
             )
         elif search is not None or filter or from_user:
             # Telegram completely ignores `from_id` in private chats
@@ -121,7 +128,8 @@ class _MessagesIter(RequestIter):
             #
             # Even better, using `filter` and `from_id` seems to always
             # trigger `RPC_CALL_FAIL` which is "internal issues"...
-            if filter and offset_date and not search and not offset_id:
+            if not isinstance(filter, types.InputMessagesFilterEmpty) \
+                    and offset_date and not search and not offset_id:
                 async for m in self.client.iter_messages(
                         self.entity, 1, offset_date=offset_date):
                     self.request.offset_id = m.id + 1
@@ -236,7 +244,7 @@ class _MessagesIter(RequestIter):
             # (only for the first request), it's safe to just clear it off.
             self.request.max_date = None
         else:
-            # getHistory and searchGlobal call it offset_date
+            # getHistory, searchGlobal and getReplies call it offset_date
             self.request.offset_date = last_message.date
 
         if isinstance(self.request, functions.messages.SearchGlobalRequest):
@@ -278,7 +286,7 @@ class _IDsIter(RequestIter):
         else:
             r = await self.client(functions.messages.GetMessagesRequest(ids))
             if self._entity:
-                from_id = utils.get_peer(self._entity)
+                from_id = await self.client._get_peer(self._entity)
 
         if isinstance(r, types.messages.MessagesNotModified):
             self.buffer.extend(None for _ in ids)
@@ -325,7 +333,8 @@ class MessageMethods:
             from_user: 'hints.EntityLike' = None,
             wait_time: float = None,
             ids: 'typing.Union[int, typing.Sequence[int]]' = None,
-            reverse: bool = False
+            reverse: bool = False,
+            reply_to: int = None
     ) -> 'typing.Union[_MessagesIter, _IDsIter]':
         """
         Iterator over the messages for the given chat.
@@ -392,8 +401,7 @@ class MessageMethods:
                 containing photos.
 
             from_user (`entity`):
-                Only messages from this user will be returned.
-                This parameter will be ignored if it is not an user.
+                Only messages from this entity will be returned.
 
             wait_time (`int`):
                 Wait time (in seconds) between different
@@ -433,6 +441,26 @@ class MessageMethods:
 
                 You cannot use this if both `entity` and `ids` are `None`.
 
+            reply_to (`int`, optional):
+                If set to a message ID, the messages that reply to this ID
+                will be returned. This feature is also known as comments in
+                posts of broadcast channels, or viewing threads in groups.
+
+                This feature can only be used in broadcast channels and their
+                linked megagroups. Using it in a chat or private conversation
+                will result in ``telethon.errors.PeerIdInvalidError`` to occur.
+
+                When using this parameter, the ``filter`` and ``search``
+                parameters have no effect, since Telegram's API doesn't
+                support searching messages in replies.
+
+                .. note::
+
+                    This feature is used to get replies to a message in the
+                    *discussion* group. If the same broadcast channel sends
+                    a message and replies to it itself, that reply will not
+                    be included in the results.
+
         Yields
             Instances of `Message <telethon.tl.custom.message.Message>`.
 
@@ -459,6 +487,10 @@ class MessageMethods:
                 from telethon.tl.types import InputMessagesFilterPhotos
                 async for message in client.iter_messages(chat, filter=InputMessagesFilterPhotos):
                     print(message.photo)
+
+                # Getting comments from a post in a channel:
+                async for message in client.iter_messages(channel, reply_to=123):
+                    print(message.chat.title, message.text)
         """
         if ids is not None:
             if not utils.is_list_like(ids):
@@ -486,7 +518,8 @@ class MessageMethods:
             offset_date=offset_date,
             add_offset=add_offset,
             filter=filter,
-            search=search
+            search=search,
+            reply_to=reply_to
         )
 
     async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
@@ -766,7 +799,7 @@ class MessageMethods:
         if isinstance(result, types.UpdateShortSentMessage):
             message = types.Message(
                 id=result.id,
-                peer_id=utils.get_peer(entity),
+                peer_id=await self._get_peer(entity),
                 message=message,
                 date=result.date,
                 out=result.out,
@@ -1208,7 +1241,7 @@ class MessageMethods:
             notify: bool = False
     ):
         """
-        Pins or unpins a message in a chat.
+        Pins a message in a chat.
 
         The default behaviour is to *not* notify members, unlike the
         official applications.
@@ -1221,7 +1254,7 @@ class MessageMethods:
 
             message (`int` | `Message <telethon.tl.custom.message.Message>`):
                 The message or the message ID to pin. If it's
-                `None`, the message will be unpinned instead.
+                `None`, all messages will be unpinned instead.
 
             notify (`bool`, optional):
                 Whether the pin should notify people or not.
@@ -1233,18 +1266,55 @@ class MessageMethods:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
+        return await self._pin(entity, message, unpin=False, notify=notify)
+
+    async def unpin_message(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Optional[hints.MessageIDLike]' = None,
+            *,
+            notify: bool = False
+    ):
+        """
+        Unpins a message in a chat.
+
+        If no message ID is specified, all pinned messages will be unpinned.
+
+        See also `Message.unpin() <telethon.tl.custom.message.Message.unpin>`.
+
+        Arguments
+            entity (`entity`):
+                The chat where the message should be pinned.
+
+            message (`int` | `Message <telethon.tl.custom.message.Message>`):
+                The message or the message ID to unpin. If it's
+                `None`, all messages will be unpinned instead.
+
+        Example
+            .. code-block:: python
+
+                # Unpin all messages from a chat
+                await client.unpin_message(chat)
+        """
+        return await self._pin(entity, message, unpin=True, notify=notify)
+
+    async def _pin(self, entity, message, *, unpin, notify=False):
         message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
+        if message <= 0:  # old behaviour accepted negative IDs to unpin
+            await self(functions.messages.UnpinAllMessagesRequest(entity))
+            return
+
         request = functions.messages.UpdatePinnedMessageRequest(
             peer=entity,
             id=message,
-            silent=not notify
+            silent=not notify,
+            unpin=unpin,
         )
         result = await self(request)
 
-        # Unpinning does not produce a service message, and technically
-        # users can pass negative IDs which seem to behave as unpinning too.
-        if message <= 0:
+        # Unpinning does not produce a service message
+        if unpin:
             return
 
         # Pinning in User chats (just with yourself really) does not produce a service message

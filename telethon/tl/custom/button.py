@@ -20,12 +20,14 @@ class Button:
     instances instead making them yourself (i.e. don't do ``Button(...)``
     but instead use methods line `Button.inline(...) <inline>` etc.
 
-    You can use `inline`, `switch_inline` and `url`
+    You can use `inline`, `switch_inline`, `url` and `auth`
     together to create inline buttons (under the message).
 
-    You can use `text`, `request_location` and `request_phone`
+    You can use `text`, `request_location`, `request_phone` and `request_poll`
     together to create a reply markup (replaces the user keyboard).
     You can also configure the aspect of the reply with these.
+    The latest message with a reply markup will be the one shown to the user
+    (messages contain the buttons, not the chat itself).
 
     You **cannot** mix the two type of buttons together,
     and it will error if you try to do so.
@@ -63,6 +65,13 @@ class Button:
 
         Note that the given `data` must be less or equal to 64 bytes.
         If more than 64 bytes are passed as data, ``ValueError`` is raised.
+        If you need to store more than 64 bytes, consider saving the real
+        data in a database and a reference to that data inside the button.
+
+        When the user clicks this button, `events.CallbackQuery
+        <telethon.events.callbackquery.CallbackQuery>` will trigger with the
+        same data that the button contained, so that you can determine which
+        button was pressed.
         """
         if not data:
             data = text.encode('utf-8')
@@ -85,6 +94,10 @@ class Button:
         If ``same_peer is True`` the inline query will directly be
         set under the currently opened chat. Otherwise, the user will
         have to select a different dialog to make the query.
+
+        When the user clicks this button, after a chat is selected, their
+        input field will be filled with the username of your bot followed
+        by the query text, ready to make inline queries.
         """
         return types.KeyboardButtonSwitchInline(text, query, same_peer)
 
@@ -96,6 +109,11 @@ class Button:
         If no `url` is given, the `text` will be used as said URL instead.
 
         You cannot detect that the user clicked this button directly.
+
+        When the user clicks this button, a confirmation box will be shown
+        to the user asking whether they want to open the displayed URL unless
+        the domain is trusted, and once confirmed the URL will open in their
+        device.
         """
         return types.KeyboardButtonUrl(text, url or text)
 
@@ -133,6 +151,9 @@ class Button:
             fwd_text (`str`):
                 The new text to show in the button if the message is
                 forwarded. By default, the button text will be the same.
+
+        When the user clicks this button, a confirmation box will be shown
+        to the user asking whether they want to login to the specified domain.
         """
         return types.InputKeyboardButtonUrlAuth(
             text=text,
@@ -161,6 +182,12 @@ class Button:
                 be "selective". The keyboard will be shown only to specific
                 users. It will target users that are @mentioned in the text
                 of the message or to the sender of the message you reply to.
+
+        When the user clicks this button, a text message with the same text
+        as the button will be sent, and can be handled with `events.NewMessage
+        <telethon.events.newmessage.NewMessage>`. You cannot distinguish
+        between a button press and the user typing and sending exactly the
+        same text on their own.
         """
         return cls(types.KeyboardButton(text),
                    resize=resize, single_use=single_use, selective=selective)
@@ -172,6 +199,10 @@ class Button:
         Creates a new keyboard button to request the user's location on click.
 
         ``resize``, ``single_use`` and ``selective`` are documented in `text`.
+
+        When the user clicks this button, a confirmation box will be shown
+        to the user asking whether they want to share their location with the
+        bot, and if confirmed a message with geo media will be sent.
         """
         return cls(types.KeyboardButtonRequestGeoLocation(text),
                    resize=resize, single_use=single_use, selective=selective)
@@ -183,6 +214,10 @@ class Button:
         Creates a new keyboard button to request the user's phone on click.
 
         ``resize``, ``single_use`` and ``selective`` are documented in `text`.
+
+        When the user clicks this button, a confirmation box will be shown
+        to the user asking whether they want to share their phone with the
+        bot, and if confirmed a message with contact media will be sent.
         """
         return cls(types.KeyboardButtonRequestPhone(text),
                    resize=resize, single_use=single_use, selective=selective)
@@ -202,6 +237,9 @@ class Button:
         the vote, and the pol might be multiple choice.
 
         ``resize``, ``single_use`` and ``selective`` are documented in `text`.
+
+        When the user clicks this button, a screen letting the user create a
+        poll will be shown, and if they do create one, the poll will be sent.
         """
         return cls(types.KeyboardButtonRequestPoll(text, quiz=force_quiz),
                    resize=resize, single_use=single_use, selective=selective)

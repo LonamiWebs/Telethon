@@ -13,6 +13,136 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Channel comments and Anonymous Admins (v1.17)
+=============================================
+
++------------------------+
+| Scheme layer used: 119 |
++------------------------+
+
+New minor version, new layer change! This time is a good one to remind every
+consumer of Python libraries that **you should always specify fixed versions
+of your dependencies**! If you're using a ``requirements.txt`` file and you
+want to stick with the old version (or any version) for the time being, you
+can `use the following syntax <https://pip.pypa.io/en/stable/user_guide/>`__:
+
+.. code-block:: text
+
+    telethon~=1.16.0
+
+This will install any version compatible with the written version (so, any in
+the ``1.16`` series). Patch releases will never break your code (and if they
+do, it's a bug). You can also use that syntax in ``pip install``. Your code
+can't know what new versions will look like, so saying it will work with all
+versions is a lie and will cause issues.
+
+The reason to bring this up is that Telegram has changed things again, and
+with the introduction of anonymous administrators and channel comments, the
+sender of a message may not be a :tl:`User`! To accomodate for this, the field
+is now a :tl:`Peer` and not `int`. As a reminder, it's always a good idea to
+use Telethon's friendly methods and custom properties, which have a higher
+stability guarantee than accessing raw API fields.
+
+Even if you don't update, your code will still need to account for the fact
+that the sender of a message might be one of the accounts Telegram introduced
+to preserve backwards compatibility, because this is a server-side change, so
+it's better to update and not lag behind. As it's mostly just a single person
+driving the project on their free time, bug-fixes are not backported.
+
+This version also updates the format of SQLite sessions (the default), so
+after upgrading and using an old session, the session will be updated, which
+means trying to use it back in older versions of the library won't work.
+
+For backwards-compatibility sake, the library has introduced the properties
+`Message.reply_to_msg_id <telethon.tl.custom.message.Message.reply_to_msg_id>`
+and `Message.to_id <telethon.tl.custom.message.Message.to_id>` that behave
+like they did before (Telegram has renamed and changed how these fields work).
+
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* ``Message.from_id`` is now a :tl:`Peer`, not `int`! If you want the marked
+  sender ID (much like old behaviour), replace all uses of ``.from_id`` with
+  ``.sender_id``. This will mostly work, but of course in old and new versions
+  you have to account for the fact that this sender may no longer be a user.
+* You can no longer assign to `Message.reply_to_msg_id
+  <telethon.tl.custom.message.Message.reply_to_msg_id>` and `Message.to_id
+  <telethon.tl.custom.message.Message.to_id>` because these are now properties
+  that offer a "view" to the real value from a different field.
+* Answering inline queries with a ``photo`` or ``document`` will now send the
+  photo or document used in the resulting message by default. Not sending the
+  media was technically a bug, but some people may be relying on this old
+  behaviour. You can use the old behaviour with ``include_media=False``.
+
+Additions
+~~~~~~~~~
+
+* New ``raise_last_call_error`` parameter in the client constructor to raise
+  the same error produced by the last failing call, rather than a generic
+  `ValueError`.
+* New ``formatting_entities`` parameter in `client.send_message()
+  <telethon.client.messages.MessageMethods.send_message>`, and
+  `client.send_file() <telethon.client.uploads.UploadMethods.send_file>`
+  to bypass the parse mode and manually specify the formatting entities.
+* New `client.get_permissions() <telethon.client.chats.ChatMethods.get_permissions>`
+  method to query a participant's permissions in a group or channel. This
+  request is slightly expensive in small group chats because it has to fetch
+  the entire chat to check just a user, so use of a cache is advised.
+* `Message.click() <telethon.tl.custom.message.Message.click>` now works on
+  normal polls!
+* New ``local_addr`` parameter in the client constructor to use a specific
+  local network address when connecting to Telegram.
+* `client.inline_query() <telethon.client.bots.BotMethods.inline_query>` now
+  lets you specify the chat where the query is being made from, which some
+  bots need to provide certain functionality.
+* You can now get comments in a channel post with the ``reply_to`` parameter in
+  `client.iter_messages() <telethon.client.messages.MessageMethods.iter_messages>`.
+  Comments are messages that "reply to" a specific channel message, hence the
+  name (which is consistent with how Telegram's API calls it).
+
+Enhancements
+~~~~~~~~~~~~
+
+* Updated documentation and list of known errors.
+* If ``hachoir`` is available, the file metadata can now be extracted from
+  streams and in-memory bytes.
+* The default parameters used to initialize a connection now match the format
+  of those used by Telegram Desktop.
+* Specifying 0 retries will no longer cause the library to attempt to reconnect.
+* The library should now be able to reliably download very large files.
+* Global search should work more reliably now.
+* Old usernames are evicted from cache, so getting entities by cached username
+  should now be more reliable.
+* Slightly less noisy logs.
+* Stability regarding transport-level errors (transport flood, authorization
+  key not found) should be improved. In particular, you should no longer be
+  getting unnecessarily logged out.
+* Reconnection should no longer occur if the client gets logged out (for
+  example, another client revokes the session).
+
+Bug fixes
+~~~~~~~~~
+
+* In some cases, there were issues when using `events.Album
+  <telethon.events.album.Album>` together with `events.Raw
+  <telethon.events.raw.Raw>`.
+* For some channels, one of their channel photos would not show up in
+  `client.iter_profile_photos() <telethon.client.chats.ChatMethods.iter_profile_photos>`.
+* In some cases, a request that failed to be sent would be forgotten, causing
+  the original caller to be "locked" forever for a response that would never
+  arrive. Failing requests should now consistently be automatically re-sent.
+* The library should more reliably handle certain updates with "empty" data.
+* Sending documents in inline queries should now work fine.
+* Manually using `client.sign_up <telethon.client.auth.AuthMethods.sign_up>`
+  should now work correctly, instead of claiming "code invalid".
+
+Special mention to some of the other changes in the 1.16.x series:
+
+* The ``thumb`` for ``download_media`` now supports both `str` and :tl:`VideoSize`.
+* Thumbnails are sorted, so ``-1`` is always the largest.
+
+
 Bug Fixes (v1.16.1)
 ===================
 
@@ -3676,7 +3806,7 @@ things with the ``InteractiveTelegramClient``:
 - **Download** any message's media (photos, documents or even contacts!).
 - **Receive message updates** as you talk (i.e., someone sent you a message).
 
-It actually is an usable-enough client for your day by day. You could
+It actually is a usable-enough client for your day by day. You could
 even add ``libnotify`` and pop, you're done! A great cli-client with
 desktop notifications.
 
