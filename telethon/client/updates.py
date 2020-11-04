@@ -397,6 +397,11 @@ class UpdateMethods:
                     # the channel. Because these "happen sporadically" (#1428)
                     # we should be okay (no flood waits) even if more occur.
                     pass
+                except ValueError:
+                    # There is a chance that GetFullChannelRequest and GetDifferenceRequest
+                    # inside the _get_difference() function will end up with 
+                    # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
+                    pass
 
         if not self._self_input_peer:
             # Some updates require our own ID, so we must make sure
