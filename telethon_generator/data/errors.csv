@@ -6,7 +6,7 @@ ACTIVE_USER_REQUIRED,401,The method is only available to already activated users
 ADMINS_TOO_MUCH,400,Too many admins
 ADMIN_RANK_EMOJI_NOT_ALLOWED,400,Emoji are not allowed in admin titles or ranks
 ADMIN_RANK_INVALID,400,The given admin title or rank was invalid (possibly larger than 16 characters)
-ALBUM_PHOTOS_TOO_MANY,400,Too many photos were included in the album 
+ALBUM_PHOTOS_TOO_MANY,400,Too many photos were included in the album
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
@@ -133,7 +133,7 @@ FRESH_CHANGE_PHONE_FORBIDDEN,406,Recently logged-in users cannot use this reques
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
-GRAPH_OUTDATED_RELOAD,400,Data can't be used for the channel statistics, graphs outdated 
+GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid
 HISTORY_GET_FAILED,500,Fetching of history failed
@@ -241,7 +241,7 @@ POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
-PRIVACY_VALUE_INVALID,400,The privacy value is invalid 
+PRIVACY_VALUE_INVALID,400,The privacy value is invalid
 PTS_CHANGE_EMPTY,500,No PTS change
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
@@ -304,7 +304,7 @@ TAKEOUT_INVALID,400,The takeout session has been invalidated by another data exp
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
 Timeout,-503,A timeout occurred while fetching data from the worker
-THEME_MIME_INVALID,400,You cannot create this theme, the mime-type is invalid
+THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TOKEN_INVALID,400,The provided token is invalid
 TTL_DAYS_INVALID,400,The provided TTL is invalid
