@@ -6,7 +6,7 @@ ACTIVE_USER_REQUIRED,401,The method is only available to already activated users
 ADMINS_TOO_MUCH,400,Too many admins
 ADMIN_RANK_EMOJI_NOT_ALLOWED,400,Emoji are not allowed in admin titles or ranks
 ADMIN_RANK_INVALID,400,The given admin title or rank was invalid (possibly larger than 16 characters)
-ALBUM_PHOTOS_TOO_MANY,400,You sent too many photo albums. 
+ALBUM_PHOTOS_TOO_MANY,400,Too many photos were included in the album 
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
@@ -258,7 +258,7 @@ REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_GAME_EMPTY,400,The provided reply markup for the game is empty
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
-RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
+RESULTS_TOO_MUCH,400,"You sent too many results, see https://core.telegram.org/bots/api#answerinlinequery for the current limit"
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs
 RESULT_ID_INVALID,400,The given result cannot be used to send the selection to the bot
 RESULT_TYPE_INVALID,400,Result type invalid
@@ -301,6 +301,7 @@ TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being ab
 TAKEOUT_INVALID,400,The takeout session has been invalidated by another data export session
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
+Timeout,-503,A timeout occurred while fetching data from the worker
 THEME_MIME_INVALID,400,You cannot create this theme, the mime-type is invalid
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TOKEN_INVALID,400,The provided token is invalid
@@ -347,4 +348,3 @@ WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty
 WORKER_BUSY_TOO_LONG_RETRY,500,Telegram workers are too busy to respond immediately
 YOU_BLOCKED_USER,400,You blocked this user
-Timeout,-503,A timeout occurred while fetching data from the worker
