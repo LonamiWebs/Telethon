@@ -336,7 +336,12 @@ class Conversation(ChatGetter):
 
         future = self._client.loop.create_future()
         self._custom[counter] = (event, future)
-        return await self._get_result(future, start_time, timeout, self._custom, counter)
+        try:
+            return await self._get_result(future, start_time, timeout, self._custom, counter)
+        except asyncio.TimeoutError:
+            # Need to remove it from the dict if it times out, else we may
+            # try and fail to set the result later (#1618).
+            del self._custom[counter]
 
     async def _check_custom(self, built):
         for key, (ev, fut) in list(self._custom.items()):

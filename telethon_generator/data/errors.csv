@@ -6,6 +6,7 @@ ACTIVE_USER_REQUIRED,401,The method is only available to already activated users
 ADMINS_TOO_MUCH,400,Too many admins
 ADMIN_RANK_EMOJI_NOT_ALLOWED,400,Emoji are not allowed in admin titles or ranks
 ADMIN_RANK_INVALID,400,The given admin title or rank was invalid (possibly larger than 16 characters)
+ALBUM_PHOTOS_TOO_MANY,400,Too many photos were included in the album
 API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
@@ -19,6 +20,8 @@ AUTH_RESTART,500,Restart the authorization process
 AUTH_TOKEN_ALREADY_ACCEPTED,400,The authorization token was already used
 AUTH_TOKEN_EXPIRED,400,The provided authorization token has expired and the updated QR-code must be re-scanned
 AUTH_TOKEN_INVALID,400,An invalid authorization token was provided
+AUTOARCHIVE_NOT_AVAILABLE,400,You cannot use this feature yet
+BANK_CARD_NUMBER_INVALID,400,Incorrect credit card number
 BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this request, i.e. restricting view_messages as a default"
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
@@ -48,14 +51,15 @@ CALL_PROTOCOL_FLAGS_INVALID,400,Call protocol flags invalid
 CDN_METHOD_INVALID,400,This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
+CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PRIVATE,400,The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it
 CHANNEL_PUBLIC_GROUP_NA,403,channel/supergroup not available
 CHAT_ABOUT_NOT_MODIFIED,400,About text has not changed
 CHAT_ABOUT_TOO_LONG,400,Chat about too long
 CHAT_ADMIN_INVITE_REQUIRED,403,You do not have the rights to do this
-CHAT_ADMIN_REQUIRED,400 403,"Chat admin privileges are required to do that in the specified chat (for example, to send a message in a channel which is not yours), or invalid permissions used for the channel or group"
-CHAT_FORBIDDEN,,You cannot write in this chat
+CHAT_ADMIN_REQUIRED,400,"Chat admin privileges are required to do that in the specified chat (for example, to send a message in a channel which is not yours), or invalid permissions used for the channel or group"
+CHAT_FORBIDDEN,403,You cannot write in this chat
 CHAT_ID_EMPTY,400,The provided chat ID is empty
 CHAT_ID_INVALID,400,"Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead"
 CHAT_INVALID,400,The chat is invalid for this request
@@ -85,6 +89,7 @@ DATA_JSON_INVALID,400,The provided JSON data is invalid
 DATE_EMPTY,400,Date empty
 DC_ID_INVALID,400,This occurs when an authorization is tried to be exported for the same data center one is currently connected to
 DH_G_A_INVALID,400,g_a invalid
+DOCUMENT_INVALID,400,The document file was invalid and can't be used in inline mode
 EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
 EMAIL_INVALID,400,The given email is invalid
 EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
@@ -102,12 +107,13 @@ ENTITY_MENTION_USER_INVALID,400,You can't use this entity
 ERROR_TEXT_EMPTY,400,The provided error message is empty
 EXPORT_CARD_INVALID,400,Provided card is invalid
 EXTERNAL_URL_INVALID,400,External URL invalid
-FIELD_NAME_EMPTY,,The field with the name FIELD_NAME is missing
-FIELD_NAME_INVALID,,The field with the name FIELD_NAME is invalid
+FIELD_NAME_EMPTY,400,The field with the name FIELD_NAME is missing
+FIELD_NAME_INVALID,400,The field with the name FIELD_NAME is invalid
+FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
 FILE_ID_INVALID,400,"The provided file id is invalid. Make sure all parameters are present, have the correct type and are not empty (ID, access hash, file reference, thumb size ...)"
 FILE_MIGRATE_X,303,The file to be accessed is currently stored in DC {new_dc}
 FILE_PARTS_INVALID,400,The number of file parts is invalid
-FILE_PART_0_MISSING,,File part 0 missing
+FILE_PART_0_MISSING,400,File part 0 missing
 FILE_PART_EMPTY,400,The provided file part is empty
 FILE_PART_INVALID,400,The file part number is invalid
 FILE_PART_LENGTH_INVALID,400,The length of a file part is invalid
@@ -116,7 +122,7 @@ FILE_PART_SIZE_INVALID,400,The provided file part size is invalid
 FILE_PART_X_MISSING,400,Part {which} of the file is missing from storage
 FILE_REFERENCE_EMPTY,400,The file reference must exist to access the media and it cannot be empty
 FILE_REFERENCE_EXPIRED,400,The file reference has expired and is no longer valid or it belongs to self-destructing media and cannot be resent
-FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
+FILE_REFERENCE_INVALID,400,The file reference is invalid or you can't do that operation on such message
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
 FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
@@ -127,6 +133,7 @@ FRESH_CHANGE_PHONE_FORBIDDEN,406,Recently logged-in users cannot use this reques
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
+GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid
 HISTORY_GET_FAILED,500,Fetching of history failed
@@ -134,25 +141,26 @@ IMAGE_PROCESS_FAILED,400,Failure while processing image
 INLINE_BOT_REQUIRED,403,The action must be performed through an inline bot callback
 INLINE_RESULT_EXPIRED,400,The inline query expired
 INPUT_CONSTRUCTOR_INVALID,400,The provided constructor is invalid
-INPUT_FETCH_ERROR,,An error occurred while deserializing TL parameters
+INPUT_FETCH_ERROR,400,An error occurred while deserializing TL parameters
 INPUT_FETCH_FAIL,400,Failed deserializing TL payload
+INPUT_FILTER_INVALID,400,The search query filter is valid
 INPUT_LAYER_INVALID,400,The provided layer is invalid
-INPUT_METHOD_INVALID,,The invoked method does not exist anymore or has never existed
+INPUT_METHOD_INVALID,400,The invoked method does not exist anymore or has never existed
 INPUT_REQUEST_TOO_LONG,400,The input request was too long. This may be a bug in the library as it can occur when serializing more bytes than it should (like appending the vector constructor code at the end of a message)
 INPUT_USER_DEACTIVATED,400,The specified user was deleted
-INTERDC_X_CALL_ERROR,,An error occurred while communicating with DC {dc}
-INTERDC_X_CALL_RICH_ERROR,,A rich error occurred while communicating with DC {dc}
+INTERDC_X_CALL_ERROR,500,An error occurred while communicating with DC {dc}
+INTERDC_X_CALL_RICH_ERROR,500,A rich error occurred while communicating with DC {dc}
 INVITE_HASH_EMPTY,400,The invite hash is empty
 INVITE_HASH_EXPIRED,400,The chat the user tried to join has expired and is not valid anymore
 INVITE_HASH_INVALID,400,The invite hash is invalid
 LANG_PACK_INVALID,400,The provided language pack is invalid
-LASTNAME_INVALID,,The last name is invalid
+LASTNAME_INVALID,400,The last name is invalid
 LIMIT_INVALID,400,An invalid limit was provided. See https://core.telegram.org/api/files#downloading-files
 LINK_NOT_MODIFIED,400,The channel is already linked to this group
 LOCATION_INVALID,400,The location given for a file was invalid. See https://core.telegram.org/api/files#downloading-files
 MAX_ID_INVALID,400,The provided max ID is invalid
 MAX_QTS_INVALID,400,The provided QTS were invalid
-MD5_CHECKSUM_INVALID,,The MD5 check-sums do not match
+MD5_CHECKSUM_INVALID,400,The MD5 check-sums do not match
 MEDIA_CAPTION_TOO_LONG,400,The caption is too long
 MEDIA_EMPTY,400,The provided media object is invalid or the current account may not be able to send it (such as games as users)
 MEDIA_INVALID,400,Media invalid
@@ -177,6 +185,7 @@ MSGID_DECREASE_RETRY,500,The request should be retried with a lower message ID
 MSG_ID_INVALID,400,The message ID used in the peer was invalid
 MSG_WAIT_FAILED,400,A waiting call returned an error
 MT_SEND_QUEUE_TOO_LONG,500,
+MULTI_MEDIA_TOO_LONG,400,Too many media files were included in the same album
 NEED_CHAT_INVALID,500,The provided chat is invalid
 NEED_MEMBER_INVALID,500,The provided member is invalid or does not exist (for example a thumb size)
 NETWORK_MIGRATE_X,303,The source IP address is associated with DC {new_dc}
@@ -184,8 +193,8 @@ NEW_SALT_INVALID,400,The new salt is invalid
 NEW_SETTINGS_INVALID,400,The new settings are invalid
 OFFSET_INVALID,400,"The given offset was invalid, it must be divisible by 1KB. See https://core.telegram.org/api/files#downloading-files"
 OFFSET_PEER_ID_INVALID,400,The provided offset peer is invalid
-OPTION_INVALID,400,The option specified is invalid and does not exist in the target poll
 OPTIONS_TOO_MUCH,400,You defined too many options for the poll
+OPTION_INVALID,400,The option specified is invalid and does not exist in the target poll
 PACK_SHORT_NAME_INVALID,400,"Invalid sticker pack name. It must begin with a letter, can't contain consecutive underscores and must end in ""_by_<bot username>""."
 PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
 PARTICIPANTS_TOO_FEW,400,Not enough participants
@@ -197,7 +206,7 @@ PASSWORD_MISSING,400,The account must have 2-factor authentication enabled (a pa
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
-PEER_FLOOD,,Too many requests
+PEER_FLOOD,400,Too many requests
 PEER_ID_INVALID,400,"An invalid Peer was used. Make sure to pass the right peer type and that the value is valid (for instance, bots cannot start conversations)"
 PEER_ID_NOT_SUPPORTED,400,The provided peer ID is not supported
 PERSISTENT_TIMESTAMP_EMPTY,400,Persistent timestamp empty
@@ -205,10 +214,10 @@ PERSISTENT_TIMESTAMP_INVALID,400,Persistent timestamp invalid
 PERSISTENT_TIMESTAMP_OUTDATED,500,Persistent timestamp outdated
 PHONE_CODE_EMPTY,400,The phone code is missing
 PHONE_CODE_EXPIRED,400,The confirmation code has expired
-PHONE_CODE_HASH_EMPTY,,The phone code hash is missing
+PHONE_CODE_HASH_EMPTY,400,The phone code hash is missing
 PHONE_CODE_INVALID,400,The phone code entered was invalid
 PHONE_MIGRATE_X,303,The phone number a user is trying to use for authorization is associated with DC {new_dc}
-PHONE_NUMBER_APP_SIGNUP_FORBIDDEN,400,
+PHONE_NUMBER_APP_SIGNUP_FORBIDDEN,400,You can't sign up using this app
 PHONE_NUMBER_BANNED,400,The used phone number has been banned from Telegram and cannot be used anymore. Maybe check https://www.telegram.org/faq_spam
 PHONE_NUMBER_FLOOD,400,You asked for the code too many times.
 PHONE_NUMBER_INVALID,400 406,The phone number is invalid
@@ -219,6 +228,7 @@ PHONE_PASSWORD_PROTECTED,400,This phone is password protected
 PHOTO_CONTENT_URL_EMPTY,400,The content from the URL used as a photo appears to be empty or has caused another HTTP error
 PHOTO_CROP_SIZE_SMALL,400,Photo is too small
 PHOTO_EXT_INVALID,400,The extension of the photo is invalid
+PHOTO_ID_INVALID,400,Photo id is invalid
 PHOTO_INVALID,400,Photo invalid
 PHOTO_INVALID_DIMENSIONS,400,The photo dimensions are invalid (hint: `pip install pillow` for `send_file` to resize images)
 PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Telegram. A reason may be that it exceeds 10MB. Try resizing it locally
@@ -231,6 +241,7 @@ POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
+PRIVACY_VALUE_INVALID,400,The privacy value is invalid
 PTS_CHANGE_EMPTY,500,No PTS change
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
@@ -246,15 +257,16 @@ RANGES_INVALID,400,Invalid range provided
 REACTION_EMPTY,400,No reaction provided
 REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed)
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
+REPLY_MARKUP_GAME_EMPTY,400,The provided reply markup for the game is empty
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
+RESULTS_TOO_MUCH,400,"You sent too many results, see https://core.telegram.org/bots/api#answerinlinequery for the current limit"
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs
 RESULT_ID_INVALID,400,The given result cannot be used to send the selection to the bot
 RESULT_TYPE_INVALID,400,Result type invalid
-RESULTS_TOO_MUCH,400,You sent too many results. See https://core.telegram.org/bots/api#answerinlinequery for the current limit.
 RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (some rights only apply to channels and vice versa)
-RPC_CALL_FAIL,,"Telegram is having internal issues, please try again later."
-RPC_MCGET_FAIL,,"Telegram is having internal issues, please try again later."
+RPC_CALL_FAIL,500,"Telegram is having internal issues, please try again later."
+RPC_MCGET_FAIL,500,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SCHEDULE_BOT_NOT_ALLOWED,400,Bots are not allowed to schedule messages
 SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
@@ -264,6 +276,7 @@ SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slow mode only supports certain values (e.g. 0, 10s, 30s, 1m, 5m, 15m and 1h)"
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
+SENSITIVE_CHANGE_FORBIDDEN,403,Your sensitive content settings cannot be changed at this time
 SESSION_EXPIRED,401,The authorization has expired
 SESSION_PASSWORD_NEEDED,401,Two-steps verification is enabled and a password is required
 SESSION_REVOKED,401,"The authorization has been invalidated, because of the user terminating all sessions"
@@ -291,11 +304,12 @@ TAKEOUT_INVALID,400,The takeout session has been invalidated by another data exp
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
 Timeout,-503,A timeout occurred while fetching data from the worker
+THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TOKEN_INVALID,400,The provided token is invalid
 TTL_DAYS_INVALID,400,The provided TTL is invalid
 TYPES_EMPTY,400,The types field is empty
-TYPE_CONSTRUCTOR_INVALID,,The type constructor is invalid
+TYPE_CONSTRUCTOR_INVALID,400,The type constructor is invalid
 UNKNOWN_METHOD,500,The method you tried to call cannot be called on non-CDN DCs
 UNTIL_DATE_INVALID,400,That date cannot be specified in this request (try using None)
 URL_INVALID,400,The URL used was invalid (e.g. when answering a callback with a URL that's not t.me/yourbot or your game's URL)

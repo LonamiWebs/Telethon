@@ -94,8 +94,10 @@ class UserMethods:
                 if utils.is_list_like(request):
                     request = request[request_index]
 
-                self._flood_waited_requests\
-                    [request.CONSTRUCTOR_ID] = time.time() + e.seconds
+                # SLOW_MODE_WAIT is chat-specific, not request-specific
+                if not isinstance(e, errors.SlowModeWaitError):
+                    self._flood_waited_requests\
+                        [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
                 # In test servers, FLOOD_WAIT_0 has been observed, and sleeping for
                 # such a short amount will cause retries very fast leading to issues.

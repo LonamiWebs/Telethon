@@ -65,6 +65,7 @@ Messages
     iter_messages
     get_messages
     pin_message
+    unpin_message
     send_read_acknowledge
 
 Uploads
