@@ -1009,14 +1009,8 @@ def get_peer_id(peer, add_mark=True):
         if not add_mark:
             return peer.channel_id
 
-        # Concat -100 through math tricks, .to_supergroup() on
-        # Madeline IDs will be strictly positive -> log works.
-        try:
-            return -(peer.channel_id + pow(
-                10, math.floor(math.log10(peer.channel_id) + 3)))
-        except ValueError:
-            raise TypeError('Cannot get marked ID of a channel '
-                            'unless its ID is strictly positive') from None
+        # Growing backwards from -100_0000_000_000 indicates it's a channel
+        return -(1000000000000 + peer.channel_id)
 
 
 def resolve_id(marked_id):
