@@ -260,7 +260,6 @@ class Album(EventBuilder):
             """
             if self._client:
                 kwargs['messages'] = self.messages
-                kwargs['as_album'] = True
                 kwargs['from_peer'] = await self.get_input_chat()
                 return await self._client.forward_messages(*args, **kwargs)
 
