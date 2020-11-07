@@ -1161,15 +1161,20 @@ def resolve_bot_file_id(file_id):
             attributes=attributes,
             file_reference=b''
         )
-    elif (version == 2 and len(data) == 44) or (version == 4 and len(data) == 49):
+    elif (version == 2 and len(data) == 44) or (version == 4 and len(data) in (49, 77)):
         if version == 2:
             (file_type, dc_id, media_id, access_hash,
                 volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
-        # elif version == 4:
-        else:
+        # else version == 4:
+        elif len(data) == 49:
             # TODO Figure out what the extra five bytes mean
             (file_type, dc_id, media_id, access_hash,
                 volume_id, secret, local_id, _) = struct.unpack('<iiqqqqi5s', data)
+        elif len(data) == 77:
+            # See #1613.
+            (file_type, dc_id, _, media_id, access_hash, volume_id, _, local_id, _) = struct.unpack('<ii28sqqq12sib', data)
+        else:
+            return None
 
         if not (1 <= dc_id <= 5):
             return None
