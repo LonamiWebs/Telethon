@@ -1158,6 +1158,9 @@ def resolve_bot_file_id(file_id):
     file: PhotoFileId
 
     photo_type = 's' if file.id or file.access_hash else 'x'
+    if isinstance(file.photosize, PhotoFileId.PhotosizeSourceThumbnail) and file.photosize.thumbnail_type:
+        photo_type = file.photosize.thumbnail_type.encode()
+    # end if
 
     foto_size = file.photosize
     if isinstance(foto_size, (PhotoFileId.PhotosizeSourceLegacy, PhotoFileId.PhotosizeSourceThumbnail, PhotoFileId.PhotosizeSourceDialogPhotoSmall, PhotoFileId.PhotosizeSourceDialogPhotoBig, PhotoFileId.PhotosizeSourceStickersetThumbnail)):
