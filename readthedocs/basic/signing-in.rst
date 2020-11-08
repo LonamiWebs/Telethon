@@ -117,7 +117,7 @@ Signing In behind a Proxy
 =========================
 
 If you need to use a proxy to access Telegram,
-you will need to  `install PySocks`__ and then change:
+you will need to  `install aiosocks`__ and then change:
 
 .. code-block:: python
 
@@ -127,15 +127,36 @@ with
 
 .. code-block:: python
 
-    TelegramClient('anon', api_id, api_hash, proxy=(socks.SOCKS5, '127.0.0.1', 4444))
+    TelegramClient('anon', api_id, api_hash, proxy=("socks5", '127.0.0.1', 4444))
 
 (of course, replacing the IP and port with the IP and port of the proxy).
 
 The ``proxy=`` argument should be a tuple, a list or a dict,
-consisting of parameters described `in PySocks usage`__.
+consisting of parameters described `in aiosocks usage`__.
 
-.. __: https://github.com/Anorov/PySocks#installation
-.. __: https://github.com/Anorov/PySocks#usage-1
+Example:
+
+* .. code-block:: python
+
+    proxy = ('socks5', '1.1.1.1', 5555, 'foo', 'bar', True)
+
+* .. code-block:: python
+
+    proxy = ['socks5', '1.1.1.1', 5555, 'foo', 'bar', True]
+
+* .. code-block:: python
+
+    proxy = {
+        'protocol': 'socks5',   # (mandatory) protocol to use, default socks5, allowed values: 'socks5' (or 2), 'socks4' (or 1)
+        'host': '1.1.1.1',      # (mandatory) proxy IP address
+        'port': 5555,           # (mandatory) proxy port number
+        'username': 'foo',      # (optional) username if the proxy requires auth
+        'password': 'bar',      # (optional) password if the proxy requires auth
+        'remote_resolve': True  # (optional) whether to use remote or local resolve, default remote
+    }
+
+.. __: https://github.com/nibrag/aiosocks#installation
+.. __: https://github.com/nibrag/aiosocks#usage
 
 
 Using MTProto Proxies

@@ -1,6 +1,5 @@
 import abc
 import asyncio
-import socket
 import sys
 
 try:
@@ -10,6 +9,20 @@ except ImportError:
 
 from ...errors import InvalidChecksumError
 from ... import helpers
+
+import aiosocks
+
+# For some reason, `aiosocks` internal errors are not inherited from
+# builtin IOError (just from Exception). Instead of adding those
+# in exceptions clauses everywhere through the code, we
+# rather monkey-patch them in place.
+
+aiosocks.errors.SocksError = ConnectionError
+aiosocks.errors.NoAcceptableAuthMethods = ConnectionError
+aiosocks.errors.LoginAuthenticationFailed = ConnectionError
+aiosocks.errors.InvalidServerVersion = ConnectionError
+aiosocks.errors.InvalidServerReply = ConnectionError
+aiosocks.errors.SocksConnectionError = ConnectionError
 
 
 class Connection(abc.ABC):
@@ -46,57 +59,75 @@ class Connection(abc.ABC):
         self._recv_queue = asyncio.Queue(1)
 
     async def _connect(self, timeout=None, ssl=None):
-        if not self._proxy:
-            if self._local_addr is not None:
-                local_addr = (self._local_addr, None)
-            else:
-                local_addr = None
 
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self._ip, self._port, ssl=ssl, local_addr=local_addr),
-                timeout=timeout
-            )
+        if self._local_addr is not None:
+
+            # NOTE: If port is not specified, we use 0 port
+            # to notify the OS that port should be chosen randomly
+            # from the available ones.
+
+            if isinstance(self._local_addr, tuple) and len(self._local_addr) == 2:
+                local_addr = self._local_addr
+            elif isinstance(self._local_addr, str):
+                local_addr = (self._local_addr, 0)
+            else:
+                raise ValueError("Unknown local address format: {}".format(self._local_addr))
         else:
-            import socks
-            if ':' in self._ip:
-                mode, address = socket.AF_INET6, (self._ip, self._port, 0, 0)
+            local_addr = None
+
+        if not self._proxy:
+            connect_coroutine = asyncio.open_connection(
+                host=self._ip,
+                port=self._port,
+                ssl=ssl,
+                local_addr=local_addr)
+        else:
+
+            if isinstance(self._proxy, (tuple, list)):
+                proxy, auth, remote_resolve = self._parse_proxy(*self._proxy)
+            elif isinstance(self._proxy, dict):
+                proxy, auth, remote_resolve = self._parse_proxy(**self._proxy)
             else:
-                mode, address = socket.AF_INET, (self._ip, self._port)
+                raise ValueError("Unknown proxy format: {}".format(self._proxy.__class__.__name__))
 
-            s = socks.socksocket(mode, socket.SOCK_STREAM)
-            if isinstance(self._proxy, dict):
-                s.set_proxy(**self._proxy)
-            else:
-                s.set_proxy(*self._proxy)
+            connect_coroutine = aiosocks.open_connection(
+                proxy=proxy,
+                proxy_auth=auth,
+                dst=(self._ip, self._port),
+                remote_resolve=remote_resolve,
+                ssl=ssl,
+                local_addr=local_addr)
 
-            s.settimeout(timeout)
-            if self._local_addr is not None:
-                s.bind((self._local_addr, None))
-            await asyncio.wait_for(
-                asyncio.get_event_loop().sock_connect(s, address),
-                timeout=timeout
-            )
-            if ssl:
-                if ssl_mod is None:
-                    raise RuntimeError(
-                        'Cannot use proxy that requires SSL'
-                        'without the SSL module being available'
-                    )
-
-                s = ssl_mod.wrap_socket(
-                    s,
-                    do_handshake_on_connect=True,
-                    ssl_version=ssl_mod.PROTOCOL_SSLv23,
-                    ciphers='ADH-AES256-SHA'
-                )
-                
-            s.setblocking(False)
-
-            self._reader, self._writer = await asyncio.open_connection(sock=s)
-
+        self._reader, self._writer = await asyncio.wait_for(connect_coroutine, timeout=timeout)
         self._codec = self.packet_codec(self)
         self._init_conn()
         await self._writer.drain()
+
+    @staticmethod
+    def _parse_proxy(protocol, host, port, username=None, password=None, remote_resolve=True):
+
+        proxy, auth = None, None
+
+        if isinstance(protocol, str):
+            protocol = protocol.lower()
+
+        # We do the check for numerical values here
+        # to be backwards compatible with PySocks proxy format,
+        # (since socks.SOCKS5 = 2 and socks.SOCKS4 = 1)
+
+        if protocol == 'socks5' or protocol == 2:
+            proxy = aiosocks.Socks5Addr(host, port)
+            if username and password:
+                auth = aiosocks.Socks5Auth(username, password)
+
+        elif protocol == 'socks4' or protocol == 1:
+            proxy = aiosocks.Socks4Addr(host, port)
+            if username:
+                auth = aiosocks.Socks4Auth(username)
+        else:
+            raise ValueError('Unsupported proxy protocol {}'.format(protocol))
+
+        return proxy, auth, remote_resolve
 
     async def connect(self, timeout=None, ssl=None):
         """

@@ -1,4 +1,3 @@
 cryptg
-pysocks
 hachoir
 pillow
