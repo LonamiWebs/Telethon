@@ -1032,67 +1032,6 @@ def resolve_id(marked_id):
     return -marked_id, types.PeerChat
 
 
-def _rle_decode(data):
-    """
-    Decodes run-length-encoded `data`.
-    """
-    if not data:
-        return data
-
-    new = b''
-    last = b''
-    for cur in data:
-        if last == b'\0':
-            new += last * cur
-            last = b''
-        else:
-            new += last
-            last = bytes([cur])
-
-    return new + last
-
-
-def _rle_encode(string):
-    new = b''
-    count = 0
-    for cur in string:
-        if not cur:
-            count += 1
-        else:
-            if count:
-                new += b'\0' + bytes([count])
-                count = 0
-
-            new += bytes([cur])
-    return new
-
-
-def _decode_telegram_base64(string):
-    """
-    Decodes a url-safe base64-encoded string into its bytes
-    by first adding the stripped necessary padding characters.
-
-    This is the way Telegram shares binary data as strings,
-    such as Bot API-style file IDs or invite links.
-
-    Returns `None` if the input string was not valid.
-    """
-    try:
-        return base64.urlsafe_b64decode(string + '=' * (len(string) % 4))
-    except (binascii.Error, ValueError, TypeError):
-        return None  # not valid base64, not valid ascii, not a string
-
-
-def _encode_telegram_base64(string):
-    """
-    Inverse for `_decode_telegram_base64`.
-    """
-    try:
-        return base64.urlsafe_b64encode(string).rstrip(b'=').decode('ascii')
-    except (binascii.Error, ValueError, TypeError):
-        return None  # not valid base64, not valid ascii, not a string
-
-
 def resolve_bot_file_id(file_id):
     """
     Given a Bot API-style `file_id <telethon.tl.custom.file.File.id>`,
