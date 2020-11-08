@@ -1163,7 +1163,13 @@ def resolve_bot_file_id(file_id):
     # end if
 
     photo_size = file.photosize
-    if isinstance(photo_size, (PhotoFileId.PhotosizeSourceLegacy, PhotoFileId.PhotosizeSourceThumbnail, PhotoFileId.PhotosizeSourceDialogPhotoSmall, PhotoFileId.PhotosizeSourceDialogPhotoBig, PhotoFileId.PhotosizeSourceStickersetThumbnail)):
+    if isinstance(photo_size, (
+        PhotoFileId.PhotosizeSourceLegacy,
+        PhotoFileId.PhotosizeSourceThumbnail,
+        PhotoFileId.PhotosizeSourceDialogPhotoSmall,
+        PhotoFileId.PhotosizeSourceDialogPhotoBig,
+        PhotoFileId.PhotosizeSourceStickersetThumbnail,
+    )):
         sizes = [
             types.PhotoSize(
                 type=photo_type,
