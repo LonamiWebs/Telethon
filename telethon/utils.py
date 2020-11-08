@@ -1154,7 +1154,8 @@ def resolve_bot_file_id(file_id):
     # end if
 
     # okey, so we're dealing with a photo.
-    assert isinstance(file, PhotoFileId)
+    file: PhotoFileId
+
     photo_size = 's' if file.id or file.access_hash else 'x'
 
     foto_size = file.photosize
