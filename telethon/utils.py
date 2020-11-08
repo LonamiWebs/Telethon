@@ -16,6 +16,7 @@ import pathlib
 import re
 import struct
 from tg_file_id.file_id import FileId, DocumentFileId, PhotoFileId
+from tg_file_id.utils import base64url_decode, base64url_encode, rle_decode, rle_encode
 from collections import namedtuple
 from mimetypes import guess_extension
 from typing import Union
@@ -1208,7 +1209,7 @@ def resolve_invite_link(link):
     if re.match(r'[a-fA-F\d]{32}', link_hash):
         payload = bytes.fromhex(link_hash)
     else:
-        payload = _decode_telegram_base64(link_hash)
+        payload = base64url_decode(link_hash)
 
     try:
         return struct.unpack('>LLQ', payload)
@@ -1229,8 +1230,7 @@ def resolve_inline_message_id(inline_msg_id):
     The ``access_hash`` does not have any use yet.
     """
     try:
-        dc_id, message_id, pid, access_hash = \
-            struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
+        dc_id, message_id, pid, access_hash = struct.unpack('<iiiq', base64url_decode(inline_msg_id))
         peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
         return message_id, peer, dc_id, access_hash
     except (struct.error, TypeError):
