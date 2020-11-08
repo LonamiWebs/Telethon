@@ -1108,7 +1108,9 @@ def resolve_bot_file_id(file_id):
     # end if
     if isinstance(file_id, str):
         file = FileId.from_file_id(file_id)
-    elif not isinstance(file_id, FileId):
+    elif isinstance(file_id, FileId):
+        file = file_id
+    else:
         return None
     # end if
 
