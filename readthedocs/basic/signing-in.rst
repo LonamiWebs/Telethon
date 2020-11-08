@@ -131,37 +131,30 @@ with
 
 (of course, replacing the IP and port with the IP and port of the proxy).
 
-The ``proxy=`` argument should be a tuple, a list or a dict,
+The ``proxy=`` argument should be a dict (or tuple, for backwards compatibility),
 consisting of parameters described `in aiosocks usage`__.
 
 Example:
 
-* All of these are equal:
-
 .. code-block:: python
-
-    proxy = ('socks5', '1.1.1.1', 5555, True, 'foo', 'bar')
-    proxy = (socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar')
-    proxy = (2, '1.1.1.1', 5555, True, 'foo', 'bar')
-
-* All of these are equal:
-
-.. code-block:: python
-
-    proxy = ['socks5', '1.1.1.1', 5555, True, 'foo', 'bar']
-    proxy = [socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar']
-    proxy = [2, '1.1.1.1', 5555, True, 'foo', 'bar']
-
-* .. code-block:: python
 
     proxy = {
-        'proxy_type': 'socks5', # (mandatory) protocol to use, allowed values: 'socks5' (or 2), 'socks4' (or 1)
+        'proxy_type': 'socks5', # (mandatory) protocol to use, allowed values: 'socks5', 'socks4'
         'addr': '1.1.1.1',      # (mandatory) proxy IP address
         'port': 5555,           # (mandatory) proxy port number
         'username': 'foo',      # (optional) username if the proxy requires auth
         'password': 'bar',      # (optional) password if the proxy requires auth
         'rdns': True            # (optional) whether to use remote or local resolve, default remote
     }
+
+
+For backwards compatibility with ``PySocks`` the following format
+is possible (but discouraged):
+
+.. code-block:: python
+
+    proxy = (socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar')
+
 
 .. __: https://github.com/nibrag/aiosocks#installation
 .. __: https://github.com/nibrag/aiosocks#usage
