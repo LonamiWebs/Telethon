@@ -136,23 +136,31 @@ consisting of parameters described `in aiosocks usage`__.
 
 Example:
 
-* .. code-block:: python
+* All of these are equal:
 
-    proxy = ('socks5', '1.1.1.1', 5555, 'foo', 'bar', True)
+.. code-block:: python
 
-* .. code-block:: python
+    proxy = ('socks5', '1.1.1.1', 5555, True, 'foo', 'bar')
+    proxy = (socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar')
+    proxy = (2, '1.1.1.1', 5555, True, 'foo', 'bar')
 
-    proxy = ['socks5', '1.1.1.1', 5555, 'foo', 'bar', True]
+* All of these are equal:
+
+.. code-block:: python
+
+    proxy = ['socks5', '1.1.1.1', 5555, True, 'foo', 'bar']
+    proxy = [socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar']
+    proxy = [2, '1.1.1.1', 5555, True, 'foo', 'bar']
 
 * .. code-block:: python
 
     proxy = {
-        'protocol': 'socks5',   # (mandatory) protocol to use, default socks5, allowed values: 'socks5' (or 2), 'socks4' (or 1)
-        'host': '1.1.1.1',      # (mandatory) proxy IP address
+        'proxy_type': 'socks5', # (mandatory) protocol to use, allowed values: 'socks5' (or 2), 'socks4' (or 1)
+        'addr': '1.1.1.1',      # (mandatory) proxy IP address
         'port': 5555,           # (mandatory) proxy port number
         'username': 'foo',      # (optional) username if the proxy requires auth
         'password': 'bar',      # (optional) password if the proxy requires auth
-        'remote_resolve': True  # (optional) whether to use remote or local resolve, default remote
+        'rdns': True            # (optional) whether to use remote or local resolve, default remote
     }
 
 .. __: https://github.com/nibrag/aiosocks#installation

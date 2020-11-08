@@ -104,30 +104,30 @@ class Connection(abc.ABC):
         await self._writer.drain()
 
     @staticmethod
-    def _parse_proxy(protocol, host, port, username=None, password=None, remote_resolve=True):
+    def _parse_proxy(proxy_type, addr, port, rdns=True, username=None, password=None):
 
         proxy, auth = None, None
 
-        if isinstance(protocol, str):
-            protocol = protocol.lower()
+        if isinstance(proxy_type, str):
+            proxy_type = proxy_type.lower()
 
         # We do the check for numerical values here
         # to be backwards compatible with PySocks proxy format,
         # (since socks.SOCKS5 = 2 and socks.SOCKS4 = 1)
 
-        if protocol == 'socks5' or protocol == 2:
-            proxy = aiosocks.Socks5Addr(host, port)
+        if proxy_type == 'socks5' or proxy_type == 2:
+            proxy = aiosocks.Socks5Addr(addr, port)
             if username and password:
                 auth = aiosocks.Socks5Auth(username, password)
 
-        elif protocol == 'socks4' or protocol == 1:
-            proxy = aiosocks.Socks4Addr(host, port)
+        elif proxy_type == 'socks4' or proxy_type == 1:
+            proxy = aiosocks.Socks4Addr(addr, port)
             if username:
                 auth = aiosocks.Socks4Auth(username)
         else:
-            raise ValueError('Unsupported proxy protocol {}'.format(protocol))
+            raise ValueError('Unsupported proxy protocol {}'.format(proxy_type))
 
-        return proxy, auth, remote_resolve
+        return proxy, auth, rdns
 
     async def connect(self, timeout=None, ssl=None):
         """
