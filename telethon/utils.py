@@ -1157,13 +1157,13 @@ def resolve_bot_file_id(file_id):
     # okey, so we're dealing with a photo.
     file: PhotoFileId
 
-    photo_size = 's' if file.id or file.access_hash else 'x'
+    photo_type = 's' if file.id or file.access_hash else 'x'
 
     foto_size = file.photosize
     if isinstance(foto_size, (PhotoFileId.PhotosizeSourceLegacy, PhotoFileId.PhotosizeSourceThumbnail, PhotoFileId.PhotosizeSourceDialogPhotoSmall, PhotoFileId.PhotosizeSourceDialogPhotoBig, PhotoFileId.PhotosizeSourceStickersetThumbnail)):
         sizes = [
             types.PhotoSize(
-                type=photo_size,
+                type=photo_type,
                 location=types.FileLocationToBeDeprecated(
                     volume_id=foto_size.volume_id,
                     local_id=foto_size.location_local_id,
