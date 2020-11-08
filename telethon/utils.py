@@ -24,6 +24,7 @@ from types import GeneratorType
 from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate, strip_text
 from .tl import types
+from .tl.types import PhotoSize, PhotoSizeEmpty
 
 try:
     import hachoir
