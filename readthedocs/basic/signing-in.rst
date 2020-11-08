@@ -155,7 +155,7 @@ Example:
 * .. code-block:: python
 
     proxy = {
-        'proxy_type': 'socks5', # (mandatory) protocol to use, allowed values: 'socks5' (or 2), 'socks4' (or 1)
+        'proxy_type': 'socks5', # (mandatory) protocol to use, allowed values: 'socks5', 'socks4'
         'addr': '1.1.1.1',      # (mandatory) proxy IP address
         'port': 5555,           # (mandatory) proxy port number
         'username': 'foo',      # (optional) username if the proxy requires auth
