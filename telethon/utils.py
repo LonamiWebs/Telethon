@@ -1162,14 +1162,14 @@ def resolve_bot_file_id(file_id):
         photo_type = file.photosize.thumbnail_type.encode()
     # end if
 
-    foto_size = file.photosize
-    if isinstance(foto_size, (PhotoFileId.PhotosizeSourceLegacy, PhotoFileId.PhotosizeSourceThumbnail, PhotoFileId.PhotosizeSourceDialogPhotoSmall, PhotoFileId.PhotosizeSourceDialogPhotoBig, PhotoFileId.PhotosizeSourceStickersetThumbnail)):
+    photo_size = file.photosize
+    if isinstance(photo_size, (PhotoFileId.PhotosizeSourceLegacy, PhotoFileId.PhotosizeSourceThumbnail, PhotoFileId.PhotosizeSourceDialogPhotoSmall, PhotoFileId.PhotosizeSourceDialogPhotoBig, PhotoFileId.PhotosizeSourceStickersetThumbnail)):
         sizes = [
             types.PhotoSize(
                 type=photo_type,
                 location=types.FileLocationToBeDeprecated(
-                    volume_id=foto_size.volume_id,
-                    local_id=foto_size.location_local_id,
+                    volume_id=photo_size.volume_id,
+                    local_id=photo_size.location_local_id,
                 ),
                 w=0,
                 h=0,
