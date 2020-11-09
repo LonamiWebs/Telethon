@@ -74,11 +74,11 @@ class Connection(abc.ABC):
             # to be backwards compatible with PySocks proxy format,
             # (since socks.SOCKS5 == 2, socks.SOCKS4 == 1, socks.HTTP == 3)
 
-            if isinstance(proxy_type, ProxyType.SOCKS5) or proxy_type == 2 or proxy_type == "socks5":
+            if proxy_type == ProxyType.SOCKS5 or proxy_type == 2 or proxy_type == "socks5":
                 protocol = ProxyType.SOCKS5
-            elif isinstance(proxy_type, ProxyType.SOCKS4) or proxy_type == 1 or proxy_type == "socks4":
+            elif proxy_type == ProxyType.SOCKS4 or proxy_type == 1 or proxy_type == "socks4":
                 protocol = ProxyType.SOCKS4
-            elif isinstance(proxy_type, ProxyType.HTTP) or proxy_type == 3 or proxy_type == "http":
+            elif proxy_type == ProxyType.HTTP or proxy_type == 3 or proxy_type == "http":
                 protocol = ProxyType.HTTP
             else:
                 raise ValueError("Unknown proxy protocol type: {}".format(proxy_type))
