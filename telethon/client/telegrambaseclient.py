@@ -110,8 +110,8 @@ class TelegramBaseClient(abc.ABC):
             function parameters for PySocks, like ``(type, 'hostname', port)``.
             See https://github.com/Anorov/PySocks#usage-1 for more.
 
-        local_addr (`str`, optional):
-            Local host address used to bind the socket to locally.
+        local_addr (`str` | `tuple`, optional):
+            Local host address (and port, optionally) used to bind the socket to locally.
             You only need to use this if you have multiple network cards and
             want to use a specific one.
 
@@ -220,10 +220,10 @@ class TelegramBaseClient(abc.ABC):
             connection: 'typing.Type[Connection]' = ConnectionTcpFull,
             use_ipv6: bool = False,
             proxy: typing.Union[tuple, dict] = None,
-            local_addr=None,
+            local_addr: typing.Union[str, tuple] = None,
             timeout: int = 10,
             request_retries: int = 5,
-            connection_retries: int =5,
+            connection_retries: int = 5,
             retry_delay: int = 1,
             auto_reconnect: bool = True,
             sequential_updates: bool = False,
