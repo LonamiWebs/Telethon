@@ -169,9 +169,7 @@ class Connection(abc.ABC):
                 # Create a non-blocking socket and bind it (if local address is specified).
                 sock = socket.socket(mode, socket.SOCK_STREAM)
                 sock.setblocking(False)
-
-                if local_addr is not None:
-                    sock.bind(local_addr)
+                sock.bind(local_addr)
 
                 # Actual TCP connection is performed here.
                 await asyncio.wait_for(
