@@ -45,54 +45,228 @@ class Connection(abc.ABC):
         self._send_queue = asyncio.Queue(1)
         self._recv_queue = asyncio.Queue(1)
 
-    async def _connect(self, timeout=None, ssl=None):
-        if not self._proxy:
-            if self._local_addr is not None:
-                local_addr = (self._local_addr, None)
-            else:
-                local_addr = None
+    @staticmethod
+    def _wrap_socket_ssl(sock):
 
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self._ip, self._port, ssl=ssl, local_addr=local_addr),
-                timeout=timeout
+        if ssl_mod is None:
+            raise RuntimeError(
+                'Cannot use proxy that requires SSL '
+                'without the SSL module being available'
             )
+
+        return ssl_mod.wrap_socket(
+            sock,
+            do_handshake_on_connect=True,
+            ssl_version=ssl_mod.PROTOCOL_SSLv23,
+            ciphers='ADH-AES256-SHA')
+
+    @staticmethod
+    def _parse_proxy(library, proxy_type, addr, port, rdns=True, username=None, password=None):
+
+        if isinstance(proxy_type, str):
+            proxy_type = proxy_type.lower()
+
+        if library == "python-socks":
+
+            from python_socks import ProxyType
+
+            # We do the check for numerical values here
+            # to be backwards compatible with PySocks proxy format,
+            # (since socks.SOCKS5 == 2, socks.SOCKS4 == 1, socks.HTTP == 3)
+
+            if proxy_type == ProxyType.SOCKS5 or proxy_type == 2 or proxy_type == "socks5":
+                protocol = ProxyType.SOCKS5
+            elif proxy_type == ProxyType.SOCKS4 or proxy_type == 1 or proxy_type == "socks4":
+                protocol = ProxyType.SOCKS4
+            elif proxy_type == ProxyType.HTTP or proxy_type == 3 or proxy_type == "http":
+                protocol = ProxyType.HTTP
+            else:
+                raise ValueError("Unknown proxy protocol type: {}".format(proxy_type))
+
+            # NOTE: We return a tuple compatible with the
+            # signature (order) of python_socks `Proxy.create()`
+            # I.E.: (proxy_type, host, port, username, password, rdns)
+
+            return protocol, addr, port, username, password, rdns
+
+        elif library == "pysocks":
+
+            from socks import SOCKS5, SOCKS4, HTTP
+
+            if proxy_type == 2 or proxy_type == "socks5":
+                protocol = SOCKS5
+            elif proxy_type == 1 or proxy_type == "socks4":
+                protocol = SOCKS4
+            elif proxy_type == 3 or proxy_type == "http":
+                protocol = HTTP
+            else:
+                raise ValueError("Unknown proxy protocol type: {}".format(proxy_type))
+
+            # NOTE: We return a tuple compatible with the
+            # signature of `PySocks` `socksocket.set_proxy()`
+            # I.E.: (proxy_type, addr, port, rdns, username, password)
+
+            return protocol, addr, port, rdns, username, password
+
         else:
+            raise ValueError("Unknown proxy library: {}".format(library))
+
+    async def _proxy_connect(self, timeout=None, local_addr=None):
+
+        # Use `python-socks` library for newer Python >= 3.6
+        # Use `PySocks` library for older Python <= 3.5
+        if sys.version_info >= (3, 6):
+
+            import python_socks
+
+            # python_socks internal errors are not inherited from
+            # builtin IOError (just from Exception). Instead of adding those
+            # in exceptions clauses everywhere through the code, we
+            # rather monkey-patch them in place.
+
+            python_socks._errors.ProxyError = ConnectionError
+            python_socks._errors.ProxyConnectionError = ConnectionError
+            python_socks._errors.ProxyTimeoutError = ConnectionError
+
+            from python_socks.async_.asyncio import Proxy
+
+            # We expect a dict/tuple in the format of `PySocks` (for compatibility)
+            # I.E.: (proxy_type, addr, port, rdns, username, password).
+
+            if isinstance(self._proxy, (tuple, list)):
+                parsed = self._parse_proxy("python-socks", *self._proxy)
+            elif isinstance(self._proxy, dict):
+                parsed = self._parse_proxy("python-socks", **self._proxy)
+            else:
+                raise TypeError("Proxy of unknown format!", type(self._proxy))
+
+            proxy = Proxy.create(*parsed)
+
+            # WARNING: If `local_addr` is set we use manual socket creation, because,
+            # unfortunately, `Proxy.connect()` does not expose `local_addr`
+            # argument, so if we want to bind socket locally, we need to manually
+            # create, bind and connect socket, and then pass to `Proxy.connect()` method.
+
+            if local_addr is None:
+                sock = await proxy.connect(
+                    dest_host=self._ip,
+                    dest_port=self._port,
+                    timeout=timeout
+                )
+            else:
+
+                # Here we start manual setup of the socket.
+                # The `address` represents the proxy ip and proxy port,
+                # not the destination one (!), because the socket
+                # connects to the proxy server, not destination server.
+                # IPv family is also checked on proxy address.
+
+                if ':' in proxy.proxy_host:
+                    mode, address = socket.AF_INET6, (proxy.proxy_host, proxy.proxy_port, 0, 0)
+                else:
+                    mode, address = socket.AF_INET, (proxy.proxy_host, proxy.proxy_port)
+
+                # Create a non-blocking socket and bind it (if local address is specified).
+                sock = socket.socket(mode, socket.SOCK_STREAM)
+                sock.setblocking(False)
+                sock.bind(local_addr)
+
+                # Actual TCP connection is performed here.
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().sock_connect(sock=sock, address=address),
+                    timeout=timeout
+                )
+
+                # As our socket is already created and connected,
+                # this call sets the destination host/port and
+                # starts protocol negotiations with the proxy server.
+
+                sock = await proxy.connect(
+                    dest_host=self._ip,
+                    dest_port=self._port,
+                    timeout=timeout,
+                    _socket=sock
+                )
+
+        else:
+
             import socks
-            if ':' in self._ip:
+
+            # We expect a dict/tuple in the format of `PySocks`.
+            # I.E.: (proxy_type, addr, port, rdns, username, password).
+
+            if isinstance(self._proxy, (tuple, list)):
+                parsed = self._parse_proxy("pysocks", *self._proxy)
+            elif isinstance(self._proxy, dict):
+                parsed = self._parse_proxy("pysocks", **self._proxy)
+            else:
+                raise TypeError("Proxy of unknown format!", type(self._proxy))
+
+            # Here `address` represents destination address (not proxy), because of
+            # the `PySocks` implementation of the connection routine.
+            # IPv family is checked on proxy address, not destination address.
+
+            if ':' in parsed[1]:
                 mode, address = socket.AF_INET6, (self._ip, self._port, 0, 0)
             else:
                 mode, address = socket.AF_INET, (self._ip, self._port)
 
-            s = socks.socksocket(mode, socket.SOCK_STREAM)
-            if isinstance(self._proxy, dict):
-                s.set_proxy(**self._proxy)
-            else:
-                s.set_proxy(*self._proxy)
+            # Setup socket, proxy, timeout and bind it (if necessary).
+            sock = socks.socksocket(mode, socket.SOCK_STREAM)
+            sock.set_proxy(*parsed)
+            sock.settimeout(timeout)
 
-            s.settimeout(timeout)
-            if self._local_addr is not None:
-                s.bind((self._local_addr, None))
+            if local_addr is not None:
+                sock.bind(local_addr)
+
+            # Actual TCP connection and negotiation performed here.
             await asyncio.wait_for(
-                asyncio.get_event_loop().sock_connect(s, address),
+                asyncio.get_event_loop().sock_connect(sock=sock, address=address),
                 timeout=timeout
             )
+
+            sock.setblocking(False)
+
+        return sock
+
+    async def _connect(self, timeout=None, ssl=None):
+
+        if self._local_addr is not None:
+
+            # NOTE: If port is not specified, we use 0 port
+            # to notify the OS that port should be chosen randomly
+            # from the available ones.
+
+            if isinstance(self._local_addr, tuple) and len(self._local_addr) == 2:
+                local_addr = self._local_addr
+            elif isinstance(self._local_addr, str):
+                local_addr = (self._local_addr, 0)
+            else:
+                raise ValueError("Unknown local address format: {}".format(self._local_addr))
+        else:
+            local_addr = None
+
+        if not self._proxy:
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_connection(
+                    host=self._ip,
+                    port=self._port,
+                    ssl=ssl,
+                    local_addr=local_addr
+                ), timeout=timeout)
+        else:
+
+            # Proxy setup, connection and negotiation is performed here.
+            sock = await self._proxy_connect(
+                timeout=timeout,
+                local_addr=local_addr
+            )
+
+            # Wrap socket in SSL context (if provided)
             if ssl:
-                if ssl_mod is None:
-                    raise RuntimeError(
-                        'Cannot use proxy that requires SSL'
-                        'without the SSL module being available'
-                    )
+                sock = self._wrap_socket_ssl(sock)
 
-                s = ssl_mod.wrap_socket(
-                    s,
-                    do_handshake_on_connect=True,
-                    ssl_version=ssl_mod.PROTOCOL_SSLv23,
-                    ciphers='ADH-AES256-SHA'
-                )
-                
-            s.setblocking(False)
-
-            self._reader, self._writer = await asyncio.open_connection(sock=s)
+            self._reader, self._writer = await asyncio.open_connection(sock=sock)
 
         self._codec = self.packet_codec(self)
         self._init_conn()
