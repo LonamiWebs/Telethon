@@ -15,7 +15,11 @@ def _datetime_to_timestamp(dt):
         dt = dt.replace(tzinfo=timezone.utc)
     # We use .total_seconds() method instead of simply dt.timestamp(), 
     # because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
-    return int((dt - _EPOCH).total_seconds())
+    secs = int((dt - _EPOCH).total_seconds())
+    # Make sure it's a valid signed 32 bit integer, as used by Telegram.
+    # This does make very large dates wrap around, but it's the best we
+    # can do with Telegram's limitations.
+    return struct.unpack('i', struct.pack('I', secs & 0xffffffff))[0]
 
 
 def _json_default(value):
