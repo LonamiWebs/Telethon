@@ -364,7 +364,7 @@ class TelegramBaseClient(abc.ABC):
             lang_code=lang_code,
             system_lang_code=system_lang_code,
             lang_pack='',  # "langPacks are for official apps only"
-            query=functions.help.GetConfigRequest(),
+            query=None,
             proxy=init_proxy
         )
 
@@ -525,6 +525,8 @@ class TelegramBaseClient(abc.ABC):
 
         self.session.auth_key = self._sender.auth_key
         self.session.save()
+
+        self._init_request.query = functions.help.GetConfigRequest()
 
         await self._sender.send(functions.InvokeWithLayerRequest(
             LAYER, self._init_request
@@ -715,9 +717,8 @@ class TelegramBaseClient(abc.ABC):
         ))
         self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
-        req = self._init_with(functions.auth.ImportAuthorizationRequest(
-            id=auth.id, bytes=auth.bytes
-        ))
+        self._init_request.query = functions.auth.ImportAuthorizationRequest(id=auth.id, bytes=auth.bytes)
+        req = functions.InvokeWithLayerRequest(LAYER, self._init_request)
         await sender.send(req)
         return sender
 
