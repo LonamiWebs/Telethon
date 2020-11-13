@@ -948,6 +948,8 @@ def get_peer(peer):
             return types.PeerChannel(peer.id)
         elif isinstance(peer, types.UserEmpty):
             return types.PeerUser(peer.id)
+        elif isinstance(peer, types.ChatEmpty):
+            return types.PeerChat(peer.id)
 
         if peer.SUBCLASS_OF_ID in (0x7d7c6f86, 0xd9c7fc18):
             # ChatParticipant, ChannelParticipant
