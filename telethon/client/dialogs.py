@@ -55,7 +55,8 @@ class _DialogsIter(RequestIter):
         self.total = getattr(r, 'count', len(r.dialogs))
 
         entities = {utils.get_peer_id(x): x
-                    for x in itertools.chain(r.users, r.chats)}
+                    for x in itertools.chain(r.users, r.chats)
+                    if not isinstance(x, (types.UserEmpty, types.ChatEmpty))}
 
         messages = {}
         for m in r.messages:
@@ -73,6 +74,12 @@ class _DialogsIter(RequestIter):
             peer_id = utils.get_peer_id(d.peer)
             if peer_id not in self.seen:
                 self.seen.add(peer_id)
+                if peer_id not in entities:
+                    # > In which case can a UserEmpty appear in the list of banned members?
+                    # > In a very rare cases. This is possible but isn't an expected behavior.
+                    # Real world example: https://t.me/TelethonChat/271471
+                    continue
+
                 cd = custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
@@ -99,8 +106,7 @@ class _DialogsIter(RequestIter):
         self.request.exclude_pinned = True
         self.request.offset_id = last_message.id if last_message else 0
         self.request.offset_date = last_message.date if last_message else None
-        self.request.offset_peer =\
-            entities[utils.get_peer_id(r.dialogs[-1].peer)]
+        self.request.offset_peer = self.buffer[-1].input_entity
 
 
 class _DraftsIter(RequestIter):
