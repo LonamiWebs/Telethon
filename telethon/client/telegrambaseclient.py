@@ -600,10 +600,10 @@ class TelegramBaseClient(abc.ABC):
         connection = getattr(self._sender, "_connection", None)
         if connection:
             if isinstance(connection, TcpMTProxy):
-                setattr(connection, "_ip", proxy[0])
-                setattr(connection, "_port", proxy[1])
+                connection._ip = proxy[0]
+                connection._port = proxy[1]
             else:
-                setattr(connection, "_proxy", proxy)
+                connection._proxy = proxy
 
     async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
