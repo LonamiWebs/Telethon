@@ -355,18 +355,17 @@ class TelegramBaseClient(abc.ABC):
         else:
             default_device_model = system.machine
         default_system_version = re.sub(r'-.+','',system.release)
-        self._init_with = lambda x: functions.InvokeWithLayerRequest(
-            LAYER, functions.InitConnectionRequest(
-                api_id=self.api_id,
-                device_model=device_model or default_device_model or 'Unknown',
-                system_version=system_version or default_system_version or '1.0',
-                app_version=app_version or self.__version__,
-                lang_code=lang_code,
-                system_lang_code=system_lang_code,
-                lang_pack='',  # "langPacks are for official apps only"
-                query=x,
-                proxy=init_proxy
-            )
+
+        self._init_request = functions.InitConnectionRequest(
+            api_id=self.api_id,
+            device_model=device_model or default_device_model or 'Unknown',
+            system_version=system_version or default_system_version or '1.0',
+            app_version=app_version or self.__version__,
+            lang_code=lang_code,
+            system_lang_code=system_lang_code,
+            lang_pack='',  # "langPacks are for official apps only"
+            query=None,
+            proxy=init_proxy
         )
 
         self._sender = MTProtoSender(
@@ -527,8 +526,11 @@ class TelegramBaseClient(abc.ABC):
         self.session.auth_key = self._sender.auth_key
         self.session.save()
 
-        await self._sender.send(self._init_with(
-            functions.help.GetConfigRequest()))
+        self._init_request.query = functions.help.GetConfigRequest()
+
+        await self._sender.send(functions.InvokeWithLayerRequest(
+            LAYER, self._init_request
+        ))
 
         self._updates_handle = self._loop.create_task(self._update_loop())
 
@@ -573,6 +575,35 @@ class TelegramBaseClient(abc.ABC):
                 #
                 # However, it doesn't really make a lot of sense.
                 pass
+
+    def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
+        """
+        Changes the proxy which will be used on next (re)connection.
+
+        Method has no immediate effects if the client is currently connected.
+
+        The new proxy will take it's effect on the next reconnection attempt:
+            - on a call `await client.connect()` (after complete disconnect)
+            - on auto-reconnect attempt (e.g, after previous connection was lost)
+        """
+        init_proxy = None if not issubclass(self._connection, TcpMTProxy) else \
+            types.InputClientProxy(*self._connection.address_info(proxy))
+
+        self._init_request.proxy = init_proxy
+        self._proxy = proxy
+
+        # While `await client.connect()` passes new proxy on each new call,
+        # auto-reconnect attempts use already set up `_connection` inside
+        # the `_sender`, so the only way to change proxy between those
+        # is to directly inject parameters.
+
+        connection = getattr(self._sender, "_connection", None)
+        if connection:
+            if isinstance(connection, TcpMTProxy):
+                connection._ip = proxy[0]
+                connection._port = proxy[1]
+            else:
+                connection._proxy = proxy
 
     async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
@@ -686,9 +717,8 @@ class TelegramBaseClient(abc.ABC):
         ))
         self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
         auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
-        req = self._init_with(functions.auth.ImportAuthorizationRequest(
-            id=auth.id, bytes=auth.bytes
-        ))
+        self._init_request.query = functions.auth.ImportAuthorizationRequest(id=auth.id, bytes=auth.bytes)
+        req = functions.InvokeWithLayerRequest(LAYER, self._init_request)
         await sender.send(req)
         return sender
 
