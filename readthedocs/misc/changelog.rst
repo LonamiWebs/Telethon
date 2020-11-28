@@ -13,6 +13,63 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New layer and QoL improvements (v1.18)
+======================================
+
++------------------------+
+| Scheme layer used: 120 |
++------------------------+
+
+Mostly fixes, and added some new things that can be done in this new layer.
+
+For proxy users, a pull request was merged that will use the ``python-socks``
+library when available for proxy support. This library natively supports
+`asyncio`, so it should work better than the old ``pysocks``. ``pysocks`` will
+still be used if the new library is not available, and both will be handled
+transparently by Telethon so you don't need to worry about it.
+
+Additions
+~~~~~~~~~
+
+* New `client.set_proxy()
+  <telethon.client.telegrambaseclient.TelegramBaseClient.set_proxy>` method
+  which lets you change the proxy without recreating the client. You will need
+  to reconnect for it to take effect, but you won't need to recreate the
+  client. This is also an external contribution.
+* New method to unpin messages `client.unpin_message()
+  <telethon.client.messages.MessageMethods.unpin_message>`.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Empty peers are excluded from the list of dialogs.
+* If the ``python-socks`` library is installed (new optional requirement), it
+  will be used instead of ``pysocks`` for proxy support. This should fix some
+  issues with proxy timeouts, because the new library natively supports
+  `asyncio`.
+* `client.send_file() <telethon.client.uploads.UploadMethods.send_file>` will
+  now group any media type, instead of sending non-image documents separatedly.
+  This lets you create music albums, for example.
+* You can now search messages with a ``from_user`` that's not a user. This is
+  a Telegram feature, we know the name isn't great, but backwards-compatibility
+  has to be kept.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixes related to conversation timeouts.
+* Large dates (over year 2038) now wrap around a 32-bit integer, which is the
+  only way we can represent them to Telegram. Even if "wrong", it makes things
+  not crash, and it's the best we can do with 32-bit dates.
+* The library was accidentally using a deprecated argument in one of its
+  friendly methods, producing a warning.
+* Improvements to the way marked IDs are parsed.
+* ``SlowModeWaitError`` floods are no longer cached.
+* Getting the buttons for a message could fail sometimes.
+* Getting the display name for "forbidden" chats now works.
+* Better handling of errors in some internal methods.
+
+
 Channel comments and Anonymous Admins (v1.17)
 =============================================
 
