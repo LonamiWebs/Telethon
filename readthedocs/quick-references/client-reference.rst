@@ -49,6 +49,7 @@ Base
     is_connected
     disconnected
     loop
+    set_proxy
 
 Messages
 --------
