@@ -31,12 +31,15 @@ class ChatAction(EventBuilder):
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdatePinnedChannelMessages):
+        # Rely on specific pin updates for unpins, but otherwise ignore them
+        # for new pins (we'd rather handle the new service message with pin,
+        # so that we can act on that message').
+        if isinstance(update, types.UpdatePinnedChannelMessages) and not update.pinned:
             return cls.Event(types.PeerChannel(update.channel_id),
                              pin_ids=update.messages,
                              pin=update.pinned)
 
-        elif isinstance(update, types.UpdatePinnedMessages):
+        elif isinstance(update, types.UpdatePinnedMessages) and not update.pinned:
             return cls.Event(update.peer,
                              pin_ids=update.messages,
                              pin=update.pinned)
@@ -107,8 +110,9 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            # Handled by specific updates
-            # elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
+            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
+                return cls.Event(msg,
+                                 pin_ids=[msg.reply_to_msg_id])
 
     class Event(EventCommon):
         """
