@@ -8,6 +8,11 @@ try:
 except ImportError:
     ssl_mod = None
 
+try:
+    import python_socks
+except ImportError:
+    python_socks = None
+
 from ...errors import InvalidChecksumError
 from ... import helpers
 
@@ -47,7 +52,6 @@ class Connection(abc.ABC):
 
     @staticmethod
     def _wrap_socket_ssl(sock):
-
         if ssl_mod is None:
             raise RuntimeError(
                 'Cannot use proxy that requires SSL '
@@ -61,19 +65,17 @@ class Connection(abc.ABC):
             ciphers='ADH-AES256-SHA')
 
     @staticmethod
-    def _parse_proxy(library, proxy_type, addr, port, rdns=True, username=None, password=None):
-
+    def _parse_proxy(proxy_type, addr, port, rdns=True, username=None, password=None):
         if isinstance(proxy_type, str):
             proxy_type = proxy_type.lower()
 
-        if library == "python-socks":
-
+        # Always prefer `python_socks` when available
+        if python_socks:
             from python_socks import ProxyType
 
             # We do the check for numerical values here
             # to be backwards compatible with PySocks proxy format,
             # (since socks.SOCKS5 == 2, socks.SOCKS4 == 1, socks.HTTP == 3)
-
             if proxy_type == ProxyType.SOCKS5 or proxy_type == 2 or proxy_type == "socks5":
                 protocol = ProxyType.SOCKS5
             elif proxy_type == ProxyType.SOCKS4 or proxy_type == 1 or proxy_type == "socks4":
@@ -83,14 +85,10 @@ class Connection(abc.ABC):
             else:
                 raise ValueError("Unknown proxy protocol type: {}".format(proxy_type))
 
-            # NOTE: We return a tuple compatible with the
-            # signature (order) of python_socks `Proxy.create()`
-            # I.E.: (proxy_type, host, port, username, password, rdns)
-
+            # This tuple must be compatible with `python_socks`' `Proxy.create()` signature
             return protocol, addr, port, username, password, rdns
 
-        elif library == "pysocks":
-
+        else:
             from socks import SOCKS5, SOCKS4, HTTP
 
             if proxy_type == 2 or proxy_type == "socks5":
@@ -102,23 +100,19 @@ class Connection(abc.ABC):
             else:
                 raise ValueError("Unknown proxy protocol type: {}".format(proxy_type))
 
-            # NOTE: We return a tuple compatible with the
-            # signature of `PySocks` `socksocket.set_proxy()`
-            # I.E.: (proxy_type, addr, port, rdns, username, password)
-
+            # This tuple must be compatible with `PySocks`' `socksocket.set_proxy()` signature
             return protocol, addr, port, rdns, username, password
 
-        else:
-            raise ValueError("Unknown proxy library: {}".format(library))
-
     async def _proxy_connect(self, timeout=None, local_addr=None):
+        if isinstance(self._proxy, (tuple, list)):
+            parsed = self._parse_proxy(*self._proxy)
+        elif isinstance(self._proxy, dict):
+            parsed = self._parse_proxy(**self._proxy)
+        else:
+            raise TypeError("Proxy of unknown format: {}".format(type(self._proxy)))
 
-        # Use `python-socks` library for newer Python >= 3.6
-        # Use `PySocks` library for older Python <= 3.5
-        if sys.version_info >= (3, 6):
-
-            import python_socks
-
+        # Always prefer `python_socks` when available
+        if python_socks:
             # python_socks internal errors are not inherited from
             # builtin IOError (just from Exception). Instead of adding those
             # in exceptions clauses everywhere through the code, we
@@ -129,16 +123,6 @@ class Connection(abc.ABC):
             python_socks._errors.ProxyTimeoutError = ConnectionError
 
             from python_socks.async_.asyncio import Proxy
-
-            # We expect a dict/tuple in the format of `PySocks` (for compatibility)
-            # I.E.: (proxy_type, addr, port, rdns, username, password).
-
-            if isinstance(self._proxy, (tuple, list)):
-                parsed = self._parse_proxy("python-socks", *self._proxy)
-            elif isinstance(self._proxy, dict):
-                parsed = self._parse_proxy("python-socks", **self._proxy)
-            else:
-                raise TypeError("Proxy of unknown format!", type(self._proxy))
 
             proxy = Proxy.create(*parsed)
 
@@ -154,13 +138,11 @@ class Connection(abc.ABC):
                     timeout=timeout
                 )
             else:
-
                 # Here we start manual setup of the socket.
                 # The `address` represents the proxy ip and proxy port,
                 # not the destination one (!), because the socket
                 # connects to the proxy server, not destination server.
                 # IPv family is also checked on proxy address.
-
                 if ':' in proxy.proxy_host:
                     mode, address = socket.AF_INET6, (proxy.proxy_host, proxy.proxy_port, 0, 0)
                 else:
@@ -180,7 +162,6 @@ class Connection(abc.ABC):
                 # As our socket is already created and connected,
                 # this call sets the destination host/port and
                 # starts protocol negotiations with the proxy server.
-
                 sock = await proxy.connect(
                     dest_host=self._ip,
                     dest_port=self._port,
@@ -189,23 +170,11 @@ class Connection(abc.ABC):
                 )
 
         else:
-
             import socks
-
-            # We expect a dict/tuple in the format of `PySocks`.
-            # I.E.: (proxy_type, addr, port, rdns, username, password).
-
-            if isinstance(self._proxy, (tuple, list)):
-                parsed = self._parse_proxy("pysocks", *self._proxy)
-            elif isinstance(self._proxy, dict):
-                parsed = self._parse_proxy("pysocks", **self._proxy)
-            else:
-                raise TypeError("Proxy of unknown format!", type(self._proxy))
 
             # Here `address` represents destination address (not proxy), because of
             # the `PySocks` implementation of the connection routine.
             # IPv family is checked on proxy address, not destination address.
-
             if ':' in parsed[1]:
                 mode, address = socket.AF_INET6, (self._ip, self._port, 0, 0)
             else:
@@ -230,13 +199,10 @@ class Connection(abc.ABC):
         return sock
 
     async def _connect(self, timeout=None, ssl=None):
-
         if self._local_addr is not None:
-
             # NOTE: If port is not specified, we use 0 port
             # to notify the OS that port should be chosen randomly
             # from the available ones.
-
             if isinstance(self._local_addr, tuple) and len(self._local_addr) == 2:
                 local_addr = self._local_addr
             elif isinstance(self._local_addr, str):
@@ -255,7 +221,6 @@ class Connection(abc.ABC):
                     local_addr=local_addr
                 ), timeout=timeout)
         else:
-
             # Proxy setup, connection and negotiation is performed here.
             sock = await self._proxy_connect(
                 timeout=timeout,
