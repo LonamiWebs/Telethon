@@ -6,6 +6,7 @@ account.checkUsername,user,USERNAME_INVALID
 account.confirmPasswordEmail,user,
 account.confirmPhone,user,CODE_HASH_INVALID PHONE_CODE_EMPTY
 account.createTheme,user,THEME_MIME_INVALID
+account.deleteAccount,user,2FA_CONFIRM_WAIT_X
 account.deleteSecureValue,user,
 account.finishTakeoutSession,user,
 account.getAccountTTL,user,
@@ -58,7 +59,7 @@ account.updateNotifySettings,user,PEER_ID_INVALID
 account.updatePasswordSettings,user,EMAIL_UNCONFIRMED_X NEW_SALT_INVALID NEW_SETTINGS_INVALID PASSWORD_HASH_INVALID
 account.updateProfile,user,ABOUT_TOO_LONG FIRSTNAME_INVALID
 account.updateStatus,user,SESSION_PASSWORD_NEEDED
-account.updateTheme,user,
+account.updateTheme,user,THEME_INVALID
 account.updateUsername,user,USERNAME_INVALID USERNAME_NOT_MODIFIED USERNAME_OCCUPIED
 account.uploadTheme,user,
 account.uploadWallPaper,user,WALLPAPER_FILE_INVALID

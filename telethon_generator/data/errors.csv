@@ -1,4 +1,5 @@
 name,codes,description
+2FA_CONFIRM_WAIT_X,420,The account is 2FA protected so it will be deleted in a week. Otherwise it can be reset in {seconds}
 ABOUT_TOO_LONG,400,The provided bio is too long
 ACCESS_TOKEN_EXPIRED,400,Bot token expired
 ACCESS_TOKEN_INVALID,400,The provided token is not valid
@@ -22,6 +23,7 @@ AUTH_TOKEN_EXPIRED,400,The provided authorization token has expired and the upda
 AUTH_TOKEN_INVALID,400,An invalid authorization token was provided
 AUTOARCHIVE_NOT_AVAILABLE,400,You cannot use this feature yet
 BANK_CARD_NUMBER_INVALID,400,Incorrect credit card number
+BASE_PORT_LOC_INVALID,400,Base port location invalid
 BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this request, i.e. restricting view_messages as a default"
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
@@ -134,6 +136,7 @@ FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and canno
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
+GROUP_CALL_INVALID,400,Group call invalid
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 HASH_INVALID,400,The provided hash is invalid
 HISTORY_GET_FAILED,500,Fetching of history failed
@@ -256,6 +259,7 @@ RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
 REACTION_EMPTY,400,No reaction provided
 REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed)
+REFLECTOR_NOT_AVAILABLE,400,Invalid call reflector server
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_GAME_EMPTY,400,The provided reply markup for the game is empty
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
@@ -304,6 +308,7 @@ TAKEOUT_INVALID,400,The takeout session has been invalidated by another data exp
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
 Timeout,-503,A timeout occurred while fetching data from the worker
+THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
 TOKEN_INVALID,400,The provided token is invalid
