@@ -80,7 +80,7 @@ class ParticipantPermissions:
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
     @property
-    def is_left(self):
+    def has_left(self):
         """
         Whether the user left the chat.
         """
