@@ -80,6 +80,13 @@ class ParticipantPermissions:
         return isinstance(self.participant, types.ChannelParticipantBanned)
 
     @property
+    def has_left(self):
+        """
+        Whether the user left the chat.
+        """
+        return isinstance(self.participant, types.ChannelParticipantLeft)
+    
+    @property
     def add_admins(self):
         """
         Whether the administrator can add new administrators with the same or
