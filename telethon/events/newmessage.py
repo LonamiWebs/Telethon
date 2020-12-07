@@ -1,7 +1,8 @@
 import re
+from typing import Optional, Callable, Union, Sequence, Match, Pattern
 
 from .common import EventBuilder, EventCommon, name_inner_event, _into_id_set
-from .. import utils
+from .. import utils, hints
 from ..tl import types
 
 
@@ -56,9 +57,11 @@ class NewMessage(EventBuilder):
                 await asyncio.sleep(5)
                 await client.delete_messages(event.chat_id, [event.id, m.id])
     """
-    def __init__(self, chats=None, *, blacklist_chats=False, func=None,
-                 incoming=None, outgoing=None,
-                 from_users=None, forwards=None, pattern=None):
+    def __init__(self, chats: Optional[Sequence[hints.Entity]] = None, *, blacklist_chats: bool = False,
+                 func: Optional[Callable[['NewMessage.Event'], None]] = None,
+                 incoming: Optional[bool] = None, outgoing: Optional[bool] = None,
+                 from_users: Optional[hints.Entity] = None, forwards: Optional[bool] = None,
+                 pattern: Union[str, Callable, Pattern, Optional] = None):
         if incoming and outgoing:
             incoming = outgoing = None  # Same as no filter
         elif incoming is not None and outgoing is None:
@@ -143,7 +146,7 @@ class NewMessage(EventBuilder):
 
         return event
 
-    def filter(self, event):
+    def filter(self, event: 'NewMessage.Event'):
         if self._no_check:
             return event
 
@@ -167,7 +170,7 @@ class NewMessage(EventBuilder):
 
         return super().filter(event)
 
-    class Event(EventCommon):
+    class Event(EventCommon, types.TypeMessage):
         """
         Represents the event of a new message. This event can be treated
         to all effects as a `Message <telethon.tl.custom.message.Message>`,
@@ -200,12 +203,12 @@ class NewMessage(EventBuilder):
                 ...
                 >>>
         """
-        def __init__(self, message):
+        def __init__(self, message: types.TypeMessage):
             self.__dict__['_init'] = False
             super().__init__(chat_peer=message.peer_id,
                              msg_id=message.id, broadcast=bool(message.post))
 
-            self.pattern_match = None
+            self.pattern_match = None  # type: Optional[Match]
             self.message = message
 
         def _set_client(self, client):
