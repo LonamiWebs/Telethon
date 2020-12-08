@@ -1034,7 +1034,7 @@ class MessageMethods:
                 await client.edit_message(message, 'hello!!!')
         """
         if isinstance(entity, types.InputBotInlineMessageID):
-            text = message
+            text = text or message
             message = entity
         elif isinstance(entity, types.Message):
             text = message  # Shift the parameters to the right
