@@ -1,8 +1,9 @@
 import abc
 import asyncio
 import warnings
+from typing import Optional, Sequence, Callable
 
-from .. import utils
+from .. import utils, TelegramClient, hints
 from ..tl import TLObject, types
 from ..tl.custom.chatgetter import ChatGetter
 
@@ -65,7 +66,8 @@ class EventBuilder(abc.ABC):
                 async def handler(event):
                     pass  # code here
     """
-    def __init__(self, chats=None, *, blacklist_chats=False, func=None):
+    def __init__(self, chats: Optional[Sequence[hints.Entity]] = None, *,
+                 blacklist_chats: bool = False, func: Optional[Callable[['EventCommon'], None]] = None):
         self.chats = chats
         self.blacklist_chats = bool(blacklist_chats)
         self.resolved = False
@@ -102,7 +104,7 @@ class EventBuilder(abc.ABC):
     async def _resolve(self, client):
         self.chats = await _into_id_set(client, self.chats)
 
-    def filter(self, event):
+    def filter(self, event: 'EventCommon'):
         """
         Returns a truthy value if the event passed the filter and should be
         used, or falsy otherwise. The return value may need to be awaited.
@@ -145,9 +147,9 @@ class EventCommon(ChatGetter, abc.ABC):
         self._entities = {}
         self._client = None
         self._message_id = msg_id
-        self.original_update = None
+        self.original_update = None  # type: Optional[types.TypeUpdate]
 
-    def _set_client(self, client):
+    def _set_client(self, client: TelegramClient):
         """
         Setter so subclasses can act accordingly when the client is set.
         """
@@ -159,7 +161,7 @@ class EventCommon(ChatGetter, abc.ABC):
             self._chat = self._input_chat = None
 
     @property
-    def client(self):
+    def client(self) -> TelegramClient:
         """
         The `telethon.TelegramClient` that created this event.
         """

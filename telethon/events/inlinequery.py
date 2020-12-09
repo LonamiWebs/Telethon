@@ -2,9 +2,10 @@ import inspect
 import re
 
 import asyncio
+from typing import Optional, Sequence, Callable, Union, Pattern, Match
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
+from .. import utils, hints
 from ..tl import types, functions, custom
 from ..tl.custom.sendergetter import SenderGetter
 
@@ -48,7 +49,9 @@ class InlineQuery(EventBuilder):
                 ])
     """
     def __init__(
-            self, users=None, *, blacklist_users=False, func=None, pattern=None):
+            self, users: Optional[Sequence[hints.EntityLike]] = None, *,
+            blacklist_users: bool = False, func: Optional[Callable[['InlineQuery.Event'], None]] = None,
+            pattern: Union[str, Callable, Pattern, Optional] = None):
         super().__init__(users, blacklist_chats=blacklist_users, func=func)
 
         if isinstance(pattern, str):
@@ -65,7 +68,7 @@ class InlineQuery(EventBuilder):
         if isinstance(update, types.UpdateBotInlineQuery):
             return cls.Event(update)
 
-    def filter(self, event):
+    def filter(self, event: 'InlineQuery.Event'):
         if self.pattern:
             match = self.pattern(event.text)
             if not match:
@@ -89,11 +92,11 @@ class InlineQuery(EventBuilder):
                 The resulting object from calling the passed ``pattern``
                 function, which is ``re.compile(...).match`` by default.
         """
-        def __init__(self, query):
+        def __init__(self, query: types.UpdateBotInlineQuery):
             super().__init__(chat_peer=types.PeerUser(query.user_id))
             SenderGetter.__init__(self, query.user_id)
             self.query = query
-            self.pattern_match = None
+            self.pattern_match = None  # type: Optional[Match]
             self._answered = False
 
         def _set_client(self, client):
@@ -141,9 +144,9 @@ class InlineQuery(EventBuilder):
             return custom.InlineBuilder(self._client)
 
         async def answer(
-                self, results=None, cache_time=0, *,
-                gallery=False, next_offset=None, private=False,
-                switch_pm=None, switch_pm_param=''):
+                self, results: Optional[Sequence[types.InputBotInlineResult]] = None, cache_time: Optional[int] = 0, *,
+                gallery: bool = False, next_offset: Optional[str] = None, private: bool = False,
+                switch_pm: Optional[str] = None, switch_pm_param: str = ''):
             """
             Answers the inline query with the given results.
 
