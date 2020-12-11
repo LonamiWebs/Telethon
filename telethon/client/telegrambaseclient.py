@@ -611,10 +611,16 @@ class TelegramBaseClient(abc.ABC):
         # Also clean-up all exported senders because we're done with them
         async with self._borrow_sender_lock:
             for state, sender in self._borrowed_senders.values():
-                if state.should_disconnect():
-                    # disconnect should never raise
-                    await sender.disconnect()
+                # Note that we're not checking for `state.should_disconnect()`.
+                # If the user wants to disconnect the client, ALL connections
+                # to Telegram (including exported senders) should be closed.
+                #
+                # Disconnect should never raise, so there's no try/except.
+                await sender.disconnect()
+                # Can't use `mark_disconnected` because it may be borrowed.
+                state._connected = False
 
+            # If any was borrowed
             self._borrowed_senders.clear()
 
         # trio's nurseries would handle this for us, but this is asyncio.
