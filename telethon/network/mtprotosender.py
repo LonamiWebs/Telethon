@@ -16,6 +16,7 @@ from ..errors import (
 from ..extensions import BinaryReader
 from ..tl.core import RpcResult, MessageContainer, GzipPacked
 from ..tl.functions.auth import LogOutRequest
+from ..tl.functions import PingRequest
 from ..tl.types import (
     MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
     MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
@@ -55,6 +56,7 @@ class MTProtoSender:
         self._update_callback = update_callback
         self._auto_reconnect_callback = auto_reconnect_callback
         self._connect_lock = asyncio.Lock()
+        self._ping = None
 
         # Whether the user has explicitly connected or disconnected.
         #
@@ -217,7 +219,7 @@ class MTProtoSender:
         self._log.info('Connecting to %s...', self._connection)
 
         connected = False
-        
+
         for attempt in retry_range(self._retries):
             if not connected:
                 connected = await self._try_connect(attempt)
@@ -358,7 +360,7 @@ class MTProtoSender:
         self._state.reset()
 
         retries = self._retries if self._auto_reconnect else 0
-        
+
         attempt = 0
         ok = True
         # We're already "retrying" to connect, so we don't want to force retries
@@ -418,6 +420,18 @@ class MTProtoSender:
             # TODO It still gets stuck? Investigate where and why.
             self._reconnecting = True
             asyncio.get_event_loop().create_task(self._reconnect(error))
+
+    def _keepalive_ping(self, rnd_id):
+        """
+        Send a keep-alive ping. If a pong for the last ping was not received
+        yet, this means we're probably not connected.
+        """
+        # TODO this is ugly, update loop shouldn't worry about this, sender should
+        if self._ping is None:
+            self._ping = rnd_id
+            self.send(PingRequest(rnd_id))
+        else:
+            self._start_reconnect(None)
 
     # Loops
 
@@ -641,6 +655,9 @@ class MTProtoSender:
         """
         pong = message.obj
         self._log.debug('Handling pong for message %d', pong.msg_id)
+        if self._ping == pong.ping_id:
+            self._ping = None
+
         state = self._pending_state.pop(pong.msg_id, None)
         if state:
             state.future.set_result(pong)

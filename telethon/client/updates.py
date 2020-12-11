@@ -348,7 +348,7 @@ class UpdateMethods:
             # We also don't really care about their result.
             # Just send them periodically.
             try:
-                self._sender.send(functions.PingRequest(rnd()))
+                self._sender._keepalive_ping(rnd())
             except (ConnectionError, asyncio.CancelledError):
                 return
 
@@ -399,7 +399,7 @@ class UpdateMethods:
                     pass
                 except ValueError:
                     # There is a chance that GetFullChannelRequest and GetDifferenceRequest
-                    # inside the _get_difference() function will end up with 
+                    # inside the _get_difference() function will end up with
                     # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
                     pass
 
