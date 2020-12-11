@@ -28,6 +28,7 @@ AUTO_CASTS = {
     'InputMessage': 'utils.get_input_message({})',
     'InputDocument': 'utils.get_input_document({})',
     'InputChatPhoto': 'utils.get_input_chat_photo({})',
+    'InputGroupCall': 'utils.get_input_group_call({})',
 }
 
 NAMED_AUTO_CASTS = {

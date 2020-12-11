@@ -221,15 +221,17 @@ class _AdminLogIter(RequestIter):
     async def _init(
             self, entity, admins, search, min_id, max_id,
             join, leave, invite, restrict, unrestrict, ban, unban,
-            promote, demote, info, settings, pinned, edit, delete
+            promote, demote, info, settings, pinned, edit, delete,
+            group_call
     ):
         if any((join, leave, invite, restrict, unrestrict, ban, unban,
-                promote, demote, info, settings, pinned, edit, delete)):
+                promote, demote, info, settings, pinned, edit, delete,
+                group_call)):
             events_filter = types.ChannelAdminLogEventsFilter(
                 join=join, leave=leave, invite=invite, ban=restrict,
                 unban=unrestrict, kick=ban, unkick=unban, promote=promote,
                 demote=demote, info=info, settings=settings, pinned=pinned,
-                edit=edit, delete=delete
+                edit=edit, delete=delete, group_call=group_call
             )
         else:
             events_filter = None
@@ -495,7 +497,8 @@ class ChatMethods:
             settings: bool = None,
             pinned: bool = None,
             edit: bool = None,
-            delete: bool = None) -> _AdminLogIter:
+            delete: bool = None,
+            group_call: bool = None) -> _AdminLogIter:
         """
         Iterator over the admin log for the specified channel.
 
@@ -582,6 +585,9 @@ class ChatMethods:
             delete (`bool`):
                 If `True`, events of message deletions will be returned.
 
+            group_call (`bool`):
+                If `True`, events related to group calls will be returned.
+
         Yields
             Instances of `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>`.
 
@@ -613,7 +619,8 @@ class ChatMethods:
             settings=settings,
             pinned=pinned,
             edit=edit,
-            delete=delete
+            delete=delete,
+            group_call=group_call
         )
 
     async def get_admin_log(
@@ -811,6 +818,7 @@ class ChatMethods:
             invite_users: bool = None,
             pin_messages: bool = None,
             add_admins: bool = None,
+            manage_call: bool = True,
             anonymous: bool = None,
             is_admin: bool = None,
             title: str = None) -> types.Updates:
@@ -854,6 +862,9 @@ class ChatMethods:
 
             add_admins (`bool`, optional):
                 Whether the user will be able to add admins.
+
+            manage_call (`bool`, optional):
+                Whether the user will be able to manage group calls.
 
             anonymous (`bool`, optional):
                 Whether the user will remain anonymous when sending messages.
@@ -907,7 +918,7 @@ class ChatMethods:
         perm_names = (
             'change_info', 'post_messages', 'edit_messages', 'delete_messages',
             'ban_users', 'invite_users', 'pin_messages', 'add_admins',
-            'anonymous',
+            'anonymous', 'manage_call',
         )
 
         ty = helpers._entity_type(entity)

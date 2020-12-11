@@ -91,6 +91,8 @@ class AdminLogEvent:
             return ori.message
         elif isinstance(ori, types.ChannelAdminLogEventActionDefaultBannedRights):
             return ori.prev_banned_rights
+        elif isinstance(ori, types.ChannelAdminLogEventActionDiscardGroupCall):
+            return ori.call
 
     @property
     def new(self):
@@ -125,6 +127,15 @@ class AdminLogEvent:
             return ori.new_banned_rights
         elif isinstance(ori, types.ChannelAdminLogEventActionStopPoll):
             return ori.message
+        elif isinstance(ori, types.ChannelAdminLogEventActionStartGroupCall):
+            return ori.call
+        elif isinstance(ori, (
+                types.ChannelAdminLogEventActionParticipantMute,
+                types.ChannelAdminLogEventActionParticipantUnmute,
+        )):
+            return ori.participant
+        elif isinstance(ori, types.ChannelAdminLogEventActionToggleGroupCallSetting):
+            return ori.join_muted
 
     @property
     def changed_about(self):
@@ -326,6 +337,56 @@ class AdminLogEvent:
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionStopPoll)
+
+    @property
+    def started_group_call(self):
+        """
+        Whether a group call was started or not.
+
+        If `True`, `new` will be present as :tl:`InputGroupCall`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionStartGroupCall)
+
+    @property
+    def discarded_group_call(self):
+        """
+        Whether a group call was started or not.
+
+        If `True`, `old` will be present as :tl:`InputGroupCall`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionDiscardGroupCall)
+
+    @property
+    def user_muted(self):
+        """
+        Whether a participant was muted in the ongoing group call or not.
+
+        If `True`, `new` will be present as :tl:`GroupCallParticipant`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionParticipantMute)
+
+    @property
+    def user_unmutted(self):
+        """
+        Whether a participant was unmuted from the ongoing group call or not.
+
+        If `True`, `new` will be present as :tl:`GroupCallParticipant`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionParticipantUnmute)
+
+    @property
+    def changed_call_settings(self):
+        """
+        Whether the group call settings were changed or not.
+
+        If `True`, `new` will be `True` if new users are muted on join.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionToggleGroupCallSetting)
 
     def __str__(self):
         return str(self.original)

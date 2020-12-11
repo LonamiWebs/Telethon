@@ -564,6 +564,17 @@ def get_input_message(message):
     _raise_cast_fail(message, 'InputMedia')
 
 
+def get_input_group_call(call):
+    """Similar to :meth:`get_input_peer`, but for input calls."""
+    try:
+        if call.SUBCLASS_OF_ID == 0x58611ab1:  # crc32(b'InputGroupCall')
+            return call
+        elif call.SUBCLASS_OF_ID == 0x20b4f320:  # crc32(b'GroupCall')
+            return types.InputGroupCall(id=call.id, access_hash=call.access_hash)
+    except AttributeError:
+        _raise_cast_fail(call, 'InputGroupCall')
+
+
 def _get_entity_pair(entity_id, entities, cache,
                      get_input_peer=get_input_peer):
     """
