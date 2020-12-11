@@ -404,7 +404,9 @@ class MTProtoSender:
 
         if not ok:
             self._log.error('Automatic reconnection failed %d time(s)', attempt)
-            await self._disconnect(error=last_error.with_traceback(None))
+            # There may be no error (e.g. automatic reconnection was turned off).
+            error = last_error.with_traceback(None) if last_error else None
+            await self._disconnect(error=error)
 
     def _start_reconnect(self, error):
         """Starts a reconnection in the background."""
