@@ -1,7 +1,11 @@
 import abc
+from typing import Optional, TYPE_CHECKING
 
 from ... import errors, utils
 from ...tl import types
+
+if TYPE_CHECKING:
+    from ... import hints
 
 
 class ChatGetter(abc.ABC):
@@ -10,7 +14,12 @@ class ChatGetter(abc.ABC):
     and `chat_id` properties and `get_chat` and `get_input_chat`
     methods.
     """
-    def __init__(self, chat_peer=None, *, input_chat=None, chat=None, broadcast=None):
+    def __init__(self,
+                 chat_peer: Optional[types.TypePeer] = None,
+                 *,
+                 input_chat: Optional[types.Chat] = None,
+                 chat: Optional[types.Chat] = None,
+                 broadcast: Optional[bool] = None):
         self._chat_peer = chat_peer
         self._input_chat = input_chat
         self._chat = chat
@@ -18,7 +27,7 @@ class ChatGetter(abc.ABC):
         self._client = None
 
     @property
-    def chat(self):
+    def chat(self) -> Optional['hints.Entity']:
         """
         Returns the :tl:`User`, :tl:`Chat` or :tl:`Channel` where this object
         belongs to. It may be `None` if Telegram didn't send the chat.
@@ -32,7 +41,7 @@ class ChatGetter(abc.ABC):
         """
         return self._chat
 
-    async def get_chat(self):
+    async def get_chat(self) -> Optional['hints.Entity']:
         """
         Returns `chat`, but will make an API call to find the
         chat unless it's already cached.
@@ -53,7 +62,7 @@ class ChatGetter(abc.ABC):
         return self._chat
 
     @property
-    def input_chat(self):
+    def input_chat(self) -> Optional[types.TypeInputPeer]:
         """
         This :tl:`InputPeer` is the input version of the chat where the
         message was sent. Similarly to `input_sender
@@ -72,7 +81,7 @@ class ChatGetter(abc.ABC):
 
         return self._input_chat
 
-    async def get_input_chat(self):
+    async def get_input_chat(self) -> Optional[types.TypeInputPeer]:
         """
         Returns `input_chat`, but will make an API call to find the
         input chat unless it's already cached.
@@ -92,7 +101,7 @@ class ChatGetter(abc.ABC):
         return self._input_chat
 
     @property
-    def chat_id(self):
+    def chat_id(self) -> Optional[int]:
         """
         Returns the marked chat integer ID. Note that this value **will
         be different** from ``peer_id`` for incoming private messages, since
@@ -107,7 +116,7 @@ class ChatGetter(abc.ABC):
         return utils.get_peer_id(self._chat_peer) if self._chat_peer else None
 
     @property
-    def is_private(self):
+    def is_private(self) -> Optional[bool]:
         """
         `True` if the message was sent as a private message.
 
@@ -117,7 +126,7 @@ class ChatGetter(abc.ABC):
         return isinstance(self._chat_peer, types.PeerUser) if self._chat_peer else None
 
     @property
-    def is_group(self):
+    def is_group(self) -> Optional[bool]:
         """
         True if the message was sent on a group or megagroup.
 
@@ -137,7 +146,7 @@ class ChatGetter(abc.ABC):
         return isinstance(self._chat_peer, types.PeerChat)
 
     @property
-    def is_channel(self):
+    def is_channel(self) -> bool:
         """`True` if the message was sent on a megagroup or channel."""
         # The only case where chat peer could be none is in MessageDeleted,
         # however those always have the peer in channels.

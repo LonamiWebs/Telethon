@@ -49,9 +49,11 @@ class InlineQuery(EventBuilder):
                 ])
     """
     def __init__(
-            self, users: Optional[Sequence[hints.EntityLike]] = None, *,
-            blacklist_users: bool = False, func: Optional[Callable[['InlineQuery.Event'], None]] = None,
-            pattern: Union[str, Callable, Pattern, Optional] = None):
+            self,
+            users: Optional[Sequence[hints.EntityLike]] = None, *,
+            blacklist_users: bool = False,
+            func: Optional[Callable[['InlineQuery.Event'], None]] = None,
+            pattern: Union[str, Callable, Pattern, None] = None):
         super().__init__(users, blacklist_chats=blacklist_users, func=func)
 
         if isinstance(pattern, str):

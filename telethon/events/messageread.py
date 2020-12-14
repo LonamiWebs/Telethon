@@ -1,5 +1,7 @@
+from typing import Optional, Sequence, Callable
+
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
+from .. import utils, hints
 from ..tl import types
 
 
@@ -29,13 +31,16 @@ class MessageRead(EventBuilder):
                 # Log when you read message in a chat (from your "inbox")
                 print('You have read messages until', event.max_id)
     """
-    def __init__(
-            self, chats=None, *, blacklist_chats=False, func=None, inbox=False):
+    def __init__(self,
+                 chats: Optional[Sequence[hints.Entity]] = None, *,
+                 blacklist_chats: bool = False,
+                 func: Optional[Callable[['MessageRead.Event'], None]] = None,
+                 inbox: bool = False):
         super().__init__(chats, blacklist_chats=blacklist_chats, func=func)
         self.inbox = inbox
 
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update: types.TypeUpdate, others=None, self_id=None):
         if isinstance(update, types.UpdateReadHistoryInbox):
             return cls.Event(update.peer, update.max_id, False)
         elif isinstance(update, types.UpdateReadHistoryOutbox):
@@ -54,7 +59,7 @@ class MessageRead(EventBuilder):
                              message_ids=update.messages,
                              contents=True)
 
-    def filter(self, event):
+    def filter(self, event: 'MessageRead.Event'):
         if self.inbox == event.outbox:
             return
 
@@ -77,8 +82,12 @@ class MessageRead(EventBuilder):
                 This will be the case when e.g. you play a voice note.
                 It may only be set on ``inbox`` events.
         """
-        def __init__(self, peer=None, max_id=None, out=False, contents=False,
-                     message_ids=None):
+        def __init__(self,
+                     peer: Optional[types.TypePeer] = None,
+                     max_id: Optional[int] = None,
+                     out: bool = False,
+                     contents: bool = False,
+                     message_ids: Optional[Sequence[int]] = None):
             self.outbox = out
             self.contents = contents
             self._message_ids = message_ids or []

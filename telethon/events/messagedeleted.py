@@ -1,3 +1,5 @@
+from typing import Sequence, Optional
+
 from .common import EventBuilder, EventCommon, name_inner_event
 from ..tl import types
 
@@ -36,7 +38,7 @@ class MessageDeleted(EventBuilder):
                     print('Message', msg_id, 'was deleted in', event.chat_id)
     """
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update: types.TypeUpdate, others=None, self_id=None):
         if isinstance(update, types.UpdateDeleteMessages):
             return cls.Event(
                 deleted_ids=update.messages,
@@ -49,7 +51,9 @@ class MessageDeleted(EventBuilder):
             )
 
     class Event(EventCommon):
-        def __init__(self, deleted_ids, peer):
+        def __init__(self,
+                     deleted_ids: Optional[Sequence[int]],
+                     peer: Optional[types.TypePeer]):
             super().__init__(
                 chat_peer=peer, msg_id=(deleted_ids or [0])[0]
             )
