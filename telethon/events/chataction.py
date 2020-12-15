@@ -11,6 +11,7 @@ class ChatAction(EventBuilder):
     * Whenever a new chat is created.
     * Whenever a chat's title or photo is changed or removed.
     * Whenever a new message is pinned.
+    * Whenever a user scores in a game.    
     * Whenever a user joins or is added to the group.
     * Whenever a user is removed or leaves a group if it has
       less than 50 members or the removed user was a bot.
@@ -113,7 +114,11 @@ class ChatAction(EventBuilder):
             elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
                 return cls.Event(msg,
                                  pin_ids=[msg.reply_to_msg_id])
-
+            elif isinstance(action, types.MessageActionGameScore):
+                return cls.Event(msg,
+                                 game_id=action.game_id,
+                                 score=action.score)
+            
     class Event(EventCommon):
         """
         Represents the event of a new chat action.
