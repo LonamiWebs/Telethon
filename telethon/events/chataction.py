@@ -153,6 +153,9 @@ class ChatAction(EventBuilder):
 
             new_title (`str`, optional):
                 The new title string for the chat, if applicable.
+            
+            new_score (`str`, optional):
+                The new score string for the game, if applicable.
 
             unpin (`bool`):
                 `True` if the existing pin gets unpinned.
