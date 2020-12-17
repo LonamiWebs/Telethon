@@ -88,7 +88,7 @@ Next, we will see some examples from the most popular libraries.
 Migrating from python-telegram-bot
 ----------------------------------
 
-Let's take their `echobot2.py`_ example and shorten it a bit:
+Let's take their `echobot.py`_ example and shorten it a bit:
 
 .. code-block:: python
 
@@ -107,7 +107,7 @@ Let's take their `echobot2.py`_ example and shorten it a bit:
         updater = Updater("TOKEN")
         dp = updater.dispatcher
         dp.add_handler(CommandHandler("start", start))
-        dp.add_handler(MessageHandler(Filters.text, echo))
+        dp.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
         updater.start_polling()
 
@@ -330,4 +330,4 @@ Key differences:
 .. _aiohttp: https://docs.aiohttp.org/en/stable
 .. _aiogram: https://aiogram.readthedocs.io
 .. _dumbot: https://github.com/Lonami/dumbot
-.. _echobot2.py: https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/echobot2.py
+.. _echobot.py: https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/echobot.py
