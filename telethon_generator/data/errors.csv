@@ -74,6 +74,7 @@ CHAT_SEND_MEDIA_FORBIDDEN,403,You can't send media in this chat
 CHAT_SEND_STICKERS_FORBIDDEN,403,You can't send stickers in this chat
 CHAT_TITLE_EMPTY,400,No chat title provided
 CHAT_WRITE_FORBIDDEN,403,You can't write in this chat
+CHP_CALL_FAIL,500,The statistics cannot be retrieved at this time
 CODE_EMPTY,400,The provided code is empty
 CODE_HASH_INVALID,400,Code hash invalid
 CODE_INVALID,400,Code invalid (i.e. from email)
@@ -194,6 +195,7 @@ NEED_MEMBER_INVALID,500,The provided member is invalid or does not exist (for ex
 NETWORK_MIGRATE_X,303,The source IP address is associated with DC {new_dc}
 NEW_SALT_INVALID,400,The new salt is invalid
 NEW_SETTINGS_INVALID,400,The new settings are invalid
+NEXT_OFFSET_INVALID,400,The value for next_offset is invalid. Check that it has normal characters and is not too long
 OFFSET_INVALID,400,"The given offset was invalid, it must be divisible by 1KB. See https://core.telegram.org/api/files#downloading-files"
 OFFSET_PEER_ID_INVALID,400,The provided offset peer is invalid
 OPTIONS_TOO_MUCH,400,You defined too many options for the poll
