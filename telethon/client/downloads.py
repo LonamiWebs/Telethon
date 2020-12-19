@@ -733,6 +733,13 @@ class DownloadMethods:
 
         thumbs = list(sorted(thumbs, key=sort_thumbs))
 
+        for i in reversed(range(len(thumbs))):
+            # :tl:`PhotoPathSize` is used for animated stickers preview, and the thumb is actually
+            # a SVG path of the outline. Users expect thumbnails to be JPEG files, so pretend this
+            # thumb size doesn't actually exist (#1655).
+            if isinstance(thumbs[i], types.PhotoPathSize):
+                thumbs.pop(i)
+
         if thumb is None:
             return thumbs[-1]
         elif isinstance(thumb, int):
