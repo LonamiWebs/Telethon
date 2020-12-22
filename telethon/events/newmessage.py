@@ -170,7 +170,7 @@ class NewMessage(EventBuilder):
 
         return super().filter(event)
 
-    class Event(EventCommon):
+    class Event(EventCommon, types.TypeMessage):
         """
         Represents the event of a new message. This event can be treated
         to all effects as a `Message <telethon.tl.custom.message.Message>`,
