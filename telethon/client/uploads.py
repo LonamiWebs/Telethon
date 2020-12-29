@@ -53,6 +53,7 @@ def _resize_photo_if_needed(
         # Don't use a `with` block for `image`, or `file` would be closed.
         # See https://github.com/LonamiWebs/Telethon/issues/1121 for more.
         image = PIL.Image.open(file)
+        exif = image.info['exif']
         if image.width <= width and image.height <= height:
             return file
 
@@ -72,7 +73,7 @@ def _resize_photo_if_needed(
             result.paste(image, mask=image.split()[alpha_index])
 
         buffer = io.BytesIO()
-        result.save(buffer, 'JPEG')
+        result.save(buffer, 'JPEG', exif=exif)
         buffer.seek(0)
         return buffer
 
