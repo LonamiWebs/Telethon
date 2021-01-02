@@ -67,7 +67,7 @@ class MessageParseMethods:
                 entities[i].offset, entities[i].length,
                 await self.get_input_entity(user)
             )
-            return True            
+            return True
         except (ValueError, TypeError):
             return False
 
@@ -134,7 +134,7 @@ class MessageParseMethods:
 
                 # Pinning a message with `updatePinnedMessage` seems to
                 # always produce a service message we can't map so return
-                # it directly.
+                # it directly. The same happens for kicking users.
                 #
                 # It could also be a list (e.g. when sending albums).
                 #

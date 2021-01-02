@@ -1135,11 +1135,16 @@ class ChatMethods:
             user (`entity`, optional):
                 The user to kick.
 
+        Returns
+            Returns the service `Message <telethon.tl.custom.message.Message>`
+            produced about a user being kicked, if any.
+
         Example
             .. code-block:: python
 
-                # Kick some user from some chat
-                await client.kick_participant(chat, user)
+                # Kick some user from some chat, and deleting the service message
+                msg = await client.kick_participant(chat, user)
+                await msg.delete()
 
                 # Leaving chat
                 await client.kick_participant(chat, 'me')
@@ -1151,15 +1156,18 @@ class ChatMethods:
 
         ty = helpers._entity_type(entity)
         if ty == helpers._EntityType.CHAT:
-            await self(functions.messages.DeleteChatUserRequest(entity.chat_id, user))
+            resp = await self(functions.messages.DeleteChatUserRequest(entity.chat_id, user))
         elif ty == helpers._EntityType.CHANNEL:
             if isinstance(user, types.InputPeerSelf):
-                await self(functions.channels.LeaveChannelRequest(entity))
+                # Despite no longer being in the channel, the account still
+                # seems to get the service message.
+                resp = await self(functions.channels.LeaveChannelRequest(entity))
             else:
-                await self(functions.channels.EditBannedRequest(
+                resp = await self(functions.channels.EditBannedRequest(
                     channel=entity,
                     user_id=user,
-                    banned_rights=types.ChatBannedRights(until_date=None, view_messages=True)
+                    banned_rights=types.ChatBannedRights(
+                        until_date=None, view_messages=True)
                 ))
                 await asyncio.sleep(0.5)
                 await self(functions.channels.EditBannedRequest(
@@ -1169,6 +1177,8 @@ class ChatMethods:
                 ))
         else:
             raise ValueError('You must pass either a channel or a chat')
+
+        return self._get_response_message(None, resp, entity)
 
     async def get_permissions(
             self: 'TelegramClient',
