@@ -54,20 +54,9 @@ class ChatAction(EventBuilder):
                              kicked_by=True,
                              users=update.user_id)
 
-        elif isinstance(update, types.UpdateChannel):
-            # We rely on the fact that update._entities is set by _process_update
-            # This update only has the channel ID, and Telegram *should* have sent
-            # the entity in the Updates.chats list. If it did, check Channel.left
-            # to determine what happened.
-            peer = types.PeerChannel(update.channel_id)
-            channel = update._entities.get(utils.get_peer_id(peer))
-            if channel is not None:
-                if isinstance(channel, types.ChannelForbidden) or channel.left:
-                    return cls.Event(peer,
-                                     kicked_by=True)
-                else:
-                    return cls.Event(peer,
-                                     added_by=True)
+        # UpdateChannel is sent if we leave a channel, and the update._entities
+        # set by _process_update would let us make some guesses. However it's
+        # better not to rely on this. Rely only in MessageActionChatDeleteUser.
 
         elif (isinstance(update, (
                 types.UpdateNewMessage, types.UpdateNewChannelMessage))
@@ -86,7 +75,7 @@ class ChatAction(EventBuilder):
                                  users=action.users)
             elif isinstance(action, types.MessageActionChatDeleteUser):
                 return cls.Event(msg,
-                                 kicked_by=msg.from_id or True,
+                                 kicked_by=utils.get_peer_id(msg.from_id) if msg.from_id else True,
                                  users=action.user_id)
             elif isinstance(action, types.MessageActionChatCreate):
                 return cls.Event(msg,
