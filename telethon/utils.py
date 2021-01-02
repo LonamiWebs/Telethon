@@ -1289,7 +1289,11 @@ def resolve_invite_link(link):
         payload = _decode_telegram_base64(link_hash)
 
     try:
-        return struct.unpack('>LLQ', payload)
+        if len(payload) == 12:
+            chat_id, rnd = struct.unpack('>LQ', payload)
+            return 0, chat_id, rnd
+        else:
+            return struct.unpack('>LLQ', payload)
     except (struct.error, TypeError):
         return None, None, None
 
