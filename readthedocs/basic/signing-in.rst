@@ -170,6 +170,7 @@ For backwards compatibility with ``PySocks`` the following format
 is possible (but discouraged):
 
 .. code-block:: python
+
     proxy = (socks.SOCKS5, '1.1.1.1', 5555, True, 'foo', 'bar')
 
 .. __: https://github.com/romis2012/python-socks#installation

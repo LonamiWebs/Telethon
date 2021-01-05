@@ -11,8 +11,8 @@ loop = asyncio.get_event_loop()
 
 """
 Provider token can be obtained via @BotFather. more info at https://core.telegram.org/bots/payments#getting-a-token
- 
-If you are using test token, set test=True in generate_invoice function, 
+
+If you are using test token, set test=True in generate_invoice function,
 If you are using real token, set test=False
 """
 provider_token = ''
@@ -83,7 +83,7 @@ async def payment_pre_checkout_handler(event: types.UpdateBotPrecheckoutQuery):
 async def payment_received_handler(event):
     if isinstance(event.message.action, types.MessageActionPaymentSentMe):
         payment: types.MessageActionPaymentSentMe = event.message.action
-        # do something after payment was recieved
+        # do something after payment was received
         if payment.payload.decode('UTF-8') == 'product A':
             await bot.send_message(event.message.from_id, 'Thank you for buying product A!')
         elif payment.payload.decode('UTF-8') == 'product B':
