@@ -13,6 +13,62 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+
+New raw API call methods (v1.19)
+================================
+
++------------------------+
+| Scheme layer used: 122 |
++------------------------+
+
+Telegram has had group calls for some weeks now. This new version contains the
+raw API methods needed to initiate and manage these group calls, however, the
+library will likely **not offer ways to stream audio directly**.
+
+Telethon's focus is being an asyncio-based, pure-Python implementation to
+interact with Telegram's API. Streaming audio is beyond the current scope of
+the project and would be a big undertaking.
+
+However, that doesn't mean calls are not possible with Telethon. If you want
+to help design a Python library to perform audio calls, which can then be used
+with Telethon (so you can use Telethon + that new library to perform calls
+with Telethon), please refer to `@pytgcallschat <https://t.me/@pytgcallschat/>`__
+and join the relevant chat to discuss and help with the implementation!
+
+The above message was also `posted in the official Telegram group
+<https://t.me/TelethonChat/284717>`__, if you wish to discuss it further.
+
+With that out of the way, let's list the additions and bug fixes in this
+release:
+
+Additions
+~~~~~~~~~
+
+* New ``has_left`` property for user permissions on `client.get_permissions()
+  <telethon.client.chats.ChatMethods.get_permissions>`.
+
+Enhancements
+~~~~~~~~~~~~
+
+* Updated documentation and list of known RPC errors.
+* The library now treats a lack of ping responses as a network error.
+* `client.kick_participant() <telethon.client.chats.ChatMethods.kick_participant>`
+  now returns the service message about the user being kicked, so you can
+  delete it.
+
+Bug fixes
+~~~~~~~~~
+
+* When editing inline messages, the text parameter is preferred if provided.
+* Additional senders are unconditionally disconnected when disconnecting the
+  main client, which should reduce the amount of asyncio warnings.
+* Automatic reconnection with no retries was failing.
+* :tl:`PhotoPathSize` is now ignored when determining a download size, since
+  this "size" is not a JPEG thumbnail unlike the rest.
+* `events.ChatAction <telethon.events.chataction.ChatAction>` should misbehave
+  less.
+
+
 New layer and QoL improvements (v1.18)
 ======================================
 
