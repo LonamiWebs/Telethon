@@ -1290,15 +1290,14 @@ def resolve_invite_link(link):
 
     try:
         if len(payload) == 12:
-            # New format
             return 0, *struct.unpack('>LQ', payload)
         elif len(payload) == 16:
-            # Old Format
             return struct.unpack('>LLQ', payload)
         else:
-            raise TypeError
+            pass
     except (struct.error, TypeError):
-        return None, None, None
+        pass
+    return None, None, None
 
 
 def resolve_inline_message_id(inline_msg_id):
