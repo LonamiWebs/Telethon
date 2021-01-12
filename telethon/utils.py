@@ -1267,14 +1267,13 @@ def resolve_invite_link(link):
     Resolves the given invite link. Returns a tuple of
     ``(link creator user id, global chat id, random int)``.
 
-    Note that for broadcast channels, the link creator
-    user ID will be zero to protect their identity.
-    Normal chats and megagroup channels will have such ID.
+    Note that for broadcast channels or with the newest link format, the link
+    creator user ID will be zero to protect their identity. Normal chats and
+    megagroup channels will have such ID.
 
-    Note that the chat ID may not be accurate for chats
-    with a link that were upgraded to megagroup, since
-    the link can remain the same, but the chat ID will
-    be correct once a new link is generated.
+    Note that the chat ID may not be accurate for chats with a link that were
+    upgraded to megagroup, since the link can remain the same, but the chat
+    ID will be correct once a new link is generated.
     """
     link_hash, is_link = parse_username(link)
     if not is_link:
@@ -1283,14 +1282,14 @@ def resolve_invite_link(link):
 
     # Little known fact, but invite links with a
     # hex-string of bytes instead of base64 also works.
-    if re.match(r'[a-fA-F\d]{32}', link_hash):
+    if re.match(r'[a-fA-F\d]+', link_hash) and len(link_hash) in (24, 32):
         payload = bytes.fromhex(link_hash)
     else:
         payload = _decode_telegram_base64(link_hash)
 
     try:
         if len(payload) == 12:
-            return 0, *struct.unpack('>LQ', payload)
+            return (0, *struct.unpack('>LQ', payload))
         elif len(payload) == 16:
             return struct.unpack('>LLQ', payload)
         else:
