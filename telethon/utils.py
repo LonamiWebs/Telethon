@@ -1289,9 +1289,15 @@ def resolve_invite_link(link):
         payload = _decode_telegram_base64(link_hash)
 
     try:
-        return struct.unpack('>LLQ', payload)
+        if len(payload) == 12:
+            return 0, *struct.unpack('>LQ', payload)
+        elif len(payload) == 16:
+            return struct.unpack('>LLQ', payload)
+        else:
+            pass
     except (struct.error, TypeError):
-        return None, None, None
+        pass
+    return None, None, None
 
 
 def resolve_inline_message_id(inline_msg_id):
