@@ -1,16 +1,15 @@
-import abc
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
 from .file import File
-from .. import TLObject, types, functions
+from .. import TLObject, types, functions, alltlobjects
 from ... import utils, errors
 
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
+class _Message(ChatGetter, SenderGetter):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -1105,3 +1104,18 @@ class Message(ChatGetter, SenderGetter, TLObject, abc.ABC):
                     return None
 
     # endregion Private Methods
+
+def _patch(cls):
+    # Create new types (classes) for all messages to combine `_Message` in them.
+    # `_Message` comes first so we get its `__init__`.
+    newtype = type(cls.__name__, (_Message, cls), {})
+    setattr(types, cls.__name__, newtype)
+    # `BinaryReader` directly imports this dictionary, but we're mutating it
+    # in-place, not replacing it, so it works out to deserialize `newtype`.
+    alltlobjects.tlobjects[cls.CONSTRUCTOR_ID] = newtype
+    return newtype
+
+
+_patch(types.MessageEmpty)
+Message = _patch(types.Message)
+_patch(types.MessageService)
