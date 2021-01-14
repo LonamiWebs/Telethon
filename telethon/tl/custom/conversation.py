@@ -416,15 +416,10 @@ class Conversation(ChatGetter):
 
         self._last_read = event.max_id
 
-        remove_reads = []
         for msg_id, pending in list(self._pending_reads.items()):
             if msg_id >= self._last_read:
-                remove_reads.append(msg_id)
                 pending.set_result(True)
                 del self._pending_reads[msg_id]
-
-        for to_remove in remove_reads:
-            del self._pending_reads[to_remove]
 
     def _get_message_id(self, message):
         if message is not None:  # 0 is valid but false-y, check for None
