@@ -699,7 +699,8 @@ class UploadMethods:
                 force_document=force_document and not is_image,
                 voice_note=voice_note,
                 video_note=video_note,
-                supports_streaming=supports_streaming
+                supports_streaming=supports_streaming,
+                thumb=thumb
             )
 
             if not thumb:

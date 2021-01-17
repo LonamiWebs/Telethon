@@ -664,7 +664,7 @@ def _get_metadata(file):
 
 def get_attributes(file, *, attributes=None, mime_type=None,
                    force_document=False, voice_note=False, video_note=False,
-                   supports_streaming=False):
+                   supports_streaming=False, thumb=None):
     """
     Get a list of attributes for the given file and
     the mime type as a tuple ([attribute], mime_type).
@@ -700,6 +700,18 @@ def get_attributes(file, *, attributes=None, mime_type=None,
                              if m.has('duration') else 0),
                 supports_streaming=supports_streaming
             )
+        elif thumb:
+            t_m = _get_metadata(thumb)
+            width = 1
+            height = 1
+            if t_m and t_m.has("width"):
+                width = t_m.get("width")
+            if t_m and t_m.has("height"):
+                height = t_m.get("height")
+            
+            doc = types.DocumentAttributeVideo(
+                0, width, height, round_message=video_note,
+                supports_streaming=supports_streaming)
         else:
             doc = types.DocumentAttributeVideo(
                 0, 1, 1, round_message=video_note,
