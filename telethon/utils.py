@@ -708,9 +708,13 @@ def get_attributes(file, *, attributes=None, mime_type=None,
                 width = t_m.get("width")
             if t_m and t_m.has("height"):
                 height = t_m.get("height")
-        else:
+            
             doc = types.DocumentAttributeVideo(
                 0, width, height, round_message=video_note,
+                supports_streaming=supports_streaming)
+        else:
+            doc = types.DocumentAttributeVideo(
+                0, 1, 1, round_message=video_note,
                 supports_streaming=supports_streaming)
 
         attr_dict[types.DocumentAttributeVideo] = doc
