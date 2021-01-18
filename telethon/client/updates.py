@@ -309,14 +309,14 @@ class UpdateMethods:
         channel_id = self._state_cache.get_channel_id(update)
         args = (update, others, channel_id, self._state_cache[channel_id])
         if self._dispatching_updates_queue is None:
-            task = self._loop.create_task(self._dispatch_update(*args))
+            task = self.loop.create_task(self._dispatch_update(*args))
             self._updates_queue.add(task)
             task.add_done_callback(lambda _: self._updates_queue.discard(task))
         else:
             self._updates_queue.put_nowait(args)
             if not self._dispatching_updates_queue.is_set():
                 self._dispatching_updates_queue.set()
-                self._loop.create_task(self._dispatch_queue_updates())
+                self.loop.create_task(self._dispatch_queue_updates())
 
         self._state_cache.update(update)
 

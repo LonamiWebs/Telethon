@@ -242,7 +242,6 @@ class TelegramBaseClient(abc.ABC):
                 "Refer to telethon.rtfd.io for more information.")
 
         self._use_ipv6 = use_ipv6
-        self._loop = asyncio.get_event_loop()
 
         if isinstance(base_logger, str):
             base_logger = logging.getLogger(base_logger)
@@ -308,14 +307,14 @@ class TelegramBaseClient(abc.ABC):
         # TODO A better fix is obviously avoiding the use of `sock_connect`
         #
         # See https://github.com/LonamiWebs/Telethon/issues/1337 for details.
-        if not callable(getattr(self._loop, 'sock_connect', None)):
+        if not callable(getattr(self.loop, 'sock_connect', None)):
             raise TypeError(
                 'Event loop of type {} lacks `sock_connect`, which is needed to use proxies.\n\n'
                 'Change the event loop in use to use proxies:\n'
                 '# https://github.com/LonamiWebs/Telethon/issues/1337\n'
                 'import asyncio\n'
                 'asyncio.set_event_loop(asyncio.SelectorEventLoop())'.format(
-                    self._loop.__class__.__name__
+                    self.loop.__class__.__name__
                 )
             )
 
@@ -459,7 +458,7 @@ class TelegramBaseClient(abc.ABC):
                 # Join the task (wait for it to complete)
                 await task
         """
-        return self._loop
+        return asyncio.get_event_loop()
 
     @property
     def disconnected(self: 'TelegramClient') -> asyncio.Future:
@@ -532,7 +531,7 @@ class TelegramBaseClient(abc.ABC):
             LAYER, self._init_request
         ))
 
-        self._updates_handle = self._loop.create_task(self._update_loop())
+        self._updates_handle = self.loop.create_task(self._update_loop())
 
     def is_connected(self: 'TelegramClient') -> bool:
         """
@@ -563,11 +562,11 @@ class TelegramBaseClient(abc.ABC):
                 # You don't need to use this if you used "with client"
                 await client.disconnect()
         """
-        if self._loop.is_running():
+        if self.loop.is_running():
             return self._disconnect_coro()
         else:
             try:
-                self._loop.run_until_complete(self._disconnect_coro())
+                self.loop.run_until_complete(self._disconnect_coro())
             except RuntimeError:
                 # Python 3.5.x complains when called from
                 # `__aexit__` and there were pending updates with:
