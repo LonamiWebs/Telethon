@@ -32,7 +32,7 @@ the project and would be a big undertaking.
 However, that doesn't mean calls are not possible with Telethon. If you want
 to help design a Python library to perform audio calls, which can then be used
 with Telethon (so you can use Telethon + that new library to perform calls
-with Telethon), please refer to `@pytgcallschat <https://t.me/@pytgcallschat/>`__
+with Telethon), please refer to `@pytgcallschat <https://t.me/pytgcallschat/>`__
 and join the relevant chat to discuss and help with the implementation!
 
 The above message was also `posted in the official Telegram group
