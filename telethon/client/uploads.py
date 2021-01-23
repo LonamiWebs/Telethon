@@ -16,7 +16,7 @@ try:
     import PIL
     import PIL.Image
 except ImportError:
-    PIL = NoneAdd a little more info
+    PIL = None
 
 
 if typing.TYPE_CHECKING:
