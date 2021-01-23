@@ -16,7 +16,7 @@ try:
     import PIL
     import PIL.Image
 except ImportError:
-    PIL = None
+    PIL = NoneAdd a little more info
 
 
 if typing.TYPE_CHECKING:
@@ -205,10 +205,7 @@ class UploadMethods:
                 Successful thumbnails were files below 20kB and 320x320px.
                 For Telegram to accept a thumbnail, you must provide the
                 file's dimensions using either ``hachoir`` or
-                :tl:`DocumentAttributesVideo`.
-                Telethon will resize thumbnails for you, if an image is
-                provided.
-                
+                :tl:`DocumentAttributesVideo`.                
 
             allow_cache (`bool`, optional):
                 This parameter currently does nothing, but is kept for
