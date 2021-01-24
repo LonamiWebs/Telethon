@@ -23,6 +23,8 @@ if typing.TYPE_CHECKING:
 MIN_CHUNK_SIZE = 4096
 MAX_CHUNK_SIZE = 512 * 1024
 
+# 2021-01-15, users reported that `errors.TimeoutError` can occur while downloading files.
+TIMED_OUT_SLEEP = 1
 
 class _DirectDownloadIter(RequestIter):
     async def _init(
@@ -36,6 +38,7 @@ class _DirectDownloadIter(RequestIter):
         self._chunk_size = chunk_size
         self._last_part = None
         self._msg_data = msg_data
+        self._timed_out = False
 
         self._exported = dc_id and self.client.session.dc_id != dc_id
         if not self._exported:
@@ -70,10 +73,21 @@ class _DirectDownloadIter(RequestIter):
     async def _request(self):
         try:
             result = await self.client._call(self._sender, self.request)
+            self._timed_out = False
             if isinstance(result, types.upload.FileCdnRedirect):
                 raise NotImplementedError  # TODO Implement
             else:
                 return result.bytes
+
+        except errors.TimeoutError as e:
+            if self._timed_out:
+                self.client._log[__name__].warning('Got two timeouts in a row while downloading file')
+                raise
+
+            self._timed_out = True
+            self.client._log[__name__].info('Got timeout while downloading file, retrying once')
+            await asyncio.sleep(TIMED_OUT_SLEEP)
+            return await self._request()
 
         except errors.FileMigrateError as e:
             self.client._log[__name__].info('File lives in another DC')
