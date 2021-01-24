@@ -4,6 +4,7 @@ import os
 import pathlib
 import typing
 import inspect
+import asyncio
 
 from ..crypto import AES
 
