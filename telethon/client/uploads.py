@@ -406,7 +406,7 @@ class UploadMethods:
             fh, fm, _ = await self._file_to_media(
                 file, supports_streaming=supports_streaming,
                 force_document=force_document)
-            if isinstance(fm, types.InputMediaUploadedPhoto):
+            if isinstance(fm, (types.InputMediaUploadedPhoto, types.InputMediaPhotoExternal)):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
                 ))
