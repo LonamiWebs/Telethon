@@ -177,7 +177,10 @@ class InlineQuery(EventBuilder):
                 
                 next_offset (`str`, optional):
                     The offset the client will send when the user scrolls the 
-                    results and it repeats the request.
+                    results and it repeats the request. Pass an empty string 
+                    if there are no more results or 
+                    if you don't support pagination.
+                    Offset length can't exceed 64 bytes.
 
                 private (`bool`, optional):
                     Whether the results should be cached by Telegram
@@ -231,7 +234,7 @@ class InlineQuery(EventBuilder):
                     results=results,
                     cache_time=cache_time,
                     gallery=gallery,
-                    next_offset=next_offset,
+                    next_offset=next_offset or None,
                     private=private,
                     switch_pm=switch_pm
                 )
