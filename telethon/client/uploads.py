@@ -201,9 +201,14 @@ class UploadMethods:
                 Optional JPEG thumbnail (for documents). **Telegram will
                 ignore this parameter** unless you pass a ``.jpg`` file!
 
-                The file must also be small in dimensions and in-disk size.
-                Successful thumbnails were files below 20kb and 200x200px.
+                The file must also be small in dimensions and in disk size.
+                Successful thumbnails were files below 20kB and 320x320px.
                 Width/height and dimensions/size ratios may be important.
+                For Telegram to accept a thumbnail, you must provide the
+                dimensions of the underlying media through ``attributes=``
+                with :tl:`DocumentAttributesVideo` or by installing the
+                optional ``hachoir`` dependency.
+
 
             allow_cache (`bool`, optional):
                 This parameter currently does nothing, but is kept for

@@ -694,10 +694,10 @@ def get_attributes(file, *, attributes=None, mime_type=None,
         if m:
             doc = types.DocumentAttributeVideo(
                 round_message=video_note,
-                w=m.get('width') if m.has('width') else 0,
-                h=m.get('height') if m.has('height') else 0,
+                w=m.get('width') if m.has('width') else 1,
+                h=m.get('height') if m.has('height') else 1,
                 duration=int(m.get('duration').seconds
-                             if m.has('duration') else 0),
+                             if m.has('duration') else 1),
                 supports_streaming=supports_streaming
             )
         elif thumb:
@@ -708,7 +708,7 @@ def get_attributes(file, *, attributes=None, mime_type=None,
                 width = t_m.get("width")
             if t_m and t_m.has("height"):
                 height = t_m.get("height")
-            
+
             doc = types.DocumentAttributeVideo(
                 0, width, height, round_message=video_note,
                 supports_streaming=supports_streaming)
