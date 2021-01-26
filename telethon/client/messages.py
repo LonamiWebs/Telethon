@@ -77,7 +77,7 @@ class _MessagesIter(RequestIter):
                 filter=filter,
                 min_date=None,
                 max_date=offset_date,
-                offset_rate=None,
+                offset_rate=0,
                 offset_peer=types.InputPeerEmpty(),
                 offset_id=offset_id,
                 limit=1
@@ -253,7 +253,7 @@ class _MessagesIter(RequestIter):
             else:
                 self.request.offset_peer = types.InputPeerEmpty()
 
-            self.request.offset_rate = getattr(response, 'next_rate', None)
+            self.request.offset_rate = getattr(response, 'next_rate', 0)
 
 
 class _IDsIter(RequestIter):
