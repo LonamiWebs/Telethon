@@ -51,7 +51,7 @@ class Error:
 
         self.has_captures = '_X' in name
         if self.has_captures:
-            self.name = _get_class_name(name.replace('_X', ''))
+            self.name = _get_class_name(name.replace('_X', '_'))
             self.pattern = name.replace('_X', r'_(\d+)')
             self.capture_name = re.search(r'{(\w+)}', description).group(1)
         else:

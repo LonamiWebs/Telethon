@@ -145,6 +145,9 @@ GROUP_CALL_INVALID,400,Group call invalid
 HASH_INVALID,400,The provided hash is invalid
 HISTORY_GET_FAILED,500,Fetching of history failed
 IMAGE_PROCESS_FAILED,400,Failure while processing image
+IMPORT_FILE_INVALID,400,The file is too large to be imported
+IMPORT_FORMAT_UNRECOGNIZED,400,Unknown import format
+IMPORT_ID_INVALID,400,
 INLINE_BOT_REQUIRED,403,The action must be performed through an inline bot callback
 INLINE_RESULT_EXPIRED,400,The inline query expired
 INPUT_CONSTRUCTOR_INVALID,400,The provided constructor is invalid
@@ -247,6 +250,7 @@ POLL_OPTION_DUPLICATE,400,A duplicate option was sent in the same poll
 POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too long)
 POLL_QUESTION_INVALID,400,The poll question was either empty or too long
 POLL_UNSUPPORTED,400,This layer does not support polls in the issued method
+PREVIOUS_CHAT_IMPORT_ACTIVE_WAIT_XMIN,406,"Similar to a flood wait, must wait {minutes} minutes"
 PRIVACY_KEY_INVALID,400,The privacy key is invalid
 PRIVACY_TOO_LONG,400,Cannot add that many entities in a single request
 PRIVACY_VALUE_INVALID,400,The privacy value is invalid
@@ -313,7 +317,7 @@ TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being ab
 TAKEOUT_INVALID,400,The takeout session has been invalidated by another data export session
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
-Timeout,-503,A timeout occurred while fetching data from the worker
+TIMEOUT,500,A timeout occurred while fetching data from the worker
 THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
