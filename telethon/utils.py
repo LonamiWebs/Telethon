@@ -996,7 +996,7 @@ def get_peer_id(peer, add_mark=True):
 
     This "mark" comes from the "bot api" format, and with it the peer type
     can be identified back. User ID is left unmodified, chat ID is negated,
-    and channel ID is prefixed with -100:
+    and channel ID is "prefixed" with -100:
 
     * ``user_id``
     * ``-chat_id``
@@ -1043,15 +1043,12 @@ def resolve_id(marked_id):
     if marked_id >= 0:
         return marked_id, types.PeerUser
 
-    # There have been report of chat IDs being 10000xyz, which means their
-    # marked version is -10000xyz, which in turn looks like a channel but
-    # it becomes 00xyz (= xyz). Hence, we must assert that there are only
-    # two zeroes.
-    m = re.match(r'-100([^0]\d*)', str(marked_id))
-    if m:
-        return int(m.group(1)), types.PeerChannel
-
-    return -marked_id, types.PeerChat
+    marked_id = -marked_id
+    if marked_id > 1000000000000:
+        marked_id -= 1000000000000
+        return marked_id, types.PeerChannel
+    else:
+        return marked_id, types.PeerChat
 
 
 def _rle_decode(data):
