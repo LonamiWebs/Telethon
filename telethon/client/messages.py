@@ -577,6 +577,19 @@ class MessageMethods:
 
     # region Message sending/editing/deleting
 
+    async def _get_comment_data(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Union[int, types.Message]'
+    ):
+        r = await self(functions.messages.GetDiscussionMessageRequest(
+            peer=entity,
+            msg_id=utils.get_message_id(message)
+        ))
+        m = r.messages[0]
+        chat = next(c for c in r.chats if c.id == m.peer_id.channel_id)
+        return utils.get_input_peer(chat), m.id
+
     async def send_message(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -591,7 +604,8 @@ class MessageMethods:
             clear_draft: bool = False,
             buttons: 'hints.MarkupLike' = None,
             silent: bool = None,
-            schedule: 'hints.DateLike' = None
+            schedule: 'hints.DateLike' = None,
+            comment_to: 'typing.Union[int, types.Message]' = None
     ) -> 'types.Message':
         """
         Sends a message to the specified user, chat or channel.
@@ -672,6 +686,14 @@ class MessageMethods:
                 it will be scheduled to be automatically sent at a later
                 time.
 
+            comment_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+                Similar to ``reply_to``, but replies in the linked group of a
+                broadcast channel instead (effectively leaving a "comment to"
+                the specified message).
+
+                This parameter takes precedence over ``reply_to``. If there is
+                no linked chat, `telethon.errors.sgIdInvalidError` is raised.
+
         Returns
             The sent `custom.Message <telethon.tl.custom.message.Message>`.
 
@@ -740,6 +762,9 @@ class MessageMethods:
             )
 
         entity = await self.get_input_entity(entity)
+        if comment_to is not None:
+            entity, reply_to = await self._get_comment_data(entity, comment_to)
+
         if isinstance(message, types.Message):
             if buttons is None:
                 markup = message.reply_markup

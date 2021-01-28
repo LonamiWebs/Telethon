@@ -114,6 +114,7 @@ class UploadMethods:
             silent: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
+            comment_to: 'typing.Union[int, types.Message]' = None,
             **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
@@ -260,6 +261,14 @@ class UploadMethods:
                 it will be scheduled to be automatically sent at a later
                 time.
 
+            comment_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+                Similar to ``reply_to``, but replies in the linked group of a
+                broadcast channel instead (effectively leaving a "comment to"
+                the specified message).
+
+                This parameter takes precedence over ``reply_to``. If there is
+                no linked chat, `telethon.errors.sgIdInvalidError` is raised.
+
         Returns
             The `Message <telethon.tl.custom.message.Message>` (or messages)
             containing the sent file, or messages if a list of them was passed.
@@ -317,6 +326,12 @@ class UploadMethods:
         if not caption:
             caption = ''
 
+        entity = await self.get_input_entity(entity)
+        if comment_to is not None:
+            entity, reply_to = await self._get_comment_data(entity, comment_to)
+        else:
+            reply_to = utils.get_message_id(reply_to
+
         # First check if the user passed an iterable, in which case
         # we may want to send grouped.
         if utils.is_list_like(file):
@@ -350,9 +365,6 @@ class UploadMethods:
                 ))
 
             return result
-
-        entity = await self.get_input_entity(entity)
-        reply_to = utils.get_message_id(reply_to)
 
         if formatting_entities is not None:
             msg_entities = formatting_entities

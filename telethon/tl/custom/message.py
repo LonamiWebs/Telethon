@@ -235,6 +235,7 @@ class _Message(ChatGetter, SenderGetter):
         self._via_bot = None
         self._via_input_bot = None
         self._action_entities = None
+        self._linked_chat = None
 
         sender_id = None
         if from_id is not None:
@@ -294,6 +295,11 @@ class _Message(ChatGetter, SenderGetter):
                     self.action, types.MessageActionChannelMigrateFrom):
                 self._action_entities = [entities.get(utils.get_peer_id(
                     types.PeerChat(self.action.chat_id)))]
+
+        if self.replies and self.replies.channel_id:
+            self._linked_chat = entities.get(utils.get_peer_id(
+                    types.PeerChannel(self.replies.channel_id)))
+
 
     # endregion Initialization
 
