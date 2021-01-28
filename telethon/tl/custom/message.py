@@ -1,3 +1,5 @@
+from typing import Optional, List, TYPE_CHECKING
+from datetime import datetime
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
@@ -152,29 +154,47 @@ class _Message(ChatGetter, SenderGetter):
 
     def __init__(
             # Common to all
-            self, id,
+            self, id: int,
 
             # Common to Message and MessageService (mandatory)
-            peer_id=None, date=None,
+            peer_id: types.TypePeer = None,
+            date: Optional[datetime] = None,
 
             # Common to Message and MessageService (flags)
-            out=None, mentioned=None, media_unread=None, silent=None,
-            post=None, from_id=None, reply_to=None,
+            out: Optional[bool] = None,
+            mentioned: Optional[bool] = None,
+            media_unread: Optional[bool] = None,
+            silent: Optional[bool] = None,
+            post: Optional[bool] = None,
+            from_id: Optional[types.TypePeer] = None,
+            reply_to: Optional[types.TypeMessageReplyHeader] = None,
 
             # For Message (mandatory)
-            message=None,
+            message: Optional[str] = None,
 
             # For Message (flags)
-            fwd_from=None, via_bot_id=None, media=None, reply_markup=None,
-            entities=None, views=None, edit_date=None, post_author=None,
-            grouped_id=None, from_scheduled=None, legacy=None,
-            edit_hide=None, pinned=None, restriction_reason=None,
-            forwards=None, replies=None,
+            fwd_from: Optional[types.TypeMessageFwdHeader] = None,
+            via_bot_id: Optional[int] = None,
+            media: Optional[types.TypeMessageMedia] = None,
+            reply_markup: Optional[types.TypeReplyMarkup] = None,
+            entities: Optional[List[types.TypeMessageEntity]] = None,
+            views: Optional[int] = None,
+            edit_date: Optional[datetime] = None,
+            post_author: Optional[str] = None,
+            grouped_id: Optional[int] = None,
+            from_scheduled: Optional[bool] = None,
+            legacy: Optional[bool] = None,
+            edit_hide: Optional[bool] = None,
+            pinned: Optional[bool] = None,
+            restriction_reason: Optional[types.TypeRestrictionReason] = None,
+            forwards: Optional[int] = None,
+            replies: Optional[types.TypeMessageReplies] = None,
 
             # For MessageAction (mandatory)
-            action=None):
+            action: Optional[types.TypeMessageAction] = None
+    ):
         # Common properties to messages, then to service (in the order they're defined in the `.tl`)
-        self.out = out
+        self.out = bool(out)
         self.mentioned = mentioned
         self.media_unread = media_unread
         self.silent = silent
@@ -1119,3 +1139,7 @@ def _patch(cls):
 _patch(types.MessageEmpty)
 Message = _patch(types.Message)
 _patch(types.MessageService)
+
+
+if TYPE_CHECKING:
+    Message = _Message
