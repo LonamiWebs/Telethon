@@ -24,7 +24,8 @@ def rpc_message_to_error(rpc_error, request):
     :return: the RPCError as a Python exception that represents this error.
     """
     # Try to get the error by direct look-up, otherwise regex
-    cls = rpc_errors_dict.get(rpc_error.error_message, None)
+    # Case-insensitive, for things like "timeout" which don't conform.
+    cls = rpc_errors_dict.get(rpc_error.error_message.upper(), None)
     if cls:
         return cls(request=request)
 
