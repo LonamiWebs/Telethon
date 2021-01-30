@@ -330,7 +330,7 @@ class UploadMethods:
         if comment_to is not None:
             entity, reply_to = await self._get_comment_data(entity, comment_to)
         else:
-            reply_to = utils.get_message_id(reply_to
+            reply_to = utils.get_message_id(reply_to)
 
         # First check if the user passed an iterable, in which case
         # we may want to send grouped.
