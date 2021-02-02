@@ -25,8 +25,7 @@ DEFAULT_PORT = 443
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
-__default_log__ = logging.getLogger(__base_name__)
-__default_log__.addHandler(logging.NullHandler())
+_base_log = logging.getLogger(__base_name__)
 
 
 # In seconds, how long to wait before disconnecting a exported sender.
@@ -246,7 +245,7 @@ class TelegramBaseClient(abc.ABC):
         if isinstance(base_logger, str):
             base_logger = logging.getLogger(base_logger)
         elif not isinstance(base_logger, logging.Logger):
-            base_logger = __default_log__
+            base_logger = _base_log
 
         class _Loggers(dict):
             def __missing__(self, key):

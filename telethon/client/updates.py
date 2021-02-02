@@ -284,16 +284,6 @@ class UpdateMethods:
 
     # region Private methods
 
-    def _log_exc(self: 'TelegramClient', msg, *args):
-        """
-        Log an exception, using `stderr` if `logging` is not configured.
-        """
-        if logging.root.hasHandlers():
-            self._log[__name__].exception(msg, *args)
-        else:
-            print('[ERROR/telethon]:', msg % args, file=sys.stderr)
-            traceback.print_exc()
-
     # It is important to not make _handle_update async because we rely on
     # the order that the updates arrive in to update the pts and date to
     # be always-increasing. There is also no need to make this async.
@@ -477,7 +467,7 @@ class UpdateMethods:
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError) or self.is_connected():
                     name = getattr(callback, '__name__', repr(callback))
-                    self._log_exc('Unhandled exception on %s', name)
+                    self._log[__name__].exception('Unhandled exception on %s', name)
 
     async def _dispatch_event(self: 'TelegramClient', event):
         """
@@ -518,7 +508,7 @@ class UpdateMethods:
             except Exception as e:
                 if not isinstance(e, asyncio.CancelledError) or self.is_connected():
                     name = getattr(callback, '__name__', repr(callback))
-                    self._log_exc('Unhandled exception on %s', name)
+                    self._log[__name__].exception('Unhandled exception on %s', name)
 
     async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
         """
@@ -621,7 +611,8 @@ class UpdateMethods:
             self._log[__name__].warning('Failed to get missed updates after '
                                         'reconnect: %r', e)
         except Exception:
-            self._log_exc('Unhandled exception while getting update difference after reconnect')
+            self._log[__name__].exception(
+                'Unhandled exception while getting update difference after reconnect')
 
     # endregion
 
