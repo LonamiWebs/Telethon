@@ -11,7 +11,7 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class _Message(ChatGetter, SenderGetter):
+class Message(ChatGetter, SenderGetter):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -1132,9 +1132,9 @@ class _Message(ChatGetter, SenderGetter):
     # endregion Private Methods
 
 def _patch(cls):
-    # Create new types (classes) for all messages to combine `_Message` in them.
-    # `_Message` comes first so we get its `__init__`.
-    newtype = type(cls.__name__, (_Message, cls), {})
+    # Create new types (classes) for all messages to combine `Message` in them.
+    # `Message` comes first so we get its `__init__`.
+    newtype = type(cls.__name__, (Message, cls), {})
     setattr(types, cls.__name__, newtype)
     # `BinaryReader` directly imports this dictionary, but we're mutating it
     # in-place, not replacing it, so it works out to deserialize `newtype`.
@@ -1145,7 +1145,3 @@ def _patch(cls):
 _patch(types.MessageEmpty)
 Message = _patch(types.Message)
 _patch(types.MessageService)
-
-
-if TYPE_CHECKING:
-    Message = _Message
