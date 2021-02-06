@@ -11,7 +11,7 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter):
+class _Message(ChatGetter, SenderGetter):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -1131,17 +1131,21 @@ class Message(ChatGetter, SenderGetter):
 
     # endregion Private Methods
 
-def _patch(cls):
-    # Create new types (classes) for all messages to combine `Message` in them.
-    # `Message` comes first so we get its `__init__`.
-    newtype = type(cls.__name__, (Message, cls), {})
-    setattr(types, cls.__name__, newtype)
-    # `BinaryReader` directly imports this dictionary, but we're mutating it
-    # in-place, not replacing it, so it works out to deserialize `newtype`.
-    alltlobjects.tlobjects[cls.CONSTRUCTOR_ID] = newtype
-    return newtype
 
+class MessageEmpty(_Message, types.MessageEmpty):
+    pass
 
-_patch(types.MessageEmpty)
-Message = _patch(types.Message)
-_patch(types.MessageService)
+types.MessageEmpty = MessageEmpty
+alltlobjects.tlobjects[MessageEmpty.CONSTRUCTOR_ID] = MessageEmpty
+
+class MessageService(_Message, types.MessageService):
+    pass
+
+types.MessageService = MessageService
+alltlobjects.tlobjects[MessageService.CONSTRUCTOR_ID] = MessageService
+
+class Message(_Message, types.Message):
+    pass
+
+types.Message = Message
+alltlobjects.tlobjects[Message.CONSTRUCTOR_ID] = Message
