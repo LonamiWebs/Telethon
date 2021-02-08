@@ -70,6 +70,8 @@ class _MessagesIter(RequestIter):
 
         if filter is None:
             filter = types.InputMessagesFilterEmpty()
+        else:
+            filter = filter() if isinstance(filter, type) else filter
 
         if not self.entity:
             self.request = functions.messages.SearchGlobalRequest(
@@ -94,7 +96,7 @@ class _MessagesIter(RequestIter):
                 min_id=0,
                 hash=0
             )
-        elif search is not None or filter or from_user:
+        elif search is not None or not isinstance(filter, types.InputMessagesFilterEmpty) or from_user:
             # Telegram completely ignores `from_id` in private chats
             ty = helpers._entity_type(self.entity)
             if ty == helpers._EntityType.USER:
@@ -109,7 +111,7 @@ class _MessagesIter(RequestIter):
             self.request = functions.messages.SearchRequest(
                 peer=self.entity,
                 q=search or '',
-                filter=filter() if isinstance(filter, type) else filter,
+                filter=filter,
                 min_date=None,
                 max_date=offset_date,
                 offset_id=offset_id,
