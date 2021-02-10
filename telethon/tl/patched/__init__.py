@@ -13,8 +13,8 @@ class MessageService(_Message, types.MessageService):
 types.MessageService = MessageService
 alltlobjects.tlobjects[MessageService.CONSTRUCTOR_ID] = MessageService
 
-class _Message(_Message, types.Message):
+class Message(_Message, types.Message):
     pass
 
-Message = _Message
 types.Message = Message
+alltlobjects.tlobjects[Message.CONSTRUCTOR_ID] = Message
