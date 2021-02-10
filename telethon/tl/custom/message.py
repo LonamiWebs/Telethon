@@ -11,7 +11,7 @@ from ... import utils, errors
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class _Message(ChatGetter, SenderGetter):
+class Message(ChatGetter, SenderGetter, TLObject):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -1130,22 +1130,3 @@ class _Message(ChatGetter, SenderGetter):
                     return None
 
     # endregion Private Methods
-
-
-class MessageEmpty(_Message, types.MessageEmpty):
-    pass
-
-types.MessageEmpty = MessageEmpty
-alltlobjects.tlobjects[MessageEmpty.CONSTRUCTOR_ID] = MessageEmpty
-
-class MessageService(_Message, types.MessageService):
-    pass
-
-types.MessageService = MessageService
-alltlobjects.tlobjects[MessageService.CONSTRUCTOR_ID] = MessageService
-
-class Message(_Message, types.Message):
-    pass
-
-types.Message = Message
-alltlobjects.tlobjects[Message.CONSTRUCTOR_ID] = Message
