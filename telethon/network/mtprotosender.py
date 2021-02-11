@@ -610,11 +610,16 @@ class MTProtoSender:
             if not state.future.cancelled():
                 state.future.set_exception(error)
         else:
-            with BinaryReader(rpc_result.body) as reader:
-                result = state.request.read_result(reader)
-
-            if not state.future.cancelled():
-                state.future.set_result(result)
+            try:
+                with BinaryReader(rpc_result.body) as reader:
+                    result = state.request.read_result(reader)
+            except Exception as e:
+                # e.g. TypeNotFoundError, should be propagated to caller
+                if not state.future.cancelled():
+                    state.future.set_exception(e)
+            else:
+                if not state.future.cancelled():
+                    state.future.set_result(result)
 
     async def _handle_container(self, message):
         """
