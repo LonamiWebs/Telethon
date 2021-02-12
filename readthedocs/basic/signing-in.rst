@@ -148,9 +148,9 @@ The allowed values for the argument ``proxy_type`` are:
 
 * For Python >= 3.6:
     * All of the above
-    * ``python_socks.SOCKS5``
-    * ``python_socks.SOCKS4``
-    * ``python_socks.HTTP``
+    * ``python_socks.ProxyType.SOCKS5``
+    * ``python_socks.ProxyType.SOCKS4``
+    * ``python_socks.ProxyType.HTTP``
 
 
 Example:
