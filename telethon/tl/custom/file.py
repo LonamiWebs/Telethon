@@ -120,9 +120,11 @@ class File:
     def size(self):
         """
         The size in bytes of this file.
+
+        For photos, this is the heaviest thumbnail, as it often repressents the largest dimensions.
         """
         if isinstance(self.media, types.Photo):
-            return utils._photo_size_byte_count(self.media.sizes[-1])
+            return max(filter(None, map(utils._photo_size_byte_count, self.media.sizes)), default=None)
         elif isinstance(self.media, types.Document):
             return self.media.size
 
