@@ -810,6 +810,11 @@ class DownloadMethods:
         if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
             return self._download_cached_photo_size(size, file)
 
+        if isinstance(size, types.PhotoSizeProgressive):
+            file_size = max(size.sizes)
+        else:
+            file_size = size.size
+
         result = await self.download_file(
             types.InputPhotoFileLocation(
                 id=photo.id,
@@ -818,7 +823,7 @@ class DownloadMethods:
                 thumb_size=size.type
             ),
             file,
-            file_size=size.size,
+            file_size=file_size,
             progress_callback=progress_callback
         )
         return result if file is bytes else file
