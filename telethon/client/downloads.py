@@ -740,6 +740,8 @@ class DownloadMethods:
                 return 1, len(thumb.bytes)
             if isinstance(thumb, types.PhotoSize):
                 return 1, thumb.size
+            if isinstance(thumb, types.PhotoSizeProgressive):
+                return 1, max(thumb.sizes)
             if isinstance(thumb, types.VideoSize):
                 return 2, thumb.size
 
