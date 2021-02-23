@@ -145,6 +145,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
             An optional list of reasons why this message was restricted.
             If the list is `None`, this message has not been restricted.
 
+        ttl_period (`int`):
+            The Time To Live period configured for this message.
+            The message should be erased from wherever it's stored (memory, a
+            local database, etc.) when
+            ``datetime.now() > message.date + timedelta(seconds=message.ttl_period)``.
+
         action (:tl:`MessageAction`):
             The message action object of the message for :tl:`MessageService`
             instances, which will be `None` for other types of messages.
@@ -168,6 +174,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             post: Optional[bool] = None,
             from_id: Optional[types.TypePeer] = None,
             reply_to: Optional[types.TypeMessageReplyHeader] = None,
+            ttl_period: Optional[int] = None,
 
             # For Message (mandatory)
             message: Optional[str] = None,
@@ -221,6 +228,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.post_author = post_author
         self.grouped_id = grouped_id
         self.restriction_reason = restriction_reason
+        self.ttl_period = ttl_period
         self.action = action
 
         # Convenient storage for custom functions

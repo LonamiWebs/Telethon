@@ -833,7 +833,8 @@ class MessageMethods:
                 out=result.out,
                 media=result.media,
                 entities=result.entities,
-                reply_markup=request.reply_markup
+                reply_markup=request.reply_markup,
+                ttl_period=result.ttl_period
             )
             message._finish_init(self, {}, entity)
             return message
