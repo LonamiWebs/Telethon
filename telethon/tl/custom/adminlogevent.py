@@ -67,7 +67,8 @@ class AdminLogEvent:
                 types.ChannelAdminLogEventActionChangeAbout,
                 types.ChannelAdminLogEventActionChangeTitle,
                 types.ChannelAdminLogEventActionChangeUsername,
-                types.ChannelAdminLogEventActionChangeLocation
+                types.ChannelAdminLogEventActionChangeLocation,
+                types.ChannelAdminLogEventActionChangeHistoryTTL,
         )):
             return ori.prev_value
         elif isinstance(ori, types.ChannelAdminLogEventActionChangePhoto):
@@ -93,6 +94,14 @@ class AdminLogEvent:
             return ori.prev_banned_rights
         elif isinstance(ori, types.ChannelAdminLogEventActionDiscardGroupCall):
             return ori.call
+        elif isinstance(ori, (
+            types.ChannelAdminLogEventActionExportedInviteDelete,
+            types.ChannelAdminLogEventActionExportedInviteRevoke,
+            types.ChannelAdminLogEventActionParticipantJoinByInvite,
+        )):
+            return ori.invite
+        elif isinstance(ori, types.ChannelAdminLogEventActionExportedInviteEdit):
+            return ori.prev_invite
 
     @property
     def new(self):
@@ -107,7 +116,8 @@ class AdminLogEvent:
                 types.ChannelAdminLogEventActionToggleInvites,
                 types.ChannelAdminLogEventActionTogglePreHistoryHidden,
                 types.ChannelAdminLogEventActionToggleSignatures,
-                types.ChannelAdminLogEventActionChangeLocation
+                types.ChannelAdminLogEventActionChangeLocation,
+                types.ChannelAdminLogEventActionChangeHistoryTTL,
         )):
             return ori.new_value
         elif isinstance(ori, types.ChannelAdminLogEventActionChangePhoto):
@@ -121,7 +131,10 @@ class AdminLogEvent:
                 types.ChannelAdminLogEventActionParticipantToggleBan
         )):
             return ori.new_participant
-        elif isinstance(ori, types.ChannelAdminLogEventActionParticipantInvite):
+        elif isinstance(ori, (
+            types.ChannelAdminLogEventActionParticipantInvite,
+            types.ChannelAdminLogEventActionParticipantVolume,
+        )):
             return ori.participant
         elif isinstance(ori, types.ChannelAdminLogEventActionDefaultBannedRights):
             return ori.new_banned_rights
@@ -136,6 +149,8 @@ class AdminLogEvent:
             return ori.participant
         elif isinstance(ori, types.ChannelAdminLogEventActionToggleGroupCallSetting):
             return ori.join_muted
+        elif isinstance(ori, types.ChannelAdminLogEventActionExportedInviteEdit):
+            return ori.new_invite
 
     @property
     def changed_about(self):
@@ -387,6 +402,71 @@ class AdminLogEvent:
         """
         return isinstance(self.original.action,
                           types.ChannelAdminLogEventActionToggleGroupCallSetting)
+
+    @property
+    def changed_history_ttl(self):
+        """
+        Whether the Time To Live of the message history has changed.
+
+        Messages sent after this change will have a ``ttl_period`` in seconds
+        indicating how long they should live for before being auto-deleted.
+
+        If `True`, `old` will be the old TTL, and `new` the new TTL, in seconds.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionChangeHistoryTTL)
+
+    @property
+    def deleted_exported_invite(self):
+        """
+        Whether the exported chat invite has been deleted.
+
+        If `True`, `old` will be the deleted :tl:`ExportedChatInvite`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionExportedInviteDelete)
+
+    @property
+    def edited_exported_invite(self):
+        """
+        Whether the exported chat invite has been edited.
+
+        If `True`, `old` and `new` will be the old and new
+        :tl:`ExportedChatInvite`, respectively.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionExportedInviteEdit)
+
+    @property
+    def revoked_exported_invite(self):
+        """
+        Whether the exported chat invite has been revoked.
+
+        If `True`, `old` will be the revoked :tl:`ExportedChatInvite`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionExportedInviteRevoke)
+
+    @property
+    def joined_by_invite(self):
+        """
+        Whether a new participant has joined with the use of an invite link.
+
+        If `True`, `old` will be pre-existing (old) :tl:`ExportedChatInvite`
+        used to join.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionParticipantJoinByInvite)
+
+    @property
+    def changed_user_volume(self):
+        """
+        Whether a participant's volume in a call has been changed.
+
+        If `True`, `new` will be the updated :tl:`GroupCallParticipant`.
+        """
+        return isinstance(self.original.action,
+                          types.ChannelAdminLogEventActionParticipantVolume)
 
     def __str__(self):
         return str(self.original)
