@@ -7,8 +7,21 @@ from ..crypto import AES
 from ..errors import SecurityError, InvalidBufferError
 from ..extensions import BinaryReader
 from ..tl.core import TLMessage
+from ..tl.tlobject import TLRequest
 from ..tl.functions import InvokeAfterMsgRequest
 from ..tl.core.gzippacked import GzipPacked
+
+
+class _OpaqueRequest(TLRequest):
+    """
+    Wraps a serialized request into a type that can be serialized again.
+    """
+    def __init__(self, data: bytes):
+        self.data = data
+
+    def _bytes(self):
+        return self.data
+
 
 
 class MTProtoState:
@@ -87,8 +100,10 @@ class MTProtoState:
         if after_id is None:
             body = GzipPacked.gzip_if_smaller(content_related, data)
         else:
+            # The `RequestState` stores `bytes(request)`, not the request itself.
+            # `invokeAfterMsg` wants a `TLRequest` though, hence the wrapping.
             body = GzipPacked.gzip_if_smaller(content_related,
-                bytes(InvokeAfterMsgRequest(after_id, data)))
+                bytes(InvokeAfterMsgRequest(after_id, _OpaqueRequest(data))))
 
         buffer.write(struct.pack('<qii', msg_id, seq_no, len(body)))
         buffer.write(body)
