@@ -779,7 +779,8 @@ class MTProtoSender:
             state = self._pending_state.get(msg_id)
             if state and isinstance(state.request, LogOutRequest):
                 del self._pending_state[msg_id]
-                state.future.set_result(True)
+                if not state.future.cancelled():
+                    state.future.set_result(True)
 
     async def _handle_future_salts(self, message):
         """
