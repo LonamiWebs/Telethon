@@ -1274,7 +1274,7 @@ class ChatMethods:
         """
         entity = await self.get_input_entity(entity)
         if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
-            raise TypeError('You must pass a user entity')
+            raise TypeError('You must pass a channel entity')
 
         # Don't bother fetching the Channel entity (costs a request), instead
         # try to guess and if it fails we know it's the other one (best case
