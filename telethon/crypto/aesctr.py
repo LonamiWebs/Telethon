@@ -2,6 +2,19 @@
 This module holds the AESModeCTR wrapper class.
 """
 import pyaes
+import logging
+
+
+__log__ = logging.getLogger(__name__)
+
+
+try:
+    import tgcrypto
+    __log__.debug('tgcrypto detected, it will be used for ctr encryption')
+except ImportError:
+    tgcrypto = None
+    __log__.debug('tgcrypto module not installed, '
+                'falling back to (slower) Python encryption')
 
 
 class AESModeCTR:
@@ -16,12 +29,15 @@ class AESModeCTR:
         :param iv: the bytes initialization vector. Must have a length of 16.
         """
         # TODO Use libssl if available
-        assert isinstance(key, bytes)
-        self._aes = pyaes.AESModeOfOperationCTR(key)
+        if tgcrypto:
+            self._aes = (key, iv, bytearray(1))
+        else:
+            assert isinstance(key, bytes)
+            self._aes = pyaes.AESModeOfOperationCTR(key)
 
-        assert isinstance(iv, bytes)
-        assert len(iv) == 16
-        self._aes._counter._counter = list(iv)
+            assert isinstance(iv, bytes)
+            assert len(iv) == 16
+            self._aes._counter._counter = list(iv)
 
     def encrypt(self, data):
         """
@@ -30,6 +46,8 @@ class AESModeCTR:
         :param data: the plain text to be encrypted.
         :return: the encrypted cipher text.
         """
+        if tgcrypto:
+            return tgcrypto.ctr256_encrypt(data, *self._aes)
         return self._aes.encrypt(data)
 
     def decrypt(self, data):
@@ -39,4 +57,6 @@ class AESModeCTR:
         :param data: the cipher text to be decrypted.
         :return: the decrypted plain text.
         """
+        if tgcrypto:
+            return tgcrypto.ctr256_decrypt(data, *self._aes)
         return self._aes.decrypt(data)
