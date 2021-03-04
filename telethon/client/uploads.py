@@ -15,6 +15,7 @@ from ..tl import types, functions, custom
 try:
     import PIL
     import PIL.Image
+    import PIL.ImageOps
 except ImportError:
     PIL = None
 
@@ -36,7 +37,7 @@ class _CacheType:
 
 
 def _resize_photo_if_needed(
-        file, is_image, width=1280, height=1280, background=(255, 255, 255)):
+        file, is_image, min_width=40, min_height=40, width=1280, height=1280, background=(255, 255, 255)):
 
     # https://github.com/telegramdesktop/tdesktop/blob/12905f0dcb9d513378e7db11989455a1b764ef75/Telegram/SourceFiles/boxes/photo_crop_box.cpp#L254
     if (not is_image
@@ -58,10 +59,14 @@ def _resize_photo_if_needed(
         except KeyError:
             kwargs = {}
 
-        if image.width <= width and image.height <= height:
-            return file
+        too_small = image.width < min_width or image.height < min_height
+        if too_small:
+            image = PIL.ImageOps.pad(image, (max(image.width, min_width), max(image.height, min_height)), color=(255, 255, 255))
+        else:
+            if (image.width <= width and image.height <= height):
+                return file
 
-        image.thumbnail((width, height), PIL.Image.ANTIALIAS)
+            image.thumbnail((width, height), PIL.Image.ANTIALIAS)
 
         alpha_index = image.mode.find('A')
         if alpha_index == -1:
