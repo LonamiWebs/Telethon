@@ -832,7 +832,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
     async def click(self, i=None, j=None,
                     *, text=None, filter=None, data=None, share_phone=None,
-                    share_geo=None):
+                    share_geo=None, password=None):
         """
         Calls :tl:`SendVote` with the specified poll option
         or `button.click <telethon.tl.custom.messagebutton.MessageButton.click>`
@@ -911,6 +911,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
                 If the button is pressed without this, `ValueError` is raised.
 
+            password (`str`):
+                When clicking certain buttons (such as BotFather's confirmation
+                button to transfer ownership), if your account has 2FA enabled,
+                you need to provide your account's password. Otherwise,
+                `teltehon.errors.PasswordHashInvalidError` is raised.
+
             Example:
 
                 .. code-block:: python
@@ -934,19 +940,13 @@ class Message(ChatGetter, SenderGetter, TLObject):
             return
 
         if data:
-            if not await self.get_input_chat():
+            chat = await self.get_input_chat()
+            if not chat:
                 return None
 
-            try:
-                return await self._client(
-                    functions.messages.GetBotCallbackAnswerRequest(
-                        peer=self._input_chat,
-                        msg_id=self.id,
-                        data=data
-                    )
-                )
-            except errors.BotResponseTimeoutError:
-                return None
+            but = types.KeyboardButtonCallback('', data)
+            return await MessageButton(self._client, but, chat, None, self.id).click(
+                share_phone=share_phone, share_geo=share_geo, password=password)
 
         if sum(int(x is not None) for x in (i, text, filter)) >= 2:
             raise ValueError('You can only set either of i, text or filter')
@@ -1018,7 +1018,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         button = find_button()
         if button:
-            return await button.click(share_phone=share_phone, share_geo=share_geo)
+            return await button.click(
+                share_phone=share_phone, share_geo=share_geo, password=password)
 
     async def mark_read(self):
         """

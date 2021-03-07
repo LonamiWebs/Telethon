@@ -1,6 +1,8 @@
 from .. import types, functions
+from ... import password as pwd_mod
 from ...errors import BotResponseTimeoutError
 import webbrowser
+import os
 
 
 class MessageButton:
@@ -59,7 +61,7 @@ class MessageButton:
         if isinstance(self.button, types.KeyboardButtonUrl):
             return self.button.url
 
-    async def click(self, share_phone=None, share_geo=None):
+    async def click(self, share_phone=None, share_geo=None, *, password=None):
         """
         Emulates the behaviour of clicking this button.
 
@@ -93,8 +95,13 @@ class MessageButton:
             return await self._client.send_message(
                 self._chat, self.button.text, parse_mode=None)
         elif isinstance(self.button, types.KeyboardButtonCallback):
+            if password is not None:
+                pwd = await self._client(functions.account.GetPasswordRequest())
+                password = pwd_mod.compute_check(pwd, password)
+
             req = functions.messages.GetBotCallbackAnswerRequest(
-                peer=self._chat, msg_id=self._msg_id, data=self.button.data
+                peer=self._chat, msg_id=self._msg_id, data=self.button.data,
+                password=password
             )
             try:
                 return await self._client(req)
