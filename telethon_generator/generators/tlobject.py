@@ -426,6 +426,9 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
             # should NOT be sent either!
             builder.write("b'' if {0} is None or {0} is False "
                           "else b''.join((", name)
+        elif 'Bool' == arg.type:
+            # `False` is a valid value for this type, so only check for `None`.
+            builder.write("b'' if {0} is None else (", name)
         else:
             builder.write("b'' if {0} is None or {0} is False "
                           "else (", name)
