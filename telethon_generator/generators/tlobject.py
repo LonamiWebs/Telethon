@@ -350,7 +350,7 @@ def _write_to_bytes(tlobject, builder):
     builder.writeln('{},', repr(struct.pack('<I', tlobject.id)))
 
     for arg in tlobject.args:
-        if _write_arg_to_bytes(builder, arg, tlobject.args):
+        if _write_arg_to_bytes(builder, arg, tlobject):
             builder.writeln(',')
 
     builder.current_indent -= 1
@@ -362,7 +362,7 @@ def _write_from_reader(tlobject, builder):
     builder.writeln('@classmethod')
     builder.writeln('def from_reader(cls, reader):')
     for arg in tlobject.args:
-        _write_arg_read_code(builder, arg, tlobject.args, name='_' + arg.name)
+        _write_arg_read_code(builder, arg, tlobject, name='_' + arg.name)
 
     builder.writeln('return cls({})', ', '.join(
         '{0}=_{0}'.format(a.name) for a in tlobject.real_args))
@@ -396,13 +396,12 @@ def _write_read_result(tlobject, builder):
                     'for _ in range(reader.read_int())]', m.group(1))
 
 
-def _write_arg_to_bytes(builder, arg, args, name=None):
+def _write_arg_to_bytes(builder, arg, tlobject, name=None):
     """
     Writes the .__bytes__() code for the given argument
     :param builder: The source code builder
     :param arg: The argument to write
-    :param args: All the other arguments in TLObject same __bytes__.
-                 This is required to determine the flags value
+    :param tlobject: The parent TLObject
     :param name: The name of the argument. Defaults to "self.argname"
                  This argument is an option because it's required when
                  writing Vectors<>
@@ -448,7 +447,7 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
         # Also disable .is_flag since it's not needed per element
         old_flag = arg.is_flag
         arg.is_vector = arg.is_flag = False
-        _write_arg_to_bytes(builder, arg, args, name='x')
+        _write_arg_to_bytes(builder, arg, tlobject, name='x')
         arg.is_vector = True
         arg.is_flag = old_flag
 
@@ -456,7 +455,7 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
 
     elif arg.flag_indicator:
         # Calculate the flags with those items which are not None
-        if not any(f.is_flag for f in args):
+        if not any(f.is_flag for f in tlobject.args):
             # There's a flag indicator, but no flag arguments so it's 0
             builder.write(r"b'\0\0\0\0'")
         else:
@@ -465,13 +464,19 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
                 ' | '.join('(0 if {0} is None or {0} is False else {1})'
                            .format('self.{}'.format(flag.name),
                                    1 << flag.flag_index)
-                           for flag in args if flag.is_flag)
+                           for flag in tlobject.args if flag.is_flag)
             )
             builder.write(')')
 
     elif 'int' == arg.type:
-        # struct.pack is around 4 times faster than int.to_bytes
-        builder.write("struct.pack('<i', {})", name)
+        # User IDs are becoming larger than 2³¹ - 1, which would translate
+        # into reading a negative ID, which we would treat as a chat. So
+        # special case them to read unsigned. See https://t.me/BotNews/57.
+        if arg.name == 'user_id' or (arg.name == 'id' and tlobject.result == 'User'):
+            builder.write("struct.pack('<I', {})", name)
+        else:
+            # struct.pack is around 4 times faster than int.to_bytes
+            builder.write("struct.pack('<i', {})", name)
 
     elif 'long' == arg.type:
         builder.write("struct.pack('<q', {})", name)
@@ -519,15 +524,14 @@ def _write_arg_to_bytes(builder, arg, args, name=None):
     return True  # Something was written
 
 
-def _write_arg_read_code(builder, arg, args, name):
+def _write_arg_read_code(builder, arg, tlobject, name):
     """
     Writes the read code for the given argument, setting the
     arg.name variable to its read value.
 
     :param builder: The source code builder
     :param arg: The argument to write
-    :param args: All the other arguments in TLObject same on_send.
-                 This is required to determine the flags value
+    :param tlobject: The parent TLObject
     :param name: The name of the argument. Defaults to "self.argname"
                  This argument is an option because it's required when
                  writing Vectors<>
@@ -561,7 +565,7 @@ def _write_arg_read_code(builder, arg, args, name):
         builder.writeln('for _ in range(reader.read_int()):')
         # Temporary disable .is_vector, not to enter this if again
         arg.is_vector = False
-        _write_arg_read_code(builder, arg, args, name='_x')
+        _write_arg_read_code(builder, arg, tlobject, name='_x')
         builder.writeln('{}.append(_x)', name)
         arg.is_vector = True
 
@@ -571,7 +575,13 @@ def _write_arg_read_code(builder, arg, args, name):
         builder.writeln()
 
     elif 'int' == arg.type:
-        builder.writeln('{} = reader.read_int()', name)
+        # User IDs are becoming larger than 2³¹ - 1, which would translate
+        # into reading a negative ID, which we would treat as a chat. So
+        # special case them to read unsigned. See https://t.me/BotNews/57.
+        if arg.name == 'user_id' or (arg.name == 'id' and tlobject.result == 'User'):
+            builder.writeln('{} = reader.read_int(signed=False)', name)
+        else:
+            builder.writeln('{} = reader.read_int()', name)
 
     elif 'long' == arg.type:
         builder.writeln('{} = reader.read_long()', name)
