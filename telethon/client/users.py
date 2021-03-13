@@ -459,10 +459,10 @@ class UserMethods:
                 pass
 
         raise ValueError(
-            'Could not find the input entity for {!s}. Please read https://'
+            'Could not find the input entity for {} ({}). Please read https://'
             'docs.telethon.dev/en/latest/concepts/entities.html to'
             ' find out more details.'
-            .format(peer)
+            .format(peer, type(peer).__name__)
         )
 
     async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
