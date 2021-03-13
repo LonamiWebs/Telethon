@@ -599,6 +599,8 @@ class UserMethods:
                     notify.peer = await self.get_input_entity(notify.peer)
                 return notify
         except AttributeError:
-            return types.InputNotifyPeer(await self.get_input_entity(notify))
+            pass
+
+        return types.InputNotifyPeer(await self.get_input_entity(notify))
 
     # endregion
