@@ -459,7 +459,7 @@ class UserMethods:
                 pass
 
         raise ValueError(
-            'Could not find the input entity for {!r}. Please read https://'
+            'Could not find the input entity for {!s}. Please read https://'
             'docs.telethon.dev/en/latest/concepts/entities.html to'
             ' find out more details.'
             .format(peer)
