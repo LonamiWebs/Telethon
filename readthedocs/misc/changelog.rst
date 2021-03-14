@@ -14,6 +14,47 @@ it can take advantage of new goodies!
 .. contents:: List of All Versions
 
 
+New schema and QoL improvements (v1.21)
+=======================================
+
++------------------------+
+| Scheme layer used: 125 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=124&to=125>`__.
+
+Not many changes in this release, mostly the layer change. Lately quite a few
+people have been reporting `TypeNotFoundError`, which occurs when the server
+**sends types that it shouldn't**. This can happen when Telegram decides to
+add a new, incomplete layer, and then they change the layer without bumping
+the layer number (so some constructor IDs no longer match and the error
+occurs). This layer change
+`should fix it <https://github.com/LonamiWebs/Telethon/issues/1724>`__.
+
+Additions
+~~~~~~~~~
+
+* `Message.click() <telethon.tl.custom.message.Message.click>` now supports
+  a ``password`` parameter, needed when doing things like changing the owner
+  of a bot via `@BotFather <https://t.me/BotFather>`__.
+
+Enhancements
+~~~~~~~~~~~~
+
+* ``tgcrypto`` will now be used for encryption when installed.
+
+Bug fixes
+~~~~~~~~~
+
+* `Message.edit <telethon.tl.custom.message.Message.edit>` wasn't working in
+  your own chat on events other than ``NewMessage``.
+* `client.delete_dialog() <telethon.client.dialogs.DialogMethods.delete_dialog>`
+  was not working on chats.
+* ``events.UserUpdate`` should now handle channels' typing status.
+* :tl:`InputNotifyPeer` auto-cast should now work on other ``TLObject``.
+* For some objects, ``False`` was not correctly serialized.
+
+
 New schema and QoL improvements (v1.20)
 =======================================
 
