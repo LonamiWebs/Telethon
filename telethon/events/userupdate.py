@@ -53,10 +53,13 @@ class UserUpdate(EventBuilder):
         if isinstance(update, types.UpdateUserStatus):
             return cls.Event(types.PeerUser(update.user_id),
                              status=update.status)
-        elif isinstance(update, types.UpdateChatUserTyping):
-            # Unfortunately, we can't know whether `chat_id`'s type
+        elif isinstance(update, types.UpdateChannelUserTyping):
             return cls.Event(update.from_id,
-                             chat_id=update.chat_id,
+                             chat_peer=types.PeerChannel(update.channel_id),
+                             typing=update.action)
+        elif isinstance(update, types.UpdateChatUserTyping):
+            return cls.Event(update.from_id,
+                             chat_peer=types.PeerChat(update.chat_id),
                              typing=update.action)
         elif isinstance(update, types.UpdateUserTyping):
             return cls.Event(update.user_id,
@@ -82,35 +85,14 @@ class UserUpdate(EventBuilder):
                 of the typing properties, since they will all be `None`
                 if the action is not set.
         """
-        def __init__(self, peer, *, status=None, chat_id=None, typing=None):
-            if chat_id is None:
-                super().__init__(peer)
-            else:
-                # Temporarily set the chat_peer to the ID until ._set_client.
-                # We need the client to actually figure out its type.
-                super().__init__(chat_id)
-
+        def __init__(self, peer, *, status=None, chat_peer=None, typing=None):
+            super().__init__(chat_peer or peer)
             SenderGetter.__init__(self, utils.get_peer_id(peer))
 
             self.status = status
             self.action = typing
 
         def _set_client(self, client):
-            if isinstance(self._chat_peer, int):
-                try:
-                    chat = client._entity_cache[self._chat_peer]
-                    if isinstance(chat, types.InputPeerChat):
-                        self._chat_peer = types.PeerChat(self._chat_peer)
-                    elif isinstance(chat, types.InputPeerChannel):
-                        self._chat_peer = types.PeerChannel(self._chat_peer)
-                    else:
-                        # Should not happen
-                        self._chat_peer = types.PeerUser(self._chat_peer)
-                except KeyError:
-                    # Hope for the best. We don't know where this event
-                    # occurred but it was most likely in a channel.
-                    self._chat_peer = types.PeerChannel(self._chat_peer)
-
             super()._set_client(client)
             self._sender, self._input_sender = utils._get_entity_pair(
                 self.sender_id, self._entities, client._entity_cache)
