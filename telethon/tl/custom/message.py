@@ -269,6 +269,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
         known entities.
         """
         self._client = client
+
+        # Make messages sent to ourselves outgoing unless they're forwarded.
+        # This makes it consistent with official client's appearance.
+        if self.peer_id == types.PeerUser(client._self_id) and not self.fwd_from:
+            self.out = True
+
         cache = client._entity_cache
 
         self._sender, self._input_sender = utils._get_entity_pair(
