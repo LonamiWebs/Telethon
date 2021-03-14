@@ -51,11 +51,11 @@ class UserUpdate(EventBuilder):
     @classmethod
     def build(cls, update, others=None, self_id=None):
         if isinstance(update, types.UpdateUserStatus):
-            return cls.Event(update.user_id,
+            return cls.Event(types.PeerUser(update.user_id),
                              status=update.status)
         elif isinstance(update, types.UpdateChatUserTyping):
             # Unfortunately, we can't know whether `chat_id`'s type
-            return cls.Event(update.user_id,
+            return cls.Event(update.from_id,
                              chat_id=update.chat_id,
                              typing=update.action)
         elif isinstance(update, types.UpdateUserTyping):
@@ -82,15 +82,15 @@ class UserUpdate(EventBuilder):
                 of the typing properties, since they will all be `None`
                 if the action is not set.
         """
-        def __init__(self, user_id, *, status=None, chat_id=None, typing=None):
+        def __init__(self, peer, *, status=None, chat_id=None, typing=None):
             if chat_id is None:
-                super().__init__(types.PeerUser(user_id))
+                super().__init__(peer)
             else:
                 # Temporarily set the chat_peer to the ID until ._set_client.
                 # We need the client to actually figure out its type.
                 super().__init__(chat_id)
 
-            SenderGetter.__init__(self, user_id)
+            SenderGetter.__init__(self, utils.get_peer_id(peer))
 
             self.status = status
             self.action = typing
