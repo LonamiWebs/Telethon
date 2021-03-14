@@ -456,7 +456,7 @@ class DialogMethods:
         if ty == helpers._EntityType.CHAT and not deactivated:
             try:
                 result = await self(functions.messages.DeleteChatUserRequest(
-                    entity.chat_id, types.InputUserSelf(), revoke=revoke
+                    entity.chat_id, types.InputUserSelf(), revoke_history=revoke
                 ))
             except errors.PeerIdInvalidError:
                 # Happens if we didn't have the deactivated information
