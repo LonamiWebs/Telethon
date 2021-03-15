@@ -69,6 +69,9 @@ class File:
         """
         The width in pixels of this media if it's a photo or a video.
         """
+        if isinstance(self.media, types.Photo):
+            return max(getattr(s, 'w', 0) for s in self.media.sizes)
+
         return self._from_attr((
             types.DocumentAttributeImageSize, types.DocumentAttributeVideo), 'w')
 
@@ -77,6 +80,9 @@ class File:
         """
         The height in pixels of this media if it's a photo or a video.
         """
+        if isinstance(self.media, types.Photo):
+            return max(getattr(s, 'h', 0) for s in self.media.sizes)
+
         return self._from_attr((
            types.DocumentAttributeImageSize, types.DocumentAttributeVideo), 'h')
 
