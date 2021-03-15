@@ -5,6 +5,7 @@ import hypercorn.asyncio
 from quart import Quart, render_template_string, request
 
 from telethon import TelegramClient, utils
+from telethon.errors import SessionPasswordNeededError
 
 
 def get_env(name, message):
@@ -34,6 +35,13 @@ PHONE_FORM = '''
 CODE_FORM = '''
 <form action='/' method='post'>
     Telegram code: <input name='code' type='text' placeholder='70707'>
+    <input type='submit'>
+</form>
+'''
+
+PASSWORD_FORM = '''
+<form action='/' method='post'>
+    Telegram password: <input name='password' type='text' placeholder='your password'>
     <input type='submit'>
 </form>
 '''
@@ -95,7 +103,13 @@ async def root():
         await client.send_code_request(phone)
 
     if 'code' in form:
-        await client.sign_in(code=form['code'])
+        try:
+            await client.sign_in(code=form['code'])
+        except SessionPasswordNeededError:
+            return await render_template_string(BASE_TEMPLATE, content=PASSWORD_FORM)
+
+    if 'password' in form:
+        await client.sign_in(password=form['password'])
 
     # If we're logged in, show them some messages from their first dialog
     if await client.is_user_authorized():
