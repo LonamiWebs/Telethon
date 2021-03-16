@@ -459,12 +459,16 @@ def _write_arg_to_bytes(builder, arg, tlobject, name=None):
             # There's a flag indicator, but no flag arguments so it's 0
             builder.write(r"b'\0\0\0\0'")
         else:
+            def fmt_flag(flag):
+                if flag.type == 'Bool':
+                    fmt = '(0 if {0} is None else {1})'
+                else:
+                    fmt = '(0 if {0} is None or {0} is False else {1})'
+                return fmt.format('self.{}'.format(flag.name), 1 << flag.flag_index)
+
             builder.write("struct.pack('<I', ")
             builder.write(
-                ' | '.join('(0 if {0} is None or {0} is False else {1})'
-                           .format('self.{}'.format(flag.name),
-                                   1 << flag.flag_index)
-                           for flag in tlobject.args if flag.is_flag)
+                ' | '.join(fmt_flag(flag) for flag in tlobject.args if flag.is_flag)
             )
             builder.write(')')
 
