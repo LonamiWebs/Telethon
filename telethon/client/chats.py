@@ -1238,6 +1238,7 @@ class ChatMethods:
     async def get_stats(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
+            message: 'typing.Union[int, types.Message]' = None,
     ):
         """
         Retrieves statistics from the given megagroup or broadcast channel.
@@ -1250,6 +1251,10 @@ class ChatMethods:
             entity (`entity`):
                 The channel from which to get statistics.
 
+            message (`int` | ``Message``, optional):
+                The message ID from which to get statistics, if your goal is
+                to obtain the statistics of a single message.
+
         Raises
             If the given entity is not a channel (broadcast or megagroup),
             a `TypeError` is raised.
@@ -1258,8 +1263,10 @@ class ChatMethods:
             ``telethon.errors.ChatAdminRequiredError`` will appear.
 
         Returns
-            Either :tl:`BroadcastStats` or :tl:`MegagroupStats`, depending on
-            whether the input belonged to a broadcast channel or megagroup.
+            If both ``entity`` and ``message`` were provided, returns
+            :tl:`MessageStats`. Otherwise, either :tl:`BroadcastStats` or
+            :tl:`MegagroupStats`, depending on whether the input belonged to a
+            broadcast channel or megagroup.
 
         Example
             .. code-block:: python
@@ -1276,20 +1283,28 @@ class ChatMethods:
         if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
             raise TypeError('You must pass a channel entity')
 
-        # Don't bother fetching the Channel entity (costs a request), instead
-        # try to guess and if it fails we know it's the other one (best case
-        # no extra request, worst just one).
-        try:
-            req = functions.stats.GetBroadcastStatsRequest(entity)
-            return await self(req)
-        except errors.StatsMigrateError as e:
-            dc = e.dc
-        except errors.BroadcastRequiredError:
-            req = functions.stats.GetMegagroupStatsRequest(entity)
+        message = utils.get_message_id(message)
+        if message is not None:
             try:
+                req = functions.stats.GetMessageStatsRequest(entity, message)
                 return await self(req)
             except errors.StatsMigrateError as e:
                 dc = e.dc
+        else:
+            # Don't bother fetching the Channel entity (costs a request), instead
+            # try to guess and if it fails we know it's the other one (best case
+            # no extra request, worst just one).
+            try:
+                req = functions.stats.GetBroadcastStatsRequest(entity)
+                return await self(req)
+            except errors.StatsMigrateError as e:
+                dc = e.dc
+            except errors.BroadcastRequiredError:
+                req = functions.stats.GetMegagroupStatsRequest(entity)
+                try:
+                    return await self(req)
+                except errors.StatsMigrateError as e:
+                    dc = e.dc
 
         sender = await self._borrow_exported_sender(dc)
         try:
