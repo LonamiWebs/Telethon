@@ -679,15 +679,27 @@ def get_attributes(file, *, attributes=None, mime_type=None,
 
     if is_audio(file):
         m = _get_metadata(file)
-        if m:
-            attr_dict[types.DocumentAttributeAudio] = \
-                types.DocumentAttributeAudio(
-                    voice=voice_note,
-                    title=m.get('title') if m.has('title') else None,
-                    performer=m.get('author') if m.has('author') else None,
-                    duration=int(m.get('duration').seconds
-                                 if m.has('duration') else 0)
-                )
+         if file.endswith(".flac"):
+            if m:
+                attr_dict[types.DocumentAttributeAudio] = \
+                    types.DocumentAttributeAudio(
+                        voice=voice_note,
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('artist') if m.has('artist') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+         else:
+            if m:
+                attr_dict[types.DocumentAttributeAudio] = \
+                    types.DocumentAttributeAudio(
+                        voice=voice_note,
+                        title=m.get('title') if m.has('title') else None,
+                        performer=m.get('author') if m.has('author') else None,
+                        duration=int(m.get('duration').seconds
+                                     if m.has('duration') else 0)
+                    )
+            
 
     if not force_document and is_video(file):
         m = _get_metadata(file)
