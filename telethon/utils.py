@@ -680,11 +680,18 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     if is_audio(file):
         m = _get_metadata(file)
         if m:
+            if m.has('author'):
+                performer = m.get('author')
+            elif m.has('artist'):
+                performer = m.get('artist')
+            else:
+                performer = None
+
             attr_dict[types.DocumentAttributeAudio] = \
                 types.DocumentAttributeAudio(
                     voice=voice_note,
                     title=m.get('title') if m.has('title') else None,
-                    performer=m.get('author') if m.has('author') else None,
+                    performer=performer,
                     duration=int(m.get('duration').seconds
                                  if m.has('duration') else 0)
                 )
