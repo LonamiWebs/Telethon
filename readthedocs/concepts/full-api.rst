@@ -26,15 +26,6 @@ of everything you can do.
     can also do ``from telethon.tl import types, functions``. Both work.
 
 
-.. important::
-
-    All the examples in this documentation assume that you have
-    ``from telethon import sync`` or ``import telethon.sync`` for the
-    sake of simplicity and that you understand what it does (see
-    :ref:`compatibility-and-convenience` for more). Simply add
-    either line at the beginning of your project and it will work.
-
-
 You should also refer to the documentation to see what the objects
 (constructors) Telegram returns look like. Every constructor inherits
 from a common type, and that's the reason for this distinction.

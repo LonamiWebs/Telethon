@@ -155,7 +155,7 @@ INLINE_RESULT_EXPIRED,400,The inline query expired
 INPUT_CONSTRUCTOR_INVALID,400,The provided constructor is invalid
 INPUT_FETCH_ERROR,400,An error occurred while deserializing TL parameters
 INPUT_FETCH_FAIL,400,Failed deserializing TL payload
-INPUT_FILTER_INVALID,400,The search query filter is valid
+INPUT_FILTER_INVALID,400,The search query filter is invalid
 INPUT_LAYER_INVALID,400,The provided layer is invalid
 INPUT_METHOD_INVALID,400,The invoked method does not exist anymore or has never existed
 INPUT_REQUEST_TOO_LONG,400,The input request was too long. This may be a bug in the library as it can occur when serializing more bytes than it should (like appending the vector constructor code at the end of a message)
