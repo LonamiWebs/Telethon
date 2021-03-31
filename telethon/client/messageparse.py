@@ -123,7 +123,6 @@ class MessageParseMethods:
 
         random_to_id = {}
         id_to_message = {}
-        sched_to_message = {}  # scheduled IDs may collide with normal IDs
         for update in updates:
             if isinstance(update, types.UpdateMessageID):
                 random_to_id[update.random_id] = update.id
@@ -164,7 +163,10 @@ class MessageParseMethods:
 
             elif isinstance(update, types.UpdateNewScheduledMessage):
                 update.message._finish_init(self, entities, input_chat)
-                sched_to_message[update.message.id] = update.message
+                # Scheduled IDs may collide with normal IDs. However, for a
+                # single request there *shouldn't* be a mix between "some
+                # scheduled and some not".
+                id_to_message[update.message.id] = update.message
 
             elif isinstance(update, types.UpdateMessagePoll):
                 if request.media.poll.id == update.poll_id:
@@ -182,17 +184,6 @@ class MessageParseMethods:
         if request is None:
             return id_to_message
 
-        # Use the scheduled mapping if we got a request with a scheduled message
-        #
-        # This breaks if the schedule date is too young, however, since the message
-        # is sent immediately, so have a fallback.
-        if getattr(request, 'schedule_date', None) is None:
-            mapping = id_to_message
-            opposite = {}  # if there's no schedule it can never be scheduled
-        else:
-            mapping = sched_to_message
-            opposite = id_to_message  # scheduled may be treated as normal, though
-
         random_id = request if isinstance(request, (int, list)) else getattr(request, 'random_id', None)
         if random_id is None:
             # Can happen when pinning a message does not actually produce a service message.
@@ -201,9 +192,7 @@ class MessageParseMethods:
             return None
 
         if not utils.is_list_like(random_id):
-            msg = mapping.get(random_to_id.get(random_id))
-            if not msg:
-                msg = opposite.get(random_to_id.get(random_id))
+            msg = id_to_message.get(random_to_id.get(random_id))
 
             if not msg:
                 self._log[__name__].warning(
@@ -212,24 +201,21 @@ class MessageParseMethods:
             return msg
 
         try:
-            return [mapping[random_to_id[rnd]] for rnd in random_id]
+            return [id_to_message[random_to_id[rnd]] for rnd in random_id]
         except KeyError:
-            try:
-                return [opposite[random_to_id[rnd]] for rnd in random_id]
-            except KeyError:
-                # Sometimes forwards fail (`MESSAGE_ID_INVALID` if a message gets
-                # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
-                # Telegram), in which case we get some "missing" message mappings.
-                # Log them with the hope that we can better work around them.
-                #
-                # This also happens when trying to forward messages that can't
-                # be forwarded because they don't exist (0, service, deleted)
-                # among others which could be (like deleted or existing).
-                self._log[__name__].warning(
-                    'Request %s had missing message mappings %s', request, result)
+            # Sometimes forwards fail (`MESSAGE_ID_INVALID` if a message gets
+            # deleted or `WORKER_BUSY_TOO_LONG_RETRY` if there are issues at
+            # Telegram), in which case we get some "missing" message mappings.
+            # Log them with the hope that we can better work around them.
+            #
+            # This also happens when trying to forward messages that can't
+            # be forwarded because they don't exist (0, service, deleted)
+            # among others which could be (like deleted or existing).
+            self._log[__name__].warning(
+                'Request %s had missing message mappings %s', request, result)
 
         return [
-            (mapping.get(random_to_id[rnd]) or opposite.get(random_to_id[rnd]))
+            id_to_message.get(random_to_id[rnd])
             if rnd in random_to_id
             else None
             for rnd in random_id
