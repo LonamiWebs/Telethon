@@ -1,3 +1,4 @@
+pyaesni
 cryptg
 pysocks
 python-socks[asyncio]
