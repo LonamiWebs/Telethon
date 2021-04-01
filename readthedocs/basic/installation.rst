@@ -49,13 +49,16 @@ The version number of the library should show in the output.
 Optional Dependencies
 =====================
 
-If cryptg_ is installed, **the library will work a lot faster**, since
+If cryptg_ or pyaesni_ are installed, **the library will work a lot faster**, since
 encryption and decryption will be made in C instead of Python. If your
 code deals with a lot of updates or you are downloading/uploading a lot
 of files, you will notice a considerable speed-up (from a hundred kilobytes
 per second to several megabytes per second, if your connection allows it).
-If it's not installed, pyaes_ will be used (which is pure Python, so it's
+If none of them isinstalled, pyaes_ will be used (which is pure Python, so it's
 much slower).
+
+pyaesni_ uses `AES instruction set`_ so you would need a processor that supports it.
+Most 64bit processors support it by default so it shouldn't be a problem.
 
 If pillow_ is installed, large images will be automatically resized when
 sending photos to prevent Telegram from failing with "invalid image".
@@ -86,6 +89,8 @@ manually.
     Thanks to `@bb010g`_ for writing down this nice list.
 
 .. _cryptg: https://github.com/cher-nov/cryptg
+.. _pyaesni: https://github.com/painor/pyaesni
+.. _`AES instruction set`: https://en.wikipedia.org/wiki/AES_instruction_set
 .. _pyaes: https://github.com/ricmoo/pyaes
 .. _pillow: https://python-pillow.org
 .. _aiohttp: https://docs.aiohttp.org
