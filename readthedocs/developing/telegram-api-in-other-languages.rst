@@ -3,7 +3,7 @@ Telegram API in Other Languages
 ===============================
 
 Telethon was made for **Python**, and it has inspired other libraries such as
-`gramjs <https://github.com/gram-js/gramjs>`__ (JavaScript) and `grammers
+`@mtproto/core <https://mtproto-core.js.org/>`__ (JavaScript) and `grammers
 <https://github.com/Lonami/grammers>`__ (Rust). But there is a lot more beyond
 those, made independently by different developers.
 
