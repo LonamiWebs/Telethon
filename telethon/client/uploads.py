@@ -606,15 +606,15 @@ class UploadMethods:
 
                 pos += len(part)
 
+                # Encryption part if needed
+                if key and iv:
+                    part = AES.encrypt_ige(part, key, iv)
+
                 if not is_big:
                     # Bit odd that MD5 is only needed for small files and not
                     # big ones with more chance for corruption, but that's
                     # what Telegram wants.
                     hash_md5.update(part)
-
-                # Encryption part if needed
-                if key and iv:
-                    part = AES.encrypt_ige(part, key, iv)
 
                 # The SavePartRequest is different depending on whether
                 # the file is too large or not (over or less than 10MB)
