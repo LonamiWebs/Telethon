@@ -210,7 +210,6 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.legacy = legacy
         self.edit_hide = edit_hide
         self.id = id
-        self.from_id = from_id
         self.peer_id = peer_id
         self.fwd_from = fwd_from
         self.via_bot_id = via_bot_id
@@ -255,6 +254,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             # (layer 119+), but the sender can only be the chat we're in.
             if post or (not out and isinstance(peer_id, types.PeerUser)):
                 sender_id = utils.get_peer_id(peer_id)
+        self.from_id = sender_id
 
         # Note that these calls would reset the client
         ChatGetter.__init__(self, peer_id, broadcast=post)
