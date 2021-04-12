@@ -210,7 +210,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.legacy = legacy
         self.edit_hide = edit_hide
         self.id = id
-        self.from_id = from_id
+        self.from_id = id
         self.peer_id = peer_id
         self.fwd_from = fwd_from
         self.via_bot_id = via_bot_id
