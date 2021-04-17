@@ -83,7 +83,11 @@ class MessageParseMethods:
         if not parse_mode:
             return message, []
 
+        original_message = message
         message, msg_entities = parse_mode.parse(message)
+        if original_message and not message and not msg_entities:
+            raise ValueError("Failed to parse message")
+        
         for i in reversed(range(len(msg_entities))):
             e = msg_entities[i]
             if isinstance(e, types.MessageEntityTextUrl):
