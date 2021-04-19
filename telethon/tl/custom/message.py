@@ -1125,6 +1125,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
                         bot = self.input_sender
                         if not bot:
                             raise ValueError('No input sender')
+                        return bot
                     else:
                         try:
                             return self._client._entity_cache[self.via_bot_id]
