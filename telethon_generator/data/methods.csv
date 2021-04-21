@@ -62,7 +62,7 @@ account.updateStatus,user,SESSION_PASSWORD_NEEDED
 account.updateTheme,user,THEME_INVALID
 account.updateUsername,user,USERNAME_INVALID USERNAME_NOT_MODIFIED USERNAME_OCCUPIED
 account.uploadTheme,user,
-account.uploadWallPaper,user,WALLPAPER_FILE_INVALID
+account.uploadWallPaper,user,WALLPAPER_FILE_INVALID WALLPAPER_MIME_INVALID
 account.verifyEmail,user,EMAIL_INVALID
 account.verifyPhone,user,
 auth.acceptLoginToken,user,

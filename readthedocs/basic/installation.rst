@@ -6,14 +6,16 @@ Installation
 
 Telethon is a Python library, which means you need to download and install
 Python from https://www.python.org/downloads/ if you haven't already. Once
-you have Python installed, run:
+you have Python installed, `upgrade pip`__ and run:
 
 .. code-block:: sh
 
-    pip3 install -U telethon --user
+    python3 -m pip install --upgrade pip
+    python3 -m pip install --upgrade telethon
 
-To install or upgrade the library to the latest version.
+…to install or upgrade the library to the latest version.
 
+.. __: https://pythonspeed.com/articles/upgrade-pip/
 
 Installing Development Versions
 ===============================
@@ -23,7 +25,7 @@ you can run the following command instead:
 
 .. code-block:: sh
 
-    pip3 install -U https://github.com/LonamiWebs/Telethon/archive/master.zip --user
+    python3 -m pip install --upgrade https://github.com/LonamiWebs/Telethon/archive/master.zip
 
 .. note::
 
@@ -74,7 +76,7 @@ manually.
 
     Some of the modules may require additional dependencies before being
     installed through ``pip``. If you have an ``apt``-based system, consider
-    installing the most commonly missing dependencies:
+    installing the most commonly missing dependencies (with the right ``pip``):
 
     .. code-block:: sh
 
@@ -84,6 +86,7 @@ manually.
         pip install -U --user telethon cryptg pillow
 
     Thanks to `@bb010g`_ for writing down this nice list.
+
 
 .. _cryptg: https://github.com/cher-nov/cryptg
 .. _pyaes: https://github.com/ricmoo/pyaes
