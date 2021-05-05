@@ -314,6 +314,9 @@ STICKER_ID_INVALID,400,The provided sticker ID is invalid
 STICKER_INVALID,400,The provided sticker is invalid
 STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
 STICKER_PNG_NOPNG,400,Stickers must be a png file but the used image was not a png
+STICKER_TGS_NOTGS,400,Stickers must be a tgs file but the used file was not a tgs
+STICKER_THUMB_PNG_NOPNG,400,Stickerset thumb must be a png file but the used file was not png
+STICKER_THUMB_TGS_NOTGS,400,Stickerset thumb must be a tgs file but the used file was not tgs
 STORAGE_CHECK_FAILED,500,Server storage check failed
 STORE_INVALID_SCALAR_TYPE,500,
 TAKEOUT_INIT_DELAY_X,420,A wait of {seconds} seconds is required before being able to initiate the takeout
@@ -324,6 +327,7 @@ TIMEOUT,500,A timeout occurred while fetching data from the worker
 THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
+TMP_PASSWORD_INVALID,400,Password auth needs to be regenerated
 TOKEN_INVALID,400,The provided token is invalid
 TTL_DAYS_INVALID,400,The provided TTL is invalid
 TYPES_EMPTY,400,The types field is empty
@@ -358,6 +362,7 @@ USER_NOT_MUTUAL_CONTACT,400 403,The provided user is not a mutual contact
 USER_NOT_PARTICIPANT,400,The target user is not a member of the specified megagroup or channel
 USER_PRIVACY_RESTRICTED,403,The user's privacy settings do not allow you to do this
 USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
+USERPIC_UPLOAD_REQUIRED,400,You must have a profile picture before using this method
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
 VIDEO_FILE_INVALID,400,The given video cannot be used
 WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
