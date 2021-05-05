@@ -129,7 +129,7 @@ contacts.deleteContacts,user,NEED_MEMBER_INVALID TIMEOUT
 contacts.getBlocked,user,
 contacts.getContactIDs,user,
 contacts.getContacts,user,
-contacts.getLocated,user,
+contacts.getLocated,user,USERPIC_UPLOAD_REQUIRED
 contacts.getSaved,user,TAKEOUT_REQUIRED
 contacts.getStatuses,user,
 contacts.getTopPeers,user,TYPES_EMPTY
