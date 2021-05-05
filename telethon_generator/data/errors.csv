@@ -327,6 +327,7 @@ TIMEOUT,500,A timeout occurred while fetching data from the worker
 THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
+TMP_PASSWORD_INVALID,400,Password auth needs to be regenerated
 TOKEN_INVALID,400,The provided token is invalid
 TTL_DAYS_INVALID,400,The provided TTL is invalid
 TYPES_EMPTY,400,The types field is empty
