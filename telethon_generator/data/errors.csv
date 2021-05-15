@@ -175,6 +175,7 @@ MAX_QTS_INVALID,400,The provided QTS were invalid
 MD5_CHECKSUM_INVALID,400,The MD5 check-sums do not match
 MEDIA_CAPTION_TOO_LONG,400,The caption is too long
 MEDIA_EMPTY,400,The provided media object is invalid or the current account may not be able to send it (such as games as users)
+MEDIA_GROUPED_INVALID,400,The Grouped Media is Invalid
 MEDIA_INVALID,400,Media invalid
 MEDIA_NEW_INVALID,400,The new media to edit the message with is invalid (such as stickers or voice notes)
 MEDIA_PREV_INVALID,400,The old media cannot be edited with anything else (such as stickers or voice notes)
