@@ -370,7 +370,7 @@ class DialogMethods:
                 await client.edit_folder(dialogs, [0, 1])
 
                 # Un-archiving all dialogs
-                await client.archive(unpack=1)
+                await client.edit_folder(unpack=1)
         """
         if (entity is None) == (unpack is None):
             raise ValueError('You can only set either entities or unpack, not both')

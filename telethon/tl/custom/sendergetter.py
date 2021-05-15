@@ -44,7 +44,7 @@ class SenderGetter(abc.ABC):
         # in which case we want to force fetch the entire thing because
         # the user explicitly called a method. If the user is okay with
         # cached information, they may use the property instead.
-        if (self._sender is None or self._sender.min) \
+        if (self._sender is None or getattr(self._sender, 'min', None)) \
                 and await self.get_input_sender():
             try:
                 self._sender =\

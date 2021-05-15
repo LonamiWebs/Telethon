@@ -142,12 +142,12 @@ class _DirectDownloadIter(RequestIter):
 
 
 class _GenericDownloadIter(_DirectDownloadIter):
-    async def _load_next_chunk(self, mask=MIN_CHUNK_SIZE - 1):
+    async def _load_next_chunk(self):
         # 1. Fetch enough for one chunk
         data = b''
 
         # 1.1. ``bad`` is how much into the data we have we need to offset
-        bad = self.request.offset & mask
+        bad = self.request.offset % self.request.limit
         before = self.request.offset
 
         # 1.2. We have to fetch from a valid offset, so remove that bad part
@@ -702,7 +702,8 @@ class DownloadMethods:
 
         if chunk_size == request_size \
                 and offset % MIN_CHUNK_SIZE == 0 \
-                and stride % MIN_CHUNK_SIZE == 0:
+                and stride % MIN_CHUNK_SIZE == 0 \
+                and offset % limit == 0:
             cls = _DirectDownloadIter
             self._log[__name__].info('Starting direct file download in chunks of '
                                      '%d at %d, stride %d', request_size, offset, stride)
