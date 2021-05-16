@@ -703,7 +703,7 @@ class DownloadMethods:
         if chunk_size == request_size \
                 and offset % MIN_CHUNK_SIZE == 0 \
                 and stride % MIN_CHUNK_SIZE == 0 \
-                and offset % limit == 0:
+                and (limit is None or offset % limit == 0):
             cls = _DirectDownloadIter
             self._log[__name__].info('Starting direct file download in chunks of '
                                      '%d at %d, stride %d', request_size, offset, stride)
