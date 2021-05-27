@@ -2,7 +2,6 @@ import inspect
 
 from .tl import types
 
-
 # Which updates have the following fields?
 _has_channel_id = []
 
@@ -26,23 +25,70 @@ def _fill():
 _fill()
 
 
+has_pts = frozenset(x.CONSTRUCTOR_ID for x in (
+    types.UpdateNewMessage,
+    types.UpdateDeleteMessages,
+    types.UpdateReadHistoryInbox,
+    types.UpdateReadHistoryOutbox,
+    types.UpdateWebPage,
+    types.UpdateReadMessagesContents,
+    types.UpdateEditMessage,
+    types.updates.State,
+    types.updates.DifferenceTooLong,
+    types.UpdateShortMessage,
+    types.UpdateShortChatMessage,
+    types.UpdateShortSentMessage
+))
+has_qts = frozenset(x.CONSTRUCTOR_ID for x in (
+    types.UpdateBotStopped,
+    types.UpdateNewEncryptedMessage,
+    types.updates.State
+))
+has_date = frozenset(x.CONSTRUCTOR_ID for x in (
+    types.UpdateUserPhoto,
+    types.UpdateEncryption,
+    types.UpdateEncryptedMessagesRead,
+    types.UpdateChatParticipantAdd,
+    types.updates.DifferenceEmpty,
+    types.UpdateShortMessage,
+    types.UpdateShortChatMessage,
+    types.UpdateShort,
+    types.UpdatesCombined,
+    types.Updates,
+    types.UpdateShortSentMessage,
+))
+has_channel_pts = frozenset(x.CONSTRUCTOR_ID for x in (
+    types.UpdateChannelTooLong,
+    types.UpdateNewChannelMessage,
+    types.UpdateDeleteChannelMessages,
+    types.UpdateEditChannelMessage,
+    types.UpdateChannelWebPage,
+    types.updates.ChannelDifferenceEmpty,
+    types.updates.ChannelDifferenceTooLong,
+    types.updates.ChannelDifference
+))
+
+
 class StateCache:
     """
     In-memory update state cache, defaultdict-like behaviour.
     """
+    _store: dict
+
     def __init__(self, initial, loggers):
         # We only care about the pts and the date. By using a tuple which
         # is lightweight and immutable we can easily copy them around to
         # each update in case they need to fetch missing entities.
         self._logger = loggers[__name__]
+        self._store = {}
         if initial:
-            self._pts_date = initial.pts, initial.date
+            self._pts_date = initial.pts, initial.qts, initial.date
         else:
-            self._pts_date = None, None
+            self._pts_date = None, None, None
 
     def reset(self):
-        self.__dict__.clear()
-        self._pts_date = None, None
+        self._store.clear()
+        self._pts_date = None, None, None
 
     # TODO Call this when receiving responses too...?
     def update(
@@ -50,43 +96,6 @@ class StateCache:
             update,
             *,
             channel_id=None,
-            has_pts=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateNewMessage,
-                types.UpdateDeleteMessages,
-                types.UpdateReadHistoryInbox,
-                types.UpdateReadHistoryOutbox,
-                types.UpdateWebPage,
-                types.UpdateReadMessagesContents,
-                types.UpdateEditMessage,
-                types.updates.State,
-                types.updates.DifferenceTooLong,
-                types.UpdateShortMessage,
-                types.UpdateShortChatMessage,
-                types.UpdateShortSentMessage
-            )),
-            has_date=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateUserPhoto,
-                types.UpdateEncryption,
-                types.UpdateEncryptedMessagesRead,
-                types.UpdateChatParticipantAdd,
-                types.updates.DifferenceEmpty,
-                types.UpdateShortMessage,
-                types.UpdateShortChatMessage,
-                types.UpdateShort,
-                types.UpdatesCombined,
-                types.Updates,
-                types.UpdateShortSentMessage,
-            )),
-            has_channel_pts=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateChannelTooLong,
-                types.UpdateNewChannelMessage,
-                types.UpdateDeleteChannelMessages,
-                types.UpdateEditChannelMessage,
-                types.UpdateChannelWebPage,
-                types.updates.ChannelDifferenceEmpty,
-                types.updates.ChannelDifferenceTooLong,
-                types.updates.ChannelDifference
-            )),
             check_only=False
     ):
         """
@@ -96,13 +105,20 @@ class StateCache:
         if check_only:
             return cid in has_pts or cid in has_date or cid in has_channel_pts
 
+        new_pts_date = tuple()
         if cid in has_pts:
-            if cid in has_date:
-                self._pts_date = update.pts, update.date
-            else:
-                self._pts_date = update.pts, self._pts_date[1]
-        elif cid in has_date:
-            self._pts_date = self._pts_date[0], update.date
+            new_pts_date += update.pts,
+        else:
+            new_pts_date += self._pts_date[0],
+        if cid in has_qts:
+            new_pts_date += update.qts,
+        else:
+            new_pts_date += self._pts_date[1],
+        if cid in has_date:
+            new_pts_date += update.date,
+        else:
+            new_pts_date += self._pts_date[2],
+        self._pts_date = new_pts_date
 
         if cid in has_channel_pts:
             if channel_id is None:
@@ -112,7 +128,23 @@ class StateCache:
                 self._logger.info(
                     'Failed to retrieve channel_id from %s', update)
             else:
-                self.__dict__[channel_id] = update.pts
+                self._store[channel_id] = update.pts
+
+    def update_already_processed(self, update):
+        cid = update.CONSTRUCTOR_ID
+        # If pts == 0, the update is from catch_up
+        if cid in has_pts and \
+                update.pts != 0 and \
+                update.pts >= self._pts_date[0]:
+            return True
+        if cid in has_qts and update.qts >= self._pts_date[1]:
+            return True
+        if cid in has_channel_pts:
+            channel_id = self.get_channel_id(update)
+            if update.pts != 0 and \
+                    self._store.get(channel_id, 0) >= update.pts:
+                return True
+        return False
 
     def get_channel_id(
             self,
@@ -120,8 +152,8 @@ class StateCache:
             has_channel_id=frozenset(_has_channel_id),
             # Hardcoded because only some with message are for channels
             has_message=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateNewChannelMessage,
-                types.UpdateEditChannelMessage
+                    types.UpdateNewChannelMessage,
+                    types.UpdateEditChannelMessage
             ))
     ):
         """
@@ -155,10 +187,13 @@ class StateCache:
         if item is None:
             return self._pts_date
         else:
-            return self.__dict__.get(item)
+            return self._store.get(item)
 
     def __setitem__(self, where, value):
         if where is None:
             self._pts_date = value
         else:
-            self.__dict__[where] = value
+            self._store[where] = value
+
+    def get_channel_pts(self):
+        return self._store

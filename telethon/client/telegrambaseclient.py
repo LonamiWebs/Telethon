@@ -6,6 +6,7 @@ import logging
 import platform
 import time
 import typing
+from datetime import datetime
 
 from .. import version, helpers, __name__ as __base_name__
 from ..crypto import rsa
@@ -401,9 +402,10 @@ class TelegramBaseClient(abc.ABC):
         self._authorized = None  # None = unknown, False = no, True = yes
 
         # Update state (for catching up after a disconnection)
-        # TODO Get state from channels too
         self._state_cache = StateCache(
             self.session.get_update_state(0), self._log)
+        for k, v in self.session.get_channel_pts().items():
+            self._state_cache[k] = v
 
         # Some further state for subclasses
         self._event_builders = []
@@ -630,12 +632,20 @@ class TelegramBaseClient(abc.ABC):
             await asyncio.wait(self._updates_queue)
             self._updates_queue.clear()
 
-        pts, date = self._state_cache[None]
+        pts, qts, date = self._state_cache[None]
         if pts and date:
             self.session.set_update_state(0, types.updates.State(
                 pts=pts,
-                qts=0,
+                qts=qts,
                 date=date,
+                seq=0,
+                unread_count=0
+            ))
+        for channel_id, pts in self._state_cache.get_channel_pts().items():
+            self.session.set_update_state(channel_id, types.updates.State(
+                pts=pts,
+                qts=0,
+                date=datetime.fromtimestamp(0),
                 seq=0,
                 unread_count=0
             ))

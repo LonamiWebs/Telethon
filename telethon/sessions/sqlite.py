@@ -210,6 +210,14 @@ class SQLiteSession(MemorySession):
                 date, tz=datetime.timezone.utc)
             return types.updates.State(pts, qts, date, seq, unread_count=0)
 
+    def get_channel_pts(self):
+        c = self._cursor()
+        try:
+            rows = c.execute('select id, pts from update_state').fetchall()
+        finally:
+            c.close()
+        return {x[0]: x[1] for x in rows if x[0] != 0}
+
     def set_update_state(self, entity_id, state):
         self._execute('insert or replace into update_state values (?,?,?,?,?)',
                       entity_id, state.pts, state.qts,

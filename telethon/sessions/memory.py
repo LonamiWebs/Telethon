@@ -74,6 +74,9 @@ class MemorySession(Session):
     def get_update_state(self, entity_id):
         return self._update_states.get(entity_id, None)
 
+    def get_channel_pts(self):
+        return {x[0]: x[1] for x in self._update_states.items() if x[0] != 0}
+
     def set_update_state(self, entity_id, state):
         self._update_states[entity_id] = state
 

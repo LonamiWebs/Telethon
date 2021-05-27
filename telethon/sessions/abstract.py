@@ -89,6 +89,13 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_channel_pts(self):
+        """
+        Returns the ``Dict[int, int]`` with pts for all saved channels
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def set_update_state(self, entity_id, state):
         """
         Sets the given ``UpdateState`` for the specified `entity_id`, which
