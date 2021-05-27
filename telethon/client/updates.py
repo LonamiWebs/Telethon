@@ -220,8 +220,8 @@ class UpdateMethods:
         if not pts:
             # First-time, can't get difference. Get pts instead.
             result = await self(functions.channels.GetFullChannelRequest(channel_id))
-            pts = self._state_cache[channel_id] = result.full_chat.pts
-            self.session.set_update_state(channel_id, types.updates.State(pts, 0, datetime.fromtimestamp(0), 0, 0))
+            self._state_cache[channel_id] = result.full_chat.pts
+            self._update_state_for(channel_id)
             return
         try:
             while True:
@@ -249,7 +249,8 @@ class UpdateMethods:
                     # there is no way to get them without raising limit or GetHistoryRequest, so just break
                     break
         finally:
-            self.session.set_update_state(channel_id, types.updates.State(pts, 0, datetime.fromtimestamp(0), 0, 0))
+            self._state_cache[channel_id] = pts
+            self._update_state_for(channel_id)
 
     async def catch_up(self: 'TelegramClient', pts_total_limit=None, limit=None):
         """
@@ -320,7 +321,7 @@ class UpdateMethods:
             pass
         finally:
             self._state_cache[None] = (pts, qts, date)
-            self.session.set_update_state(0, types.updates.State(pts, qts, date, seq=0, unread_count=0))
+            self._update_state_for(None)
             self.session.catching_up = False
 
     # endregion
@@ -404,10 +405,10 @@ class UpdateMethods:
             except (ConnectionError, asyncio.CancelledError):
                 return
 
-            # Entities and cached files are not saved when they are
-            # inserted because this is a rather expensive operation
-            # (default's sqlite3 takes ~0.1s to commit changes). Do
-            # it every minute instead. No-op if there's nothing new.
+            # Entities, cached files and update states are not saved
+            # when they are inserted because this is a rather expensive
+            # operation (default's sqlite3 takes ~0.1s to commit changes).
+            # Do it every minute instead. No-op if there's nothing new.
             self.session.save()
 
             # We need to send some content-related request at least hourly
@@ -589,6 +590,7 @@ class UpdateMethods:
                     utils.get_input_channel(where)
                 ))
                 self._state_cache[channel_id] = result.full_chat.pts
+                self._update_state_for(channel_id)
                 return
 
             result = await self(functions.updates.GetChannelDifferenceRequest(
@@ -603,6 +605,7 @@ class UpdateMethods:
                 # First-time, can't get difference. Get pts instead.
                 result = await self(functions.updates.GetStateRequest())
                 self._state_cache[None] = result.pts, result.qts, result.date
+                self._update_state_for(None)
                 return
 
             result = await self(functions.updates.GetDifferenceRequest(

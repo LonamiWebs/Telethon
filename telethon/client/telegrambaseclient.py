@@ -605,6 +605,27 @@ class TelegramBaseClient(abc.ABC):
             else:
                 connection._proxy = proxy
 
+    def _update_state_for(self, channel_id: 'typing.Optional[int]'):
+        if channel_id is None:
+            pts, qts, date = self._state_cache[None]
+            if pts and date:
+                self.session.set_update_state(0, types.updates.State(
+                    pts=pts,
+                    qts=qts,
+                    date=date,
+                    seq=0,
+                    unread_count=0
+                ))
+        else:
+            pts = self._state_cache[channel_id]
+            self.session.set_update_state(channel_id, types.updates.State(
+                pts=pts,
+                qts=0,
+                date=datetime.fromtimestamp(0),
+                seq=0,
+                unread_count=0
+            ))
+
     async def _disconnect_coro(self: 'TelegramClient'):
         await self._disconnect()
 
@@ -632,23 +653,9 @@ class TelegramBaseClient(abc.ABC):
             await asyncio.wait(self._updates_queue)
             self._updates_queue.clear()
 
-        pts, qts, date = self._state_cache[None]
-        if pts and date:
-            self.session.set_update_state(0, types.updates.State(
-                pts=pts,
-                qts=qts,
-                date=date,
-                seq=0,
-                unread_count=0
-            ))
-        for channel_id, pts in self._state_cache.get_channel_pts().items():
-            self.session.set_update_state(channel_id, types.updates.State(
-                pts=pts,
-                qts=0,
-                date=datetime.fromtimestamp(0),
-                seq=0,
-                unread_count=0
-            ))
+        self._update_state_for(None)
+        for channel_id in self._state_cache.get_channel_pts():
+            self._update_state_for(channel_id)
 
         self.session.close()
 
