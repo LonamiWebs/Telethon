@@ -213,17 +213,16 @@ class UpdateMethods:
         """
         return [(callback, event) for event, callback in self._event_builders]
 
-    async def _catch_up_channel(self: 'TelegramClient', channel_id: int, pts: int, limit: int = None):
+    async def _catch_up_channel(self: 'TelegramClient', channel_id: int, pts: int, limit: int):
         if self._state_cache[channel_id]:
             pts = self._state_cache[channel_id]
 
-        if not pts:
-            # First-time, can't get difference. Get pts instead.
-            result = await self(functions.channels.GetFullChannelRequest(channel_id))
-            self._state_cache[channel_id] = result.full_chat.pts
-            self._update_state_for(channel_id)
-            return
         try:
+            if not pts:
+                # Ran first time, get initial pts and return
+                result = await self(functions.channels.GetFullChannelRequest(channel_id))
+                pts = result.full_chat.pts
+                return
             while True:
                 d = await self(functions.updates.GetChannelDifferenceRequest(
                     channel=channel_id,
@@ -245,14 +244,14 @@ class UpdateMethods:
                     ))
                 elif isinstance(d, (types.updates.ChannelDifferenceTooLong,
                                     types.updates.ChannelDifferenceEmpty)):
-                    # If there is too much updates (ChannelDifferenceTooLong),
+                    # If there are too many updates (ChannelDifferenceTooLong),
                     # there is no way to get them without raising limit or GetHistoryRequest, so just break
                     break
         finally:
             self._state_cache[channel_id] = pts
             self._update_state_for(channel_id)
 
-    async def catch_up(self: 'TelegramClient', pts_total_limit=None, limit=None):
+    async def catch_up(self: 'TelegramClient', pts_total_limit=None, limit=1000):
         """
         "Catches up" on the missed updates while the client was offline.
         You should call this method after registering the event handlers
