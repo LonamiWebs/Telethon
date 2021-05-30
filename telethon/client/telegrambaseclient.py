@@ -89,7 +89,7 @@ class TelegramBaseClient(abc.ABC):
             The API ID you obtained from https://my.telegram.org.
 
         api_hash (`str`):
-            The API ID you obtained from https://my.telegram.org.
+            The API hash you obtained from https://my.telegram.org.
 
         connection (`telethon.network.connection.common.Connection`, optional):
             The connection instance to be used when creating a new connection

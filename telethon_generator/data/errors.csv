@@ -141,6 +141,7 @@ GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
 GROUPCALL_FORBIDDEN,403,
+GROUPCALL_JOIN_MISSING,400,
 GROUPCALL_SSRC_DUPLICATE_MUCH,400,
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 GROUP_CALL_INVALID,400,Group call invalid
@@ -315,6 +316,7 @@ STICKER_ID_INVALID,400,The provided sticker ID is invalid
 STICKER_INVALID,400,The provided sticker is invalid
 STICKER_PNG_DIMENSIONS,400,Sticker png dimensions invalid
 STICKER_PNG_NOPNG,400,Stickers must be a png file but the used image was not a png
+STICKER_TGS_NODOC,400,
 STICKER_TGS_NOTGS,400,Stickers must be a tgs file but the used file was not a tgs
 STICKER_THUMB_PNG_NOPNG,400,Stickerset thumb must be a png file but the used file was not png
 STICKER_THUMB_TGS_NOTGS,400,Stickerset thumb must be a tgs file but the used file was not tgs
