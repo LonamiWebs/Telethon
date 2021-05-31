@@ -598,6 +598,7 @@ class MessageMethods:
             message: 'hints.MessageLike' = '',
             *,
             reply_to: 'typing.Union[int, types.Message]' = None,
+            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
             parse_mode: typing.Optional[str] = (),
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
@@ -606,6 +607,7 @@ class MessageMethods:
             clear_draft: bool = False,
             buttons: 'hints.MarkupLike' = None,
             silent: bool = None,
+            supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None
     ) -> 'types.Message':
@@ -641,6 +643,10 @@ class MessageMethods:
             reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
+
+            attributes (`list`, optional):
+                Optional attributes that override the inferred ones, like
+                :tl:`DocumentAttributeFilename` and so on.
 
             parse_mode (`object`, optional):
                 See the `TelegramClient.parse_mode
@@ -682,6 +688,13 @@ class MessageMethods:
                 Whether the message should notify people in a broadcast
                 channel or not. Defaults to `False`, which means it will
                 notify them. Set it to `True` to alter this behaviour.
+
+            supports_streaming (`bool`, optional):
+                Whether the sent video supports streaming or not. Note that
+                Telegram only recognizes as streamable some formats like MP4,
+                and others like AVI or MKV will not work. You should convert
+                these to MP4 before sending if you want them to be streamable.
+                Unsupported formats will result in ``VideoContentTypeError``.
 
             schedule (`hints.DateLike`, optional):
                 If set, the message won't send immediately, and instead
@@ -758,9 +771,11 @@ class MessageMethods:
         if file is not None:
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
-                parse_mode=parse_mode, force_document=force_document,
+                attributes=attributes, parse_mode=parse_mode,
+                force_document=force_document,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
-                schedule=schedule, formatting_entities=formatting_entities,
+                schedule=schedule, supports_streaming=supports_streaming,
+                formatting_entities=formatting_entities,
                 comment_to=comment_to
             )
 
@@ -967,11 +982,13 @@ class MessageMethods:
             text: str = None,
             *,
             parse_mode: str = (),
+            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
             force_document: bool = False,
             buttons: 'hints.MarkupLike' = None,
+            supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None
     ) -> 'types.Message':
         """
@@ -1007,6 +1024,10 @@ class MessageMethods:
                 property for allowed values. Markdown parsing will be used by
                 default.
 
+            attributes (`list`, optional):
+                Optional attributes that override the inferred ones, like
+                :tl:`DocumentAttributeFilename` and so on.
+
             formatting_entities (`list`, optional):
                 A list of message formatting entities. When provided, the ``parse_mode`` is ignored.
 
@@ -1025,6 +1046,13 @@ class MessageMethods:
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
                 :tl:`ReplyMarkup` here.
+
+            supports_streaming (`bool`, optional):
+                Whether the sent video supports streaming or not. Note that
+                Telegram only recognizes as streamable some formats like MP4,
+                and others like AVI or MKV will not work. You should convert
+                these to MP4 before sending if you want them to be streamable.
+                Unsupported formats will result in ``VideoContentTypeError``.
 
             schedule (`hints.DateLike`, optional):
                 If set, the message won't be edited immediately, and instead
@@ -1073,6 +1101,8 @@ class MessageMethods:
         if formatting_entities is None:
             text, formatting_entities = await self._parse_message_text(text, parse_mode)
         file_handle, media, image = await self._file_to_media(file,
+                supports_streaming=supports_streaming,
+                attributes=attributes,
                 force_document=force_document)
 
         if isinstance(entity, types.InputBotInlineMessageID):
