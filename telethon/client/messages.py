@@ -774,7 +774,8 @@ class MessageMethods:
                 attributes=attributes,parse_mode=parse_mode,
                 force_document=force_document,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
-                schedule=schedule, formatting_entities=formatting_entities,
+                schedule=schedule, supports_streaming=supports_streaming,
+                formatting_entities=formatting_entities,
                 comment_to=comment_to
             )
 
@@ -1100,6 +1101,7 @@ class MessageMethods:
         if formatting_entities is None:
             text, formatting_entities = await self._parse_message_text(text, parse_mode)
         file_handle, media, image = await self._file_to_media(file,
+                supports_streaming=supports_streaming,
                 attributes=attributes,
                 force_document=force_document)
 
