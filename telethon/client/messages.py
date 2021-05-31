@@ -771,7 +771,7 @@ class MessageMethods:
         if file is not None:
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
-                attributes=attributes,parse_mode=parse_mode,
+                attributes=attributes, parse_mode=parse_mode,
                 force_document=force_document,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
