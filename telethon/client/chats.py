@@ -1313,4 +1313,27 @@ class ChatMethods:
         finally:
             await self._return_exported_sender(sender)
 
+    async def change_groupcall(method:str,
+                               chat,
+                               title:str=None):
+        if not method:
+            return
+        if method == "create":
+            InputPeer = utils.get_input_peer(chat)
+            return await self(
+                functions.phone.CreateGroupCallRequest(peer=InputPeer)
+                )
+        try:
+            Call = (await self(functions.messages.GetFullChatRequest(chat))).full_chat.call
+        except errors.rpcerrorlist.ChatIdInvalidError:
+            Call = (await self(functions.channels.GetFullChannelRequest(chat))).full_chat.call
+        if method == "edit_title":
+            return await self(functions.phone.EditGroupCallTitleRequest(Call, title=title))
+        elif method == "discard":
+            return await self(functions.phone.DiscardGroupCallRequest(call))
+        else:
+            self._log[__name__].info("Invalid Method Invoked while using change_groupcall")            
+
+        
+
     # endregion

@@ -269,7 +269,7 @@ class DownloadMethods:
 
             photo = entity.photo
 
-        if isinstance(photo, (types.UserProfilePhoto, types.)):
+        if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
             dc_id = photo.dc_id
             loc = types.InputPeerPhotoFileLocation(
                 peer=await self.get_input_entity(entity),
