@@ -789,8 +789,7 @@ class ChatMethods:
             try:
                 action = _ChatAction._str_mapping[action.lower()]
             except KeyError:
-                raise ValueError(
-                    'No such action "{}"'.format(action)) from None
+                raise ValueError('No such action "{}"'.format(action)) from None
         elif not isinstance(action, types.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
             # 0x20b2cc21 = crc32(b'SendMessageAction')
             if isinstance(action, type):
@@ -955,8 +954,7 @@ class ChatMethods:
                 entity, user, is_admin=is_admin))
 
         else:
-            raise ValueError(
-                'You can only edit permissions in groups and channels')
+            raise ValueError('You can only edit permissions in groups and channels')
 
     async def edit_permissions(
             self: 'TelegramClient',
@@ -1315,85 +1313,27 @@ class ChatMethods:
         finally:
             await self._return_exported_sender(sender)
 
-    async def modify_groupcall(
-        self: 'TelegramClient',
-        method: str,
-        entity: 'hints.EntityLike',
-        schedule: 'hints.DateLike' = None,
-        title: str = None
-    ):    
-        """
-        Stuff to do with Group Calls, Possible for Administrator and
-        Creator.
-
-        Arguments
-            method (`str`):
-                Any of `create`, `discard`, `start_schedule` and 
-                `edit_title` will work. Check Examples to know more Clearly.
-
-            entity (`int` | `str`):
-                Username/ID of Channel, where to Modify Group Call.
-
-            schedule (`hints.Datelike`, optional):
-                Used to Schedule the GroupCall.
-            
-            title (str, optional):
-                Edits the Group call Title. It should be used with
-                `edit_title` as method parameter.
-
-        Returns
-            The resulting :tl:`Updates` object.
-        
-        Raises
-            ChatAdminRequiredError - You Should be Admin, in order to
-            Modify Group Call.
-        
-        Example
-        .. code-block:: python
-
-                # Starting a Group Call
-                await client.modify_groupcall("create", -100123456789)
-                
-                # Scheduling a Group Call, within 5-Minutes
-                from datetime import timedelta
-                schedule_for = timedelta(minutes=5)
-                await client.modify_groupcall(
-                    "create",
-                    schedule=schedule_for
-                )
-                
-                # Editing a Group Call Title
-                new_title = "Having Fun with Telethon"
-                await client.modify_groupcall(
-                    "edit_title",
-                    title=new_title
-                )
-
-                # Stopping/Closing a Group Call
-                await client.modify_groupcall("discard", -100123456789)
-        """
+    async def modify_groupcall(self: 'TelegramClient', method:str,
+                               chat,
+                               title:str=None):
         if not method:
-            return self._log[__name__].info("Method Cant be None.")
-        
-        if method == "create" :
+            return
+        if method == "create":
+            InputPeer = utils.get_input_peer(chat)
             return await self(
-                functions.phone.CreateGroupCallRequest(
-                    peer=entity,
-                    schedule=schedule)
-            ).updates[0]
+                functions.phone.CreateGroupCallRequest(peer=InputPeer)
+                )
         try:
-            Call = await self(functions.messages.GetFullChatRequest(entity))
+            Call = (await self(functions.messages.GetFullChatRequest(chat))).full_chat.call
         except errors.rpcerrorlist.ChatIdInvalidError:
-            Call = await self(functions. channels.GetFullChannelRequest(entity))
+            Call = (await self(functions.channels.GetFullChannelRequest(chat))).full_chat.call
         if method == "edit_title":
-            return (await self(functions.phone.EditGroupCallTitleRequest(
-                Call, title=title if title else ""))).updates
+            return await self(functions.phone.EditGroupCallTitleRequest(Call, title=title))
         elif method == "discard":
-            return (await self(functions.phone.DiscardGroupCallRequest(Call))).updates
-        elif method == "start_schedule":
-            return (await self(functions.phone.StartScheduledGroupCallRequest(Call))).updates
+            return await self(functions.phone.DiscardGroupCallRequest(call))
         else:
-            self._log[__name__].info(
-                "Invalid Method Used while using Modifying GroupCall")
+            self._log[__name__].info("Invalid Method Invoked while using change_groupcall")            
+
+        
 
     # endregion
