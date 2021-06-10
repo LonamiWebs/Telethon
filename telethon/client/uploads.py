@@ -699,10 +699,6 @@ class UploadMethods:
                 media = types.InputMediaPhotoExternal(file)
             else:
                 media = types.InputMediaDocumentExternal(file)
-        else:
-            bot_file = utils.resolve_bot_file_id(file)
-            if bot_file:
-                media = utils.get_input_media(bot_file)
 
         if media:
             pass  # Already have media, don't check the rest
