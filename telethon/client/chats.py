@@ -1313,7 +1313,7 @@ class ChatMethods:
         finally:
             await self._return_exported_sender(sender)
 
-    async def change_groupcall(method:str,
+    async def modify_groupcall(self: 'TelegramClient', method:str,
                                chat,
                                title:str=None):
         if not method:
