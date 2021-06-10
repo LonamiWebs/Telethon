@@ -216,6 +216,7 @@ PACK_SHORT_NAME_INVALID,400,"Invalid sticker pack name. It must begin with a let
 PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
 PARTICIPANTS_TOO_FEW,400,Not enough participants
 PARTICIPANT_CALL_FAILED,500,Failure while making call
+PARTICIPANT_JOIN_MISSING,403,
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
@@ -288,6 +289,7 @@ RPC_CALL_FAIL,500,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,500,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SCHEDULE_BOT_NOT_ALLOWED,400,Bots are not allowed to schedule messages
+SCHEDULE_DATE_INVALID,400,
 SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
 SCHEDULE_STATUS_PRIVATE,400,You cannot schedule a message until the person comes online if their privacy does not show this information
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
