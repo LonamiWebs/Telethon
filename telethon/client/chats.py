@@ -1260,6 +1260,8 @@ class ChatMethods:
                 # Get Banned Permissions of Chat
                 await client.get_permissions(chat)
         """
+        entity = await self.get_entity(entity)
+
         if not user:
             if isinstance(entity, types.Channel):
                 FullChat = await self(functions.channels.GetFullChannelRequest(entity))
@@ -1382,6 +1384,8 @@ class ChatMethods:
         """
         Stuff to do with Group Calls, Possible for Administrator and
         Creator.
+        
+        will raise ValueError, if `method` is None or Invalid.
 
         Arguments
             method (`str`):
@@ -1472,25 +1476,23 @@ class ChatMethods:
         Call = Call.full_chat.call
 
         if method == "edit_title":
-            return (await self(functions.phone.EditGroupCallTitleRequest(
-                Call, title=title if title else ""))).updates
+            return await self(functions.phone.EditGroupCallTitleRequest(
+                Call, title=title if title else ""))
 
         elif method == "edit_perms":
-            reqs = await self(
+            return await self(
                 functions.phone.ToggleGroupCallSettingsRequest(
                     reset_invite_hash=reset_invite_hash,
                     call=Call,
                     join_muted=join_muted))
-            return reqs.updates
 
         elif method == "discard":
-            return (await self(
-                functions.phone.DiscardGroupCallRequest(Call))).updates
+            return await self(
+                functions.phone.DiscardGroupCallRequest(Call))
 
         elif method == "start_schedule":
-            return (await self(
+            return await self(
                 functions.phone.StartScheduledGroupCallRequest(Call))
-            ).updates
 
         else:
             raise ValueError(
