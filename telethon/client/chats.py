@@ -1418,17 +1418,21 @@ class ChatMethods:
             return await self(
                 functions.phone.CreateGroupCallRequest(
                     peer=entity,
-                    schedule=schedule)
+                    schedule_date=schedule)
             ).updates[0]
         try:
             Call = await self(
                 functions.messages.GetFullChatRequest(entity))
-        except errors.rpcerrorlist.ChatIdInvalidError:
+        except errors.rpcerrorslist.ChatIdInvalidError: 
             Call = await self(
                 functions.channels.GetFullChannelRequest(entity))
+
+        Call = Call.full_chat.call
+
         if method == "edit_title":
             return (await self(functions.phone.EditGroupCallTitleRequest(
                 Call, title=title if title else ""))).updates
+
         elif method == "edit_perms":
             reqs = await self(
                 functions.phone.ToggleGroupCallSettingsRequest(
@@ -1436,13 +1440,16 @@ class ChatMethods:
                     call=Call,
                     join_muted=join_muted))
             return reqs.updates
+
         elif method == "discard":
             return (await self(
                 functions.phone.DiscardGroupCallRequest(Call))).updates
+
         elif method == "start_schedule":
             return (await self(
                 functions.phone.StartScheduledGroupCallRequest(Call))
             ).updates
+
         else:
             self._log[__name__].info(
                 "Invalid Method Used while using Modifying GroupCall")

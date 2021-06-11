@@ -395,6 +395,11 @@ class DownloadMethods:
             date = datetime.datetime.now()
             media = message
 
+        if isinstance(media, types.MessageService):
+            if isinstance(message.action,
+                          types.MessageActionChatEditPhoto):
+                media = media.photo
+       
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
