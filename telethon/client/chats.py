@@ -170,7 +170,7 @@ class _ParticipantsIter(RequestIter):
                 if not self.filter_entity(user):
                     continue
 
-                user = users[userid]
+                user = users[user_id]
                 user.participant = participant
                 self.buffer.append(user)
 
