@@ -162,7 +162,7 @@ class _ParticipantsIter(RequestIter):
 
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
-                if isinstance(participant, types.ChannelParticipantsBanned):
+                if isinstance(participant, types.ChannelParticipantBanned):
                     user_id = participant.peer.user_id
                 else:
                     user_id = participant.user_id
@@ -212,7 +212,7 @@ class _ParticipantsIter(RequestIter):
             users = {user.id: user for user in participants.users}
             for participant in participants.participants:
 
-                if isinstance(participant, types.ChannelParticipantsBanned):
+                if isinstance(participant, types.ChannelParticipantBanned):
                     user_id = participant.peer.user_id
                 else:
                     user_id = participant.user_id
@@ -511,7 +511,7 @@ class ChatMethods:
                 await client.get_participant(chat, user)
         """
         chat = await self.get_input_entity(chat)
-        user = await self.get_input_entity(user)
+        user = await self.get_input_entity(entity)
         return await self(functions.channels.GetParticipantRequest(
             channel=chat,
             participant=user)
@@ -1260,7 +1260,6 @@ class ChatMethods:
                 # Get Banned Permissions of Chat
                 await client.get_permissions(chat)
         """
-        entity = await self.get_input_entity(entity)
         if not user:
             if isinstance(entity, types.Channel):
                 FullChat = await self(functions.channels.GetFullChannelRequest(entity))
@@ -1269,6 +1268,8 @@ class ChatMethods:
             else:
                 return
             return FullChat.chats[0].default_banned_rights
+
+        entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
         if helpers._entity_type(user) != helpers._EntityType.USER:
             raise ValueError('You must pass a user entity')
@@ -1464,7 +1465,7 @@ class ChatMethods:
         try:
             Call = await self(
                 functions.messages.GetFullChatRequest(entity))
-        except errors.rpcerrorslist.ChatIdInvalidError: 
+        except errors.rpcerrorlist.ChatIdInvalidError: 
             Call = await self(
                 functions.channels.GetFullChannelRequest(entity))
 
