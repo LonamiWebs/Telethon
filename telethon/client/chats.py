@@ -162,11 +162,15 @@ class _ParticipantsIter(RequestIter):
 
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
-                user = users[participant.user_id]
+                if isinstance(participant, types.ChannelParticipantsBanned):
+                    user_id = participant.peer.user_id
+                else:
+                    user_id = participant.user_id
+                user = users[user_id]
                 if not self.filter_entity(user):
                     continue
 
-                user = users[participant.user_id]
+                user = users[userid]
                 user.participant = participant
                 self.buffer.append(user)
 
@@ -207,12 +211,17 @@ class _ParticipantsIter(RequestIter):
             self.requests[i].offset += len(participants.participants)
             users = {user.id: user for user in participants.users}
             for participant in participants.participants:
-                user = users[participant.user_id]
+
+                if isinstance(participant, types.ChannelParticipantsBanned):
+                    user_id = participant.peer.user_id
+                else:
+                    user_id = participant.user_id
+
+                user = users[user_id]
                 if not self.filter_entity(user) or user.id in self.seen:
                     continue
-
-                self.seen.add(participant.user_id)
-                user = users[participant.user_id]
+                self.seen.add(user_id)
+                user = users[user_id]
                 user.participant = participant
                 self.buffer.append(user)
 
@@ -474,6 +483,39 @@ class ChatMethods:
         return await self.iter_participants(*args, **kwargs).collect()
 
     get_participants.__signature__ = inspect.signature(iter_participants)
+
+    async def get_participant(
+            self: 'TelegramClient',
+            chat: 'hints.EntityLike',
+            entity: 'hints.EntityLike'
+    ):
+        """
+        Get One Participant of Specific Channel or Chat.
+
+        Arguments 
+
+            chat (`entity`):
+                The channel/chat entity from where to Get Participant.
+
+            entity (`entity`):
+                Username/UserId of person to look for.
+        
+        Raises
+            UserNotParticipantError - User is Not Participant of Chat/Channel.
+
+        Returns
+            The resulting :tl:`ChannelParticipant` object.
+
+        Example
+            .. code-block:: python
+                await client.get_participant(chat, user)
+        """
+        chat = await self.get_input_entity(chat)
+        user = await self.get_input_entity(user)
+        return await self(functions.channels.GetParticipantRequest(
+            channel=chat,
+            participant=user)
+        )
 
     def iter_admin_log(
             self: 'TelegramClient',
@@ -1191,7 +1233,6 @@ class ChatMethods:
         Fetches the permissions of a user in a specific chat or channel or
         get Default Restricted Rights of Chat or Channel.
 
-
         .. note::
 
             This request has to fetch the entire chat for small group chats,
@@ -1412,14 +1453,14 @@ class ChatMethods:
                     join_muted=True) # Mute New Group call Participants
         """
         if not method:
-            return self._log[__name__].info("Method Cant be None.")
+            raise ValueError("Method Cant be None.")
 
         if method == "create":
-            return await self(
+            return (await self(
                 functions.phone.CreateGroupCallRequest(
                     peer=entity,
                     schedule_date=schedule)
-            ).updates[0]
+            )).updates[0]
         try:
             Call = await self(
                 functions.messages.GetFullChatRequest(entity))
@@ -1451,7 +1492,7 @@ class ChatMethods:
             ).updates
 
         else:
-            self._log[__name__].info(
+            raise ValueError(
                 "Invalid Method Used while using Modifying GroupCall")
 
     # endregion
