@@ -348,4 +348,6 @@ library a lot easier. Only the interesting ones will be listed here.
     get_inner_text
     get_peer_id
     resolve_id
+    pack_bot_file_id
+    resolve_bot_file_id
     resolve_invite_link

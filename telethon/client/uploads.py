@@ -152,6 +152,9 @@ class UploadMethods:
                   send the file as "external" media, and Telegram is the
                   one that will fetch the media and send it.
 .
+                * A Bot API-like ``file_id``. You can convert previously
+                  sent media to file IDs for later reusing with
+                  `telethon.utils.pack_bot_file_id`.
 
                 * A handle to an existing file (for example, if you sent a
                   message with media before, you can use its ``message.media``
@@ -696,6 +699,10 @@ class UploadMethods:
                 media = types.InputMediaPhotoExternal(file)
             else:
                 media = types.InputMediaDocumentExternal(file)
+        else:
+            bot_file = utils.resolve_bot_file_id(file)
+            if bot_file:
+                media = utils.get_input_media(bot_file)
 
         if media:
             pass  # Already have media, don't check the rest

@@ -855,6 +855,8 @@ def is_image(file):
     match = re.match(r'\.(png|jpe?g)', _get_extension(file), re.IGNORECASE)
     if match:
         return True
+    else:
+        return isinstance(resolve_bot_file_id(file), types.Photo)
 
 
 def is_gif(file):
@@ -1112,6 +1114,160 @@ def _encode_telegram_base64(string):
     except (binascii.Error, ValueError, TypeError):
         return None  # not valid base64, not valid ascii, not a string
 
+
+def resolve_bot_file_id(file_id):
+    """
+    Given a Bot API-style `file_id <telethon.tl.custom.file.File.id>`,
+    returns the media it represents. If the `file_id <telethon.tl.custom.file.File.id>`
+    is not valid, `None` is returned instead.
+
+    Note that the `file_id <telethon.tl.custom.file.File.id>` does not have information
+    such as image dimensions or file size, so these will be zero if present.
+
+    For thumbnails, the photo ID and hash will always be zero.
+    """
+    data = _rle_decode(_decode_telegram_base64(file_id))
+    if not data:
+        return None
+
+    # This isn't officially documented anywhere, but
+    # we assume the last byte is some kind of "version".
+    data, version = data[:-1], data[-1]
+    if version not in (2, 4):
+        return None
+
+    if (version == 2 and len(data) == 24) or (version == 4 and len(data) == 25):
+        if version == 2:
+            file_type, dc_id, media_id, access_hash = struct.unpack('<iiqq', data)
+        # elif version == 4:
+        else:
+            # TODO Figure out what the extra byte means
+            file_type, dc_id, media_id, access_hash, _ = struct.unpack('<iiqqb', data)
+
+        if not (1 <= dc_id <= 5):
+            # Valid `file_id`'s must have valid DC IDs. Since this method is
+            # called when sending a file and the user may have entered a path
+            # they believe is correct but the file doesn't exist, this method
+            # may detect a path as "valid" bot `file_id` even when it's not.
+            # By checking the `dc_id`, we greatly reduce the chances of this
+            # happening.
+            return None
+
+        attributes = []
+        if file_type == 3 or file_type == 9:
+            attributes.append(types.DocumentAttributeAudio(
+                duration=0,
+                voice=file_type == 3
+            ))
+        elif file_type == 4 or file_type == 13:
+            attributes.append(types.DocumentAttributeVideo(
+                duration=0,
+                w=0,
+                h=0,
+                round_message=file_type == 13
+            ))
+        # elif file_type == 5:  # other, cannot know which
+        elif file_type == 8:
+            attributes.append(types.DocumentAttributeSticker(
+                alt='',
+                stickerset=types.InputStickerSetEmpty()
+            ))
+        elif file_type == 10:
+            attributes.append(types.DocumentAttributeAnimated())
+
+        return types.Document(
+            id=media_id,
+            access_hash=access_hash,
+            date=None,
+            mime_type='',
+            size=0,
+            thumbs=None,
+            dc_id=dc_id,
+            attributes=attributes,
+            file_reference=b''
+        )
+    elif (version == 2 and len(data) == 44) or (version == 4 and len(data) in (49, 77)):
+        if version == 2:
+            (file_type, dc_id, media_id, access_hash,
+                volume_id, secret, local_id) = struct.unpack('<iiqqqqi', data)
+        # else version == 4:
+        elif len(data) == 49:
+            # TODO Figure out what the extra five bytes mean
+            (file_type, dc_id, media_id, access_hash,
+                volume_id, secret, local_id, _) = struct.unpack('<iiqqqqi5s', data)
+        elif len(data) == 77:
+            # See #1613.
+            (file_type, dc_id, _, media_id, access_hash, volume_id, _, local_id, _) = struct.unpack('<ii28sqqq12sib', data)
+        else:
+            return None
+
+        if not (1 <= dc_id <= 5):
+            return None
+
+        # Thumbnails (small) always have ID 0; otherwise size 'x'
+        photo_size = 's' if media_id or access_hash else 'x'
+        return types.Photo(
+            id=media_id,
+            access_hash=access_hash,
+            file_reference=b'',
+            date=None,
+            sizes=[types.PhotoSize(
+                type=photo_size,
+                w=0,
+                h=0,
+                size=0
+            )],
+            dc_id=dc_id,
+            has_stickers=None
+        )
+
+
+def pack_bot_file_id(file):
+    """
+    Inverse operation for `resolve_bot_file_id`.
+
+    The only parameters this method will accept are :tl:`Document` and
+    :tl:`Photo`, and it will return a variable-length ``file_id`` string.
+
+    If an invalid parameter is given, it will ``return None``.
+    """
+    if isinstance(file, types.MessageMediaDocument):
+        file = file.document
+    elif isinstance(file, types.MessageMediaPhoto):
+        file = file.photo
+
+    if isinstance(file, types.Document):
+        file_type = 5
+        for attribute in file.attributes:
+            if isinstance(attribute, types.DocumentAttributeAudio):
+                file_type = 3 if attribute.voice else 9
+            elif isinstance(attribute, types.DocumentAttributeVideo):
+                file_type = 13 if attribute.round_message else 4
+            elif isinstance(attribute, types.DocumentAttributeSticker):
+                file_type = 8
+            elif isinstance(attribute, types.DocumentAttributeAnimated):
+                file_type = 10
+            else:
+                continue
+            break
+
+        return _encode_telegram_base64(_rle_encode(struct.pack(
+            '<iiqqb', file_type, file.dc_id, file.id, file.access_hash, 2)))
+
+    elif isinstance(file, types.Photo):
+        size = next((x for x in reversed(file.sizes) if isinstance(
+            x, (types.PhotoSize, types.PhotoCachedSize))), None)
+
+        if not size:
+            return None
+
+        size = size.location
+        return _encode_telegram_base64(_rle_encode(struct.pack(
+            '<iiqqqqib', 2, file.dc_id, file.id, file.access_hash,
+            size.volume_id, 0, size.local_id, 2  # 0 = old `secret`
+        )))
+    else:
+        return None
 
 
 def resolve_invite_link(link):
@@ -1393,7 +1549,7 @@ def _photo_size_byte_count(size):
         return len(size.bytes)
     elif isinstance(size, types.PhotoSizeEmpty):
         return 0
-    elif isinstance(size, types.PhotoSizeProgressive):
+    elif isinstance(size, types.):
         return max(size.sizes)
     else:
         return None

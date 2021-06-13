@@ -395,6 +395,9 @@ class DownloadMethods:
             date = datetime.datetime.now()
             media = message
 
+        if isinstance(media, str):
+            media = utils.resolve_bot_file_id(media)
+
         if isinstance(media, types.MessageService):
             if isinstance(message.action,
                           types.MessageActionChatEditPhoto):
