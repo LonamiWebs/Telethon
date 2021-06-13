@@ -29,6 +29,7 @@ BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this reques
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
+BOT_COMMAND_INVALID,400,
 BOT_DOMAIN_INVALID,400,The domain used for the auth button does not match the one configured in @BotFather
 BOT_GAMES_DISABLED,400,Bot games cannot be used in this type of chat
 BOT_GROUPS_BLOCKED,400,This bot can't be added to groups
