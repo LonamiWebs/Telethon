@@ -1549,7 +1549,7 @@ def _photo_size_byte_count(size):
         return len(size.bytes)
     elif isinstance(size, types.PhotoSizeEmpty):
         return 0
-    elif isinstance(size, types.):
+    elif isinstance(size, types.PhotoSizeProgressive):
         return max(size.sizes)
     else:
         return None

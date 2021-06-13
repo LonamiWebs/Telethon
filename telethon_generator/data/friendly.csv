@@ -11,8 +11,6 @@ chats.ChatMethods,edit_admin,channels.editAdmin messages.editChatAdmin
 chats.ChatMethods,edit_permissions,channels.editBanned messages.editChatDefaultBannedRights
 chats.ChatMethods,iter_participants,channels.getParticipants
 chats.ChatMethods,iter_admin_log,channels.getAdminLog
-chats.ChatMethods,get_participant, channels.getParticipant
-chats.ChatMethods,modify_groupcall, phone.createGroupCall phone.discardGroupCall phone.toggleGroupCallSettings phone.startScheduledGroupCall phone.editGroupCallTitle
 dialogs.DialogMethods,iter_dialogs,messages.getDialogs
 dialogs.DialogMethods,iter_drafts,messages.getAllDrafts
 dialogs.DialogMethods,edit_folder,folders.deleteFolder folders.editPeerFolders

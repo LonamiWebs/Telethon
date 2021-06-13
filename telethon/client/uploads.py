@@ -151,7 +151,7 @@ class UploadMethods:
                 * An external URL to a file over the internet. This will
                   send the file as "external" media, and Telegram is the
                   one that will fetch the media and send it.
-.
+
                 * A Bot API-like ``file_id``. You can convert previously
                   sent media to file IDs for later reusing with
                   `telethon.utils.pack_bot_file_id`.
