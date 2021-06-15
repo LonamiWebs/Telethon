@@ -378,6 +378,7 @@ WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
 WALLPAPER_INVALID,400,The input wallpaper was not valid
 WALLPAPER_MIME_INVALID,400,
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
+WEBDOCUMENT_MIME_INVALID,400,
 WEBDOCUMENT_URL_INVALID,400,The given URL cannot be used
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty
