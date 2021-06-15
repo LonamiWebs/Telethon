@@ -256,6 +256,10 @@ class InlineBuilder:
                 It will be automatically set if ``mime_type`` is specified,
                 and default to ``'file'`` if no matching mime type is found.
 
+            attributes (`list`, optional):
+                Optional attributes that override the inferred ones, like
+                :tl:`DocumentAttributeFilename` and so on.
+
             include_media (`bool`, optional):
                 Whether the document file used to display the result should be
                 included in the message itself or not. By default, the document

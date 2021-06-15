@@ -271,11 +271,9 @@ class DownloadMethods:
 
         if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
             dc_id = photo.dc_id
-            which = photo.photo_big if download_big else photo.photo_small
             loc = types.InputPeerPhotoFileLocation(
                 peer=await self.get_input_entity(entity),
-                local_id=which.local_id,
-                volume_id=which.volume_id,
+                photo_id=photo.photo_id,
                 big=download_big
             )
         else:
@@ -400,6 +398,11 @@ class DownloadMethods:
         if isinstance(media, str):
             media = utils.resolve_bot_file_id(media)
 
+        if isinstance(media, types.MessageService):
+            if isinstance(message.action,
+                          types.MessageActionChatEditPhoto):
+                media = media.photo
+       
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo

@@ -12,6 +12,7 @@ API_ID_INVALID,400,The api_id/api_hash combination is invalid
 API_ID_PUBLISHED_FLOOD,400,"This API id was published somewhere, you can't use it now"
 ARTICLE_TITLE_EMPTY,400,The title of the article is empty
 AUDIO_TITLE_EMPTY,400,The title attribute of the audio must be non-empty
+AUDIO_CONTENT_URL_EMPTY,400,
 AUTH_BYTES_INVALID,400,The provided authorization is invalid
 AUTH_KEY_DUPLICATED,406,"The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions"
 AUTH_KEY_INVALID,401,The key is invalid
@@ -28,6 +29,7 @@ BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this reques
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
+BOT_COMMAND_INVALID,400,
 BOT_DOMAIN_INVALID,400,The domain used for the auth button does not match the one configured in @BotFather
 BOT_GAMES_DISABLED,400,Bot games cannot be used in this type of chat
 BOT_GROUPS_BLOCKED,400,This bot can't be added to groups
@@ -143,6 +145,7 @@ GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs
 GROUPCALL_FORBIDDEN,403,
 GROUPCALL_JOIN_MISSING,400,
 GROUPCALL_SSRC_DUPLICATE_MUCH,400,
+GROUPCALL_NOT_MODIFIED,400,
 GROUPED_MEDIA_INVALID,400,Invalid grouped media
 GROUP_CALL_INVALID,400,Group call invalid
 HASH_INVALID,400,The provided hash is invalid
@@ -215,6 +218,7 @@ PACK_SHORT_NAME_INVALID,400,"Invalid sticker pack name. It must begin with a let
 PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
 PARTICIPANTS_TOO_FEW,400,Not enough participants
 PARTICIPANT_CALL_FAILED,500,Failure while making call
+PARTICIPANT_JOIN_MISSING,403,
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
@@ -241,6 +245,7 @@ PHONE_NUMBER_OCCUPIED,400,The phone number is already in use
 PHONE_NUMBER_UNOCCUPIED,400,The phone number is not yet being used
 PHONE_PASSWORD_FLOOD,406,You have tried logging in too many times
 PHONE_PASSWORD_PROTECTED,400,This phone is password protected
+PHOTO_CONTENT_TYPE_INVALID,400,
 PHOTO_CONTENT_URL_EMPTY,400,The content from the URL used as a photo appears to be empty or has caused another HTTP error
 PHOTO_CROP_SIZE_SMALL,400,Photo is too small
 PHOTO_EXT_INVALID,400,The extension of the photo is invalid
@@ -287,6 +292,7 @@ RPC_CALL_FAIL,500,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,500,"Telegram is having internal issues, please try again later."
 RSA_DECRYPT_FAILED,400,Internal RSA decryption failed
 SCHEDULE_BOT_NOT_ALLOWED,400,Bots are not allowed to schedule messages
+SCHEDULE_DATE_INVALID,400,
 SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
 SCHEDULE_STATUS_PRIVATE,400,You cannot schedule a message until the person comes online if their privacy does not show this information
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
@@ -373,6 +379,7 @@ WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
 WALLPAPER_INVALID,400,The input wallpaper was not valid
 WALLPAPER_MIME_INVALID,400,
 WC_CONVERT_URL_INVALID,400,WC convert URL invalid
+WEBDOCUMENT_MIME_INVALID,400,
 WEBDOCUMENT_URL_INVALID,400,The given URL cannot be used
 WEBPAGE_CURL_FAILED,400,Failure while fetching the webpage with cURL
 WEBPAGE_MEDIA_EMPTY,400,Webpage media empty

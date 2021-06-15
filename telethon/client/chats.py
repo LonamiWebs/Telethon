@@ -162,11 +162,15 @@ class _ParticipantsIter(RequestIter):
 
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
-                user = users[participant.user_id]
+                if isinstance(participant, types.ChannelParticipantBanned):
+                    user_id = participant.peer.user_id
+                else:
+                    user_id = participant.user_id
+                user = users[user_id]
                 if not self.filter_entity(user):
                     continue
 
-                user = users[participant.user_id]
+                user = users[user_id]
                 user.participant = participant
                 self.buffer.append(user)
 
@@ -207,12 +211,17 @@ class _ParticipantsIter(RequestIter):
             self.requests[i].offset += len(participants.participants)
             users = {user.id: user for user in participants.users}
             for participant in participants.participants:
-                user = users[participant.user_id]
+
+                if isinstance(participant, types.ChannelParticipantBanned):
+                    user_id = participant.peer.user_id
+                else:
+                    user_id = participant.user_id
+
+                user = users[user_id]
                 if not self.filter_entity(user) or user.id in self.seen:
                     continue
-
-                self.seen.add(participant.user_id)
-                user = users[participant.user_id]
+                self.seen.add(user_id)
+                user = users[user_id]
                 user.participant = participant
                 self.buffer.append(user)
 
@@ -474,6 +483,7 @@ class ChatMethods:
         return await self.iter_participants(*args, **kwargs).collect()
 
     get_participants.__signature__ = inspect.signature(iter_participants)
+
 
     def iter_admin_log(
             self: 'TelegramClient',
@@ -789,7 +799,8 @@ class ChatMethods:
             try:
                 action = _ChatAction._str_mapping[action.lower()]
             except KeyError:
-                raise ValueError('No such action "{}"'.format(action)) from None
+                raise ValueError(
+                    'No such action "{}"'.format(action)) from None
         elif not isinstance(action, types.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
             # 0x20b2cc21 = crc32(b'SendMessageAction')
             if isinstance(action, type):
@@ -954,7 +965,8 @@ class ChatMethods:
                 entity, user, is_admin=is_admin))
 
         else:
-            raise ValueError('You can only edit permissions in groups and channels')
+            raise ValueError(
+                'You can only edit permissions in groups and channels')
 
     async def edit_permissions(
             self: 'TelegramClient',
@@ -1108,7 +1120,7 @@ class ChatMethods:
 
         return await self(functions.channels.EditBannedRequest(
             channel=entity,
-            user_id=user,
+            participant=user,
             banned_rights=rights
         ))
 
@@ -1165,14 +1177,14 @@ class ChatMethods:
             else:
                 resp = await self(functions.channels.EditBannedRequest(
                     channel=entity,
-                    user_id=user,
+                    participant=user,
                     banned_rights=types.ChatBannedRights(
                         until_date=None, view_messages=True)
                 ))
                 await asyncio.sleep(0.5)
                 await self(functions.channels.EditBannedRequest(
                     channel=entity,
-                    user_id=user,
+                    participant=user,
                     banned_rights=types.ChatBannedRights(until_date=None)
                 ))
         else:
@@ -1183,10 +1195,11 @@ class ChatMethods:
     async def get_permissions(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            user: 'hints.EntityLike'
+            user: 'hints.EntityLike' = None
     ) -> 'typing.Optional[custom.ParticipantPermissions]':
         """
-        Fetches the permissions of a user in a specific chat or channel.
+        Fetches the permissions of a user in a specific chat or channel or
+        get Default Restricted Rights of Chat or Channel.
 
         .. note::
 
@@ -1197,7 +1210,7 @@ class ChatMethods:
             entity (`entity`):
                 The channel or chat the user is participant of.
 
-            user (`entity`):
+            user (`entity`, optional):
                 Target user.
 
         Returns
@@ -1211,7 +1224,21 @@ class ChatMethods:
                 permissions = await client.get_permissions(chat, user)
                 if permissions.is_admin:
                     # do something
+
+                # Get Banned Permissions of Chat
+                await client.get_permissions(chat)
         """
+        entity = await self.get_entity(entity)
+
+        if not user:
+            if isinstance(entity, types.Channel):
+                FullChat = await self(functions.channels.GetFullChannelRequest(entity))
+            elif isinstance(entity, types.Chat):
+                FullChat = await self(functions.messages.GetFullChatRequest(entity))
+            else:
+                return
+            return FullChat.chats[0].default_banned_rights
+
         entity = await self.get_input_entity(entity)
         user = await self.get_input_entity(user)
         if helpers._entity_type(user) != helpers._EntityType.USER:

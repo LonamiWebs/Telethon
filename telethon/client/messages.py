@@ -603,6 +603,7 @@ class MessageMethods:
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
+            thumb: 'hints.FileLike' = None,
             force_document: bool = False,
             clear_draft: bool = False,
             buttons: 'hints.MarkupLike' = None,
@@ -663,6 +664,17 @@ class MessageMethods:
             file (`file`, optional):
                 Sends a message with a file attached (e.g. a photo,
                 video, audio or document). The ``message`` may be empty.
+
+            thumb (`str` | `bytes` | `file`, optional):
+                Optional JPEG thumbnail (for documents). **Telegram will
+                ignore this parameter** unless you pass a ``.jpg`` file!
+                The file must also be small in dimensions and in disk size.
+                Successful thumbnails were files below 20kB and 320x320px.
+                Width/height and dimensions/size ratios may be important.
+                For Telegram to accept a thumbnail, you must provide the
+                dimensions of the underlying media through ``attributes=``
+                with :tl:`DocumentAttributesVideo` or by installing the
+                optional ``hachoir`` dependency.
 
             force_document (`bool`, optional):
                 Whether to send the given file as a document or not.
@@ -772,7 +784,7 @@ class MessageMethods:
             return await self.send_file(
                 entity, file, caption=message, reply_to=reply_to,
                 attributes=attributes, parse_mode=parse_mode,
-                force_document=force_document,
+                force_document=force_document, thumb=thumb,
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
@@ -986,6 +998,7 @@ class MessageMethods:
             formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
+            thumb: 'hints.FileLike' = None,
             force_document: bool = False,
             buttons: 'hints.MarkupLike' = None,
             supports_streaming: bool = False,
@@ -1037,6 +1050,17 @@ class MessageMethods:
             file (`str` | `bytes` | `file` | `media`, optional):
                 The file object that should replace the existing media
                 in the message.
+
+            thumb (`str` | `bytes` | `file`, optional):
+                Optional JPEG thumbnail (for documents). **Telegram will
+                ignore this parameter** unless you pass a ``.jpg`` file!
+                The file must also be small in dimensions and in disk size.
+                Successful thumbnails were files below 20kB and 320x320px.
+                Width/height and dimensions/size ratios may be important.
+                For Telegram to accept a thumbnail, you must provide the
+                dimensions of the underlying media through ``attributes=``
+                with :tl:`DocumentAttributesVideo` or by installing the
+                optional ``hachoir`` dependency.
 
             force_document (`bool`, optional):
                 Whether to send the given file as a document or not.
@@ -1102,6 +1126,7 @@ class MessageMethods:
             text, formatting_entities = await self._parse_message_text(text, parse_mode)
         file_handle, media, image = await self._file_to_media(file,
                 supports_streaming=supports_streaming,
+                thumb=thumb,
                 attributes=attributes,
                 force_document=force_document)
 
