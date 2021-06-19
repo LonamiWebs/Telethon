@@ -692,11 +692,21 @@ class TelegramBaseClient(abc.ABC):
             for pk in cls._cdn_config.public_keys:
                 rsa.add_key(pk.public_key)
 
-        return next(
-            dc for dc in cls._config.dc_options
-            if dc.id == dc_id
-            and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
-        )
+        try:
+            return next(
+                dc for dc in cls._config.dc_options
+                if dc.id == dc_id
+                and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
+            )
+        except StopIteration:
+            self._log[__name__].warning(
+                'Failed to get DC %s (cdn = %s) with use_ipv6 = %s; retrying ignoring IPv6 check',
+                dc_id, cdn, self._use_ipv6
+            )
+            return next(
+                dc for dc in cls._config.dc_options
+                if dc.id == dc_id and bool(dc.cdn) == cdn
+            )
 
     async def _create_exported_sender(self: 'TelegramClient', dc_id):
         """
