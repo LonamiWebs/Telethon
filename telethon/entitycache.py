@@ -91,6 +91,12 @@ class EntityCache:
 
         raise KeyError('No cached entity for the given key')
 
+    def clear(self):
+        """
+        Clear the entity cache.
+        """
+        self.__dict__.clear()
+
     def ensure_cached(
             self,
             update,
