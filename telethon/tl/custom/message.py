@@ -984,7 +984,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
             options = find_options()
             if options is None:
-                return
+                options = []
             return await self._client(
                 functions.messages.SendVoteRequest(
                     peer=self._input_chat,
