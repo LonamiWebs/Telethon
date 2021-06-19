@@ -13,6 +13,35 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New schema and bug fixes (v1.22)
+================================
+
++------------------------+
+| Scheme layer used: 129 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=125&to=129>`__.
+
+Enhancements
+~~~~~~~~~~~~
+
+* You can now specify a message in `client.get_stats()
+  <telethon.client.chats.ChatMethods.get_stats>`.
+* Metadata extraction from audio files with ``hachoir`` now recognises "artist".
+* Get default chat permissions by not supplying a user to `client.get_permissions()
+  <telethon.client.chats.ChatMethods.get_permissions>`.
+* You may now use ``thumb`` when editing messages.
+
+Bug fixes
+~~~~~~~~~
+
+* Fixes regarding bot markup in messages.
+* Gracefully handle :tl:`ChannelForbidden` in ``get_sender``.
+
+And from v1.21.1:
+
+* ``file.width`` and ``.height`` was not working correctly in photos.
+* Raw API was mis-interpreting ``False`` values on boolean flag parameters.
 
 New schema and QoL improvements (v1.21)
 =======================================

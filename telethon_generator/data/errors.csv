@@ -141,6 +141,7 @@ FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and canno
 FROM_PEER_INVALID,400,The given from_user peer cannot be used for the parameter
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
 GIF_ID_INVALID,400,The provided GIF ID is invalid
+GRAPH_INVALID_RELOAD,400,
 GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
 GROUPCALL_FORBIDDEN,403,
 GROUPCALL_JOIN_MISSING,400,
