@@ -307,7 +307,7 @@ class InlineBuilder:
                 file,
                 mime_type=mime_type,
                 attributes=attributes,
-                force_document=True,
+                force_document=force_document,
                 voice_note=voice_note,
                 video_note=video_note,
                 allow_cache=use_cache
