@@ -255,6 +255,8 @@ class InlineBuilder:
                 contact, file, geo, gif, photo, sticker, venue, video, voice.
                 It will be automatically set if ``mime_type`` is specified,
                 and default to ``'file'`` if no matching mime type is found.
+                you may need to pass ``attributes`` in order to use ``type``
+                effectively.
 
             attributes (`list`, optional):
                 Optional attributes that override the inferred ones, like

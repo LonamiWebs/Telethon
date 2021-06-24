@@ -140,6 +140,7 @@ FRESH_CHANGE_PHONE_FORBIDDEN,406,Recently logged-in users cannot use this reques
 FRESH_RESET_AUTHORISATION_FORBIDDEN,406,The current session is too new and cannot be used to reset other authorisations yet
 FROM_PEER_INVALID,400,The given from_user peer cannot be used for the parameter
 GAME_BOT_INVALID,400,You cannot send that game with the current bot
+GIF_CONTENT_TYPE_INVALID,400,
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GRAPH_INVALID_RELOAD,400,
 GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
@@ -346,6 +347,7 @@ TYPE_CONSTRUCTOR_INVALID,400,The type constructor is invalid
 UNKNOWN_METHOD,500,The method you tried to call cannot be called on non-CDN DCs
 UNTIL_DATE_INVALID,400,That date cannot be specified in this request (try using None)
 URL_INVALID,400,The URL used was invalid (e.g. when answering a callback with a URL that's not t.me/yourbot or your game's URL)
+USER_VOLUME_INVALID,400,
 USERNAME_INVALID,400,"Nobody is using this username, or the username is unacceptable. If the latter, it must match r""[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]"""
 USERNAME_NOT_MODIFIED,400,The username is not different from the current username
 USERNAME_NOT_OCCUPIED,400,The username is not in use by anyone else yet
@@ -376,6 +378,7 @@ USER_RESTRICTED,403,"You're spamreported, you can't create channels or chats."
 USERPIC_UPLOAD_REQUIRED,400,You must have a profile picture before using this method
 VIDEO_CONTENT_TYPE_INVALID,400,The video content type is not supported with the given parameters (i.e. supports_streaming)
 VIDEO_FILE_INVALID,400,The given video cannot be used
+VIDEO_TITLE_EMPTY,400,
 WALLPAPER_FILE_INVALID,400,The given file cannot be used as a wallpaper
 WALLPAPER_INVALID,400,The input wallpaper was not valid
 WALLPAPER_MIME_INVALID,400,
