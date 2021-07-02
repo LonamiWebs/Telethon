@@ -129,3 +129,7 @@ class ParticipantPermissions:
     anonymous = property(**_admin_prop('anonymous', """
         Whether the administrator will remain anonymous when sending messages.
     """))
+    
+    manage_call = property(**_admin_prop('manage_call', """
+        Whether the user will be able to manage group calls.
+    """))
