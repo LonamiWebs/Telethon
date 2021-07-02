@@ -829,7 +829,7 @@ class ChatMethods:
             invite_users: bool = None,
             pin_messages: bool = None,
             add_admins: bool = None,
-            manage_call: bool = True,
+            manage_call: bool = None,
             anonymous: bool = None,
             is_admin: bool = None,
             title: str = None) -> types.Updates:
