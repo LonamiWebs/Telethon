@@ -226,7 +226,7 @@ class InlineBuilder:
     # noinspection PyIncorrectDocstring
     async def document(
             self, file, title=None, *, description=None, type=None,
-            mime_type=None, attributes=None, force_document=False,
+            mime_type=None, attributes=None, force_document=True,
             voice_note=False, video_note=False, use_cache=True, id=None,
             text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None,
