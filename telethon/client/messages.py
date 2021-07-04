@@ -1345,7 +1345,7 @@ class MessageMethods:
                 Whether the pin should notify people or not.
                 
             pm_oneside (`bool`, optional):
-                Whether the message should be deleted for everyone or not.
+                Whether the message should be pinned for everyone or not.
                 By default it has the opposite behaviour of official clients,
                 and it will pin the message for both sides, in private chats.
 
