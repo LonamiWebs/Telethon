@@ -1038,7 +1038,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             await self._client.send_read_acknowledge(
                 await self.get_input_chat(), max_id=self.id)
 
-    async def pin(self, *, notify=False):
+    async def pin(self, *, notify=False, pm_oneside=False):
         """
         Pins the message. Shorthand for
         `telethon.client.messages.MessageMethods.pin_message`
@@ -1049,7 +1049,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         #      That or figure out a way to always set it directly.
         if self._client:
             return await self._client.pin_message(
-                await self.get_input_chat(), self.id, notify=notify)
+                await self.get_input_chat(), self.id, notify=notify, pm_oneside=pm_oneside)
 
     async def unpin(self):
         """
