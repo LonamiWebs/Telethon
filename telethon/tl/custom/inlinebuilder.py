@@ -72,7 +72,7 @@ class InlineBuilder:
 
     # noinspection PyIncorrectDocstring
     async def article(
-            self, title, description=None,
+            self, title, description=None, type="article",
             *, url=None, thumb=None, content=None,
             id=None, text=None, parse_mode=(), link_preview=True,
             geo=None, period=60, contact=None, game=False, buttons=None
@@ -97,6 +97,13 @@ class InlineBuilder:
             content (:tl:`InputWebDocument`, optional):
                 The content to be shown for this result.
                 For now it has to be a :tl:`InputWebDocument` if present.
+
+            type (`str`, optional):
+                type of the content to use. Defaults to `article`.
+
+            include_media (`bool`, optional):
+                Whether the content used to display the result should be
+                included in the message itself or not. Defaults to `False`.
 
         Example:
             .. code-block:: python
@@ -128,10 +135,11 @@ class InlineBuilder:
         # voice, document, location, venue, contact, game
         result = types.InputBotInlineResult(
             id=id or '',
-            type='article',
+            type=type,
             send_message=await self._message(
                 text=text, parse_mode=parse_mode, link_preview=link_preview,
                 geo=geo, period=period,
+                media=include_media,
                 contact=contact,
                 game=game,
                 buttons=buttons
