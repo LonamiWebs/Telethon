@@ -49,7 +49,6 @@ class Button:
         Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
-            types.KeyboardButtonBuy,
             types.KeyboardButtonCallback,
             types.KeyboardButtonSwitchInline,
             types.KeyboardButtonUrl,
@@ -163,18 +162,6 @@ class Button:
             request_write_access=write_access,
             fwd_text=fwd_text
         )
-
-    @staticmethod
-    def buy(text):
-        """
-        Create a inline button to Buy a Product.
-        It can be only used with Invoice.
-        It should be the first button of the Invoice. 
-        On Not using this, Telegram will Automatically add button to it.
-        Read More - https://core.telegram.org/api/payments
-        """
-        return types.KeyboardButtonBuy(text)
-
 
     @classmethod
     def text(cls, text, *, resize=None, single_use=None, selective=None):
