@@ -75,7 +75,8 @@ class InlineBuilder:
             self, title, description=None, type="article",
             *, url=None, thumb=None, content=None,
             id=None, text=None, parse_mode=(), link_preview=True,
-            geo=None, period=60, contact=None, game=False, buttons=None
+            geo=None, period=60, contact=None, game=False, buttons=None,
+            include_media=False
     ):
         """
         Creates new inline result of article type.
