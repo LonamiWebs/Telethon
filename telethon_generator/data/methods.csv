@@ -296,7 +296,7 @@ messages.toggleStickerSets,user,
 messages.uninstallStickerSet,user,STICKERSET_INVALID
 messages.updateDialogFilter,user,
 messages.updateDialogFiltersOrder,user,
-messages.updatePinnedMessage,both,
+messages.updatePinnedMessage,both,BOT_ONESIDE_NOT_AVAIL
 messages.uploadEncryptedFile,user,
 messages.uploadMedia,both,BOT_MISSING MEDIA_INVALID PEER_ID_INVALID
 payments.clearSavedInfo,user,

@@ -27,6 +27,7 @@ BANK_CARD_NUMBER_INVALID,400,Incorrect credit card number
 BASE_PORT_LOC_INVALID,400,Base port location invalid
 BANNED_RIGHTS_INVALID,400,"You cannot use that set of permissions in this request, i.e. restricting view_messages as a default"
 BOTS_TOO_MUCH,400,There are too many bots in this chat/channel
+BOT_ONESIDE_NOT_AVAIL,400,
 BOT_CHANNELS_NA,400,Bots can't edit admin privileges
 BOT_COMMAND_DESCRIPTION_INVALID,400,"The command description was empty, too long or had invalid characters used"
 BOT_COMMAND_INVALID,400,

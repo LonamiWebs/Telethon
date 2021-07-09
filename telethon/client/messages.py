@@ -1322,7 +1322,8 @@ class MessageMethods:
             entity: 'hints.EntityLike',
             message: 'typing.Optional[hints.MessageIDLike]',
             *,
-            notify: bool = False
+            notify: bool = False,
+            pm_oneside: bool = False
     ):
         """
         Pins a message in a chat.
@@ -1342,6 +1343,11 @@ class MessageMethods:
 
             notify (`bool`, optional):
                 Whether the pin should notify people or not.
+                
+            pm_oneside (`bool`, optional):
+                Whether the message should be pinned for everyone or not.
+                By default it has the opposite behaviour of official clients,
+                and it will pin the message for both sides, in private chats.
 
         Example
             .. code-block:: python
@@ -1350,7 +1356,7 @@ class MessageMethods:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
-        return await self._pin(entity, message, unpin=False, notify=notify)
+        return await self._pin(entity, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
 
     async def unpin_message(
             self: 'TelegramClient',
@@ -1382,7 +1388,7 @@ class MessageMethods:
         """
         return await self._pin(entity, message, unpin=True, notify=notify)
 
-    async def _pin(self, entity, message, *, unpin, notify=False):
+    async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
         message = utils.get_message_id(message) or 0
         entity = await self.get_input_entity(entity)
         if message <= 0:  # old behaviour accepted negative IDs to unpin
@@ -1394,6 +1400,7 @@ class MessageMethods:
             id=message,
             silent=not notify,
             unpin=unpin,
+            pm_oneside=pm_oneside
         )
         result = await self(request)
 
