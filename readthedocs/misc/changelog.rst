@@ -13,6 +13,29 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+New schema and bug fixes (v1.23)
+================================
+
++------------------------+
+| Scheme layer used: 130 |
++------------------------+
+
+`View new and changed raw API methods <https://diff.telethon.dev/?from=129&to=130>`__.
+
+Enhancements
+~~~~~~~~~~~~
+
+* `client.pin_message() <telethon.client.messages.MessageMethods.pin_message>`
+  can now pin on a single side in PMs.
+* Iterating participants should now be less expensive floodwait-wise.
+
+Bug fixes
+~~~~~~~~~
+
+* The QR login URL was being encoded incorrectly.
+* ``force_document`` was being ignored in inline queries for document.
+* ``manage_call`` permission was accidentally set to ``True`` by default.
+
 New schema and bug fixes (v1.22)
 ================================
 
