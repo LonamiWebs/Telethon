@@ -309,6 +309,7 @@ SESSION_REVOKED,401,"The authorization has been invalidated, because of the user
 SESSION_TOO_FRESH_X,400,The session logged in too recently and {seconds} seconds must pass before calling the method
 SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
+SHORT_NAME_OCCUPIED,400,
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 SRP_ID_INVALID,400,
 START_PARAM_EMPTY,400,The start parameter is empty
@@ -335,6 +336,7 @@ TAKEOUT_INVALID,400,The takeout session has been invalidated by another data exp
 TAKEOUT_REQUIRED,400,You must initialize a takeout request first
 TEMP_AUTH_KEY_EMPTY,400,No temporary auth key provided
 TIMEOUT,500,A timeout occurred while fetching data from the worker
+TITLE_INVALID,400,
 THEME_INVALID,400,Theme invalid
 THEME_MIME_INVALID,400,"You cannot create this theme, the mime-type is invalid"
 TMP_PASSWORD_DISABLED,400,The temporary password is disabled
