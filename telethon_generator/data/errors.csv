@@ -91,6 +91,7 @@ CONNECTION_SYSTEM_EMPTY,400,Connection system empty
 CONNECTION_SYSTEM_LANG_CODE_EMPTY,400,The system language string was empty during connection
 CONTACT_ID_INVALID,400,The provided contact ID is invalid
 CONTACT_NAME_EMPTY,400,The provided contact name cannot be empty
+CURRENCY_TOTAL_AMOUNT_INVALID,400,
 DATA_INVALID,400,Encrypted data invalid
 DATA_JSON_INVALID,400,The provided JSON data is invalid
 DATE_EMPTY,400,Date empty
@@ -118,6 +119,7 @@ EXTERNAL_URL_INVALID,400,External URL invalid
 FIELD_NAME_EMPTY,400,The field with the name FIELD_NAME is missing
 FIELD_NAME_INVALID,400,The field with the name FIELD_NAME is invalid
 FILEREF_UPGRADE_NEEDED,406,The file reference needs to be refreshed before being used again
+FILE_CONTENT_TYPE_INVALID,400,
 FILE_ID_INVALID,400,"The provided file id is invalid. Make sure all parameters are present, have the correct type and are not empty (ID, access hash, file reference, thumb size ...)"
 FILE_MIGRATE_X,303,The file to be accessed is currently stored in DC {new_dc}
 FILE_PARTS_INVALID,400,The number of file parts is invalid
@@ -145,6 +147,7 @@ GIF_CONTENT_TYPE_INVALID,400,
 GIF_ID_INVALID,400,The provided GIF ID is invalid
 GRAPH_INVALID_RELOAD,400,
 GRAPH_OUTDATED_RELOAD,400,"Data can't be used for the channel statistics, graphs outdated"
+GROUPCALL_ALREADY_DISCARDED,400,
 GROUPCALL_FORBIDDEN,403,
 GROUPCALL_JOIN_MISSING,400,
 GROUPCALL_SSRC_DUPLICATE_MUCH,400,
