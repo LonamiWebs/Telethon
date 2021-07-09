@@ -124,11 +124,11 @@ class _ParticipantsIter(RequestIter):
         self.requests = []
 
         if ty == helpers._EntityType.CHANNEL:
-            self.total = (await self.client(
-                functions.channels.GetFullChannelRequest(entity)
-            )).full_chat.participants_count
-
             if self.limit <= 0:
+                # May not have access to the channel, but getFull can get the .total.
+                self.total = (await self.client(
+                    functions.channels.GetFullChannelRequest(entity)
+                )).full_chat.participants_count
                 raise StopAsyncIteration
 
             self.seen = set()
@@ -201,9 +201,29 @@ class _ParticipantsIter(RequestIter):
         if self.requests[0].offset > self.limit:
             return True
 
+        if self.total is None:
+            f = self.requests[0].filter
+            if len(self.requests) > 1 or (
+                not isinstance(f, types.ChannelParticipantsRecent)
+                and (not isinstance(f, types.ChannelParticipantsSearch) or f.q)
+            ):
+                # Only do an additional getParticipants here to get the total
+                # if there's a filter which would reduce the real total number.
+                # getParticipants is cheaper than getFull.
+                self.total = (await self.client(functions.channels.GetParticipantsRequest(
+                    channel=self.requests[0].channel,
+                    filter=types.ChannelParticipantsRecent(),
+                    offset=0,
+                    limit=1,
+                    hash=0
+                ))).count
+
         results = await self.client(self.requests)
         for i in reversed(range(len(self.requests))):
             participants = results[i]
+            if self.total is None:
+                # Will only get here if there was one request with a filter that matched all users.
+                self.total = participants.count
             if not participants.users:
                 self.requests.pop(i)
                 continue
