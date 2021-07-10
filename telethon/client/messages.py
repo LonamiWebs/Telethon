@@ -703,7 +703,7 @@ class MessageMethods:
                 notify them. Set it to `True` to alter this behaviour.
 
             background (`bool`, optional):
-                Whether the message should be forwarded in background.
+                Whether the message should be send in background.
 
             supports_streaming (`bool`, optional):
                 Whether the sent video supports streaming or not. Note that
@@ -792,7 +792,7 @@ class MessageMethods:
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
-                comment_to=comment_to
+                comment_to=comment_to, background=background
             )
 
         entity = await self.get_input_entity(entity)
@@ -815,6 +815,7 @@ class MessageMethods:
                     message.media,
                     caption=message.message,
                     silent=silent,
+                    background=background,
                     reply_to=reply_to,
                     buttons=markup,
                     formatting_entities=message.entities,
