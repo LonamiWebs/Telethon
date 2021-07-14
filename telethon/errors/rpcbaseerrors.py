@@ -1,3 +1,5 @@
+from ..tl.functions import InvokeWithoutUpdatesRequest
+
 class RPCError(Exception):
     """Base class for all Remote Procedure Call errors."""
     code = None
@@ -13,7 +15,12 @@ class RPCError(Exception):
 
     @staticmethod
     def _fmt_request(request):
-        return ' (caused by {})'.format(request.__class__.__name__)
+        if type(request) is InvokeWithoutUpdatesRequest:
+            reason = 'InvokeWithoutUpdatesRequest({})'.format(request.query.__class__.__name__)
+        else:
+            reason = request.__class__.__name__
+
+        return ' (caused by {})'.format(reason)
 
     def __reduce__(self):
         return type(self), (self.request, self.message, self.code)
