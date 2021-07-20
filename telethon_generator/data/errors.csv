@@ -175,6 +175,7 @@ INTERDC_X_CALL_RICH_ERROR,500,A rich error occurred while communicating with DC 
 INVITE_HASH_EMPTY,400,The invite hash is empty
 INVITE_HASH_EXPIRED,400,The chat the user tried to join has expired and is not valid anymore
 INVITE_HASH_INVALID,400,The invite hash is invalid
+LANG_CODE_INVALID,400,
 LANG_PACK_INVALID,400,The provided language pack is invalid
 LASTNAME_INVALID,400,The last name is invalid
 LIMIT_INVALID,400,An invalid limit was provided. See https://core.telegram.org/api/files#downloading-files
@@ -229,6 +230,7 @@ PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to dat
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
 PASSWORD_MISSING,400,The account must have 2-factor authentication enabled (a password) before this method can be used
+PASSWORD_RECOVERY_EXPIRED,400,
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
@@ -289,6 +291,7 @@ REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_GAME_EMPTY,400,The provided reply markup for the game is empty
 REPLY_MARKUP_INVALID,400,The provided reply markup is invalid
 REPLY_MARKUP_TOO_LONG,400,The data embedded in the reply markup buttons was too much
+RESET_REQUEST_MISSING,400,
 RESULTS_TOO_MUCH,400,"You sent too many results, see https://core.telegram.org/bots/api#answerinlinequery for the current limit"
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs
 RESULT_ID_INVALID,400,The given result cannot be used to send the selection to the bot
@@ -313,6 +316,7 @@ SESSION_REVOKED,401,"The authorization has been invalidated, because of the user
 SESSION_TOO_FRESH_X,400,The session logged in too recently and {seconds} seconds must pass before calling the method
 SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
+SHORT_NAME_INVALID,400,
 SHORT_NAME_OCCUPIED,400,
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 SRP_ID_INVALID,400,
