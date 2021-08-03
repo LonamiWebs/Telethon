@@ -16,6 +16,8 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
+Callback = typing.Callable[[typing.Any], typing.Any]
+
 class UpdateMethods:
 
     # region Public methods
@@ -104,7 +106,7 @@ class UpdateMethods:
 
     def add_event_handler(
             self: 'TelegramClient',
-            callback: callable,
+            callback: Callback,
             event: EventBuilder = None):
         """
         Registers a new event handler callback.
@@ -153,7 +155,7 @@ class UpdateMethods:
 
     def remove_event_handler(
             self: 'TelegramClient',
-            callback: callable,
+            callback: Callback,
             event: EventBuilder = None) -> int:
         """
         Inverse operation of `add_event_handler()`.
@@ -191,7 +193,7 @@ class UpdateMethods:
         return found
 
     def list_event_handlers(self: 'TelegramClient')\
-            -> 'typing.Sequence[typing.Tuple[callable, EventBuilder]]':
+            -> 'typing.Sequence[typing.Tuple[Callback, EventBuilder]]':
         """
         Lists all registered event handlers.
 
