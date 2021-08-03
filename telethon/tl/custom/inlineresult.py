@@ -102,7 +102,7 @@ class InlineResult:
         elif isinstance(self.result, types.BotInlineMediaResult):
             return self.result.document
 
-    async def click(self, entity=None, reply_to=None,
+    async def click(self, entity=None, reply_to=None, comment_to=None,
                     silent=False, clear_draft=False, hide_via=False):
         """
         Clicks this result and sends the associated `message`.
@@ -113,6 +113,11 @@ class InlineResult:
 
             reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
                 If present, the sent message will reply to this ID or message.
+
+            comment_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+                Similar to ``reply_to``, but replies in the linked group of a
+                broadcast channel instead (effectively leaving a "comment to"
+                the specified message).
 
             silent (`bool`, optional):
                 Whether the message should notify people with sound or not.
@@ -135,7 +140,11 @@ class InlineResult:
         else:
             raise ValueError('You must provide the entity where the result should be sent to')
 
-        reply_id = None if reply_to is None else utils.get_message_id(reply_to)
+        if comment_to:
+            entity, reply_id = await self._client._get_comment_data(entity, comment_to)
+        else:
+            reply_id = None if reply_to is None else utils.get_message_id(reply_to)
+
         req = functions.messages.SendInlineBotResultRequest(
             peer=entity,
             query_id=self._query_id,
