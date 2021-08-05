@@ -103,7 +103,8 @@ class InlineResult:
             return self.result.document
 
     async def click(self, entity=None, reply_to=None, comment_to=None,
-                    silent=False, clear_draft=False, hide_via=False):
+                    silent=False, clear_draft=False, hide_via=False,
+                    background=None):
         """
         Clicks this result and sends the associated `message`.
 
@@ -128,10 +129,14 @@ class InlineResult:
             clear_draft (`bool`, optional):
                 Whether the draft should be removed after sending the
                 message from this result or not. Defaults to `False`.
-            
+
             hide_via (`bool`, optional):
                 Whether the "via @bot" should be hidden or not.
                 Only works with certain bots (like @bing or @gif).
+
+            background (`bool`, optional):
+                Whether the message should be send in background.
+
         """
         if entity:
             entity = await self._client.get_input_entity(entity)
@@ -150,6 +155,7 @@ class InlineResult:
             query_id=self._query_id,
             id=self.result.id,
             silent=silent,
+            background=background,
             clear_draft=clear_draft,
             hide_via=hide_via,
             reply_to_msg_id=reply_id

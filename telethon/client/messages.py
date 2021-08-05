@@ -608,6 +608,7 @@ class MessageMethods:
             clear_draft: bool = False,
             buttons: 'hints.MarkupLike' = None,
             silent: bool = None,
+            background: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None
@@ -701,6 +702,9 @@ class MessageMethods:
                 channel or not. Defaults to `False`, which means it will
                 notify them. Set it to `True` to alter this behaviour.
 
+            background (`bool`, optional):
+                Whether the message should be send in background.
+
             supports_streaming (`bool`, optional):
                 Whether the sent video supports streaming or not. Note that
                 Telegram only recognizes as streamable some formats like MP4,
@@ -788,7 +792,7 @@ class MessageMethods:
                 buttons=buttons, clear_draft=clear_draft, silent=silent,
                 schedule=schedule, supports_streaming=supports_streaming,
                 formatting_entities=formatting_entities,
-                comment_to=comment_to
+                comment_to=comment_to, background=background
             )
 
         entity = await self.get_input_entity(entity)
@@ -811,6 +815,7 @@ class MessageMethods:
                     message.media,
                     caption=message.message,
                     silent=silent,
+                    background=background,
                     reply_to=reply_to,
                     buttons=markup,
                     formatting_entities=message.entities,
@@ -821,6 +826,7 @@ class MessageMethods:
                 peer=entity,
                 message=message.message or '',
                 silent=silent,
+                background=background,
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 reply_markup=markup,
                 entities=message.entities,
@@ -846,6 +852,7 @@ class MessageMethods:
                 reply_to_msg_id=utils.get_message_id(reply_to),
                 clear_draft=clear_draft,
                 silent=silent,
+                background=background,
                 reply_markup=self.build_reply_markup(buttons),
                 schedule_date=schedule
             )
@@ -874,6 +881,8 @@ class MessageMethods:
             messages: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
             from_peer: 'hints.EntityLike' = None,
             *,
+            background: bool = None,
+            with_my_score: bool = None,
             silent: bool = None,
             as_album: bool = None,
             schedule: 'hints.DateLike' = None
@@ -905,6 +914,12 @@ class MessageMethods:
                 Defaults to `False` (send with a notification sound unless
                 the person has the chat muted). Set it to `True` to alter
                 this behaviour.
+
+            background (`bool`, optional):
+                Whether the message should be forwarded in background.
+
+            with_my_score (`bool`, optional):
+                Whether forwarded should contain your game score.
 
             as_album (`bool`, optional):
                 This flag no longer has any effect.
@@ -980,6 +995,8 @@ class MessageMethods:
                 id=chunk,
                 to_peer=entity,
                 silent=silent,
+                background=background,
+                with_my_score=with_my_score,
                 schedule_date=schedule
             )
             result = await self(req)
