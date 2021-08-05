@@ -26,10 +26,12 @@ def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
 
 
 class UserMethods:
-    async def __call__(self: 'TelegramClient', request, ordered=False):
+    async def __call__(self: 'TelegramClient', request, ordered=False, flood_sleep_threshold=None):
         return await self._call(self._sender, request, ordered=ordered)
 
-    async def _call(self: 'TelegramClient', sender, request, ordered=False):
+    async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
+        if flood_sleep_threshold is None:
+            flood_sleep_threshold = self.flood_sleep_threshold
         requests = (request if utils.is_list_like(request) else (request,))
         for r in requests:
             if not isinstance(r, TLRequest):
@@ -42,7 +44,7 @@ class UserMethods:
                 diff = round(due - time.time())
                 if diff <= 3:  # Flood waits below 3 seconds are "ignored"
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
-                elif diff <= self.flood_sleep_threshold:
+                elif diff <= flood_sleep_threshold:
                     self._log[__name__].info(*_fmt_flood(diff, r, early=True))
                     await asyncio.sleep(diff)
                     self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
