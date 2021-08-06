@@ -837,6 +837,11 @@ class TelegramBaseClient(abc.ABC):
                 executed sequentially on the server. They run in arbitrary
                 order by default.
 
+            flood_sleep_threshold (`int` | `None`, optional):
+                The flood sleep threshold to use for this request. This overrides
+                the default value stored in
+                `client.flood_sleep_threshold <telethon.client.telegrambaseclient.TelegramBaseClient.flood_sleep_threshold>`
+
         Returns:
             The result of the request (often a `TLObject`) or a list of
             results if more than one request was given.
