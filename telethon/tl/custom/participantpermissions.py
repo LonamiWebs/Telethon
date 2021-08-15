@@ -92,8 +92,11 @@ class ParticipantPermissions:
         Whether the administrator can add new administrators with the same or
         less permissions than them.
         """
-        if not self.is_admin or (self.is_chat and not self.is_creator):
+        if not self.is_admin:
             return False
+
+        if self.is_chat:
+            return self.is_creator
 
         return self.participant.admin_rights.add_admins
 
