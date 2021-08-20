@@ -231,6 +231,7 @@ PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
 PASSWORD_MISSING,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_RECOVERY_EXPIRED,400,
+PASSWORD_RECOVERY_NA,400,
 PASSWORD_REQUIRED,400,The account must have 2-factor authentication enabled (a password) before this method can be used
 PASSWORD_TOO_FRESH_X,400,The password was added too recently and {seconds} seconds must pass before using the method
 PAYMENT_PROVIDER_INVALID,400,The payment provider was not recognised or its token was invalid
