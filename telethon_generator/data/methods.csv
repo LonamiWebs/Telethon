@@ -89,6 +89,7 @@ bots.answerWebhookJSONQuery,bot,QUERY_ID_INVALID USER_BOT_INVALID
 bots.sendCustomRequest,bot,USER_BOT_INVALID
 bots.setBotCommands,bot,BOT_COMMAND_DESCRIPTION_INVALID BOT_COMMAND_INVALID LANG_CODE_INVALID
 channels.checkUsername,user,CHANNEL_INVALID CHAT_ID_INVALID USERNAME_INVALID
+channels.convertToGigagroup,user,PARTICIPANTS_TOO_FEW
 channels.createChannel,user,CHAT_TITLE_EMPTY USER_RESTRICTED
 channels.deleteChannel,user,CHANNEL_INVALID CHANNEL_PRIVATE
 channels.deleteHistory,user,
