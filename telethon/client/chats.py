@@ -233,6 +233,9 @@ class _ParticipantsIter(RequestIter):
             for participant in participants.participants:
 
                 if isinstance(participant, types.ChannelParticipantBanned):
+                    if not isinstance(participant.peer, types.PeerUser):
+                        # May have the entire channel banned. See #3105.
+                        continue
                     user_id = participant.peer.user_id
                 else:
                     user_id = participant.user_id
