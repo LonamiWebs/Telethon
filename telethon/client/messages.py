@@ -1360,7 +1360,7 @@ class MessageMethods:
 
             notify (`bool`, optional):
                 Whether the pin should notify people or not.
-                
+
             pm_oneside (`bool`, optional):
                 Whether the message should be pinned for everyone or not.
                 By default it has the opposite behaviour of official clients,
@@ -1421,12 +1421,11 @@ class MessageMethods:
         )
         result = await self(request)
 
-        # Unpinning does not produce a service message
-        if unpin:
-            return
-
-        # Pinning in User chats (just with yourself really) does not produce a service message
-        if helpers._entity_type(entity) == helpers._EntityType.USER:
+        # Unpinning does not produce a service message.
+        # Pinning a message that was already pinned also produces no service message.
+        # Pinning a message in your own chat does not produce a service message,
+        # but pinning on a private conversation with someone else does.
+        if unpin or not result.updates:
             return
 
         # Pinning a message that doesn't exist would RPC-error earlier
