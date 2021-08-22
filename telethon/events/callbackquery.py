@@ -135,7 +135,7 @@ class CallbackQuery(EventBuilder):
                 The object returned by the ``data=`` parameter
                 when creating the event builder, if any. Similar
                 to ``pattern_match`` for the new message event.
-            
+
             pattern_match (`obj`, optional):
                 Alias for ``data_match``.
         """
