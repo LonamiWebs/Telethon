@@ -286,6 +286,7 @@ messages.sendVote,user,MESSAGE_POLL_CLOSED OPTION_INVALID
 messages.setBotCallbackAnswer,both,QUERY_ID_INVALID URL_INVALID
 messages.setBotPrecheckoutResults,both,ERROR_TEXT_EMPTY
 messages.setBotShippingResults,both,QUERY_ID_INVALID
+messages.setChatTheme,user,EMOJI_INVALID EMOJI_NOT_MODIFIED
 messages.setEncryptedTyping,user,CHAT_ID_INVALID
 messages.setGameScore,bot,PEER_ID_INVALID USER_BOT_REQUIRED
 messages.setHistoryTTL,user,CHAT_NOT_MODIFIED TTL_PERIOD_INVALID

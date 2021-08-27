@@ -101,6 +101,8 @@ DOCUMENT_INVALID,400,The document file was invalid and can't be used in inline m
 EMAIL_HASH_EXPIRED,400,The email hash expired and cannot be used to verify it
 EMAIL_INVALID,400,The given email is invalid
 EMAIL_UNCONFIRMED_X,400,"Email unconfirmed, the length of the code must be {code_length}"
+EMOJI_INVALID,400,
+EMOJI_NOT_MODIFIED,400,
 EMOTICON_EMPTY,400,The emoticon field cannot be empty
 EMOTICON_INVALID,400,The specified emoticon cannot be used or was not a emoticon
 EMOTICON_STICKERPACK_MISSING,400,The emoticon sticker pack you are trying to get is missing
