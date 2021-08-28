@@ -49,6 +49,7 @@ class Button:
         Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
+            types.KeyboardButtonBuy,
             types.KeyboardButtonCallback,
             types.KeyboardButtonSwitchInline,
             types.KeyboardButtonUrl,
@@ -266,8 +267,36 @@ class Button:
         Args:
             placeholder (str):
                 text to show the user at typing place of message.
+                Telegram crops the placeholder and shows only only
+                64 Characters and adds ellipsis (…) character as 65th.
         """
         return types.ReplyKeyboardForceReply(
             single_use=single_use,
             selective=selective,
             placeholder=placeholder)
+
+    @staticmethod
+    def buy(text):
+        """
+        Creates an Inline button to Buy a Product.
+        It can be only used with Invoice.
+        It should be the first button of the Invoice.
+        On Not Specifying Button, Telegram will Automatically add button to That Invoice.
+        Read More - https://core.telegram.org/api/payments
+        
+        Args:
+            text (str):
+                text to show on the Buy Button.
+        """
+        return types.KeyboardButtonBuy(text)
+
+    @staticmethod
+    def game(text):
+        """
+        Creates an Inline Button to send with Game.
+
+        Args:
+            text (str):
+                text to show on Game Button.
+        """
+        return types.KeyboardButtonGame(text)
