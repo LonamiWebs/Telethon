@@ -51,6 +51,7 @@ class Button:
         return isinstance(button, (
             types.KeyboardButtonBuy,
             types.KeyboardButtonCallback,
+            types.KeyboardButtonGame,
             types.KeyboardButtonSwitchInline,
             types.KeyboardButtonUrl,
             types.InputKeyboardButtonUrlAuth
@@ -283,7 +284,7 @@ class Button:
         It should be the first button of the Invoice.
         On Not Specifying Button, Telegram will Automatically add button to That Invoice.
         Read More - https://core.telegram.org/api/payments
-        
+
         Args:
             text (str):
                 text to show on the Buy Button.
