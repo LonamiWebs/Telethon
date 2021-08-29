@@ -19,7 +19,8 @@ class _MessagesIter(RequestIter):
     """
     async def _init(
             self, entity, offset_id, min_id, max_id,
-            from_user, offset_date, add_offset, filter, search, reply_to
+            from_user, offset_date, add_offset, filter, search, reply_to,
+            scheduled
     ):
         # Note that entity being `None` will perform a global search.
         if entity:
@@ -83,6 +84,11 @@ class _MessagesIter(RequestIter):
                 offset_peer=types.InputPeerEmpty(),
                 offset_id=offset_id,
                 limit=1
+            )
+        elif scheduled:
+            self.request = functions.messages.GetScheduledHistoryRequest(
+                peer=entity,
+                hash=0
             )
         elif reply_to is not None:
             self.request = functions.messages.GetRepliesRequest(
@@ -336,7 +342,8 @@ class MessageMethods:
             wait_time: float = None,
             ids: 'typing.Union[int, typing.Sequence[int]]' = None,
             reverse: bool = False,
-            reply_to: int = None
+            reply_to: int = None,
+            scheduled: bool = False
     ) -> 'typing.Union[_MessagesIter, _IDsIter]':
         """
         Iterator over the messages for the given chat.
@@ -463,6 +470,10 @@ class MessageMethods:
                     a message and replies to it itself, that reply will not
                     be included in the results.
 
+            scheduled (`bool`, optional):
+                If set to `True`, messages which are scheduled will be returned.
+                All other parameter will be ignored for this, except `entity`.
+
         Yields
             Instances of `Message <telethon.tl.custom.message.Message>`.
 
@@ -521,7 +532,8 @@ class MessageMethods:
             add_offset=add_offset,
             filter=filter,
             search=search,
-            reply_to=reply_to
+            reply_to=reply_to,
+            scheduled=scheduled
         )
 
     async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
