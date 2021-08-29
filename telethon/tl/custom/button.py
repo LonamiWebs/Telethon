@@ -268,8 +268,10 @@ class Button:
         Args:
             placeholder (str):
                 text to show the user at typing place of message.
-                Telegram crops the placeholder and shows only only
-                64 Characters and adds ellipsis (…) character as 65th.
+
+                If the placeholder is too long, Telegram applications will
+                crop the text (for example, to 64 characters and adding an
+                ellipsis (…) character as the 65th).
         """
         return types.ReplyKeyboardForceReply(
             single_use=single_use,
@@ -279,25 +281,28 @@ class Button:
     @staticmethod
     def buy(text):
         """
-        Creates an Inline button to Buy a Product.
-        It can be only used with Invoice.
-        It should be the first button of the Invoice.
-        On Not Specifying Button, Telegram will Automatically add button to That Invoice.
-        Read More - https://core.telegram.org/api/payments
+        Creates a new inline button to buy a product.
 
-        Args:
-            text (str):
-                text to show on the Buy Button.
+        This can only be used when sending files of type
+        :tl:`InputMediaInvoice`, and must be the first button.
+
+        If the button is not specified, Telegram will automatically
+        add the button to the message. See the
+        `Payments API <https://core.telegram.org/api/payments>`__
+        documentation for more information.
         """
         return types.KeyboardButtonBuy(text)
 
     @staticmethod
     def game(text):
         """
-        Creates an Inline Button to send with Game.
+        Creates a new inline button to start playing a game.
 
-        Args:
-            text (str):
-                text to show on Game Button.
+        This should be used when sending files of type
+        :tl:`InputMediaGame`, and must be the first button.
+
+        See the
+        `Games <https://core.telegram.org/api/bots/games>`__
+        documentation for more information on using games.
         """
         return types.KeyboardButtonGame(text)
