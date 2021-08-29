@@ -20,7 +20,7 @@ class Button:
     instances instead making them yourself (i.e. don't do ``Button(...)``
     but instead use methods line `Button.inline(...) <inline>` etc.
 
-    You can use `inline`, `switch_inline`, `url` and `auth`
+    You can use `inline`, `switch_inline`, `url`, `auth`, `buy` and `game`
     together to create inline buttons (under the message).
 
     You can use `text`, `request_location`, `request_phone` and `request_poll`
