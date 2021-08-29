@@ -20,7 +20,7 @@ class Button:
     instances instead making them yourself (i.e. don't do ``Button(...)``
     but instead use methods line `Button.inline(...) <inline>` etc.
 
-    You can use `inline`, `switch_inline`, `url` and `auth`
+    You can use `inline`, `switch_inline`, `url`, `auth`, `buy` and `game`
     together to create inline buttons (under the message).
 
     You can use `text`, `request_location`, `request_phone` and `request_poll`
@@ -49,7 +49,9 @@ class Button:
         Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
+            types.KeyboardButtonBuy,
             types.KeyboardButtonCallback,
+            types.KeyboardButtonGame,
             types.KeyboardButtonSwitchInline,
             types.KeyboardButtonUrl,
             types.InputKeyboardButtonUrlAuth
@@ -266,8 +268,41 @@ class Button:
         Args:
             placeholder (str):
                 text to show the user at typing place of message.
+
+                If the placeholder is too long, Telegram applications will
+                crop the text (for example, to 64 characters and adding an
+                ellipsis (…) character as the 65th).
         """
         return types.ReplyKeyboardForceReply(
             single_use=single_use,
             selective=selective,
             placeholder=placeholder)
+
+    @staticmethod
+    def buy(text):
+        """
+        Creates a new inline button to buy a product.
+
+        This can only be used when sending files of type
+        :tl:`InputMediaInvoice`, and must be the first button.
+
+        If the button is not specified, Telegram will automatically
+        add the button to the message. See the
+        `Payments API <https://core.telegram.org/api/payments>`__
+        documentation for more information.
+        """
+        return types.KeyboardButtonBuy(text)
+
+    @staticmethod
+    def game(text):
+        """
+        Creates a new inline button to start playing a game.
+
+        This should be used when sending files of type
+        :tl:`InputMediaGame`, and must be the first button.
+
+        See the
+        `Games <https://core.telegram.org/api/bots/games>`__
+        documentation for more information on using games.
+        """
+        return types.KeyboardButtonGame(text)
