@@ -1,3 +1,15 @@
+from ..tl import functions
+
+_NESTS_QUERY = (
+    functions.InvokeAfterMsgRequest,
+    functions.InvokeAfterMsgsRequest,
+    functions.InitConnectionRequest,
+    functions.InvokeWithLayerRequest,
+    functions.InvokeWithoutUpdatesRequest,
+    functions.InvokeWithMessagesRangeRequest,
+    functions.InvokeWithTakeoutRequest,
+)
+
 class RPCError(Exception):
     """Base class for all Remote Procedure Call errors."""
     code = None
@@ -13,7 +25,15 @@ class RPCError(Exception):
 
     @staticmethod
     def _fmt_request(request):
-        return ' (caused by {})'.format(request.__class__.__name__)
+        n = 0
+        reason = ''
+        while isinstance(request, _NESTS_QUERY):
+            n += 1
+            reason += request.__class__.__name__ + '('
+            request = request.query
+        reason += request.__class__.__name__ + ')' * n
+
+        return ' (caused by {})'.format(reason)
 
     def __reduce__(self):
         return type(self), (self.request, self.message, self.code)
