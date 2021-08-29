@@ -32,6 +32,17 @@ class UpdateMethods:
         finally:
             await self.disconnect()
 
+    async def set_receive_updates(self: 'TelegramClient', receive_updates):
+        """
+        Change the value of `receive_updates`.
+
+        This is an `async` method, because in order for Telegram to start
+        sending updates again, a request must be made.
+        """
+        self._no_updates = not receive_updates
+        if receive_updates:
+            await self(functions.updates.GetStateRequest())
+
     def run_until_disconnected(self: 'TelegramClient'):
         """
         Runs the event loop until the library is disconnected.

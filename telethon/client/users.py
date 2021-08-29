@@ -51,7 +51,7 @@ class UserMethods:
                 else:
                     raise errors.FloodWaitError(request=r, capture=diff)
 
-            if not self._event_builders and not self._conversations:
+            if self._no_updates:
                 r = functions.InvokeWithoutUpdatesRequest(r)
 
         request_index = 0
