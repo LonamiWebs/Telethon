@@ -11,6 +11,7 @@ class ChatAction(EventBuilder):
     * Whenever a new chat is created.
     * Whenever a chat's title or photo is changed or removed.
     * Whenever a new message is pinned.
+    * Whenever a user scores in a game.
     * Whenever a user joins or is added to the group.
     * Whenever a user is removed or leaves a group if it has
       less than 50 members or the removed user was a bot.
@@ -29,6 +30,7 @@ class ChatAction(EventBuilder):
                 if event.user_joined:
                     await event.reply('Welcome to the group!')
     """
+
     @classmethod
     def build(cls, update, others=None, self_id=None):
         # Rely on specific pin updates for unpins, but otherwise ignore them
@@ -102,6 +104,9 @@ class ChatAction(EventBuilder):
             elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
                 return cls.Event(msg,
                                  pin_ids=[msg.reply_to_msg_id])
+            elif isinstance(action, types.MessageActionGameScore):
+                return cls.Event(msg,
+                                 new_score=action.score)
 
     class Event(EventCommon):
         """
@@ -137,13 +142,17 @@ class ChatAction(EventBuilder):
 
             new_title (`str`, optional):
                 The new title string for the chat, if applicable.
+            
+            new_score (`str`, optional):
+                The new score string for the game, if applicable.
 
             unpin (`bool`):
                 `True` if the existing pin gets unpinned.
         """
+
         def __init__(self, where, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None, pin_ids=None, pin=None):
+                     users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.peer_id
@@ -193,6 +202,7 @@ class ChatAction(EventBuilder):
             self._users = None
             self._input_users = None
             self.new_title = new_title
+            self.new_score = new_score
             self.unpin = not pin
 
         def _set_client(self, client):
