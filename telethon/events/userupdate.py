@@ -136,6 +136,7 @@ class UserUpdate(EventBuilder):
             """
             return isinstance(self.action, (
                 types.SendMessageChooseContactAction,
+                types.SendMessageChooseStickerAction,
                 types.SendMessageUploadAudioAction,
                 types.SendMessageUploadDocumentAction,
                 types.SendMessageUploadPhotoAction,
@@ -227,6 +228,14 @@ class UserUpdate(EventBuilder):
             `True` if what's being uploaded is document.
             """
             return isinstance(self.action, types.SendMessageUploadDocumentAction)
+
+        @property
+        @_requires_action
+        def sticker(self):
+            """
+            `True` if what's being uploaded is a sticker.
+            """
+            return isinstance(self.action, types.SendMessageChooseStickerAction)
 
         @property
         @_requires_action

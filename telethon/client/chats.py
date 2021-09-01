@@ -22,6 +22,7 @@ class _ChatAction:
         'contact': types.SendMessageChooseContactAction(),
         'game': types.SendMessageGamePlayAction(),
         'location': types.SendMessageGeoLocationAction(),
+        'sticker': types.SendMessageChooseStickerAction(),
 
         'record-audio': types.SendMessageRecordAudioAction(),
         'record-voice': types.SendMessageRecordAudioAction(),  # alias
@@ -773,6 +774,7 @@ class ChatMethods:
                 * ``'contact'``: choosing a contact.
                 * ``'game'``: playing a game.
                 * ``'location'``: choosing a geo location.
+                * ``'sticker'``: choosing a sticker.
                 * ``'record-audio'``: recording a voice note.
                   You may use ``'record-voice'`` as alias.
                 * ``'record-round'``: recording a round video.
