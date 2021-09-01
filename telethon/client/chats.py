@@ -28,6 +28,7 @@ class _ChatAction:
         'record-round': types.SendMessageRecordRoundAction(),
         'record-video': types.SendMessageRecordVideoAction(),
 
+        'sticker': types.SendMessageChooseStickerAction(),
         'audio': types.SendMessageUploadAudioAction(1),
         'voice': types.SendMessageUploadAudioAction(1),  # alias
         'song': types.SendMessageUploadAudioAction(1),  # alias
