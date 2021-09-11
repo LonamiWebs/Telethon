@@ -77,6 +77,7 @@ CHAT_SEND_INLINE_FORBIDDEN,400,You cannot send inline results in this chat
 CHAT_SEND_MEDIA_FORBIDDEN,403,You can't send media in this chat
 CHAT_SEND_STICKERS_FORBIDDEN,403,You can't send stickers in this chat
 CHAT_TITLE_EMPTY,400,No chat title provided
+CHAT_TOO_BIG,400,
 CHAT_WRITE_FORBIDDEN,403,You can't write in this chat
 CHP_CALL_FAIL,500,The statistics cannot be retrieved at this time
 CODE_EMPTY,400,The provided code is empty
