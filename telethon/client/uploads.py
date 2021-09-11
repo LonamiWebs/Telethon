@@ -116,6 +116,7 @@ class UploadMethods:
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
             comment_to: 'typing.Union[int, types.Message]' = None,
+            ttl: int = None,
             **kwargs) -> 'types.Message':
         """
         Sends message with the given file to the specified entity.
@@ -273,6 +274,18 @@ class UploadMethods:
                 This parameter takes precedence over ``reply_to``. If there is
                 no linked chat, `telethon.errors.sgIdInvalidError` is raised.
 
+            ttl (`int`. optional):
+                The Time-To-Live of the file (also known as "self-destruct timer"
+                or "self-destructing media"). If set, files can only be viewed for
+                a short period of time before they disappear from the message
+                history automatically.
+
+                The value must be at least 1 second, and at most 60 seconds,
+                otherwise Telegram will ignore this parameter.
+
+                Not all types of media can be used with this parameter, such
+                as text documents, which will fail with ``TtlMediaInvalidError``.
+
         Returns
             The `Message <telethon.tl.custom.message.Message>` (or messages)
             containing the sent file, or messages if a list of them was passed.
@@ -382,7 +395,7 @@ class UploadMethods:
             progress_callback=progress_callback,
             attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
             voice_note=voice_note, video_note=video_note,
-            supports_streaming=supports_streaming
+            supports_streaming=supports_streaming, ttl=ttl
         )
 
         # e.g. invalid cast from :tl:`MessageMediaWebPage`
@@ -402,7 +415,7 @@ class UploadMethods:
                           progress_callback=None, reply_to=None,
                           parse_mode=(), silent=None, schedule=None,
                           supports_streaming=None, clear_draft=None,
-                          force_document=False, background=None):
+                          force_document=False, background=None, ttl=None):
         """Specialized version of .send_file for albums"""
         # We don't care if the user wants to avoid cache, we will use it
         # anyway. Why? The cached version will be exactly the same thing
@@ -432,7 +445,7 @@ class UploadMethods:
             # it as media and then convert that to :tl:`InputMediaPhoto`.
             fh, fm, _ = await self._file_to_media(
                 file, supports_streaming=supports_streaming,
-                force_document=force_document)
+                force_document=force_document, ttl=ttl)
             if isinstance(fm, (types.InputMediaUploadedPhoto, types.InputMediaPhotoExternal)):
                 r = await self(functions.messages.UploadMediaRequest(
                     entity, media=fm
@@ -654,7 +667,8 @@ class UploadMethods:
             self, file, force_document=False, file_size=None,
             progress_callback=None, attributes=None, thumb=None,
             allow_cache=True, voice_note=False, video_note=False,
-            supports_streaming=False, mime_type=None, as_image=None):
+            supports_streaming=False, mime_type=None, as_image=None,
+            ttl=None):
         if not file:
             return None, None, None
 
@@ -683,7 +697,8 @@ class UploadMethods:
                     force_document=force_document,
                     voice_note=voice_note,
                     video_note=video_note,
-                    supports_streaming=supports_streaming
+                    supports_streaming=supports_streaming,
+                    ttl=ttl
                 ), as_image)
             except TypeError:
                 # Can't turn whatever was given into media
@@ -702,13 +717,13 @@ class UploadMethods:
             )
         elif re.match('https?://', file):
             if as_image:
-                media = types.InputMediaPhotoExternal(file)
+                media = types.InputMediaPhotoExternal(file, ttl_seconds=ttl)
             else:
-                media = types.InputMediaDocumentExternal(file)
+                media = types.InputMediaDocumentExternal(file, ttl_seconds=ttl)
         else:
             bot_file = utils.resolve_bot_file_id(file)
             if bot_file:
-                media = utils.get_input_media(bot_file)
+                media = utils.get_input_media(bot_file, ttl=ttl)
 
         if media:
             pass  # Already have media, don't check the rest
@@ -718,7 +733,7 @@ class UploadMethods:
                 'an HTTP URL or a valid bot-API-like file ID'.format(file)
             )
         elif as_image:
-            media = types.InputMediaUploadedPhoto(file_handle)
+            media = types.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)
         else:
             attributes, mime_type = utils.get_attributes(
                 file,
@@ -743,7 +758,8 @@ class UploadMethods:
                 mime_type=mime_type,
                 attributes=attributes,
                 thumb=thumb,
-                force_file=force_document and not is_image
+                force_file=force_document and not is_image,
+                ttl_seconds=ttl
             )
         return file_handle, media, as_image
 
