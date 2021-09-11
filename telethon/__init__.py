@@ -1,4 +1,4 @@
-from .client.telegramclient import TelegramClient
+from ._client.telegramclient import TelegramClient
 from .network import connection
 from .tl import types, functions, custom
 from .tl.custom import Button

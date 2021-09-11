@@ -13,12 +13,27 @@ from Telethon version 1.x to 2.0 onwards.
 User, chat and channel identifiers are now 64-bit numbers
 ---------------------------------------------------------
 
-`Layer 133 <https://diff.telethon.dev/?from=132&to=133>`__ changed *a lot* of
-identifiers from ``int`` to ``long``, meaning they will no longer fit in 32
-bits, and instead require 64 bits.
+`Layer 133 <https://diff.telethon.dev/?from=132&to=133>`__ changed *a lot* of identifiers from
+``int`` to ``long``, meaning they will no longer fit in 32 bits, and instead require 64 bits.
 
-If you were storing these identifiers somewhere size did matter (for example,
-a database), you will need to migrate that to support the new size requirement
-of 8 bytes.
+If you were storing these identifiers somewhere size did matter (for example, a database), you
+will need to migrate that to support the new size requirement of 8 bytes.
 
 For the full list of types changed, please review the above link.
+
+
+Many modules are now private
+----------------------------
+
+There were a lot of things which were public but should not have been. From now on, you should
+only rely on things that are either publicly re-exported or defined. That is, as soon as anything
+starts with an underscore (``_``) on its name, you're acknowledging that the functionality may
+change even across minor version changes, and thus have your code break.
+
+* The ``telethon.client`` module is now ``telethon._client``, meaning you should stop relying on
+  anything inside of it. This includes all of the subclasses that used to exist (like ``UserMethods``).
+
+  TODO REVIEW self\._\w+\(
+  and __signature__
+  and property
+  abs abc abstract

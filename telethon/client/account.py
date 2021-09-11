@@ -107,137 +107,40 @@ class _TakeoutClient:
         return setattr(self.__client, name, value)
 
 
-class AccountMethods:
-    def takeout(
-            self: 'TelegramClient',
-            finalize: bool = True,
-            *,
-            contacts: bool = None,
-            users: bool = None,
-            chats: bool = None,
-            megagroups: bool = None,
-            channels: bool = None,
-            files: bool = None,
-            max_file_size: bool = None) -> 'TelegramClient':
-        """
-        Returns a :ref:`telethon-client` which calls methods behind a takeout session.
+def takeout(
+        self: 'TelegramClient',
+        finalize: bool = True,
+        *,
+        contacts: bool = None,
+        users: bool = None,
+        chats: bool = None,
+        megagroups: bool = None,
+        channels: bool = None,
+        files: bool = None,
+        max_file_size: bool = None) -> 'TelegramClient':
+    request_kwargs = dict(
+        contacts=contacts,
+        message_users=users,
+        message_chats=chats,
+        message_megagroups=megagroups,
+        message_channels=channels,
+        files=files,
+        file_max_size=max_file_size
+    )
+    arg_specified = (arg is not None for arg in request_kwargs.values())
 
-        It does so by creating a proxy object over the current client through
-        which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
-        them. In other words, returns the current client modified so that
-        requests are done as a takeout:
+    if self.session.takeout_id is None or any(arg_specified):
+        request = functions.account.InitTakeoutSessionRequest(
+            **request_kwargs)
+    else:
+        request = None
 
-        Some of the calls made through the takeout session will have lower
-        flood limits. This is useful if you want to export the data from
-        conversations or mass-download media, since the rate limits will
-        be lower. Only some requests will be affected, and you will need
-        to adjust the `wait_time` of methods like `client.iter_messages
-        <telethon.client.messages.MessageMethods.iter_messages>`.
+    return _TakeoutClient(finalize, self, request)
 
-        By default, all parameters are `None`, and you need to enable those
-        you plan to use by setting them to either `True` or `False`.
-
-        You should ``except errors.TakeoutInitDelayError as e``, since this
-        exception will raise depending on the condition of the session. You
-        can then access ``e.seconds`` to know how long you should wait for
-        before calling the method again.
-
-        There's also a `success` property available in the takeout proxy
-        object, so from the `with` body you can set the boolean result that
-        will be sent back to Telegram. But if it's left `None` as by
-        default, then the action is based on the `finalize` parameter. If
-        it's `True` then the takeout will be finished, and if no exception
-        occurred during it, then `True` will be considered as a result.
-        Otherwise, the takeout will not be finished and its ID will be
-        preserved for future usage as `client.session.takeout_id
-        <telethon.sessions.abstract.Session.takeout_id>`.
-
-        Arguments
-            finalize (`bool`):
-                Whether the takeout session should be finalized upon
-                exit or not.
-
-            contacts (`bool`):
-                Set to `True` if you plan on downloading contacts.
-
-            users (`bool`):
-                Set to `True` if you plan on downloading information
-                from users and their private conversations with you.
-
-            chats (`bool`):
-                Set to `True` if you plan on downloading information
-                from small group chats, such as messages and media.
-
-            megagroups (`bool`):
-                Set to `True` if you plan on downloading information
-                from megagroups (channels), such as messages and media.
-
-            channels (`bool`):
-                Set to `True` if you plan on downloading information
-                from broadcast channels, such as messages and media.
-
-            files (`bool`):
-                Set to `True` if you plan on downloading media and
-                you don't only wish to export messages.
-
-            max_file_size (`int`):
-                The maximum file size, in bytes, that you plan
-                to download for each message with media.
-
-        Example
-            .. code-block:: python
-
-                from telethon import errors
-
-                try:
-                    async with client.takeout() as takeout:
-                        await client.get_messages('me')  # normal call
-                        await takeout.get_messages('me')  # wrapped through takeout (less limits)
-
-                        async for message in takeout.iter_messages(chat, wait_time=0):
-                            ...  # Do something with the message
-
-                except errors.TakeoutInitDelayError as e:
-                    print('Must wait', e.seconds, 'before takeout')
-        """
-        request_kwargs = dict(
-            contacts=contacts,
-            message_users=users,
-            message_chats=chats,
-            message_megagroups=megagroups,
-            message_channels=channels,
-            files=files,
-            file_max_size=max_file_size
-        )
-        arg_specified = (arg is not None for arg in request_kwargs.values())
-
-        if self.session.takeout_id is None or any(arg_specified):
-            request = functions.account.InitTakeoutSessionRequest(
-                **request_kwargs)
-        else:
-            request = None
-
-        return _TakeoutClient(finalize, self, request)
-
-    async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
-        """
-        Finishes the current takeout session.
-
-        Arguments
-            success (`bool`):
-                Whether the takeout completed successfully or not.
-
-        Returns
-            `True` if the operation was successful, `False` otherwise.
-
-        Example
-            .. code-block:: python
-
-                await client.end_takeout(success=False)
-        """
-        try:
-            async with _TakeoutClient(True, self, None) as takeout:
-                takeout.success = success
-        except ValueError:
-            return False
-        return True
+async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
+    try:
+        async with _TakeoutClient(True, self, None) as takeout:
+            takeout.success = success
+    except ValueError:
+        return False
+    return True
