@@ -151,9 +151,9 @@ class TelegramClient:
             will be received from Telegram as they occur.
 
             Turning this off means that Telegram will not send updates at all
-            so event handlers, conversations, and QR login will not work.
-            However, certain scripts don't need updates, so this will reduce
-            the amount of bandwidth used.
+            so event handlers and QR login will not work. However, certain
+            scripts don't need updates, so this will reduce the amount of
+            bandwidth used.
     """
 
     # region Account
@@ -1701,131 +1701,6 @@ class TelegramClient:
                 await client.delete_dialog('username')
         """
         return dialogs.delete_dialog(**locals())
-
-    def conversation(
-            self: 'TelegramClient',
-            entity: 'hints.EntityLike',
-            *,
-            timeout: float = 60,
-            total_timeout: float = None,
-            max_messages: int = 100,
-            exclusive: bool = True,
-            replies_are_responses: bool = True) -> custom.Conversation:
-        """
-        Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
-        with the given entity.
-
-        .. note::
-
-            This Conversation API has certain shortcomings, such as lacking
-            persistence, poor interaction with other event handlers, and
-            overcomplicated usage for anything beyond the simplest case.
-
-            If you plan to interact with a bot without handlers, this works
-            fine, but when running a bot yourself, you may instead prefer
-            to follow the advice from https://stackoverflow.com/a/62246569/.
-
-        This is not the same as just sending a message to create a "dialog"
-        with them, but rather a way to easily send messages and await for
-        responses or other reactions. Refer to its documentation for more.
-
-        Arguments
-            entity (`entity`):
-                The entity with which a new conversation should be opened.
-
-            timeout (`int` | `float`, optional):
-                The default timeout (in seconds) *per action* to be used. You
-                may also override this timeout on a per-method basis. By
-                default each action can take up to 60 seconds (the value of
-                this timeout).
-
-            total_timeout (`int` | `float`, optional):
-                The total timeout (in seconds) to use for the whole
-                conversation. This takes priority over per-action
-                timeouts. After these many seconds pass, subsequent
-                actions will result in ``asyncio.TimeoutError``.
-
-            max_messages (`int`, optional):
-                The maximum amount of messages this conversation will
-                remember. After these many messages arrive in the
-                specified chat, subsequent actions will result in
-                ``ValueError``.
-
-            exclusive (`bool`, optional):
-                By default, conversations are exclusive within a single
-                chat. That means that while a conversation is open in a
-                chat, you can't open another one in the same chat, unless
-                you disable this flag.
-
-                If you try opening an exclusive conversation for
-                a chat where it's already open, it will raise
-                ``AlreadyInConversationError``.
-
-            replies_are_responses (`bool`, optional):
-                Whether replies should be treated as responses or not.
-
-                If the setting is enabled, calls to `conv.get_response
-                <telethon.tl.custom.conversation.Conversation.get_response>`
-                and a subsequent call to `conv.get_reply
-                <telethon.tl.custom.conversation.Conversation.get_reply>`
-                will return different messages, otherwise they may return
-                the same message.
-
-                Consider the following scenario with one outgoing message,
-                1, and two incoming messages, the second one replying::
-
-                                        Hello! <1
-                    2> (reply to 1) Hi!
-                    3> (reply to 1) How are you?
-
-                And the following code:
-
-                .. code-block:: python
-
-                    async with client.conversation(chat) as conv:
-                        msg1 = await conv.send_message('Hello!')
-                        msg2 = await conv.get_response()
-                        msg3 = await conv.get_reply()
-
-                With the setting enabled, ``msg2`` will be ``'Hi!'`` and
-                ``msg3`` be ``'How are you?'`` since replies are also
-                responses, and a response was already returned.
-
-                With the setting disabled, both ``msg2`` and ``msg3`` will
-                be ``'Hi!'`` since one is a response and also a reply.
-
-        Returns
-            A `Conversation <telethon.tl.custom.conversation.Conversation>`.
-
-        Example
-            .. code-block:: python
-
-                # <you> denotes outgoing messages you sent
-                # <usr> denotes incoming response messages
-                with bot.conversation(chat) as conv:
-                    # <you> Hi!
-                    conv.send_message('Hi!')
-
-                    # <usr> Hello!
-                    hello = conv.get_response()
-
-                    # <you> Please tell me your name
-                    conv.send_message('Please tell me your name')
-
-                    # <usr> ?
-                    name = conv.get_response().raw_text
-
-                    while not any(x.isalpha() for x in name):
-                        # <you> Your name didn't have any letters! Try again
-                        conv.send_message("Your name didn't have any letters! Try again")
-
-                        # <usr> Human
-                        name = conv.get_response().raw_text
-
-                    # <you> Thanks Human!
-                    conv.send_message('Thanks {}!'.format(name))
-        """
-        return dialogs.conversation(**locals())
 
     # endregion Dialogs
 

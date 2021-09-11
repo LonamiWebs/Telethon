@@ -51,3 +51,56 @@ removed. This implies:
   * ``run_until_disconnected``
 
 // TODO provide standalone alternative for this?
+
+
+The Conversation API has been removed
+-------------------------------------
+
+This API had certain shortcomings, such as lacking persistence, poor interaction with other event
+handlers, and overcomplicated usage for anything beyond the simplest case.
+
+It is not difficult to write your own code to deal with a conversation's state. A simple
+`Finite State Machine <https://stackoverflow.com/a/62246569/>`__ inside your handlers will do
+just fine:
+
+.. code-block:: python
+
+    from enum import Enum, auto
+
+    # We use a Python Enum for the state because it's a clean and easy way to do it
+    class State(Enum):
+        WAIT_NAME = auto()
+        WAIT_AGE = auto()
+
+    # The state in which different users are, {user_id: state}
+    conversation_state = {}
+
+    # ...code to create and setup your client...
+
+    @client.on(events.NewMessage)
+    async def handler(event):
+        who = event.sender_id
+        state = conversation_state.get(who)
+
+        if state is None:
+            # Starting a conversation
+            await event.respond('Hi! What is your name?')
+            conversation_state[who] = State.WAIT_NAME
+
+        elif state == State.WAIT_NAME:
+            name = event.text  # Save the name wherever you want
+            await event.respond('Nice! What is your age?')
+            conversation_state[who] = State.WAIT_AGE
+
+        elif state == State.WAIT_AGE:
+            age = event.text  # Save the age wherever you want
+            await event.respond('Thank you!')
+            # Conversation is done so we can forget the state of this user
+            del conversation_state[who]
+
+    # ...code to keep Telethon running...
+
+Not only is this approach simpler, but it can also be easily persisted, and you can adjust it
+to your needs and your handlers much more easily.
+
+// TODO provide standalone alternative for this?

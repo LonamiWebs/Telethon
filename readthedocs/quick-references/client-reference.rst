@@ -107,7 +107,6 @@ Dialogs
     iter_drafts
     get_drafts
     delete_dialog
-    conversation
 
 Users
 -----

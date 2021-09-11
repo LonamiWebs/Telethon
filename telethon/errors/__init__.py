@@ -7,7 +7,7 @@ import re
 from .common import (
     ReadCancelledError, TypeNotFoundError, InvalidChecksumError,
     InvalidBufferError, SecurityError, CdnFileTamperedError,
-    AlreadyInConversationError, BadMessageError, MultiError
+    BadMessageError, MultiError
 )
 
 # This imports the base errors too, as they're imported there

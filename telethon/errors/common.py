@@ -79,17 +79,6 @@ class CdnFileTamperedError(SecurityError):
         )
 
 
-class AlreadyInConversationError(Exception):
-    """
-    Occurs when another exclusive conversation is opened in the same chat.
-    """
-    def __init__(self):
-        super().__init__(
-            'Cannot open exclusive conversation in a '
-            'chat that already has one open conversation'
-        )
-
-
 class BadMessageError(Exception):
     """Occurs when handling a bad_message_notification."""
     ErrorMessages = {

@@ -252,23 +252,3 @@ async def delete_dialog(
         await self(functions.messages.DeleteHistoryRequest(entity, 0, revoke=revoke))
 
     return result
-
-def conversation(
-        self: 'TelegramClient',
-        entity: 'hints.EntityLike',
-        *,
-        timeout: float = 60,
-        total_timeout: float = None,
-        max_messages: int = 100,
-        exclusive: bool = True,
-        replies_are_responses: bool = True) -> custom.Conversation:
-    return custom.Conversation(
-        self,
-        entity,
-        timeout=timeout,
-        total_timeout=total_timeout,
-        max_messages=max_messages,
-        exclusive=exclusive,
-        replies_are_responses=replies_are_responses
-
-    )

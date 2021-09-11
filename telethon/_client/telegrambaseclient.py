@@ -267,9 +267,6 @@ def init(
     # Some further state for subclasses
     self._event_builders = []
 
-    # {chat_id: {Conversation}}
-    self._conversations = collections.defaultdict(set)
-
     # Hack to workaround the fact Telegram may send album updates as
     # different Updates when being sent from a different data center.
     # {grouped_id: AlbumHack}

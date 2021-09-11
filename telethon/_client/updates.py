@@ -418,22 +418,6 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
             pass  # might not have connection
 
     built = EventBuilderDict(self, update, others)
-    for conv_set in self._conversations.values():
-        for conv in conv_set:
-            ev = built[events.NewMessage]
-            if ev:
-                conv._on_new_message(ev)
-
-            ev = built[events.MessageEdited]
-            if ev:
-                conv._on_edit(ev)
-
-            ev = built[events.MessageRead]
-            if ev:
-                conv._on_read(ev)
-
-            if conv._custom:
-                await conv._check_custom(built)
 
     for builder, callback in self._event_builders:
         event = built[type(builder)]
@@ -451,11 +435,6 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
 
         try:
             await callback(event)
-        except errors.AlreadyInConversationError:
-            name = getattr(callback, '__name__', repr(callback))
-            self._log[__name__].debug(
-                'Event handler "%s" already has an open conversation, '
-                'ignoring new one', name)
         except events.StopPropagation:
             name = getattr(callback, '__name__', repr(callback))
             self._log[__name__].debug(
@@ -492,11 +471,6 @@ async def _dispatch_event(self: 'TelegramClient', event):
 
         try:
             await callback(event)
-        except errors.AlreadyInConversationError:
-            name = getattr(callback, '__name__', repr(callback))
-            self._log[__name__].debug(
-                'Event handler "%s" already has an open conversation, '
-                'ignoring new one', name)
         except events.StopPropagation:
             name = getattr(callback, '__name__', repr(callback))
             self._log[__name__].debug(
