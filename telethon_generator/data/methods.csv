@@ -124,6 +124,7 @@ channels.togglePreHistoryHidden,user,CHAT_LINK_EXISTS
 channels.toggleSignatures,user,CHANNEL_INVALID
 channels.toggleSlowMode,user,SECONDS_INVALID
 channels.updateUsername,user,CHANNELS_ADMIN_PUBLIC_TOO_MUCH CHANNEL_INVALID CHAT_ADMIN_REQUIRED USERNAME_INVALID USERNAME_OCCUPIED
+channels.viewSponsoredMessage,user,UNKNOWN_ERROR
 contacts.acceptContact,user,
 contacts.addContact,user,CONTACT_NAME_EMPTY
 contacts.block,user,CONTACT_ID_INVALID
@@ -319,7 +320,7 @@ phone.discardGroupCallRequest,user,GROUPCALL_ALREADY_DISCARDED
 phone.editGroupCallParticipant,user,USER_VOLUME_INVALID
 phone.getCallConfig,user,
 phone.inviteToGroupCall,user,GROUPCALL_FORBIDDEN
-phone.joinGroupCall,user,GROUPCALL_SSRC_DUPLICATE_MUCH
+phone.joinGroupCall,user,GROUPCALL_ADD_PARTICIPANTS_FAILED GROUPCALL_SSRC_DUPLICATE_MUCH
 phone.joinGroupCallPresentation,user, PARTICIPANT_JOIN_MISSING
 phone.receivedCall,user,CALL_ALREADY_DECLINED CALL_PEER_INVALID
 phone.requestCall,user,CALL_PROTOCOL_FLAGS_INVALID PARTICIPANT_CALL_FAILED PARTICIPANT_VERSION_OUTDATED USER_ID_INVALID USER_IS_BLOCKED USER_PRIVACY_RESTRICTED

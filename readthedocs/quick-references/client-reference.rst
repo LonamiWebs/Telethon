@@ -169,6 +169,7 @@ Updates
     remove_event_handler
     list_event_handlers
     catch_up
+    set_receive_updates
 
 Bots
 ----

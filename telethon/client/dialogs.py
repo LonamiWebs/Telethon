@@ -482,6 +482,16 @@ class DialogMethods:
         Creates a `Conversation <telethon.tl.custom.conversation.Conversation>`
         with the given entity.
 
+        .. note::
+
+            This Conversation API has certain shortcomings, such as lacking
+            persistence, poor interaction with other event handlers, and
+            overcomplicated usage for anything beyond the simplest case.
+
+            If you plan to interact with a bot without handlers, this works
+            fine, but when running a bot yourself, you may instead prefer
+            to follow the advice from https://stackoverflow.com/a/62246569/.
+
         This is not the same as just sending a message to create a "dialog"
         with them, but rather a way to easily send messages and await for
         responses or other reactions. Refer to its documentation for more.
