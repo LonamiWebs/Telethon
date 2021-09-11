@@ -12,6 +12,7 @@ class ChatAction(EventBuilder):
     * Whenever a chat's title or photo is changed or removed.
     * Whenever a new message is pinned.
     * Whenever a user scores in a game.
+    * Whenever a new chat theme is chosen.
     * Whenever a user joins or is added to the group.
     * Whenever a user is removed or leaves a group if it has
       less than 50 members or the removed user was a bot.
@@ -107,6 +108,8 @@ class ChatAction(EventBuilder):
             elif isinstance(action, types.MessageActionGameScore):
                 return cls.Event(msg,
                                  new_score=action.score)
+            elif isinstance(action, types.MessageActionSetChatTheme):
+                return cls.Event(msg, emoticon=action.emoticon)
 
     class Event(EventCommon):
         """
@@ -148,11 +151,18 @@ class ChatAction(EventBuilder):
 
             unpin (`bool`):
                 `True` if the existing pin gets unpinned.
+
+            chat_theme (`bool`):
+                `True` if the chat theme is changed.
+
+            emoticon (`str`):
+                The new emoticon kept with `chat_theme`.
         """
 
         def __init__(self, where, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
-                     users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
+                     users=None, new_title=None, pin_ids=None, pin=None, new_score=None,
+                     emoticon=None):
             if isinstance(where, types.MessageService):
                 self.action_message = where
                 where = where.peer_id
@@ -204,6 +214,8 @@ class ChatAction(EventBuilder):
             self.new_title = new_title
             self.new_score = new_score
             self.unpin = not pin
+            self.emoticon = emoticon
+            self.chat_theme = True if emoticon != None else False
 
         def _set_client(self, client):
             super()._set_client(client)
