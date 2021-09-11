@@ -10,38 +10,6 @@ if typing.TYPE_CHECKING:
 
 
 def get_parse_mode(self: 'TelegramClient'):
-    """
-    This property is the default parse mode used when sending messages.
-    Defaults to `telethon.extensions.markdown`. It will always
-    be either `None` or an object with ``parse`` and ``unparse``
-    methods.
-
-    When setting a different value it should be one of:
-
-    * Object with ``parse`` and ``unparse`` methods.
-    * A ``callable`` to act as the parse method.
-    * A `str` indicating the ``parse_mode``. For Markdown ``'md'``
-        or ``'markdown'`` may be used. For HTML, ``'htm'`` or ``'html'``
-        may be used.
-
-    The ``parse`` method should be a function accepting a single
-    parameter, the text to parse, and returning a tuple consisting
-    of ``(parsed message str, [MessageEntity instances])``.
-
-    The ``unparse`` method should be the inverse of ``parse`` such
-    that ``assert text == unparse(*parse(text))``.
-
-    See :tl:`MessageEntity` for allowed message entities.
-
-    Example
-        .. code-block:: python
-
-            # Disabling default formatting
-            client.parse_mode = None
-
-            # Enabling HTML as the default format
-            client.parse_mode = 'html'
-    """
     return self._parse_mode
 
 def set_parse_mode(self: 'TelegramClient', mode: str):

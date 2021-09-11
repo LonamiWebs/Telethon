@@ -195,43 +195,6 @@ async def download_profile_photo(
         file: 'hints.FileLike' = None,
         *,
         download_big: bool = True) -> typing.Optional[str]:
-    """
-    Downloads the profile photo from the given user, chat or channel.
-
-    Arguments
-        entity (`entity`):
-            From who the photo will be downloaded.
-
-            .. note::
-
-                This method expects the full entity (which has the data
-                to download the photo), not an input variant.
-
-                It's possible that sometimes you can't fetch the entity
-                from its input (since you can get errors like
-                ``ChannelPrivateError``) but you already have it through
-                another call, like getting a forwarded message from it.
-
-        file (`str` | `file`, optional):
-            The output file path, directory, or stream-like object.
-            If the path exists and is a file, it will be overwritten.
-            If file is the type `bytes`, it will be downloaded in-memory
-            as a bytestring (e.g. ``file=bytes``).
-
-        download_big (`bool`, optional):
-            Whether to use the big version of the available photos.
-
-    Returns
-        `None` if no photo was provided, or if it was Empty. On success
-        the file path is returned since it may differ from the one given.
-
-    Example
-        .. code-block:: python
-
-            # Download your own profile photo
-            path = await client.download_profile_photo('me')
-            print(path)
-    """
     # hex(crc32(x.encode('ascii'))) for x in
     # ('User', 'Chat', 'UserFull', 'ChatFull')
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
@@ -307,73 +270,6 @@ async def download_media(
         *,
         thumb: 'typing.Union[int, types.TypePhotoSize]' = None,
         progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
-    """
-    Downloads the given media from a message object.
-
-    Note that if the download is too slow, you should consider installing
-    ``cryptg`` (through ``pip install cryptg``) so that decrypting the
-    received data is done in C instead of Python (much faster).
-
-    See also `Message.download_media() <telethon.tl.custom.message.Message.download_media>`.
-
-    Arguments
-        message (`Message <telethon.tl.custom.message.Message>` | :tl:`Media`):
-            The media or message containing the media that will be downloaded.
-
-        file (`str` | `file`, optional):
-            The output file path, directory, or stream-like object.
-            If the path exists and is a file, it will be overwritten.
-            If file is the type `bytes`, it will be downloaded in-memory
-            as a bytestring (e.g. ``file=bytes``).
-
-        progress_callback (`callable`, optional):
-            A callback function accepting two parameters:
-            ``(received bytes, total)``.
-
-        thumb (`int` | :tl:`PhotoSize`, optional):
-            Which thumbnail size from the document or photo to download,
-            instead of downloading the document or photo itself.
-
-            If it's specified but the file does not have a thumbnail,
-            this method will return `None`.
-
-            The parameter should be an integer index between ``0`` and
-            ``len(sizes)``. ``0`` will download the smallest thumbnail,
-            and ``len(sizes) - 1`` will download the largest thumbnail.
-            You can also use negative indices, which work the same as
-            they do in Python's `list`.
-
-            You can also pass the :tl:`PhotoSize` instance to use.
-            Alternatively, the thumb size type `str` may be used.
-
-            In short, use ``thumb=0`` if you want the smallest thumbnail
-            and ``thumb=-1`` if you want the largest thumbnail.
-
-            .. note::
-                The largest thumbnail may be a video instead of a photo,
-                as they are available since layer 116 and are bigger than
-                any of the photos.
-
-    Returns
-        `None` if no media was provided, or if it was Empty. On success
-        the file path is returned since it may differ from the one given.
-
-    Example
-        .. code-block:: python
-
-            path = await client.download_media(message)
-            await client.download_media(message, filename)
-            # or
-            path = await message.download_media()
-            await message.download_media(filename)
-
-            # Printing download progress
-            def callback(current, total):
-                print('Downloaded', current, 'out of', total,
-                        'bytes: {:.2%}'.format(current / total))
-
-            await client.download_media(message, progress_callback=callback)
-    """
     # Downloading large documents may be slow enough to require a new file reference
     # to be obtained mid-download. Store (input chat, message id) so that the message
     # can be re-fetched.
@@ -428,58 +324,6 @@ async def download_file(
         dc_id: int = None,
         key: bytes = None,
         iv: bytes = None) -> typing.Optional[bytes]:
-    """
-    Low-level method to download files from their input location.
-
-    .. note::
-
-        Generally, you should instead use `download_media`.
-        This method is intended to be a bit more low-level.
-
-    Arguments
-        input_location (:tl:`InputFileLocation`):
-            The file location from which the file will be downloaded.
-            See `telethon.utils.get_input_location` source for a complete
-            list of supported types.
-
-        file (`str` | `file`, optional):
-            The output file path, directory, or stream-like object.
-            If the path exists and is a file, it will be overwritten.
-
-            If the file path is `None` or `bytes`, then the result
-            will be saved in memory and returned as `bytes`.
-
-        part_size_kb (`int`, optional):
-            Chunk size when downloading files. The larger, the less
-            requests will be made (up to 512KB maximum).
-
-        file_size (`int`, optional):
-            The file size that is about to be downloaded, if known.
-            Only used if ``progress_callback`` is specified.
-
-        progress_callback (`callable`, optional):
-            A callback function accepting two parameters:
-            ``(downloaded bytes, total)``. Note that the
-            ``total`` is the provided ``file_size``.
-
-        dc_id (`int`, optional):
-            The data center the library should connect to in order
-            to download the file. You shouldn't worry about this.
-
-        key ('bytes', optional):
-            In case of an encrypted upload (secret chats) a key is supplied
-
-        iv ('bytes', optional):
-            In case of an encrypted upload (secret chats) an iv is supplied
-
-
-    Example
-        .. code-block:: python
-
-            # Download a file and print its header
-            data = await client.download_file(input_file, bytes)
-            print(data[:16])
-    """
     return await self._download_file(
         input_location,
         file,
@@ -563,89 +407,6 @@ def iter_download(
         file_size: int = None,
         dc_id: int = None
 ):
-    """
-    Iterates over a file download, yielding chunks of the file.
-
-    This method can be used to stream files in a more convenient
-    way, since it offers more control (pausing, resuming, etc.)
-
-    .. note::
-
-        Using a value for `offset` or `stride` which is not a multiple
-        of the minimum allowed `request_size`, or if `chunk_size` is
-        different from `request_size`, the library will need to do a
-        bit more work to fetch the data in the way you intend it to.
-
-        You normally shouldn't worry about this.
-
-    Arguments
-        file (`hints.FileLike`):
-            The file of which contents you want to iterate over.
-
-        offset (`int`, optional):
-            The offset in bytes into the file from where the
-            download should start. For example, if a file is
-            1024KB long and you just want the last 512KB, you
-            would use ``offset=512 * 1024``.
-
-        stride (`int`, optional):
-            The stride of each chunk (how much the offset should
-            advance between reading each chunk). This parameter
-            should only be used for more advanced use cases.
-
-            It must be bigger than or equal to the `chunk_size`.
-
-        limit (`int`, optional):
-            The limit for how many *chunks* will be yielded at most.
-
-        chunk_size (`int`, optional):
-            The maximum size of the chunks that will be yielded.
-            Note that the last chunk may be less than this value.
-            By default, it equals to `request_size`.
-
-        request_size (`int`, optional):
-            How many bytes will be requested to Telegram when more
-            data is required. By default, as many bytes as possible
-            are requested. If you would like to request data in
-            smaller sizes, adjust this parameter.
-
-            Note that values outside the valid range will be clamped,
-            and the final value will also be a multiple of the minimum
-            allowed size.
-
-        file_size (`int`, optional):
-            If the file size is known beforehand, you should set
-            this parameter to said value. Depending on the type of
-            the input file passed, this may be set automatically.
-
-        dc_id (`int`, optional):
-            The data center the library should connect to in order
-            to download the file. You shouldn't worry about this.
-
-    Yields
-
-        `bytes` objects representing the chunks of the file if the
-        right conditions are met, or `memoryview` objects instead.
-
-    Example
-        .. code-block:: python
-
-            # Streaming `media` to an output file
-            # After the iteration ends, the sender is cleaned up
-            with open('photo.jpg', 'wb') as fd:
-                async for chunk in client.iter_download(media):
-                    fd.write(chunk)
-
-            # Fetching only the header of a file (32 bytes)
-            # You should manually close the iterator in this case.
-            #
-            # "stream" is a common name for asynchronous generators,
-            # and iter_download will yield `bytes` (chunks of the file).
-            stream = client.iter_download(media, request_size=32)
-            header = await stream.__anext__()  # "manual" version of `async for`
-            await stream.close()
-            assert len(header) == 32
-    """
     return self._iter_download(
         file,
         offset=offset,

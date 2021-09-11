@@ -30,74 +30,14 @@ async def _run_until_disconnected(self: 'TelegramClient'):
         await self.disconnect()
 
 async def set_receive_updates(self: 'TelegramClient', receive_updates):
-    """
-    Change the value of `receive_updates`.
-
-    This is an `async` method, because in order for Telegram to start
-    sending updates again, a request must be made.
-    """
     self._no_updates = not receive_updates
     if receive_updates:
         await self(functions.updates.GetStateRequest())
 
 async def run_until_disconnected(self: 'TelegramClient'):
-    """
-    Runs the event loop until the library is disconnected.
-
-    It also notifies Telegram that we want to receive updates
-    as described in https://core.telegram.org/api/updates.
-
-    Manual disconnections can be made by calling `disconnect()
-    <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
-    or sending a ``KeyboardInterrupt`` (e.g. by pressing ``Ctrl+C`` on
-    the console window running the script).
-
-    If a disconnection error occurs (i.e. the library fails to reconnect
-    automatically), said error will be raised through here, so you have a
-    chance to ``except`` it on your own code.
-
-    If the loop is already running, this method returns a coroutine
-    that you should await on your own code.
-
-    .. note::
-
-        If you want to handle ``KeyboardInterrupt`` in your code,
-        simply run the event loop in your code too in any way, such as
-        ``loop.run_forever()`` or ``await client.disconnected`` (e.g.
-        ``loop.run_until_complete(client.disconnected)``).
-
-    Example
-        .. code-block:: python
-
-            # Blocks the current task here until a disconnection occurs.
-            #
-            # You will still receive updates, since this prevents the
-            # script from exiting.
-            await client.run_until_disconnected()
-    """
     return await self._run_until_disconnected()
 
 def on(self: 'TelegramClient', event: EventBuilder):
-    """
-    Decorator used to `add_event_handler` more conveniently.
-
-
-    Arguments
-        event (`_EventBuilder` | `type`):
-            The event builder class or instance to be used,
-            for instance ``events.NewMessage``.
-
-    Example
-        .. code-block:: python
-
-            from telethon import TelegramClient, events
-            client = TelegramClient(...)
-
-            # Here we use client.on
-            @client.on(events.NewMessage)
-            async def handler(event):
-                ...
-    """
     def decorator(f):
         self.add_event_handler(f, event)
         return f
@@ -108,38 +48,6 @@ def add_event_handler(
         self: 'TelegramClient',
         callback: Callback,
         event: EventBuilder = None):
-    """
-    Registers a new event handler callback.
-
-    The callback will be called when the specified event occurs.
-
-    Arguments
-        callback (`callable`):
-            The callable function accepting one parameter to be used.
-
-            Note that if you have used `telethon.events.register` in
-            the callback, ``event`` will be ignored, and instead the
-            events you previously registered will be used.
-
-        event (`_EventBuilder` | `type`, optional):
-            The event builder class or instance to be used,
-            for instance ``events.NewMessage``.
-
-            If left unspecified, `telethon.events.raw.Raw` (the
-            :tl:`Update` objects with no further processing) will
-            be passed instead.
-
-    Example
-        .. code-block:: python
-
-            from telethon import TelegramClient, events
-            client = TelegramClient(...)
-
-            async def handler(event):
-                ...
-
-            client.add_event_handler(handler, events.NewMessage)
-    """
     builders = events._get_handlers(callback)
     if builders is not None:
         for event in builders:
@@ -157,27 +65,6 @@ def remove_event_handler(
         self: 'TelegramClient',
         callback: Callback,
         event: EventBuilder = None) -> int:
-    """
-    Inverse operation of `add_event_handler()`.
-
-    If no event is given, all events for this callback are removed.
-    Returns how many callbacks were removed.
-
-    Example
-        .. code-block:: python
-
-            @client.on(events.Raw)
-            @client.on(events.NewMessage)
-            async def handler(event):
-                ...
-
-            # Removes only the "Raw" handling
-            # "handler" will still receive "events.NewMessage"
-            client.remove_event_handler(handler, events.Raw)
-
-            # "handler" will stop receiving anything
-            client.remove_event_handler(handler)
-    """
     found = 0
     if event and not isinstance(event, type):
         event = type(event)
@@ -194,38 +81,9 @@ def remove_event_handler(
 
 def list_event_handlers(self: 'TelegramClient')\
         -> 'typing.Sequence[typing.Tuple[Callback, EventBuilder]]':
-    """
-    Lists all registered event handlers.
-
-    Returns
-        A list of pairs consisting of ``(callback, event)``.
-
-    Example
-        .. code-block:: python
-
-            @client.on(events.NewMessage(pattern='hello'))
-            async def on_greeting(event):
-                '''Greets someone'''
-                await event.reply('Hi')
-
-            for callback, event in client.list_event_handlers():
-                print(id(callback), type(event))
-    """
     return [(callback, event) for event, callback in self._event_builders]
 
 async def catch_up(self: 'TelegramClient'):
-    """
-    "Catches up" on the missed updates while the client was offline.
-    You should call this method after registering the event handlers
-    so that the updates it loads can by processed by your script.
-
-    This can also be used to forcibly fetch new updates if there are any.
-
-    Example
-        .. code-block:: python
-
-            await client.catch_up()
-    """
     pts, date = self._state_cache[None]
     if not pts:
         return
