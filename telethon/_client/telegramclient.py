@@ -1,12 +1,17 @@
+import asyncio
 import functools
 import inspect
 import typing
+import logging
 
 from . import (
     account, auth, bots, buttons, chats, dialogs, downloads, messageparse, messages,
     telegrambaseclient, updates, uploads, users
 )
-from .. import helpers
+from .. import helpers, version
+from ..tl import types, custom
+from ..network import ConnectionTcpFull
+from ..events.common import EventBuilder, EventCommon
 
 
 class TelegramClient:
@@ -721,7 +726,7 @@ class TelegramClient:
             *,
             search: str = '',
             filter: 'types.TypeChannelParticipantsFilter' = None,
-            aggressive: bool = False) -> _ParticipantsIter:
+            aggressive: bool = False) -> chats._ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -830,7 +835,7 @@ class TelegramClient:
             pinned: bool = None,
             edit: bool = None,
             delete: bool = None,
-            group_call: bool = None) -> _AdminLogIter:
+            group_call: bool = None) -> chats._AdminLogIter:
         """
         Iterator over the admin log for the specified channel.
 
@@ -958,7 +963,7 @@ class TelegramClient:
             limit: int = None,
             *,
             offset: int = 0,
-            max_id: int = 0) -> _ProfilePhotoIter:
+            max_id: int = 0) -> chats._ProfilePhotoIter:
         """
         Iterator over a user's profile photos or a chat's photos.
 
@@ -1452,7 +1457,7 @@ class TelegramClient:
             ignore_migrated: bool = False,
             folder: int = None,
             archived: bool = None
-    ) -> _DialogsIter:
+    ) -> dialogs._DialogsIter:
         """
         Iterator over the dialogs (open conversations/subscribed channels).
 
@@ -1549,7 +1554,7 @@ class TelegramClient:
     def iter_drafts(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike' = None
-    ) -> _DraftsIter:
+    ) -> dialogs._DraftsIter:
         """
         Iterator over draft messages.
 
@@ -2023,7 +2028,7 @@ class TelegramClient:
             stride: int = None,
             limit: int = None,
             chunk_size: int = None,
-            request_size: int = MAX_CHUNK_SIZE,
+            request_size: int = downloads.MAX_CHUNK_SIZE,
             file_size: int = None,
             dc_id: int = None
     ):
@@ -3180,7 +3185,7 @@ class TelegramClient:
 
     def add_event_handler(
             self: 'TelegramClient',
-            callback: Callback,
+            callback: updates.Callback,
             event: EventBuilder = None):
         """
         Registers a new event handler callback.
@@ -3218,7 +3223,7 @@ class TelegramClient:
 
     def remove_event_handler(
             self: 'TelegramClient',
-            callback: Callback,
+            callback: updates.Callback,
             event: EventBuilder = None) -> int:
         """
         Inverse operation of `add_event_handler()`.
