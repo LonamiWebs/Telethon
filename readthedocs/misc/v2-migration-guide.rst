@@ -9,6 +9,8 @@ the technical debt that has grown on the project.
 This document documents all the things you should be aware of when migrating
 from Telethon version 1.x to 2.0 onwards.
 
+**Please read this document in full before upgrading your code to Telethon 2.0.**
+
 
 User, chat and channel identifiers are now 64-bit numbers
 ---------------------------------------------------------
@@ -22,17 +24,75 @@ will need to migrate that to support the new size requirement of 8 bytes.
 For the full list of types changed, please review the above link.
 
 
-Many modules are now private
-----------------------------
+Many subpackages and modules are now private
+--------------------------------------------
 
 There were a lot of things which were public but should not have been. From now on, you should
 only rely on things that are either publicly re-exported or defined. That is, as soon as anything
 starts with an underscore (``_``) on its name, you're acknowledging that the functionality may
 change even across minor version changes, and thus have your code break.
 
-* The ``telethon.client`` module is now ``telethon._client``, meaning you should stop relying on
-  anything inside of it. This includes all of the subclasses that used to exist (like ``UserMethods``).
+The following subpackages are now considered private:
 
+* ``client`` is now ``_client``.
+* ``crypto`` is now ``_crypto``.
+* ``extensions`` is now ``_misc``.
+* ``tl`` is now ``_tl``.
+
+The following modules have been moved inside ``_misc``:
+
+* ``entitycache.py``
+* ``helpers.py``
+* ``hints.py``
+* ``password.py``
+* ``requestiter.py`
+* ``statecache.py``
+* ``utils.py``
+
+
+The TelegramClient is no longer made out of mixins
+--------------------------------------------------
+
+If you were relying on any of the individual mixins that made up the client, such as
+``UserMethods`` inside the ``telethon.client`` subpackage, those are now gone.
+There is a single ``TelegramClient`` class now, containing everything you need.
+
+
+Raw API methods have been renamed
+---------------------------------
+
+The subpackage holding the raw API methods has been renamed from ``tl`` to ``_tl`` in order to
+signal that these are prone to change across minor version bumps (the ``y`` in version ``x.y.z``).
+
+The ``Request`` suffix has been removed from the classes inside ``tl.functions``.
+
+The ``tl.types`` is now simply ``_tl``, and the ``tl.functions`` is now ``_tl.fn``.
+
+Some examples:
+
+.. code-block:: python
+
+    # Before
+    from telethon.tl import types, functions
+
+    await client(functions.messages.SendMessageRequest(...))
+    message: types.Message = ...
+
+    # After
+    from telethon import _tl
+    await client(_tl.fn.messages.SendMessage(...))
+    message: _tl.Message
+
+This serves multiple goals:
+
+* It removes redundant parts from the names. The "recommended" way of using the raw API is through
+  the subpackage namespace, which already contains a mention to "functions" in it. In addition,
+  some requests were awkward, such as ``SendCustomRequestRequest``.
+* It makes it easier to search for code that is using the raw API, so that you can quickly
+  identify which parts are making use of it.
+* The name is shorter, but remains recognizable.
+
+// TODO this definitely generated files mapping from the original name to this new one...
 
 Synchronous compatibility mode has been removed
 -----------------------------------------------
@@ -61,46 +121,7 @@ handlers, and overcomplicated usage for anything beyond the simplest case.
 
 It is not difficult to write your own code to deal with a conversation's state. A simple
 `Finite State Machine <https://stackoverflow.com/a/62246569/>`__ inside your handlers will do
-just fine:
-
-.. code-block:: python
-
-    from enum import Enum, auto
-
-    # We use a Python Enum for the state because it's a clean and easy way to do it
-    class State(Enum):
-        WAIT_NAME = auto()
-        WAIT_AGE = auto()
-
-    # The state in which different users are, {user_id: state}
-    conversation_state = {}
-
-    # ...code to create and setup your client...
-
-    @client.on(events.NewMessage)
-    async def handler(event):
-        who = event.sender_id
-        state = conversation_state.get(who)
-
-        if state is None:
-            # Starting a conversation
-            await event.respond('Hi! What is your name?')
-            conversation_state[who] = State.WAIT_NAME
-
-        elif state == State.WAIT_NAME:
-            name = event.text  # Save the name wherever you want
-            await event.respond('Nice! What is your age?')
-            conversation_state[who] = State.WAIT_AGE
-
-        elif state == State.WAIT_AGE:
-            age = event.text  # Save the age wherever you want
-            await event.respond('Thank you!')
-            # Conversation is done so we can forget the state of this user
-            del conversation_state[who]
-
-    # ...code to keep Telethon running...
-
-Not only is this approach simpler, but it can also be easily persisted, and you can adjust it
-to your needs and your handlers much more easily.
+just fine This approach can also be easily persisted, and you can adjust it to your needs and
+your handlers much more easily.
 
 // TODO provide standalone alternative for this?

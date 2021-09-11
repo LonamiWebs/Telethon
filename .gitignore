@@ -1,7 +1,7 @@
 # Generated code
-/telethon/tl/functions/
-/telethon/tl/types/
-/telethon/tl/alltlobjects.py
+/telethon/_tl/functions/
+/telethon/_tl/types/
+/telethon/_tl/alltlobjects.py
 /telethon/errors/rpcerrorlist.py
 
 # User session
