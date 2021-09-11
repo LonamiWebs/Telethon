@@ -32,8 +32,3 @@ change even across minor version changes, and thus have your code break.
 
 * The ``telethon.client`` module is now ``telethon._client``, meaning you should stop relying on
   anything inside of it. This includes all of the subclasses that used to exist (like ``UserMethods``).
-
-  TODO REVIEW self\._\w+\(
-  and __signature__
-  and property
-  abs abc abstract
