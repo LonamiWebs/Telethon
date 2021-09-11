@@ -40,7 +40,7 @@ async def set_receive_updates(self: 'TelegramClient', receive_updates):
     if receive_updates:
         await self(functions.updates.GetStateRequest())
 
-def run_until_disconnected(self: 'TelegramClient'):
+async def run_until_disconnected(self: 'TelegramClient'):
     """
     Runs the event loop until the library is disconnected.
 
@@ -75,15 +75,7 @@ def run_until_disconnected(self: 'TelegramClient'):
             # script from exiting.
             await client.run_until_disconnected()
     """
-    if self.loop.is_running():
-        return self._run_until_disconnected()
-    try:
-        return self.loop.run_until_complete(self._run_until_disconnected())
-    except KeyboardInterrupt:
-        pass
-    finally:
-        # No loop.run_until_complete; it's already syncified
-        self.disconnect()
+    return await self._run_until_disconnected()
 
 def on(self: 'TelegramClient', event: EventBuilder):
     """

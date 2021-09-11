@@ -55,9 +55,12 @@ We can finally write some code to log into our account!
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
 
-    # The first parameter is the .session file name (absolute paths allowed)
-    with TelegramClient('anon', api_id, api_hash) as client:
-        client.loop.run_until_complete(client.send_message('me', 'Hello, myself!'))
+    async def main():
+        # The first parameter is the .session file name (absolute paths allowed)
+        async with TelegramClient('anon', api_id, api_hash) as client:
+            await client.send_message('me', 'Hello, myself!')
+
+    client.loop.run_until_complete(main())
 
 
 In the first line, we import the class name so we can create an instance
@@ -95,7 +98,7 @@ You will still need an API ID and hash, but the process is very similar:
 
 .. code-block:: python
 
-    from telethon.sync import TelegramClient
+    from telethon import TelegramClient
 
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
@@ -104,9 +107,12 @@ You will still need an API ID and hash, but the process is very similar:
     # We have to manually call "start" if we want an explicit bot token
     bot = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 
-    # But then we can use the client instance as usual
-    with bot:
-        ...
+    async def main():
+        # But then we can use the client instance as usual
+        async with bot:
+            ...
+
+    client.loop.run_until_complete(main())
 
 
 To get a bot account, you need to talk

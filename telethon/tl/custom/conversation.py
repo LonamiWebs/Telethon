@@ -524,6 +524,3 @@ class Conversation(ChatGetter):
             del self._client._conversations[chat_id]
 
         self._cancel_all()
-
-    __enter__ = helpers._sync_enter
-    __exit__ = helpers._sync_exit

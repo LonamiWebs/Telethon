@@ -32,3 +32,22 @@ change even across minor version changes, and thus have your code break.
 
 * The ``telethon.client`` module is now ``telethon._client``, meaning you should stop relying on
   anything inside of it. This includes all of the subclasses that used to exist (like ``UserMethods``).
+
+
+Synchronous compatibility mode has been removed
+-----------------------------------------------
+
+The "sync hack" (which kicked in as soon as anything from ``telethon.sync`` was imported) has been
+removed. This implies:
+
+* The ``telethon.sync`` module is gone.
+* Synchronous context-managers (``with`` as opposed to ``async with``) are no longer supported.
+  Most notably, you can no longer do ``with client``. It must be ``async with client`` now.
+* The "smart" behaviour of the following methods has been removed and now they no longer work in
+  a synchronous context when the ``asyncio`` event loop was not running. This means they now need
+  to be used with ``await`` (or, alternatively, manually used with ``loop.run_until_complete``):
+  * ``start``
+  * ``disconnect``
+  * ``run_until_disconnected``
+
+// TODO provide standalone alternative for this?

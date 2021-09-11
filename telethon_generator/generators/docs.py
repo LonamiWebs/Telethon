@@ -396,7 +396,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
                     docs.write('<details>')
 
                 docs.write('''<pre>\
-<strong>from</strong> telethon.sync <strong>import</strong> TelegramClient
+<strong>from</strong> telethon <strong>import</strong> TelegramClient
 <strong>from</strong> telethon <strong>import</strong> functions, types
 
 <strong>with</strong> TelegramClient(name, api_id, api_hash) <strong>as</strong> client:

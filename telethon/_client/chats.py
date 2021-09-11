@@ -76,9 +76,6 @@ class _ChatAction:
 
             self._task = None
 
-    __enter__ = helpers._sync_enter
-    __exit__ = helpers._sync_exit
-
     async def _update(self):
         try:
             while self._running:

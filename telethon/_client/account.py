@@ -56,9 +56,6 @@ class _TakeoutClient:
                 raise ValueError("Failed to finish the takeout.")
             self.session.takeout_id = None
 
-    __enter__ = helpers._sync_enter
-    __exit__ = helpers._sync_exit
-
     async def __call__(self, request, ordered=False):
         takeout_id = self.__client.session.takeout_id
         if takeout_id is None:

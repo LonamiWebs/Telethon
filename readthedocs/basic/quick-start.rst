@@ -100,12 +100,8 @@ proceeding. We will see all the available methods later on.
             # Most of your code should go here.
             # You can of course make and use your own async def (do_something).
             # They only need to be async if they need to await things.
-            me = await client.get_me()
-            await do_something(me)
+            async with client:
+                me = await client.get_me()
+                await do_something(me)
 
-        with client:
-            client.loop.run_until_complete(main())
-
-    After you understand this, you may use the ``telethon.sync`` hack if you
-    want do so (see :ref:`compatibility-and-convenience`), but note you may
-    run into other issues (iPython, Anaconda, etc. have some issues with it).
+        client.loop.run_until_complete(main())

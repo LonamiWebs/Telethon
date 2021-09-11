@@ -619,9 +619,6 @@ class TelegramClient:
     async def __aexit__(self, *args):
         await self.disconnect()
 
-    __enter__ = helpers._sync_enter
-    __exit__ = helpers._sync_exit
-
     # endregion Auth
 
     # region Bots

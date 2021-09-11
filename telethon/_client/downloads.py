@@ -137,9 +137,6 @@ class _DirectDownloadIter(RequestIter):
     async def __aexit__(self, *args):
         await self.close()
 
-    __enter__ = helpers._sync_enter
-    __exit__ = helpers._sync_exit
-
 
 class _GenericDownloadIter(_DirectDownloadIter):
     async def _load_next_chunk(self):

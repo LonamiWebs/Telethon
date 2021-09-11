@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-def start(
+async def start(
         self: 'TelegramClient',
         phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
         password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
@@ -39,7 +39,7 @@ def start(
         raise ValueError('Both a phone and a bot token provided, '
                             'must only provide one of either')
 
-    coro = self._start(
+    return await self._start(
         phone=phone,
         password=password,
         bot_token=bot_token,
@@ -48,10 +48,6 @@ def start(
         first_name=first_name,
         last_name=last_name,
         max_attempts=max_attempts
-    )
-    return (
-        coro if self.loop.is_running()
-        else self.loop.run_until_complete(coro)
     )
 
 async def _start(

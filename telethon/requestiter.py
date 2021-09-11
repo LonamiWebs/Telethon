@@ -12,9 +12,6 @@ class RequestIter(abc.ABC):
     It has some facilities, such as automatically sleeping a desired
     amount of time between requests if needed (but not more).
 
-    Can be used synchronously if the event loop is not running and
-    as an asynchronous iterator otherwise.
-
     `limit` is the total amount of items that the iterator should return.
     This is handled on this base class, and will be always ``>= 0``.
 
@@ -82,27 +79,12 @@ class RequestIter(abc.ABC):
         self.index += 1
         return result
 
-    def __next__(self):
-        try:
-            return self.client.loop.run_until_complete(self.__anext__())
-        except StopAsyncIteration:
-            raise StopIteration
-
     def __aiter__(self):
         self.buffer = None
         self.index = 0
         self.last_load = 0
         self.left = self.limit
         return self
-
-    def __iter__(self):
-        if self.client.loop.is_running():
-            raise RuntimeError(
-                'You must use "async for" if the event loop '
-                'is running (i.e. you are inside an "async def")'
-            )
-
-        return self.__aiter__()
 
     async def collect(self):
         """

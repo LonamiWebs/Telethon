@@ -337,19 +337,8 @@ def is_connected(self: 'TelegramClient') -> bool:
     sender = getattr(self, '_sender', None)
     return sender and sender.is_connected()
 
-def disconnect(self: 'TelegramClient'):
-    if self.loop.is_running():
-        return self._disconnect_coro()
-    else:
-        try:
-            self.loop.run_until_complete(self._disconnect_coro())
-        except RuntimeError:
-            # Python 3.5.x complains when called from
-            # `__aexit__` and there were pending updates with:
-            #   "Event loop stopped before Future completed."
-            #
-            # However, it doesn't really make a lot of sense.
-            pass
+async def disconnect(self: 'TelegramClient'):
+    return await self._disconnect_coro()
 
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
     init_proxy = None if not issubclass(self._connection, TcpMTProxy) else \
