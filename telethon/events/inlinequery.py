@@ -6,7 +6,7 @@ import asyncio
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
-from .._tl import custom
+from ..types import _custom
 
 
 @name_inner_event
@@ -74,7 +74,7 @@ class InlineQuery(EventBuilder):
 
         return super().filter(event)
 
-    class Event(EventCommon, custom.sendergetter.SenderGetter):
+    class Event(EventCommon, _custom.sendergetter.SenderGetter):
         """
         Represents the event of a new callback query.
 
@@ -91,7 +91,7 @@ class InlineQuery(EventBuilder):
         """
         def __init__(self, query):
             super().__init__(chat_peer=_tl.PeerUser(query.user_id))
-            custom.sendergetter.SenderGetter.__init__(self, query.user_id)
+            _custom.sendergetter.SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.pattern_match = None
             self._answered = False

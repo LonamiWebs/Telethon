@@ -11,7 +11,7 @@ except ImportError:
     rsa = None
     raise ImportError('Missing module "rsa", please install via pip.')
 
-from .. import _tl
+from .._misc import tlobject
 
 
 # {fingerprint: (Crypto.PublicKey.RSA._RSAobj, old)} dictionary
@@ -41,8 +41,8 @@ def _compute_fingerprint(key):
     :param key: the Crypto.RSA key.
     :return: its 8-bytes-long fingerprint.
     """
-    n = _tl.TLObject.serialize_bytes(get_byte_array(key.n))
-    e = _tl.TLObject.serialize_bytes(get_byte_array(key.e))
+    n = tlobject.TLObject.serialize_bytes(get_byte_array(key.n))
+    e = tlobject.TLObject.serialize_bytes(get_byte_array(key.e))
     # Telegram uses the last 8 bytes as the fingerprint
     return struct.unpack('<q', sha1(n + e).digest()[-8:])[0]
 

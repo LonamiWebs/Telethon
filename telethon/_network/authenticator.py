@@ -9,7 +9,7 @@ from hashlib import sha1
 from .. import helpers, _tl
 from .._crypto import AES, AuthKey, Factorization, rsa
 from ..errors import SecurityError
-from .._misc import BinaryReader
+from .._misc.binaryreader import BinaryReader
 
 
 async def do_authentication(sender):

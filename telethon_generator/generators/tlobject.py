@@ -52,7 +52,7 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
 
 
 def _write_modules(
-        out_dir, in_mod, kind, namespace_tlobjects, type_constructors):
+        out_dir, in_mod, kind, namespace_tlobjects, type_constructors, layer):
     # namespace_tlobjects: {'namespace', [TLObject]}
     out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -162,6 +162,9 @@ def _write_modules(
             builder.writeln()
             for line in type_defs:
                 builder.writeln(line)
+
+            if not ns and kind == 'TLObject':
+                _write_all_tlobjects(tlobjects, layer, builder)
 
 
 def _write_source_code(tlobject, kind, builder, type_constructors):
@@ -658,12 +661,6 @@ def _write_arg_read_code(builder, arg, tlobject, name):
 
 
 def _write_all_tlobjects(tlobjects, layer, builder):
-    builder.writeln(AUTO_GEN_NOTICE)
-    builder.writeln()
-
-    builder.writeln('from . import types, functions')
-    builder.writeln()
-
     # Create a constant variable to indicate which layer this is
     builder.writeln('LAYER = {}', layer)
     builder.writeln()
@@ -675,12 +672,13 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     # Fill the dictionary (0x1a2b3c4f: tl.full.type.path.Class)
     for tlobject in tlobjects:
         builder.write('{:#010x}: ', tlobject.id)
-        builder.write('functions' if tlobject.is_function else 'types')
+        if tlobject.is_function:
+            builder.write('fn.')
 
         if tlobject.namespace:
-            builder.write('.{}', tlobject.namespace)
+            builder.write('{}.', tlobject.namespace)
 
-        builder.writeln('.{},', tlobject.class_name)
+        builder.writeln('{},', tlobject.class_name)
 
     builder.current_indent -= 1
     builder.writeln('}')
@@ -701,14 +699,9 @@ def generate_tlobjects(tlobjects, layer, input_mod, output_dir):
             type_constructors[tlobject.result].append(tlobject)
 
     _write_modules(output_dir, input_mod, 'TLObject',
-                   namespace_types, type_constructors)
+                   namespace_types, type_constructors, layer)
     _write_modules(output_dir / 'fn', input_mod + '.fn', 'TLRequest',
-                   namespace_functions, type_constructors)
-
-    filename = output_dir / 'alltlobjects.py'
-    with filename.open('w') as file:
-        with SourceBuilder(file) as builder:
-            _write_all_tlobjects(tlobjects, layer, builder)
+                   namespace_functions, type_constructors, layer)
 
 
 def clean_tlobjects(output_dir):
@@ -716,7 +709,3 @@ def clean_tlobjects(output_dir):
         d = output_dir / d
         if d.is_dir():
             shutil.rmtree(str(d))
-
-    tl = output_dir / 'alltlobjects.py'
-    if tl.is_file():
-        tl.unlink()

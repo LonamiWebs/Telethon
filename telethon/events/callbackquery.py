@@ -4,7 +4,7 @@ import struct
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
-from .._tl import custom
+from ..types import _custom
 
 
 @name_inner_event
@@ -123,7 +123,7 @@ class CallbackQuery(EventBuilder):
             return self.func(event)
         return True
 
-    class Event(EventCommon, custom.sendergetter.SenderGetter):
+    class Event(EventCommon, _custom.sendergetter.SenderGetter):
         """
         Represents the event of a new callback query.
 
@@ -141,7 +141,7 @@ class CallbackQuery(EventBuilder):
         """
         def __init__(self, query, peer, msg_id):
             super().__init__(peer, msg_id=msg_id)
-            custom.sendergetter.SenderGetter.__init__(self, query.user_id)
+            _custom.sendergetter.SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.data_match = None
             self.pattern_match = None
@@ -308,7 +308,7 @@ class CallbackQuery(EventBuilder):
             .. note::
 
                 This method won't respect the previous message unlike
-                `Message.edit <telethon.tl.custom.message.Message.edit>`,
+                `Message.edit <telethon.tl._custom.message.Message.edit>`,
                 since the message object is normally not present.
             """
             self._client.loop.create_task(self.answer())

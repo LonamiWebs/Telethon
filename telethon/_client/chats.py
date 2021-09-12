@@ -5,8 +5,8 @@ import string
 import typing
 
 from .. import hints, errors, _tl
-from .._misc import helpers, utils, requestiter
-from .._tl import custom
+from .._misc import helpers, utils, requestiter, tlobject
+from ..types import _custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -302,7 +302,7 @@ class _AdminLogIter(requestiter.RequestIter):
                 ev.action.message._finish_init(
                     self.client, entities, self.entity)
 
-            self.buffer.append(custom.AdminLogEvent(ev, entities))
+            self.buffer.append(_custom.AdminLogEvent(ev, entities))
 
         if len(r.events) < self.request.limit:
             return True
@@ -516,7 +516,7 @@ def action(
         except KeyError:
             raise ValueError(
                 'No such action "{}"'.format(action)) from None
-    elif not isinstance(action, _tl.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
+    elif not isinstance(action, tlobject.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
         # 0x20b2cc21 = crc32(b'SendMessageAction')
         if isinstance(action, type):
             raise ValueError('You must pass an instance, not the class')
@@ -716,7 +716,7 @@ async def get_permissions(
             entity,
             user
         ))
-        return custom.ParticipantPermissions(participant.participant, False)
+        return _custom.ParticipantPermissions(participant.participant, False)
     elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
         chat = await self(_tl.fn.messages.GetFullChat(
             entity
@@ -725,7 +725,7 @@ async def get_permissions(
             user = await self.get_me(input_peer=True)
         for participant in chat.full_chat.participants.participants:
             if participant.user_id == user.user_id:
-                return custom.ParticipantPermissions(participant, True)
+                return _custom.ParticipantPermissions(participant, True)
         raise errors.UserNotParticipantError(None)
 
     raise ValueError('You must pass either a channel or a chat')

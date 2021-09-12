@@ -1,7 +1,7 @@
-from .. import TLObject
+from ..._misc import tlobject
 
 
-class TLMessage(TLObject):
+class TLMessage(tlobject.TLObject):
     """
     https://core.telegram.org/mtproto/service_messages#simple-container.
 

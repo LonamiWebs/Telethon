@@ -2,7 +2,7 @@ import datetime
 
 from ... import _tl
 from ...errors import RPCError
-from ..._misc import markdown
+from ..._misc import markdown, tlobject
 from ..._misc.utils import get_input_peer, get_peer
 
 
@@ -182,7 +182,7 @@ class Draft:
         }
 
     def __str__(self):
-        return _tl.TLObject.pretty_format(self.to_dict())
+        return tlobject.TLObject.pretty_format(self.to_dict())
 
     def stringify(self):
-        return _tl.TLObject.pretty_format(self.to_dict(), indent=0)
+        return tlobject.TLObject.pretty_format(self.to_dict(), indent=0)

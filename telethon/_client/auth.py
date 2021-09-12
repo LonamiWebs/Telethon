@@ -7,7 +7,7 @@ import warnings
 
 from .._misc import utils, helpers, password as pwd_mod
 from .. import errors, _tl
-from .._tl import custom
+from ..types import _custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -343,8 +343,8 @@ async def send_code_request(
 
     return result
 
-async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> custom.QRLogin:
-    qr_login = custom.QRLogin(self, ignored_ids or [])
+async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
+    qr_login = _custom.QRLogin(self, ignored_ids or [])
     await qr_login.recreate()
     return qr_login
 

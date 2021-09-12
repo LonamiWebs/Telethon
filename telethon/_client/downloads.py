@@ -7,7 +7,7 @@ import inspect
 import asyncio
 
 from .._crypto import AES
-from .._misc import utils, helpers, requestiter
+from .._misc import utils, helpers, requestiter, tlobject
 from .. import errors, hints, _tl
 
 try:
@@ -198,7 +198,7 @@ async def download_profile_photo(
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
     # ('InputPeer', 'InputUser', 'InputChannel')
     INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
-    if not isinstance(entity, _tl.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
+    if not isinstance(entity, tlobject.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
         entity = await self.get_entity(entity)
 
     thumb = -1 if download_big else 0

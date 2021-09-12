@@ -9,8 +9,7 @@ from struct import unpack
 
 from ..errors import TypeNotFoundError
 from .. import _tl
-from .._tl.alltlobjects import tlobjects
-from ..types import core
+from ..types import _core
 
 _EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
 _EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)
@@ -119,7 +118,7 @@ class BinaryReader:
     def tgread_object(self):
         """Reads a Telegram object."""
         constructor_id = self.read_int(signed=False)
-        clazz = tlobjects.get(constructor_id, None)
+        clazz = _tl.tlobjects.get(constructor_id, None)
         if clazz is None:
             # The class was None, but there's still a
             # chance of it being a manually parsed value like bool!
@@ -131,7 +130,7 @@ class BinaryReader:
             elif value == 0x1cb5c415:  # Vector
                 return [self.tgread_object() for _ in range(self.read_int())]
 
-            clazz = core.core_objects.get(constructor_id, None)
+            clazz = _core.core_objects.get(constructor_id, None)
             if clazz is None:
                 # If there was still no luck, give up
                 self.seek(-4)  # Go back

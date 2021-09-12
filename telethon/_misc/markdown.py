@@ -8,6 +8,7 @@ import warnings
 
 from .helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
 from .. import _tl
+from .._misc import tlobject
 
 DEFAULT_DELIMITERS = {
     '**': _tl.MessageEntityBold,
@@ -153,7 +154,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     if url_fmt is not None:
         warnings.warn('url_fmt is deprecated')  # since it complicates everything *a lot*
 
-    if isinstance(entities, _tl.TLObject):
+    if isinstance(entities, tlobject.TLObject):
         entities = (entities,)
 
     text = add_surrogate(text)

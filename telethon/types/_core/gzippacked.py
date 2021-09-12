@@ -1,10 +1,10 @@
 import gzip
 import struct
 
-from .. import TLObject
+from ..._misc import tlobject
 
 
-class GzipPacked(TLObject):
+class GzipPacked(tlobject.TLObject):
     CONSTRUCTOR_ID = 0x3072cfa1
 
     def __init__(self, data):
@@ -26,7 +26,7 @@ class GzipPacked(TLObject):
 
     def __bytes__(self):
         return struct.pack('<I', GzipPacked.CONSTRUCTOR_ID) + \
-               TLObject.serialize_bytes(gzip.compress(self.data))
+               tlobject.TLObject.serialize_bytes(gzip.compress(self.data))
 
     @staticmethod
     def read(reader):

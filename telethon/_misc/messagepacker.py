@@ -4,8 +4,7 @@ import io
 import struct
 
 from .._tl import TLRequest
-from .._tl.core.messagecontainer import MessageContainer
-from .._tl.core.tlmessage import TLMessage
+from ..types._core import MessageContainer, TLMessage
 
 
 class MessagePacker:

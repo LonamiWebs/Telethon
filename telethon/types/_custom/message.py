@@ -5,13 +5,13 @@ from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
 from .file import File
-from ..._misc import utils
+from ..._misc import utils, tlobject
 from ... import errors, _tl
 
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter, _tl.TLObject):
+class Message(ChatGetter, SenderGetter, tlobject.TLObject):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.

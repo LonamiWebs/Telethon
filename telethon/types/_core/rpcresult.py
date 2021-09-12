@@ -1,5 +1,6 @@
 from .gzippacked import GzipPacked
-from .. import TLObject, RpcError
+from ..._misc.tlobject import TLObject
+from ... import _tl
 
 
 class RpcResult(TLObject):
@@ -14,8 +15,8 @@ class RpcResult(TLObject):
     def from_reader(cls, reader):
         msg_id = reader.read_long()
         inner_code = reader.read_int(signed=False)
-        if inner_code == RpcError.CONSTRUCTOR_ID:
-            return RpcResult(msg_id, None, RpcError.from_reader(reader))
+        if inner_code == _tl.RpcError.CONSTRUCTOR_ID:
+            return RpcResult(msg_id, None, _tl.RpcError.from_reader(reader))
         if inner_code == GzipPacked.CONSTRUCTOR_ID:
             return RpcResult(msg_id, GzipPacked.from_reader(reader).data, None)
 

@@ -7,14 +7,14 @@ from .._misc.messagepacker import MessagePacker
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
 from .mtprotostate import MTProtoState
-from .._tl.tlobject import TLRequest
 from .. import helpers, utils, _tl
 from ..errors import (
     BadMessageError, InvalidBufferError, SecurityError,
     TypeNotFoundError, rpc_message_to_error
 )
-from .._misc import BinaryReader
-from .._tl.core import RpcResult, MessageContainer, GzipPacked
+from .._misc.binaryreader import BinaryReader
+from .._misc.tlobject import TLRequest
+from ..types._core import RpcResult, MessageContainer, GzipPacked
 from .._crypto import AuthKey
 from .._misc.helpers import retry_range
 

@@ -11,7 +11,6 @@ from .. import version, helpers, __name__ as __base_name__, _tl
 from .._crypto import rsa
 from .._misc import markdown, entitycache, statecache
 from .._network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
-from .._tl.alltlobjects import LAYER
 from ..sessions import Session, SQLiteSession, MemorySession
 
 DEFAULT_DC_ID = 2
@@ -322,7 +321,7 @@ async def connect(self: 'TelegramClient') -> None:
     self._init_request.query = _tl.fn.help.GetConfig()
 
     await self._sender.send(_tl.fn.InvokeWithLayer(
-        LAYER, self._init_request
+        _tl.LAYER, self._init_request
     ))
 
     self._updates_handle = self.loop.create_task(self._update_loop())

@@ -6,7 +6,7 @@ import struct
 
 from .mtprotostate import MTProtoState
 from ..errors import InvalidBufferError
-from .._misc import BinaryReader
+from .._misc.binaryreader import BinaryReader
 
 
 class MTProtoPlainSender:

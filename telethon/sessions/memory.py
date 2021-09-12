@@ -1,7 +1,7 @@
 from enum import Enum
 
 from .abstract import Session
-from .._misc import utils
+from .._misc import utils, tlobject
 from .. import _tl
 
 
@@ -89,7 +89,7 @@ class MemorySession(Session):
         return id, hash, username, phone, name
 
     def _entity_to_row(self, e):
-        if not isinstance(e, _tl.TLObject):
+        if not isinstance(e, tlobject.TLObject):
             return
         try:
             p = utils.get_input_peer(e, allow_self=False)
@@ -118,7 +118,7 @@ class MemorySession(Session):
         )
 
     def _entities_to_rows(self, tlo):
-        if not isinstance(tlo, _tl.TLObject) and utils.is_list_like(tlo):
+        if not isinstance(tlo, tlobject.TLObject) and utils.is_list_like(tlo):
             # This may be a list of users already for instance
             entities = tlo
         else:
@@ -189,7 +189,7 @@ class MemorySession(Session):
             return utils.get_input_peer(key)
         except (AttributeError, TypeError):
             # Not a TLObject or can't be cast into InputPeer
-            if isinstance(key, _tl.TLObject):
+            if isinstance(key, tlobject.TLObject):
                 key = utils.get_peer_id(key)
                 exact = True
             else:

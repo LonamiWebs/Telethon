@@ -1,6 +1,6 @@
 from . import Draft
 from ... import _tl
-from ..._misc import utils
+from ..._misc import utils, tlobject
 
 
 class Dialog:
@@ -155,7 +155,7 @@ class Dialog:
         }
 
     def __str__(self):
-        return _tl.TLObject.pretty_format(self.to_dict())
+        return tlobject.TLObject.pretty_format(self.to_dict())
 
     def stringify(self):
-        return _tl.TLObject.pretty_format(self.to_dict(), indent=0)
+        return tlobject.TLObject.pretty_format(self.to_dict(), indent=0)

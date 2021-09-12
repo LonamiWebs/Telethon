@@ -4,7 +4,7 @@ import functools
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
-from .._tl import custom
+from ..types import _custom
 
 
 # TODO Either the properties are poorly named or they should be
@@ -65,7 +65,7 @@ class UserUpdate(EventBuilder):
             return cls.Event(update.user_id,
                              typing=update.action)
 
-    class Event(EventCommon, custom.sendergetter.SenderGetter):
+    class Event(EventCommon, _custom.sendergetter.SenderGetter):
         """
         Represents the event of a user update
         such as gone online, started typing, etc.
@@ -87,7 +87,7 @@ class UserUpdate(EventBuilder):
         """
         def __init__(self, peer, *, status=None, chat_peer=None, typing=None):
             super().__init__(chat_peer or peer)
-            custom.sendergetter.SenderGetter.__init__(self, utils.get_peer_id(peer))
+            _custom.sendergetter.SenderGetter.__init__(self, utils.get_peer_id(peer))
 
             self.status = status
             self.action = typing

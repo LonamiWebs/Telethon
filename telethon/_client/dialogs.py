@@ -5,7 +5,7 @@ import typing
 
 from .. import  hints, errors, _tl
 from .._misc import helpers, utils, requestiter
-from .._tl import custom
+from ..types import _custom
 
 _MAX_CHUNK_SIZE = 100
 
@@ -80,7 +80,7 @@ class _DialogsIter(requestiter.RequestIter):
                     # Real world example: https://t.me/TelethonChat/271471
                     continue
 
-                cd = custom.Dialog(self.client, d, entities, message)
+                cd = _custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
 
@@ -128,7 +128,7 @@ class _DraftsIter(requestiter.RequestIter):
                     for x in itertools.chain(r.users, r.chats)}
 
         self.buffer.extend(
-            custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
+            _custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
             for d in items
         )
 

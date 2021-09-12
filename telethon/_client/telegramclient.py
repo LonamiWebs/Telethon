@@ -9,7 +9,7 @@ from . import (
     telegrambaseclient, updates, uploads, users
 )
 from .. import helpers, version, _tl
-from .._tl import custom
+from ..types import _custom
 from .._network import ConnectionTcpFull
 from ..events.common import EventBuilder, EventCommon
 
@@ -500,7 +500,7 @@ class TelegramClient:
         """
         return await auth.send_code_request(**locals())
 
-    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> custom.QRLogin:
+    async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
         """
         Initiates the QR login procedure.
 
@@ -630,7 +630,7 @@ class TelegramClient:
             *,
             entity: 'hints.EntityLike' = None,
             offset: str = None,
-            geo_point: '_tl.GeoPoint' = None) -> custom.InlineResults:
+            geo_point: '_tl.GeoPoint' = None) -> _custom.InlineResults:
         """
         Makes an inline query to the specified bot (``@vote New Poll``).
 
@@ -658,8 +658,8 @@ class TelegramClient:
                 for localised results. Available under some bots.
 
         Returns
-            A list of `custom.InlineResult
-            <telethon.tl.custom.inlineresult.InlineResult>`.
+            A list of `_custom.InlineResult
+            <telethon.tl._custom.inlineresult.InlineResult>`.
 
         Example
             .. code-block:: python
@@ -923,7 +923,7 @@ class TelegramClient:
                 If `True`, events related to group calls will be returned.
 
         Yields
-            Instances of `AdminLogEvent <telethon.tl.custom.adminlogevent.AdminLogEvent>`.
+            Instances of `AdminLogEvent <telethon.tl._custom.adminlogevent.AdminLogEvent>`.
 
         Example
             .. code-block:: python
@@ -1161,8 +1161,8 @@ class TelegramClient:
                 .. note::
 
                     Users may be able to identify the anonymous admin by its
-                    custom title, so additional care is needed when using both
-                    ``anonymous`` and custom titles. For example, if multiple
+                    _custom title, so additional care is needed when using both
+                    ``anonymous`` and _custom titles. For example, if multiple
                     anonymous admins share the same title, users won't be able
                     to distinguish them.
 
@@ -1178,7 +1178,7 @@ class TelegramClient:
                 permissions, but you can still disable those you need.
 
             title (`str`, optional):
-                The custom title (also known as "rank") to show for this admin.
+                The _custom title (also known as "rank") to show for this admin.
                 This text will be shown instead of the "admin" badge.
                 This will only work in channels and megagroups.
 
@@ -1340,7 +1340,7 @@ class TelegramClient:
                 The user to kick.
 
         Returns
-            Returns the service `Message <telethon.tl.custom.message.Message>`
+            Returns the service `Message <telethon.tl._custom.message.Message>`
             produced about a user being kicked, if any.
 
         Example
@@ -1359,7 +1359,7 @@ class TelegramClient:
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             user: 'hints.EntityLike' = None
-    ) -> 'typing.Optional[custom.ParticipantPermissions]':
+    ) -> 'typing.Optional[_custom.ParticipantPermissions]':
         """
         Fetches the permissions of a user in a specific chat or channel or
         get Default Restricted Rights of Chat or Channel.
@@ -1377,7 +1377,7 @@ class TelegramClient:
                 Target user.
 
         Returns
-            A `ParticipantPermissions <telethon.tl.custom.participantpermissions.ParticipantPermissions>`
+            A `ParticipantPermissions <telethon.tl._custom.participantpermissions.ParticipantPermissions>`
             instance. Refer to its documentation to see what properties are
             available.
 
@@ -1509,7 +1509,7 @@ class TelegramClient:
                 Alias for `folder`. If unspecified, all will be returned,
                 `False` implies ``folder=0`` and `True` implies ``folder=1``.
         Yields
-            Instances of `Dialog <telethon.tl.custom.dialog.Dialog>`.
+            Instances of `Dialog <telethon.tl._custom.dialog.Dialog>`.
 
         Example
             .. code-block:: python
@@ -1563,7 +1563,7 @@ class TelegramClient:
                 If left unspecified, all draft messages will be returned.
 
         Yields
-            Instances of `Draft <telethon.tl.custom.draft.Draft>`.
+            Instances of `Draft <telethon.tl._custom.draft.Draft>`.
 
         Example
             .. code-block:: python
@@ -1670,7 +1670,7 @@ class TelegramClient:
         bots will only be able to use it to leave groups and channels
         (trying to delete a private conversation will do nothing).
 
-        See also `Dialog.delete() <telethon.tl.custom.dialog.Dialog.delete>`.
+        See also `Dialog.delete() <telethon.tl._custom.dialog.Dialog.delete>`.
 
         Arguments
             entity (entities):
@@ -1765,10 +1765,10 @@ class TelegramClient:
         ``cryptg`` (through ``pip install cryptg``) so that decrypting the
         received data is done in C instead of Python (much faster).
 
-        See also `Message.download_media() <telethon.tl.custom.message.Message.download_media>`.
+        See also `Message.download_media() <telethon.tl._custom.message.Message.download_media>`.
 
         Arguments
-            message (`Message <telethon.tl.custom.message.Message>` | :tl:`Media`):
+            message (`Message <telethon.tl._custom.message.Message>` | :tl:`Media`):
                 The media or message containing the media that will be downloaded.
 
             file (`str` | `file`, optional):
@@ -2186,7 +2186,7 @@ class TelegramClient:
                 All other parameter will be ignored for this, except `entity`.
 
         Yields
-            Instances of `Message <telethon.tl.custom.message.Message>`.
+            Instances of `Message <telethon.tl._custom.message.Message>`.
 
         Example
             .. code-block:: python
@@ -2232,7 +2232,7 @@ class TelegramClient:
         specified it makes sense that it should return the entirety of it.
 
         If `ids` is present in the *named* arguments and is not a list,
-        a single `Message <telethon.tl.custom.message.Message>` will be
+        a single `Message <telethon.tl._custom.message.Message>` will be
         returned for convenience instead of a list.
 
         Example
@@ -2278,7 +2278,7 @@ class TelegramClient:
         Sends a message to the specified user, chat or channel.
 
         The default parse mode is the same as the official applications
-        (a custom flavour of markdown). ``**bold**, `code` or __italic__``
+        (a _custom flavour of markdown). ``**bold**, `code` or __italic__``
         are available. In addition you can send ``[links](https://example.com)``
         and ``[mentions](@username)`` (or using IDs like in the Bot API:
         ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
@@ -2288,14 +2288,14 @@ class TelegramClient:
         is also done through this method. Simply send ``'/start data'`` to
         the bot.
 
-        See also `Message.respond() <telethon.tl.custom.message.Message.respond>`
-        and `Message.reply() <telethon.tl.custom.message.Message.reply>`.
+        See also `Message.respond() <telethon.tl._custom.message.Message.respond>`
+        and `Message.reply() <telethon.tl._custom.message.Message.reply>`.
 
         Arguments
             entity (`entity`):
                 To who will it be sent.
 
-            message (`str` | `Message <telethon.tl.custom.message.Message>`):
+            message (`str` | `Message <telethon.tl._custom.message.Message>`):
                 The message to be sent, or another message object to resend.
 
                 The maximum length for a message is 35,000 bytes or 4,096
@@ -2303,7 +2303,7 @@ class TelegramClient:
                 and you should slice them manually if the text to send is
                 longer than said length.
 
-            reply_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+            reply_to (`int` | `Message <telethon.tl._custom.message.Message>`, optional):
                 Whether to reply to a message or not. If an integer is provided,
                 it should be the ID of the message that it should reply to.
 
@@ -2344,7 +2344,7 @@ class TelegramClient:
             clear_draft (`bool`, optional):
                 Whether the existing draft should be cleared or not.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
+            buttons (`list`, `_custom.Button <telethon.tl._custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
@@ -2378,7 +2378,7 @@ class TelegramClient:
                 it will be scheduled to be automatically sent at a later
                 time.
 
-            comment_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+            comment_to (`int` | `Message <telethon.tl._custom.message.Message>`, optional):
                 Similar to ``reply_to``, but replies in the linked group of a
                 broadcast channel instead (effectively leaving a "comment to"
                 the specified message).
@@ -2387,7 +2387,7 @@ class TelegramClient:
                 no linked chat, `telethon.errors.sgIdInvalidError` is raised.
 
         Returns
-            The sent `custom.Message <telethon.tl.custom.message.Message>`.
+            The sent `_custom.Message <telethon.tl._custom.message.Message>`.
 
         Example
             .. code-block:: python
@@ -2466,13 +2466,13 @@ class TelegramClient:
         (the "forwarded from" text), you should use `send_message` with
         the original message instead. This will send a copy of it.
 
-        See also `Message.forward_to() <telethon.tl.custom.message.Message.forward_to>`.
+        See also `Message.forward_to() <telethon.tl._custom.message.Message.forward_to>`.
 
         Arguments
             entity (`entity`):
                 To which entity the message(s) will be forwarded.
 
-            messages (`list` | `int` | `Message <telethon.tl.custom.message.Message>`):
+            messages (`list` | `int` | `Message <telethon.tl._custom.message.Message>`):
                 The message(s) to forward, or their integer IDs.
 
             from_peer (`entity`):
@@ -2502,7 +2502,7 @@ class TelegramClient:
                 at a later time.
 
         Returns
-            The list of forwarded `Message <telethon.tl.custom.message.Message>`,
+            The list of forwarded `Message <telethon.tl._custom.message.Message>`,
             or a single one if a list wasn't provided as input.
 
             Note that if all messages are invalid (i.e. deleted) the call
@@ -2560,10 +2560,10 @@ class TelegramClient:
         """
         Edits the given message to change its text or media.
 
-        See also `Message.edit() <telethon.tl.custom.message.Message.edit>`.
+        See also `Message.edit() <telethon.tl._custom.message.Message.edit>`.
 
         Arguments
-            entity (`entity` | `Message <telethon.tl.custom.message.Message>`):
+            entity (`entity` | `Message <telethon.tl._custom.message.Message>`):
                 From which chat to edit the message. This can also be
                 the message to be edited, and the entity will be inferred
                 from it, so the next parameter will be assumed to be the
@@ -2573,16 +2573,16 @@ class TelegramClient:
                 which is the only way to edit messages that were sent
                 after the user selects an inline query result.
 
-            message (`int` | `Message <telethon.tl.custom.message.Message>` | `str`):
+            message (`int` | `Message <telethon.tl._custom.message.Message>` | `str`):
                 The ID of the message (or `Message
-                <telethon.tl.custom.message.Message>` itself) to be edited.
+                <telethon.tl._custom.message.Message>` itself) to be edited.
                 If the `entity` was a `Message
-                <telethon.tl.custom.message.Message>`, then this message
+                <telethon.tl._custom.message.Message>`, then this message
                 will be treated as the new text.
 
             text (`str`, optional):
                 The new text of the message. Does nothing if the `entity`
-                was a `Message <telethon.tl.custom.message.Message>`.
+                was a `Message <telethon.tl._custom.message.Message>`.
 
             parse_mode (`object`, optional):
                 See the `TelegramClient.parse_mode
@@ -2618,7 +2618,7 @@ class TelegramClient:
             force_document (`bool`, optional):
                 Whether to send the given file as a document or not.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
+            buttons (`list`, `_custom.Button <telethon.tl._custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
@@ -2640,7 +2640,7 @@ class TelegramClient:
                 trying to edit a message that was sent via inline bots.
 
         Returns
-            The edited `Message <telethon.tl.custom.message.Message>`,
+            The edited `Message <telethon.tl._custom.message.Message>`,
             unless `entity` was a :tl:`InputBotInlineMessageID` in which
             case this method returns a boolean.
 
@@ -2678,7 +2678,7 @@ class TelegramClient:
         """
         Deletes the given messages, optionally "for everyone".
 
-        See also `Message.delete() <telethon.tl.custom.message.Message.delete>`.
+        See also `Message.delete() <telethon.tl._custom.message.Message.delete>`.
 
         .. warning::
 
@@ -2693,7 +2693,7 @@ class TelegramClient:
                 be `None` for normal chats, but **must** be present
                 for channels and megagroups.
 
-            message_ids (`list` | `int` | `Message <telethon.tl.custom.message.Message>`):
+            message_ids (`list` | `int` | `Message <telethon.tl._custom.message.Message>`):
                 The IDs (or ID) or messages to be deleted.
 
             revoke (`bool`, optional):
@@ -2741,13 +2741,13 @@ class TelegramClient:
         including such ID will be marked as read (for all messages whose ID
         ≤ max_id).
 
-        See also `Message.mark_read() <telethon.tl.custom.message.Message.mark_read>`.
+        See also `Message.mark_read() <telethon.tl._custom.message.Message.mark_read>`.
 
         Arguments
             entity (`entity`):
                 The chat where these messages are located.
 
-            message (`list` | `Message <telethon.tl.custom.message.Message>`):
+            message (`list` | `Message <telethon.tl._custom.message.Message>`):
                 Either a list of messages or a single message.
 
             max_id (`int`):
@@ -2787,13 +2787,13 @@ class TelegramClient:
         The default behaviour is to *not* notify members, unlike the
         official applications.
 
-        See also `Message.pin() <telethon.tl.custom.message.Message.pin>`.
+        See also `Message.pin() <telethon.tl._custom.message.Message.pin>`.
 
         Arguments
             entity (`entity`):
                 The chat where the message should be pinned.
 
-            message (`int` | `Message <telethon.tl.custom.message.Message>`):
+            message (`int` | `Message <telethon.tl._custom.message.Message>`):
                 The message or the message ID to pin. If it's
                 `None`, all messages will be unpinned instead.
 
@@ -2826,13 +2826,13 @@ class TelegramClient:
 
         If no message ID is specified, all pinned messages will be unpinned.
 
-        See also `Message.unpin() <telethon.tl.custom.message.Message.unpin>`.
+        See also `Message.unpin() <telethon.tl._custom.message.Message.unpin>`.
 
         Arguments
             entity (`entity`):
                 The chat where the message should be pinned.
 
-            message (`int` | `Message <telethon.tl.custom.message.Message>`):
+            message (`int` | `Message <telethon.tl._custom.message.Message>`):
                 The message or the message ID to unpin. If it's
                 `None`, all messages will be unpinned instead.
 
@@ -3277,7 +3277,7 @@ class TelegramClient:
                 A callback function accepting two parameters:
                 ``(sent bytes, total)``.
 
-            reply_to (`int` | `Message <telethon.tl.custom.message.Message>`):
+            reply_to (`int` | `Message <telethon.tl._custom.message.Message>`):
                 Same as `reply_to` from `send_message`.
 
             attributes (`list`, optional):
@@ -3318,7 +3318,7 @@ class TelegramClient:
                 If `True` the video will be sent as a video note,
                 also known as a round video message.
 
-            buttons (`list`, `custom.Button <telethon.tl.custom.button.Button>`, :tl:`KeyboardButton`):
+            buttons (`list`, `_custom.Button <telethon.tl._custom.button.Button>`, :tl:`KeyboardButton`):
                 The matrix (list of lists), row list or button to be shown
                 after sending the message. This parameter will only work if
                 you have signed in as a bot. You can also pass your own
@@ -3345,7 +3345,7 @@ class TelegramClient:
                 it will be scheduled to be automatically sent at a later
                 time.
 
-            comment_to (`int` | `Message <telethon.tl.custom.message.Message>`, optional):
+            comment_to (`int` | `Message <telethon.tl._custom.message.Message>`, optional):
                 Similar to ``reply_to``, but replies in the linked group of a
                 broadcast channel instead (effectively leaving a "comment to"
                 the specified message).
@@ -3366,7 +3366,7 @@ class TelegramClient:
                 as text documents, which will fail with ``TtlMediaInvalidError``.
 
         Returns
-            The `Message <telethon.tl.custom.message.Message>` (or messages)
+            The `Message <telethon.tl._custom.message.Message>` (or messages)
             containing the sent file, or messages if a list of them was passed.
 
         Example
@@ -3381,7 +3381,7 @@ class TelegramClient:
                 await client.send_file(chat, '/my/songs/song.mp3', voice_note=True)
                 await client.send_file(chat, '/my/videos/video.mp4', video_note=True)
 
-                # Custom thumbnails
+                # _custom thumbnails
                 await client.send_file(chat, '/my/documents/doc.txt', thumb='photo.jpg')
 
                 # Only documents
@@ -3482,7 +3482,7 @@ class TelegramClient:
 
         Returns
             :tl:`InputFileBig` if the file size is larger than 10MB,
-            `InputSizedFile <telethon.tl.custom.inputsizedfile.InputSizedFile>`
+            `InputSizedFile <telethon.tl._custom.inputsizedfile.InputSizedFile>`
             (subclass of :tl:`InputFile`) otherwise.
 
         Example

@@ -2,8 +2,9 @@ import abc
 import asyncio
 import warnings
 
-from .._misc import utils
-from .._tl.custom.chatgetter import ChatGetter
+from .. import _tl
+from .._misc import utils, tlobject
+from ..types._custom.chatgetter import ChatGetter
 
 
 async def _into_id_set(client, chats):
@@ -25,7 +26,7 @@ async def _into_id_set(client, chats):
                     utils.get_peer_id(_tl.PeerChat(chat)),
                     utils.get_peer_id(_tl.PeerChannel(chat)),
                 })
-        elif isinstance(chat, _tl.TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
+        elif isinstance(chat, tlobject.TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
             # 0x2d45687 == crc32(b'Peer')
             result.add(utils.get_peer_id(chat))
         else:

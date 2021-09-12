@@ -5,7 +5,7 @@ import weakref
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
-from .._tl import custom
+from ..types import _custom
 
 _IGNORE_MAX_SIZE = 100  # len()
 _IGNORE_MAX_AGE = 5  # seconds
@@ -140,12 +140,12 @@ class Album(EventBuilder):
         if len(event.messages) > 1:
             return super().filter(event)
 
-    class Event(EventCommon, custom.sendergetter.SenderGetter):
+    class Event(EventCommon, _custom.sendergetter.SenderGetter):
         """
         Represents the event of a new album.
 
         Members:
-            messages (Sequence[`Message <telethon.tl.custom.message.Message>`]):
+            messages (Sequence[`Message <telethon.tl._custom.message.Message>`]):
                 The list of messages belonging to the same album.
         """
         def __init__(self, messages):
@@ -160,7 +160,7 @@ class Album(EventBuilder):
             super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
-            custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
+            _custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
             self.messages = messages
 
         def _set_client(self, client):
@@ -217,7 +217,7 @@ class Album(EventBuilder):
         @property
         def forward(self):
             """
-            The `Forward <telethon.tl.custom.forward.Forward>`
+            The `Forward <telethon.tl._custom.forward.Forward>`
             information for the first message in the album if it was forwarded.
             """
             # Each individual message in an album all reply to the same message
@@ -229,7 +229,7 @@ class Album(EventBuilder):
 
         async def get_reply_message(self):
             """
-            The `Message <telethon.tl.custom.message.Message>`
+            The `Message <telethon.tl._custom.message.Message>`
             that this album is replying to, or `None`.
 
             The result will be cached after its first use.

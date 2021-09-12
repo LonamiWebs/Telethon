@@ -5,11 +5,10 @@ from hashlib import sha256
 
 from .._crypto import AES
 from ..errors import SecurityError, InvalidBufferError
-from .._misc import BinaryReader
-from .._tl.core import TLMessage
-from .._tl.tlobject import TLRequest
+from .._misc.binaryreader import BinaryReader
+from ..types._core import TLMessage, GzipPacked
+from .._misc.tlobject import TLRequest
 from .. import _tl
-from .._tl.core.gzippacked import GzipPacked
 
 
 class _OpaqueRequest(TLRequest):

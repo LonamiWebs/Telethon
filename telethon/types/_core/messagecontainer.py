@@ -1,5 +1,5 @@
 from .tlmessage import TLMessage
-from ..tlobject import TLObject
+from ..._misc.tlobject import TLObject
 
 
 class MessageContainer(TLObject):
