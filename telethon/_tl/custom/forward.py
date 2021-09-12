@@ -1,7 +1,6 @@
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
-from ... import utils, helpers
-from ...tl import types
+from ..._misc import utils, helpers
 
 
 class Forward(ChatGetter, SenderGetter):

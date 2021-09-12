@@ -6,10 +6,9 @@ import typing
 import inspect
 import asyncio
 
-from ..crypto import AES
-
-from .. import utils, helpers, errors, hints, _tl
-from ..requestiter import RequestIter
+from .._crypto import AES
+from .._misc import utils, helpers, requestiter
+from .. import errors, hints, _tl
 
 try:
     import aiohttp
@@ -26,7 +25,7 @@ MAX_CHUNK_SIZE = 512 * 1024
 # 2021-01-15, users reported that `errors.TimeoutError` can occur while downloading files.
 TIMED_OUT_SLEEP = 1
 
-class _DirectDownloadIter(RequestIter):
+class _DirectDownloadIter(requestiter.RequestIter):
     async def _init(
             self, file, dc_id, offset, stride, chunk_size, request_size, file_size, msg_data
     ):

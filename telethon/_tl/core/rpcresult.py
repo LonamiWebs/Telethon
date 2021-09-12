@@ -1,6 +1,5 @@
 from .gzippacked import GzipPacked
-from .. import TLObject
-from ..types import RpcError
+from .. import TLObject, RpcError
 
 
 class RpcResult(TLObject):

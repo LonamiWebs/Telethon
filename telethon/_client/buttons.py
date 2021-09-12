@@ -1,6 +1,8 @@
 import typing
 
-from .. import utils, hints, _tl
+from .._misc import utils, hints
+from .. import _tl
+from .._tl import custom
 
 
 def build_reply_markup(
@@ -30,7 +32,7 @@ def build_reply_markup(
     for row in buttons:
         current = []
         for button in row:
-            if isinstance(button, _tl.custom.Button):
+            if isinstance(button, custom.Button):
                 if button.resize is not None:
                     resize = button.resize
                 if button.single_use is not None:
@@ -39,10 +41,10 @@ def build_reply_markup(
                     selective = button.selective
 
                 button = button.button
-            elif isinstance(button, _tl.custom.MessageButton):
+            elif isinstance(button, custom.MessageButton):
                 button = button.button
 
-            inline = _tl.custom.Button._is_inline(button)
+            inline = custom.Button._is_inline(button)
             is_inline |= inline
             is_normal |= not inline
 

@@ -1,6 +1,6 @@
 import inspect
 
-from . import _tl
+from .. import _tl
 
 
 # Which updates have the following fields?

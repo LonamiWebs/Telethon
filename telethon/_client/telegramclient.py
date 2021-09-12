@@ -9,7 +9,8 @@ from . import (
     telegrambaseclient, updates, uploads, users
 )
 from .. import helpers, version, _tl
-from ..network import ConnectionTcpFull
+from .._tl import custom
+from .._network import ConnectionTcpFull
 from ..events.common import EventBuilder, EventCommon
 
 
@@ -3390,7 +3391,7 @@ class TelegramClient:
                 await client.send_file(chat, file, progress_callback=callback)
 
                 # Dices, including dart and other future emoji
-                from telethon.tl import types
+                from telethon import _tl
                 await client.send_file(chat, _tl.InputMediaDice(''))
                 await client.send_file(chat, _tl.InputMediaDice('🎯'))
 

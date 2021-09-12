@@ -1,5 +1,5 @@
-from ...tl import types
-from ...utils import get_input_peer
+from ... import _tl
+from ..._misc.utils import get_input_peer
 
 
 class AdminLogEvent:

@@ -1,6 +1,6 @@
 from . import Draft
-from .. import TLObject, types, functions
-from ... import utils
+from ... import _tl
+from ..._misc import utils
 
 
 class Dialog:
@@ -89,12 +89,12 @@ class Dialog:
 
         self.draft = Draft(client, self.entity, self.dialog.draft)
 
-        self.is_user = isinstance(self.entity, types.User)
+        self.is_user = isinstance(self.entity, _tl.User)
         self.is_group = (
-            isinstance(self.entity, (types.Chat, types.ChatForbidden)) or
-            (isinstance(self.entity, types.Channel) and self.entity.megagroup)
+            isinstance(self.entity, (_tl.Chat, _tl.ChatForbidden)) or
+            (isinstance(self.entity, _tl.Channel) and self.entity.megagroup)
         )
-        self.is_channel = isinstance(self.entity, types.Channel)
+        self.is_channel = isinstance(self.entity, _tl.Channel)
 
     async def send_message(self, *args, **kwargs):
         """
@@ -141,7 +141,7 @@ class Dialog:
                 dialog.archive(0)
         """
         return await self._client(_tl.fn.folders.EditPeerFolders([
-            types.InputFolderPeer(self.input_entity, folder_id=folder)
+            _tl.InputFolderPeer(self.input_entity, folder_id=folder)
         ]))
 
     def to_dict(self):
@@ -155,7 +155,7 @@ class Dialog:
         }
 
     def __str__(self):
-        return TLObject.pretty_format(self.to_dict())
+        return _tl.TLObject.pretty_format(self.to_dict())
 
     def stringify(self):
-        return TLObject.pretty_format(self.to_dict(), indent=0)
+        return _tl.TLObject.pretty_format(self.to_dict(), indent=0)

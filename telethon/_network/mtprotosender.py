@@ -3,27 +3,20 @@ import collections
 import struct
 
 from . import authenticator
-from ..extensions.messagepacker import MessagePacker
+from .._misc.messagepacker import MessagePacker
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
 from .mtprotostate import MTProtoState
-from ..tl.tlobject import TLRequest
-from .. import helpers, utils
+from .._tl.tlobject import TLRequest
+from .. import helpers, utils, _tl
 from ..errors import (
     BadMessageError, InvalidBufferError, SecurityError,
     TypeNotFoundError, rpc_message_to_error
 )
-from ..extensions import BinaryReader
-from ..tl.core import RpcResult, MessageContainer, GzipPacked
-from ..tl.functions.auth import LogOutRequest
-from ..tl.functions import PingRequest, DestroySessionRequest
-from ..tl.types import (
-    MsgsAck, Pong, BadServerSalt, BadMsgNotification, FutureSalts,
-    MsgNewDetailedInfo, NewSessionCreated, MsgDetailedInfo, MsgsStateReq,
-    MsgsStateInfo, MsgsAllInfo, MsgResendReq, upload, DestroySessionOk, DestroySessionNone,
-)
-from ..crypto import AuthKey
-from ..helpers import retry_range
+from .._misc import BinaryReader
+from .._tl.core import RpcResult, MessageContainer, GzipPacked
+from .._crypto import AuthKey
+from .._misc.helpers import retry_range
 
 
 class MTProtoSender:
@@ -97,19 +90,19 @@ class MTProtoSender:
             RpcResult.CONSTRUCTOR_ID: self._handle_rpc_result,
             MessageContainer.CONSTRUCTOR_ID: self._handle_container,
             GzipPacked.CONSTRUCTOR_ID: self._handle_gzip_packed,
-            Pong.CONSTRUCTOR_ID: self._handle_pong,
-            BadServerSalt.CONSTRUCTOR_ID: self._handle_bad_server_salt,
-            BadMsgNotification.CONSTRUCTOR_ID: self._handle_bad_notification,
-            MsgDetailedInfo.CONSTRUCTOR_ID: self._handle_detailed_info,
-            MsgNewDetailedInfo.CONSTRUCTOR_ID: self._handle_new_detailed_info,
-            NewSessionCreated.CONSTRUCTOR_ID: self._handle_new_session_created,
-            MsgsAck.CONSTRUCTOR_ID: self._handle_ack,
-            FutureSalts.CONSTRUCTOR_ID: self._handle_future_salts,
-            MsgsStateReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
-            MsgResendReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
-            MsgsAllInfo.CONSTRUCTOR_ID: self._handle_msg_all,
-            DestroySessionOk: self._handle_destroy_session,
-            DestroySessionNone: self._handle_destroy_session,
+            _tl.Pong.CONSTRUCTOR_ID: self._handle_pong,
+            _tl.BadServerSalt.CONSTRUCTOR_ID: self._handle_bad_server_salt,
+            _tl.BadMsgNotification.CONSTRUCTOR_ID: self._handle_bad_notification,
+            _tl.MsgDetailedInfo.CONSTRUCTOR_ID: self._handle_detailed_info,
+            _tl.MsgNewDetailedInfo.CONSTRUCTOR_ID: self._handle_new_detailed_info,
+            _tl.NewSessionCreated.CONSTRUCTOR_ID: self._handle_new_session_created,
+            _tl.MsgsAck.CONSTRUCTOR_ID: self._handle_ack,
+            _tl.FutureSalts.CONSTRUCTOR_ID: self._handle_future_salts,
+            _tl.MsgsStateReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
+            _tl.MsgResendReq.CONSTRUCTOR_ID: self._handle_state_forgotten,
+            _tl.MsgsAllInfo.CONSTRUCTOR_ID: self._handle_msg_all,
+            _tl.DestroySessionOk: self._handle_destroy_session,
+            _tl.DestroySessionNone: self._handle_destroy_session,
         }
 
     # Public API
@@ -433,7 +426,7 @@ class MTProtoSender:
         # TODO this is ugly, update loop shouldn't worry about this, sender should
         if self._ping is None:
             self._ping = rnd_id
-            self.send(PingRequest(rnd_id))
+            self.send(_tl.fn.Ping(rnd_id))
         else:
             self._start_reconnect(None)
 
@@ -448,7 +441,7 @@ class MTProtoSender:
         """
         while self._user_connected and not self._reconnecting:
             if self._pending_ack:
-                ack = RequestState(MsgsAck(list(self._pending_ack)))
+                ack = RequestState(_tl.MsgsAck(list(self._pending_ack)))
                 self._send_queue.append(ack)
                 self._last_acks.append(ack)
                 self._pending_ack.clear()
@@ -598,7 +591,7 @@ class MTProtoSender:
             # which contain the real response right after.
             try:
                 with BinaryReader(rpc_result.body) as reader:
-                    if not isinstance(reader.tgread_object(), upload.File):
+                    if not isinstance(reader.tgread_object(), _tl.upload.File):
                         raise ValueError('Not an upload.File')
             except (TypeNotFoundError, ValueError):
                 self._log.info('Received response without parent request: %s', rpc_result.body)
@@ -607,7 +600,7 @@ class MTProtoSender:
         if rpc_result.error:
             error = rpc_message_to_error(rpc_result.error, state.request)
             self._send_queue.append(
-                RequestState(MsgsAck([state.msg_id])))
+                RequestState(_tl.MsgsAck([state.msg_id])))
 
             if not state.future.cancelled():
                 state.future.set_exception(error)
@@ -777,7 +770,7 @@ class MTProtoSender:
         self._log.debug('Handling acknowledge for %s', str(ack.msg_ids))
         for msg_id in ack.msg_ids:
             state = self._pending_state.get(msg_id)
-            if state and isinstance(state.request, LogOutRequest):
+            if state and isinstance(state.request, _tl.fn.auth.LogOut):
                 del self._pending_state[msg_id]
                 if not state.future.cancelled():
                     state.future.set_result(True)
@@ -802,7 +795,7 @@ class MTProtoSender:
         Handles both :tl:`MsgsStateReq` and :tl:`MsgResendReq` by
         enqueuing a :tl:`MsgsStateInfo` to be sent at a later point.
         """
-        self._send_queue.append(RequestState(MsgsStateInfo(
+        self._send_queue.append(RequestState(_tl.MsgsStateInfo(
             req_msg_id=message.msg_id, info=chr(1) * len(message.obj.msg_ids)
         )))
 
@@ -817,7 +810,7 @@ class MTProtoSender:
         It behaves pretty much like handling an RPC result.
         """
         for msg_id, state in self._pending_state.items():
-            if isinstance(state.request, DestroySessionRequest)\
+            if isinstance(state.request, _tl.fn.DestroySession)\
                     and state.request.session_id == message.obj.session_id:
                 break
         else:

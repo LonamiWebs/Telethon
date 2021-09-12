@@ -1,4 +1,4 @@
-from .. import types
+from ... import _tl
 
 
 def _admin_prop(field_name, doc):
@@ -85,7 +85,7 @@ class ParticipantPermissions:
         Whether the user left the chat.
         """
         return isinstance(self.participant, types.ChannelParticipantLeft)
-    
+
     @property
     def add_admins(self):
         """
@@ -132,7 +132,7 @@ class ParticipantPermissions:
     anonymous = property(**_admin_prop('anonymous', """
         Whether the administrator will remain anonymous when sending messages.
     """))
-    
+
     manage_call = property(**_admin_prop('manage_call', """
         Whether the user will be able to manage group calls.
     """))

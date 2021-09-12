@@ -1,7 +1,8 @@
 from enum import Enum
 
 from .abstract import Session
-from .. import utils, _tl
+from .._misc import utils
+from .. import _tl
 
 
 class _SentFileType(Enum):

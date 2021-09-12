@@ -20,4 +20,4 @@ __pycache__/
 /docs/
 
 # File used to manually test new changes, contains sensitive data
-/example.py
+/example*.py

@@ -4,9 +4,9 @@ import itertools
 import time
 import typing
 
-from .. import errors, helpers, utils, hints, _tl
+from .. import errors, hints, _tl
+from .._misc import helpers, utils
 from ..errors import MultiError, RPCError
-from ..helpers import retry_range
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
@@ -53,7 +53,7 @@ async def call(self: 'TelegramClient', sender, request, ordered=False, flood_sle
     last_error = None
     self._last_request = time.time()
 
-    for attempt in retry_range(self._request_retries):
+    for attempt in helpers.retry_range(self._request_retries):
         try:
             future = sender.send(request, ordered=ordered)
             if isinstance(future, list):

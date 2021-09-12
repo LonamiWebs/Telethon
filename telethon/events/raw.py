@@ -1,5 +1,5 @@
 from .common import EventBuilder
-from .. import utils
+from .._misc import utils
 
 
 class Raw(EventBuilder):

@@ -1,8 +1,8 @@
 import hashlib
 import os
 
-from .crypto import factorization
-from . import _tl
+from .._crypto import factorization
+from .. import _tl
 
 
 def check_prime_and_good_check(prime: int, g: int):

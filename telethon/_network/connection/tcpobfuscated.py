@@ -3,7 +3,7 @@ import os
 from .tcpabridged import AbridgedPacketCodec
 from .connection import ObfuscatedConnection
 
-from ...crypto import AESModeCTR
+from ..._crypto import AESModeCTR
 
 
 class ObfuscatedIO:

@@ -2,7 +2,9 @@ import re
 import struct
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils, _tl
+from .._misc import utils
+from .. import _tl
+from .._tl import custom
 
 
 @name_inner_event
@@ -121,7 +123,7 @@ class CallbackQuery(EventBuilder):
             return self.func(event)
         return True
 
-    class Event(EventCommon, _tl.custom.sendergetter.SenderGetter):
+    class Event(EventCommon, custom.sendergetter.SenderGetter):
         """
         Represents the event of a new callback query.
 
@@ -139,7 +141,7 @@ class CallbackQuery(EventBuilder):
         """
         def __init__(self, query, peer, msg_id):
             super().__init__(peer, msg_id=msg_id)
-            _tl.custom.sendergetter.SenderGetter.__init__(self, query.user_id)
+            custom.sendergetter.SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.data_match = None
             self.pattern_match = None

@@ -3,8 +3,9 @@ import inspect
 import itertools
 import typing
 
-from .. import helpers, utils, hints, errors, _tl
-from ..requestiter import RequestIter
+from .. import  hints, errors, _tl
+from .._misc import helpers, utils, requestiter
+from .._tl import custom
 
 _MAX_CHUNK_SIZE = 100
 
@@ -23,7 +24,7 @@ def _dialog_message_key(peer, message_id):
     return (peer.channel_id if isinstance(peer, _tl.PeerChannel) else None), message_id
 
 
-class _DialogsIter(RequestIter):
+class _DialogsIter(requestiter.RequestIter):
     async def _init(
             self, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder
     ):
@@ -79,7 +80,7 @@ class _DialogsIter(RequestIter):
                     # Real world example: https://t.me/TelethonChat/271471
                     continue
 
-                cd = _tl.custom.Dialog(self.client, d, entities, message)
+                cd = custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
 
@@ -108,7 +109,7 @@ class _DialogsIter(RequestIter):
         self.request.offset_peer = self.buffer[-1].input_entity
 
 
-class _DraftsIter(RequestIter):
+class _DraftsIter(requestiter.RequestIter):
     async def _init(self, entities, **kwargs):
         if not entities:
             r = await self.client(_tl.fn.messages.GetAllDrafts())
@@ -127,7 +128,7 @@ class _DraftsIter(RequestIter):
                     for x in itertools.chain(r.users, r.chats)}
 
         self.buffer.extend(
-            _tl.custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
+            custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
             for d in items
         )
 

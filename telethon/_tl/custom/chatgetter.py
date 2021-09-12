@@ -1,7 +1,6 @@
 import abc
 
-from ... import errors, utils
-from ...tl import types
+from ... import errors, utils, _tl
 
 
 class ChatGetter(abc.ABC):
@@ -114,7 +113,7 @@ class ChatGetter(abc.ABC):
         Returns `None` if there isn't enough information
         (e.g. on `events.MessageDeleted <telethon.events.messagedeleted.MessageDeleted>`).
         """
-        return isinstance(self._chat_peer, types.PeerUser) if self._chat_peer else None
+        return isinstance(self._chat_peer, _tl.PeerUser) if self._chat_peer else None
 
     @property
     def is_group(self):
@@ -128,20 +127,20 @@ class ChatGetter(abc.ABC):
         if self._broadcast is None and hasattr(self.chat, 'broadcast'):
             self._broadcast = bool(self.chat.broadcast)
 
-        if isinstance(self._chat_peer, types.PeerChannel):
+        if isinstance(self._chat_peer, _tl.PeerChannel):
             if self._broadcast is None:
                 return None
             else:
                 return not self._broadcast
 
-        return isinstance(self._chat_peer, types.PeerChat)
+        return isinstance(self._chat_peer, _tl.PeerChat)
 
     @property
     def is_channel(self):
         """`True` if the message was sent on a megagroup or channel."""
         # The only case where chat peer could be none is in MessageDeleted,
         # however those always have the peer in channels.
-        return isinstance(self._chat_peer, types.PeerChannel)
+        return isinstance(self._chat_peer, _tl.PeerChannel)
 
     async def _refetch_chat(self):
         """

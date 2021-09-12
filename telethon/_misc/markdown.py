@@ -6,7 +6,7 @@ since they seem to count as two characters and it's a bit strange.
 import re
 import warnings
 
-from ..helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
+from .helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
 from .. import _tl
 
 DEFAULT_DELIMITERS = {

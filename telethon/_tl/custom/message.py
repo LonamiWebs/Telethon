@@ -5,13 +5,13 @@ from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
 from .file import File
-from .. import TLObject, types, functions, alltlobjects
-from ... import utils, errors
+from ..._misc import utils
+from ... import errors, _tl
 
 
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter, TLObject):
+class Message(ChatGetter, SenderGetter, _tl.TLObject):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -163,7 +163,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             self, id: int,
 
             # Common to Message and MessageService (mandatory)
-            peer_id: types.TypePeer = None,
+            peer_id: _tl.TypePeer = None,
             date: Optional[datetime] = None,
 
             # Common to Message and MessageService (flags)
@@ -172,19 +172,19 @@ class Message(ChatGetter, SenderGetter, TLObject):
             media_unread: Optional[bool] = None,
             silent: Optional[bool] = None,
             post: Optional[bool] = None,
-            from_id: Optional[types.TypePeer] = None,
-            reply_to: Optional[types.TypeMessageReplyHeader] = None,
+            from_id: Optional[_tl.TypePeer] = None,
+            reply_to: Optional[_tl.TypeMessageReplyHeader] = None,
             ttl_period: Optional[int] = None,
 
             # For Message (mandatory)
             message: Optional[str] = None,
 
             # For Message (flags)
-            fwd_from: Optional[types.TypeMessageFwdHeader] = None,
+            fwd_from: Optional[_tl.TypeMessageFwdHeader] = None,
             via_bot_id: Optional[int] = None,
-            media: Optional[types.TypeMessageMedia] = None,
-            reply_markup: Optional[types.TypeReplyMarkup] = None,
-            entities: Optional[List[types.TypeMessageEntity]] = None,
+            media: Optional[_tl.TypeMessageMedia] = None,
+            reply_markup: Optional[_tl.TypeReplyMarkup] = None,
+            entities: Optional[List[_tl.TypeMessageEntity]] = None,
             views: Optional[int] = None,
             edit_date: Optional[datetime] = None,
             post_author: Optional[str] = None,
@@ -193,12 +193,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
             legacy: Optional[bool] = None,
             edit_hide: Optional[bool] = None,
             pinned: Optional[bool] = None,
-            restriction_reason: Optional[types.TypeRestrictionReason] = None,
+            restriction_reason: Optional[_tl.TypeRestrictionReason] = None,
             forwards: Optional[int] = None,
-            replies: Optional[types.TypeMessageReplies] = None,
+            replies: Optional[_tl.TypeMessageReplies] = None,
 
             # For MessageAction (mandatory)
-            action: Optional[types.TypeMessageAction] = None
+            action: Optional[_tl.TypeMessageAction] = None
     ):
         # Common properties to messages, then to service (in the order they're defined in the `.tl`)
         self.out = bool(out)
@@ -217,7 +217,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         self.reply_to = reply_to
         self.date = date
         self.message = message
-        self.media =  None if isinstance(media, types.MessageMediaEmpty) else media
+        self.media =  None if isinstance(media, _tl.MessageMediaEmpty) else media
         self.reply_markup = reply_markup
         self.entities = entities
         self.views = views
@@ -253,7 +253,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             # ...or...
             # incoming messages in private conversations no longer have from_id
             # (layer 119+), but the sender can only be the chat we're in.
-            if post or (not out and isinstance(peer_id, types.PeerUser)):
+            if post or (not out and isinstance(peer_id, _tl.PeerUser)):
                 sender_id = utils.get_peer_id(peer_id)
 
         # Note that these calls would reset the client
@@ -272,7 +272,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
 
         # Make messages sent to ourselves outgoing unless they're forwarded.
         # This makes it consistent with official client's appearance.
-        if self.peer_id == types.PeerUser(client._self_id) and not self.fwd_from:
+        if self.peer_id == _tl.PeerUser(client._self_id) and not self.fwd_from:
             self.out = True
 
         cache = client._entity_cache
@@ -294,25 +294,25 @@ class Message(ChatGetter, SenderGetter, TLObject):
             self._forward = Forward(self._client, self.fwd_from, entities)
 
         if self.action:
-            if isinstance(self.action, (types.MessageActionChatAddUser,
-                                        types.MessageActionChatCreate)):
+            if isinstance(self.action, (_tl.MessageActionChatAddUser,
+                                        _tl.MessageActionChatCreate)):
                 self._action_entities = [entities.get(i)
                                          for i in self.action.users]
-            elif isinstance(self.action, types.MessageActionChatDeleteUser):
+            elif isinstance(self.action, _tl.MessageActionChatDeleteUser):
                 self._action_entities = [entities.get(self.action.user_id)]
-            elif isinstance(self.action, types.MessageActionChatJoinedByLink):
+            elif isinstance(self.action, _tl.MessageActionChatJoinedByLink):
                 self._action_entities = [entities.get(self.action.inviter_id)]
-            elif isinstance(self.action, types.MessageActionChatMigrateTo):
+            elif isinstance(self.action, _tl.MessageActionChatMigrateTo):
                 self._action_entities = [entities.get(utils.get_peer_id(
-                    types.PeerChannel(self.action.channel_id)))]
+                    _tl.PeerChannel(self.action.channel_id)))]
             elif isinstance(
-                    self.action, types.MessageActionChannelMigrateFrom):
+                    self.action, _tl.MessageActionChannelMigrateFrom):
                 self._action_entities = [entities.get(utils.get_peer_id(
-                    types.PeerChat(self.action.chat_id)))]
+                    _tl.PeerChat(self.action.chat_id)))]
 
         if self.replies and self.replies.channel_id:
             self._linked_chat = entities.get(utils.get_peer_id(
-                    types.PeerChannel(self.replies.channel_id)))
+                    _tl.PeerChannel(self.replies.channel_id)))
 
 
     # endregion Initialization
@@ -435,7 +435,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         if self._buttons_count is None:
             if isinstance(self.reply_markup, (
-                    types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+                    _tl.ReplyInlineMarkup, _tl.ReplyKeyboardMarkup)):
                 self._buttons_count = sum(
                     len(row.buttons) for row in self.reply_markup.rows)
             else:
@@ -471,14 +471,14 @@ class Message(ChatGetter, SenderGetter, TLObject):
         action is :tl:`MessageActionChatEditPhoto`, or if the message has
         a web preview with a photo.
         """
-        if isinstance(self.media, types.MessageMediaPhoto):
-            if isinstance(self.media.photo, types.Photo):
+        if isinstance(self.media, _tl.MessageMediaPhoto):
+            if isinstance(self.media.photo, _tl.Photo):
                 return self.media.photo
-        elif isinstance(self.action, types.MessageActionChatEditPhoto):
+        elif isinstance(self.action, _tl.MessageActionChatEditPhoto):
             return self.action.photo
         else:
             web = self.web_preview
-            if web and isinstance(web.photo, types.Photo):
+            if web and isinstance(web.photo, _tl.Photo):
                 return web.photo
 
     @property
@@ -486,12 +486,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`Document` media in this message, if any.
         """
-        if isinstance(self.media, types.MessageMediaDocument):
-            if isinstance(self.media.document, types.Document):
+        if isinstance(self.media, _tl.MessageMediaDocument):
+            if isinstance(self.media.document, _tl.Document):
                 return self.media.document
         else:
             web = self.web_preview
-            if web and isinstance(web.document, types.Document):
+            if web and isinstance(web.document, _tl.Document):
                 return web.document
 
     @property
@@ -499,8 +499,8 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`WebPage` media in this message, if any.
         """
-        if isinstance(self.media, types.MessageMediaWebPage):
-            if isinstance(self.media.webpage, types.WebPage):
+        if isinstance(self.media, _tl.MessageMediaWebPage):
+            if isinstance(self.media.webpage, _tl.WebPage):
                 return self.media.webpage
 
     @property
@@ -508,7 +508,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`Document` media in this message, if it's an audio file.
         """
-        return self._document_by_attribute(types.DocumentAttributeAudio,
+        return self._document_by_attribute(_tl.DocumentAttributeAudio,
                                            lambda attr: not attr.voice)
 
     @property
@@ -516,7 +516,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`Document` media in this message, if it's a voice note.
         """
-        return self._document_by_attribute(types.DocumentAttributeAudio,
+        return self._document_by_attribute(_tl.DocumentAttributeAudio,
                                            lambda attr: attr.voice)
 
     @property
@@ -524,14 +524,14 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`Document` media in this message, if it's a video.
         """
-        return self._document_by_attribute(types.DocumentAttributeVideo)
+        return self._document_by_attribute(_tl.DocumentAttributeVideo)
 
     @property
     def video_note(self):
         """
         The :tl:`Document` media in this message, if it's a video note.
         """
-        return self._document_by_attribute(types.DocumentAttributeVideo,
+        return self._document_by_attribute(_tl.DocumentAttributeVideo,
                                            lambda attr: attr.round_message)
 
     @property
@@ -543,21 +543,21 @@ class Message(ChatGetter, SenderGetter, TLObject):
         sound, the so called "animated" media. However, it may be the actual
         gif format if the file is too large.
         """
-        return self._document_by_attribute(types.DocumentAttributeAnimated)
+        return self._document_by_attribute(_tl.DocumentAttributeAnimated)
 
     @property
     def sticker(self):
         """
         The :tl:`Document` media in this message, if it's a sticker.
         """
-        return self._document_by_attribute(types.DocumentAttributeSticker)
+        return self._document_by_attribute(_tl.DocumentAttributeSticker)
 
     @property
     def contact(self):
         """
         The :tl:`MessageMediaContact` in this message, if it's a contact.
         """
-        if isinstance(self.media, types.MessageMediaContact):
+        if isinstance(self.media, _tl.MessageMediaContact):
             return self.media
 
     @property
@@ -565,7 +565,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`Game` media in this message, if it's a game.
         """
-        if isinstance(self.media, types.MessageMediaGame):
+        if isinstance(self.media, _tl.MessageMediaGame):
             return self.media.game
 
     @property
@@ -573,9 +573,9 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`GeoPoint` media in this message, if it has a location.
         """
-        if isinstance(self.media, (types.MessageMediaGeo,
-                                   types.MessageMediaGeoLive,
-                                   types.MessageMediaVenue)):
+        if isinstance(self.media, (_tl.MessageMediaGeo,
+                                   _tl.MessageMediaGeoLive,
+                                   _tl.MessageMediaVenue)):
             return self.media.geo
 
     @property
@@ -583,7 +583,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`MessageMediaInvoice` in this message, if it's an invoice.
         """
-        if isinstance(self.media, types.MessageMediaInvoice):
+        if isinstance(self.media, _tl.MessageMediaInvoice):
             return self.media
 
     @property
@@ -591,7 +591,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`MessageMediaPoll` in this message, if it's a poll.
         """
-        if isinstance(self.media, types.MessageMediaPoll):
+        if isinstance(self.media, _tl.MessageMediaPoll):
             return self.media
 
     @property
@@ -599,7 +599,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`MessageMediaVenue` in this message, if it's a venue.
         """
-        if isinstance(self.media, types.MessageMediaVenue):
+        if isinstance(self.media, _tl.MessageMediaVenue):
             return self.media
 
     @property
@@ -607,7 +607,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         """
         The :tl:`MessageMediaDice` in this message, if it's a dice roll.
         """
-        if isinstance(self.media, types.MessageMediaDice):
+        if isinstance(self.media, _tl.MessageMediaDice):
             return self.media
 
     @property
@@ -616,7 +616,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Returns a list of entities that took part in this action.
 
         Possible cases for this are :tl:`MessageActionChatAddUser`,
-        :tl:`types.MessageActionChatCreate`, :tl:`MessageActionChatDeleteUser`,
+        :tl:`_tl.MessageActionChatCreate`, :tl:`MessageActionChatDeleteUser`,
         :tl:`MessageActionChatJoinedByLink` :tl:`MessageActionChatMigrateTo`
         and :tl:`MessageActionChannelMigrateFrom`.
 
@@ -660,7 +660,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         # If the client wasn't set we can't emulate the behaviour correctly,
         # so as a best-effort simply return the chat peer.
         if self._client and not self.out and self.is_private:
-            return types.PeerUser(self._client._self_id)
+            return _tl.PeerUser(self._client._self_id)
 
         return self.peer_id
 
@@ -722,7 +722,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             # However they can access them through replies...
             self._reply_message = await self._client.get_messages(
                 await self.get_input_chat() if self.is_channel else None,
-                ids=types.InputMessageReplyTo(self.id)
+                ids=_tl.InputMessageReplyTo(self.id)
             )
             if not self._reply_message:
                 # ...unless the current message got deleted.
@@ -883,7 +883,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
                 Clicks the first button or poll option for which the callable
                 returns `True`. The callable should accept a single
                 `MessageButton <telethon.tl.custom.messagebutton.MessageButton>`
-                or `PollAnswer <telethon.tl.types.PollAnswer>` argument.
+                or `PollAnswer <telethon.tl._tl.PollAnswer>` argument.
 
                 If you need to select multiple options in a poll,
                 pass a list of indices to the ``i`` parameter.
@@ -950,7 +950,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
             if not chat:
                 return None
 
-            but = types.KeyboardButtonCallback('', data)
+            but = _tl.KeyboardButtonCallback('', data)
             return await MessageButton(self._client, but, chat, None, self.id).click(
                 share_phone=share_phone, share_geo=share_geo, password=password)
 
@@ -1098,7 +1098,7 @@ class Message(ChatGetter, SenderGetter, TLObject):
         Helper methods to set the buttons given the input sender and chat.
         """
         if self._client and isinstance(self.reply_markup, (
-                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+                _tl.ReplyInlineMarkup, _tl.ReplyKeyboardMarkup)):
             self._buttons = [[
                 MessageButton(self._client, button, chat, bot, self.id)
                 for button in row.buttons
@@ -1114,12 +1114,12 @@ class Message(ChatGetter, SenderGetter, TLObject):
         cannot be found but is needed. Returns `None` if it's not needed.
         """
         if self._client and not isinstance(self.reply_markup, (
-                types.ReplyInlineMarkup, types.ReplyKeyboardMarkup)):
+                _tl.ReplyInlineMarkup, _tl.ReplyKeyboardMarkup)):
             return None
 
         for row in self.reply_markup.rows:
             for button in row.buttons:
-                if isinstance(button, types.KeyboardButtonSwitchInline):
+                if isinstance(button, _tl.KeyboardButtonSwitchInline):
                     # no via_bot_id means the bot sent the message itself (#1619)
                     if button.same_peer or not self.via_bot_id:
                         bot = self.input_sender

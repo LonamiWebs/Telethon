@@ -49,6 +49,8 @@ The following modules have been moved inside ``_misc``:
 * ``statecache.py``
 * ``utils.py``
 
+// TODO review telethon/__init__.py isn't exposing more than it should
+
 
 The TelegramClient is no longer made out of mixins
 --------------------------------------------------

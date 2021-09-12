@@ -1,7 +1,7 @@
-from ..types import InputFile
+from ... import _tl
 
 
-class InputSizedFile(InputFile):
+class InputSizedFile(_tl.InputFile):
     """InputFile class with two extra parameters: md5 (digest) and size"""
     def __init__(self, id_, parts, name, md5, size):
         super().__init__(id_, parts, name, md5.hexdigest())

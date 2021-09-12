@@ -8,12 +8,10 @@ import time
 import typing
 
 from .. import version, helpers, __name__ as __base_name__, _tl
-from ..crypto import rsa
-from ..entitycache import EntityCache
-from ..extensions import markdown
-from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
+from .._crypto import rsa
+from .._misc import markdown, entitycache, statecache
+from .._network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
-from ..statecache import StateCache
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -151,7 +149,7 @@ def init(
     # TODO Session should probably return all cached
     #      info of entities, not just the input versions
     self.session = session
-    self._entity_cache = EntityCache()
+    self._entity_cache = entitycache.EntityCache()
     self.api_id = int(api_id)
     self.api_hash = api_hash
 
@@ -259,7 +257,7 @@ def init(
 
     # Update state (for catching up after a disconnection)
     # TODO Get state from channels too
-    self._state_cache = StateCache(
+    self._state_cache = statecache.StateCache(
         self.session.get_update_state(0), self._log)
 
     # Some further state for subclasses

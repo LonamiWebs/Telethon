@@ -1,6 +1,12 @@
+# Note: the import order matters
+from ._misc import helpers  # no dependencies
+from . import _tl  # no dependencies
+from ._misc import utils  # depends on helpers and _tl
+from ._tl import custom  # depends on utils
+from ._misc import hints  # depends on custom
+
 from ._client.telegramclient import TelegramClient
-from .network import connection
-from ._tl import custom
+from ._network import connection
 from ._tl.custom import Button
 from . import version, events, utils, errors
 

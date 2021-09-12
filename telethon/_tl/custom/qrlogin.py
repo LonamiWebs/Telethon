@@ -2,8 +2,7 @@ import asyncio
 import base64
 import datetime
 
-from .. import types, functions
-from ... import events
+from ... import events, _tl
 
 
 class QRLogin:

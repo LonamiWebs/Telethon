@@ -3,8 +3,8 @@ import itertools
 import typing
 import warnings
 
-from .. import helpers, utils, errors, hints, _tl
-from ..requestiter import RequestIter
+from .. import errors, hints, _tl
+from .._misc import helpers, utils, requestiter
 
 _MAX_CHUNK_SIZE = 100
 
@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-class _MessagesIter(RequestIter):
+class _MessagesIter(requestiter.RequestIter):
     """
     Common factor for all requests that need to iterate over messages.
     """
@@ -263,7 +263,7 @@ class _MessagesIter(RequestIter):
             self.request.offset_rate = getattr(response, 'next_rate', 0)
 
 
-class _IDsIter(RequestIter):
+class _IDsIter(requestiter.RequestIter):
     async def _init(self, entity, ids):
         self.total = len(ids)
         self._ids = list(reversed(ids)) if self.reverse else ids

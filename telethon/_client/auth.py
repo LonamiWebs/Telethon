@@ -5,7 +5,9 @@ import sys
 import typing
 import warnings
 
-from .. import utils, helpers, errors, password as pwd_mod, _tl
+from .._misc import utils, helpers, password as pwd_mod
+from .. import errors, _tl
+from .._tl import custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient

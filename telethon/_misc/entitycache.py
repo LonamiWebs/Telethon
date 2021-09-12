@@ -1,7 +1,8 @@
 import inspect
 import itertools
 
-from . import utils, _tl
+from .._misc import utils
+from .. import _tl
 
 # Which updates have the following fields?
 _has_field = {

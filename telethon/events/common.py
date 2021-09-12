@@ -2,7 +2,8 @@ import abc
 import asyncio
 import warnings
 
-from .. import utils, _tl
+from .._misc import utils
+from .._tl.custom.chatgetter import ChatGetter
 
 
 async def _into_id_set(client, chats):

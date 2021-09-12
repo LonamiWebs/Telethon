@@ -1,5 +1,5 @@
-from .. import types, functions
-from ... import utils
+from ... import _tl
+from ..._misc import utils
 
 
 class InlineResult:

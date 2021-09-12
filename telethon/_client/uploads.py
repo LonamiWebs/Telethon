@@ -7,9 +7,11 @@ import re
 import typing
 from io import BytesIO
 
-from ..crypto import AES
+from .._crypto import AES
 
-from .. import utils, helpers, hints, _tl
+from .._misc import utils, helpers
+from .. import hints, _tl
+from .._tl import custom
 
 try:
     import PIL
@@ -361,7 +363,7 @@ async def upload_file(
     if is_big:
         return _tl.InputFileBig(file_id, part_count, file_name)
     else:
-        return _tl.custom.InputSizedFile(
+        return custom.InputSizedFile(
             file_id, part_count, file_name, md5=hash_md5, size=file_size
         )
 

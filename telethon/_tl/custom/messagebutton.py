@@ -1,5 +1,5 @@
-from .. import types, functions
-from ... import password as pwd_mod
+from ..._misc import password as pwd_mod
+from ... import _tl
 from ...errors import BotResponseTimeoutError
 import webbrowser
 import os
@@ -46,19 +46,19 @@ class MessageButton:
     @property
     def data(self):
         """The `bytes` data for :tl:`KeyboardButtonCallback` objects."""
-        if isinstance(self.button, types.KeyboardButtonCallback):
+        if isinstance(self.button, _tl.KeyboardButtonCallback):
             return self.button.data
 
     @property
     def inline_query(self):
         """The query `str` for :tl:`KeyboardButtonSwitchInline` objects."""
-        if isinstance(self.button, types.KeyboardButtonSwitchInline):
+        if isinstance(self.button, _tl.KeyboardButtonSwitchInline):
             return self.button.query
 
     @property
     def url(self):
         """The url `str` for :tl:`KeyboardButtonUrl` objects."""
-        if isinstance(self.button, types.KeyboardButtonUrl):
+        if isinstance(self.button, _tl.KeyboardButtonUrl):
             return self.button.url
 
     async def click(self, share_phone=None, share_geo=None, *, password=None):
@@ -91,10 +91,10 @@ class MessageButton:
         this value a lot quickly may not work as expected. You may also pass a
         :tl:`InputGeoPoint` if you find the order confusing.
         """
-        if isinstance(self.button, types.KeyboardButton):
+        if isinstance(self.button, _tl.KeyboardButton):
             return await self._client.send_message(
                 self._chat, self.button.text, parse_mode=None)
-        elif isinstance(self.button, types.KeyboardButtonCallback):
+        elif isinstance(self.button, _tl.KeyboardButtonCallback):
             if password is not None:
                 pwd = await self._client(_tl.fn.account.GetPassword())
                 password = pwd_mod.compute_check(pwd, password)
@@ -107,13 +107,13 @@ class MessageButton:
                 return await self._client(req)
             except BotResponseTimeoutError:
                 return None
-        elif isinstance(self.button, types.KeyboardButtonSwitchInline):
+        elif isinstance(self.button, _tl.KeyboardButtonSwitchInline):
             return await self._client(_tl.fn.messages.StartBot(
                 bot=self._bot, peer=self._chat, start_param=self.button.query
             ))
-        elif isinstance(self.button, types.KeyboardButtonUrl):
+        elif isinstance(self.button, _tl.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)
-        elif isinstance(self.button, types.KeyboardButtonGame):
+        elif isinstance(self.button, _tl.KeyboardButtonGame):
             req = _tl.fn.messages.GetBotCallbackAnswer(
                 peer=self._chat, msg_id=self._msg_id, game=True
             )
@@ -121,13 +121,13 @@ class MessageButton:
                 return await self._client(req)
             except BotResponseTimeoutError:
                 return None
-        elif isinstance(self.button, types.KeyboardButtonRequestPhone):
+        elif isinstance(self.button, _tl.KeyboardButtonRequestPhone):
             if not share_phone:
                 raise ValueError('cannot click on phone buttons unless share_phone=True')
 
             if share_phone == True or isinstance(share_phone, str):
                 me = await self._client.get_me()
-                share_phone = types.InputMediaContact(
+                share_phone = _tl.InputMediaContact(
                     phone_number=me.phone if share_phone == True else share_phone,
                     first_name=me.first_name or '',
                     last_name=me.last_name or '',
@@ -135,12 +135,12 @@ class MessageButton:
                 )
 
             return await self._client.send_file(self._chat, share_phone)
-        elif isinstance(self.button, types.KeyboardButtonRequestGeoLocation):
+        elif isinstance(self.button, _tl.KeyboardButtonRequestGeoLocation):
             if not share_geo:
                 raise ValueError('cannot click on geo buttons unless share_geo=(longitude, latitude)')
 
             if isinstance(share_geo, (tuple, list)):
                 long, lat = share_geo
-                share_geo = types.InputMediaGeoPoint(types.InputGeoPoint(lat=lat, long=long))
+                share_geo = _tl.InputMediaGeoPoint(_tl.InputGeoPoint(lat=lat, long=long))
 
             return await self._client.send_file(self._chat, share_geo)

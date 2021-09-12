@@ -7,9 +7,9 @@ import time
 from hashlib import sha1
 
 from .. import helpers, _tl
-from ..crypto import AES, AuthKey, Factorization, rsa
+from .._crypto import AES, AuthKey, Factorization, rsa
 from ..errors import SecurityError
-from ..extensions import BinaryReader
+from .._misc import BinaryReader
 
 
 async def do_authentication(sender):

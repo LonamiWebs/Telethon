@@ -3,8 +3,9 @@ import os
 import time
 
 from .memory import MemorySession, _SentFileType
-from .. import utils, _tl
-from ..crypto import AuthKey
+from .._misc import utils
+from .. import _tl
+from .._crypto import AuthKey
 
 try:
     import sqlite3

@@ -3,7 +3,9 @@ import time
 import weakref
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils, _tl
+from .._misc import utils
+from .. import _tl
+from .._tl import custom
 
 _IGNORE_MAX_SIZE = 100  # len()
 _IGNORE_MAX_AGE = 5  # seconds
@@ -138,7 +140,7 @@ class Album(EventBuilder):
         if len(event.messages) > 1:
             return super().filter(event)
 
-    class Event(EventCommon, _tl.custom.sendergetter.SenderGetter):
+    class Event(EventCommon, custom.sendergetter.SenderGetter):
         """
         Represents the event of a new album.
 
@@ -158,7 +160,7 @@ class Album(EventBuilder):
             super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
-            _tl.custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
+            custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
             self.messages = messages
 
         def _set_client(self, client):

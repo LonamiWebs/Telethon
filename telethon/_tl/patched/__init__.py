@@ -1,4 +1,4 @@
-from .. import types, alltlobjects
+from .. import _tl
 from ..custom.message import Message as _Message
 
 class MessageEmpty(_Message, types.MessageEmpty):

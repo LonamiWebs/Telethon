@@ -2,8 +2,8 @@ import datetime
 
 from ... import _tl
 from ...errors import RPCError
-from ...extensions import markdown
-from ...utils import get_input_peer, get_peer
+from ..._misc import markdown
+from ..._misc.utils import get_input_peer, get_peer
 
 
 class Draft:

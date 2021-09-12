@@ -19,9 +19,9 @@ from collections import namedtuple
 from mimetypes import guess_extension
 from types import GeneratorType
 
-from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate, strip_text
-from . import _tl
+from . import markdown, html
+from .. import _tl
 
 try:
     import hachoir
@@ -32,26 +32,26 @@ except ImportError:
 
 # Register some of the most common mime-types to avoid any issues.
 # See https://github.com/LonamiWebs/Telethon/issues/1096.
-mime_tl.add_type('image/png', '.png')
-mime_tl.add_type('image/jpeg', '.jpeg')
-mime_tl.add_type('image/webp', '.webp')
-mime_tl.add_type('image/gif', '.gif')
-mime_tl.add_type('image/bmp', '.bmp')
-mime_tl.add_type('image/x-tga', '.tga')
-mime_tl.add_type('image/tiff', '.tiff')
-mime_tl.add_type('image/vnd.adobe.photoshop', '.psd')
+mimetypes.add_type('image/png', '.png')
+mimetypes.add_type('image/jpeg', '.jpeg')
+mimetypes.add_type('image/webp', '.webp')
+mimetypes.add_type('image/gif', '.gif')
+mimetypes.add_type('image/bmp', '.bmp')
+mimetypes.add_type('image/x-tga', '.tga')
+mimetypes.add_type('image/tiff', '.tiff')
+mimetypes.add_type('image/vnd.adobe.photoshop', '.psd')
 
-mime_tl.add_type('video/mp4', '.mp4')
-mime_tl.add_type('video/quicktime', '.mov')
-mime_tl.add_type('video/avi', '.avi')
+mimetypes.add_type('video/mp4', '.mp4')
+mimetypes.add_type('video/quicktime', '.mov')
+mimetypes.add_type('video/avi', '.avi')
 
-mime_tl.add_type('audio/mpeg', '.mp3')
-mime_tl.add_type('audio/m4a', '.m4a')
-mime_tl.add_type('audio/aac', '.aac')
-mime_tl.add_type('audio/ogg', '.ogg')
-mime_tl.add_type('audio/flac', '.flac')
+mimetypes.add_type('audio/mpeg', '.mp3')
+mimetypes.add_type('audio/m4a', '.m4a')
+mimetypes.add_type('audio/aac', '.aac')
+mimetypes.add_type('audio/ogg', '.ogg')
+mimetypes.add_type('audio/flac', '.flac')
 
-mime_tl.add_type('application/x-tgsticker', '.tgs')
+mimetypes.add_type('application/x-tgsticker', '.tgs')
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(@|joinchat/)?'
@@ -675,7 +675,7 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase` streams
     name = file if isinstance(file, str) else getattr(file, 'name', 'unnamed')
     if mime_type is None:
-        mime_type = mime_tl.guess_type(name)[0]
+        mime_type = mimetypes.guess_type(name)[0]
 
     attr_dict = {_tl.DocumentAttributeFilename:
         _tl.DocumentAttributeFilename(os.path.basename(name))}
@@ -881,7 +881,7 @@ def is_audio(file):
             return False
     else:
         file = 'a' + ext
-        return (mime_tl.guess_type(file)[0] or '').startswith('audio/')
+        return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
 
 
 def is_video(file):
@@ -895,7 +895,7 @@ def is_video(file):
             return False
     else:
         file = 'a' + ext
-        return (mime_tl.guess_type(file)[0] or '').startswith('video/')
+        return (mimetypes.guess_type(file)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):

@@ -4,7 +4,7 @@ This module holds the CdnDecrypter utility class.
 from hashlib import sha256
 
 from .. import _tl
-from ..crypto import AESModeCTR
+from .._crypto import AESModeCTR
 from ..errors import CdnFileTamperedError
 
 

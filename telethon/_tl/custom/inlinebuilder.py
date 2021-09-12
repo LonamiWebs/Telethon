@@ -1,7 +1,7 @@
 import hashlib
 
-from .. import functions, types
-from ... import utils
+from ... import _tl
+from ..._misc import utils
 
 _TYPE_TO_MIMES = {
     'gif': ['image/gif'],  # 'video/mp4' too, but that's used for video
@@ -126,7 +126,7 @@ class InlineBuilder:
         # TODO Does 'article' work always?
         # article, photo, gif, mpeg4_gif, video, audio,
         # voice, document, location, venue, contact, game
-        result = types.InputBotInlineResult(
+        result = _tl.InputBotInlineResult(
             id=id or '',
             type='article',
             send_message=await self._message(
@@ -194,15 +194,15 @@ class InlineBuilder:
             _, media, _ = await self._client._file_to_media(
                 file, allow_cache=True, as_image=True
             )
-            if isinstance(media, types.InputPhoto):
+            if isinstance(media, _tl.InputPhoto):
                 fh = media
             else:
                 r = await self._client(_tl.fn.messages.UploadMedia(
-                    types.InputPeerSelf(), media=media
+                    _tl.InputPeerSelf(), media=media
                 ))
                 fh = utils.get_input_photo(r.photo)
 
-        result = types.InputBotInlineResultPhoto(
+        result = _tl.InputBotInlineResultPhoto(
             id=id or '',
             type='photo',
             photo=fh,
@@ -314,15 +314,15 @@ class InlineBuilder:
                 video_note=video_note,
                 allow_cache=use_cache
             )
-            if isinstance(media, types.InputDocument):
+            if isinstance(media, _tl.InputDocument):
                 fh = media
             else:
                 r = await self._client(_tl.fn.messages.UploadMedia(
-                    types.InputPeerSelf(), media=media
+                    _tl.InputPeerSelf(), media=media
                 ))
                 fh = utils.get_input_document(r.document)
 
-        result = types.InputBotInlineResultDocument(
+        result = _tl.InputBotInlineResultDocument(
             id=id or '',
             type=type,
             document=fh,
@@ -361,7 +361,7 @@ class InlineBuilder:
             short_name (`str`):
                 The short name of the game to use.
         """
-        result = types.InputBotInlineResultGame(
+        result = _tl.InputBotInlineResultGame(
             id=id or '',
             short_name=short_name,
             send_message=await self._message(
@@ -400,31 +400,31 @@ class InlineBuilder:
                 # "MediaAuto" means it will use whatever media the inline
                 # result itself has (stickers, photos, or documents), while
                 # respecting the user's text (caption) and formatting.
-                return types.InputBotInlineMessageMediaAuto(
+                return _tl.InputBotInlineMessageMediaAuto(
                     message=text,
                     entities=msg_entities,
                     reply_markup=markup
                 )
             else:
-                return types.InputBotInlineMessageText(
+                return _tl.InputBotInlineMessageText(
                     message=text,
                     no_webpage=not link_preview,
                     entities=msg_entities,
                     reply_markup=markup
                 )
-        elif isinstance(geo, (types.InputGeoPoint, types.GeoPoint)):
-            return types.InputBotInlineMessageMediaGeo(
+        elif isinstance(geo, (_tl.InputGeoPoint, _tl.GeoPoint)):
+            return _tl.InputBotInlineMessageMediaGeo(
                 geo_point=utils.get_input_geo(geo),
                 period=period,
                 reply_markup=markup
             )
-        elif isinstance(geo, (types.InputMediaVenue, types.MessageMediaVenue)):
-            if isinstance(geo, types.InputMediaVenue):
+        elif isinstance(geo, (_tl.InputMediaVenue, _tl.MessageMediaVenue)):
+            if isinstance(geo, _tl.InputMediaVenue):
                 geo_point = geo.geo_point
             else:
                 geo_point = geo.geo
 
-            return types.InputBotInlineMessageMediaVenue(
+            return _tl.InputBotInlineMessageMediaVenue(
                 geo_point=geo_point,
                 title=geo.title,
                 address=geo.address,
@@ -434,8 +434,8 @@ class InlineBuilder:
                 reply_markup=markup
             )
         elif isinstance(contact, (
-                types.InputMediaContact, types.MessageMediaContact)):
-            return types.InputBotInlineMessageMediaContact(
+                _tl.InputMediaContact, _tl.MessageMediaContact)):
+            return _tl.InputBotInlineMessageMediaContact(
                 phone_number=contact.phone_number,
                 first_name=contact.first_name,
                 last_name=contact.last_name,
@@ -443,7 +443,7 @@ class InlineBuilder:
                 reply_markup=markup
             )
         elif game:
-            return types.InputBotInlineMessageGame(
+            return _tl.InputBotInlineMessageGame(
                 reply_markup=markup
             )
         else:

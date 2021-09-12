@@ -4,8 +4,9 @@ import itertools
 import string
 import typing
 
-from .. import helpers, utils, hints, errors, _tl
-from ..requestiter import RequestIter
+from .. import hints, errors, _tl
+from .._misc import helpers, utils, requestiter
+from .._tl import custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -92,7 +93,7 @@ class _ChatAction:
             self._action.progress = 100 * round(current / total)
 
 
-class _ParticipantsIter(RequestIter):
+class _ParticipantsIter(requestiter.RequestIter):
     async def _init(self, entity, filter, search, aggressive):
         if isinstance(filter, type):
             if filter in (_tl.ChannelParticipantsBanned,
@@ -246,7 +247,7 @@ class _ParticipantsIter(RequestIter):
                 self.buffer.append(user)
 
 
-class _AdminLogIter(RequestIter):
+class _AdminLogIter(requestiter.RequestIter):
     async def _init(
             self, entity, admins, search, min_id, max_id,
             join, leave, invite, restrict, unrestrict, ban, unban,
@@ -301,13 +302,13 @@ class _AdminLogIter(RequestIter):
                 ev.action.message._finish_init(
                     self.client, entities, self.entity)
 
-            self.buffer.append(_tl.custom.AdminLogEvent(ev, entities))
+            self.buffer.append(custom.AdminLogEvent(ev, entities))
 
         if len(r.events) < self.request.limit:
             return True
 
 
-class _ProfilePhotoIter(RequestIter):
+class _ProfilePhotoIter(requestiter.RequestIter):
     async def _init(
             self, entity, offset, max_id
     ):
@@ -694,7 +695,7 @@ async def get_permissions(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         user: 'hints.EntityLike' = None
-) -> 'typing.Optional[_tl.custom.ParticipantPermissions]':
+) -> 'typing.Optional[custom.ParticipantPermissions]':
     entity = await self.get_entity(entity)
 
     if not user:
@@ -715,7 +716,7 @@ async def get_permissions(
             entity,
             user
         ))
-        return _tl.custom.ParticipantPermissions(participant.participant, False)
+        return custom.ParticipantPermissions(participant.participant, False)
     elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
         chat = await self(_tl.fn.messages.GetFullChat(
             entity
@@ -724,7 +725,7 @@ async def get_permissions(
             user = await self.get_me(input_peer=True)
         for participant in chat.full_chat.participants.participants:
             if participant.user_id == user.user_id:
-                return _tl.custom.ParticipantPermissions(participant, True)
+                return custom.ParticipantPermissions(participant, True)
         raise errors.UserNotParticipantError(None)
 
     raise ValueError('You must pass either a channel or a chat')

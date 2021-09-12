@@ -3,13 +3,13 @@ import struct
 import time
 from hashlib import sha256
 
-from ..crypto import AES
+from .._crypto import AES
 from ..errors import SecurityError, InvalidBufferError
-from ..extensions import BinaryReader
-from ..tl.core import TLMessage
-from ..tl.tlobject import TLRequest
-from ..tl.functions import InvokeAfterMsgRequest
-from ..tl.core.gzippacked import GzipPacked
+from .._misc import BinaryReader
+from .._tl.core import TLMessage
+from .._tl.tlobject import TLRequest
+from .. import _tl
+from .._tl.core.gzippacked import GzipPacked
 
 
 class _OpaqueRequest(TLRequest):
@@ -103,7 +103,7 @@ class MTProtoState:
             # The `RequestState` stores `bytes(request)`, not the request itself.
             # `invokeAfterMsg` wants a `TLRequest` though, hence the wrapping.
             body = GzipPacked.gzip_if_smaller(content_related,
-                bytes(InvokeAfterMsgRequest(after_id, _OpaqueRequest(data))))
+                bytes(_tl.fn.InvokeAfterMsgRequest(after_id, _OpaqueRequest(data))))
 
         buffer.write(struct.pack('<qii', msg_id, seq_no, len(body)))
         buffer.write(body)

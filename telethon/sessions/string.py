@@ -4,7 +4,7 @@ import struct
 
 from .abstract import Session
 from .memory import MemorySession
-from ..crypto import AuthKey
+from .._crypto import AuthKey
 
 _STRUCT_PREFORMAT = '>B{}sH256s'
 

@@ -9,7 +9,7 @@ from .tcpintermediate import (
     RandomizedIntermediatePacketCodec
 )
 
-from ...crypto import AESModeCTR
+from ..._crypto import AESModeCTR
 
 
 class MTProxyIO:
