@@ -6,8 +6,9 @@ Version 2 represents the second major version change, breaking compatibility
 with old code beyond the usual raw API changes in order to clean up a lot of
 the technical debt that has grown on the project.
 
-This document documents all the things you should be aware of when migrating
-from Telethon version 1.x to 2.0 onwards.
+This document documents all the things you should be aware of when migrating from Telethon version
+1.x to 2.0 onwards. It is sorted roughly from the "likely most impactful changes" to "there's a
+good chance you were not relying on this to begin with".
 
 **Please read this document in full before upgrading your code to Telethon 2.0.**
 
@@ -30,47 +31,34 @@ will need to migrate that to support the new size requirement of 8 bytes.
 For the full list of types changed, please review the above link.
 
 
-Many subpackages and modules are now private
---------------------------------------------
+Synchronous compatibility mode has been removed
+-----------------------------------------------
 
-There were a lot of things which were public but should not have been. From now on, you should
-only rely on things that are either publicly re-exported or defined. That is, as soon as anything
-starts with an underscore (``_``) on its name, you're acknowledging that the functionality may
-change even across minor version changes, and thus have your code break.
+The "sync hack" (which kicked in as soon as anything from ``telethon.sync`` was imported) has been
+removed. This implies:
 
-The following subpackages are now considered private:
+* The ``telethon.sync`` module is gone.
+* Synchronous context-managers (``with`` as opposed to ``async with``) are no longer supported.
+  Most notably, you can no longer do ``with client``. It must be ``async with client`` now.
+* The "smart" behaviour of the following methods has been removed and now they no longer work in
+  a synchronous context when the ``asyncio`` event loop was not running. This means they now need
+  to be used with ``await`` (or, alternatively, manually used with ``loop.run_until_complete``):
+  * ``start``
+  * ``disconnect``
+  * ``run_until_disconnected``
 
-* ``client`` is now ``_client``.
-* ``crypto`` is now ``_crypto``.
-* ``extensions`` is now ``_misc``.
-* ``tl`` is now ``_tl``.
-
-The following modules have been moved inside ``_misc``:
-
-* ``entitycache.py``
-* ``helpers.py``
-* ``hints.py``
-* ``password.py``
-* ``requestiter.py`
-* ``statecache.py``
-* ``utils.py``
-
-// TODO review telethon/__init__.py isn't exposing more than it should
+// TODO provide standalone alternative for this?
 
 
-The TelegramClient is no longer made out of mixins
---------------------------------------------------
-
-If you were relying on any of the individual mixins that made up the client, such as
-``UserMethods`` inside the ``telethon.client`` subpackage, those are now gone.
-There is a single ``TelegramClient`` class now, containing everything you need.
-
-
-Raw API methods have been renamed
----------------------------------
+Raw API methods have been renamed and are now considered private
+----------------------------------------------------------------
 
 The subpackage holding the raw API methods has been renamed from ``tl`` to ``_tl`` in order to
 signal that these are prone to change across minor version bumps (the ``y`` in version ``x.y.z``).
+
+Because in Python "we're all adults", you *can* use this private module if you need to. However,
+you *are* also acknowledging that this is a private module prone to change (and indeed, it will
+change on layer upgrades across minor version bumps).
 
 The ``Request`` suffix has been removed from the classes inside ``tl.functions``.
 
@@ -103,23 +91,32 @@ This serves multiple goals:
 // TODO this definitely generated files mapping from the original name to this new one...
 
 
-Synchronous compatibility mode has been removed
------------------------------------------------
+Many subpackages and modules are now private
+--------------------------------------------
 
-The "sync hack" (which kicked in as soon as anything from ``telethon.sync`` was imported) has been
-removed. This implies:
+There were a lot of things which were public but should not have been. From now on, you should
+only rely on things that are either publicly re-exported or defined. That is, as soon as anything
+starts with an underscore (``_``) on its name, you're acknowledging that the functionality may
+change even across minor version changes, and thus have your code break.
 
-* The ``telethon.sync`` module is gone.
-* Synchronous context-managers (``with`` as opposed to ``async with``) are no longer supported.
-  Most notably, you can no longer do ``with client``. It must be ``async with client`` now.
-* The "smart" behaviour of the following methods has been removed and now they no longer work in
-  a synchronous context when the ``asyncio`` event loop was not running. This means they now need
-  to be used with ``await`` (or, alternatively, manually used with ``loop.run_until_complete``):
-  * ``start``
-  * ``disconnect``
-  * ``run_until_disconnected``
+The following subpackages are now considered private:
 
-// TODO provide standalone alternative for this?
+* ``client`` is now ``_client``.
+* ``crypto`` is now ``_crypto``.
+* ``extensions`` is now ``_misc``.
+* ``tl`` is now ``_tl``.
+
+The following modules have been moved inside ``_misc``:
+
+* ``entitycache.py``
+* ``helpers.py``
+* ``hints.py``
+* ``password.py``
+* ``requestiter.py`
+* ``statecache.py``
+* ``utils.py``
+
+// TODO review telethon/__init__.py isn't exposing more than it should
 
 
 The Conversation API has been removed
@@ -134,3 +131,11 @@ just fine This approach can also be easily persisted, and you can adjust it to y
 your handlers much more easily.
 
 // TODO provide standalone alternative for this?
+
+
+The TelegramClient is no longer made out of mixins
+--------------------------------------------------
+
+If you were relying on any of the individual mixins that made up the client, such as
+``UserMethods`` inside the ``telethon.client`` subpackage, those are now gone.
+There is a single ``TelegramClient`` class now, containing everything you need.
