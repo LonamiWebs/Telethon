@@ -12,6 +12,12 @@ from Telethon version 1.x to 2.0 onwards.
 **Please read this document in full before upgrading your code to Telethon 2.0.**
 
 
+Pyhton 3.5 is no longer supported
+---------------------------------
+
+The library will no longer attempt to support Python 3.5. The minimum version is now Python 3.6.
+
+
 User, chat and channel identifiers are now 64-bit numbers
 ---------------------------------------------------------
 
@@ -95,6 +101,7 @@ This serves multiple goals:
 * The name is shorter, but remains recognizable.
 
 // TODO this definitely generated files mapping from the original name to this new one...
+
 
 Synchronous compatibility mode has been removed
 -----------------------------------------------
