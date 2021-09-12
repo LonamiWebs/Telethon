@@ -24,12 +24,16 @@ def _fmt_flood(delay, request, *, early=False, td=datetime.timedelta):
     )
 
 
-async def call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
+async def call(self: 'TelegramClient', request, ordered=False, flood_sleep_threshold=None):
+    return await _call(self, self._sender, request, ordered=ordered)
+
+
+async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
     if flood_sleep_threshold is None:
         flood_sleep_threshold = self.flood_sleep_threshold
     requests = (request if utils.is_list_like(request) else (request,))
     for r in requests:
-        if not isinstance(r, TLRequest):
+        if not isinstance(r, _tl.TLRequest):
             raise _NOT_A_REQUEST()
         await r.resolve(self, utils)
 

@@ -167,7 +167,7 @@ async def send_file(
         msg_entities = formatting_entities
     else:
         caption, msg_entities =\
-            await _parse_message_text(self, caption, parse_mode)
+            await self._parse_message_text(caption, parse_mode)
 
     file_handle, media, image = await _file_to_media(
         self, file, force_document=force_document,

@@ -274,7 +274,7 @@ class TelegramClient:
 
     # region Auth
 
-    def start(
+    async def start(
             self: 'TelegramClient',
             phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
             password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
@@ -360,7 +360,7 @@ class TelegramClient:
                 with client:
                     pass
         """
-        return auth.start(**locals())
+        return await auth.start(**locals())
 
     async def sign_in(
             self: 'TelegramClient',
@@ -419,7 +419,7 @@ class TelegramClient:
                 code = input('enter code: ')
                 await client.sign_in(phone, code)
         """
-        return auth.sign_in(**locals())
+        return await auth.sign_in(**locals())
 
     async def sign_up(
             self: 'TelegramClient',
@@ -471,7 +471,7 @@ class TelegramClient:
                 code = input('enter code: ')
                 await client.sign_up(code, first_name='Anna', last_name='Banana')
         """
-        return auth.sign_up(**locals())
+        return await auth.sign_up(**locals())
 
     async def send_code_request(
             self: 'TelegramClient',
@@ -498,7 +498,7 @@ class TelegramClient:
                 sent = await client.send_code_request(phone)
                 print(sent)
         """
-        return auth.send_code_request(**locals())
+        return await auth.send_code_request(**locals())
 
     async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> custom.QRLogin:
         """
@@ -533,7 +533,7 @@ class TelegramClient:
                 # Important! You need to wait for the login to complete!
                 await qr_login.wait()
         """
-        return auth.qr_login(**locals())
+        return await auth.qr_login(**locals())
 
     async def log_out(self: 'TelegramClient') -> bool:
         """
@@ -548,7 +548,7 @@ class TelegramClient:
                 # Note: you will need to login again!
                 await client.log_out()
         """
-        return auth.log_out(**locals())
+        return await auth.log_out(**locals())
 
     async def edit_2fa(
             self: 'TelegramClient',
@@ -611,7 +611,7 @@ class TelegramClient:
                 # Removing the password
                 await client.edit_2fa(current_password='I_<3_Telethon')
         """
-        return auth.edit_2fa(**locals())
+        return await auth.edit_2fa(**locals())
 
     async def __aenter__(self):
         return await self.start()
@@ -670,7 +670,7 @@ class TelegramClient:
                 # Send the first result to some chat
                 message = await results[0].click('TelethonOffTopic')
         """
-        return bots.inline_query(**locals())
+        return await bots.inline_query(**locals())
 
     # endregion Bots
 
@@ -709,8 +709,8 @@ class TelegramClient:
                 # later
                 await client.send_message(chat, 'click me', buttons=markup)
         """
-        return buttons.build_reply_markup(**locals())
-
+        from . import buttons as b
+        return b.build_reply_markup(buttons=buttons, inline_only=inline_only)
 
     # endregion Buttons
 
@@ -805,7 +805,7 @@ class TelegramClient:
                     if user.username is not None:
                         print(user.username)
         """
-        return chats.get_participants(*args, **kwargs)
+        return await chats.get_participants(*args, **kwargs)
 
     get_participants.__signature__ = inspect.signature(iter_participants)
 
@@ -950,7 +950,7 @@ class TelegramClient:
                 # Print the old message before it was deleted
                 print(events[0].old)
         """
-        return chats.get_admin_log(*args, **kwargs)
+        return await chats.get_admin_log(*args, **kwargs)
 
     get_admin_log.__signature__ = inspect.signature(iter_admin_log)
 
@@ -1011,7 +1011,7 @@ class TelegramClient:
                 # Download the oldest photo
                 await client.download_media(photos[-1])
         """
-        return chats.get_profile_photos(*args, **kwargs)
+        return await chats.get_profile_photos(*args, **kwargs)
 
     get_profile_photos.__signature__ = inspect.signature(iter_profile_photos)
 
@@ -1197,7 +1197,7 @@ class TelegramClient:
                 # Granting all permissions except for `add_admins`
                 await client.edit_admin(chat, user, is_admin=True, add_admins=False)
         """
-        return chats.edit_admin(**locals())
+        return await chats.edit_admin(**locals())
 
     async def edit_permissions(
             self: 'TelegramClient',
@@ -1314,7 +1314,7 @@ class TelegramClient:
                 await client.edit_permissions(chat, user, view_messages=False)
                 await client.edit_permissions(chat, user)
         """
-        return chats.edit_permissions(**locals())
+        return await chats.edit_permissions(**locals())
 
     async def kick_participant(
             self: 'TelegramClient',
@@ -1353,7 +1353,7 @@ class TelegramClient:
                 # Leaving chat
                 await client.kick_participant(chat, 'me')
         """
-        return chats.kick_participant(**locals())
+        return await chats.kick_participant(**locals())
 
     async def get_permissions(
             self: 'TelegramClient',
@@ -1391,7 +1391,7 @@ class TelegramClient:
                 # Get Banned Permissions of Chat
                 await client.get_permissions(chat)
         """
-        return chats.get_permissions(**locals())
+        return await chats.get_permissions(**locals())
 
     async def get_stats(
             self: 'TelegramClient',
@@ -1437,7 +1437,7 @@ class TelegramClient:
 
         .. _`at least 500 members`: https://telegram.org/blog/profile-videos-people-nearby-and-more
         """
-        return chats.get_stats(**locals())
+        return await chats.get_stats(**locals())
 
     # endregion Chats
 
@@ -1544,7 +1544,7 @@ class TelegramClient:
                 archived = await client.get_dialogs(folder=1)
                 archived = await client.get_dialogs(archived=True)
         """
-        return dialogs.get_dialogs(*args, **kwargs)
+        return await dialogs.get_dialogs(*args, **kwargs)
 
     get_dialogs.__signature__ = inspect.signature(iter_dialogs)
 
@@ -1596,7 +1596,7 @@ class TelegramClient:
                 draft = await client.get_drafts('me')
                 print(drafts.text)
         """
-        return dialogs.get_drafts(**locals())
+        return await dialogs.get_drafts(**locals())
 
     async def edit_folder(
             self: 'TelegramClient',
@@ -1655,7 +1655,7 @@ class TelegramClient:
                 # Un-archiving all dialogs
                 await client.edit_folder(unpack=1)
         """
-        return dialogs.edit_folder(**locals())
+        return await dialogs.edit_folder(**locals())
 
     async def delete_dialog(
             self: 'TelegramClient',
@@ -1700,7 +1700,7 @@ class TelegramClient:
                 # Leaving a channel by username
                 await client.delete_dialog('username')
         """
-        return dialogs.delete_dialog(**locals())
+        return await dialogs.delete_dialog(**locals())
 
     # endregion Dialogs
 
@@ -1749,7 +1749,7 @@ class TelegramClient:
                 path = await client.download_profile_photo('me')
                 print(path)
         """
-        return downloads.download_profile_photo(**locals())
+        return await downloads.download_profile_photo(**locals())
 
     async def download_media(
             self: 'TelegramClient',
@@ -1825,7 +1825,7 @@ class TelegramClient:
 
                 await client.download_media(message, progress_callback=callback)
         """
-        return downloads.download_media(**locals())
+        return await downloads.download_media(**locals())
 
     async def download_file(
             self: 'TelegramClient',
@@ -1890,7 +1890,7 @@ class TelegramClient:
                 data = await client.download_file(input_file, bytes)
                 print(data[:16])
         """
-        return downloads.download_file(**locals())
+        return await downloads.download_file(**locals())
 
     def iter_download(
             self: 'TelegramClient',
@@ -2249,7 +2249,7 @@ class TelegramClient:
                 # Get messages by ID:
                 message_1337 = await client.get_messages(chat, ids=1337)
         """
-        return messages.get_messages(**locals())
+        return await messages.get_messages(**locals())
 
     get_messages.__signature__ = inspect.signature(iter_messages)
 
@@ -2445,7 +2445,7 @@ class TelegramClient:
                 from datetime import timedelta
                 await client.send_message(chat, 'Hi, future!', schedule=timedelta(minutes=5))
         """
-        return messages.send_message(**locals())
+        return await messages.send_message(**locals())
 
     async def forward_messages(
             self: 'TelegramClient',
@@ -2527,7 +2527,18 @@ class TelegramClient:
                 # Forwarding as a copy
                 await client.send_message(chat, message)
         """
-        return messages.forward_messages(**locals())
+        from . import messages as m
+        return await m.forward_messages(
+            self=self,
+            entity=entity,
+            messages=messages,
+            from_peer=from_peer,
+            background=background,
+            with_my_score=with_my_score,
+            silent=silent,
+            as_album=as_album,
+            schedule=schedule
+        )
 
     async def edit_message(
             self: 'TelegramClient',
@@ -2656,7 +2667,7 @@ class TelegramClient:
                 # or
                 await client.edit_message(message, 'hello!!!')
         """
-        return messages.edit_message(**locals())
+        return await messages.edit_message(**locals())
 
     async def delete_messages(
             self: 'TelegramClient',
@@ -2708,7 +2719,7 @@ class TelegramClient:
 
                 await client.delete_messages(chat, messages)
         """
-        return messages.delete_messages(**locals())
+        return await messages.delete_messages(**locals())
 
     async def send_read_acknowledge(
             self: 'TelegramClient',
@@ -2760,7 +2771,7 @@ class TelegramClient:
                 # ...or passing a list of messages to mark as read
                 await client.send_read_acknowledge(chat, messages)
         """
-        return messages.send_read_acknowledge(**locals())
+        return await messages.send_read_acknowledge(**locals())
 
     async def pin_message(
             self: 'TelegramClient',
@@ -2801,7 +2812,7 @@ class TelegramClient:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
-        return messages.pin_message(**locals())
+        return await messages.pin_message(**locals())
 
     async def unpin_message(
             self: 'TelegramClient',
@@ -2831,7 +2842,7 @@ class TelegramClient:
                 # Unpin all messages from a chat
                 await client.unpin_message(chat)
         """
-        return messages.unpin_message(**locals())
+        return await messages.unpin_message(**locals())
 
     # endregion Messages
 
@@ -2938,7 +2949,7 @@ class TelegramClient:
                 except OSError:
                     print('Failed to connect')
         """
-        return telegrambaseclient.connect(**locals())
+        return await telegrambaseclient.connect(**locals())
 
     def is_connected(self: 'TelegramClient') -> bool:
         """
@@ -2993,7 +3004,7 @@ class TelegramClient:
         This is an `async` method, because in order for Telegram to start
         sending updates again, a request must be made.
         """
-        return updates.set_receive_updates(**locals())
+        return await updates.set_receive_updates(**locals())
 
     def run_until_disconnected(self: 'TelegramClient'):
         """
@@ -3154,7 +3165,7 @@ class TelegramClient:
 
                 await client.catch_up()
         """
-        return updates.catch_up(**locals())
+        return await updates.catch_up(**locals())
 
     # endregion Updates
 
@@ -3403,7 +3414,7 @@ class TelegramClient:
                     vcard=''
                 ))
         """
-        return uploads.send_file(**locals())
+        return await uploads.send_file(**locals())
 
     async def upload_file(
             self: 'TelegramClient',
@@ -3490,7 +3501,7 @@ class TelegramClient:
                 await client.send_file(chat, file)                   # sends as song
                 await client.send_file(chat, file, voice_note=True)  # sends as voice note
         """
-        return uploads.upload_file(**locals())
+        return await uploads.upload_file(**locals())
 
     # endregion Uploads
 
@@ -3519,7 +3530,7 @@ class TelegramClient:
             The result of the request (often a `TLObject`) or a list of
             results if more than one request was given.
         """
-        return self._call(request, ordered, flood_sleep_threshold)
+        return await users.call(**locals())
 
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
             -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
@@ -3543,7 +3554,7 @@ class TelegramClient:
                 me = await client.get_me()
                 print(me.username)
         """
-        return users.get_me(**locals())
+        return await users.get_me(**locals())
 
     async def is_bot(self: 'TelegramClient') -> bool:
         """
@@ -3557,7 +3568,7 @@ class TelegramClient:
                 else:
                     print('Hello')
         """
-        return users.is_bot(**locals())
+        return await users.is_bot(**locals())
 
     async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
@@ -3571,7 +3582,7 @@ class TelegramClient:
                     code = input('enter code: ')
                     await client.sign_in(phone, code)
         """
-        return users.is_user_authorized(**locals())
+        return await users.is_user_authorized(**locals())
 
     async def get_entity(
             self: 'TelegramClient',
@@ -3629,7 +3640,7 @@ class TelegramClient:
                 # Note that for this to work the phone number must be in your contacts
                 some_id = await client.get_peer_id('+34123456789')
         """
-        return users.get_entity(**locals())
+        return await users.get_entity(**locals())
 
     async def get_input_entity(
             self: 'TelegramClient',
@@ -3695,7 +3706,7 @@ class TelegramClient:
                 # The same applies to IDs, chats or channels.
                 chat = await client.get_input_entity(-123456789)
         """
-        return users.get_input_entity(**locals())
+        return await users.get_input_entity(**locals())
 
     async def get_peer_id(
             self: 'TelegramClient',
@@ -3715,20 +3726,20 @@ class TelegramClient:
 
                 print(await client.get_peer_id('me'))
         """
-        return users.get_peer_id(**locals())
+        return await users.get_peer_id(**locals())
 
     # endregion Users
 
     # region Private
 
     async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
-        return users.call(self._sender, request, ordered=ordered, flood_sleep_threshold=flood_sleep_threshold)
+        return await users._call(**locals())
 
     async def _update_loop(self: 'TelegramClient'):
-        return updates._update_loop(**locals())
+        return await updates._update_loop(**locals())
 
     async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
-        return messageparse._parse_message_text(**locals())
+        return await messageparse._parse_message_text(**locals())
 
     async def _file_to_media(
             self, file, force_document=False, file_size=None,
@@ -3736,10 +3747,10 @@ class TelegramClient:
             allow_cache=True, voice_note=False, video_note=False,
             supports_streaming=False, mime_type=None, as_image=None,
             ttl=None):
-        return uploads._file_to_media(**locals())
+        return await uploads._file_to_media(**locals())
 
     async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
-        return users._get_peer(**locals())
+        return await users._get_peer(**locals())
 
     def _get_response_message(self: 'TelegramClient', request, result, input_chat):
         return messageparse._get_response_message(**locals())
@@ -3749,19 +3760,19 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             message: 'typing.Union[int, _tl.Message]'
     ):
-        return messages._get_comment_data(**locals())
+        return await messages._get_comment_data(**locals())
 
     async def _switch_dc(self: 'TelegramClient', new_dc):
-        return telegrambaseclient._switch_dc(**locals())
+        return await telegrambaseclient._switch_dc(**locals())
 
     async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
-        return telegrambaseclient._borrow_exported_sender(**locals())
+        return await telegrambaseclient._borrow_exported_sender(**locals())
 
     async def _return_exported_sender(self: 'TelegramClient', sender):
-        return telegrambaseclient._return_exported_sender(**locals())
+        return await telegrambaseclient._return_exported_sender(**locals())
 
     async def _clean_exported_senders(self: 'TelegramClient'):
-        return telegrambaseclient._clean_exported_senders(**locals())
+        return await telegrambaseclient._clean_exported_senders(**locals())
 
     def _auth_key_callback(self: 'TelegramClient', auth_key):
         return telegrambaseclient._auth_key_callback
@@ -3770,7 +3781,7 @@ class TelegramClient:
         return updates._handle_update(**locals())
 
     async def _handle_auto_reconnect(self: 'TelegramClient'):
-        return updates._handle_auto_reconnect(**locals())
+        return await updates._handle_auto_reconnect(**locals())
 
     # endregion Private
 
