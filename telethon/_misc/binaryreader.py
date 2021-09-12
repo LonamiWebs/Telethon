@@ -10,7 +10,7 @@ from struct import unpack
 from ..errors import TypeNotFoundError
 from .. import _tl
 from .._tl.alltlobjects import tlobjects
-from .._tl import core
+from ..types import core
 
 _EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
 _EPOCH = _EPOCH_NAIVE.replace(tzinfo=timezone.utc)

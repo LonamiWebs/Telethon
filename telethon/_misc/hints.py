@@ -3,7 +3,7 @@ import typing
 
 from . import helpers
 from .. import _tl
-from .._tl import custom
+from ..types import _custom
 
 Phone = str
 Username = str
@@ -22,7 +22,7 @@ EntityLike = typing.Union[
 ]
 EntitiesLike = typing.Union[EntityLike, typing.Sequence[EntityLike]]
 
-ButtonLike = typing.Union[_tl.TypeKeyboardButton, custom.Button]
+ButtonLike = typing.Union[_tl.TypeKeyboardButton, _custom.Button]
 MarkupLike = typing.Union[
     _tl.TypeReplyMarkup,
     ButtonLike,

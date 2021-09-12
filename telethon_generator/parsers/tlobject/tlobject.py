@@ -2,7 +2,7 @@ import re
 import struct
 import zlib
 
-from ..._misc.utils import snake_to_camel_case
+from ...utils import snake_to_camel_case
 
 # https://github.com/telegramdesktop/tdesktop/blob/4bf66cb6e93f3965b40084771b595e93d0b11bcd/Telegram/SourceFiles/codegen/scheme/codegen_scheme.py#L57-L62
 WHITELISTED_MISMATCHING_IDS = {

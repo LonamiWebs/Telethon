@@ -4,7 +4,7 @@ This module holds the AuthKey class.
 import struct
 from hashlib import sha1
 
-from .._misc import BinaryReader
+from .._misc.binaryreader import BinaryReader
 
 
 class AuthKey:

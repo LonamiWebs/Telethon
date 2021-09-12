@@ -1,7 +1,7 @@
 import csv
 import re
 
-from .._misc.utils import snake_to_camel_case
+from ..utils import snake_to_camel_case
 
 # Core base classes depending on the integer error code
 KNOWN_BASE_CLASSES = {

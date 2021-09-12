@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ..docswriter import DocsWriter
 from ..parsers import TLObject, Usability
-from .._misc.utils import snake_to_camel_case
+from ..utils import snake_to_camel_case
 
 CORE_TYPES = {
     'int', 'long', 'int128', 'int256', 'double',
