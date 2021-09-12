@@ -40,7 +40,8 @@ async def start(
         raise ValueError('Both a phone and a bot token provided, '
                             'must only provide one of either')
 
-    return await self._start(
+    return await _start(
+        self=self,
         phone=phone,
         password=password,
         bot_token=bot_token,
@@ -211,7 +212,7 @@ async def sign_in(
         return await self.send_code_request(phone)
     elif code:
         phone, phone_code_hash = \
-            self._parse_phone_and_hash(phone, phone_code_hash)
+            _parse_phone_and_hash(self, phone, phone_code_hash)
 
         # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
         # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
@@ -240,7 +241,7 @@ async def sign_in(
         self._tos = result.terms_of_service
         raise errors.PhoneNumberUnoccupiedError(request=request)
 
-    return self._on_login(result.user)
+    return _on_login(self, result.user)
 
 async def sign_up(
         self: 'TelegramClient',
@@ -280,7 +281,7 @@ async def sign_up(
         sys.stderr.flush()
 
     phone, phone_code_hash = \
-        self._parse_phone_and_hash(phone, phone_code_hash)
+        _parse_phone_and_hash(self, phone, phone_code_hash)
 
     result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
@@ -293,7 +294,7 @@ async def sign_up(
         await self(
             _tl.fn.help.AcceptTermsOfService(self._tos.id))
 
-    return self._on_login(result.user)
+    return _on_login(self, result.user)
 
 def _on_login(self, user):
     """

@@ -34,7 +34,7 @@ async def set_receive_updates(self: 'TelegramClient', receive_updates):
         await self(_tl.fn.updates.GetState())
 
 async def run_until_disconnected(self: 'TelegramClient'):
-    return await self._run_until_disconnected()
+    return await _run_until_disconnected(self)
 
 def on(self: 'TelegramClient', event: EventBuilder):
     def decorator(f):
@@ -101,7 +101,7 @@ async def catch_up(self: 'TelegramClient'):
                     state = d.intermediate_state
 
                 pts, date = state.pts, state.date
-                self._handle_update(_tl.Updates(
+                _handle_update(self, _tl.Updates(
                     users=d.users,
                     chats=d.chats,
                     date=state.date,
@@ -151,11 +151,11 @@ def _handle_update(self: 'TelegramClient', update):
         entities = {utils.get_peer_id(x): x for x in
                     itertools.chain(update.users, update.chats)}
         for u in update.updates:
-            self._process_update(u, update.updates, entities=entities)
+            _process_update(self, u, update.updates, entities=entities)
     elif isinstance(update, _tl.UpdateShort):
-        self._process_update(update.update, None)
+        _process_update(self, update.update, None)
     else:
-        self._process_update(update, None)
+        _process_update(self, update, None)
 
     self._state_cache.update(update)
 
@@ -168,14 +168,14 @@ def _process_update(self: 'TelegramClient', update, others, entities=None):
     channel_id = self._state_cache.get_channel_id(update)
     args = (update, others, channel_id, self._state_cache[channel_id])
     if self._dispatching_updates_queue is None:
-        task = self.loop.create_task(self._dispatch_update(*args))
+        task = self.loop.create_task(_dispatch_update(self, *args))
         self._updates_queue.add(task)
         task.add_done_callback(lambda _: self._updates_queue.discard(task))
     else:
         self._updates_queue.put_nowait(args)
         if not self._dispatching_updates_queue.is_set():
             self._dispatching_updates_queue.set()
-            self.loop.create_task(self._dispatch_queue_updates())
+            self.loop.create_task(_dispatch_queue_updates(self))
 
     self._state_cache.update(update)
 
@@ -235,7 +235,7 @@ async def _update_loop(self: 'TelegramClient'):
 
 async def _dispatch_queue_updates(self: 'TelegramClient'):
     while not self._updates_queue.empty():
-        await self._dispatch_update(*self._updates_queue.get_nowait())
+        await _dispatch_update(self, *self._updates_queue.get_nowait())
 
     self._dispatching_updates_queue.clear()
 
@@ -248,7 +248,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
             # If the update doesn't have pts, fetching won't do anything.
             # For example, UpdateUserStatus or UpdateChatUserTyping.
             try:
-                await self._get_difference(update, channel_id, pts_date)
+                await _get_difference(self, update, channel_id, pts_date)
             except OSError:
                 pass  # We were disconnected, that's okay
             except errors.RPCError:

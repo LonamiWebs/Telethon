@@ -230,7 +230,7 @@ async def get_entity(
     result = []
     for x in inputs:
         if isinstance(x, str):
-            result.append(await self._get_entity_from_string(x))
+            result.append(await _get_entity_from_string(self, x))
         elif not isinstance(x, _tl.InputPeerSelf):
             result.append(id_entity[utils.get_peer_id(x)])
         else:
@@ -271,7 +271,7 @@ async def get_input_entity(
     # Only network left to try
     if isinstance(peer, str):
         return utils.get_input_peer(
-            await self._get_entity_from_string(peer))
+            await _get_entity_from_string(self, peer))
 
     # If we're a bot and the user has messaged us privately users.getUsers
     # will work with access_hash = 0. Similar for channels.getChannels.

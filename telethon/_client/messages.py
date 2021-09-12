@@ -436,7 +436,7 @@ async def send_message(
 
     entity = await self.get_input_entity(entity)
     if comment_to is not None:
-        entity, reply_to = await self._get_comment_data(entity, comment_to)
+        entity, reply_to = await _get_comment_data(self, entity, comment_to)
 
     if isinstance(message, _tl.Message):
         if buttons is None:
@@ -712,7 +712,7 @@ async def pin_message(
         notify: bool = False,
         pm_oneside: bool = False
 ):
-    return await self._pin(entity, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
+    return await _pin(self, entity, message, unpin=False, notify=notify, pm_oneside=pm_oneside)
 
 async def unpin_message(
         self: 'TelegramClient',
@@ -721,7 +721,7 @@ async def unpin_message(
         *,
         notify: bool = False
 ):
-    return await self._pin(entity, message, unpin=True, notify=notify)
+    return await _pin(self, entity, message, unpin=True, notify=notify)
 
 async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
     message = utils.get_message_id(message) or 0

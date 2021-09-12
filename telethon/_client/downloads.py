@@ -213,8 +213,8 @@ async def download_profile_photo(
             if not hasattr(entity, 'chat_photo'):
                 return None
 
-            return await self._download_photo(
-                entity.chat_photo, file, date=None,
+            return await _download_photo(
+                self, entity.chat_photo, file, date=None,
                 thumb=thumb, progress_callback=None
             )
 
@@ -237,7 +237,7 @@ async def download_profile_photo(
         # media which should be done with `download_media` instead.
         return None
 
-    file = self._get_proper_filename(
+    file = _get_proper_filename(
         file, 'profile_photo', '.jpg',
         possible_names=possible_names
     )
@@ -252,8 +252,8 @@ async def download_profile_photo(
         ty = helpers._entity_type(ie)
         if ty == helpers._EntityType.CHANNEL:
             full = await self(_tl.fn.channels.GetFullChannel(ie))
-            return await self._download_photo(
-                full.full_chat.chat_photo, file,
+            return await _download_photo(
+                self, full.full_chat.chat_photo, file,
                 date=None, progress_callback=None,
                 thumb=thumb
             )
@@ -295,20 +295,20 @@ async def download_media(
             media = media.webpage.document or media.webpage.photo
 
     if isinstance(media, (_tl.MessageMediaPhoto, _tl.Photo)):
-        return await self._download_photo(
-            media, file, date, thumb, progress_callback
+        return await _download_photo(
+            self, media, file, date, thumb, progress_callback
         )
     elif isinstance(media, (_tl.MessageMediaDocument, _tl.Document)):
-        return await self._download_document(
-            media, file, date, thumb, progress_callback, msg_data
+        return await _download_document(
+            self, media, file, date, thumb, progress_callback, msg_data
         )
     elif isinstance(media, _tl.MessageMediaContact) and thumb is None:
-        return self._download_contact(
-            media, file
+        return _download_contact(
+            self, media, file
         )
     elif isinstance(media, (_tl.WebDocument, _tl.WebDocumentNoProxy)) and thumb is None:
-        return await self._download_web_document(
-            media, file, progress_callback
+        return await _download_web_document(
+            self, media, file, progress_callback
         )
 
 async def download_file(
@@ -322,7 +322,8 @@ async def download_file(
         dc_id: int = None,
         key: bytes = None,
         iv: bytes = None) -> typing.Optional[bytes]:
-    return await self._download_file(
+    return await _download_file(
+        self,
         input_location,
         file,
         part_size_kb=part_size_kb,
@@ -370,8 +371,8 @@ async def _download_file(
         f = file
 
     try:
-        async for chunk in self._iter_download(
-                input_location, request_size=part_size, dc_id=dc_id, msg_data=msg_data):
+        async for chunk in _iter_download(
+                self, input_location, request_size=part_size, dc_id=dc_id, msg_data=msg_data):
             if iv and key:
                 chunk = AES.decrypt_ige(chunk, key, iv)
             r = f.write(chunk)
@@ -405,7 +406,8 @@ def iter_download(
         file_size: int = None,
         dc_id: int = None
 ):
-    return self._iter_download(
+    return _iter_download(
+        self,
         file,
         offset=offset,
         stride=stride,
@@ -552,17 +554,17 @@ async def _download_photo(self: 'TelegramClient', photo, file, date, thumb, prog
         return
 
     # Include video sizes here (but they may be None so provide an empty list)
-    size = self._get_thumb(photo.sizes + (photo.video_sizes or []), thumb)
+    size = _get_thumb(photo.sizes + (photo.video_sizes or []), thumb)
     if not size or isinstance(size, _tl.PhotoSizeEmpty):
         return
 
     if isinstance(size, _tl.VideoSize):
-        file = self._get_proper_filename(file, 'video', '.mp4', date=date)
+        file = _get_proper_filename(file, 'video', '.mp4', date=date)
     else:
-        file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
+        file = _get_proper_filename(file, 'photo', '.jpg', date=date)
 
     if isinstance(size, (_tl.PhotoCachedSize, _tl.PhotoStrippedSize)):
-        return self._download_cached_photo_size(size, file)
+        return _download_cached_photo_size(self, size, file)
 
     if isinstance(size, _tl.PhotoSizeProgressive):
         file_size = max(size.sizes)
@@ -614,19 +616,19 @@ async def _download_document(
         return
 
     if thumb is None:
-        kind, possible_names = self._get_kind_and_names(document.attributes)
-        file = self._get_proper_filename(
+        kind, possible_names = _get_kind_and_names(document.attributes)
+        file = _get_proper_filename(
             file, kind, utils.get_extension(document),
             date=date, possible_names=possible_names
         )
         size = None
     else:
-        file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
-        size = self._get_thumb(document.thumbs, thumb)
+        file = _get_proper_filename(file, 'photo', '.jpg', date=date)
+        size = _get_thumb(document.thumbs, thumb)
         if isinstance(size, (_tl.PhotoCachedSize, _tl.PhotoStrippedSize)):
-            return self._download_cached_photo_size(size, file)
+            return _download_cached_photo_size(self, size, file)
 
-    result = await self._download_file(
+    result = await _download_file(
         _tl.InputDocumentFileLocation(
             id=document.id,
             access_hash=document.access_hash,

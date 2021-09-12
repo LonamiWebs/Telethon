@@ -55,12 +55,12 @@ async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
             m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
             if m:
                 user = int(m.group(1)) if m.group(1) else e.url
-                is_mention = await self._replace_with_mention(msg_entities, i, user)
+                is_mention = await _replace_with_mention(self, msg_entities, i, user)
                 if not is_mention:
                     del msg_entities[i]
         elif isinstance(e, (_tl.MessageEntityMentionName,
                             _tl.InputMessageEntityMentionName)):
-            is_mention = await self._replace_with_mention(msg_entities, i, e.user_id)
+            is_mention = await _replace_with_mention(self, msg_entities, i, e.user_id)
             if not is_mention:
                 del msg_entities[i]
 

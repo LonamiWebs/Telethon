@@ -125,7 +125,7 @@ async def send_file(
 
     entity = await self.get_input_entity(entity)
     if comment_to is not None:
-        entity, reply_to = await self._get_comment_data(entity, comment_to)
+        entity, reply_to = await _get_comment_data(self, entity, comment_to)
     else:
         reply_to = utils.get_message_id(reply_to)
 
@@ -139,8 +139,8 @@ async def send_file(
 
         result = []
         while file:
-            result += await self._send_album(
-                entity, file[:10], caption=captions[:10],
+            result += await _send_album(
+                self, entity, file[:10], caption=captions[:10],
                 progress_callback=progress_callback, reply_to=reply_to,
                 parse_mode=parse_mode, silent=silent, schedule=schedule,
                 supports_streaming=supports_streaming, clear_draft=clear_draft,
@@ -167,10 +167,10 @@ async def send_file(
         msg_entities = formatting_entities
     else:
         caption, msg_entities =\
-            await self._parse_message_text(caption, parse_mode)
+            await _parse_message_text(self, caption, parse_mode)
 
-    file_handle, media, image = await self._file_to_media(
-        file, force_document=force_document,
+    file_handle, media, image = await _file_to_media(
+        self, file, force_document=force_document,
         file_size=file_size,
         progress_callback=progress_callback,
         attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
@@ -223,8 +223,8 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
         # :tl:`InputMediaUploadedPhoto`. However using that will
         # make it `raise MediaInvalidError`, so we need to upload
         # it as media and then convert that to :tl:`InputMediaPhoto`.
-        fh, fm, _ = await self._file_to_media(
-            file, supports_streaming=supports_streaming,
+        fh, fm, _ = await _file_to_media(
+            self, file, supports_streaming=supports_streaming,
             force_document=force_document, ttl=ttl)
         if isinstance(fm, (_tl.InputMediaUploadedPhoto, _tl.InputMediaPhotoExternal)):
             r = await self(_tl.fn.messages.UploadMedia(

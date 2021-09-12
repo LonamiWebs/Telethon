@@ -3496,7 +3496,7 @@ class TelegramClient:
 
     # region Users
 
-    def __call__(self: 'TelegramClient', request, ordered=False):
+    async def __call__(self: 'TelegramClient', request, ordered=False, flood_sleep_threshold=None):
         """
         Invokes (sends) one or more MTProtoRequests and returns (receives)
         their result.
@@ -3519,7 +3519,7 @@ class TelegramClient:
             The result of the request (often a `TLObject`) or a list of
             results if more than one request was given.
         """
-        return users.call(self._sender, request, ordered=ordered)
+        return self._call(request, ordered, flood_sleep_threshold)
 
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
             -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
@@ -3718,5 +3718,60 @@ class TelegramClient:
         return users.get_peer_id(**locals())
 
     # endregion Users
+
+    # region Private
+
+    async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
+        return users.call(self._sender, request, ordered=ordered, flood_sleep_threshold=flood_sleep_threshold)
+
+    async def _update_loop(self: 'TelegramClient'):
+        return updates._update_loop(**locals())
+
+    async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
+        return messageparse._parse_message_text(**locals())
+
+    async def _file_to_media(
+            self, file, force_document=False, file_size=None,
+            progress_callback=None, attributes=None, thumb=None,
+            allow_cache=True, voice_note=False, video_note=False,
+            supports_streaming=False, mime_type=None, as_image=None,
+            ttl=None):
+        return uploads._file_to_media(**locals())
+
+    async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
+        return users._get_peer(**locals())
+
+    def _get_response_message(self: 'TelegramClient', request, result, input_chat):
+        return messageparse._get_response_message(**locals())
+
+    async def _get_comment_data(
+            self: 'TelegramClient',
+            entity: 'hints.EntityLike',
+            message: 'typing.Union[int, _tl.Message]'
+    ):
+        return messages._get_comment_data(**locals())
+
+    async def _switch_dc(self: 'TelegramClient', new_dc):
+        return telegrambaseclient._switch_dc(**locals())
+
+    async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
+        return telegrambaseclient._borrow_exported_sender(**locals())
+
+    async def _return_exported_sender(self: 'TelegramClient', sender):
+        return telegrambaseclient._return_exported_sender(**locals())
+
+    async def _clean_exported_senders(self: 'TelegramClient'):
+        return telegrambaseclient._clean_exported_senders(**locals())
+
+    def _auth_key_callback(self: 'TelegramClient', auth_key):
+        return telegrambaseclient._auth_key_callback
+
+    def _handle_update(self: 'TelegramClient', update):
+        return updates._handle_update(**locals())
+
+    async def _handle_auto_reconnect(self: 'TelegramClient'):
+        return updates._handle_auto_reconnect(**locals())
+
+    # endregion Private
 
 # TODO re-patch everything to remove the intermediate calls

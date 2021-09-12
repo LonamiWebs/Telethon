@@ -331,7 +331,7 @@ def is_connected(self: 'TelegramClient') -> bool:
     return sender and sender.is_connected()
 
 async def disconnect(self: 'TelegramClient'):
-    return await self._disconnect_coro()
+    return await _disconnect_coro(self)
 
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
     init_proxy = None if not issubclass(self._connection, TcpMTProxy) else \
@@ -354,7 +354,7 @@ def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
             connection._proxy = proxy
 
 async def _disconnect_coro(self: 'TelegramClient'):
-    await self._disconnect()
+    await _disconnect(self)
 
     # Also clean-up all exported senders because we're done with them
     async with self._borrow_sender_lock:
@@ -408,7 +408,7 @@ async def _switch_dc(self: 'TelegramClient', new_dc):
     Permanently switches the current connection to the new data center.
     """
     self._log[__name__].info('Reconnecting to new data center %s', new_dc)
-    dc = await self._get_dc(new_dc)
+    dc = await _get_dc(self, new_dc)
 
     self.session.set_dc(dc.id, dc.ip_address, dc.port)
     # auth_key's are associated with a server, which has now changed
@@ -416,7 +416,7 @@ async def _switch_dc(self: 'TelegramClient', new_dc):
     self._sender.auth_key.key = None
     self.session.auth_key = None
     self.session.save()
-    await self._disconnect()
+    await _disconnect(self)
     return await self.connect()
 
 def _auth_key_callback(self: 'TelegramClient', auth_key):
@@ -462,7 +462,7 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
     """
     # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
     # for clearly showing how to export the authorization
-    dc = await self._get_dc(dc_id)
+    dc = await _get_dc(self, dc_id)
     # Can't reuse self._sender._connection as it has its own seqno.
     #
     # If one were to do that, Telegram would reset the connection
@@ -497,12 +497,12 @@ async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
 
         if state is None:
             state = _ExportState()
-            sender = await self._create_exported_sender(dc_id)
+            sender = await _create_exported_sender(self, dc_id)
             sender.dc_id = dc_id
             self._borrowed_senders[dc_id] = (state, sender)
 
         elif state.need_connect():
-            dc = await self._get_dc(dc_id)
+            dc = await _get_dc(self, dc_id)
             await sender.connect(self._connection(
                 dc.ip_address,
                 dc.port,
@@ -545,7 +545,7 @@ async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
     raise NotImplementedError
     session = self._exported_sessions.get(cdn_redirect.dc_id)
     if not session:
-        dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
+        dc = await _get_dc(self, cdn_redirect.dc_id, cdn=True)
         session = self.session.clone()
         await session.set_dc(dc.id, dc.ip_address, dc.port)
         self._exported_sessions[cdn_redirect.dc_id] = session
@@ -564,20 +564,3 @@ async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
     # set already. Avoid invoking non-CDN methods by not syncing updates.
     client.connect(_sync_updates=False)
     return client
-
-
-@abc.abstractmethod
-def __call__(self: 'TelegramClient', request, ordered=False):
-    raise NotImplementedError
-
-@abc.abstractmethod
-def _handle_update(self: 'TelegramClient', update):
-    raise NotImplementedError
-
-@abc.abstractmethod
-def _update_loop(self: 'TelegramClient'):
-    raise NotImplementedError
-
-@abc.abstractmethod
-async def _handle_auto_reconnect(self: 'TelegramClient'):
-    raise NotImplementedError
