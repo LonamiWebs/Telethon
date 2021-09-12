@@ -7,15 +7,13 @@ import platform
 import time
 import typing
 
-from .. import version, helpers, __name__ as __base_name__
+from .. import version, helpers, __name__ as __base_name__, _tl
 from ..crypto import rsa
 from ..entitycache import EntityCache
 from ..extensions import markdown
 from ..network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
 from ..sessions import Session, SQLiteSession, MemorySession
 from ..statecache import StateCache
-from ..tl import functions, types
-from ..tl.alltlobjects import LAYER
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -122,7 +120,7 @@ def init(
             import warnings
             warnings.warn(
                 'The sqlite3 module is not available under this '
-                'Python installation and no custom session '
+                'Python installation and no _ session '
                 'instance was given; using MemorySession.\n'
                 'You will need to re-login every time unless '
                 'you use another session storage'
@@ -198,7 +196,7 @@ def init(
     assert isinstance(connection, type)
     self._connection = connection
     init_proxy = None if not issubclass(connection, TcpMTProxy) else \
-        types.InputClientProxy(*connection.address_info(proxy))
+        _tl.InputClientProxy(*connection.address_info(proxy))
 
     # Used on connection. Capture the variables in a lambda since
     # exporting clients need to create this InvokeWithLayerRequest.
@@ -212,7 +210,7 @@ def init(
         default_device_model = system.machine
     default_system_version = re.sub(r'-.+','',system.release)
 
-    self._init_request = functions.InitConnectionRequest(
+    self._init_request = _tl.fn.InitConnection(
         api_id=self.api_id,
         device_model=device_model or default_device_model or 'Unknown',
         system_version=system_version or default_system_version or '1.0',
@@ -322,10 +320,10 @@ async def connect(self: 'TelegramClient') -> None:
     self.session.auth_key = self._sender.auth_key
     self.session.save()
 
-    self._init_request.query = functions.help.GetConfigRequest()
+    self._init_request.query = _tl.fn.help.GetConfig()
 
-    await self._sender.send(functions.InvokeWithLayerRequest(
-        LAYER, self._init_request
+    await self._sender.send(_tl.fn.InvokeWithLayer(
+        _tl.alltlobjects.LAYER, self._init_request
     ))
 
     self._updates_handle = self.loop.create_task(self._update_loop())
@@ -339,7 +337,7 @@ async def disconnect(self: 'TelegramClient'):
 
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
     init_proxy = None if not issubclass(self._connection, TcpMTProxy) else \
-        types.InputClientProxy(*self._connection.address_info(proxy))
+        _tl.InputClientProxy(*self._connection.address_info(proxy))
 
     self._init_request.proxy = init_proxy
     self._proxy = proxy
@@ -386,7 +384,7 @@ async def _disconnect_coro(self: 'TelegramClient'):
 
     pts, date = self._state_cache[None]
     if pts and date:
-        self.session.set_update_state(0, types.updates.State(
+        self.session.set_update_state(0, _tl.updates.State(
             pts=pts,
             qts=0,
             date=date,
@@ -436,10 +434,10 @@ async def _get_dc(self: 'TelegramClient', dc_id, cdn=False):
     """Gets the Data Center (DC) associated to 'dc_id'"""
     cls = self.__class__
     if not cls._config:
-        cls._config = await self(functions.help.GetConfigRequest())
+        cls._config = await self(_tl.fn.help.GetConfig())
 
     if cdn and not self._cdn_config:
-        cls._cdn_config = await self(functions.help.GetCdnConfigRequest())
+        cls._cdn_config = await self(_tl.fn.help.GetCdnConfig())
         for pk in cls._cdn_config.public_keys:
             rsa.add_key(pk.public_key)
 
@@ -481,9 +479,9 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
         local_addr=self._local_addr
     ))
     self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
-    auth = await self(functions.auth.ExportAuthorizationRequest(dc_id))
-    self._init_request.query = functions.auth.ImportAuthorizationRequest(id=auth.id, bytes=auth.bytes)
-    req = functions.InvokeWithLayerRequest(LAYER, self._init_request)
+    auth = await self(_tl.fn.auth.ExportAuthorization(dc_id))
+    self._init_request.query = _tl.fn.auth.ImportAuthorization(id=auth.id, bytes=auth.bytes)
+    req = _tl.fn.InvokeWithLayer(LAYER, self._init_request)
     await sender.send(req)
     return sender
 

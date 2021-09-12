@@ -1,6 +1,6 @@
 import inspect
 
-from .tl import types
+from . import _tl
 
 
 # Which updates have the following fields?
@@ -9,8 +9,8 @@ _has_channel_id = []
 
 # TODO EntityCache does the same. Reuse?
 def _fill():
-    for name in dir(types):
-        update = getattr(types, name)
+    for name in dir(_tl):
+        update = getattr(_tl, name)
         if getattr(update, 'SUBCLASS_OF_ID', None) == 0x9f89304e:
             cid = update.CONSTRUCTOR_ID
             sig = inspect.signature(update.__init__)
@@ -51,41 +51,41 @@ class StateCache:
             *,
             channel_id=None,
             has_pts=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateNewMessage,
-                types.UpdateDeleteMessages,
-                types.UpdateReadHistoryInbox,
-                types.UpdateReadHistoryOutbox,
-                types.UpdateWebPage,
-                types.UpdateReadMessagesContents,
-                types.UpdateEditMessage,
-                types.updates.State,
-                types.updates.DifferenceTooLong,
-                types.UpdateShortMessage,
-                types.UpdateShortChatMessage,
-                types.UpdateShortSentMessage
+                _tl.UpdateNewMessage,
+                _tl.UpdateDeleteMessages,
+                _tl.UpdateReadHistoryInbox,
+                _tl.UpdateReadHistoryOutbox,
+                _tl.UpdateWebPage,
+                _tl.UpdateReadMessagesContents,
+                _tl.UpdateEditMessage,
+                _tl.updates.State,
+                _tl.updates.DifferenceTooLong,
+                _tl.UpdateShortMessage,
+                _tl.UpdateShortChatMessage,
+                _tl.UpdateShortSentMessage
             )),
             has_date=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateUserPhoto,
-                types.UpdateEncryption,
-                types.UpdateEncryptedMessagesRead,
-                types.UpdateChatParticipantAdd,
-                types.updates.DifferenceEmpty,
-                types.UpdateShortMessage,
-                types.UpdateShortChatMessage,
-                types.UpdateShort,
-                types.UpdatesCombined,
-                types.Updates,
-                types.UpdateShortSentMessage,
+                _tl.UpdateUserPhoto,
+                _tl.UpdateEncryption,
+                _tl.UpdateEncryptedMessagesRead,
+                _tl.UpdateChatParticipantAdd,
+                _tl.updates.DifferenceEmpty,
+                _tl.UpdateShortMessage,
+                _tl.UpdateShortChatMessage,
+                _tl.UpdateShort,
+                _tl.UpdatesCombined,
+                _tl.Updates,
+                _tl.UpdateShortSentMessage,
             )),
             has_channel_pts=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateChannelTooLong,
-                types.UpdateNewChannelMessage,
-                types.UpdateDeleteChannelMessages,
-                types.UpdateEditChannelMessage,
-                types.UpdateChannelWebPage,
-                types.updates.ChannelDifferenceEmpty,
-                types.updates.ChannelDifferenceTooLong,
-                types.updates.ChannelDifference
+                _tl.UpdateChannelTooLong,
+                _tl.UpdateNewChannelMessage,
+                _tl.UpdateDeleteChannelMessages,
+                _tl.UpdateEditChannelMessage,
+                _tl.UpdateChannelWebPage,
+                _tl.updates.ChannelDifferenceEmpty,
+                _tl.updates.ChannelDifferenceTooLong,
+                _tl.updates.ChannelDifference
             )),
             check_only=False
     ):
@@ -120,8 +120,8 @@ class StateCache:
             has_channel_id=frozenset(_has_channel_id),
             # Hardcoded because only some with message are for channels
             has_message=frozenset(x.CONSTRUCTOR_ID for x in (
-                types.UpdateNewChannelMessage,
-                types.UpdateEditChannelMessage
+                _tl.UpdateNewChannelMessage,
+                _tl.UpdateEditChannelMessage
             ))
     ):
         """

@@ -695,9 +695,9 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    _write_modules(output_dir / 'functions', import_depth, 'TLRequest',
+    _write_modules(output_dir / 'fn', import_depth, 'TLRequest',
                    namespace_functions, type_constructors)
-    _write_modules(output_dir / 'types', import_depth, 'TLObject',
+    _write_modules(output_dir, import_depth - 1, 'TLObject',
                    namespace_types, type_constructors)
 
     filename = output_dir / 'alltlobjects.py'

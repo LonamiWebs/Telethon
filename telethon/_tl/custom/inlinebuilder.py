@@ -197,7 +197,7 @@ class InlineBuilder:
             if isinstance(media, types.InputPhoto):
                 fh = media
             else:
-                r = await self._client(functions.messages.UploadMediaRequest(
+                r = await self._client(_tl.fn.messages.UploadMedia(
                     types.InputPeerSelf(), media=media
                 ))
                 fh = utils.get_input_photo(r.photo)
@@ -317,7 +317,7 @@ class InlineBuilder:
             if isinstance(media, types.InputDocument):
                 fh = media
             else:
-                r = await self._client(functions.messages.UploadMediaRequest(
+                r = await self._client(_tl.fn.messages.UploadMedia(
                     types.InputPeerSelf(), media=media
                 ))
                 fh = utils.get_input_document(r.document)

@@ -2,9 +2,7 @@ import abc
 import asyncio
 import warnings
 
-from .. import utils
-from ..tl import TLObject, types
-from ..tl.custom.chatgetter import ChatGetter
+from .. import utils, _tl
 
 
 async def _into_id_set(client, chats):
@@ -22,16 +20,16 @@ async def _into_id_set(client, chats):
                 result.add(chat)  # Explicitly marked IDs are negative
             else:
                 result.update({  # Support all valid types of peers
-                    utils.get_peer_id(types.PeerUser(chat)),
-                    utils.get_peer_id(types.PeerChat(chat)),
-                    utils.get_peer_id(types.PeerChannel(chat)),
+                    utils.get_peer_id(_tl.PeerUser(chat)),
+                    utils.get_peer_id(_tl.PeerChat(chat)),
+                    utils.get_peer_id(_tl.PeerChannel(chat)),
                 })
-        elif isinstance(chat, TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
+        elif isinstance(chat, _tl.TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
             # 0x2d45687 == crc32(b'Peer')
             result.add(utils.get_peer_id(chat))
         else:
             chat = await client.get_input_entity(chat)
-            if isinstance(chat, types.InputPeerSelf):
+            if isinstance(chat, _tl.InputPeerSelf):
                 chat = await client.get_me(input_peer=True)
             result.add(utils.get_peer_id(chat))
 
@@ -166,10 +164,10 @@ class EventCommon(ChatGetter, abc.ABC):
         return self._client
 
     def __str__(self):
-        return TLObject.pretty_format(self.to_dict())
+        return _tl.TLObject.pretty_format(self.to_dict())
 
     def stringify(self):
-        return TLObject.pretty_format(self.to_dict(), indent=0)
+        return _tl.TLObject.pretty_format(self.to_dict(), indent=0)
 
     def to_dict(self):
         d = {k: v for k, v in self.__dict__.items() if k[0] != '_'}

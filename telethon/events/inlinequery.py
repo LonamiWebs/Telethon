@@ -4,9 +4,7 @@ import re
 import asyncio
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
-from ..tl import types, functions, custom
-from ..tl.custom.sendergetter import SenderGetter
+from .. import utils, _tl
 
 
 @name_inner_event
@@ -62,7 +60,7 @@ class InlineQuery(EventBuilder):
 
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateBotInlineQuery):
+        if isinstance(update, _tl.UpdateBotInlineQuery):
             return cls.Event(update)
 
     def filter(self, event):
@@ -74,7 +72,7 @@ class InlineQuery(EventBuilder):
 
         return super().filter(event)
 
-    class Event(EventCommon, SenderGetter):
+    class Event(EventCommon, _tl.custom.sendergetter.SenderGetter):
         """
         Represents the event of a new callback query.
 
@@ -90,8 +88,8 @@ class InlineQuery(EventBuilder):
                 function, which is ``re.compile(...).match`` by default.
         """
         def __init__(self, query):
-            super().__init__(chat_peer=types.PeerUser(query.user_id))
-            SenderGetter.__init__(self, query.user_id)
+            super().__init__(chat_peer=_tl.PeerUser(query.user_id))
+            _tl.custom.sendergetter.SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.pattern_match = None
             self._answered = False
@@ -223,10 +221,10 @@ class InlineQuery(EventBuilder):
                 results = []
 
             if switch_pm:
-                switch_pm = types.InlineBotSwitchPM(switch_pm, switch_pm_param)
+                switch_pm = _tl.InlineBotSwitchPM(switch_pm, switch_pm_param)
 
             return await self._client(
-                functions.messages.SetInlineBotResultsRequest(
+                _tl.fn.messages.SetInlineBotResults(
                     query_id=self.query.query_id,
                     results=results,
                     cache_time=cache_time,

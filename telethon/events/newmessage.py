@@ -1,8 +1,7 @@
 import re
 
 from .common import EventBuilder, EventCommon, name_inner_event, _into_id_set
-from .. import utils
-from ..tl import types
+from .. import utils, _tl
 
 
 @name_inner_event
@@ -96,19 +95,19 @@ class NewMessage(EventBuilder):
     @classmethod
     def build(cls, update, others=None, self_id=None):
         if isinstance(update,
-                      (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
-            if not isinstance(update.message, types.Message):
+                      (_tl.UpdateNewMessage, _tl.UpdateNewChannelMessage)):
+            if not isinstance(update.message, _tl.Message):
                 return  # We don't care about MessageService's here
             event = cls.Event(update.message)
-        elif isinstance(update, types.UpdateShortMessage):
-            event = cls.Event(types.Message(
+        elif isinstance(update, _tl.UpdateShortMessage):
+            event = cls.Event(_tl.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
                 silent=update.silent,
                 id=update.id,
-                peer_id=types.PeerUser(update.user_id),
-                from_id=types.PeerUser(self_id if update.out else update.user_id),
+                peer_id=_tl.PeerUser(update.user_id),
+                from_id=_tl.PeerUser(self_id if update.out else update.user_id),
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,
@@ -117,15 +116,15 @@ class NewMessage(EventBuilder):
                 entities=update.entities,
                 ttl_period=update.ttl_period
             ))
-        elif isinstance(update, types.UpdateShortChatMessage):
-            event = cls.Event(types.Message(
+        elif isinstance(update, _tl.UpdateShortChatMessage):
+            event = cls.Event(_tl.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
                 silent=update.silent,
                 id=update.id,
-                from_id=types.PeerUser(self_id if update.out else update.from_id),
-                peer_id=types.PeerChat(update.chat_id),
+                from_id=_tl.PeerUser(self_id if update.out else update.from_id),
+                peer_id=_tl.PeerChat(update.chat_id),
                 message=update.message,
                 date=update.date,
                 fwd_from=update.fwd_from,

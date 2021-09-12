@@ -1,6 +1,5 @@
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
-from ..tl import types
+from .. import utils, _tl
 
 
 @name_inner_event
@@ -36,23 +35,23 @@ class ChatAction(EventBuilder):
         # Rely on specific pin updates for unpins, but otherwise ignore them
         # for new pins (we'd rather handle the new service message with pin,
         # so that we can act on that message').
-        if isinstance(update, types.UpdatePinnedChannelMessages) and not update.pinned:
-            return cls.Event(types.PeerChannel(update.channel_id),
+        if isinstance(update, _tl.UpdatePinnedChannelMessages) and not update.pinned:
+            return cls.Event(_tl.PeerChannel(update.channel_id),
                              pin_ids=update.messages,
                              pin=update.pinned)
 
-        elif isinstance(update, types.UpdatePinnedMessages) and not update.pinned:
+        elif isinstance(update, _tl.UpdatePinnedMessages) and not update.pinned:
             return cls.Event(update.peer,
                              pin_ids=update.messages,
                              pin=update.pinned)
 
-        elif isinstance(update, types.UpdateChatParticipantAdd):
-            return cls.Event(types.PeerChat(update.chat_id),
+        elif isinstance(update, _tl.UpdateChatParticipantAdd):
+            return cls.Event(_tl.PeerChat(update.chat_id),
                              added_by=update.inviter_id or True,
                              users=update.user_id)
 
-        elif isinstance(update, types.UpdateChatParticipantDelete):
-            return cls.Event(types.PeerChat(update.chat_id),
+        elif isinstance(update, _tl.UpdateChatParticipantDelete):
+            return cls.Event(_tl.PeerChat(update.chat_id),
                              kicked_by=True,
                              users=update.user_id)
 
@@ -61,50 +60,50 @@ class ChatAction(EventBuilder):
         # better not to rely on this. Rely only in MessageActionChatDeleteUser.
 
         elif (isinstance(update, (
-                types.UpdateNewMessage, types.UpdateNewChannelMessage))
-              and isinstance(update.message, types.MessageService)):
+                _tl.UpdateNewMessage, _tl.UpdateNewChannelMessage))
+              and isinstance(update.message, _tl.MessageService)):
             msg = update.message
             action = update.message.action
-            if isinstance(action, types.MessageActionChatJoinedByLink):
+            if isinstance(action, _tl.MessageActionChatJoinedByLink):
                 return cls.Event(msg,
                                  added_by=True,
                                  users=msg.from_id)
-            elif isinstance(action, types.MessageActionChatAddUser):
+            elif isinstance(action, _tl.MessageActionChatAddUser):
                 # If a user adds itself, it means they joined via the public chat username
                 added_by = ([msg.sender_id] == action.users) or msg.from_id
                 return cls.Event(msg,
                                  added_by=added_by,
                                  users=action.users)
-            elif isinstance(action, types.MessageActionChatDeleteUser):
+            elif isinstance(action, _tl.MessageActionChatDeleteUser):
                 return cls.Event(msg,
                                  kicked_by=utils.get_peer_id(msg.from_id) if msg.from_id else True,
                                  users=action.user_id)
-            elif isinstance(action, types.MessageActionChatCreate):
+            elif isinstance(action, _tl.MessageActionChatCreate):
                 return cls.Event(msg,
                                  users=action.users,
                                  created=True,
                                  new_title=action.title)
-            elif isinstance(action, types.MessageActionChannelCreate):
+            elif isinstance(action, _tl.MessageActionChannelCreate):
                 return cls.Event(msg,
                                  created=True,
                                  users=msg.from_id,
                                  new_title=action.title)
-            elif isinstance(action, types.MessageActionChatEditTitle):
+            elif isinstance(action, _tl.MessageActionChatEditTitle):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_title=action.title)
-            elif isinstance(action, types.MessageActionChatEditPhoto):
+            elif isinstance(action, _tl.MessageActionChatEditPhoto):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=action.photo)
-            elif isinstance(action, types.MessageActionChatDeletePhoto):
+            elif isinstance(action, _tl.MessageActionChatDeletePhoto):
                 return cls.Event(msg,
                                  users=msg.from_id,
                                  new_photo=True)
-            elif isinstance(action, types.MessageActionPinMessage) and msg.reply_to:
+            elif isinstance(action, _tl.MessageActionPinMessage) and msg.reply_to:
                 return cls.Event(msg,
                                  pin_ids=[msg.reply_to_msg_id])
-            elif isinstance(action, types.MessageActionGameScore):
+            elif isinstance(action, _tl.MessageActionGameScore):
                 return cls.Event(msg,
                                  new_score=action.score)
 
@@ -142,7 +141,7 @@ class ChatAction(EventBuilder):
 
             new_title (`str`, optional):
                 The new title string for the chat, if applicable.
-            
+
             new_score (`str`, optional):
                 The new score string for the game, if applicable.
 
@@ -153,7 +152,7 @@ class ChatAction(EventBuilder):
         def __init__(self, where, new_photo=None,
                      added_by=None, kicked_by=None, created=None,
                      users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
-            if isinstance(where, types.MessageService):
+            if isinstance(where, _tl.MessageService):
                 self.action_message = where
                 where = where.peer_id
             else:
@@ -169,7 +168,7 @@ class ChatAction(EventBuilder):
 
             self.new_photo = new_photo is not None
             self.photo = \
-                new_photo if isinstance(new_photo, types.Photo) else None
+                new_photo if isinstance(new_photo, _tl.Photo) else None
 
             self._added_by = None
             self._kicked_by = None
@@ -283,7 +282,7 @@ class ChatAction(EventBuilder):
             """
             The user who added ``users``, if applicable (`None` otherwise).
             """
-            if self._added_by and not isinstance(self._added_by, types.User):
+            if self._added_by and not isinstance(self._added_by, _tl.User):
                 aby = self._entities.get(utils.get_peer_id(self._added_by))
                 if aby:
                     self._added_by = aby
@@ -304,7 +303,7 @@ class ChatAction(EventBuilder):
             """
             The user who kicked ``users``, if applicable (`None` otherwise).
             """
-            if self._kicked_by and not isinstance(self._kicked_by, types.User):
+            if self._kicked_by and not isinstance(self._kicked_by, _tl.User):
                 kby = self._entities.get(utils.get_peer_id(self._kicked_by))
                 if kby:
                     self._kicked_by = kby
@@ -393,7 +392,7 @@ class ChatAction(EventBuilder):
                 await self.action_message._reload_message()
                 self._users = [
                     u for u in self.action_message.action_entities
-                    if isinstance(u, (types.User, types.UserEmpty))]
+                    if isinstance(u, (_tl.User, _tl.UserEmpty))]
 
             return self._users
 
@@ -433,7 +432,7 @@ class ChatAction(EventBuilder):
                 self._input_users = [
                     utils.get_input_peer(u)
                     for u in self.action_message.action_entities
-                    if isinstance(u, (types.User, types.UserEmpty))]
+                    if isinstance(u, (_tl.User, _tl.UserEmpty))]
 
             return self._input_users or []
 

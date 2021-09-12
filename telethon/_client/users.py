@@ -4,10 +4,9 @@ import itertools
 import time
 import typing
 
-from .. import errors, helpers, utils, hints
+from .. import errors, helpers, utils, hints, _tl
 from ..errors import MultiError, RPCError
 from ..helpers import retry_range
-from ..tl import TLRequest, types, functions
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
@@ -48,7 +47,7 @@ async def call(self: 'TelegramClient', sender, request, ordered=False, flood_sle
                 raise errors.FloodWaitError(request=r, capture=diff)
 
         if self._no_updates:
-            r = functions.InvokeWithoutUpdatesRequest(r)
+            r = _tl.fn.InvokeWithoutUpdates(r)
 
     request_index = 0
     last_error = None
@@ -128,13 +127,13 @@ async def call(self: 'TelegramClient', sender, request, ordered=False, flood_sle
 
 
 async def get_me(self: 'TelegramClient', input_peer: bool = False) \
-        -> 'typing.Union[types.User, types.InputPeerUser]':
+        -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
     if input_peer and self._self_input_peer:
         return self._self_input_peer
 
     try:
         me = (await self(
-            functions.users.GetUsersRequest([types.InputUserSelf()])))[0]
+            _tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
 
         self._bot = me.bot
         if not self._self_input_peer:
@@ -165,7 +164,7 @@ async def is_user_authorized(self: 'TelegramClient') -> bool:
     if self._authorized is None:
         try:
             # Any request that requires authorization will work
-            await self(functions.updates.GetStateRequest())
+            await self(_tl.fn.updates.GetState())
             self._authorized = True
         except errors.RPCError:
             self._authorized = False
@@ -209,14 +208,14 @@ async def get_entity(
         tmp = []
         while users:
             curr, users = users[:200], users[200:]
-            tmp.extend(await self(functions.users.GetUsersRequest(curr)))
+            tmp.extend(await self(_tl.fn.users.GetUsers(curr)))
         users = tmp
     if chats:  # TODO Handle chats slice?
         chats = (await self(
-            functions.messages.GetChatsRequest([x.chat_id for x in chats]))).chats
+            _tl.fn.messages.GetChats([x.chat_id for x in chats]))).chats
     if channels:
         channels = (await self(
-            functions.channels.GetChannelsRequest(channels))).chats
+            _tl.fn.channels.GetChannels(channels))).chats
 
     # Merge users, chats and channels into a single dictionary
     id_entity = {
@@ -232,19 +231,19 @@ async def get_entity(
     for x in inputs:
         if isinstance(x, str):
             result.append(await self._get_entity_from_string(x))
-        elif not isinstance(x, types.InputPeerSelf):
+        elif not isinstance(x, _tl.InputPeerSelf):
             result.append(id_entity[utils.get_peer_id(x)])
         else:
             result.append(next(
                 u for u in id_entity.values()
-                if isinstance(u, types.User) and u.is_self
+                if isinstance(u, _tl.User) and u.is_self
             ))
 
     return result[0] if single else result
 
 async def get_input_entity(
         self: 'TelegramClient',
-        peer: 'hints.EntityLike') -> 'types.TypeInputPeer':
+        peer: 'hints.EntityLike') -> '_tl.TypeInputPeer':
     # Short-circuit if the input parameter directly maps to an InputPeer
     try:
         return utils.get_input_peer(peer)
@@ -261,7 +260,7 @@ async def get_input_entity(
 
     # Then come known strings that take precedence
     if peer in ('me', 'self'):
-        return types.InputPeerSelf()
+        return _tl.InputPeerSelf()
 
     # No InputPeer, cached peer, or known string. Fetch from disk cache
     try:
@@ -279,10 +278,10 @@ async def get_input_entity(
     # If we're not a bot but the user is in our contacts, it seems to work
     # regardless. These are the only two special-cased requests.
     peer = utils.get_peer(peer)
-    if isinstance(peer, types.PeerUser):
-        users = await self(functions.users.GetUsersRequest([
-            types.InputUser(peer.user_id, access_hash=0)]))
-        if users and not isinstance(users[0], types.UserEmpty):
+    if isinstance(peer, _tl.PeerUser):
+        users = await self(_tl.fn.users.GetUsers([
+            _tl.InputUser(peer.user_id, access_hash=0)]))
+        if users and not isinstance(users[0], _tl.UserEmpty):
             # If the user passed a valid ID they expect to work for
             # channels but would be valid for users, we get UserEmpty.
             # Avoid returning the invalid empty input peer for that.
@@ -291,12 +290,12 @@ async def get_input_entity(
             # it's not, work as a chat and try to validate it through
             # another request, but that becomes too much work.
             return utils.get_input_peer(users[0])
-    elif isinstance(peer, types.PeerChat):
-        return types.InputPeerChat(peer.chat_id)
-    elif isinstance(peer, types.PeerChannel):
+    elif isinstance(peer, _tl.PeerChat):
+        return _tl.InputPeerChat(peer.chat_id)
+    elif isinstance(peer, _tl.PeerChannel):
         try:
-            channels = await self(functions.channels.GetChannelsRequest([
-                types.InputChannel(peer.channel_id, access_hash=0)]))
+            channels = await self(_tl.fn.channels.GetChannels([
+                _tl.InputChannel(peer.channel_id, access_hash=0)]))
             return utils.get_input_peer(channels.chats[0])
         except errors.ChannelInvalidError:
             pass
@@ -326,7 +325,7 @@ async def get_peer_id(
     except AttributeError:
         peer = await self.get_input_entity(peer)
 
-    if isinstance(peer, types.InputPeerSelf):
+    if isinstance(peer, _tl.InputPeerSelf):
         peer = await self.get_me(input_peer=True)
 
     return utils.get_peer_id(peer, add_mark=add_mark)
@@ -348,7 +347,7 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
     if phone:
         try:
             for user in (await self(
-                    functions.contacts.GetContactsRequest(0))).users:
+                    _tl.fn.contacts.GetContacts(0))).users:
                 if user.phone == phone:
                     return user
         except errors.BotMethodInvalidError:
@@ -360,26 +359,26 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
         username, is_join_chat = utils.parse_username(string)
         if is_join_chat:
             invite = await self(
-                functions.messages.CheckChatInviteRequest(username))
+                _tl.fn.messages.CheckChatInvite(username))
 
-            if isinstance(invite, types.ChatInvite):
+            if isinstance(invite, _tl.ChatInvite):
                 raise ValueError(
                     'Cannot get entity from a channel (or group) '
                     'that you are not part of. Join the group and retry'
                 )
-            elif isinstance(invite, types.ChatInviteAlready):
+            elif isinstance(invite, _tl.ChatInviteAlready):
                 return invite.chat
         elif username:
             try:
                 result = await self(
-                    functions.contacts.ResolveUsernameRequest(username))
+                    _tl.fn.contacts.ResolveUsername(username))
             except errors.UsernameNotOccupiedError as e:
                 raise ValueError('No user has "{}" as username'
                                     .format(username)) from e
 
             try:
                 pid = utils.get_peer_id(result.peer, add_mark=False)
-                if isinstance(result.peer, types.PeerUser):
+                if isinstance(result.peer, _tl.PeerUser):
                     return next(x for x in result.users if x.id == pid)
                 else:
                     return next(x for x in result.chats if x.id == pid)
@@ -407,11 +406,11 @@ async def _get_input_dialog(self: 'TelegramClient', dialog):
             dialog.peer = await self.get_input_entity(dialog.peer)
             return dialog
         elif dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-            return types.InputDialogPeer(dialog)
+            return _tl.InputDialogPeer(dialog)
     except AttributeError:
         pass
 
-    return types.InputDialogPeer(await self.get_input_entity(dialog))
+    return _tl.InputDialogPeer(await self.get_input_entity(dialog))
 
 async def _get_input_notify(self: 'TelegramClient', notify):
     """
@@ -421,10 +420,10 @@ async def _get_input_notify(self: 'TelegramClient', notify):
     """
     try:
         if notify.SUBCLASS_OF_ID == 0x58981615:
-            if isinstance(notify, types.InputNotifyPeer):
+            if isinstance(notify, _tl.InputNotifyPeer):
                 notify.peer = await self.get_input_entity(notify.peer)
             return notify
     except AttributeError:
         pass
 
-    return types.InputNotifyPeer(await self.get_input_entity(notify))
+    return _tl.InputNotifyPeer(await self.get_input_entity(notify))

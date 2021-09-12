@@ -21,7 +21,7 @@ from types import GeneratorType
 
 from .extensions import markdown, html
 from .helpers import add_surrogate, del_surrogate, strip_text
-from .tl import types
+from . import _tl
 
 try:
     import hachoir
@@ -32,26 +32,26 @@ except ImportError:
 
 # Register some of the most common mime-types to avoid any issues.
 # See https://github.com/LonamiWebs/Telethon/issues/1096.
-mimetypes.add_type('image/png', '.png')
-mimetypes.add_type('image/jpeg', '.jpeg')
-mimetypes.add_type('image/webp', '.webp')
-mimetypes.add_type('image/gif', '.gif')
-mimetypes.add_type('image/bmp', '.bmp')
-mimetypes.add_type('image/x-tga', '.tga')
-mimetypes.add_type('image/tiff', '.tiff')
-mimetypes.add_type('image/vnd.adobe.photoshop', '.psd')
+mime_tl.add_type('image/png', '.png')
+mime_tl.add_type('image/jpeg', '.jpeg')
+mime_tl.add_type('image/webp', '.webp')
+mime_tl.add_type('image/gif', '.gif')
+mime_tl.add_type('image/bmp', '.bmp')
+mime_tl.add_type('image/x-tga', '.tga')
+mime_tl.add_type('image/tiff', '.tiff')
+mime_tl.add_type('image/vnd.adobe.photoshop', '.psd')
 
-mimetypes.add_type('video/mp4', '.mp4')
-mimetypes.add_type('video/quicktime', '.mov')
-mimetypes.add_type('video/avi', '.avi')
+mime_tl.add_type('video/mp4', '.mp4')
+mime_tl.add_type('video/quicktime', '.mov')
+mime_tl.add_type('video/avi', '.avi')
 
-mimetypes.add_type('audio/mpeg', '.mp3')
-mimetypes.add_type('audio/m4a', '.m4a')
-mimetypes.add_type('audio/aac', '.aac')
-mimetypes.add_type('audio/ogg', '.ogg')
-mimetypes.add_type('audio/flac', '.flac')
+mime_tl.add_type('audio/mpeg', '.mp3')
+mime_tl.add_type('audio/m4a', '.m4a')
+mime_tl.add_type('audio/aac', '.aac')
+mime_tl.add_type('audio/ogg', '.ogg')
+mime_tl.add_type('audio/flac', '.flac')
 
-mimetypes.add_type('application/x-tgsticker', '.tgs')
+mime_tl.add_type('application/x-tgsticker', '.tgs')
 
 USERNAME_RE = re.compile(
     r'@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)/(@|joinchat/)?'
@@ -92,7 +92,7 @@ def get_display_name(entity):
     Gets the display name for the given :tl:`User`,
     :tl:`Chat` or :tl:`Channel`. Returns an empty string otherwise.
     """
-    if isinstance(entity, types.User):
+    if isinstance(entity, _tl.User):
         if entity.last_name and entity.first_name:
             return '{} {}'.format(entity.first_name, entity.last_name)
         elif entity.first_name:
@@ -102,7 +102,7 @@ def get_display_name(entity):
         else:
             return ''
 
-    elif isinstance(entity, (types.Chat, types.ChatForbidden, types.Channel)):
+    elif isinstance(entity, (_tl.Chat, _tl.ChatForbidden, _tl.Channel)):
         return entity.title
 
     return ''
@@ -117,14 +117,14 @@ def get_extension(media):
         return '.jpg'
     except TypeError:
         # These cases are not handled by input photo because it can't
-        if isinstance(media, (types.UserProfilePhoto, types.ChatPhoto)):
+        if isinstance(media, (_tl.UserProfilePhoto, _tl.ChatPhoto)):
             return '.jpg'
 
     # Documents will come with a mime type
-    if isinstance(media, types.MessageMediaDocument):
+    if isinstance(media, _tl.MessageMediaDocument):
         media = media.document
     if isinstance(media, (
-            types.Document, types.WebDocument, types.WebDocumentNoProxy)):
+            _tl.Document, _tl.WebDocument, _tl.WebDocumentNoProxy)):
         if media.mime_type == 'application/octet-stream':
             # Octet stream are just bytes, which have no default extension
             return ''
@@ -184,53 +184,53 @@ def get_input_peer(entity, allow_self=True, check_hash=True):
         else:
             _raise_cast_fail(entity, 'InputPeer')
 
-    if isinstance(entity, types.User):
+    if isinstance(entity, _tl.User):
         if entity.is_self and allow_self:
-            return types.InputPeerSelf()
+            return _tl.InputPeerSelf()
         elif (entity.access_hash is not None and not entity.min) or not check_hash:
-            return types.InputPeerUser(entity.id, entity.access_hash)
+            return _tl.InputPeerUser(entity.id, entity.access_hash)
         else:
             raise TypeError('User without access_hash or min info cannot be input')
 
-    if isinstance(entity, (types.Chat, types.ChatEmpty, types.ChatForbidden)):
-        return types.InputPeerChat(entity.id)
+    if isinstance(entity, (_tl.Chat, _tl.ChatEmpty, _tl.ChatForbidden)):
+        return _tl.InputPeerChat(entity.id)
 
-    if isinstance(entity, types.Channel):
+    if isinstance(entity, _tl.Channel):
         if (entity.access_hash is not None and not entity.min) or not check_hash:
-            return types.InputPeerChannel(entity.id, entity.access_hash)
+            return _tl.InputPeerChannel(entity.id, entity.access_hash)
         else:
             raise TypeError('Channel without access_hash or min info cannot be input')
-    if isinstance(entity, types.ChannelForbidden):
+    if isinstance(entity, _tl.ChannelForbidden):
         # "channelForbidden are never min", and since their hash is
         # also not optional, we assume that this truly is the case.
-        return types.InputPeerChannel(entity.id, entity.access_hash)
+        return _tl.InputPeerChannel(entity.id, entity.access_hash)
 
-    if isinstance(entity, types.InputUser):
-        return types.InputPeerUser(entity.user_id, entity.access_hash)
+    if isinstance(entity, _tl.InputUser):
+        return _tl.InputPeerUser(entity.user_id, entity.access_hash)
 
-    if isinstance(entity, types.InputChannel):
-        return types.InputPeerChannel(entity.channel_id, entity.access_hash)
+    if isinstance(entity, _tl.InputChannel):
+        return _tl.InputPeerChannel(entity.channel_id, entity.access_hash)
 
-    if isinstance(entity, types.InputUserSelf):
-        return types.InputPeerSelf()
+    if isinstance(entity, _tl.InputUserSelf):
+        return _tl.InputPeerSelf()
 
-    if isinstance(entity, types.InputUserFromMessage):
-        return types.InputPeerUserFromMessage(entity.peer, entity.msg_id, entity.user_id)
+    if isinstance(entity, _tl.InputUserFromMessage):
+        return _tl.InputPeerUserFromMessage(entity.peer, entity.msg_id, entity.user_id)
 
-    if isinstance(entity, types.InputChannelFromMessage):
-        return types.InputPeerChannelFromMessage(entity.peer, entity.msg_id, entity.channel_id)
+    if isinstance(entity, _tl.InputChannelFromMessage):
+        return _tl.InputPeerChannelFromMessage(entity.peer, entity.msg_id, entity.channel_id)
 
-    if isinstance(entity, types.UserEmpty):
-        return types.InputPeerEmpty()
+    if isinstance(entity, _tl.UserEmpty):
+        return _tl.InputPeerEmpty()
 
-    if isinstance(entity, types.UserFull):
+    if isinstance(entity, _tl.UserFull):
         return get_input_peer(entity.user)
 
-    if isinstance(entity, types.ChatFull):
-        return types.InputPeerChat(entity.id)
+    if isinstance(entity, _tl.ChatFull):
+        return _tl.InputPeerChat(entity.id)
 
-    if isinstance(entity, types.PeerChat):
-        return types.InputPeerChat(entity.chat_id)
+    if isinstance(entity, _tl.PeerChat):
+        return _tl.InputPeerChat(entity.chat_id)
 
     _raise_cast_fail(entity, 'InputPeer')
 
@@ -251,14 +251,14 @@ def get_input_channel(entity):
     except AttributeError:
         _raise_cast_fail(entity, 'InputChannel')
 
-    if isinstance(entity, (types.Channel, types.ChannelForbidden)):
-        return types.InputChannel(entity.id, entity.access_hash or 0)
+    if isinstance(entity, (_tl.Channel, _tl.ChannelForbidden)):
+        return _tl.InputChannel(entity.id, entity.access_hash or 0)
 
-    if isinstance(entity, types.InputPeerChannel):
-        return types.InputChannel(entity.channel_id, entity.access_hash)
+    if isinstance(entity, _tl.InputPeerChannel):
+        return _tl.InputChannel(entity.channel_id, entity.access_hash)
 
-    if isinstance(entity, types.InputPeerChannelFromMessage):
-        return types.InputChannelFromMessage(entity.peer, entity.msg_id, entity.channel_id)
+    if isinstance(entity, _tl.InputPeerChannelFromMessage):
+        return _tl.InputChannelFromMessage(entity.peer, entity.msg_id, entity.channel_id)
 
     _raise_cast_fail(entity, 'InputChannel')
 
@@ -279,26 +279,26 @@ def get_input_user(entity):
     except AttributeError:
         _raise_cast_fail(entity, 'InputUser')
 
-    if isinstance(entity, types.User):
+    if isinstance(entity, _tl.User):
         if entity.is_self:
-            return types.InputUserSelf()
+            return _tl.InputUserSelf()
         else:
-            return types.InputUser(entity.id, entity.access_hash or 0)
+            return _tl.InputUser(entity.id, entity.access_hash or 0)
 
-    if isinstance(entity, types.InputPeerSelf):
-        return types.InputUserSelf()
+    if isinstance(entity, _tl.InputPeerSelf):
+        return _tl.InputUserSelf()
 
-    if isinstance(entity, (types.UserEmpty, types.InputPeerEmpty)):
-        return types.InputUserEmpty()
+    if isinstance(entity, (_tl.UserEmpty, _tl.InputPeerEmpty)):
+        return _tl.InputUserEmpty()
 
-    if isinstance(entity, types.UserFull):
+    if isinstance(entity, _tl.UserFull):
         return get_input_user(entity.user)
 
-    if isinstance(entity, types.InputPeerUser):
-        return types.InputUser(entity.user_id, entity.access_hash)
+    if isinstance(entity, _tl.InputPeerUser):
+        return _tl.InputUser(entity.user_id, entity.access_hash)
 
-    if isinstance(entity, types.InputPeerUserFromMessage):
-        return types.InputUserFromMessage(entity.peer, entity.msg_id, entity.user_id)
+    if isinstance(entity, _tl.InputPeerUserFromMessage):
+        return _tl.InputUserFromMessage(entity.peer, entity.msg_id, entity.user_id)
 
     _raise_cast_fail(entity, 'InputUser')
 
@@ -309,12 +309,12 @@ def get_input_dialog(dialog):
         if dialog.SUBCLASS_OF_ID == 0xa21c9795:  # crc32(b'InputDialogPeer')
             return dialog
         if dialog.SUBCLASS_OF_ID == 0xc91c90b6:  # crc32(b'InputPeer')
-            return types.InputDialogPeer(dialog)
+            return _tl.InputDialogPeer(dialog)
     except AttributeError:
         _raise_cast_fail(dialog, 'InputDialogPeer')
 
     try:
-        return types.InputDialogPeer(get_input_peer(dialog))
+        return _tl.InputDialogPeer(get_input_peer(dialog))
     except TypeError:
         pass
 
@@ -329,18 +329,18 @@ def get_input_document(document):
     except AttributeError:
         _raise_cast_fail(document, 'InputDocument')
 
-    if isinstance(document, types.Document):
-        return types.InputDocument(
+    if isinstance(document, _tl.Document):
+        return _tl.InputDocument(
             id=document.id, access_hash=document.access_hash,
             file_reference=document.file_reference)
 
-    if isinstance(document, types.DocumentEmpty):
-        return types.InputDocumentEmpty()
+    if isinstance(document, _tl.DocumentEmpty):
+        return _tl.InputDocumentEmpty()
 
-    if isinstance(document, types.MessageMediaDocument):
+    if isinstance(document, _tl.MessageMediaDocument):
         return get_input_document(document.document)
 
-    if isinstance(document, types.Message):
+    if isinstance(document, _tl.Message):
         return get_input_document(document.media)
 
     _raise_cast_fail(document, 'InputDocument')
@@ -354,32 +354,32 @@ def get_input_photo(photo):
     except AttributeError:
         _raise_cast_fail(photo, 'InputPhoto')
 
-    if isinstance(photo, types.Message):
+    if isinstance(photo, _tl.Message):
         photo = photo.media
 
-    if isinstance(photo, (types.photos.Photo, types.MessageMediaPhoto)):
+    if isinstance(photo, (_tl.photos.Photo, _tl.MessageMediaPhoto)):
         photo = photo.photo
 
-    if isinstance(photo, types.Photo):
-        return types.InputPhoto(id=photo.id, access_hash=photo.access_hash,
+    if isinstance(photo, _tl.Photo):
+        return _tl.InputPhoto(id=photo.id, access_hash=photo.access_hash,
                                 file_reference=photo.file_reference)
 
-    if isinstance(photo, types.PhotoEmpty):
-        return types.InputPhotoEmpty()
+    if isinstance(photo, _tl.PhotoEmpty):
+        return _tl.InputPhotoEmpty()
 
-    if isinstance(photo, types.messages.ChatFull):
+    if isinstance(photo, _tl.messages.ChatFull):
         photo = photo.full_chat
 
-    if isinstance(photo, types.ChannelFull):
+    if isinstance(photo, _tl.ChannelFull):
         return get_input_photo(photo.chat_photo)
-    elif isinstance(photo, types.UserFull):
+    elif isinstance(photo, _tl.UserFull):
         return get_input_photo(photo.profile_photo)
-    elif isinstance(photo, (types.Channel, types.Chat, types.User)):
+    elif isinstance(photo, (_tl.Channel, _tl.Chat, _tl.User)):
         return get_input_photo(photo.photo)
 
-    if isinstance(photo, (types.UserEmpty, types.ChatEmpty,
-                          types.ChatForbidden, types.ChannelForbidden)):
-        return types.InputPhotoEmpty()
+    if isinstance(photo, (_tl.UserEmpty, _tl.ChatEmpty,
+                          _tl.ChatForbidden, _tl.ChannelForbidden)):
+        return _tl.InputPhotoEmpty()
 
     _raise_cast_fail(photo, 'InputPhoto')
 
@@ -390,15 +390,15 @@ def get_input_chat_photo(photo):
         if photo.SUBCLASS_OF_ID == 0xd4eb2d74:  # crc32(b'InputChatPhoto')
             return photo
         elif photo.SUBCLASS_OF_ID == 0xe7655f1f:  # crc32(b'InputFile'):
-            return types.InputChatUploadedPhoto(photo)
+            return _tl.InputChatUploadedPhoto(photo)
     except AttributeError:
         _raise_cast_fail(photo, 'InputChatPhoto')
 
     photo = get_input_photo(photo)
-    if isinstance(photo, types.InputPhoto):
-        return types.InputChatPhoto(photo)
-    elif isinstance(photo, types.InputPhotoEmpty):
-        return types.InputChatPhotoEmpty()
+    if isinstance(photo, _tl.InputPhoto):
+        return _tl.InputChatPhoto(photo)
+    elif isinstance(photo, _tl.InputPhotoEmpty):
+        return _tl.InputChatPhotoEmpty()
 
     _raise_cast_fail(photo, 'InputChatPhoto')
 
@@ -411,16 +411,16 @@ def get_input_geo(geo):
     except AttributeError:
         _raise_cast_fail(geo, 'InputGeoPoint')
 
-    if isinstance(geo, types.GeoPoint):
-        return types.InputGeoPoint(lat=geo.lat, long=geo.long)
+    if isinstance(geo, _tl.GeoPoint):
+        return _tl.InputGeoPoint(lat=geo.lat, long=geo.long)
 
-    if isinstance(geo, types.GeoPointEmpty):
-        return types.InputGeoPointEmpty()
+    if isinstance(geo, _tl.GeoPointEmpty):
+        return _tl.InputGeoPointEmpty()
 
-    if isinstance(geo, types.MessageMediaGeo):
+    if isinstance(geo, _tl.MessageMediaGeo):
         return get_input_geo(geo.geo)
 
-    if isinstance(geo, types.Message):
+    if isinstance(geo, _tl.Message):
         return get_input_geo(geo.media)
 
     _raise_cast_fail(geo, 'InputGeoPoint')
@@ -443,39 +443,39 @@ def get_input_media(
         if media.SUBCLASS_OF_ID == 0xfaf846f4:  # crc32(b'InputMedia')
             return media
         elif media.SUBCLASS_OF_ID == 0x846363e0:  # crc32(b'InputPhoto')
-            return types.InputMediaPhoto(media, ttl_seconds=ttl)
+            return _tl.InputMediaPhoto(media, ttl_seconds=ttl)
         elif media.SUBCLASS_OF_ID == 0xf33fdb68:  # crc32(b'InputDocument')
-            return types.InputMediaDocument(media, ttl_seconds=ttl)
+            return _tl.InputMediaDocument(media, ttl_seconds=ttl)
     except AttributeError:
         _raise_cast_fail(media, 'InputMedia')
 
-    if isinstance(media, types.MessageMediaPhoto):
-        return types.InputMediaPhoto(
+    if isinstance(media, _tl.MessageMediaPhoto):
+        return _tl.InputMediaPhoto(
             id=get_input_photo(media.photo),
             ttl_seconds=ttl or media.ttl_seconds
         )
 
-    if isinstance(media, (types.Photo, types.photos.Photo, types.PhotoEmpty)):
-        return types.InputMediaPhoto(
+    if isinstance(media, (_tl.Photo, _tl.photos.Photo, _tl.PhotoEmpty)):
+        return _tl.InputMediaPhoto(
             id=get_input_photo(media),
             ttl_seconds=ttl
         )
 
-    if isinstance(media, types.MessageMediaDocument):
-        return types.InputMediaDocument(
+    if isinstance(media, _tl.MessageMediaDocument):
+        return _tl.InputMediaDocument(
             id=get_input_document(media.document),
             ttl_seconds=ttl or media.ttl_seconds
         )
 
-    if isinstance(media, (types.Document, types.DocumentEmpty)):
-        return types.InputMediaDocument(
+    if isinstance(media, (_tl.Document, _tl.DocumentEmpty)):
+        return _tl.InputMediaDocument(
             id=get_input_document(media),
             ttl_seconds=ttl
         )
 
-    if isinstance(media, (types.InputFile, types.InputFileBig)):
+    if isinstance(media, (_tl.InputFile, _tl.InputFileBig)):
         if is_photo:
-            return types.InputMediaUploadedPhoto(file=media, ttl_seconds=ttl)
+            return _tl.InputMediaUploadedPhoto(file=media, ttl_seconds=ttl)
         else:
             attrs, mime = get_attributes(
                 media,
@@ -485,29 +485,29 @@ def get_input_media(
                 video_note=video_note,
                 supports_streaming=supports_streaming
             )
-            return types.InputMediaUploadedDocument(
+            return _tl.InputMediaUploadedDocument(
                 file=media, mime_type=mime, attributes=attrs, force_file=force_document,
                 ttl_seconds=ttl)
 
-    if isinstance(media, types.MessageMediaGame):
-        return types.InputMediaGame(id=types.InputGameID(
+    if isinstance(media, _tl.MessageMediaGame):
+        return _tl.InputMediaGame(id=_tl.InputGameID(
             id=media.game.id,
             access_hash=media.game.access_hash
         ))
 
-    if isinstance(media, types.MessageMediaContact):
-        return types.InputMediaContact(
+    if isinstance(media, _tl.MessageMediaContact):
+        return _tl.InputMediaContact(
             phone_number=media.phone_number,
             first_name=media.first_name,
             last_name=media.last_name,
             vcard=''
         )
 
-    if isinstance(media, types.MessageMediaGeo):
-        return types.InputMediaGeoPoint(geo_point=get_input_geo(media.geo))
+    if isinstance(media, _tl.MessageMediaGeo):
+        return _tl.InputMediaGeoPoint(geo_point=get_input_geo(media.geo))
 
-    if isinstance(media, types.MessageMediaVenue):
-        return types.InputMediaVenue(
+    if isinstance(media, _tl.MessageMediaVenue):
+        return _tl.InputMediaVenue(
             geo_point=get_input_geo(media.geo),
             title=media.title,
             address=media.address,
@@ -516,19 +516,19 @@ def get_input_media(
             venue_type=''
         )
 
-    if isinstance(media, types.MessageMediaDice):
-        return types.InputMediaDice(media.emoticon)
+    if isinstance(media, _tl.MessageMediaDice):
+        return _tl.InputMediaDice(media.emoticon)
 
     if isinstance(media, (
-            types.MessageMediaEmpty, types.MessageMediaUnsupported,
-            types.ChatPhotoEmpty, types.UserProfilePhotoEmpty,
-            types.ChatPhoto, types.UserProfilePhoto)):
-        return types.InputMediaEmpty()
+            _tl.MessageMediaEmpty, _tl.MessageMediaUnsupported,
+            _tl.ChatPhotoEmpty, _tl.UserProfilePhotoEmpty,
+            _tl.ChatPhoto, _tl.UserProfilePhoto)):
+        return _tl.InputMediaEmpty()
 
-    if isinstance(media, types.Message):
+    if isinstance(media, _tl.Message):
         return get_input_media(media.media, is_photo=is_photo, ttl=ttl)
 
-    if isinstance(media, types.MessageMediaPoll):
+    if isinstance(media, _tl.MessageMediaPoll):
         if media.poll.quiz:
             if not media.results.results:
                 # A quiz has correct answers, which we don't know until answered.
@@ -539,15 +539,15 @@ def get_input_media(
         else:
             correct_answers = None
 
-        return types.InputMediaPoll(
+        return _tl.InputMediaPoll(
             poll=media.poll,
             correct_answers=correct_answers,
             solution=media.results.solution,
             solution_entities=media.results.solution_entities,
         )
 
-    if isinstance(media, types.Poll):
-        return types.InputMediaPoll(media)
+    if isinstance(media, _tl.Poll):
+        return _tl.InputMediaPoll(media)
 
     _raise_cast_fail(media, 'InputMedia')
 
@@ -556,11 +556,11 @@ def get_input_message(message):
     """Similar to :meth:`get_input_peer`, but for input messages."""
     try:
         if isinstance(message, int):  # This case is really common too
-            return types.InputMessageID(message)
+            return _tl.InputMessageID(message)
         elif message.SUBCLASS_OF_ID == 0x54b6bcc5:  # crc32(b'InputMessage'):
             return message
         elif message.SUBCLASS_OF_ID == 0x790009e3:  # crc32(b'Message'):
-            return types.InputMessageID(message.id)
+            return _tl.InputMessageID(message.id)
     except AttributeError:
         pass
 
@@ -573,7 +573,7 @@ def get_input_group_call(call):
         if call.SUBCLASS_OF_ID == 0x58611ab1:  # crc32(b'InputGroupCall')
             return call
         elif call.SUBCLASS_OF_ID == 0x20b4f320:  # crc32(b'GroupCall')
-            return types.InputGroupCall(id=call.id, access_hash=call.access_hash)
+            return _tl.InputGroupCall(id=call.id, access_hash=call.access_hash)
     except AttributeError:
         _raise_cast_fail(call, 'InputGroupCall')
 
@@ -675,10 +675,10 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     # Note: ``file.name`` works for :tl:`InputFile` and some `IOBase` streams
     name = file if isinstance(file, str) else getattr(file, 'name', 'unnamed')
     if mime_type is None:
-        mime_type = mimetypes.guess_type(name)[0]
+        mime_type = mime_tl.guess_type(name)[0]
 
-    attr_dict = {types.DocumentAttributeFilename:
-        types.DocumentAttributeFilename(os.path.basename(name))}
+    attr_dict = {_tl.DocumentAttributeFilename:
+        _tl.DocumentAttributeFilename(os.path.basename(name))}
 
     if is_audio(file):
         m = _get_metadata(file)
@@ -690,8 +690,8 @@ def get_attributes(file, *, attributes=None, mime_type=None,
             else:
                 performer = None
 
-            attr_dict[types.DocumentAttributeAudio] = \
-                types.DocumentAttributeAudio(
+            attr_dict[_tl.DocumentAttributeAudio] = \
+                _tl.DocumentAttributeAudio(
                     voice=voice_note,
                     title=m.get('title') if m.has('title') else None,
                     performer=performer,
@@ -702,7 +702,7 @@ def get_attributes(file, *, attributes=None, mime_type=None,
     if not force_document and is_video(file):
         m = _get_metadata(file)
         if m:
-            doc = types.DocumentAttributeVideo(
+            doc = _tl.DocumentAttributeVideo(
                 round_message=video_note,
                 w=m.get('width') if m.has('width') else 1,
                 h=m.get('height') if m.has('height') else 1,
@@ -719,22 +719,22 @@ def get_attributes(file, *, attributes=None, mime_type=None,
             if t_m and t_m.has("height"):
                 height = t_m.get("height")
 
-            doc = types.DocumentAttributeVideo(
+            doc = _tl.DocumentAttributeVideo(
                 0, width, height, round_message=video_note,
                 supports_streaming=supports_streaming)
         else:
-            doc = types.DocumentAttributeVideo(
+            doc = _tl.DocumentAttributeVideo(
                 0, 1, 1, round_message=video_note,
                 supports_streaming=supports_streaming)
 
-        attr_dict[types.DocumentAttributeVideo] = doc
+        attr_dict[_tl.DocumentAttributeVideo] = doc
 
     if voice_note:
-        if types.DocumentAttributeAudio in attr_dict:
-            attr_dict[types.DocumentAttributeAudio].voice = True
+        if _tl.DocumentAttributeAudio in attr_dict:
+            attr_dict[_tl.DocumentAttributeAudio].voice = True
         else:
-            attr_dict[types.DocumentAttributeAudio] = \
-                types.DocumentAttributeAudio(0, voice=True)
+            attr_dict[_tl.DocumentAttributeAudio] = \
+                _tl.DocumentAttributeAudio(0, voice=True)
 
     # Now override the attributes if any. As we have a dict of
     # {cls: instance}, we can override any class with the list
@@ -803,23 +803,23 @@ def _get_file_info(location):
     except AttributeError:
         _raise_cast_fail(location, 'InputFileLocation')
 
-    if isinstance(location, types.Message):
+    if isinstance(location, _tl.Message):
         location = location.media
 
-    if isinstance(location, types.MessageMediaDocument):
+    if isinstance(location, _tl.MessageMediaDocument):
         location = location.document
-    elif isinstance(location, types.MessageMediaPhoto):
+    elif isinstance(location, _tl.MessageMediaPhoto):
         location = location.photo
 
-    if isinstance(location, types.Document):
-        return _FileInfo(location.dc_id, types.InputDocumentFileLocation(
+    if isinstance(location, _tl.Document):
+        return _FileInfo(location.dc_id, _tl.InputDocumentFileLocation(
             id=location.id,
             access_hash=location.access_hash,
             file_reference=location.file_reference,
             thumb_size=''  # Presumably to download one of its thumbnails
         ), location.size)
-    elif isinstance(location, types.Photo):
-        return _FileInfo(location.dc_id, types.InputPhotoFileLocation(
+    elif isinstance(location, _tl.Photo):
+        return _FileInfo(location.dc_id, _tl.InputPhotoFileLocation(
             id=location.id,
             access_hash=location.access_hash,
             file_reference=location.file_reference,
@@ -860,7 +860,7 @@ def is_image(file):
     if match:
         return True
     else:
-        return isinstance(resolve_bot_file_id(file), types.Photo)
+        return isinstance(resolve_bot_file_id(file), _tl.Photo)
 
 
 def is_gif(file):
@@ -881,7 +881,7 @@ def is_audio(file):
             return False
     else:
         file = 'a' + ext
-        return (mimetypes.guess_type(file)[0] or '').startswith('audio/')
+        return (mime_tl.guess_type(file)[0] or '').startswith('audio/')
 
 
 def is_video(file):
@@ -895,7 +895,7 @@ def is_video(file):
             return False
     else:
         file = 'a' + ext
-        return (mimetypes.guess_type(file)[0] or '').startswith('video/')
+        return (mime_tl.guess_type(file)[0] or '').startswith('video/')
 
 
 def is_list_like(obj):
@@ -971,27 +971,27 @@ def get_peer(peer):
         elif peer.SUBCLASS_OF_ID == 0x2d45687:
             return peer
         elif isinstance(peer, (
-                types.contacts.ResolvedPeer, types.InputNotifyPeer,
-                types.TopPeer, types.Dialog, types.DialogPeer)):
+                _tl.contacts.ResolvedPeer, _tl.InputNotifyPeer,
+                _tl.TopPeer, _tl.Dialog, _tl.DialogPeer)):
             return peer.peer
-        elif isinstance(peer, types.ChannelFull):
-            return types.PeerChannel(peer.id)
-        elif isinstance(peer, types.UserEmpty):
-            return types.PeerUser(peer.id)
-        elif isinstance(peer, types.ChatEmpty):
-            return types.PeerChat(peer.id)
+        elif isinstance(peer, _tl.ChannelFull):
+            return _tl.PeerChannel(peer.id)
+        elif isinstance(peer, _tl.UserEmpty):
+            return _tl.PeerUser(peer.id)
+        elif isinstance(peer, _tl.ChatEmpty):
+            return _tl.PeerChat(peer.id)
 
         if peer.SUBCLASS_OF_ID in (0x7d7c6f86, 0xd9c7fc18):
             # ChatParticipant, ChannelParticipant
-            return types.PeerUser(peer.user_id)
+            return _tl.PeerUser(peer.user_id)
 
         peer = get_input_peer(peer, allow_self=False, check_hash=False)
-        if isinstance(peer, (types.InputPeerUser, types.InputPeerUserFromMessage)):
-            return types.PeerUser(peer.user_id)
-        elif isinstance(peer, types.InputPeerChat):
-            return types.PeerChat(peer.chat_id)
-        elif isinstance(peer, (types.InputPeerChannel, types.InputPeerChannelFromMessage)):
-            return types.PeerChannel(peer.channel_id)
+        if isinstance(peer, (_tl.InputPeerUser, _tl.InputPeerUserFromMessage)):
+            return _tl.PeerUser(peer.user_id)
+        elif isinstance(peer, _tl.InputPeerChat):
+            return _tl.PeerChat(peer.chat_id)
+        elif isinstance(peer, (_tl.InputPeerChannel, _tl.InputPeerChannelFromMessage)):
+            return _tl.PeerChannel(peer.channel_id)
     except (AttributeError, TypeError):
         pass
     _raise_cast_fail(peer, 'Peer')
@@ -1017,7 +1017,7 @@ def get_peer_id(peer, add_mark=True):
         return peer if add_mark else resolve_id(peer)[0]
 
     # Tell the user to use their client to resolve InputPeerSelf if we got one
-    if isinstance(peer, types.InputPeerSelf):
+    if isinstance(peer, _tl.InputPeerSelf):
         _raise_cast_fail(peer, 'int (you might want to use client.get_peer_id)')
 
     try:
@@ -1025,15 +1025,15 @@ def get_peer_id(peer, add_mark=True):
     except TypeError:
         _raise_cast_fail(peer, 'int')
 
-    if isinstance(peer, types.PeerUser):
+    if isinstance(peer, _tl.PeerUser):
         return peer.user_id
-    elif isinstance(peer, types.PeerChat):
+    elif isinstance(peer, _tl.PeerChat):
         # Check in case the user mixed things up to avoid blowing up
         if not (0 < peer.chat_id <= 0x7fffffff):
             peer.chat_id = resolve_id(peer.chat_id)[0]
 
         return -peer.chat_id if add_mark else peer.chat_id
-    else:  # if isinstance(peer, types.PeerChannel):
+    else:  # if isinstance(peer, _tl.PeerChannel):
         # Check in case the user mixed things up to avoid blowing up
         if not (0 < peer.channel_id <= 0x7fffffff):
             peer.channel_id = resolve_id(peer.channel_id)[0]
@@ -1048,14 +1048,14 @@ def get_peer_id(peer, add_mark=True):
 def resolve_id(marked_id):
     """Given a marked ID, returns the original ID and its :tl:`Peer` type."""
     if marked_id >= 0:
-        return marked_id, types.PeerUser
+        return marked_id, _tl.PeerUser
 
     marked_id = -marked_id
     if marked_id > 1000000000000:
         marked_id -= 1000000000000
-        return marked_id, types.PeerChannel
+        return marked_id, _tl.PeerChannel
     else:
-        return marked_id, types.PeerChat
+        return marked_id, _tl.PeerChat
 
 
 def _rle_decode(data):
@@ -1159,12 +1159,12 @@ def resolve_bot_file_id(file_id):
 
         attributes = []
         if file_type == 3 or file_type == 9:
-            attributes.append(types.DocumentAttributeAudio(
+            attributes.append(_tl.DocumentAttributeAudio(
                 duration=0,
                 voice=file_type == 3
             ))
         elif file_type == 4 or file_type == 13:
-            attributes.append(types.DocumentAttributeVideo(
+            attributes.append(_tl.DocumentAttributeVideo(
                 duration=0,
                 w=0,
                 h=0,
@@ -1172,14 +1172,14 @@ def resolve_bot_file_id(file_id):
             ))
         # elif file_type == 5:  # other, cannot know which
         elif file_type == 8:
-            attributes.append(types.DocumentAttributeSticker(
+            attributes.append(_tl.DocumentAttributeSticker(
                 alt='',
-                stickerset=types.InputStickerSetEmpty()
+                stickerset=_tl.InputStickerSetEmpty()
             ))
         elif file_type == 10:
-            attributes.append(types.DocumentAttributeAnimated())
+            attributes.append(_tl.DocumentAttributeAnimated())
 
-        return types.Document(
+        return _tl.Document(
             id=media_id,
             access_hash=access_hash,
             date=None,
@@ -1210,12 +1210,12 @@ def resolve_bot_file_id(file_id):
 
         # Thumbnails (small) always have ID 0; otherwise size 'x'
         photo_size = 's' if media_id or access_hash else 'x'
-        return types.Photo(
+        return _tl.Photo(
             id=media_id,
             access_hash=access_hash,
             file_reference=b'',
             date=None,
-            sizes=[types.PhotoSize(
+            sizes=[_tl.PhotoSize(
                 type=photo_size,
                 w=0,
                 h=0,
@@ -1235,21 +1235,21 @@ def pack_bot_file_id(file):
 
     If an invalid parameter is given, it will ``return None``.
     """
-    if isinstance(file, types.MessageMediaDocument):
+    if isinstance(file, _tl.MessageMediaDocument):
         file = file.document
-    elif isinstance(file, types.MessageMediaPhoto):
+    elif isinstance(file, _tl.MessageMediaPhoto):
         file = file.photo
 
-    if isinstance(file, types.Document):
+    if isinstance(file, _tl.Document):
         file_type = 5
         for attribute in file.attributes:
-            if isinstance(attribute, types.DocumentAttributeAudio):
+            if isinstance(attribute, _tl.DocumentAttributeAudio):
                 file_type = 3 if attribute.voice else 9
-            elif isinstance(attribute, types.DocumentAttributeVideo):
+            elif isinstance(attribute, _tl.DocumentAttributeVideo):
                 file_type = 13 if attribute.round_message else 4
-            elif isinstance(attribute, types.DocumentAttributeSticker):
+            elif isinstance(attribute, _tl.DocumentAttributeSticker):
                 file_type = 8
-            elif isinstance(attribute, types.DocumentAttributeAnimated):
+            elif isinstance(attribute, _tl.DocumentAttributeAnimated):
                 file_type = 10
             else:
                 continue
@@ -1258,9 +1258,9 @@ def pack_bot_file_id(file):
         return _encode_telegram_base64(_rle_encode(struct.pack(
             '<iiqqb', file_type, file.dc_id, file.id, file.access_hash, 2)))
 
-    elif isinstance(file, types.Photo):
+    elif isinstance(file, _tl.Photo):
         size = next((x for x in reversed(file.sizes) if isinstance(
-            x, (types.PhotoSize, types.PhotoCachedSize))), None)
+            x, (_tl.PhotoSize, _tl.PhotoCachedSize))), None)
 
         if not size:
             return None
@@ -1326,7 +1326,7 @@ def resolve_inline_message_id(inline_msg_id):
     try:
         dc_id, message_id, pid, access_hash = \
             struct.unpack('<iiiq', _decode_telegram_base64(inline_msg_id))
-        peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
+        peer = _tl.PeerChannel(-pid) if pid < 0 else _tl.PeerUser(pid)
         return message_id, peer, dc_id, access_hash
     except (struct.error, TypeError):
         return None, None, None, None
@@ -1360,14 +1360,14 @@ def encode_waveform(waveform):
             file = 'my.ogg'
 
             # Send 'my.ogg' with a ascending-triangle waveform
-            await client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
+            await client.send_file(chat, file, attributes=[_tl.DocumentAttributeAudio(
                 duration=7,
                 voice=True,
                 waveform=utils.encode_waveform(bytes(range(2 ** 5))  # 2**5 because 5-bit
             )]
 
             # Send 'my.ogg' with a square waveform
-            await client.send_file(chat, file, attributes=[types.DocumentAttributeAudio(
+            await client.send_file(chat, file, attributes=[_tl.DocumentAttributeAudio(
                 duration=7,
                 voice=True,
                 waveform=utils.encode_waveform(bytes((31, 31, 15, 15, 15, 15, 31, 31)) * 4)
@@ -1542,18 +1542,18 @@ def stripped_photo_to_jpg(stripped):
 
 
 def _photo_size_byte_count(size):
-    if isinstance(size, types.PhotoSize):
+    if isinstance(size, _tl.PhotoSize):
         return size.size
-    elif isinstance(size, types.PhotoStrippedSize):
+    elif isinstance(size, _tl.PhotoStrippedSize):
         if len(size.bytes) < 3 or size.bytes[0] != 1:
             return len(size.bytes)
 
         return len(size.bytes) + 622
-    elif isinstance(size, types.PhotoCachedSize):
+    elif isinstance(size, _tl.PhotoCachedSize):
         return len(size.bytes)
-    elif isinstance(size, types.PhotoSizeEmpty):
+    elif isinstance(size, _tl.PhotoSizeEmpty):
         return 0
-    elif isinstance(size, types.PhotoSizeProgressive):
+    elif isinstance(size, _tl.PhotoSizeProgressive):
         return max(size.sizes)
     else:
         return None

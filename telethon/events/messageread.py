@@ -1,6 +1,5 @@
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
-from ..tl import types
+from .. import utils, _tl
 
 
 @name_inner_event
@@ -36,21 +35,21 @@ class MessageRead(EventBuilder):
 
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateReadHistoryInbox):
+        if isinstance(update, _tl.UpdateReadHistoryInbox):
             return cls.Event(update.peer, update.max_id, False)
-        elif isinstance(update, types.UpdateReadHistoryOutbox):
+        elif isinstance(update, _tl.UpdateReadHistoryOutbox):
             return cls.Event(update.peer, update.max_id, True)
-        elif isinstance(update, types.UpdateReadChannelInbox):
-            return cls.Event(types.PeerChannel(update.channel_id),
+        elif isinstance(update, _tl.UpdateReadChannelInbox):
+            return cls.Event(_tl.PeerChannel(update.channel_id),
                              update.max_id, False)
-        elif isinstance(update, types.UpdateReadChannelOutbox):
-            return cls.Event(types.PeerChannel(update.channel_id),
+        elif isinstance(update, _tl.UpdateReadChannelOutbox):
+            return cls.Event(_tl.PeerChannel(update.channel_id),
                              update.max_id, True)
-        elif isinstance(update, types.UpdateReadMessagesContents):
+        elif isinstance(update, _tl.UpdateReadMessagesContents):
             return cls.Event(message_ids=update.messages,
                              contents=True)
-        elif isinstance(update, types.UpdateChannelReadMessagesContents):
-            return cls.Event(types.PeerChannel(update.channel_id),
+        elif isinstance(update, _tl.UpdateChannelReadMessagesContents):
+            return cls.Event(_tl.PeerChannel(update.channel_id),
                              message_ids=update.messages,
                              contents=True)
 

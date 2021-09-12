@@ -3,9 +3,8 @@ import itertools
 import typing
 import warnings
 
-from .. import helpers, utils, errors, hints
+from .. import helpers, utils, errors, hints, _tl
 from ..requestiter import RequestIter
-from ..tl import types, functions
 
 _MAX_CHUNK_SIZE = 100
 
@@ -67,31 +66,31 @@ class _MessagesIter(RequestIter):
         # If we want to perform global a search with `from_user` we have to perform
         # a normal `messages.search`, *but* we can make the entity be `inputPeerEmpty`.
         if not self.entity and from_user:
-            self.entity = types.InputPeerEmpty()
+            self.entity = _tl.InputPeerEmpty()
 
         if filter is None:
-            filter = types.InputMessagesFilterEmpty()
+            filter = _tl.InputMessagesFilterEmpty()
         else:
             filter = filter() if isinstance(filter, type) else filter
 
         if not self.entity:
-            self.request = functions.messages.SearchGlobalRequest(
+            self.request = _tl.fn.messages.SearchGlobal(
                 q=search or '',
                 filter=filter,
                 min_date=None,
                 max_date=offset_date,
                 offset_rate=0,
-                offset_peer=types.InputPeerEmpty(),
+                offset_peer=_tl.InputPeerEmpty(),
                 offset_id=offset_id,
                 limit=1
             )
         elif scheduled:
-            self.request = functions.messages.GetScheduledHistoryRequest(
+            self.request = _tl.fn.messages.GetScheduledHistory(
                 peer=entity,
                 hash=0
             )
         elif reply_to is not None:
-            self.request = functions.messages.GetRepliesRequest(
+            self.request = _tl.fn.messages.GetReplies(
                 peer=self.entity,
                 msg_id=reply_to,
                 offset_id=offset_id,
@@ -102,7 +101,7 @@ class _MessagesIter(RequestIter):
                 min_id=0,
                 hash=0
             )
-        elif search is not None or not isinstance(filter, types.InputMessagesFilterEmpty) or from_user:
+        elif search is not None or not isinstance(filter, _tl.InputMessagesFilterEmpty) or from_user:
             # Telegram completely ignores `from_id` in private chats
             ty = helpers._entity_type(self.entity)
             if ty == helpers._EntityType.USER:
@@ -114,7 +113,7 @@ class _MessagesIter(RequestIter):
                 # and set `from_id` to None to avoid checking it locally.
                 self.from_id = None
 
-            self.request = functions.messages.SearchRequest(
+            self.request = _tl.fn.messages.Search(
                 peer=self.entity,
                 q=search or '',
                 filter=filter,
@@ -136,13 +135,13 @@ class _MessagesIter(RequestIter):
             #
             # Even better, using `filter` and `from_id` seems to always
             # trigger `RPC_CALL_FAIL` which is "internal issues"...
-            if not isinstance(filter, types.InputMessagesFilterEmpty) \
+            if not isinstance(filter, _tl.InputMessagesFilterEmpty) \
                     and offset_date and not search and not offset_id:
                 async for m in self.client.iter_messages(
                         self.entity, 1, offset_date=offset_date):
                     self.request.offset_id = m.id + 1
         else:
-            self.request = functions.messages.GetHistoryRequest(
+            self.request = _tl.fn.messages.GetHistory(
                 peer=self.entity,
                 limit=1,
                 offset_date=offset_date,
@@ -156,7 +155,7 @@ class _MessagesIter(RequestIter):
         if self.limit <= 0:
             # No messages, but we still need to know the total message count
             result = await self.client(self.request)
-            if isinstance(result, types.messages.MessagesNotModified):
+            if isinstance(result, _tl.messages.MessagesNotModified):
                 self.total = result.count
             else:
                 self.total = getattr(result, 'count', len(result.messages))
@@ -189,7 +188,7 @@ class _MessagesIter(RequestIter):
 
         messages = reversed(r.messages) if self.reverse else r.messages
         for message in messages:
-            if (isinstance(message, types.MessageEmpty)
+            if (isinstance(message, _tl.MessageEmpty)
                     or self.from_id and message.sender_id != self.from_id):
                 continue
 
@@ -245,7 +244,7 @@ class _MessagesIter(RequestIter):
             # We want to skip the one we already have
             self.request.offset_id += 1
 
-        if isinstance(self.request, functions.messages.SearchRequest):
+        if isinstance(self.request, _tl.fn.messages.SearchRequest):
             # Unlike getHistory and searchGlobal that use *offset* date,
             # this is *max* date. This means that doing a search in reverse
             # will break it. Since it's not really needed once we're going
@@ -255,11 +254,11 @@ class _MessagesIter(RequestIter):
             # getHistory, searchGlobal and getReplies call it offset_date
             self.request.offset_date = last_message.date
 
-        if isinstance(self.request, functions.messages.SearchGlobalRequest):
+        if isinstance(self.request, _tl.fn.messages.SearchGlobalRequest):
             if last_message.input_chat:
                 self.request.offset_peer = last_message.input_chat
             else:
-                self.request.offset_peer = types.InputPeerEmpty()
+                self.request.offset_peer = _tl.InputPeerEmpty()
 
             self.request.offset_rate = getattr(response, 'next_rate', 0)
 
@@ -287,16 +286,16 @@ class _IDsIter(RequestIter):
         if self._ty == helpers._EntityType.CHANNEL:
             try:
                 r = await self.client(
-                    functions.channels.GetMessagesRequest(self._entity, ids))
+                    _tl.fn.channels.GetMessages(self._entity, ids))
             except errors.MessageIdsEmptyError:
                 # All IDs were invalid, use a dummy result
-                r = types.messages.MessagesNotModified(len(ids))
+                r = _tl.messages.MessagesNotModified(len(ids))
         else:
-            r = await self.client(functions.messages.GetMessagesRequest(ids))
+            r = await self.client(_tl.fn.messages.GetMessages(ids))
             if self._entity:
                 from_id = await self.client._get_peer(self._entity)
 
-        if isinstance(r, types.messages.MessagesNotModified):
+        if isinstance(r, _tl.messages.MessagesNotModified):
             self.buffer.extend(None for _ in ids)
             return
 
@@ -312,7 +311,7 @@ class _IDsIter(RequestIter):
         # since the user can enter arbitrary numbers which can belong to
         # arbitrary chats. Validate these unless ``from_id is None``.
         for message in r.messages:
-            if isinstance(message, types.MessageEmpty) or (
+            if isinstance(message, _tl.MessageEmpty) or (
                     from_id and message.peer_id != from_id):
                 self.buffer.append(None)
             else:
@@ -331,7 +330,7 @@ def iter_messages(
         min_id: int = 0,
         add_offset: int = 0,
         search: str = None,
-        filter: 'typing.Union[types.TypeMessagesFilter, typing.Type[types.TypeMessagesFilter]]' = None,
+        filter: 'typing.Union[_tl.TypeMessagesFilter, typing.Type[_tl.TypeMessagesFilter]]' = None,
         from_user: 'hints.EntityLike' = None,
         wait_time: float = None,
         ids: 'typing.Union[int, typing.Sequence[int]]' = None,
@@ -393,9 +392,9 @@ async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalL
 async def _get_comment_data(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        message: 'typing.Union[int, types.Message]'
+        message: 'typing.Union[int, _tl.Message]'
 ):
-    r = await self(functions.messages.GetDiscussionMessageRequest(
+    r = await self(_tl.fn.messages.GetDiscussionMessage(
         peer=entity,
         msg_id=utils.get_message_id(message)
     ))
@@ -408,10 +407,10 @@ async def send_message(
         entity: 'hints.EntityLike',
         message: 'hints.MessageLike' = '',
         *,
-        reply_to: 'typing.Union[int, types.Message]' = None,
-        attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
+        reply_to: 'typing.Union[int, _tl.Message]' = None,
+        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
         parse_mode: typing.Optional[str] = (),
-        formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
         link_preview: bool = True,
         file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
         thumb: 'hints.FileLike' = None,
@@ -422,8 +421,8 @@ async def send_message(
         background: bool = None,
         supports_streaming: bool = False,
         schedule: 'hints.DateLike' = None,
-        comment_to: 'typing.Union[int, types.Message]' = None
-) -> 'types.Message':
+        comment_to: 'typing.Union[int, _tl.Message]' = None
+) -> '_tl.Message':
     if file is not None:
         return await self.send_file(
             entity, file, caption=message, reply_to=reply_to,
@@ -439,7 +438,7 @@ async def send_message(
     if comment_to is not None:
         entity, reply_to = await self._get_comment_data(entity, comment_to)
 
-    if isinstance(message, types.Message):
+    if isinstance(message, _tl.Message):
         if buttons is None:
             markup = message.reply_markup
         else:
@@ -449,7 +448,7 @@ async def send_message(
             silent = message.silent
 
         if (message.media and not isinstance(
-                message.media, types.MessageMediaWebPage)):
+                message.media, _tl.MessageMediaWebPage)):
             return await self.send_file(
                 entity,
                 message.media,
@@ -462,7 +461,7 @@ async def send_message(
                 schedule=schedule
             )
 
-        request = functions.messages.SendMessageRequest(
+        request = _tl.fn.messages.SendMessage(
             peer=entity,
             message=message.message or '',
             silent=silent,
@@ -472,7 +471,7 @@ async def send_message(
             entities=message.entities,
             clear_draft=clear_draft,
             no_webpage=not isinstance(
-                message.media, types.MessageMediaWebPage),
+                message.media, _tl.MessageMediaWebPage),
             schedule_date=schedule
         )
         message = message.message
@@ -484,7 +483,7 @@ async def send_message(
                 'The message cannot be empty unless a file is provided'
             )
 
-        request = functions.messages.SendMessageRequest(
+        request = _tl.fn.messages.SendMessage(
             peer=entity,
             message=message,
             entities=formatting_entities,
@@ -498,8 +497,8 @@ async def send_message(
         )
 
     result = await self(request)
-    if isinstance(result, types.UpdateShortSentMessage):
-        message = types.Message(
+    if isinstance(result, _tl.UpdateShortSentMessage):
+        message = _tl.Message(
             id=result.id,
             peer_id=await self._get_peer(entity),
             message=message,
@@ -526,7 +525,7 @@ async def forward_messages(
         silent: bool = None,
         as_album: bool = None,
         schedule: 'hints.DateLike' = None
-) -> 'typing.Sequence[types.Message]':
+) -> 'typing.Sequence[_tl.Message]':
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
 
@@ -548,7 +547,7 @@ async def forward_messages(
                 return from_peer_id
 
             raise ValueError('from_peer must be given if integer IDs are used')
-        elif isinstance(m, types.Message):
+        elif isinstance(m, _tl.Message):
             return m.chat_id
         else:
             raise TypeError('Cannot forward messages of type {}'.format(type(m)))
@@ -562,7 +561,7 @@ async def forward_messages(
             chat = await chunk[0].get_input_chat()
             chunk = [m.id for m in chunk]
 
-        req = functions.messages.ForwardMessagesRequest(
+        req = _tl.fn.messages.ForwardMessages(
             from_peer=chat,
             id=chunk,
             to_peer=entity,
@@ -578,13 +577,13 @@ async def forward_messages(
 
 async def edit_message(
         self: 'TelegramClient',
-        entity: 'typing.Union[hints.EntityLike, types.Message]',
+        entity: 'typing.Union[hints.EntityLike, _tl.Message]',
         message: 'hints.MessageLike' = None,
         text: str = None,
         *,
         parse_mode: str = (),
-        attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
-        formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
+        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
         link_preview: bool = True,
         file: 'hints.FileLike' = None,
         thumb: 'hints.FileLike' = None,
@@ -592,11 +591,11 @@ async def edit_message(
         buttons: 'hints.MarkupLike' = None,
         supports_streaming: bool = False,
         schedule: 'hints.DateLike' = None
-) -> 'types.Message':
-    if isinstance(entity, types.InputBotInlineMessageID):
+) -> '_tl.Message':
+    if isinstance(entity, _tl.InputBotInlineMessageID):
         text = text or message
         message = entity
-    elif isinstance(entity, types.Message):
+    elif isinstance(entity, _tl.Message):
         text = message  # Shift the parameters to the right
         message = entity
         entity = entity.peer_id
@@ -609,8 +608,8 @@ async def edit_message(
             attributes=attributes,
             force_document=force_document)
 
-    if isinstance(entity, types.InputBotInlineMessageID):
-        request = functions.messages.EditInlineBotMessageRequest(
+    if isinstance(entity, _tl.InputBotInlineMessageID):
+        request = _tl.fn.messages.EditInlineBotMessage(
             id=entity,
             message=text,
             no_webpage=not link_preview,
@@ -631,7 +630,7 @@ async def edit_message(
             return await self(request)
 
     entity = await self.get_input_entity(entity)
-    request = functions.messages.EditMessageRequest(
+    request = _tl.fn.messages.EditMessage(
         peer=entity,
         id=utils.get_message_id(message),
         message=text,
@@ -649,13 +648,13 @@ async def delete_messages(
         entity: 'hints.EntityLike',
         message_ids: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
         *,
-        revoke: bool = True) -> 'typing.Sequence[types.messages.AffectedMessages]':
+        revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
     if not utils.is_list_like(message_ids):
         message_ids = (message_ids,)
 
     message_ids = (
         m.id if isinstance(m, (
-            types.Message, types.MessageService, types.MessageEmpty))
+            _tl.Message, _tl.MessageService, _tl.MessageEmpty))
         else int(m) for m in message_ids
     )
 
@@ -667,10 +666,10 @@ async def delete_messages(
         ty = helpers._EntityType.USER
 
     if ty == helpers._EntityType.CHANNEL:
-        return await self([functions.channels.DeleteMessagesRequest(
+        return await self([_tl.fn.channels.DeleteMessages(
                         entity, list(c)) for c in utils.chunks(message_ids)])
     else:
-        return await self([functions.messages.DeleteMessagesRequest(
+        return await self([_tl.fn.messages.DeleteMessages(
                         list(c), revoke) for c in utils.chunks(message_ids)])
 
 async def send_read_acknowledge(
@@ -691,16 +690,16 @@ async def send_read_acknowledge(
 
     entity = await self.get_input_entity(entity)
     if clear_mentions:
-        await self(functions.messages.ReadMentionsRequest(entity))
+        await self(_tl.fn.messages.ReadMentions(entity))
         if max_id is None:
             return True
 
     if max_id is not None:
         if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
-            return await self(functions.channels.ReadHistoryRequest(
+            return await self(_tl.fn.channels.ReadHistory(
                 utils.get_input_channel(entity), max_id=max_id))
         else:
-            return await self(functions.messages.ReadHistoryRequest(
+            return await self(_tl.fn.messages.ReadHistory(
                 entity, max_id=max_id))
 
     return False
@@ -728,10 +727,10 @@ async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
     message = utils.get_message_id(message) or 0
     entity = await self.get_input_entity(entity)
     if message <= 0:  # old behaviour accepted negative IDs to unpin
-        await self(functions.messages.UnpinAllMessagesRequest(entity))
+        await self(_tl.fn.messages.UnpinAllMessages(entity))
         return
 
-    request = functions.messages.UpdatePinnedMessageRequest(
+    request = _tl.fn.messages.UpdatePinnedMessage(
         peer=entity,
         id=message,
         silent=not notify,

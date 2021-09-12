@@ -8,9 +8,8 @@ import traceback
 import typing
 import logging
 
-from .. import events, utils, errors
+from .. import events, utils, errors, _tl
 from ..events.common import EventBuilder, EventCommon
-from ..tl import types, functions
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -22,7 +21,7 @@ Callback = typing.Callable[[typing.Any], typing.Any]
 async def _run_until_disconnected(self: 'TelegramClient'):
     try:
         # Make a high-level request to notify that we want updates
-        await self(functions.updates.GetStateRequest())
+        await self(_tl.fn.updates.GetState())
         return await self.disconnected
     except KeyboardInterrupt:
         pass
@@ -32,7 +31,7 @@ async def _run_until_disconnected(self: 'TelegramClient'):
 async def set_receive_updates(self: 'TelegramClient', receive_updates):
     self._no_updates = not receive_updates
     if receive_updates:
-        await self(functions.updates.GetStateRequest())
+        await self(_tl.fn.updates.GetState())
 
 async def run_until_disconnected(self: 'TelegramClient'):
     return await self._run_until_disconnected()
@@ -91,24 +90,24 @@ async def catch_up(self: 'TelegramClient'):
     self.session.catching_up = True
     try:
         while True:
-            d = await self(functions.updates.GetDifferenceRequest(
+            d = await self(_tl.fn.updates.GetDifference(
                 pts, date, 0
             ))
-            if isinstance(d, (types.updates.DifferenceSlice,
-                                types.updates.Difference)):
-                if isinstance(d, types.updates.Difference):
+            if isinstance(d, (_tl.updates.DifferenceSlice,
+                                _tl.updates.Difference)):
+                if isinstance(d, _tl.updates.Difference):
                     state = d.state
                 else:
                     state = d.intermediate_state
 
                 pts, date = state.pts, state.date
-                self._handle_update(types.Updates(
+                self._handle_update(_tl.Updates(
                     users=d.users,
                     chats=d.chats,
                     date=state.date,
                     seq=state.seq,
                     updates=d.other_updates + [
-                        types.UpdateNewMessage(m, 0, 0)
+                        _tl.UpdateNewMessage(m, 0, 0)
                         for m in d.new_messages
                     ]
                 ))
@@ -128,9 +127,9 @@ async def catch_up(self: 'TelegramClient'):
                 # some). This can be used to detect collisions (i.e.
                 # it would return an update we have already seen).
             else:
-                if isinstance(d, types.updates.DifferenceEmpty):
+                if isinstance(d, _tl.updates.DifferenceEmpty):
                     date = d.date
-                elif isinstance(d, types.updates.DifferenceTooLong):
+                elif isinstance(d, _tl.updates.DifferenceTooLong):
                     pts = d.pts
                 break
     except (ConnectionError, asyncio.CancelledError):
@@ -148,12 +147,12 @@ def _handle_update(self: 'TelegramClient', update):
     self.session.process_entities(update)
     self._entity_cache.add(update)
 
-    if isinstance(update, (types.Updates, types.UpdatesCombined)):
+    if isinstance(update, (_tl.Updates, _tl.UpdatesCombined)):
         entities = {utils.get_peer_id(x): x for x in
                     itertools.chain(update.users, update.chats)}
         for u in update.updates:
             self._process_update(u, update.updates, entities=entities)
-    elif isinstance(update, types.UpdateShort):
+    elif isinstance(update, _tl.UpdateShort):
         self._process_update(update.update, None)
     else:
         self._process_update(update, None)
@@ -230,7 +229,7 @@ async def _update_loop(self: 'TelegramClient'):
                 continue
 
             try:
-                await self(functions.updates.GetStateRequest())
+                await self(_tl.fn.updates.GetState())
             except (ConnectionError, asyncio.CancelledError):
                 return
 
@@ -359,7 +358,7 @@ async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
         assert isinstance(channel_id, int), 'channel_id was {}, not int in {}'.format(type(channel_id), update)
         try:
             # Wrap the ID inside a peer to ensure we get a channel back.
-            where = await self.get_input_entity(types.PeerChannel(channel_id))
+            where = await self.get_input_entity(_tl.PeerChannel(channel_id))
         except ValueError:
             # There's a high chance that this fails, since
             # we are getting the difference to fetch entities.
@@ -367,15 +366,15 @@ async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
 
         if not pts_date:
             # First-time, can't get difference. Get pts instead.
-            result = await self(functions.channels.GetFullChannelRequest(
+            result = await self(_tl.fn.channels.GetFullChannel(
                 utils.get_input_channel(where)
             ))
             self._state_cache[channel_id] = result.full_chat.pts
             return
 
-        result = await self(functions.updates.GetChannelDifferenceRequest(
+        result = await self(_tl.fn.updates.GetChannelDifference(
             channel=where,
-            filter=types.ChannelMessagesFilterEmpty(),
+            filter=_tl.ChannelMessagesFilterEmpty(),
             pts=pts_date,  # just pts
             limit=100,
             force=True
@@ -383,20 +382,20 @@ async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
     else:
         if not pts_date[0]:
             # First-time, can't get difference. Get pts instead.
-            result = await self(functions.updates.GetStateRequest())
+            result = await self(_tl.fn.updates.GetState())
             self._state_cache[None] = result.pts, result.date
             return
 
-        result = await self(functions.updates.GetDifferenceRequest(
+        result = await self(_tl.fn.updates.GetDifference(
             pts=pts_date[0],
             date=pts_date[1],
             qts=0
         ))
 
-    if isinstance(result, (types.updates.Difference,
-                            types.updates.DifferenceSlice,
-                            types.updates.ChannelDifference,
-                            types.updates.ChannelDifferenceTooLong)):
+    if isinstance(result, (_tl.updates.Difference,
+                            _tl.updates.DifferenceSlice,
+                            _tl.updates.ChannelDifference,
+                            _tl.updates.ChannelDifferenceTooLong)):
         update._entities.update({
             utils.get_peer_id(x): x for x in
             itertools.chain(result.users, result.chats)

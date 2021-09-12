@@ -1,29 +1,28 @@
 import datetime
 import typing
 
-from . import helpers
-from .tl import types, custom
+from . import helpers, _tl
 
 Phone = str
 Username = str
 PeerID = int
-Entity = typing.Union[types.User, types.Chat, types.Channel]
-FullEntity = typing.Union[types.UserFull, types.messages.ChatFull, types.ChatFull, types.ChannelFull]
+Entity = typing.Union[_tl.User, _tl.Chat, _tl.Channel]
+FullEntity = typing.Union[_tl.UserFull, _tl.messages.ChatFull, _tl.ChatFull, _tl.ChannelFull]
 
 EntityLike = typing.Union[
     Phone,
     Username,
     PeerID,
-    types.TypePeer,
-    types.TypeInputPeer,
+    _tl.TypePeer,
+    _tl.TypeInputPeer,
     Entity,
     FullEntity
 ]
 EntitiesLike = typing.Union[EntityLike, typing.Sequence[EntityLike]]
 
-ButtonLike = typing.Union[types.TypeKeyboardButton, custom.Button]
+ButtonLike = typing.Union[_tl.TypeKeyboardButton, custom.Button]
 MarkupLike = typing.Union[
-    types.TypeReplyMarkup,
+    _tl.TypeReplyMarkup,
     ButtonLike,
     typing.Sequence[ButtonLike],
     typing.Sequence[typing.Sequence[ButtonLike]]
@@ -42,9 +41,9 @@ FileLike = typing.Union[
     BotFileID,
     bytes,
     typing.BinaryIO,
-    types.TypeMessageMedia,
-    types.TypeInputFile,
-    types.TypeInputFileLocation
+    _tl.TypeMessageMedia,
+    _tl.TypeInputFile,
+    _tl.TypeInputFileLocation
 ]
 
 # Can't use `typing.Type` in Python 3.5.2
@@ -61,7 +60,7 @@ except TypeError:
         typing.BinaryIO
     ]
 
-MessageLike = typing.Union[str, types.Message]
-MessageIDLike = typing.Union[int, types.Message, types.TypeInputMessage]
+MessageLike = typing.Union[str, _tl.Message]
+MessageIDLike = typing.Union[int, _tl.Message, _tl.TypeInputMessage]
 
 ProgressCallback = typing.Callable[[int, int], None]

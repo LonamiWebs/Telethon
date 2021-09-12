@@ -150,7 +150,7 @@ class InlineResult:
         else:
             reply_id = None if reply_to is None else utils.get_message_id(reply_to)
 
-        req = functions.messages.SendInlineBotResultRequest(
+        req = _tl.fn.messages.SendInlineBotResult(
             peer=entity,
             query_id=self._query_id,
             id=self.result.id,

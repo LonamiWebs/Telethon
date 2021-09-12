@@ -1,5 +1,5 @@
 from .common import EventBuilder, EventCommon, name_inner_event
-from ..tl import types
+from .. import _tl
 
 
 @name_inner_event
@@ -37,15 +37,15 @@ class MessageDeleted(EventBuilder):
     """
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateDeleteMessages):
+        if isinstance(update, _tl.UpdateDeleteMessages):
             return cls.Event(
                 deleted_ids=update.messages,
                 peer=None
             )
-        elif isinstance(update, types.UpdateDeleteChannelMessages):
+        elif isinstance(update, _tl.UpdateDeleteChannelMessages):
             return cls.Event(
                 deleted_ids=update.messages,
-                peer=types.PeerChannel(update.channel_id)
+                peer=_tl.PeerChannel(update.channel_id)
             )
 
     class Event(EventCommon):

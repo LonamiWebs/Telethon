@@ -8,8 +8,7 @@ from . import (
     account, auth, bots, buttons, chats, dialogs, downloads, messageparse, messages,
     telegrambaseclient, updates, uploads, users
 )
-from .. import helpers, version
-from ..tl import types, custom
+from .. import helpers, version, _tl
 from ..network import ConnectionTcpFull
 from ..events.common import EventBuilder, EventCommon
 
@@ -369,7 +368,7 @@ class TelegramClient:
             *,
             password: str = None,
             bot_token: str = None,
-            phone_code_hash: str = None) -> 'typing.Union[types.User, types.auth.SentCode]':
+            phone_code_hash: str = None) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
         """
         Logs in to Telegram to an existing user or bot account.
 
@@ -428,7 +427,7 @@ class TelegramClient:
             last_name: str = '',
             *,
             phone: str = None,
-            phone_code_hash: str = None) -> 'types.User':
+            phone_code_hash: str = None) -> '_tl.User':
         """
         Signs up to Telegram as a new user account.
 
@@ -477,7 +476,7 @@ class TelegramClient:
             self: 'TelegramClient',
             phone: str,
             *,
-            force_sms: bool = False) -> 'types.auth.SentCode':
+            force_sms: bool = False) -> '_tl.auth.SentCode':
         """
         Sends the Telegram code needed to login to the given phone number.
 
@@ -630,7 +629,7 @@ class TelegramClient:
             *,
             entity: 'hints.EntityLike' = None,
             offset: str = None,
-            geo_point: 'types.GeoPoint' = None) -> custom.InlineResults:
+            geo_point: '_tl.GeoPoint' = None) -> custom.InlineResults:
         """
         Makes an inline query to the specified bot (``@vote New Poll``).
 
@@ -679,7 +678,7 @@ class TelegramClient:
     @staticmethod
     def build_reply_markup(
             buttons: 'typing.Optional[hints.MarkupLike]',
-            inline_only: bool = False) -> 'typing.Optional[types.TypeReplyMarkup]':
+            inline_only: bool = False) -> 'typing.Optional[_tl.TypeReplyMarkup]':
         """
         Builds a :tl:`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
         the given buttons.
@@ -722,7 +721,7 @@ class TelegramClient:
             limit: float = None,
             *,
             search: str = '',
-            filter: 'types.TypeChannelParticipantsFilter' = None,
+            filter: '_tl.TypeChannelParticipantsFilter' = None,
             aggressive: bool = False) -> chats._ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
@@ -1018,7 +1017,7 @@ class TelegramClient:
     def action(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            action: 'typing.Union[str, types.TypeSendMessageAction]',
+            action: 'typing.Union[str, _tl.TypeSendMessageAction]',
             *,
             delay: float = 4,
             auto_cancel: bool = True) -> 'typing.Union[_ChatAction, typing.Coroutine]':
@@ -1109,7 +1108,7 @@ class TelegramClient:
             manage_call: bool = None,
             anonymous: bool = None,
             is_admin: bool = None,
-            title: str = None) -> types.Updates:
+            title: str = None) -> _tl.Updates:
         """
         Edits admin permissions for someone in a chat.
 
@@ -1216,7 +1215,7 @@ class TelegramClient:
             send_polls: bool = True,
             change_info: bool = True,
             invite_users: bool = True,
-            pin_messages: bool = True) -> types.Updates:
+            pin_messages: bool = True) -> _tl.Updates:
         """
         Edits user restrictions in a chat.
 
@@ -1396,7 +1395,7 @@ class TelegramClient:
     async def get_stats(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            message: 'typing.Union[int, types.Message]' = None,
+            message: 'typing.Union[int, _tl.Message]' = None,
     ):
         """
         Retrieves statistics from the given megagroup or broadcast channel.
@@ -1449,7 +1448,7 @@ class TelegramClient:
             *,
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
-            offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
+            offset_peer: 'hints.EntityLike' = _tl.InputPeerEmpty(),
             ignore_pinned: bool = False,
             ignore_migrated: bool = False,
             folder: int = None,
@@ -1604,7 +1603,7 @@ class TelegramClient:
             folder: typing.Union[int, typing.Sequence[int]] = None,
             *,
             unpack=None
-    ) -> types.Updates:
+    ) -> _tl.Updates:
         """
         Edits the folder used by one or more dialogs to archive them.
 
@@ -1756,7 +1755,7 @@ class TelegramClient:
             message: 'hints.MessageLike',
             file: 'hints.FileLike' = None,
             *,
-            thumb: 'typing.Union[int, types.TypePhotoSize]' = None,
+            thumb: 'typing.Union[int, _tl.TypePhotoSize]' = None,
             progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
         """
         Downloads the given media from a message object.
@@ -1850,7 +1849,7 @@ class TelegramClient:
             input_location (:tl:`InputFileLocation`):
                 The file location from which the file will be downloaded.
                 See `telethon.utils.get_input_location` source for a complete
-                list of supported types.
+                list of supported _tl.
 
             file (`str` | `file`, optional):
                 The output file path, directory, or stream-like object.
@@ -2048,7 +2047,7 @@ class TelegramClient:
             min_id: int = 0,
             add_offset: int = 0,
             search: str = None,
-            filter: 'typing.Union[types.TypeMessagesFilter, typing.Type[types.TypeMessagesFilter]]' = None,
+            filter: 'typing.Union[_tl.TypeMessagesFilter, typing.Type[_tl.TypeMessagesFilter]]' = None,
             from_user: 'hints.EntityLike' = None,
             wait_time: float = None,
             ids: 'typing.Union[int, typing.Sequence[int]]' = None,
@@ -2258,10 +2257,10 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             message: 'hints.MessageLike' = '',
             *,
-            reply_to: 'typing.Union[int, types.Message]' = None,
-            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
+            reply_to: 'typing.Union[int, _tl.Message]' = None,
+            attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
             parse_mode: typing.Optional[str] = (),
-            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+            formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
             thumb: 'hints.FileLike' = None,
@@ -2272,8 +2271,8 @@ class TelegramClient:
             background: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
-            comment_to: 'typing.Union[int, types.Message]' = None
-    ) -> 'types.Message':
+            comment_to: 'typing.Union[int, _tl.Message]' = None
+    ) -> '_tl.Message':
         """
         Sends a message to the specified user, chat or channel.
 
@@ -2458,7 +2457,7 @@ class TelegramClient:
             silent: bool = None,
             as_album: bool = None,
             schedule: 'hints.DateLike' = None
-    ) -> 'typing.Sequence[types.Message]':
+    ) -> 'typing.Sequence[_tl.Message]':
         """
         Forwards the given messages to the specified entity.
 
@@ -2531,13 +2530,13 @@ class TelegramClient:
 
     async def edit_message(
             self: 'TelegramClient',
-            entity: 'typing.Union[hints.EntityLike, types.Message]',
+            entity: 'typing.Union[hints.EntityLike, _tl.Message]',
             message: 'hints.MessageLike' = None,
             text: str = None,
             *,
             parse_mode: str = (),
-            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
-            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+            attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
+            formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
             link_preview: bool = True,
             file: 'hints.FileLike' = None,
             thumb: 'hints.FileLike' = None,
@@ -2545,7 +2544,7 @@ class TelegramClient:
             buttons: 'hints.MarkupLike' = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None
-    ) -> 'types.Message':
+    ) -> '_tl.Message':
         """
         Edits the given message to change its text or media.
 
@@ -2663,7 +2662,7 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             message_ids: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
             *,
-            revoke: bool = True) -> 'typing.Sequence[types.messages.AffectedMessages]':
+            revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
         """
         Deletes the given messages, optionally "for everyone".
 
@@ -3171,11 +3170,11 @@ class TelegramClient:
             clear_draft: bool = False,
             progress_callback: 'hints.ProgressCallback' = None,
             reply_to: 'hints.MessageIDLike' = None,
-            attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
+            attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
             thumb: 'hints.FileLike' = None,
             allow_cache: bool = True,
             parse_mode: str = (),
-            formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+            formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
             voice_note: bool = False,
             video_note: bool = False,
             buttons: 'hints.MarkupLike' = None,
@@ -3183,9 +3182,9 @@ class TelegramClient:
             background: bool = None,
             supports_streaming: bool = False,
             schedule: 'hints.DateLike' = None,
-            comment_to: 'typing.Union[int, types.Message]' = None,
+            comment_to: 'typing.Union[int, _tl.Message]' = None,
             ttl: int = None,
-            **kwargs) -> 'types.Message':
+            **kwargs) -> '_tl.Message':
         """
         Sends message with the given file to the specified entity.
 
@@ -3392,11 +3391,11 @@ class TelegramClient:
 
                 # Dices, including dart and other future emoji
                 from telethon.tl import types
-                await client.send_file(chat, types.InputMediaDice(''))
-                await client.send_file(chat, types.InputMediaDice('🎯'))
+                await client.send_file(chat, _tl.InputMediaDice(''))
+                await client.send_file(chat, _tl.InputMediaDice('🎯'))
 
                 # Contacts
-                await client.send_file(chat, types.InputMediaContact(
+                await client.send_file(chat, _tl.InputMediaContact(
                     phone_number='+34 123 456 789',
                     first_name='Example',
                     last_name='',
@@ -3415,7 +3414,7 @@ class TelegramClient:
             use_cache: type = None,
             key: bytes = None,
             iv: bytes = None,
-            progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
+            progress_callback: 'hints.ProgressCallback' = None) -> '_tl.TypeInputFile':
         """
         Uploads a file to Telegram's servers, without sending it.
 
@@ -3522,7 +3521,7 @@ class TelegramClient:
         return users.call(self._sender, request, ordered=ordered)
 
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
-            -> 'typing.Union[types.User, types.InputPeerUser]':
+            -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
         """
         Gets "me", the current :tl:`User` who is logged in.
 
@@ -3633,7 +3632,7 @@ class TelegramClient:
 
     async def get_input_entity(
             self: 'TelegramClient',
-            peer: 'hints.EntityLike') -> 'types.TypeInputPeer':
+            peer: 'hints.EntityLike') -> '_tl.TypeInputPeer':
         """
         Turns the given entity into its input entity version.
 

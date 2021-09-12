@@ -1,13 +1,7 @@
 from enum import Enum
 
 from .abstract import Session
-from .. import utils
-from ..tl import TLObject
-from ..tl.types import (
-    PeerUser, PeerChat, PeerChannel,
-    InputPeerUser, InputPeerChat, InputPeerChannel,
-    InputPhoto, InputDocument
-)
+from .. import utils, _tl
 
 
 class _SentFileType(Enum):
@@ -16,9 +10,9 @@ class _SentFileType(Enum):
 
     @staticmethod
     def from_type(cls):
-        if cls == InputDocument:
+        if cls == _tl.InputDocument:
             return _SentFileType.DOCUMENT
-        elif cls == InputPhoto:
+        elif cls == _tl.InputPhoto:
             return _SentFileType.PHOTO
         else:
             raise ValueError('The cls must be either InputDocument/InputPhoto')
@@ -94,7 +88,7 @@ class MemorySession(Session):
         return id, hash, username, phone, name
 
     def _entity_to_row(self, e):
-        if not isinstance(e, TLObject):
+        if not isinstance(e, _tl.TLObject):
             return
         try:
             p = utils.get_input_peer(e, allow_self=False)
@@ -106,9 +100,9 @@ class MemorySession(Session):
             #        anywhere (since layer 102, there are two access hashes).
             return
 
-        if isinstance(p, (InputPeerUser, InputPeerChannel)):
+        if isinstance(p, (_tl.InputPeerUser, _tl.InputPeerChannel)):
             p_hash = p.access_hash
-        elif isinstance(p, InputPeerChat):
+        elif isinstance(p, _tl.InputPeerChat):
             p_hash = 0
         else:
             return
@@ -123,7 +117,7 @@ class MemorySession(Session):
         )
 
     def _entities_to_rows(self, tlo):
-        if not isinstance(tlo, TLObject) and utils.is_list_like(tlo):
+        if not isinstance(tlo, _tl.TLObject) and utils.is_list_like(tlo):
             # This may be a list of users already for instance
             entities = tlo
         else:
@@ -175,9 +169,9 @@ class MemorySession(Session):
                             in self._entities if found_id == id)
             else:
                 ids = (
-                    utils.get_peer_id(PeerUser(id)),
-                    utils.get_peer_id(PeerChat(id)),
-                    utils.get_peer_id(PeerChannel(id))
+                    utils.get_peer_id(_tl.PeerUser(id)),
+                    utils.get_peer_id(_tl.PeerChat(id)),
+                    utils.get_peer_id(_tl.PeerChannel(id))
                 )
                 return next((id, hash) for found_id, hash, _, _, _
                             in self._entities if found_id in ids)
@@ -194,7 +188,7 @@ class MemorySession(Session):
             return utils.get_input_peer(key)
         except (AttributeError, TypeError):
             # Not a TLObject or can't be cast into InputPeer
-            if isinstance(key, TLObject):
+            if isinstance(key, _tl.TLObject):
                 key = utils.get_peer_id(key)
                 exact = True
             else:
@@ -224,17 +218,17 @@ class MemorySession(Session):
             entity_id, entity_hash = result  # unpack resulting tuple
             entity_id, kind = utils.resolve_id(entity_id)
             # removes the mark and returns type of entity
-            if kind == PeerUser:
-                return InputPeerUser(entity_id, entity_hash)
-            elif kind == PeerChat:
-                return InputPeerChat(entity_id)
-            elif kind == PeerChannel:
-                return InputPeerChannel(entity_id, entity_hash)
+            if kind == _tl.PeerUser:
+                return _tl.InputPeerUser(entity_id, entity_hash)
+            elif kind == _tl.PeerChat:
+                return _tl.InputPeerChat(entity_id)
+            elif kind == _tl.PeerChannel:
+                return _tl.InputPeerChannel(entity_id, entity_hash)
         else:
             raise ValueError('Could not find input entity with key ', key)
 
     def cache_file(self, md5_digest, file_size, instance):
-        if not isinstance(instance, (InputDocument, InputPhoto)):
+        if not isinstance(instance, (_tl.InputDocument, _tl.InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
         key = (md5_digest, file_size, _SentFileType.from_type(type(instance)))
         value = (instance.id, instance.access_hash)

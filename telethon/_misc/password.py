@@ -2,7 +2,7 @@ import hashlib
 import os
 
 from .crypto import factorization
-from .tl import types
+from . import _tl
 
 
 def check_prime_and_good_check(prime: int, g: int):
@@ -110,7 +110,7 @@ def pbkdf2sha512(password: bytes, salt: bytes, iterations: int):
     return hashlib.pbkdf2_hmac('sha512', password, salt, iterations)
 
 
-def compute_hash(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
+def compute_hash(algo: _tl.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
                  password: str):
     hash1 = sha256(algo.salt1, password.encode('utf-8'), algo.salt1)
     hash2 = sha256(algo.salt2, hash1, algo.salt2)
@@ -118,7 +118,7 @@ def compute_hash(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter1000
     return sha256(algo.salt2, hash3, algo.salt2)
 
 
-def compute_digest(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
+def compute_digest(algo: _tl.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow,
                    password: str):
     try:
         check_prime_and_good(algo.p, algo.g)
@@ -133,9 +133,9 @@ def compute_digest(algo: types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter10
 
 
 # https://github.com/telegramdesktop/tdesktop/blob/18b74b90451a7db2379a9d753c9cbaf8734b4d5d/Telegram/SourceFiles/core/core_cloud_password.cpp
-def compute_check(request: types.account.Password, password: str):
+def compute_check(request: _tl.account.Password, password: str):
     algo = request.current_algo
-    if not isinstance(algo, types.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow):
+    if not isinstance(algo, _tl.PasswordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow):
         raise ValueError('unsupported password algorithm {}'
                          .format(algo.__class__.__name__))
 
@@ -190,5 +190,5 @@ def compute_check(request: types.account.Password, password: str):
         K
     )
 
-    return types.InputCheckPasswordSRP(
+    return _tl.InputCheckPasswordSRP(
         request.srp_id, bytes(a_for_hash), bytes(M1))

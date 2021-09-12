@@ -8,9 +8,8 @@ import asyncio
 
 from ..crypto import AES
 
-from .. import utils, helpers, errors, hints
+from .. import utils, helpers, errors, hints, _tl
 from ..requestiter import RequestIter
-from ..tl import TLObject, types, functions
 
 try:
     import aiohttp
@@ -31,7 +30,7 @@ class _DirectDownloadIter(RequestIter):
     async def _init(
             self, file, dc_id, offset, stride, chunk_size, request_size, file_size, msg_data
     ):
-        self.request = functions.upload.GetFileRequest(
+        self.request = _tl.fn.upload.GetFile(
             file, offset=offset, limit=request_size)
 
         self.total = file_size
@@ -50,7 +49,7 @@ class _DirectDownloadIter(RequestIter):
                 self._sender = await self.client._borrow_exported_sender(dc_id)
             except errors.DcIdInvalidError:
                 # Can't export a sender for the ID we are currently in
-                config = await self.client(functions.help.GetConfigRequest())
+                config = await self.client(_tl.fn.help.GetConfig())
                 for option in config.dc_options:
                     if option.ip_address == self.client.session.server_address:
                         self.client.session.set_dc(
@@ -75,7 +74,7 @@ class _DirectDownloadIter(RequestIter):
         try:
             result = await self.client._call(self._sender, self.request)
             self._timed_out = False
-            if isinstance(result, types.upload.FileCdnRedirect):
+            if isinstance(result, _tl.upload.FileCdnRedirect):
                 raise NotImplementedError  # TODO Implement
             else:
                 return result.bytes
@@ -99,7 +98,7 @@ class _DirectDownloadIter(RequestIter):
         except errors.FilerefUpgradeNeededError as e:
             # Only implemented for documents which are the ones that may take that long to download
             if not self._msg_data \
-                    or not isinstance(self.request.location, types.InputDocumentFileLocation) \
+                    or not isinstance(self.request.location, _tl.InputDocumentFileLocation) \
                     or self.request.location.thumb_size != '':
                 raise
 
@@ -107,7 +106,7 @@ class _DirectDownloadIter(RequestIter):
             chat, msg_id = self._msg_data
             msg = await self.client.get_messages(chat, ids=msg_id)
 
-            if not isinstance(msg.media, types.MessageMediaDocument):
+            if not isinstance(msg.media, _tl.MessageMediaDocument):
                 raise
 
             document = msg.media.document
@@ -200,7 +199,7 @@ async def download_profile_photo(
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
     # ('InputPeer', 'InputUser', 'InputChannel')
     INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
-    if not isinstance(entity, TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
+    if not isinstance(entity, _tl.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
         entity = await self.get_entity(entity)
 
     thumb = -1 if download_big else 0
@@ -225,9 +224,9 @@ async def download_profile_photo(
 
         photo = entity.photo
 
-    if isinstance(photo, (types.UserProfilePhoto, types.ChatPhoto)):
+    if isinstance(photo, (_tl.UserProfilePhoto, _tl.ChatPhoto)):
         dc_id = photo.dc_id
-        loc = types.InputPeerPhotoFileLocation(
+        loc = _tl.InputPeerPhotoFileLocation(
             peer=await self.get_input_entity(entity),
             photo_id=photo.photo_id,
             big=download_big
@@ -253,7 +252,7 @@ async def download_profile_photo(
         ie = await self.get_input_entity(entity)
         ty = helpers._entity_type(ie)
         if ty == helpers._EntityType.CHANNEL:
-            full = await self(functions.channels.GetFullChannelRequest(ie))
+            full = await self(_tl.fn.channels.GetFullChannel(ie))
             return await self._download_photo(
                 full.full_chat.chat_photo, file,
                 date=None, progress_callback=None,
@@ -268,7 +267,7 @@ async def download_media(
         message: 'hints.MessageLike',
         file: 'hints.FileLike' = None,
         *,
-        thumb: 'typing.Union[int, types.TypePhotoSize]' = None,
+        thumb: 'typing.Union[int, _tl.TypePhotoSize]' = None,
         progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
     # Downloading large documents may be slow enough to require a new file reference
     # to be obtained mid-download. Store (input chat, message id) so that the message
@@ -276,7 +275,7 @@ async def download_media(
     msg_data = None
 
     # TODO This won't work for messageService
-    if isinstance(message, types.Message):
+    if isinstance(message, _tl.Message):
         date = message.date
         media = message.media
         msg_data = (message.input_chat, message.id) if message.input_chat else None
@@ -287,28 +286,28 @@ async def download_media(
     if isinstance(media, str):
         media = utils.resolve_bot_file_id(media)
 
-    if isinstance(media, types.MessageService):
+    if isinstance(media, _tl.MessageService):
         if isinstance(message.action,
-                        types.MessageActionChatEditPhoto):
+                        _tl.MessageActionChatEditPhoto):
             media = media.photo
 
-    if isinstance(media, types.MessageMediaWebPage):
-        if isinstance(media.webpage, types.WebPage):
+    if isinstance(media, _tl.MessageMediaWebPage):
+        if isinstance(media.webpage, _tl.WebPage):
             media = media.webpage.document or media.webpage.photo
 
-    if isinstance(media, (types.MessageMediaPhoto, types.Photo)):
+    if isinstance(media, (_tl.MessageMediaPhoto, _tl.Photo)):
         return await self._download_photo(
             media, file, date, thumb, progress_callback
         )
-    elif isinstance(media, (types.MessageMediaDocument, types.Document)):
+    elif isinstance(media, (_tl.MessageMediaDocument, _tl.Document)):
         return await self._download_document(
             media, file, date, thumb, progress_callback, msg_data
         )
-    elif isinstance(media, types.MessageMediaContact) and thumb is None:
+    elif isinstance(media, _tl.MessageMediaContact) and thumb is None:
         return self._download_contact(
             media, file
         )
-    elif isinstance(media, (types.WebDocument, types.WebDocumentNoProxy)) and thumb is None:
+    elif isinstance(media, (_tl.WebDocument, _tl.WebDocumentNoProxy)) and thumb is None:
         return await self._download_web_document(
             media, file, progress_callback
         )
@@ -488,15 +487,15 @@ def _get_thumb(thumbs, thumb):
     # last while this is the smallest (layer 116). Ensure we have the
     # sizes sorted correctly with a custom function.
     def sort_thumbs(thumb):
-        if isinstance(thumb, types.PhotoStrippedSize):
+        if isinstance(thumb, _tl.PhotoStrippedSize):
             return 1, len(thumb.bytes)
-        if isinstance(thumb, types.PhotoCachedSize):
+        if isinstance(thumb, _tl.PhotoCachedSize):
             return 1, len(thumb.bytes)
-        if isinstance(thumb, types.PhotoSize):
+        if isinstance(thumb, _tl.PhotoSize):
             return 1, thumb.size
-        if isinstance(thumb, types.PhotoSizeProgressive):
+        if isinstance(thumb, _tl.PhotoSizeProgressive):
             return 1, max(thumb.sizes)
-        if isinstance(thumb, types.VideoSize):
+        if isinstance(thumb, _tl.VideoSize):
             return 2, thumb.size
 
         # Empty size or invalid should go last
@@ -508,7 +507,7 @@ def _get_thumb(thumbs, thumb):
         # :tl:`PhotoPathSize` is used for animated stickers preview, and the thumb is actually
         # a SVG path of the outline. Users expect thumbnails to be JPEG files, so pretend this
         # thumb size doesn't actually exist (#1655).
-        if isinstance(thumbs[i], types.PhotoPathSize):
+        if isinstance(thumbs[i], _tl.PhotoPathSize):
             thumbs.pop(i)
 
     if thumb is None:
@@ -517,15 +516,15 @@ def _get_thumb(thumbs, thumb):
         return thumbs[thumb]
     elif isinstance(thumb, str):
         return next((t for t in thumbs if t.type == thumb), None)
-    elif isinstance(thumb, (types.PhotoSize, types.PhotoCachedSize,
-                            types.PhotoStrippedSize, types.VideoSize)):
+    elif isinstance(thumb, (_tl.PhotoSize, _tl.PhotoCachedSize,
+                            _tl.PhotoStrippedSize, _tl.VideoSize)):
         return thumb
     else:
         return None
 
 def _download_cached_photo_size(self: 'TelegramClient', size, file):
     # No need to download anything, simply write the bytes
-    if isinstance(size, types.PhotoStrippedSize):
+    if isinstance(size, _tl.PhotoStrippedSize):
         data = utils.stripped_photo_to_jpg(size.bytes)
     else:
         data = size.bytes
@@ -548,31 +547,31 @@ def _download_cached_photo_size(self: 'TelegramClient', size, file):
 async def _download_photo(self: 'TelegramClient', photo, file, date, thumb, progress_callback):
     """Specialized version of .download_media() for photos"""
     # Determine the photo and its largest size
-    if isinstance(photo, types.MessageMediaPhoto):
+    if isinstance(photo, _tl.MessageMediaPhoto):
         photo = photo.photo
-    if not isinstance(photo, types.Photo):
+    if not isinstance(photo, _tl.Photo):
         return
 
     # Include video sizes here (but they may be None so provide an empty list)
     size = self._get_thumb(photo.sizes + (photo.video_sizes or []), thumb)
-    if not size or isinstance(size, types.PhotoSizeEmpty):
+    if not size or isinstance(size, _tl.PhotoSizeEmpty):
         return
 
-    if isinstance(size, types.VideoSize):
+    if isinstance(size, _tl.VideoSize):
         file = self._get_proper_filename(file, 'video', '.mp4', date=date)
     else:
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
 
-    if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
+    if isinstance(size, (_tl.PhotoCachedSize, _tl.PhotoStrippedSize)):
         return self._download_cached_photo_size(size, file)
 
-    if isinstance(size, types.PhotoSizeProgressive):
+    if isinstance(size, _tl.PhotoSizeProgressive):
         file_size = max(size.sizes)
     else:
         file_size = size.size
 
     result = await self.download_file(
-        types.InputPhotoFileLocation(
+        _tl.InputPhotoFileLocation(
             id=photo.id,
             access_hash=photo.access_hash,
             file_reference=photo.file_reference,
@@ -589,10 +588,10 @@ def _get_kind_and_names(attributes):
     kind = 'document'
     possible_names = []
     for attr in attributes:
-        if isinstance(attr, types.DocumentAttributeFilename):
+        if isinstance(attr, _tl.DocumentAttributeFilename):
             possible_names.insert(0, attr.file_name)
 
-        elif isinstance(attr, types.DocumentAttributeAudio):
+        elif isinstance(attr, _tl.DocumentAttributeAudio):
             kind = 'audio'
             if attr.performer and attr.title:
                 possible_names.append('{} - {}'.format(
@@ -610,9 +609,9 @@ def _get_kind_and_names(attributes):
 async def _download_document(
         self, document, file, date, thumb, progress_callback, msg_data):
     """Specialized version of .download_media() for documents."""
-    if isinstance(document, types.MessageMediaDocument):
+    if isinstance(document, _tl.MessageMediaDocument):
         document = document.document
-    if not isinstance(document, types.Document):
+    if not isinstance(document, _tl.Document):
         return
 
     if thumb is None:
@@ -625,11 +624,11 @@ async def _download_document(
     else:
         file = self._get_proper_filename(file, 'photo', '.jpg', date=date)
         size = self._get_thumb(document.thumbs, thumb)
-        if isinstance(size, (types.PhotoCachedSize, types.PhotoStrippedSize)):
+        if isinstance(size, (_tl.PhotoCachedSize, _tl.PhotoStrippedSize)):
             return self._download_cached_photo_size(size, file)
 
     result = await self._download_file(
-        types.InputDocumentFileLocation(
+        _tl.InputDocumentFileLocation(
             id=document.id,
             access_hash=document.access_hash,
             file_reference=document.file_reference,

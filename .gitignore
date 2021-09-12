@@ -1,6 +1,6 @@
 # Generated code
-/telethon/_tl/functions/
-/telethon/_tl/types/
+/telethon/_tl/fn/
+/telethon/_tl/*.py
 /telethon/_tl/alltlobjects.py
 /telethon/errors/rpcerrorlist.py
 

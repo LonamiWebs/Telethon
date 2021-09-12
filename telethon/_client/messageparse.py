@@ -2,8 +2,7 @@ import itertools
 import re
 import typing
 
-from .. import helpers, utils
-from ..tl import types
+from .. import helpers, utils, _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -25,7 +24,7 @@ async def _replace_with_mention(self: 'TelegramClient', entities, i, user):
     or do nothing if it can't be found.
     """
     try:
-        entities[i] = types.InputMessageEntityMentionName(
+        entities[i] = _tl.InputMessageEntityMentionName(
             entities[i].offset, entities[i].length,
             await self.get_input_entity(user)
         )
@@ -52,15 +51,15 @@ async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
 
     for i in reversed(range(len(msg_entities))):
         e = msg_entities[i]
-        if isinstance(e, types.MessageEntityTextUrl):
+        if isinstance(e, _tl.MessageEntityTextUrl):
             m = re.match(r'^@|\+|tg://user\?id=(\d+)', e.url)
             if m:
                 user = int(m.group(1)) if m.group(1) else e.url
                 is_mention = await self._replace_with_mention(msg_entities, i, user)
                 if not is_mention:
                     del msg_entities[i]
-        elif isinstance(e, (types.MessageEntityMentionName,
-                            types.InputMessageEntityMentionName)):
+        elif isinstance(e, (_tl.MessageEntityMentionName,
+                            _tl.InputMessageEntityMentionName)):
             is_mention = await self._replace_with_mention(msg_entities, i, e.user_id)
             if not is_mention:
                 del msg_entities[i]
@@ -76,10 +75,10 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
 
     If ``request.random_id`` is a list, this method returns a list too.
     """
-    if isinstance(result, types.UpdateShort):
+    if isinstance(result, _tl.UpdateShort):
         updates = [result.update]
         entities = {}
-    elif isinstance(result, (types.Updates, types.UpdatesCombined)):
+    elif isinstance(result, (_tl.Updates, _tl.UpdatesCombined)):
         updates = result.updates
         entities = {utils.get_peer_id(x): x
                     for x in
@@ -90,11 +89,11 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
     random_to_id = {}
     id_to_message = {}
     for update in updates:
-        if isinstance(update, types.UpdateMessageID):
+        if isinstance(update, _tl.UpdateMessageID):
             random_to_id[update.random_id] = update.id
 
         elif isinstance(update, (
-                types.UpdateNewChannelMessage, types.UpdateNewMessage)):
+                _tl.UpdateNewChannelMessage, _tl.UpdateNewMessage)):
             update.message._finish_init(self, entities, input_chat)
 
             # Pinning a message with `updatePinnedMessage` seems to
@@ -109,7 +108,7 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
             else:
                 return update.message
 
-        elif (isinstance(update, types.UpdateEditMessage)
+        elif (isinstance(update, _tl.UpdateEditMessage)
                 and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):
             update.message._finish_init(self, entities, input_chat)
 
@@ -120,26 +119,26 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
             elif request.id == update.message.id:
                 return update.message
 
-        elif (isinstance(update, types.UpdateEditChannelMessage)
+        elif (isinstance(update, _tl.UpdateEditChannelMessage)
                 and utils.get_peer_id(request.peer) ==
                 utils.get_peer_id(update.message.peer_id)):
             if request.id == update.message.id:
                 update.message._finish_init(self, entities, input_chat)
                 return update.message
 
-        elif isinstance(update, types.UpdateNewScheduledMessage):
+        elif isinstance(update, _tl.UpdateNewScheduledMessage):
             update.message._finish_init(self, entities, input_chat)
             # Scheduled IDs may collide with normal IDs. However, for a
             # single request there *shouldn't* be a mix between "some
             # scheduled and some not".
             id_to_message[update.message.id] = update.message
 
-        elif isinstance(update, types.UpdateMessagePoll):
+        elif isinstance(update, _tl.UpdateMessagePoll):
             if request.media.poll.id == update.poll_id:
-                m = types.Message(
+                m = _tl.Message(
                     id=request.id,
                     peer_id=utils.get_peer(request.peer),
-                    media=types.MessageMediaPoll(
+                    media=_tl.MessageMediaPoll(
                         poll=update.poll,
                         results=update.results
                     )

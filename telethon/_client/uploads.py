@@ -9,8 +9,7 @@ from io import BytesIO
 
 from ..crypto import AES
 
-from .. import utils, helpers, hints
-from ..tl import types, functions, custom
+from .. import utils, helpers, hints, _tl
 
 try:
     import PIL
@@ -99,11 +98,11 @@ async def send_file(
         clear_draft: bool = False,
         progress_callback: 'hints.ProgressCallback' = None,
         reply_to: 'hints.MessageIDLike' = None,
-        attributes: 'typing.Sequence[types.TypeDocumentAttribute]' = None,
+        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
         thumb: 'hints.FileLike' = None,
         allow_cache: bool = True,
         parse_mode: str = (),
-        formatting_entities: typing.Optional[typing.List[types.TypeMessageEntity]] = None,
+        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
         voice_note: bool = False,
         video_note: bool = False,
         buttons: 'hints.MarkupLike' = None,
@@ -111,9 +110,9 @@ async def send_file(
         background: bool = None,
         supports_streaming: bool = False,
         schedule: 'hints.DateLike' = None,
-        comment_to: 'typing.Union[int, types.Message]' = None,
+        comment_to: 'typing.Union[int, _tl.Message]' = None,
         ttl: int = None,
-        **kwargs) -> 'types.Message':
+        **kwargs) -> '_tl.Message':
     # TODO Properly implement allow_cache to reuse the sha256 of the file
     # i.e. `None` was used
     if not file:
@@ -182,7 +181,7 @@ async def send_file(
         raise TypeError('Cannot use {!r} as file'.format(file))
 
     markup = self.build_reply_markup(buttons)
-    request = functions.messages.SendMediaRequest(
+    request = _tl.fn.messages.SendMedia(
         entity, media, reply_to_msg_id=reply_to, message=caption,
         entities=msg_entities, reply_markup=markup, silent=silent,
         schedule_date=schedule, clear_draft=clear_draft,
@@ -225,14 +224,14 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
         fh, fm, _ = await self._file_to_media(
             file, supports_streaming=supports_streaming,
             force_document=force_document, ttl=ttl)
-        if isinstance(fm, (types.InputMediaUploadedPhoto, types.InputMediaPhotoExternal)):
-            r = await self(functions.messages.UploadMediaRequest(
+        if isinstance(fm, (_tl.InputMediaUploadedPhoto, _tl.InputMediaPhotoExternal)):
+            r = await self(_tl.fn.messages.UploadMedia(
                 entity, media=fm
             ))
 
             fm = utils.get_input_media(r.photo)
-        elif isinstance(fm, types.InputMediaUploadedDocument):
-            r = await self(functions.messages.UploadMediaRequest(
+        elif isinstance(fm, _tl.InputMediaUploadedDocument):
+            r = await self(_tl.fn.messages.UploadMedia(
                 entity, media=fm
             ))
 
@@ -243,7 +242,7 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
             caption, msg_entities = captions.pop()
         else:
             caption, msg_entities = '', None
-        media.append(types.InputSingleMedia(
+        media.append(_tl.InputSingleMedia(
             fm,
             message=caption,
             entities=msg_entities
@@ -251,7 +250,7 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
         ))
 
     # Now we can construct the multi-media request
-    request = functions.messages.SendMultiMediaRequest(
+    request = _tl.fn.messages.SendMultiMedia(
         entity, reply_to_msg_id=reply_to, multi_media=media,
         silent=silent, schedule_date=schedule, clear_draft=clear_draft,
         background=background
@@ -271,8 +270,8 @@ async def upload_file(
         use_cache: type = None,
         key: bytes = None,
         iv: bytes = None,
-        progress_callback: 'hints.ProgressCallback' = None) -> 'types.TypeInputFile':
-    if isinstance(file, (types.InputFile, types.InputFileBig)):
+        progress_callback: 'hints.ProgressCallback' = None) -> '_tl.TypeInputFile':
+    if isinstance(file, (_tl.InputFile, _tl.InputFileBig)):
         return file  # Already uploaded
 
     pos = 0
@@ -343,10 +342,10 @@ async def upload_file(
             # The SavePartRequest is different depending on whether
             # the file is too large or not (over or less than 10MB)
             if is_big:
-                request = functions.upload.SaveBigFilePartRequest(
+                request = _tl.fn.upload.SaveBigFilePart(
                     file_id, part_index, part_count, part)
             else:
-                request = functions.upload.SaveFilePartRequest(
+                request = _tl.fn.upload.SaveFilePart(
                     file_id, part_index, part)
 
             result = await self(request)
@@ -360,9 +359,9 @@ async def upload_file(
                     'Failed to upload file part {}.'.format(part_index))
 
     if is_big:
-        return types.InputFileBig(file_id, part_count, file_name)
+        return _tl.InputFileBig(file_id, part_count, file_name)
     else:
-        return custom.InputSizedFile(
+        return _tl.custom.InputSizedFile(
             file_id, part_count, file_name, md5=hash_md5, size=file_size
         )
 
@@ -385,7 +384,7 @@ async def _file_to_media(
 
     # `aiofiles` do not base `io.IOBase` but do have `read`, so we
     # just check for the read attribute to see if it's file-like.
-    if not isinstance(file, (str, bytes, types.InputFile, types.InputFileBig))\
+    if not isinstance(file, (str, bytes, _tl.InputFile, _tl.InputFileBig))\
             and not hasattr(file, 'read'):
         # The user may pass a Message containing media (or the media,
         # or anything similar) that should be treated as a file. Try
@@ -411,7 +410,7 @@ async def _file_to_media(
     media = None
     file_handle = None
 
-    if isinstance(file, (types.InputFile, types.InputFileBig)):
+    if isinstance(file, (_tl.InputFile, _tl.InputFileBig)):
         file_handle = file
     elif not isinstance(file, str) or os.path.isfile(file):
         file_handle = await self.upload_file(
@@ -421,9 +420,9 @@ async def _file_to_media(
         )
     elif re.match('https?://', file):
         if as_image:
-            media = types.InputMediaPhotoExternal(file, ttl_seconds=ttl)
+            media = _tl.InputMediaPhotoExternal(file, ttl_seconds=ttl)
         else:
-            media = types.InputMediaDocumentExternal(file, ttl_seconds=ttl)
+            media = _tl.InputMediaDocumentExternal(file, ttl_seconds=ttl)
     else:
         bot_file = utils.resolve_bot_file_id(file)
         if bot_file:
@@ -437,7 +436,7 @@ async def _file_to_media(
             'an HTTP URL or a valid bot-API-like file ID'.format(file)
         )
     elif as_image:
-        media = types.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)
+        media = _tl.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)
     else:
         attributes, mime_type = utils.get_attributes(
             file,
@@ -457,7 +456,7 @@ async def _file_to_media(
                 thumb = str(thumb.absolute())
             thumb = await self.upload_file(thumb, file_size=file_size)
 
-        media = types.InputMediaUploadedDocument(
+        media = _tl.InputMediaUploadedDocument(
             file=file_handle,
             mime_type=mime_type,
             attributes=attributes,

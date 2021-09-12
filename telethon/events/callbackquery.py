@@ -2,9 +2,7 @@ import re
 import struct
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
-from ..tl import types, functions
-from ..tl.custom.sendergetter import SenderGetter
+from .. import utils, _tl
 
 
 @name_inner_event
@@ -88,13 +86,13 @@ class CallbackQuery(EventBuilder):
 
     @classmethod
     def build(cls, update, others=None, self_id=None):
-        if isinstance(update, types.UpdateBotCallbackQuery):
+        if isinstance(update, _tl.UpdateBotCallbackQuery):
             return cls.Event(update, update.peer, update.msg_id)
-        elif isinstance(update, types.UpdateInlineBotCallbackQuery):
+        elif isinstance(update, _tl.UpdateInlineBotCallbackQuery):
             # See https://github.com/LonamiWebs/Telethon/pull/1005
             # The long message ID is actually just msg_id + peer_id
             mid, pid = struct.unpack('<ii', struct.pack('<q', update.msg_id.id))
-            peer = types.PeerChannel(-pid) if pid < 0 else types.PeerUser(pid)
+            peer = _tl.PeerChannel(-pid) if pid < 0 else _tl.PeerUser(pid)
             return cls.Event(update, peer, mid)
 
     def filter(self, event):
@@ -123,7 +121,7 @@ class CallbackQuery(EventBuilder):
             return self.func(event)
         return True
 
-    class Event(EventCommon, SenderGetter):
+    class Event(EventCommon, _tl.custom.sendergetter.SenderGetter):
         """
         Represents the event of a new callback query.
 
@@ -141,7 +139,7 @@ class CallbackQuery(EventBuilder):
         """
         def __init__(self, query, peer, msg_id):
             super().__init__(peer, msg_id=msg_id)
-            SenderGetter.__init__(self, query.user_id)
+            _tl.custom.sendergetter.SenderGetter.__init__(self, query.user_id)
             self.query = query
             self.data_match = None
             self.pattern_match = None
@@ -242,7 +240,7 @@ class CallbackQuery(EventBuilder):
 
             self._answered = True
             return await self._client(
-                functions.messages.SetBotCallbackAnswerRequest(
+                _tl.fn.messages.SetBotCallbackAnswerRequest(
                     query_id=self.query.query_id,
                     cache_time=cache_time,
                     alert=alert,
@@ -264,7 +262,7 @@ class CallbackQuery(EventBuilder):
             chat, so methods like `respond` or `delete` won't work (but
             `edit` will always work).
             """
-            return isinstance(self.query, types.UpdateInlineBotCallbackQuery)
+            return isinstance(self.query, _tl.UpdateInlineBotCallbackQuery)
 
         async def respond(self, *args, **kwargs):
             """
@@ -312,7 +310,7 @@ class CallbackQuery(EventBuilder):
                 since the message object is normally not present.
             """
             self._client.loop.create_task(self.answer())
-            if isinstance(self.query.msg_id, types.InputBotInlineMessageID):
+            if isinstance(self.query.msg_id, _tl.InputBotInlineMessageID):
                 return await self._client.edit_message(
                     self.query.msg_id, *args, **kwargs
                 )

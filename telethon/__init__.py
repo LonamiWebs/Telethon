@@ -1,8 +1,7 @@
 from ._client.telegramclient import TelegramClient
 from .network import connection
-from .tl import types, functions, custom
-from .tl.custom import Button
-from .tl import patched as _  # import for its side-effects
+from ._tl import custom
+from ._tl.custom import Button
 from . import version, events, utils, errors
 
 __version__ = version.__version__

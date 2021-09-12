@@ -1,8 +1,6 @@
 import datetime
 
-from .. import TLObject
-from ..functions.messages import SaveDraftRequest
-from ..types import DraftMessage
+from ... import _tl
 from ...errors import RPCError
 from ...extensions import markdown
 from ...utils import get_input_peer, get_peer
@@ -30,8 +28,8 @@ class Draft:
         self._entity = entity
         self._input_entity = get_input_peer(entity) if entity else None
 
-        if not draft or not isinstance(draft, DraftMessage):
-            draft = DraftMessage('', None, None, None, None)
+        if not draft or not isinstance(draft, _tl.DraftMessage):
+            draft = _tl.DraftMessage('', None, None, None, None)
 
         self._text = markdown.unparse(draft.message, draft.entities)
         self._raw_text = draft.message
@@ -134,7 +132,7 @@ class Draft:
         raw_text, entities =\
             await self._client._parse_message_text(text, parse_mode)
 
-        result = await self._client(SaveDraftRequest(
+        result = await self._client(_tl.fn.SaveDraftRequest(
             peer=self._peer,
             message=raw_text,
             no_webpage=not link_preview,
@@ -184,7 +182,7 @@ class Draft:
         }
 
     def __str__(self):
-        return TLObject.pretty_format(self.to_dict())
+        return _tl.TLObject.pretty_format(self.to_dict())
 
     def stringify(self):
-        return TLObject.pretty_format(self.to_dict(), indent=0)
+        return _tl.TLObject.pretty_format(self.to_dict(), indent=0)

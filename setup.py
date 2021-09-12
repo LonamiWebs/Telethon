@@ -55,7 +55,7 @@ METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 FRIENDLY_IN = GENERATOR_DIR / 'data/friendly.csv'
 
 TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
-TLOBJECT_OUT = LIBRARY_DIR / 'tl'
+TLOBJECT_OUT = LIBRARY_DIR / '_tl'
 IMPORT_DEPTH = 2
 
 DOCS_IN_RES = GENERATOR_DIR / 'data/html'

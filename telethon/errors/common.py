@@ -1,7 +1,7 @@
 """Errors not related to the Telegram API itself"""
 import struct
 
-from ..tl import TLRequest
+from .. import _tl
 
 
 class ReadCancelledError(Exception):
@@ -138,7 +138,7 @@ class MultiError(Exception):
                 raise TypeError(
                     "Expected an exception object, not '%r'" % e
                 )
-            if not isinstance(req, TLRequest):
+            if not isinstance(req, _tl.TLRequest):
                 raise TypeError(
                     "Expected TLRequest object, not '%r'" % req
                 )

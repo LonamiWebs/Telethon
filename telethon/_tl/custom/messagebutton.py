@@ -96,10 +96,10 @@ class MessageButton:
                 self._chat, self.button.text, parse_mode=None)
         elif isinstance(self.button, types.KeyboardButtonCallback):
             if password is not None:
-                pwd = await self._client(functions.account.GetPasswordRequest())
+                pwd = await self._client(_tl.fn.account.GetPassword())
                 password = pwd_mod.compute_check(pwd, password)
 
-            req = functions.messages.GetBotCallbackAnswerRequest(
+            req = _tl.fn.messages.GetBotCallbackAnswer(
                 peer=self._chat, msg_id=self._msg_id, data=self.button.data,
                 password=password
             )
@@ -108,13 +108,13 @@ class MessageButton:
             except BotResponseTimeoutError:
                 return None
         elif isinstance(self.button, types.KeyboardButtonSwitchInline):
-            return await self._client(functions.messages.StartBotRequest(
+            return await self._client(_tl.fn.messages.StartBot(
                 bot=self._bot, peer=self._chat, start_param=self.button.query
             ))
         elif isinstance(self.button, types.KeyboardButtonUrl):
             return webbrowser.open(self.button.url)
         elif isinstance(self.button, types.KeyboardButtonGame):
-            req = functions.messages.GetBotCallbackAnswerRequest(
+            req = _tl.fn.messages.GetBotCallbackAnswer(
                 peer=self._chat, msg_id=self._msg_id, game=True
             )
             try:

@@ -5,7 +5,7 @@ from telethon.tl import types, functions
 
 def test_nested_invalid_serialization():
     large_long = 2**62
-    request = functions.account.SetPrivacyRequest(
+    request = _tl.fn.account.SetPrivacy(
         key=types.InputPrivacyKeyChatInvite(),
         rules=[types.InputPrivacyValueDisallowUsers(users=[large_long])]
     )

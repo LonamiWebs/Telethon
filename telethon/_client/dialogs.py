@@ -3,9 +3,8 @@ import inspect
 import itertools
 import typing
 
-from .. import helpers, utils, hints, errors
+from .. import helpers, utils, hints, errors, _tl
 from ..requestiter import RequestIter
-from ..tl import types, functions, custom
 
 _MAX_CHUNK_SIZE = 100
 
@@ -21,14 +20,14 @@ def _dialog_message_key(peer, message_id):
     and the peer ID is required to distinguish between them. But it is not
     necessary in small group chats and private chats.
     """
-    return (peer.channel_id if isinstance(peer, types.PeerChannel) else None), message_id
+    return (peer.channel_id if isinstance(peer, _tl.PeerChannel) else None), message_id
 
 
 class _DialogsIter(RequestIter):
     async def _init(
             self, offset_date, offset_id, offset_peer, ignore_pinned, ignore_migrated, folder
     ):
-        self.request = functions.messages.GetDialogsRequest(
+        self.request = _tl.fn.messages.GetDialogs(
             offset_date=offset_date,
             offset_id=offset_id,
             offset_peer=offset_peer,
@@ -56,7 +55,7 @@ class _DialogsIter(RequestIter):
 
         entities = {utils.get_peer_id(x): x
                     for x in itertools.chain(r.users, r.chats)
-                    if not isinstance(x, (types.UserEmpty, types.ChatEmpty))}
+                    if not isinstance(x, (_tl.UserEmpty, _tl.ChatEmpty))}
 
         messages = {}
         for m in r.messages:
@@ -80,7 +79,7 @@ class _DialogsIter(RequestIter):
                     # Real world example: https://t.me/TelethonChat/271471
                     continue
 
-                cd = custom.Dialog(self.client, d, entities, message)
+                cd = _tl.custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
                     self.client._channel_pts[cd.id] = cd.dialog.pts
 
@@ -89,7 +88,7 @@ class _DialogsIter(RequestIter):
                     self.buffer.append(cd)
 
         if len(r.dialogs) < self.request.limit\
-                or not isinstance(r, types.messages.DialogsSlice):
+                or not isinstance(r, _tl.messages.DialogsSlice):
             # Less than we requested means we reached the end, or
             # we didn't get a DialogsSlice which means we got all.
             return True
@@ -112,15 +111,15 @@ class _DialogsIter(RequestIter):
 class _DraftsIter(RequestIter):
     async def _init(self, entities, **kwargs):
         if not entities:
-            r = await self.client(functions.messages.GetAllDraftsRequest())
+            r = await self.client(_tl.fn.messages.GetAllDrafts())
             items = r.updates
         else:
             peers = []
             for entity in entities:
-                peers.append(types.InputDialogPeer(
+                peers.append(_tl.InputDialogPeer(
                     await self.client.get_input_entity(entity)))
 
-            r = await self.client(functions.messages.GetPeerDialogsRequest(peers))
+            r = await self.client(_tl.fn.messages.GetPeerDialogs(peers))
             items = r.dialogs
 
         # TODO Maybe there should be a helper method for this?
@@ -128,7 +127,7 @@ class _DraftsIter(RequestIter):
                     for x in itertools.chain(r.users, r.chats)}
 
         self.buffer.extend(
-            custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
+            _tl.custom.Draft(self.client, entities[utils.get_peer_id(d.peer)], d.draft)
             for d in items
         )
 
@@ -142,7 +141,7 @@ def iter_dialogs(
         *,
         offset_date: 'hints.DateLike' = None,
         offset_id: int = 0,
-        offset_peer: 'hints.EntityLike' = types.InputPeerEmpty(),
+        offset_peer: 'hints.EntityLike' = _tl.InputPeerEmpty(),
         ignore_pinned: bool = False,
         ignore_migrated: bool = False,
         folder: int = None,
@@ -192,12 +191,12 @@ async def edit_folder(
         folder: typing.Union[int, typing.Sequence[int]] = None,
         *,
         unpack=None
-) -> types.Updates:
+) -> _tl.Updates:
     if (entity is None) == (unpack is None):
         raise ValueError('You can only set either entities or unpack, not both')
 
     if unpack is not None:
-        return await self(functions.folders.DeleteFolderRequest(
+        return await self(_tl.fn.folders.DeleteFolder(
             folder_id=unpack
         ))
 
@@ -214,8 +213,8 @@ async def edit_folder(
     elif len(entities) != len(folder):
         raise ValueError('Number of folders does not match number of entities')
 
-    return await self(functions.folders.EditPeerFoldersRequest([
-        types.InputFolderPeer(x, folder_id=y)
+    return await self(_tl.fn.folders.EditPeerFolders([
+        _tl.InputFolderPeer(x, folder_id=y)
         for x, y in zip(entities, folder)
     ]))
 
@@ -227,7 +226,7 @@ async def delete_dialog(
 ):
     # If we have enough information (`Dialog.delete` gives it to us),
     # then we know we don't have to kick ourselves in deactivated chats.
-    if isinstance(entity, types.Chat):
+    if isinstance(entity, _tl.Chat):
         deactivated = entity.deactivated
     else:
         deactivated = False
@@ -235,12 +234,12 @@ async def delete_dialog(
     entity = await self.get_input_entity(entity)
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHANNEL:
-        return await self(functions.channels.LeaveChannelRequest(entity))
+        return await self(_tl.fn.channels.LeaveChannel(entity))
 
     if ty == helpers._EntityType.CHAT and not deactivated:
         try:
-            result = await self(functions.messages.DeleteChatUserRequest(
-                entity.chat_id, types.InputUserSelf(), revoke_history=revoke
+            result = await self(_tl.fn.messages.DeleteChatUser(
+                entity.chat_id, _tl.InputUserSelf(), revoke_history=revoke
             ))
         except errors.PeerIdInvalidError:
             # Happens if we didn't have the deactivated information
@@ -249,6 +248,6 @@ async def delete_dialog(
         result = None
 
     if not await self.is_bot():
-        await self(functions.messages.DeleteHistoryRequest(entity, 0, revoke=revoke))
+        await self(_tl.fn.messages.DeleteHistory(entity, 0, revoke=revoke))
 
     return result

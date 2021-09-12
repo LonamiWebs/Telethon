@@ -7,14 +7,7 @@ from html import escape
 from html.parser import HTMLParser
 from typing import Iterable, Optional, Tuple, List
 
-from .. import helpers
-from ..tl.types import (
-    MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityEmail, MessageEntityUrl,
-    MessageEntityTextUrl, MessageEntityMentionName,
-    MessageEntityUnderline, MessageEntityStrike, MessageEntityBlockquote,
-    TypeMessageEntity
-)
+from .. import helpers, _tl
 
 
 # Helpers from markdown.py
@@ -46,15 +39,15 @@ class HTMLToTelegramParser(HTMLParser):
         EntityType = None
         args = {}
         if tag == 'strong' or tag == 'b':
-            EntityType = MessageEntityBold
+            EntityType = _tl.MessageEntityBold
         elif tag == 'em' or tag == 'i':
-            EntityType = MessageEntityItalic
+            EntityType = _tl.MessageEntityItalic
         elif tag == 'u':
-            EntityType = MessageEntityUnderline
+            EntityType = _tl.MessageEntityUnderline
         elif tag == 'del' or tag == 's':
-            EntityType = MessageEntityStrike
+            EntityType = _tl.MessageEntityStrike
         elif tag == 'blockquote':
-            EntityType = MessageEntityBlockquote
+            EntityType = _tl.MessageEntityBlockquote
         elif tag == 'code':
             try:
                 # If we're in the middle of a <pre> tag, this <code> tag is
@@ -69,9 +62,9 @@ class HTMLToTelegramParser(HTMLParser):
                 except KeyError:
                     pass
             except KeyError:
-                EntityType = MessageEntityCode
+                EntityType = _tl.MessageEntityCode
         elif tag == 'pre':
-            EntityType = MessageEntityPre
+            EntityType = _tl.MessageEntityPre
             args['language'] = ''
         elif tag == 'a':
             try:
@@ -80,12 +73,12 @@ class HTMLToTelegramParser(HTMLParser):
                 return
             if url.startswith('mailto:'):
                 url = url[len('mailto:'):]
-                EntityType = MessageEntityEmail
+                EntityType = _tl.MessageEntityEmail
             else:
                 if self.get_starttag_text() == url:
-                    EntityType = MessageEntityUrl
+                    EntityType = _tl.MessageEntityUrl
                 else:
-                    EntityType = MessageEntityTextUrl
+                    EntityType = _tl.MessageEntityTextUrl
                     args['url'] = url
                     url = None
             self._open_tags_meta.popleft()
@@ -121,10 +114,10 @@ class HTMLToTelegramParser(HTMLParser):
             self.entities.append(entity)
 
 
-def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
+def parse(html: str) -> Tuple[str, List[_tl.TypeMessageEntity]]:
     """
     Parses the given HTML message and returns its stripped representation
-    plus a list of the MessageEntity's that were found.
+    plus a list of the _tl.MessageEntity's that were found.
 
     :param html: the message with HTML to be parsed.
     :return: a tuple consisting of (clean message, [message entities]).
@@ -138,14 +131,14 @@ def parse(html: str) -> Tuple[str, List[TypeMessageEntity]]:
     return _del_surrogate(text), parser.entities
 
 
-def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
+def unparse(text: str, entities: Iterable[_tl.TypeMessageEntity], _offset: int = 0,
             _length: Optional[int] = None) -> str:
     """
     Performs the reverse operation to .parse(), effectively returning HTML
-    given a normal text and its MessageEntity's.
+    given a normal text and its _tl.MessageEntity's.
 
     :param text: the text to be reconverted into HTML.
-    :param entities: the MessageEntity's applied to the text.
+    :param entities: the _tl.MessageEntity's applied to the text.
     :return: a HTML representation of the combination of both inputs.
     """
     if not text:
@@ -185,19 +178,19 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
                               _offset=entity.offset, _length=length)
         entity_type = type(entity)
 
-        if entity_type == MessageEntityBold:
+        if entity_type == _tl.MessageEntityBold:
             html.append('<strong>{}</strong>'.format(entity_text))
-        elif entity_type == MessageEntityItalic:
+        elif entity_type == _tl.MessageEntityItalic:
             html.append('<em>{}</em>'.format(entity_text))
-        elif entity_type == MessageEntityCode:
+        elif entity_type == _tl.MessageEntityCode:
             html.append('<code>{}</code>'.format(entity_text))
-        elif entity_type == MessageEntityUnderline:
+        elif entity_type == _tl.MessageEntityUnderline:
             html.append('<u>{}</u>'.format(entity_text))
-        elif entity_type == MessageEntityStrike:
+        elif entity_type == _tl.MessageEntityStrike:
             html.append('<del>{}</del>'.format(entity_text))
-        elif entity_type == MessageEntityBlockquote:
+        elif entity_type == _tl.MessageEntityBlockquote:
             html.append('<blockquote>{}</blockquote>'.format(entity_text))
-        elif entity_type == MessageEntityPre:
+        elif entity_type == _tl.MessageEntityPre:
             if entity.language:
                 html.append(
                     "<pre>\n"
@@ -208,14 +201,14 @@ def unparse(text: str, entities: Iterable[TypeMessageEntity], _offset: int = 0,
             else:
                 html.append('<pre><code>{}</code></pre>'
                             .format(entity_text))
-        elif entity_type == MessageEntityEmail:
+        elif entity_type == _tl.MessageEntityEmail:
             html.append('<a href="mailto:{0}">{0}</a>'.format(entity_text))
-        elif entity_type == MessageEntityUrl:
+        elif entity_type == _tl.MessageEntityUrl:
             html.append('<a href="{0}">{0}</a>'.format(entity_text))
-        elif entity_type == MessageEntityTextUrl:
+        elif entity_type == _tl.MessageEntityTextUrl:
             html.append('<a href="{}">{}</a>'
                         .format(escape(entity.url), entity_text))
-        elif entity_type == MessageEntityMentionName:
+        elif entity_type == _tl.MessageEntityMentionName:
             html.append('<a href="tg://user?id={}">{}</a>'
                         .format(entity.user_id, entity_text))
         else:

@@ -15,7 +15,7 @@ class QRLogin:
     """
     def __init__(self, client, ignored_ids):
         self._client = client
-        self._request = functions.auth.ExportLoginTokenRequest(
+        self._request = _tl.fn.auth.ExportLoginToken(
             self._client.api_id, self._client.api_hash, ignored_ids)
         self._resp = None
 
@@ -108,7 +108,7 @@ class QRLogin:
         resp = await self._client(self._request)
         if isinstance(resp, types.auth.LoginTokenMigrateTo):
             await self._client._switch_dc(resp.dc_id)
-            resp = await self._client(functions.auth.ImportLoginTokenRequest(resp.token))
+            resp = await self._client(_tl.fn.auth.ImportLoginToken(resp.token))
             # resp should now be auth.loginTokenSuccess
 
         if isinstance(resp, types.auth.LoginTokenSuccess):

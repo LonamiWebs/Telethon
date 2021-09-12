@@ -7,19 +7,14 @@ import re
 import warnings
 
 from ..helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
-from ..tl import TLObject
-from ..tl.types import (
-    MessageEntityBold, MessageEntityItalic, MessageEntityCode,
-    MessageEntityPre, MessageEntityTextUrl, MessageEntityMentionName,
-    MessageEntityStrike
-)
+from .. import _tl
 
 DEFAULT_DELIMITERS = {
-    '**': MessageEntityBold,
-    '__': MessageEntityItalic,
-    '~~': MessageEntityStrike,
-    '`': MessageEntityCode,
-    '```': MessageEntityPre
+    '**': _tl.MessageEntityBold,
+    '__': _tl.MessageEntityItalic,
+    '~~': _tl.MessageEntityStrike,
+    '`': _tl.MessageEntityCode,
+    '```': _tl.MessageEntityPre
 }
 
 DEFAULT_URL_RE = re.compile(r'\[([\S\s]+?)\]\((.+?)\)')
@@ -33,7 +28,7 @@ def overlap(a, b, x, y):
 def parse(message, delimiters=None, url_re=None):
     """
     Parses the given markdown message and returns its stripped representation
-    plus a list of the MessageEntity's that were found.
+    plus a list of the _tl.MessageEntity's that were found.
 
     :param message: the message with markdown-like syntax to be parsed.
     :param delimiters: the delimiters to be used, {delimiter: type}.
@@ -98,13 +93,13 @@ def parse(message, delimiters=None, url_re=None):
 
                 # Append the found entity
                 ent = delimiters[delim]
-                if ent == MessageEntityPre:
+                if ent == _tl.MessageEntityPre:
                     result.append(ent(i, end - i - len(delim), ''))  # has 'lang'
                 else:
                     result.append(ent(i, end - i - len(delim)))
 
                 # No nested entities inside code blocks
-                if ent in (MessageEntityCode, MessageEntityPre):
+                if ent in (_tl.MessageEntityCode, _tl.MessageEntityPre):
                     i = end - len(delim)
 
                 continue
@@ -125,7 +120,7 @@ def parse(message, delimiters=None, url_re=None):
                     if ent.offset + ent.length > m.start():
                         ent.length -= delim_size
 
-                result.append(MessageEntityTextUrl(
+                result.append(_tl.MessageEntityTextUrl(
                     offset=m.start(), length=len(m.group(1)),
                     url=del_surrogate(m.group(2))
                 ))
@@ -141,10 +136,10 @@ def parse(message, delimiters=None, url_re=None):
 def unparse(text, entities, delimiters=None, url_fmt=None):
     """
     Performs the reverse operation to .parse(), effectively returning
-    markdown-like syntax given a normal text and its MessageEntity's.
+    markdown-like syntax given a normal text and its _tl.MessageEntity's.
 
     :param text: the text to be reconverted into markdown.
-    :param entities: the MessageEntity's applied to the text.
+    :param entities: the _tl.MessageEntity's applied to the text.
     :return: a markdown-like text representing the combination of both inputs.
     """
     if not text or not entities:
@@ -158,7 +153,7 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
     if url_fmt is not None:
         warnings.warn('url_fmt is deprecated')  # since it complicates everything *a lot*
 
-    if isinstance(entities, TLObject):
+    if isinstance(entities, _tl.TLObject):
         entities = (entities,)
 
     text = add_surrogate(text)
@@ -173,9 +168,9 @@ def unparse(text, entities, delimiters=None, url_fmt=None):
             insert_at.append((e, delimiter))
         else:
             url = None
-            if isinstance(entity, MessageEntityTextUrl):
+            if isinstance(entity, _tl.MessageEntityTextUrl):
                 url = entity.url
-            elif isinstance(entity, MessageEntityMentionName):
+            elif isinstance(entity, _tl.MessageEntityMentionName):
                 url = 'tg://user?id={}'.format(entity.user_id)
             if url:
                 insert_at.append((s, '['))

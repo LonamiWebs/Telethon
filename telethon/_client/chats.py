@@ -4,9 +4,8 @@ import itertools
 import string
 import typing
 
-from .. import helpers, utils, hints, errors
+from .. import helpers, utils, hints, errors, _tl
 from ..requestiter import RequestIter
-from ..tl import types, functions, custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -18,28 +17,28 @@ _MAX_PROFILE_PHOTO_CHUNK_SIZE = 100
 
 class _ChatAction:
     _str_mapping = {
-        'typing': types.SendMessageTypingAction(),
-        'contact': types.SendMessageChooseContactAction(),
-        'game': types.SendMessageGamePlayAction(),
-        'location': types.SendMessageGeoLocationAction(),
-        'sticker': types.SendMessageChooseStickerAction(),
+        'typing': _tl.SendMessageTypingAction(),
+        'contact': _tl.SendMessageChooseContactAction(),
+        'game': _tl.SendMessageGamePlayAction(),
+        'location': _tl.SendMessageGeoLocationAction(),
+        'sticker': _tl.SendMessageChooseStickerAction(),
 
-        'record-audio': types.SendMessageRecordAudioAction(),
-        'record-voice': types.SendMessageRecordAudioAction(),  # alias
-        'record-round': types.SendMessageRecordRoundAction(),
-        'record-video': types.SendMessageRecordVideoAction(),
+        'record-audio': _tl.SendMessageRecordAudioAction(),
+        'record-voice': _tl.SendMessageRecordAudioAction(),  # alias
+        'record-round': _tl.SendMessageRecordRoundAction(),
+        'record-video': _tl.SendMessageRecordVideoAction(),
 
-        'audio': types.SendMessageUploadAudioAction(1),
-        'voice': types.SendMessageUploadAudioAction(1),  # alias
-        'song': types.SendMessageUploadAudioAction(1),  # alias
-        'round': types.SendMessageUploadRoundAction(1),
-        'video': types.SendMessageUploadVideoAction(1),
+        'audio': _tl.SendMessageUploadAudioAction(1),
+        'voice': _tl.SendMessageUploadAudioAction(1),  # alias
+        'song': _tl.SendMessageUploadAudioAction(1),  # alias
+        'round': _tl.SendMessageUploadRoundAction(1),
+        'video': _tl.SendMessageUploadVideoAction(1),
 
-        'photo': types.SendMessageUploadPhotoAction(1),
-        'document': types.SendMessageUploadDocumentAction(1),
-        'file': types.SendMessageUploadDocumentAction(1),  # alias
+        'photo': _tl.SendMessageUploadPhotoAction(1),
+        'document': _tl.SendMessageUploadDocumentAction(1),
+        'file': _tl.SendMessageUploadDocumentAction(1),  # alias
 
-        'cancel': types.SendMessageCancelAction()
+        'cancel': _tl.SendMessageCancelAction()
     }
 
     def __init__(self, client, chat, action, *, delay, auto_cancel):
@@ -58,7 +57,7 @@ class _ChatAction:
         # Since `self._action` is passed by reference we can avoid
         # recreating the request all the time and still modify
         # `self._action.progress` directly in `progress`.
-        self._request = functions.messages.SetTypingRequest(
+        self._request = _tl.fn.messages.SetTyping(
             self._chat, self._action)
 
         self._running = True
@@ -85,8 +84,8 @@ class _ChatAction:
             pass
         except asyncio.CancelledError:
             if self._auto_cancel:
-                await self._client(functions.messages.SetTypingRequest(
-                    self._chat, types.SendMessageCancelAction()))
+                await self._client(_tl.fn.messages.SetTyping(
+                    self._chat, _tl.SendMessageCancelAction()))
 
     def progress(self, current, total):
         if hasattr(self._action, 'progress'):
@@ -96,10 +95,10 @@ class _ChatAction:
 class _ParticipantsIter(RequestIter):
     async def _init(self, entity, filter, search, aggressive):
         if isinstance(filter, type):
-            if filter in (types.ChannelParticipantsBanned,
-                          types.ChannelParticipantsKicked,
-                          types.ChannelParticipantsSearch,
-                          types.ChannelParticipantsContacts):
+            if filter in (_tl.ChannelParticipantsBanned,
+                          _tl.ChannelParticipantsKicked,
+                          _tl.ChannelParticipantsSearch,
+                          _tl.ChannelParticipantsContacts):
                 # These require a `q` parameter (support types for convenience)
                 filter = filter('')
             else:
@@ -125,23 +124,23 @@ class _ParticipantsIter(RequestIter):
             if self.limit <= 0:
                 # May not have access to the channel, but getFull can get the .total.
                 self.total = (await self.client(
-                    functions.channels.GetFullChannelRequest(entity)
+                    _tl.fn.channels.GetFullChannel(entity)
                 )).full_chat.participants_count
                 raise StopAsyncIteration
 
             self.seen = set()
             if aggressive and not filter:
-                self.requests.extend(functions.channels.GetParticipantsRequest(
+                self.requests.extend(_tl.fn.channels.GetParticipants(
                     channel=entity,
-                    filter=types.ChannelParticipantsSearch(x),
+                    filter=_tl.ChannelParticipantsSearch(x),
                     offset=0,
                     limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
                 ) for x in (search or string.ascii_lowercase))
             else:
-                self.requests.append(functions.channels.GetParticipantsRequest(
+                self.requests.append(_tl.fn.channels.GetParticipants(
                     channel=entity,
-                    filter=filter or types.ChannelParticipantsSearch(search),
+                    filter=filter or _tl.ChannelParticipantsSearch(search),
                     offset=0,
                     limit=_MAX_PARTICIPANTS_CHUNK_SIZE,
                     hash=0
@@ -149,9 +148,9 @@ class _ParticipantsIter(RequestIter):
 
         elif ty == helpers._EntityType.CHAT:
             full = await self.client(
-                functions.messages.GetFullChatRequest(entity.chat_id))
+                _tl.fn.messages.GetFullChat(entity.chat_id))
             if not isinstance(
-                    full.full_chat.participants, types.ChatParticipants):
+                    full.full_chat.participants, _tl.ChatParticipants):
                 # ChatParticipantsForbidden won't have ``.participants``
                 self.total = 0
                 raise StopAsyncIteration
@@ -160,7 +159,7 @@ class _ParticipantsIter(RequestIter):
 
             users = {user.id: user for user in full.users}
             for participant in full.full_chat.participants.participants:
-                if isinstance(participant, types.ChannelParticipantBanned):
+                if isinstance(participant, _tl.ChannelParticipantBanned):
                     user_id = participant.peer.user_id
                 else:
                     user_id = participant.user_id
@@ -202,15 +201,15 @@ class _ParticipantsIter(RequestIter):
         if self.total is None:
             f = self.requests[0].filter
             if len(self.requests) > 1 or (
-                not isinstance(f, types.ChannelParticipantsRecent)
-                and (not isinstance(f, types.ChannelParticipantsSearch) or f.q)
+                not isinstance(f, _tl.ChannelParticipantsRecent)
+                and (not isinstance(f, _tl.ChannelParticipantsSearch) or f.q)
             ):
                 # Only do an additional getParticipants here to get the total
                 # if there's a filter which would reduce the real total number.
                 # getParticipants is cheaper than getFull.
-                self.total = (await self.client(functions.channels.GetParticipantsRequest(
+                self.total = (await self.client(_tl.fn.channels.GetParticipants(
                     channel=self.requests[0].channel,
-                    filter=types.ChannelParticipantsRecent(),
+                    filter=_tl.ChannelParticipantsRecent(),
                     offset=0,
                     limit=1,
                     hash=0
@@ -230,8 +229,8 @@ class _ParticipantsIter(RequestIter):
             users = {user.id: user for user in participants.users}
             for participant in participants.participants:
 
-                if isinstance(participant, types.ChannelParticipantBanned):
-                    if not isinstance(participant.peer, types.PeerUser):
+                if isinstance(participant, _tl.ChannelParticipantBanned):
+                    if not isinstance(participant.peer, _tl.PeerUser):
                         # May have the entire channel banned. See #3105.
                         continue
                     user_id = participant.peer.user_id
@@ -257,7 +256,7 @@ class _AdminLogIter(RequestIter):
         if any((join, leave, invite, restrict, unrestrict, ban, unban,
                 promote, demote, info, settings, pinned, edit, delete,
                 group_call)):
-            events_filter = types.ChannelAdminLogEventsFilter(
+            events_filter = _tl.ChannelAdminLogEventsFilter(
                 join=join, leave=leave, invite=invite, ban=restrict,
                 unban=unrestrict, kick=ban, unkick=unban, promote=promote,
                 demote=demote, info=info, settings=settings, pinned=pinned,
@@ -276,7 +275,7 @@ class _AdminLogIter(RequestIter):
             for admin in admins:
                 admin_list.append(await self.client.get_input_entity(admin))
 
-        self.request = functions.channels.GetAdminLogRequest(
+        self.request = _tl.fn.channels.GetAdminLog(
             self.entity, q=search or '', min_id=min_id, max_id=max_id,
             limit=0, events_filter=events_filter, admins=admin_list or None
         )
@@ -290,7 +289,7 @@ class _AdminLogIter(RequestIter):
         self.request.max_id = min((e.id for e in r.events), default=0)
         for ev in r.events:
             if isinstance(ev.action,
-                          types.ChannelAdminLogEventActionEditMessage):
+                          _tl.ChannelAdminLogEventActionEditMessage):
                 ev.action.prev_message._finish_init(
                     self.client, entities, self.entity)
 
@@ -298,11 +297,11 @@ class _AdminLogIter(RequestIter):
                     self.client, entities, self.entity)
 
             elif isinstance(ev.action,
-                            types.ChannelAdminLogEventActionDeleteMessage):
+                            _tl.ChannelAdminLogEventActionDeleteMessage):
                 ev.action.message._finish_init(
                     self.client, entities, self.entity)
 
-            self.buffer.append(custom.AdminLogEvent(ev, entities))
+            self.buffer.append(_tl.custom.AdminLogEvent(ev, entities))
 
         if len(r.events) < self.request.limit:
             return True
@@ -315,17 +314,17 @@ class _ProfilePhotoIter(RequestIter):
         entity = await self.client.get_input_entity(entity)
         ty = helpers._entity_type(entity)
         if ty == helpers._EntityType.USER:
-            self.request = functions.photos.GetUserPhotosRequest(
+            self.request = _tl.fn.photos.GetUserPhotos(
                 entity,
                 offset=offset,
                 max_id=max_id,
                 limit=1
             )
         else:
-            self.request = functions.messages.SearchRequest(
+            self.request = _tl.fn.messages.Search(
                 peer=entity,
                 q='',
-                filter=types.InputMessagesFilterChatPhotos(),
+                filter=_tl.InputMessagesFilterChatPhotos(),
                 min_date=None,
                 max_date=None,
                 offset_id=0,
@@ -339,9 +338,9 @@ class _ProfilePhotoIter(RequestIter):
         if self.limit == 0:
             self.request.limit = 1
             result = await self.client(self.request)
-            if isinstance(result, types.photos.Photos):
+            if isinstance(result, _tl.photos.Photos):
                 self.total = len(result.photos)
-            elif isinstance(result, types.messages.Messages):
+            elif isinstance(result, _tl.messages.Messages):
                 self.total = len(result.messages)
             else:
                 # Luckily both photosSlice and messages have a count for total
@@ -351,17 +350,17 @@ class _ProfilePhotoIter(RequestIter):
         self.request.limit = min(self.left, _MAX_PROFILE_PHOTO_CHUNK_SIZE)
         result = await self.client(self.request)
 
-        if isinstance(result, types.photos.Photos):
+        if isinstance(result, _tl.photos.Photos):
             self.buffer = result.photos
             self.left = len(self.buffer)
             self.total = len(self.buffer)
-        elif isinstance(result, types.messages.Messages):
+        elif isinstance(result, _tl.messages.Messages):
             self.buffer = [x.action.photo for x in result.messages
-                           if isinstance(x.action, types.MessageActionChatEditPhoto)]
+                           if isinstance(x.action, _tl.MessageActionChatEditPhoto)]
 
             self.left = len(self.buffer)
             self.total = len(self.buffer)
-        elif isinstance(result, types.photos.PhotosSlice):
+        elif isinstance(result, _tl.photos.PhotosSlice):
             self.buffer = result.photos
             self.total = result.count
             if len(self.buffer) < self.request.limit:
@@ -381,16 +380,16 @@ class _ProfilePhotoIter(RequestIter):
             # Unconditionally fetch the full channel to obtain this photo and
             # yield it with the rest (unless it's a duplicate).
             seen_id = None
-            if isinstance(result, types.messages.ChannelMessages):
-                channel = await self.client(functions.channels.GetFullChannelRequest(self.request.peer))
+            if isinstance(result, _tl.messages.ChannelMessages):
+                channel = await self.client(_tl.fn.channels.GetFullChannel(self.request.peer))
                 photo = channel.full_chat.chat_photo
-                if isinstance(photo, types.Photo):
+                if isinstance(photo, _tl.Photo):
                     self.buffer.append(photo)
                     seen_id = photo.id
 
             self.buffer.extend(
                 x.action.photo for x in result.messages
-                if isinstance(x.action, types.MessageActionChatEditPhoto)
+                if isinstance(x.action, _tl.MessageActionChatEditPhoto)
                 and x.action.photo.id != seen_id
             )
 
@@ -407,7 +406,7 @@ def iter_participants(
         limit: float = None,
         *,
         search: str = '',
-        filter: 'types.TypeChannelParticipantsFilter' = None,
+        filter: '_tl.TypeChannelParticipantsFilter' = None,
         aggressive: bool = False) -> _ParticipantsIter:
     return _ParticipantsIter(
         self,
@@ -506,7 +505,7 @@ async def get_profile_photos(
 def action(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        action: 'typing.Union[str, types.TypeSendMessageAction]',
+        action: 'typing.Union[str, _tl.TypeSendMessageAction]',
         *,
         delay: float = 4,
         auto_cancel: bool = True) -> 'typing.Union[_ChatAction, typing.Coroutine]':
@@ -516,17 +515,17 @@ def action(
         except KeyError:
             raise ValueError(
                 'No such action "{}"'.format(action)) from None
-    elif not isinstance(action, types.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
+    elif not isinstance(action, _tl.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
         # 0x20b2cc21 = crc32(b'SendMessageAction')
         if isinstance(action, type):
             raise ValueError('You must pass an instance, not the class')
         else:
             raise ValueError('Cannot use {} as action'.format(action))
 
-    if isinstance(action, types.SendMessageCancelAction):
+    if isinstance(action, _tl.SendMessageCancelAction):
         # ``SetTypingRequest.resolve`` will get input peer of ``entity``.
-        return self(functions.messages.SetTypingRequest(
-            entity, types.SendMessageCancelAction()))
+        return self(_tl.fn.messages.SetTyping(
+            entity, _tl.SendMessageCancelAction()))
 
     return _ChatAction(
         self, entity, action, delay=delay, auto_cancel=auto_cancel)
@@ -547,7 +546,7 @@ async def edit_admin(
         manage_call: bool = None,
         anonymous: bool = None,
         is_admin: bool = None,
-        title: str = None) -> types.Updates:
+        title: str = None) -> _tl.Updates:
     entity = await self.get_input_entity(entity)
     user = await self.get_input_entity(user)
     ty = helpers._entity_type(user)
@@ -576,7 +575,7 @@ async def edit_admin(
                 edit_messages = None
 
         perms = locals()
-        return await self(functions.channels.EditAdminRequest(entity, user, types.ChatAdminRights(**{
+        return await self(_tl.fn.channels.EditAdmin(entity, user, _tl.ChatAdminRights(**{
             # A permission is its explicit (not-None) value or `is_admin`.
             # This essentially makes `is_admin` be the default value.
             name: perms[name] if perms[name] is not None else is_admin
@@ -589,7 +588,7 @@ async def edit_admin(
         if is_admin is None:
             is_admin = any(locals()[x] for x in perm_names)
 
-        return await self(functions.messages.EditChatAdminRequest(
+        return await self(_tl.fn.messages.EditChatAdmin(
             entity, user, is_admin=is_admin))
 
     else:
@@ -613,13 +612,13 @@ async def edit_permissions(
         send_polls: bool = True,
         change_info: bool = True,
         invite_users: bool = True,
-        pin_messages: bool = True) -> types.Updates:
+        pin_messages: bool = True) -> _tl.Updates:
     entity = await self.get_input_entity(entity)
     ty = helpers._entity_type(entity)
     if ty != helpers._EntityType.CHANNEL:
         raise ValueError('You must pass either a channel or a supergroup')
 
-    rights = types.ChatBannedRights(
+    rights = _tl.ChatBannedRights(
         until_date=until_date,
         view_messages=not view_messages,
         send_messages=not send_messages,
@@ -636,7 +635,7 @@ async def edit_permissions(
     )
 
     if user is None:
-        return await self(functions.messages.EditChatDefaultBannedRightsRequest(
+        return await self(_tl.fn.messages.EditChatDefaultBannedRights(
             peer=entity,
             banned_rights=rights
         ))
@@ -646,10 +645,10 @@ async def edit_permissions(
     if ty != helpers._EntityType.USER:
         raise ValueError('You must pass a user entity')
 
-    if isinstance(user, types.InputPeerSelf):
+    if isinstance(user, _tl.InputPeerSelf):
         raise ValueError('You cannot restrict yourself')
 
-    return await self(functions.channels.EditBannedRequest(
+    return await self(_tl.fn.channels.EditBanned(
         channel=entity,
         participant=user,
         banned_rights=rights
@@ -667,24 +666,24 @@ async def kick_participant(
 
     ty = helpers._entity_type(entity)
     if ty == helpers._EntityType.CHAT:
-        resp = await self(functions.messages.DeleteChatUserRequest(entity.chat_id, user))
+        resp = await self(_tl.fn.messages.DeleteChatUser(entity.chat_id, user))
     elif ty == helpers._EntityType.CHANNEL:
-        if isinstance(user, types.InputPeerSelf):
+        if isinstance(user, _tl.InputPeerSelf):
             # Despite no longer being in the channel, the account still
             # seems to get the service message.
-            resp = await self(functions.channels.LeaveChannelRequest(entity))
+            resp = await self(_tl.fn.channels.LeaveChannel(entity))
         else:
-            resp = await self(functions.channels.EditBannedRequest(
+            resp = await self(_tl.fn.channels.EditBanned(
                 channel=entity,
                 participant=user,
-                banned_rights=types.ChatBannedRights(
+                banned_rights=_tl.ChatBannedRights(
                     until_date=None, view_messages=True)
             ))
             await asyncio.sleep(0.5)
-            await self(functions.channels.EditBannedRequest(
+            await self(_tl.fn.channels.EditBanned(
                 channel=entity,
                 participant=user,
-                banned_rights=types.ChatBannedRights(until_date=None)
+                banned_rights=_tl.ChatBannedRights(until_date=None)
             ))
     else:
         raise ValueError('You must pass either a channel or a chat')
@@ -695,14 +694,14 @@ async def get_permissions(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         user: 'hints.EntityLike' = None
-) -> 'typing.Optional[custom.ParticipantPermissions]':
+) -> 'typing.Optional[_tl.custom.ParticipantPermissions]':
     entity = await self.get_entity(entity)
 
     if not user:
-        if isinstance(entity, types.Channel):
-            FullChat = await self(functions.channels.GetFullChannelRequest(entity))
-        elif isinstance(entity, types.Chat):
-            FullChat = await self(functions.messages.GetFullChatRequest(entity))
+        if isinstance(entity, _tl.Channel):
+            FullChat = await self(_tl.fn.channels.GetFullChannel(entity))
+        elif isinstance(entity, _tl.Chat):
+            FullChat = await self(_tl.fn.messages.GetFullChat(entity))
         else:
             return
         return FullChat.chats[0].default_banned_rights
@@ -712,20 +711,20 @@ async def get_permissions(
     if helpers._entity_type(user) != helpers._EntityType.USER:
         raise ValueError('You must pass a user entity')
     if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
-        participant = await self(functions.channels.GetParticipantRequest(
+        participant = await self(_tl.fn.channels.GetParticipant(
             entity,
             user
         ))
-        return custom.ParticipantPermissions(participant.participant, False)
+        return _tl.custom.ParticipantPermissions(participant.participant, False)
     elif helpers._entity_type(entity) == helpers._EntityType.CHAT:
-        chat = await self(functions.messages.GetFullChatRequest(
+        chat = await self(_tl.fn.messages.GetFullChat(
             entity
         ))
-        if isinstance(user, types.InputPeerSelf):
+        if isinstance(user, _tl.InputPeerSelf):
             user = await self.get_me(input_peer=True)
         for participant in chat.full_chat.participants.participants:
             if participant.user_id == user.user_id:
-                return custom.ParticipantPermissions(participant, True)
+                return _tl.custom.ParticipantPermissions(participant, True)
         raise errors.UserNotParticipantError(None)
 
     raise ValueError('You must pass either a channel or a chat')
@@ -733,7 +732,7 @@ async def get_permissions(
 async def get_stats(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        message: 'typing.Union[int, types.Message]' = None,
+        message: 'typing.Union[int, _tl.Message]' = None,
 ):
     entity = await self.get_input_entity(entity)
     if helpers._entity_type(entity) != helpers._EntityType.CHANNEL:
@@ -742,7 +741,7 @@ async def get_stats(
     message = utils.get_message_id(message)
     if message is not None:
         try:
-            req = functions.stats.GetMessageStatsRequest(entity, message)
+            req = _tl.fn.stats.GetMessageStats(entity, message)
             return await self(req)
         except errors.StatsMigrateError as e:
             dc = e.dc
@@ -751,12 +750,12 @@ async def get_stats(
         # try to guess and if it fails we know it's the other one (best case
         # no extra request, worst just one).
         try:
-            req = functions.stats.GetBroadcastStatsRequest(entity)
+            req = _tl.fn.stats.GetBroadcastStats(entity)
             return await self(req)
         except errors.StatsMigrateError as e:
             dc = e.dc
         except errors.BroadcastRequiredError:
-            req = functions.stats.GetMegagroupStatsRequest(entity)
+            req = _tl.fn.stats.GetMegagroupStats(entity)
             try:
                 return await self(req)
             except errors.StatsMigrateError as e:

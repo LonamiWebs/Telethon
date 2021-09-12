@@ -1,8 +1,7 @@
 import inspect
 import itertools
 
-from . import utils
-from .tl import types
+from . import utils, _tl
 
 # Which updates have the following fields?
 _has_field = {
@@ -25,8 +24,8 @@ _has_field = {
 
 
 def _fill():
-    for name in dir(types):
-        update = getattr(types, name)
+    for name in dir(_tl):
+        update = getattr(_tl, name)
         if getattr(update, 'SUBCLASS_OF_ID', None) == 0x9f89304e:
             cid = update.CONSTRUCTOR_ID
             sig = inspect.signature(update.__init__)
@@ -84,7 +83,7 @@ class EntityCache:
             except TypeError:
                 raise KeyError('Invalid key will not have entity') from None
 
-        for cls in (types.PeerUser, types.PeerChat, types.PeerChannel):
+        for cls in (_tl.PeerUser, _tl.PeerChat, _tl.PeerChannel):
             result = self.__dict__.get(utils.get_peer_id(cls(item)))
             if result:
                 return result
@@ -111,7 +110,7 @@ class EntityCache:
         """
         # This method is called pretty often and we want it to have the lowest
         # overhead possible. For that, we avoid `isinstance` and constantly
-        # getting attributes out of `types.` by "caching" the constructor IDs
+        # getting attributes out of `_tl.` by "caching" the constructor IDs
         # in sets inside the arguments, and using local variables.
         dct = self.__dict__
         cid = update.CONSTRUCTOR_ID
@@ -120,11 +119,11 @@ class EntityCache:
             return False
 
         if cid in has_chat_id and \
-                utils.get_peer_id(types.PeerChat(update.chat_id)) not in dct:
+                utils.get_peer_id(_tl.PeerChat(update.chat_id)) not in dct:
             return False
 
         if cid in has_channel_id and \
-                utils.get_peer_id(types.PeerChannel(update.channel_id)) not in dct:
+                utils.get_peer_id(_tl.PeerChannel(update.channel_id)) not in dct:
             return False
 
         if cid in has_peer and \

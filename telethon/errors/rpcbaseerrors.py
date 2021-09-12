@@ -1,13 +1,13 @@
-from ..tl import functions
+from .. import _tl
 
 _NESTS_QUERY = (
-    functions.InvokeAfterMsgRequest,
-    functions.InvokeAfterMsgsRequest,
-    functions.InitConnectionRequest,
-    functions.InvokeWithLayerRequest,
-    functions.InvokeWithoutUpdatesRequest,
-    functions.InvokeWithMessagesRangeRequest,
-    functions.InvokeWithTakeoutRequest,
+    _tl.fn.InvokeAfterMsg,
+    _tl.fn.InvokeAfterMsgs,
+    _tl.fn.InitConnection,
+    _tl.fn.InvokeWithLayer,
+    _tl.fn.InvokeWithoutUpdates,
+    _tl.fn.InvokeWithMessagesRange,
+    _tl.fn.InvokeWithTakeout,
 )
 
 class RPCError(Exception):

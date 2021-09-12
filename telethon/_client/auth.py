@@ -5,8 +5,7 @@ import sys
 import typing
 import warnings
 
-from .. import utils, helpers, errors, password as pwd_mod
-from ..tl import types, functions, custom
+from .. import utils, helpers, errors, password as pwd_mod, _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -201,7 +200,7 @@ async def sign_in(
         *,
         password: str = None,
         bot_token: str = None,
-        phone_code_hash: str = None) -> 'typing.Union[types.User, types.auth.SentCode]':
+        phone_code_hash: str = None) -> 'typing.Union[_tl.User, _tl.auth.SentCode]':
     me = await self.get_me()
     if me:
         return me
@@ -214,16 +213,16 @@ async def sign_in(
 
         # May raise PhoneCodeEmptyError, PhoneCodeExpiredError,
         # PhoneCodeHashEmptyError or PhoneCodeInvalidError.
-        request = functions.auth.SignInRequest(
+        request = _tl.fn.auth.SignIn(
             phone, phone_code_hash, str(code)
         )
     elif password:
-        pwd = await self(functions.account.GetPasswordRequest())
-        request = functions.auth.CheckPasswordRequest(
+        pwd = await self(_tl.fn.account.GetPassword())
+        request = _tl.fn.auth.CheckPassword(
             pwd_mod.compute_check(pwd, password)
         )
     elif bot_token:
-        request = functions.auth.ImportBotAuthorizationRequest(
+        request = _tl.fn.auth.ImportBotAuthorization(
             flags=0, bot_auth_token=bot_token,
             api_id=self.api_id, api_hash=self.api_hash
         )
@@ -234,7 +233,7 @@ async def sign_in(
         )
 
     result = await self(request)
-    if isinstance(result, types.auth.AuthorizationSignUpRequired):
+    if isinstance(result, _tl.auth.AuthorizationSignUpRequired):
         # Emulate pre-layer 104 behaviour
         self._tos = result.terms_of_service
         raise errors.PhoneNumberUnoccupiedError(request=request)
@@ -248,7 +247,7 @@ async def sign_up(
         last_name: str = '',
         *,
         phone: str = None,
-        phone_code_hash: str = None) -> 'types.User':
+        phone_code_hash: str = None) -> '_tl.User':
     me = await self.get_me()
     if me:
         return me
@@ -281,7 +280,7 @@ async def sign_up(
     phone, phone_code_hash = \
         self._parse_phone_and_hash(phone, phone_code_hash)
 
-    result = await self(functions.auth.SignUpRequest(
+    result = await self(_tl.fn.auth.SignUp(
         phone_number=phone,
         phone_code_hash=phone_code_hash,
         first_name=first_name,
@@ -290,7 +289,7 @@ async def sign_up(
 
     if self._tos:
         await self(
-            functions.help.AcceptTermsOfServiceRequest(self._tos.id))
+            _tl.fn.help.AcceptTermsOfService(self._tos.id))
 
     return self._on_login(result.user)
 
@@ -309,20 +308,20 @@ async def send_code_request(
         self: 'TelegramClient',
         phone: str,
         *,
-        force_sms: bool = False) -> 'types.auth.SentCode':
+        force_sms: bool = False) -> '_tl.auth.SentCode':
     result = None
     phone = utils.parse_phone(phone) or self._phone
     phone_hash = self._phone_code_hash.get(phone)
 
     if not phone_hash:
         try:
-            result = await self(functions.auth.SendCodeRequest(
-                phone, self.api_id, self.api_hash, types.CodeSettings()))
+            result = await self(_tl.fn.auth.SendCode(
+                phone, self.api_id, self.api_hash, _tl.CodeSettings()))
         except errors.AuthRestartError:
             return await self.send_code_request(phone, force_sms=force_sms)
 
         # If we already sent a SMS, do not resend the code (hash may be empty)
-        if isinstance(result.type, types.auth.SentCodeTypeSms):
+        if isinstance(result.type, _tl.auth.SentCodeTypeSms):
             force_sms = False
 
         # phone_code_hash may be empty, if it is, do not save it (#1283)
@@ -335,7 +334,7 @@ async def send_code_request(
 
     if force_sms:
         result = await self(
-            functions.auth.ResendCodeRequest(phone, phone_hash))
+            _tl.fn.auth.ResendCode(phone, phone_hash))
 
         self._phone_code_hash[phone] = result.phone_code_hash
 
@@ -348,7 +347,7 @@ async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None)
 
 async def log_out(self: 'TelegramClient') -> bool:
     try:
-        await self(functions.auth.LogOutRequest())
+        await self(_tl.fn.auth.LogOut())
     except errors.RPCError:
         return False
 
@@ -375,16 +374,16 @@ async def edit_2fa(
     if email and not callable(email_code_callback):
         raise ValueError('email present without email_code_callback')
 
-    pwd = await self(functions.account.GetPasswordRequest())
+    pwd = await self(_tl.fn.account.GetPassword())
     pwd.new_algo.salt1 += os.urandom(32)
-    assert isinstance(pwd, types.account.Password)
+    assert isinstance(pwd, _tl.account.Password)
     if not pwd.has_password and current_password:
         current_password = None
 
     if current_password:
         password = pwd_mod.compute_check(pwd, current_password)
     else:
-        password = types.InputCheckPasswordEmpty()
+        password = _tl.InputCheckPasswordEmpty()
 
     if new_password:
         new_password_hash = pwd_mod.compute_digest(
@@ -393,9 +392,9 @@ async def edit_2fa(
         new_password_hash = b''
 
     try:
-        await self(functions.account.UpdatePasswordSettingsRequest(
+        await self(_tl.fn.account.UpdatePasswordSettings(
             password=password,
-            new_settings=types.account.PasswordInputSettings(
+            new_settings=_tl.account.PasswordInputSettings(
                 new_algo=pwd.new_algo,
                 new_password_hash=new_password_hash,
                 hint=hint,
@@ -409,6 +408,6 @@ async def edit_2fa(
             code = await code
 
         code = str(code)
-        await self(functions.account.ConfirmPasswordEmailRequest(code))
+        await self(_tl.fn.account.ConfirmPasswordEmail(code))
 
     return True

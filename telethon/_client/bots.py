@@ -1,7 +1,6 @@
 import typing
 
-from .. import hints
-from ..tl import types, functions, custom
+from .. import hints, _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -14,14 +13,14 @@ async def inline_query(
         *,
         entity: 'hints.EntityLike' = None,
         offset: str = None,
-        geo_point: 'types.GeoPoint' = None) -> custom.InlineResults:
+        geo_point: '_tl.GeoPoint' = None) -> _tl.custom.InlineResults:
     bot = await self.get_input_entity(bot)
     if entity:
         peer = await self.get_input_entity(entity)
     else:
-        peer = types.InputPeerEmpty()
+        peer = _tl.InputPeerEmpty()
 
-    result = await self(functions.messages.GetInlineBotResultsRequest(
+    result = await self(_tl.fn.messages.GetInlineBotResults(
         bot=bot,
         peer=peer,
         query=query,
@@ -29,4 +28,4 @@ async def inline_query(
         geo_point=geo_point
     ))
 
-    return custom.InlineResults(self, result, entity=peer if entity else None)
+    return _tl.custom.InlineResults(self, result, entity=peer if entity else None)

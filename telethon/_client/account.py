@@ -3,8 +3,7 @@ import inspect
 import typing
 
 from .users import _NOT_A_REQUEST
-from .. import helpers, utils
-from ..tl import functions, TLRequest
+from .. import helpers, utils, _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -50,7 +49,7 @@ class _TakeoutClient:
             self.__success = exc_type is None
 
         if self.__success is not None:
-            result = await self(functions.account.FinishTakeoutSessionRequest(
+            result = await self(_tl.fn.account.FinishTakeoutSession(
                 self.__success))
             if not result:
                 raise ValueError("Failed to finish the takeout.")
@@ -66,10 +65,10 @@ class _TakeoutClient:
         requests = ((request,) if single else request)
         wrapped = []
         for r in requests:
-            if not isinstance(r, TLRequest):
+            if not isinstance(r, _tl.TLRequest):
                 raise _NOT_A_REQUEST()
             await r.resolve(self, utils)
-            wrapped.append(functions.InvokeWithTakeoutRequest(takeout_id, r))
+            wrapped.append(_tl.fn.InvokeWithTakeout(takeout_id, r))
 
         return await self.__client(
             wrapped[0] if single else wrapped, ordered=ordered)
@@ -127,7 +126,7 @@ def takeout(
     arg_specified = (arg is not None for arg in request_kwargs.values())
 
     if self.session.takeout_id is None or any(arg_specified):
-        request = functions.account.InitTakeoutSessionRequest(
+        request = _tl.fn.account.InitTakeoutSession(
             **request_kwargs)
     else:
         request = None

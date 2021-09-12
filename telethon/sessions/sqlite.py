@@ -2,13 +2,9 @@ import datetime
 import os
 import time
 
-from telethon.tl import types
 from .memory import MemorySession, _SentFileType
-from .. import utils
+from .. import utils, _tl
 from ..crypto import AuthKey
-from ..tl.types import (
-    InputPhoto, InputDocument, PeerUser, PeerChat, PeerChannel
-)
 
 try:
     import sqlite3
@@ -208,7 +204,7 @@ class SQLiteSession(MemorySession):
             pts, qts, date, seq = row
             date = datetime.datetime.fromtimestamp(
                 date, tz=datetime.timezone.utc)
-            return types.updates.State(pts, qts, date, seq, unread_count=0)
+            return _tl.updates.State(pts, qts, date, seq, unread_count=0)
 
     def set_update_state(self, entity_id, state):
         self._execute('insert or replace into update_state values (?,?,?,?,?)',
@@ -325,9 +321,9 @@ class SQLiteSession(MemorySession):
         else:
             return self._execute(
                 'select id, hash from entities where id in (?,?,?)',
-                utils.get_peer_id(PeerUser(id)),
-                utils.get_peer_id(PeerChat(id)),
-                utils.get_peer_id(PeerChannel(id))
+                utils.get_peer_id(_tl.PeerUser(id)),
+                utils.get_peer_id(_tl.PeerChat(id)),
+                utils.get_peer_id(_tl.PeerChannel(id))
             )
 
     # File processing
@@ -343,7 +339,7 @@ class SQLiteSession(MemorySession):
             return cls(row[0], row[1])
 
     def cache_file(self, md5_digest, file_size, instance):
-        if not isinstance(instance, (InputDocument, InputPhoto)):
+        if not isinstance(instance, (_tl.InputDocument, _tl.InputPhoto)):
             raise TypeError('Cannot cache %s instance' % type(instance))
 
         self._execute(

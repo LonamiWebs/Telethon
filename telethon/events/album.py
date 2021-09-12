@@ -3,9 +3,7 @@ import time
 import weakref
 
 from .common import EventBuilder, EventCommon, name_inner_event
-from .. import utils
-from ..tl import types
-from ..tl.custom.sendergetter import SenderGetter
+from .. import utils, _tl
 
 _IGNORE_MAX_SIZE = 100  # len()
 _IGNORE_MAX_AGE = 5  # seconds
@@ -101,8 +99,8 @@ class Album(EventBuilder):
             return  # We only care about albums which come inside the same Updates
 
         if isinstance(update,
-                      (types.UpdateNewMessage, types.UpdateNewChannelMessage)):
-            if not isinstance(update.message, types.Message):
+                      (_tl.UpdateNewMessage, _tl.UpdateNewChannelMessage)):
+            if not isinstance(update.message, _tl.Message):
                 return  # We don't care about MessageService's here
 
             group = update.message.grouped_id
@@ -130,8 +128,8 @@ class Album(EventBuilder):
             # Figure out which updates share the same group and use those
             return cls.Event([
                 u.message for u in others
-                if (isinstance(u, (types.UpdateNewMessage, types.UpdateNewChannelMessage))
-                    and isinstance(u.message, types.Message)
+                if (isinstance(u, (_tl.UpdateNewMessage, _tl.UpdateNewChannelMessage))
+                    and isinstance(u.message, _tl.Message)
                     and u.message.grouped_id == group)
             ])
 
@@ -140,7 +138,7 @@ class Album(EventBuilder):
         if len(event.messages) > 1:
             return super().filter(event)
 
-    class Event(EventCommon, SenderGetter):
+    class Event(EventCommon, _tl.custom.sendergetter.SenderGetter):
         """
         Represents the event of a new album.
 
@@ -150,7 +148,7 @@ class Album(EventBuilder):
         """
         def __init__(self, messages):
             message = messages[0]
-            if not message.out and isinstance(message.peer_id, types.PeerUser):
+            if not message.out and isinstance(message.peer_id, _tl.PeerUser):
                 # Incoming message (e.g. from a bot) has peer_id=us, and
                 # from_id=bot (the actual "chat" from a user's perspective).
                 chat_peer = message.from_id
@@ -160,7 +158,7 @@ class Album(EventBuilder):
             super().__init__(chat_peer=chat_peer,
                              msg_id=message.id, broadcast=bool(message.post))
 
-            SenderGetter.__init__(self, message.sender_id)
+            _tl.custom.sendergetter.SenderGetter.__init__(self, message.sender_id)
             self.messages = messages
 
         def _set_client(self, client):

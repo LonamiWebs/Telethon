@@ -140,7 +140,7 @@ class Dialog:
                 # Un-archiving
                 dialog.archive(0)
         """
-        return await self._client(functions.folders.EditPeerFoldersRequest([
+        return await self._client(_tl.fn.folders.EditPeerFolders([
             types.InputFolderPeer(self.input_entity, folder_id=folder)
         ]))
 
