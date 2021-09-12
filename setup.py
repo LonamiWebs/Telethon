@@ -56,7 +56,7 @@ FRIENDLY_IN = GENERATOR_DIR / 'data/friendly.csv'
 
 TLOBJECT_IN_TLS = [Path(x) for x in GENERATOR_DIR.glob('data/*.tl')]
 TLOBJECT_OUT = LIBRARY_DIR / '_tl'
-IMPORT_DEPTH = 2
+TLOBJECT_MOD = 'telethon._tl'
 
 DOCS_IN_RES = GENERATOR_DIR / 'data/html'
 DOCS_OUT = Path('docs')
@@ -94,7 +94,7 @@ def generate(which, action='gen'):
         if clean:
             clean_tlobjects(TLOBJECT_OUT)
         else:
-            generate_tlobjects(tlobjects, layer, IMPORT_DEPTH, TLOBJECT_OUT)
+            generate_tlobjects(tlobjects, layer, TLOBJECT_MOD, TLOBJECT_OUT)
 
     if 'errors' in which:
         which.remove('errors')

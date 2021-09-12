@@ -52,7 +52,7 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
 
 
 def _write_modules(
-        out_dir, depth, kind, namespace_tlobjects, type_constructors):
+        out_dir, in_mod, kind, namespace_tlobjects, type_constructors):
     # namespace_tlobjects: {'namespace', [TLObject]}
     out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -60,10 +60,11 @@ def _write_modules(
         with file.open('w') as f, SourceBuilder(f) as builder:
             builder.writeln(AUTO_GEN_NOTICE)
 
-            builder.writeln('from {}.tl.tlobject import TLObject', '.' * depth)
-            if kind != 'TLObject':
-                builder.writeln(
-                    'from {}.tl.tlobject import {}', '.' * depth, kind)
+            if kind == 'TLObject':
+                builder.writeln('from .tlobject import TLObject, TLRequest')
+                builder.writeln('from . import fn')
+            else:
+                builder.writeln('from .. import TLObject, TLRequest')
 
             builder.writeln('from typing import Optional, List, '
                             'Union, TYPE_CHECKING')
@@ -124,7 +125,11 @@ def _write_modules(
                     if not name or name in primitives:
                         continue
 
-                    import_space = '{}.tl.types'.format('.' * depth)
+                    if kind == 'TLObject':
+                        import_space = '.'
+                    else:
+                        import_space = '..'
+
                     if '.' in name:
                         namespace = name.split('.')[0]
                         name = name.split('.')[1]
@@ -681,7 +686,7 @@ def _write_all_tlobjects(tlobjects, layer, builder):
     builder.writeln('}')
 
 
-def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
+def generate_tlobjects(tlobjects, layer, input_mod, output_dir):
     # Group everything by {namespace: [tlobjects]} to generate __init__.py
     namespace_functions = defaultdict(list)
     namespace_types = defaultdict(list)
@@ -695,10 +700,10 @@ def generate_tlobjects(tlobjects, layer, import_depth, output_dir):
             namespace_types[tlobject.namespace].append(tlobject)
             type_constructors[tlobject.result].append(tlobject)
 
-    _write_modules(output_dir / 'fn', import_depth, 'TLRequest',
-                   namespace_functions, type_constructors)
-    _write_modules(output_dir, import_depth - 1, 'TLObject',
+    _write_modules(output_dir, input_mod, 'TLObject',
                    namespace_types, type_constructors)
+    _write_modules(output_dir / 'fn', input_mod + '.fn', 'TLRequest',
+                   namespace_functions, type_constructors)
 
     filename = output_dir / 'alltlobjects.py'
     with filename.open('w') as file:
