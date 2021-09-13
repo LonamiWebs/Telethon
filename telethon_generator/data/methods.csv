@@ -227,7 +227,7 @@ messages.getInlineGameHighScores,bot,MESSAGE_ID_INVALID USER_BOT_REQUIRED
 messages.getMaskStickers,user,
 messages.getMessageEditData,user,MESSAGE_AUTHOR_REQUIRED PEER_ID_INVALID
 messages.getMessages,both,
-messages.getMessagesReadParticipants,user,CHAT_TOO_BIG
+messages.getMessagesReadParticipants,user,CHAT_TOO_BIG MESSAGE_ID_INVALID
 messages.getMessagesViews,user,CHANNEL_PRIVATE CHAT_ID_INVALID PEER_ID_INVALID
 messages.getOnlines,user,
 messages.getPeerDialogs,user,CHANNEL_PRIVATE PEER_ID_INVALID
