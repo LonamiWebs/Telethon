@@ -119,6 +119,32 @@ The following modules have been moved inside ``_misc``:
 // TODO review telethon/__init__.py isn't exposing more than it should
 
 
+The custom.Message class and the way it is used has changed
+-----------------------------------------------------------
+
+It no longer inherits ``TLObject``, and rather than trying to mimick Telegram's ``Message``
+constructor, it now takes two parameters: a ``TelegramClient`` instance and a ``_tl.Message``.
+As a benefit, you can now more easily reconstruct instances of this type from a previously-stored
+``_tl.Message`` instance.
+
+There are no public attributes. Instead, they are now properties which forward the values into and
+from the private ``_message`` field. As a benefit, the documentation will now be easier to follow.
+However, you can no longer use ``del`` on these.
+
+The ``_tl.Message.media`` attribute will no longer be ``None`` when using raw API if the media was
+``messageMediaEmpty``. As a benefit, you can now actually distinguish between no media and empty
+media. The ``Message.media`` property as returned by friendly methods will still be ``None`` on
+empty media.
+
+The ``telethon.tl.patched`` hack has been removed.
+
+In order to avoid breaking more code than strictly necessary, ``.raw_text`` will remain a synonym
+of ``.message``, and ``.text`` will still be the text formatted through the ``client.parse_mode``.
+However, you're encouraged to change uses of ``.raw_text`` with ``.message``, and ``.text`` with
+either ``.md_text`` or ``.html_text`` as needed. This is because both ``.text`` and ``.raw_text``
+may disappear in future versions, and their behaviour is not immediately obvious.
+
+
 The Conversation API has been removed
 -------------------------------------
 

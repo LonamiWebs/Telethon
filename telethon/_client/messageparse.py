@@ -3,6 +3,7 @@ import re
 import typing
 
 from .. import helpers, utils, _tl
+from ..types import _custom
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -94,7 +95,7 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
 
         elif isinstance(update, (
                 _tl.UpdateNewChannelMessage, _tl.UpdateNewMessage)):
-            update.message._finish_init(self, entities, input_chat)
+            update.message = _custom.Message._new(self, update.message, entities, input_chat)
 
             # Pinning a message with `updatePinnedMessage` seems to
             # always produce a service message we can't map so return
@@ -110,7 +111,7 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
 
         elif (isinstance(update, _tl.UpdateEditMessage)
                 and helpers._entity_type(request.peer) != helpers._EntityType.CHANNEL):
-            update.message._finish_init(self, entities, input_chat)
+            update.message = _custom.Message._new(self, update.message, entities, input_chat)
 
             # Live locations use `sendMedia` but Telegram responds with
             # `updateEditMessage`, which means we won't have `id` field.
@@ -123,28 +124,24 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
                 and utils.get_peer_id(request.peer) ==
                 utils.get_peer_id(update.message.peer_id)):
             if request.id == update.message.id:
-                update.message._finish_init(self, entities, input_chat)
-                return update.message
+                return _custom.Message._new(self, update.message, entities, input_chat)
 
         elif isinstance(update, _tl.UpdateNewScheduledMessage):
-            update.message._finish_init(self, entities, input_chat)
             # Scheduled IDs may collide with normal IDs. However, for a
             # single request there *shouldn't* be a mix between "some
             # scheduled and some not".
-            id_to_message[update.message.id] = update.message
+            id_to_message[update.message.id] = _custom.Message._new(self, update.message, entities, input_chat)
 
         elif isinstance(update, _tl.UpdateMessagePoll):
             if request.media.poll.id == update.poll_id:
-                m = _tl.Message(
+                return _custom.Message._new(self, _tl.Message(
                     id=request.id,
                     peer_id=utils.get_peer(request.peer),
                     media=_tl.MessageMediaPoll(
                         poll=update.poll,
                         results=update.results
                     )
-                )
-                m._finish_init(self, entities, input_chat)
-                return m
+                ), entities, input_chat)
 
     if request is None:
         return id_to_message

@@ -3783,6 +3783,9 @@ class TelegramClient:
     async def _handle_auto_reconnect(self: 'TelegramClient'):
         return await updates._handle_auto_reconnect(**locals())
 
+    def _self_id(self: 'TelegramClient') -> typing.Optional[int]:
+        return users._self_id(**locals())
+
     # endregion Private
 
 # TODO re-patch everything to remove the intermediate calls

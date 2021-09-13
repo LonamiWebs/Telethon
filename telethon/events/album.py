@@ -168,8 +168,10 @@ class Album(EventBuilder):
             self._sender, self._input_sender = utils._get_entity_pair(
                 self.sender_id, self._entities, client._entity_cache)
 
-            for msg in self.messages:
-                msg._finish_init(client, self._entities, None)
+            self.messages = [
+                _custom.Message._new(client, m, self._entities, None)
+                for m in self.messages
+            ]
 
             if len(self.messages) == 1:
                 # This will require hacks to be a proper album event

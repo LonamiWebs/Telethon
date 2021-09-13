@@ -58,10 +58,10 @@ class _DialogsIter(requestiter.RequestIter):
                     for x in itertools.chain(r.users, r.chats)
                     if not isinstance(x, (_tl.UserEmpty, _tl.ChatEmpty))}
 
-        messages = {}
-        for m in r.messages:
-            m._finish_init(self.client, entities, None)
-            messages[_dialog_message_key(m.peer_id, m.id)] = m
+        messages = {
+            _dialog_message_key(m.peer_id, m.id): _custom.Message._new(self.client, m, entities, None)
+            for m in r.messages
+        }
 
         for d in r.dialogs:
             # We check the offset date here because Telegram may ignore it

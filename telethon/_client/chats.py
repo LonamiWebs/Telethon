@@ -291,16 +291,16 @@ class _AdminLogIter(requestiter.RequestIter):
         for ev in r.events:
             if isinstance(ev.action,
                           _tl.ChannelAdminLogEventActionEditMessage):
-                ev.action.prev_message._finish_init(
-                    self.client, entities, self.entity)
+                ev.action.prev_message = _custom.Message._new(
+                    self.client, ev.action.prev_message, entities, self.entity)
 
-                ev.action.new_message._finish_init(
-                    self.client, entities, self.entity)
+                ev.action.new_message = _custom.Message._new(
+                    self.client, ev.action.new_message, entities, self.entity)
 
             elif isinstance(ev.action,
                             _tl.ChannelAdminLogEventActionDeleteMessage):
-                ev.action.message._finish_init(
-                    self.client, entities, self.entity)
+                ev.action.message = _custom.Message._new(
+                    self.client, ev.action.message, entities, self.entity)
 
             self.buffer.append(_custom.AdminLogEvent(ev, entities))
 

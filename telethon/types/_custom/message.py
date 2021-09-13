@@ -9,9 +9,22 @@ from ..._misc import utils, tlobject
 from ... import errors, _tl
 
 
+def _fwd(field, doc):
+    def fget(self):
+        try:
+            return self._message.__dict__[field]
+        except KeyError:
+            return None
+
+    def fset(self, value):
+        self._message.__dict__[field] = value
+
+    return property(fget, fset, None, doc)
+
+
 # TODO Figure out a way to have the code generator error on missing fields
 # Maybe parsing the init function alone if that's possible.
-class Message(ChatGetter, SenderGetter, tlobject.TLObject):
+class Message(ChatGetter, SenderGetter):
     """
     This custom class aggregates both :tl:`Message` and
     :tl:`MessageService` to ease accessing their members.
@@ -20,219 +33,192 @@ class Message(ChatGetter, SenderGetter, tlobject.TLObject):
     <telethon.tl.custom.chatgetter.ChatGetter>` and `SenderGetter
     <telethon.tl.custom.sendergetter.SenderGetter>` which means you
     have access to all their sender and chat properties and methods.
-
-    Members:
-        out (`bool`):
-            Whether the message is outgoing (i.e. you sent it from
-            another session) or incoming (i.e. someone else sent it).
-
-            Note that messages in your own chat are always incoming,
-            but this member will be `True` if you send a message
-            to your own chat. Messages you forward to your chat are
-            *not* considered outgoing, just like official clients
-            display them.
-
-        mentioned (`bool`):
-            Whether you were mentioned in this message or not.
-            Note that replies to your own messages also count
-            as mentions.
-
-        media_unread (`bool`):
-            Whether you have read the media in this message
-            or not, e.g. listened to the voice note media.
-
-        silent (`bool`):
-            Whether the message should notify people with sound or not.
-            Previously used in channels, but since 9 August 2019, it can
-            also be `used in private chats
-            <https://telegram.org/blog/silent-messages-slow-mode>`_.
-
-        post (`bool`):
-            Whether this message is a post in a broadcast
-            channel or not.
-
-        from_scheduled (`bool`):
-            Whether this message was originated from a previously-scheduled
-            message or not.
-
-        legacy (`bool`):
-            Whether this is a legacy message or not.
-
-        edit_hide (`bool`):
-            Whether the edited mark of this message is edited
-            should be hidden (e.g. in GUI clients) or shown.
-
-        pinned (`bool`):
-            Whether this message is currently pinned or not.
-
-        id (`int`):
-            The ID of this message. This field is *always* present.
-            Any other member is optional and may be `None`.
-
-        from_id (:tl:`Peer`):
-            The peer who sent this message, which is either
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
-            This value will be `None` for anonymous messages.
-
-        peer_id (:tl:`Peer`):
-            The peer to which this message was sent, which is either
-            :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`. This
-            will always be present except for empty messages.
-
-        fwd_from (:tl:`MessageFwdHeader`):
-            The original forward header if this message is a forward.
-            You should probably use the `forward` property instead.
-
-        via_bot_id (`int`):
-            The ID of the bot used to send this message
-            through its inline mode (e.g. "via @like").
-
-        reply_to (:tl:`MessageReplyHeader`):
-            The original reply header if this message is replying to another.
-
-        date (`datetime`):
-            The UTC+0 `datetime` object indicating when this message
-            was sent. This will always be present except for empty
-            messages.
-
-        message (`str`):
-            The string text of the message for `Message
-            <telethon.tl.custom.message.Message>` instances,
-            which will be `None` for other types of messages.
-
-        media (:tl:`MessageMedia`):
-            The media sent with this message if any (such as
-            photos, videos, documents, gifs, stickers, etc.).
-
-            You may want to access the `photo`, `document`
-            etc. properties instead.
-
-            If the media was not present or it was :tl:`MessageMediaEmpty`,
-            this member will instead be `None` for convenience.
-
-        reply_markup (:tl:`ReplyMarkup`):
-            The reply markup for this message (which was sent
-            either via a bot or by a bot). You probably want
-            to access `buttons` instead.
-
-        entities (List[:tl:`MessageEntity`]):
-            The list of markup entities in this message,
-            such as bold, italics, code, hyperlinks, etc.
-
-        views (`int`):
-            The number of views this message from a broadcast
-            channel has. This is also present in forwards.
-
-        forwards (`int`):
-            The number of times this message has been forwarded.
-
-        replies (`int`):
-            The number of times another message has replied to this message.
-
-        edit_date (`datetime`):
-            The date when this message was last edited.
-
-        post_author (`str`):
-            The display name of the message sender to
-            show in messages sent to broadcast channels.
-
-        grouped_id (`int`):
-            If this message belongs to a group of messages
-            (photo albums or video albums), all of them will
-            have the same value here.
-
-        restriction_reason (List[:tl:`RestrictionReason`])
-            An optional list of reasons why this message was restricted.
-            If the list is `None`, this message has not been restricted.
-
-        ttl_period (`int`):
-            The Time To Live period configured for this message.
-            The message should be erased from wherever it's stored (memory, a
-            local database, etc.) when
-            ``datetime.now() > message.date + timedelta(seconds=message.ttl_period)``.
-
-        action (:tl:`MessageAction`):
-            The message action object of the message for :tl:`MessageService`
-            instances, which will be `None` for other types of messages.
     """
+
+    # region Forwarded properties
+
+    out = _fwd('out', """
+        Whether the message is outgoing (i.e. you sent it from
+        another session) or incoming (i.e. someone else sent it).
+
+        Note that messages in your own chat are always incoming,
+        but this member will be `True` if you send a message
+        to your own chat. Messages you forward to your chat are
+        *not* considered outgoing, just like official clients
+        display them.
+    """)
+
+    mentioned = _fwd('mentioned', """
+        Whether you were mentioned in this message or not.
+        Note that replies to your own messages also count
+        as mentions.
+    """)
+
+    media_unread = _fwd('media_unread', """
+        Whether you have read the media in this message
+        or not, e.g. listened to the voice note media.
+    """)
+
+    silent = _fwd('silent', """
+        Whether the message should notify people with sound or not.
+        Previously used in channels, but since 9 August 2019, it can
+        also be `used in private chats
+        <https://telegram.org/blog/silent-messages-slow-mode>`_.
+    """)
+
+    post = _fwd('post', """
+        Whether this message is a post in a broadcast
+        channel or not.
+    """)
+
+    from_scheduled = _fwd('from_scheduled', """
+        Whether this message was originated from a previously-scheduled
+        message or not.
+    """)
+
+    legacy = _fwd('legacy', """
+        Whether this is a legacy message or not.
+    """)
+
+    edit_hide = _fwd('edit_hide', """
+        Whether the edited mark of this message is edited
+        should be hidden (e.g. in GUI clients) or shown.
+    """)
+
+    pinned = _fwd('pinned', """
+        Whether this message is currently pinned or not.
+    """)
+
+    id = _fwd('id', """
+        The ID of this message. This field is *always* present.
+        Any other member is optional and may be `None`.
+    """)
+
+    from_id = _fwd('from_id', """
+        The peer who sent this message, which is either
+        :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`.
+        This value will be `None` for anonymous messages.
+    """)
+
+    peer_id = _fwd('peer_id', """
+        The peer to which this message was sent, which is either
+        :tl:`PeerUser`, :tl:`PeerChat` or :tl:`PeerChannel`. This
+        will always be present except for empty messages.
+    """)
+
+    fwd_from = _fwd('fwd_from', """
+        The original forward header if this message is a forward.
+        You should probably use the `forward` property instead.
+    """)
+
+    via_bot_id = _fwd('via_bot_id', """
+        The ID of the bot used to send this message
+        through its inline mode (e.g. "via @like").
+    """)
+
+    reply_to = _fwd('reply_to', """
+        The original reply header if this message is replying to another.
+    """)
+
+    date = _fwd('date', """
+        The UTC+0 `datetime` object indicating when this message
+        was sent. This will always be present except for empty
+        messages.
+    """)
+
+    message = _fwd('message', """
+        The string text of the message for `Message
+        <telethon.tl.custom.message.Message>` instances,
+        which will be `None` for other types of messages.
+    """)
+
+    @property
+    def media(self):
+        """
+        The media sent with this message if any (such as
+        photos, videos, documents, gifs, stickers, etc.).
+
+        You may want to access the `photo`, `document`
+        etc. properties instead.
+
+        If the media was not present or it was :tl:`MessageMediaEmpty`,
+        this member will instead be `None` for convenience.
+        """
+        try:
+            media = self._message.media
+        except AttributeError:
+            return None
+
+        return None if media.CONSTRUCTOR_ID == 0x3ded6320 else media
+
+    @media.setter
+    def media(self, value):
+        self._message.media = value
+
+    reply_markup = _fwd('reply_markup', """
+        The reply markup for this message (which was sent
+        either via a bot or by a bot). You probably want
+        to access `buttons` instead.
+    """)
+
+    entities = _fwd('entities', """
+        The list of markup entities in this message,
+        such as bold, italics, code, hyperlinks, etc.
+    """)
+
+    views = _fwd('views', """
+        The number of views this message from a broadcast
+        channel has. This is also present in forwards.
+    """)
+
+    forwards = _fwd('forwards', """
+        The number of times this message has been forwarded.
+    """)
+
+    replies = _fwd('replies', """
+        The number of times another message has replied to this message.
+    """)
+
+    edit_date = _fwd('edit_date', """
+        The date when this message was last edited.
+    """)
+
+    post_author = _fwd('post_author', """
+        The display name of the message sender to
+        show in messages sent to broadcast channels.
+    """)
+
+    grouped_id = _fwd('grouped_id', """
+        If this message belongs to a group of messages
+        (photo albums or video albums), all of them will
+        have the same value here.
+
+    restriction_reason (List[:tl:`RestrictionReason`])
+        An optional list of reasons why this message was restricted.
+        If the list is `None`, this message has not been restricted.
+    """)
+
+    ttl_period = _fwd('ttl_period', """
+        The Time To Live period configured for this message.
+        The message should be erased from wherever it's stored (memory, a
+        local database, etc.) when
+        ``datetime.now() > message.date + timedelta(seconds=message.ttl_period)``.
+    """)
+
+    action = _fwd('action', """
+        The message action object of the message for :tl:`MessageService`
+        instances, which will be `None` for other types of messages.
+    """)
+
+    # endregion
 
     # region Initialization
 
-    def __init__(
-            # Common to all
-            self, id: int,
-
-            # Common to Message and MessageService (mandatory)
-            peer_id: _tl.TypePeer = None,
-            date: Optional[datetime] = None,
-
-            # Common to Message and MessageService (flags)
-            out: Optional[bool] = None,
-            mentioned: Optional[bool] = None,
-            media_unread: Optional[bool] = None,
-            silent: Optional[bool] = None,
-            post: Optional[bool] = None,
-            from_id: Optional[_tl.TypePeer] = None,
-            reply_to: Optional[_tl.TypeMessageReplyHeader] = None,
-            ttl_period: Optional[int] = None,
-
-            # For Message (mandatory)
-            message: Optional[str] = None,
-
-            # For Message (flags)
-            fwd_from: Optional[_tl.TypeMessageFwdHeader] = None,
-            via_bot_id: Optional[int] = None,
-            media: Optional[_tl.TypeMessageMedia] = None,
-            reply_markup: Optional[_tl.TypeReplyMarkup] = None,
-            entities: Optional[List[_tl.TypeMessageEntity]] = None,
-            views: Optional[int] = None,
-            edit_date: Optional[datetime] = None,
-            post_author: Optional[str] = None,
-            grouped_id: Optional[int] = None,
-            from_scheduled: Optional[bool] = None,
-            legacy: Optional[bool] = None,
-            edit_hide: Optional[bool] = None,
-            pinned: Optional[bool] = None,
-            restriction_reason: Optional[_tl.TypeRestrictionReason] = None,
-            forwards: Optional[int] = None,
-            replies: Optional[_tl.TypeMessageReplies] = None,
-
-            # For MessageAction (mandatory)
-            action: Optional[_tl.TypeMessageAction] = None
-    ):
-        # Common properties to messages, then to service (in the order they're defined in the `.tl`)
-        self.out = bool(out)
-        self.mentioned = mentioned
-        self.media_unread = media_unread
-        self.silent = silent
-        self.post = post
-        self.from_scheduled = from_scheduled
-        self.legacy = legacy
-        self.edit_hide = edit_hide
-        self.id = id
-        self.from_id = from_id
-        self.peer_id = peer_id
-        self.fwd_from = fwd_from
-        self.via_bot_id = via_bot_id
-        self.reply_to = reply_to
-        self.date = date
-        self.message = message
-        self.media =  None if isinstance(media, _tl.MessageMediaEmpty) else media
-        self.reply_markup = reply_markup
-        self.entities = entities
-        self.views = views
-        self.forwards = forwards
-        self.replies = replies
-        self.edit_date = edit_date
-        self.pinned = pinned
-        self.post_author = post_author
-        self.grouped_id = grouped_id
-        self.restriction_reason = restriction_reason
-        self.ttl_period = ttl_period
-        self.action = action
+    def __init__(self, client, message):
+        self._client = client
+        self._message = message
 
         # Convenient storage for custom functions
-        # TODO This is becoming a bit of bloat
         self._client = None
         self._text = None
         self._file = None
@@ -246,28 +232,25 @@ class Message(ChatGetter, SenderGetter, tlobject.TLObject):
         self._linked_chat = None
 
         sender_id = None
-        if from_id is not None:
-            sender_id = utils.get_peer_id(from_id)
-        elif peer_id:
+        if self.from_id is not None:
+            sender_id = utils.get_peer_id(self.from_id)
+        elif self.peer_id:
             # If the message comes from a Channel, let the sender be it
             # ...or...
             # incoming messages in private conversations no longer have from_id
             # (layer 119+), but the sender can only be the chat we're in.
-            if post or (not out and isinstance(peer_id, _tl.PeerUser)):
-                sender_id = utils.get_peer_id(peer_id)
+            if self.post or (not self.out and isinstance(self.peer_id, _tl.PeerUser)):
+                sender_id = utils.get_peer_id(self.peer_id)
 
         # Note that these calls would reset the client
-        ChatGetter.__init__(self, peer_id, broadcast=post)
+        ChatGetter.__init__(self, self.peer_id, broadcast=self.post)
         SenderGetter.__init__(self, sender_id)
 
         self._forward = None
 
-    def _finish_init(self, client, entities, input_chat):
-        """
-        Finishes the initialization of this message by setting
-        the client that sent the message and making use of the
-        known entities.
-        """
+    @classmethod
+    def _new(cls, client, message, entities, input_chat):
+        self = cls(client, message)
         self._client = client
 
         # Make messages sent to ourselves outgoing unless they're forwarded.
@@ -314,6 +297,7 @@ class Message(ChatGetter, SenderGetter, tlobject.TLObject):
             self._linked_chat = entities.get(utils.get_peer_id(
                     _tl.PeerChannel(self.replies.channel_id)))
 
+        return self
 
     # endregion Initialization
 

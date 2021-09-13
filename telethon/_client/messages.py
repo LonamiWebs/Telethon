@@ -5,6 +5,7 @@ import warnings
 
 from .. import errors, hints, _tl
 from .._misc import helpers, utils, requestiter
+from ..types import _custom
 
 _MAX_CHUNK_SIZE = 100
 
@@ -200,8 +201,7 @@ class _MessagesIter(requestiter.RequestIter):
             # is an attempt to avoid these duplicates, since the message
             # IDs are returned in descending order (or asc if reverse).
             self.last_id = message.id
-            message._finish_init(self.client, entities, self.entity)
-            self.buffer.append(message)
+            self.buffer.append(_custom.Message._new(self.client, message, entities, self.entity))
 
         if len(r.messages) < self.request.limit:
             return True
@@ -315,8 +315,7 @@ class _IDsIter(requestiter.RequestIter):
                     from_id and message.peer_id != from_id):
                 self.buffer.append(None)
             else:
-                message._finish_init(self.client, entities, self._entity)
-                self.buffer.append(message)
+                self.buffer.append(_custom.Message._new(self.client, message, entities, self._entity))
 
 
 def iter_messages(
@@ -498,7 +497,7 @@ async def send_message(
 
     result = await self(request)
     if isinstance(result, _tl.UpdateShortSentMessage):
-        message = _tl.Message(
+        return _custom.Message._new(self, _tl.Message(
             id=result.id,
             peer_id=await self._get_peer(entity),
             message=message,
@@ -508,9 +507,7 @@ async def send_message(
             entities=result.entities,
             reply_markup=request.reply_markup,
             ttl_period=result.ttl_period
-        )
-        message._finish_init(self, {}, entity)
-        return message
+        ), {}, entity)
 
     return self._get_response_message(request, result, entity)
 

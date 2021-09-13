@@ -1,6 +1,7 @@
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
+from ..types import _custom
 
 
 @name_inner_event
