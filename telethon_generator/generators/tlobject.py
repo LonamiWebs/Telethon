@@ -52,7 +52,7 @@ BASE_TYPES = ('string', 'bytes', 'int', 'long', 'int128',
 
 
 def _write_modules(
-        out_dir, in_mod, kind, namespace_tlobjects, type_constructors, layer):
+        out_dir, in_mod, kind, namespace_tlobjects, type_constructors, layer, all_tlobjects):
     # namespace_tlobjects: {'namespace', [TLObject]}
     out_dir.mkdir(parents=True, exist_ok=True)
     for ns, tlobjects in namespace_tlobjects.items():
@@ -164,7 +164,7 @@ def _write_modules(
                 builder.writeln(line)
 
             if not ns and kind == 'TLObject':
-                _write_all_tlobjects(tlobjects, layer, builder)
+                _write_all_tlobjects(all_tlobjects, layer, builder)
 
 
 def _write_source_code(tlobject, kind, builder, type_constructors):
@@ -699,9 +699,9 @@ def generate_tlobjects(tlobjects, layer, input_mod, output_dir):
             type_constructors[tlobject.result].append(tlobject)
 
     _write_modules(output_dir, input_mod, 'TLObject',
-                   namespace_types, type_constructors, layer)
+                   namespace_types, type_constructors, layer, tlobjects)
     _write_modules(output_dir / 'fn', input_mod + '.fn', 'TLRequest',
-                   namespace_functions, type_constructors, layer)
+                   namespace_functions, type_constructors, layer, tlobjects)
 
 
 def clean_tlobjects(output_dir):
