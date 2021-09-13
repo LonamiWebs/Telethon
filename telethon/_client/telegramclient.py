@@ -173,7 +173,7 @@ class TelegramClient:
         Returns a :ref:`telethon-client` which calls methods behind a takeout session.
 
         It does so by creating a proxy object over the current client through
-        which making requests will use :tl:`InvokeWithTakeoutRequest` to wrap
+        which making requests will use :tl:`InvokeWithTakeout` to wrap
         them. In other words, returns the current client modified so that
         requests are done as a takeout:
 
@@ -764,7 +764,7 @@ class TelegramClient:
                 This has no effect if a ``filter`` is given.
 
         Yields
-            The :tl:`User` objects returned by :tl:`GetParticipantsRequest`
+            The :tl:`User` objects returned by :tl:`GetParticipants`
             with an additional ``.participant`` attribute which is the
             matched :tl:`ChannelParticipant` type for channels/megagroups
             or :tl:`ChatParticipants` for normal chats.
@@ -2067,7 +2067,7 @@ class TelegramClient:
 
         .. note::
 
-            Telegram's flood wait limit for :tl:`GetHistoryRequest` seems to
+            Telegram's flood wait limit for :tl:`GetHistory` seems to
             be around 30 seconds per 10 requests, therefore a sleep of 1
             second is the default for this limit (or above).
 
@@ -2125,7 +2125,7 @@ class TelegramClient:
 
             wait_time (`int`):
                 Wait time (in seconds) between different
-                :tl:`GetHistoryRequest`. Use this parameter to avoid hitting
+                :tl:`GetHistory`. Use this parameter to avoid hitting
                 the ``FloodWaitError`` as needed. If left to `None`, it will
                 default to 1 second only if the limit is higher than 3000.
 

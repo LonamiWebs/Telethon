@@ -74,7 +74,7 @@ class CdnDecrypter:
 
     def get_file(self):
         """
-        Calls GetCdnFileRequest and decrypts its bytes.
+        Calls GetCdnFile and decrypts its bytes.
         Also ensures that the file hasn't been tampered.
 
         :return: the CdnFile result.

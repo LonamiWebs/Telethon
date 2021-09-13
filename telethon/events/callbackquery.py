@@ -242,7 +242,7 @@ class CallbackQuery(EventBuilder):
 
             self._answered = True
             return await self._client(
-                _tl.fn.messages.SetBotCallbackAnswerRequest(
+                _tl.fn.messages.SetBotCallbackAnswer(
                     query_id=self.query.query_id,
                     cache_time=cache_time,
                     alert=alert,

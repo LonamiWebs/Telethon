@@ -208,7 +208,7 @@ async def get_entity(
     chats = lists[helpers._EntityType.CHAT]
     channels = lists[helpers._EntityType.CHANNEL]
     if users:
-        # GetUsersRequest has a limit of 200 per call
+        # GetUsers has a limit of 200 per call
         tmp = []
         while users:
             curr, users = users[:200], users[200:]

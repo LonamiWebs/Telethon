@@ -244,7 +244,7 @@ class _MessagesIter(requestiter.RequestIter):
             # We want to skip the one we already have
             self.request.offset_id += 1
 
-        if isinstance(self.request, _tl.fn.messages.SearchRequest):
+        if isinstance(self.request, _tl.fn.messages.Search):
             # Unlike getHistory and searchGlobal that use *offset* date,
             # this is *max* date. This means that doing a search in reverse
             # will break it. Since it's not really needed once we're going
@@ -254,7 +254,7 @@ class _MessagesIter(requestiter.RequestIter):
             # getHistory, searchGlobal and getReplies call it offset_date
             self.request.offset_date = last_message.date
 
-        if isinstance(self.request, _tl.fn.messages.SearchGlobalRequest):
+        if isinstance(self.request, _tl.fn.messages.SearchGlobal):
             if last_message.input_chat:
                 self.request.offset_peer = last_message.input_chat
             else:

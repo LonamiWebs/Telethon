@@ -524,7 +524,7 @@ def action(
             raise ValueError('Cannot use {} as action'.format(action))
 
     if isinstance(action, _tl.SendMessageCancelAction):
-        # ``SetTypingRequest.resolve`` will get input peer of ``entity``.
+        # ``SetTyping.resolve`` will get input peer of ``entity``.
         return self(_tl.fn.messages.SetTyping(
             entity, _tl.SendMessageCancelAction()))
 

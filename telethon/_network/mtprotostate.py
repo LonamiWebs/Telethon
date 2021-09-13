@@ -102,7 +102,7 @@ class MTProtoState:
             # The `RequestState` stores `bytes(request)`, not the request itself.
             # `invokeAfterMsg` wants a `TLRequest` though, hence the wrapping.
             body = GzipPacked.gzip_if_smaller(content_related,
-                bytes(_tl.fn.InvokeAfterMsgRequest(after_id, _OpaqueRequest(data))))
+                bytes(_tl.fn.InvokeAfterMsg(after_id, _OpaqueRequest(data))))
 
         buffer.write(struct.pack('<qii', msg_id, seq_no, len(body)))
         buffer.write(body)

@@ -72,7 +72,7 @@ class MessageButton:
         it will be "clicked" and the :tl:`BotCallbackAnswer` returned.
 
         If it's an inline :tl:`KeyboardButtonSwitchInline` button, the
-        :tl:`StartBotRequest` will be invoked and the resulting updates
+        :tl:`StartBot` will be invoked and the resulting updates
         returned.
 
         If it's a :tl:`KeyboardButtonUrl`, the URL of the button will

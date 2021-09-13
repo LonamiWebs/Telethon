@@ -197,7 +197,7 @@ def init(
         _tl.InputClientProxy(*connection.address_info(proxy))
 
     # Used on connection. Capture the variables in a lambda since
-    # exporting clients need to create this InvokeWithLayerRequest.
+    # exporting clients need to create this InvokeWithLayer.
     system = platform.uname()
 
     if system.machine in ('x86_64', 'AMD64'):
@@ -559,7 +559,7 @@ async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
 
     # This will make use of the new RSA keys for this specific CDN.
     #
-    # We won't be calling GetConfigRequest because it's only called
+    # We won't be calling GetConfig because it's only called
     # when needed by ._get_dc, and also it's static so it's likely
     # set already. Avoid invoking non-CDN methods by not syncing updates.
     client.connect(_sync_updates=False)

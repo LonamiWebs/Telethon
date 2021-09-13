@@ -341,7 +341,7 @@ async def upload_file(
                 # what Telegram wants.
                 hash_md5.update(part)
 
-            # The SavePartRequest is different depending on whether
+            # The SavePart is different depending on whether
             # the file is too large or not (over or less than 10MB)
             if is_big:
                 request = _tl.fn.upload.SaveBigFilePart(

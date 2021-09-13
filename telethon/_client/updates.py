@@ -257,7 +257,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
                 # we should be okay (no flood waits) even if more occur.
                 pass
             except ValueError:
-                # There is a chance that GetFullChannelRequest and GetDifferenceRequest
+                # There is a chance that GetFullChannel and GetDifference
                 # inside the _get_difference() function will end up with
                 # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
                 pass

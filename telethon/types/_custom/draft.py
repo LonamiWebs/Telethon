@@ -132,7 +132,7 @@ class Draft:
         raw_text, entities =\
             await self._client._parse_message_text(text, parse_mode)
 
-        result = await self._client(_tl.fn.SaveDraftRequest(
+        result = await self._client(_tl.fn.SaveDraft(
             peer=self._peer,
             message=raw_text,
             no_webpage=not link_preview,
