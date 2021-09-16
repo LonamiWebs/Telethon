@@ -2,6 +2,8 @@
 This module contains several functions that authenticate the client machine
 with Telegram's servers, effectively creating an authorization key.
 """
+import asyncio
+import functools
 import os
 import time
 from hashlib import sha1
@@ -37,7 +39,10 @@ async def do_authentication(sender):
     pq = get_int(res_pq.pq)
 
     # Step 2 sending: DH Exchange
-    p, q = Factorization.factorize(pq)
+    p, q = await asyncio.get_event_loop().run_in_executor(
+        None,
+        functools.partial(Factorization.factorize, pq)
+    )
     p, q = rsa.get_byte_array(p), rsa.get_byte_array(q)
     new_nonce = int.from_bytes(os.urandom(32), 'little', signed=True)
 
