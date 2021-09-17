@@ -735,6 +735,10 @@ class TelegramClient:
             limit (`int`):
                 Limits amount of participants fetched.
 
+                By default, there is no limit set when using the result as
+                an iterator. When using ``await``, the default limit is 1,
+                so the method returns a single user.
+
             search (`str`, optional):
                 Look for participants with this string in name/username.
 
@@ -821,6 +825,10 @@ class TelegramClient:
 
                 The limit may also be `None`, which would eventually return
                 the whole history.
+
+                By default, there is no limit set when using the result as
+                an iterator. When using ``await``, the default limit is 1,
+                so the method returns the last event.
 
             max_id (`int`):
                 All the events with a higher (newer) ID or equal to this will
@@ -929,6 +937,10 @@ class TelegramClient:
 
                 The limit may also be `None`, which would eventually all
                 the photos that are still available.
+
+                By default, there is no limit set when using the result as
+                an iterator. When using ``await``, the default limit is 1,
+                so the method returns the last profile photo.
 
             offset (`int`):
                 How many photos should be skipped before returning the first one.
@@ -1406,6 +1418,10 @@ class TelegramClient:
                 whole minutes if you have hundreds of dialogs, as Telegram
                 will tell the library to slow down through a
                 ``FloodWaitError``.
+
+                By default, there is no limit set when using the result as
+                an iterator. When using ``await``, the default limit is 1,
+                so the method returns the most-recent dialog.
 
             offset_date (`datetime`, optional):
                 The offset date to be used.
@@ -2000,6 +2016,10 @@ class TelegramClient:
 
                 The limit may also be `None`, which would eventually return
                 the whole history.
+
+                By default, there is no limit set when using the result as
+                an iterator. When using ``await``, the default limit is 1,
+                so the method returns the last message.
 
             offset_date (`datetime`):
                 Offset date (messages *previous* to this date will be
