@@ -722,8 +722,7 @@ class TelegramClient:
             limit: float = (),
             *,
             search: str = '',
-            filter: '_tl.TypeChannelParticipantsFilter' = None,
-            aggressive: bool = False) -> chats._ParticipantsIter:
+            filter: '_tl.TypeChannelParticipantsFilter' = None) -> chats._ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -739,9 +738,6 @@ class TelegramClient:
             search (`str`, optional):
                 Look for participants with this string in name/username.
 
-                If ``aggressive is True``, the symbols from this string will
-                be used.
-
             filter (:tl:`ChannelParticipantsFilter`, optional):
                 The filter to be used, if you want e.g. only admins
                 Note that you might not have permissions for some filter.
@@ -752,16 +748,6 @@ class TelegramClient:
                     The filter :tl:`ChannelParticipantsBanned` will return
                     *restricted* users. If you want *banned* users you should
                     use :tl:`ChannelParticipantsKicked` instead.
-
-            aggressive (`bool`, optional):
-                Aggressively looks for all participants in the chat.
-
-                This is useful for channels since 20 July 2018,
-                Telegram added a server-side limit where only the
-                first 200 members can be retrieved. With this flag
-                set, more than 200 will be often be retrieved.
-
-                This has no effect if a ``filter`` is given.
 
         Yields
             The :tl:`User` objects returned by :tl:`GetParticipants`

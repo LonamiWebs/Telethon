@@ -218,6 +218,13 @@ your handlers much more easily.
 // TODO provide standalone alternative for this?
 
 
+The aggressive parameter hack has been removed
+----------------------------------------------
+
+The "aggressive" hack in ``get_participants`` (and ``iter_participants``) is now gone.
+It was not reliable, and was a cause of flood wait errors.
+
+
 The TelegramClient is no longer made out of mixins
 --------------------------------------------------
 
