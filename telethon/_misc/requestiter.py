@@ -114,3 +114,6 @@ class RequestIter(abc.ABC):
     def __reversed__(self):
         self.reverse = not self.reverse
         return self  # __aiter__ will be called after, too
+
+    def __await__(self):
+        return self.collect().__await__()

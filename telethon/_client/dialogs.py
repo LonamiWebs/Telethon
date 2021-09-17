@@ -136,7 +136,7 @@ class _DraftsIter(requestiter.RequestIter):
         return []
 
 
-def iter_dialogs(
+def get_dialogs(
         self: 'TelegramClient',
         limit: float = None,
         *,
@@ -162,11 +162,8 @@ def iter_dialogs(
         folder=folder
     )
 
-async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
-    return await self.iter_dialogs(*args, **kwargs).collect()
 
-
-def iter_drafts(
+def get_drafts(
         self: 'TelegramClient',
         entity: 'hints.EntitiesLike' = None
 ) -> _DraftsIter:
@@ -176,15 +173,6 @@ def iter_drafts(
     # TODO Passing a limit here makes no sense
     return _DraftsIter(self, None, entities=entity)
 
-async def get_drafts(
-        self: 'TelegramClient',
-        entity: 'hints.EntitiesLike' = None
-) -> 'hints.TotalList':
-    items = await self.iter_drafts(entity).collect()
-    if not entity or utils.is_list_like(entity):
-        return items
-    else:
-        return items[0]
 
 async def edit_folder(
         self: 'TelegramClient',

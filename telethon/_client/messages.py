@@ -318,7 +318,7 @@ class _IDsIter(requestiter.RequestIter):
                 self.buffer.append(_custom.Message._new(self.client, message, entities, self._entity))
 
 
-def iter_messages(
+def get_messages(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         limit: float = None,
@@ -367,25 +367,6 @@ def iter_messages(
         reply_to=reply_to,
         scheduled=scheduled
     )
-
-async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
-    if len(args) == 1 and 'limit' not in kwargs:
-        if 'min_id' in kwargs and 'max_id' in kwargs:
-            kwargs['limit'] = None
-        else:
-            kwargs['limit'] = 1
-
-    it = self.iter_messages(*args, **kwargs)
-
-    ids = kwargs.get('ids')
-    if ids and not utils.is_list_like(ids):
-        async for message in it:
-            return message
-        else:
-            # Iterator exhausted = empty, to handle InputMessageReplyTo
-            return None
-
-    return await it.collect()
 
 
 async def _get_comment_data(

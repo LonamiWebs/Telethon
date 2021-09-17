@@ -401,7 +401,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
                 self.request.offset_id = result.messages[-1].id
 
 
-def iter_participants(
+def get_participants(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         limit: float = None,
@@ -418,14 +418,8 @@ def iter_participants(
         aggressive=aggressive
     )
 
-async def get_participants(
-        self: 'TelegramClient',
-        *args,
-        **kwargs) -> 'hints.TotalList':
-    return await self.iter_participants(*args, **kwargs).collect()
 
-
-def iter_admin_log(
+def get_admin_log(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         limit: float = None,
@@ -474,14 +468,8 @@ def iter_admin_log(
         group_call=group_call
     )
 
-async def get_admin_log(
-        self: 'TelegramClient',
-        *args,
-        **kwargs) -> 'hints.TotalList':
-    return await self.iter_admin_log(*args, **kwargs).collect()
 
-
-def iter_profile_photos(
+def get_profile_photos(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         limit: int = None,
@@ -495,12 +483,6 @@ def iter_profile_photos(
         offset=offset,
         max_id=max_id
     )
-
-async def get_profile_photos(
-        self: 'TelegramClient',
-        *args,
-        **kwargs) -> 'hints.TotalList':
-    return await self.iter_profile_photos(*args, **kwargs).collect()
 
 
 def action(

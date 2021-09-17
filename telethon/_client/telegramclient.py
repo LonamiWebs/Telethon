@@ -716,7 +716,7 @@ class TelegramClient:
 
     # region Chats
 
-    def iter_participants(
+    def get_participants(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             limit: float = None,
@@ -784,32 +784,14 @@ class TelegramClient:
                 from telethon.tl.types import ChannelParticipantsAdmins
                 async for user in client.iter_participants(chat, filter=ChannelParticipantsAdmins):
                     print(user.first_name)
+
+                # Get a list of 0 people but print the total amount of participants in the chat
+                users = await client.get_participants(chat, limit=0)
+                print(users.total)
         """
-        return chats.iter_participants(**locals())
+        return chats.get_participants(**locals())
 
-    async def get_participants(
-            self: 'TelegramClient',
-            *args,
-            **kwargs) -> 'hints.TotalList':
-        """
-        Same as `iter_participants()`, but returns a
-        `TotalList <telethon.helpers.TotalList>` instead.
-
-        Example
-            .. code-block:: python
-
-                users = await client.get_participants(chat)
-                print(users[0].first_name)
-
-                for user in users:
-                    if user.username is not None:
-                        print(user.username)
-        """
-        return await chats.get_participants(*args, **kwargs)
-
-    get_participants.__signature__ = inspect.signature(iter_participants)
-
-    def iter_admin_log(
+    def get_admin_log(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             limit: float = None,
@@ -931,30 +913,16 @@ class TelegramClient:
                 async for event in client.iter_admin_log(channel):
                     if event.changed_title:
                         print('The title changed from', event.old, 'to', event.new)
-        """
-        return chats.iter_admin_log(**locals())
 
-    async def get_admin_log(
-            self: 'TelegramClient',
-            *args,
-            **kwargs) -> 'hints.TotalList':
-        """
-        Same as `iter_admin_log()`, but returns a ``list`` instead.
-
-        Example
-            .. code-block:: python
-
-                # Get a list of deleted message events which said "heck"
-                events = await client.get_admin_log(channel, search='heck', delete=True)
+                # Get all events of deleted message events which said "heck" and print the last one
+                events = await client.get_admin_log(channel, limit=None, search='heck', delete=True)
 
                 # Print the old message before it was deleted
-                print(events[0].old)
+                print(events[-1].old)
         """
-        return await chats.get_admin_log(*args, **kwargs)
+        return chats.get_admin_log(**locals())
 
-    get_admin_log.__signature__ = inspect.signature(iter_admin_log)
-
-    def iter_profile_photos(
+    def get_profile_photos(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             limit: int = None,
@@ -991,29 +959,12 @@ class TelegramClient:
                 # Download all the profile photos of some user
                 async for photo in client.iter_profile_photos(user):
                     await client.download_media(photo)
-        """
-        return chats.iter_profile_photos(**locals())
 
-    async def get_profile_photos(
-            self: 'TelegramClient',
-            *args,
-            **kwargs) -> 'hints.TotalList':
-        """
-        Same as `iter_profile_photos()`, but returns a
-        `TotalList <telethon.helpers.TotalList>` instead.
-
-        Example
-            .. code-block:: python
-
-                # Get the photos of a channel
-                photos = await client.get_profile_photos(channel)
-
-                # Download the oldest photo
+                # Get all the photos of a channel and download the oldest one
+                photos = await client.get_profile_photos(channel, limit=None)
                 await client.download_media(photos[-1])
         """
-        return await chats.get_profile_photos(*args, **kwargs)
-
-    get_profile_photos.__signature__ = inspect.signature(iter_profile_photos)
+        return chats.get_profile_photos(**locals())
 
     def action(
             self: 'TelegramClient',
@@ -1443,7 +1394,7 @@ class TelegramClient:
 
     # region Dialogs
 
-    def iter_dialogs(
+    def get_dialogs(
             self: 'TelegramClient',
             limit: float = None,
             *,
@@ -1517,19 +1468,9 @@ class TelegramClient:
                 # Print all dialog IDs and the title, nicely formatted
                 async for dialog in client.iter_dialogs():
                     print('{:>14}: {}'.format(dialog.id, dialog.title))
-        """
-        return dialogs.iter_dialogs(**locals())
-
-    async def get_dialogs(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
-        """
-        Same as `iter_dialogs()`, but returns a
-        `TotalList <telethon.helpers.TotalList>` instead.
-
-        Example
-            .. code-block:: python
 
                 # Get all open conversation, print the title of the first
-                dialogs = await client.get_dialogs()
+                dialogs = await client.get_dialogs(limit=None)
                 first = dialogs[0]
                 print(first.title)
 
@@ -1537,18 +1478,16 @@ class TelegramClient:
                 await client.send_message(first, 'hi')
 
                 # Getting only non-archived dialogs (both equivalent)
-                non_archived = await client.get_dialogs(folder=0)
-                non_archived = await client.get_dialogs(archived=False)
+                non_archived = await client.get_dialogs(folder=0, limit=None)
+                non_archived = await client.get_dialogs(archived=False, limit=None)
 
                 # Getting only archived dialogs (both equivalent)
-                archived = await client.get_dialogs(folder=1)
-                archived = await client.get_dialogs(archived=True)
+                archived = await client.get_dialogs(folder=1, limit=None)
+                archived = await client.get_dialogs(archived=True, limit=None)
         """
-        return await dialogs.get_dialogs(*args, **kwargs)
+        return dialogs.get_dialogs(**locals())
 
-    get_dialogs.__signature__ = inspect.signature(iter_dialogs)
-
-    def iter_drafts(
+    def get_drafts(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike' = None
     ) -> dialogs._DraftsIter:
@@ -1575,28 +1514,12 @@ class TelegramClient:
                 # Getting the drafts with 'bot1' and 'bot2'
                 async for draft in client.iter_drafts(['bot1', 'bot2']):
                     print(draft.text)
-        """
-        return dialogs.iter_drafts(**locals())
-
-    async def get_drafts(
-            self: 'TelegramClient',
-            entity: 'hints.EntitiesLike' = None
-    ) -> 'hints.TotalList':
-        """
-        Same as `iter_drafts()`, but returns a list instead.
-
-        Example
-            .. code-block:: python
-
-                # Get drafts, print the text of the first
-                drafts = await client.get_drafts()
-                print(drafts[0].text)
 
                 # Get the draft in your chat
                 draft = await client.get_drafts('me')
-                print(drafts.text)
+                print(draft.text)
         """
-        return await dialogs.get_drafts(**locals())
+        return dialogs.get_drafts(**locals())
 
     async def edit_folder(
             self: 'TelegramClient',
@@ -2037,7 +1960,7 @@ class TelegramClient:
 
     # region Messages
 
-    def iter_messages(
+    def get_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             limit: float = None,
@@ -2199,8 +2122,8 @@ class TelegramClient:
                 async for message in client.iter_messages(chat, reverse=True):
                     print(message.id, message.text)
 
-                # Filter by sender
-                async for message in client.iter_messages(chat, from_user='me'):
+                # Filter by sender, and limit to 10
+                async for message in client.iter_messages(chat, 10, from_user='me'):
                     print(message.text)
 
                 # Server-side search with fuzzy text
@@ -2215,43 +2138,22 @@ class TelegramClient:
                 # Getting comments from a post in a channel:
                 async for message in client.iter_messages(channel, reply_to=123):
                     print(message.chat.title, message.text)
-        """
-        return messages.iter_messages(**locals())
-
-    async def get_messages(self: 'TelegramClient', *args, **kwargs) -> 'hints.TotalList':
-        """
-        Same as `iter_messages()`, but returns a
-        `TotalList <telethon.helpers.TotalList>` instead.
-
-        If the `limit` is not set, it will be 1 by default unless both
-        `min_id` **and** `max_id` are set (as *named* arguments), in
-        which case the entire range will be returned.
-
-        This is so because any integer limit would be rather arbitrary and
-        it's common to only want to fetch one message, but if a range is
-        specified it makes sense that it should return the entirety of it.
-
-        If `ids` is present in the *named* arguments and is not a list,
-        a single `Message <telethon.tl._custom.message.Message>` will be
-        returned for convenience instead of a list.
-
-        Example
-            .. code-block:: python
 
                 # Get 0 photos and print the total to show how many photos there are
                 from telethon.tl.types import InputMessagesFilterPhotos
                 photos = await client.get_messages(chat, 0, filter=InputMessagesFilterPhotos)
                 print(photos.total)
 
-                # Get all the photos
-                photos = await client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
+                # Get all the photos in a list
+                all_photos = await client.get_messages(chat, None, filter=InputMessagesFilterPhotos)
 
-                # Get messages by ID:
+                # Get the last photo or None if none has been sent yet (same as setting limit 1)
+                photo = await client.get_messages(chat, filter=InputMessagesFilterPhotos)
+
+                # Get a single message given an ID:
                 message_1337 = await client.get_messages(chat, ids=1337)
         """
-        return await messages.get_messages(**locals())
-
-    get_messages.__signature__ = inspect.signature(iter_messages)
+        return messages.get_messages(**locals())
 
     async def send_message(
             self: 'TelegramClient',

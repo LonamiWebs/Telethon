@@ -50,6 +50,40 @@ removed. This implies:
 // TODO provide standalone alternative for this?
 
 
+The "iter" variant of the client methods have been removed
+----------------------------------------------------------
+
+Instead, you can now use the result of the ``get_*`` variant. For instance, where before you had:
+
+.. code-block:: python
+
+    async for message in client.iter_messages(...):
+        pass
+
+You would now do:
+
+    .. code-block:: python
+
+        async for message in client.get_messages(...):
+            pass                  # ^^^ now it's get, not iter
+
+You can still use ``await`` on the ``get_`` methods to retrieve the list.
+
+The removed methods are:
+
+* iter_messages
+* iter_dialogs
+* iter_participants
+* iter_admin_log
+* iter_profile_photos
+* iter_drafts
+
+The only exception to this rule is ``iter_download``.
+
+// TODO keep providing the old ``iter_`` versions? it doesn't really hurt, even if the recommended way changed
+// TODO does the download really need to be special? get download is kind of weird though
+
+
 Raw API methods have been renamed and are now considered private
 ----------------------------------------------------------------
 
