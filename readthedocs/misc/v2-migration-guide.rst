@@ -13,7 +13,7 @@ good chance you were not relying on this to begin with".
 **Please read this document in full before upgrading your code to Telethon 2.0.**
 
 
-Pyhton 3.5 is no longer supported
+Python 3.5 is no longer supported
 ---------------------------------
 
 The library will no longer attempt to support Python 3.5. The minimum version is now Python 3.6.
@@ -216,6 +216,14 @@ just fine This approach can also be easily persisted, and you can adjust it to y
 your handlers much more easily.
 
 // TODO provide standalone alternative for this?
+
+
+Deleting messages now returns a more useful value
+-------------------------------------------------
+
+It used to return a list of :tl:`messages.affectedMessages` which I expect very little people were
+actually using. Now it returns an ``int`` value indicating the number of messages that did exist
+and were deleted.
 
 
 The aggressive parameter hack has been removed

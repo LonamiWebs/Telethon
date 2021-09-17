@@ -644,11 +644,13 @@ async def delete_messages(
         ty = helpers._EntityType.USER
 
     if ty == helpers._EntityType.CHANNEL:
-        return await self([_tl.fn.channels.DeleteMessages(
-                        entity, list(c)) for c in utils.chunks(message_ids)])
+        res = await self([_tl.fn.channels.DeleteMessages(
+                entity, list(c)) for c in utils.chunks(message_ids)])
     else:
-        return await self([_tl.fn.messages.DeleteMessages(
-                        list(c), revoke) for c in utils.chunks(message_ids)])
+        res = await self([_tl.fn.messages.DeleteMessages(
+            list(c), revoke) for c in utils.chunks(message_ids)])
+
+    return sum(r.pts_count for r in res)
 
 async def send_read_acknowledge(
         self: 'TelegramClient',
