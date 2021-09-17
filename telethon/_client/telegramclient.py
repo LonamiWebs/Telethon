@@ -719,7 +719,7 @@ class TelegramClient:
     def get_participants(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            limit: float = None,
+            limit: float = (),
             *,
             search: str = '',
             filter: '_tl.TypeChannelParticipantsFilter' = None,
@@ -794,7 +794,7 @@ class TelegramClient:
     def get_admin_log(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            limit: float = None,
+            limit: float = (),
             *,
             max_id: int = 0,
             min_id: int = 0,
@@ -925,7 +925,7 @@ class TelegramClient:
     def get_profile_photos(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            limit: int = None,
+            limit: int = (),
             *,
             offset: int = 0,
             max_id: int = 0) -> chats._ProfilePhotoIter:
@@ -1396,7 +1396,7 @@ class TelegramClient:
 
     def get_dialogs(
             self: 'TelegramClient',
-            limit: float = None,
+            limit: float = (),
             *,
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,
@@ -1963,7 +1963,7 @@ class TelegramClient:
     def get_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            limit: float = None,
+            limit: float = (),
             *,
             offset_date: 'hints.DateLike' = None,
             offset_id: int = 0,

@@ -28,12 +28,13 @@ class RequestIter(abc.ABC):
         self.reverse = reverse
         self.wait_time = wait_time
         self.kwargs = kwargs
-        self.limit = max(float('inf') if limit is None else limit, 0)
+        self.limit = max(float('inf') if limit is None or limit == () else limit, 0)
         self.left = self.limit
         self.buffer = None
         self.index = 0
         self.total = None
         self.last_load = 0
+        self.return_single = limit == 1 or limit == ()
 
     async def _init(self, **kwargs):
         """
@@ -86,11 +87,20 @@ class RequestIter(abc.ABC):
         self.left = self.limit
         return self
 
-    async def collect(self):
+    async def collect(self, force_list=True):
         """
         Create a `self` iterator and collect it into a `TotalList`
         (a normal list with a `.total` attribute).
+
+        If ``force_list`` is ``False`` and ``self.return_single`` is ``True``, no list
+        will be returned. Instead, either a single item or ``None`` will be returned.
         """
+        if not force_list and self.return_single:
+            self.limit = 1
+            async for message in self:
+                return message
+            return None
+
         result = helpers.TotalList()
         async for message in self:
             result.append(message)
@@ -116,4 +126,4 @@ class RequestIter(abc.ABC):
         return self  # __aiter__ will be called after, too
 
     def __await__(self):
-        return self.collect().__await__()
+        return self.collect(force_list=False).__await__()

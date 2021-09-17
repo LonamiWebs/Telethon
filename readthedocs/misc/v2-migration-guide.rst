@@ -80,6 +80,31 @@ The removed methods are:
 
 The only exception to this rule is ``iter_download``.
 
+Additionally, when using ``await``, if the method was called with a limit of 1 (either through
+setting just one value to fetch, or setting the limit to one), either ``None`` or a single item
+(outside of a ``list``) will be returned. This used to be the case only for ``get_messages``,
+but now all methods behave in the same way for consistency.
+
+When using ``async for``, the default limit will be ``None``, meaning all items will be fetched.
+When using ``await``, the default limit will be ``1``, meaning the latest item will be fetched.
+If you want to use ``await`` but still get a list, use the ``.collect()`` method to collect the
+results into a list:
+
+.. code-block:: python
+
+    chat = ...
+
+    # will iterate over all (default limit=None)
+    async for message in client.get_messages(chat):
+        ...
+
+    # will return either a single Message or None if there is not any (limit=1)
+    message = await client.get_messages(chat)
+
+    # will collect all messages into a list (default limit=None). will also take long!
+    all_messages = await client.get_messages(chat).collect()
+
+
 // TODO keep providing the old ``iter_`` versions? it doesn't really hurt, even if the recommended way changed
 // TODO does the download really need to be special? get download is kind of weird though
 

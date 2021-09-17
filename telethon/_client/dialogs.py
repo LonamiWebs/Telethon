@@ -167,11 +167,13 @@ def get_drafts(
         self: 'TelegramClient',
         entity: 'hints.EntitiesLike' = None
 ) -> _DraftsIter:
-    if entity and not utils.is_list_like(entity):
-        entity = (entity,)
+    limit = None
+    if entity:
+        if not utils.is_list_like(entity):
+            entity = (entity,)
+        limit = len(entity)
 
-    # TODO Passing a limit here makes no sense
-    return _DraftsIter(self, None, entities=entity)
+    return _DraftsIter(self, limit, entities=entity)
 
 
 async def edit_folder(
