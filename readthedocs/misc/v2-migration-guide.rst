@@ -204,6 +204,33 @@ either ``.md_text`` or ``.html_text`` as needed. This is because both ``.text`` 
 may disappear in future versions, and their behaviour is not immediately obvious.
 
 
+Using a flat list to define buttons will now create rows and not columns
+------------------------------------------------------------------------
+
+When sending a message with buttons under a bot account, passing a flat list such as the following:
+
+.. code-block:: python
+
+    bot.send_message(chat, message, buttons=[
+        Button.inline('top'),
+        Button.inline('middle'),
+        Button.inline('bottom'),
+    ])
+
+Will now send a message with 3 rows of buttons, instead of a message with 3 columns (old behaviour).
+If you still want the old behaviour, wrap the list inside another list:
+
+.. code-block:: python
+
+    bot.send_message(chat, message, buttons=[[
+        #                                   +
+        Button.inline('top'),
+        Button.inline('middle'),
+        Button.inline('bottom'),
+    ]])
+    #+
+
+
 The Conversation API has been removed
 -------------------------------------
 

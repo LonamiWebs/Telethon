@@ -8,7 +8,7 @@ from ..types import _custom
 def build_reply_markup(
         buttons: 'typing.Optional[hints.MarkupLike]',
         inline_only: bool = False) -> 'typing.Optional[_tl.TypeReplyMarkup]':
-    if buttons is None:
+    if not buttons:
         return None
 
     try:
@@ -18,9 +18,9 @@ def build_reply_markup(
         pass
 
     if not utils.is_list_like(buttons):
-        buttons = [[buttons]]
-    elif not buttons or not utils.is_list_like(buttons[0]):
         buttons = [buttons]
+    if not utils.is_list_like(buttons[0]):
+        buttons = [[b] for b in buttons]
 
     is_inline = False
     is_normal = False
