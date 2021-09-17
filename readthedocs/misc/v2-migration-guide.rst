@@ -225,6 +225,16 @@ The "aggressive" hack in ``get_participants`` (and ``iter_participants``) is now
 It was not reliable, and was a cause of flood wait errors.
 
 
+The total value when getting participants has changed
+-----------------------------------------------------
+
+Before, it used to always be the total amount of people inside the chat. Now the filter is also
+considered. If you were running ``client.get_participants`` with a ``filter`` other than the
+default and accessing the ``list.total``, you will now get a different result. You will need to
+perform a separate request with no filter to fetch the total without filter (this is what the
+library used to do).
+
+
 The TelegramClient is no longer made out of mixins
 --------------------------------------------------
 

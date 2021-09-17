@@ -184,27 +184,8 @@ class _ParticipantsIter(requestiter.RequestIter):
         if self.request.offset > self.limit:
             return True
 
-        if self.total is None:
-            f = self.request.filter
-            if (
-                not isinstance(f, _tl.ChannelParticipantsRecent)
-                and (not isinstance(f, _tl.ChannelParticipantsSearch) or f.q)
-            ):
-                # Only do an additional getParticipants here to get the total
-                # if there's a filter which would reduce the real total number.
-                # getParticipants is cheaper than getFull.
-                self.total = (await self.client(_tl.fn.channels.GetParticipants(
-                    channel=self.request.channel,
-                    filter=_tl.ChannelParticipantsRecent(),
-                    offset=0,
-                    limit=1,
-                    hash=0
-                ))).count
-
         participants = await self.client(self.request)
-        if self.total is None:
-            # Will only get here if there was one request with a filter that matched all users.
-            self.total = participants.count
+        self.total = participants.count
 
         self.request.offset += len(participants.participants)
         users = {user.id: user for user in participants.users}
