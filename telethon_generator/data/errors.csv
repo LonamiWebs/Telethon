@@ -305,6 +305,7 @@ RESULTS_TOO_MUCH,400,"You sent too many results, see https://core.telegram.org/b
 RESULT_ID_DUPLICATE,400,Duplicated IDs on the sent results. Make sure to use unique IDs
 RESULT_ID_INVALID,400,The given result cannot be used to send the selection to the bot
 RESULT_TYPE_INVALID,400,Result type invalid
+REVOTE_NOT_ALLOWED,400,
 RIGHT_FORBIDDEN,403,Either your admin rights do not allow you to do this or you passed the wrong rights combination (some rights only apply to channels and vice versa)
 RPC_CALL_FAIL,500,"Telegram is having internal issues, please try again later."
 RPC_MCGET_FAIL,500,"Telegram is having internal issues, please try again later."
@@ -327,6 +328,7 @@ SHA256_HASH_INVALID,400,The provided SHA256 hash is invalid
 SHORTNAME_OCCUPY_FAILED,400,An error occurred when trying to register the short-name used for the sticker pack. Try a different name
 SHORT_NAME_INVALID,400,
 SHORT_NAME_OCCUPIED,400,
+SLOWMODE_MULTI_MSGS_DISABLED,400,
 SLOWMODE_WAIT_X,420,A wait of {seconds} seconds is required before sending another message in this chat
 SRP_ID_INVALID,400,
 START_PARAM_EMPTY,400,The start parameter is empty
