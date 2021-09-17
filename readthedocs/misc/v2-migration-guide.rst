@@ -249,3 +249,9 @@ The TelegramClient is no longer made out of mixins
 If you were relying on any of the individual mixins that made up the client, such as
 ``UserMethods`` inside the ``telethon.client`` subpackage, those are now gone.
 There is a single ``TelegramClient`` class now, containing everything you need.
+
+
+CdnDecrypter has been removed
+-----------------------------
+
+It was not really working and was more intended to be an implementation detail than anything else.

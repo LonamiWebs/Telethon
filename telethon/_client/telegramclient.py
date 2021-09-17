@@ -2761,7 +2761,6 @@ class TelegramClient:
 
     # Cached server configuration (with .dc_options), can be "global"
     _config = None
-    _cdn_config = None
 
     def __init__(
             self: 'TelegramClient',

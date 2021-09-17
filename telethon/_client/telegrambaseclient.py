@@ -428,31 +428,26 @@ def _auth_key_callback(self: 'TelegramClient', auth_key):
     self.session.save()
 
 
-async def _get_dc(self: 'TelegramClient', dc_id, cdn=False):
+async def _get_dc(self: 'TelegramClient', dc_id):
     """Gets the Data Center (DC) associated to 'dc_id'"""
     cls = self.__class__
     if not cls._config:
         cls._config = await self(_tl.fn.help.GetConfig())
 
-    if cdn and not self._cdn_config:
-        cls._cdn_config = await self(_tl.fn.help.GetCdnConfig())
-        for pk in cls._cdn_config.public_keys:
-            rsa.add_key(pk.public_key)
-
     try:
         return next(
             dc for dc in cls._config.dc_options
             if dc.id == dc_id
-            and bool(dc.ipv6) == self._use_ipv6 and bool(dc.cdn) == cdn
+            and bool(dc.ipv6) == self._use_ipv6 and not dc.cdn
         )
     except StopIteration:
         self._log[__name__].warning(
-            'Failed to get DC %s (cdn = %s) with use_ipv6 = %s; retrying ignoring IPv6 check',
-            dc_id, cdn, self._use_ipv6
+            'Failed to get DC %swith use_ipv6 = %s; retrying ignoring IPv6 check',
+            dc_id, self._use_ipv6
         )
         return next(
             dc for dc in cls._config.dc_options
-            if dc.id == dc_id and bool(dc.cdn) == cdn
+            if dc.id == dc_id and not dc.cdn
         )
 
 async def _create_exported_sender(self: 'TelegramClient', dc_id):
@@ -538,29 +533,3 @@ async def _clean_exported_senders(self: 'TelegramClient'):
                 # Disconnect should never raise
                 await sender.disconnect()
                 state.mark_disconnected()
-
-async def _get_cdn_client(self: 'TelegramClient', cdn_redirect):
-    """Similar to ._borrow_exported_client, but for CDNs"""
-    # TODO Implement
-    raise NotImplementedError
-    session = self._exported_sessions.get(cdn_redirect.dc_id)
-    if not session:
-        dc = await _get_dc(self, cdn_redirect.dc_id, cdn=True)
-        session = self.session.clone()
-        await session.set_dc(dc.id, dc.ip_address, dc.port)
-        self._exported_sessions[cdn_redirect.dc_id] = session
-
-    self._log[__name__].info('Creating new CDN client')
-    client = TelegramBaseClient(
-        session, self.api_id, self.api_hash,
-        proxy=self._sender.connection.conn.proxy,
-        timeout=self._sender.connection.get_timeout()
-    )
-
-    # This will make use of the new RSA keys for this specific CDN.
-    #
-    # We won't be calling GetConfig because it's only called
-    # when needed by ._get_dc, and also it's static so it's likely
-    # set already. Avoid invoking non-CDN methods by not syncing updates.
-    client.connect(_sync_updates=False)
-    return client
