@@ -77,7 +77,7 @@ class InlineResult:
         this URL to open it in your browser, you should use Python's
         `webbrowser.open(url)` for such task.
         """
-        if isinstance(self.result, types.BotInlineResult):
+        if isinstance(self.result, _tl.BotInlineResult):
             return self.result.url
 
     @property
@@ -86,9 +86,9 @@ class InlineResult:
         Returns either the :tl:`WebDocument` thumbnail for
         normal results or the :tl:`Photo` for media results.
         """
-        if isinstance(self.result, types.BotInlineResult):
+        if isinstance(self.result, _tl.BotInlineResult):
             return self.result.thumb
-        elif isinstance(self.result, types.BotInlineMediaResult):
+        elif isinstance(self.result, _tl.BotInlineMediaResult):
             return self.result.photo
 
     @property
@@ -97,9 +97,9 @@ class InlineResult:
         Returns either the :tl:`WebDocument` content for
         normal results or the :tl:`Document` for media results.
         """
-        if isinstance(self.result, types.BotInlineResult):
+        if isinstance(self.result, _tl.BotInlineResult):
             return self.result.content
-        elif isinstance(self.result, types.BotInlineMediaResult):
+        elif isinstance(self.result, _tl.BotInlineMediaResult):
             return self.result.document
 
     async def click(self, entity=None, reply_to=None, comment_to=None,

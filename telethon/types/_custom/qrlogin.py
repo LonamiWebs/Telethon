@@ -94,7 +94,7 @@ class QRLogin:
         async def handler(_update):
             event.set()
 
-        self._client.add_event_handler(handler, events.Raw(types.UpdateLoginToken))
+        self._client.add_event_handler(handler, events.Raw(_tl.UpdateLoginToken))
 
         try:
             # Will raise timeout error if it doesn't complete quick enough,
@@ -105,12 +105,12 @@ class QRLogin:
 
         # We got here without it raising timeout error, so we can proceed
         resp = await self._client(self._request)
-        if isinstance(resp, types.auth.LoginTokenMigrateTo):
+        if isinstance(resp, _tl.auth.LoginTokenMigrateTo):
             await self._client._switch_dc(resp.dc_id)
             resp = await self._client(_tl.fn.auth.ImportLoginToken(resp.token))
             # resp should now be auth.loginTokenSuccess
 
-        if isinstance(resp, types.auth.LoginTokenSuccess):
+        if isinstance(resp, _tl.auth.LoginTokenSuccess):
             user = resp.authorization.user
             self._client._on_login(user)
             return user

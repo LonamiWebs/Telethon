@@ -46,8 +46,8 @@ class ParticipantPermissions:
         also counts as begin an administrator, since they have all permissions.
         """
         return self.is_creator or isinstance(self.participant, (
-            types.ChannelParticipantAdmin,
-            types.ChatParticipantAdmin
+            _tl.ChannelParticipantAdmin,
+            _tl.ChatParticipantAdmin
         ))
 
     @property
@@ -56,8 +56,8 @@ class ParticipantPermissions:
         Whether the user is the creator of the chat or not.
         """
         return isinstance(self.participant, (
-            types.ChannelParticipantCreator,
-            types.ChatParticipantCreator
+            _tl.ChannelParticipantCreator,
+            _tl.ChatParticipantCreator
         ))
 
     @property
@@ -67,9 +67,9 @@ class ParticipantPermissions:
         not banned either, and has no restrictions applied).
         """
         return isinstance(self.participant, (
-            types.ChannelParticipant,
-            types.ChatParticipant,
-            types.ChannelParticipantSelf
+            _tl.ChannelParticipant,
+            _tl.ChatParticipant,
+            _tl.ChannelParticipantSelf
         ))
 
     @property
@@ -77,14 +77,14 @@ class ParticipantPermissions:
         """
         Whether the user is banned in the chat.
         """
-        return isinstance(self.participant, types.ChannelParticipantBanned)
+        return isinstance(self.participant, _tl.ChannelParticipantBanned)
 
     @property
     def has_left(self):
         """
         Whether the user left the chat.
         """
-        return isinstance(self.participant, types.ChannelParticipantLeft)
+        return isinstance(self.participant, _tl.ChannelParticipantLeft)
 
     @property
     def add_admins(self):

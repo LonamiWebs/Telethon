@@ -49,12 +49,12 @@ class Button:
         Returns `True` if the button belongs to an inline keyboard.
         """
         return isinstance(button, (
-            types.KeyboardButtonBuy,
-            types.KeyboardButtonCallback,
-            types.KeyboardButtonGame,
-            types.KeyboardButtonSwitchInline,
-            types.KeyboardButtonUrl,
-            types.InputKeyboardButtonUrlAuth
+            _tl.KeyboardButtonBuy,
+            _tl.KeyboardButtonCallback,
+            _tl.KeyboardButtonGame,
+            _tl.KeyboardButtonSwitchInline,
+            _tl.KeyboardButtonUrl,
+            _tl.InputKeyboardButtonUrlAuth
         ))
 
     @staticmethod
@@ -83,7 +83,7 @@ class Button:
         if len(data) > 64:
             raise ValueError('Too many bytes for the data')
 
-        return types.KeyboardButtonCallback(text, data)
+        return _tl.KeyboardButtonCallback(text, data)
 
     @staticmethod
     def switch_inline(text, query='', same_peer=False):
@@ -101,7 +101,7 @@ class Button:
         input field will be filled with the username of your bot followed
         by the query text, ready to make inline queries.
         """
-        return types.KeyboardButtonSwitchInline(text, query, same_peer)
+        return _tl.KeyboardButtonSwitchInline(text, query, same_peer)
 
     @staticmethod
     def url(text, url=None):
@@ -117,7 +117,7 @@ class Button:
         the domain is trusted, and once confirmed the URL will open in their
         device.
         """
-        return types.KeyboardButtonUrl(text, url or text)
+        return _tl.KeyboardButtonUrl(text, url or text)
 
     @staticmethod
     def auth(text, url=None, *, bot=None, write_access=False, fwd_text=None):
@@ -157,10 +157,10 @@ class Button:
         When the user clicks this button, a confirmation box will be shown
         to the user asking whether they want to login to the specified domain.
         """
-        return types.InputKeyboardButtonUrlAuth(
+        return _tl.InputKeyboardButtonUrlAuth(
             text=text,
             url=url or text,
-            bot=utils.get_input_user(bot or types.InputUserSelf()),
+            bot=utils.get_input_user(bot or _tl.InputUserSelf()),
             request_write_access=write_access,
             fwd_text=fwd_text
         )
@@ -191,7 +191,7 @@ class Button:
         between a button press and the user typing and sending exactly the
         same text on their own.
         """
-        return cls(types.KeyboardButton(text),
+        return cls(_tl.KeyboardButton(text),
                    resize=resize, single_use=single_use, selective=selective)
 
     @classmethod
@@ -206,7 +206,7 @@ class Button:
         to the user asking whether they want to share their location with the
         bot, and if confirmed a message with geo media will be sent.
         """
-        return cls(types.KeyboardButtonRequestGeoLocation(text),
+        return cls(_tl.KeyboardButtonRequestGeoLocation(text),
                    resize=resize, single_use=single_use, selective=selective)
 
     @classmethod
@@ -221,7 +221,7 @@ class Button:
         to the user asking whether they want to share their phone with the
         bot, and if confirmed a message with contact media will be sent.
         """
-        return cls(types.KeyboardButtonRequestPhone(text),
+        return cls(_tl.KeyboardButtonRequestPhone(text),
                    resize=resize, single_use=single_use, selective=selective)
 
     @classmethod
@@ -243,7 +243,7 @@ class Button:
         When the user clicks this button, a screen letting the user create a
         poll will be shown, and if they do create one, the poll will be sent.
         """
-        return cls(types.KeyboardButtonRequestPoll(text, quiz=force_quiz),
+        return cls(_tl.KeyboardButtonRequestPoll(text, quiz=force_quiz),
                    resize=resize, single_use=single_use, selective=selective)
 
     @staticmethod
@@ -255,7 +255,7 @@ class Button:
        ``selective`` is as documented in `text`.
 
         """
-        return types.ReplyKeyboardHide(selective=selective)
+        return _tl.ReplyKeyboardHide(selective=selective)
 
     @staticmethod
     def force_reply(single_use=None, selective=None, placeholder=None):
@@ -273,7 +273,7 @@ class Button:
                 crop the text (for example, to 64 characters and adding an
                 ellipsis (…) character as the 65th).
         """
-        return types.ReplyKeyboardForceReply(
+        return _tl.ReplyKeyboardForceReply(
             single_use=single_use,
             selective=selective,
             placeholder=placeholder)
@@ -291,7 +291,7 @@ class Button:
         `Payments API <https://core.telegram.org/api/payments>`__
         documentation for more information.
         """
-        return types.KeyboardButtonBuy(text)
+        return _tl.KeyboardButtonBuy(text)
 
     @staticmethod
     def game(text):
@@ -305,4 +305,4 @@ class Button:
         `Games <https://core.telegram.org/api/bots/games>`__
         documentation for more information on using games.
         """
-        return types.KeyboardButtonGame(text)
+        return _tl.KeyboardButtonGame(text)
