@@ -195,6 +195,19 @@ Additionally, the ``custom.File.id`` property is gone (which used to provide acc
 // this should lessen the impact of the removal of this feature
 
 
+Removal of several utility methods
+----------------------------------
+
+The following ``utils`` methods no longer exist or have been made private:
+
+* ``utils.resolve_bot_file_id``. It was half-broken.
+* ``utils.pack_bot_file_id``. It was half-broken.
+* ``utils.resolve_invite_link``. It has been broken for a while, so this just makes its removal
+  official (see `issue #1723 <https://github.com/LonamiWebs/Telethon/issues/1723>`__).
+
+// TODO provide the new clean utils
+
+
 The custom.Message class and the way it is used has changed
 -----------------------------------------------------------
 

@@ -204,10 +204,6 @@ class MemorySession(Session):
                 username, invite = utils.parse_username(key)
                 if username and not invite:
                     result = self.get_entity_rows_by_username(username)
-                else:
-                    tup = utils.resolve_invite_link(key)[1]
-                    if tup:
-                        result = self.get_entity_rows_by_id(tup, exact=False)
 
         elif isinstance(key, int):
             result = self.get_entity_rows_by_id(key, exact)
