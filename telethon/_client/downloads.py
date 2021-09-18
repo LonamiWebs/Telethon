@@ -282,9 +282,6 @@ async def download_media(
         date = datetime.datetime.now()
         media = message
 
-    if isinstance(media, str):
-        media = utils.resolve_bot_file_id(media)
-
     if isinstance(media, _tl.MessageService):
         if isinstance(message.action,
                         _tl.MessageActionChatEditPhoto):

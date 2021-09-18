@@ -425,17 +425,13 @@ async def _file_to_media(
             media = _tl.InputMediaPhotoExternal(file, ttl_seconds=ttl)
         else:
             media = _tl.InputMediaDocumentExternal(file, ttl_seconds=ttl)
-    else:
-        bot_file = utils.resolve_bot_file_id(file)
-        if bot_file:
-            media = utils.get_input_media(bot_file, ttl=ttl)
 
     if media:
         pass  # Already have media, don't check the rest
     elif not file_handle:
         raise ValueError(
-            'Failed to convert {} to media. Not an existing file, '
-            'an HTTP URL or a valid bot-API-like file ID'.format(file)
+            'Failed to convert {} to media. Not an existing file or '
+            'HTTP URL'.format(file)
         )
     elif as_image:
         media = _tl.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)

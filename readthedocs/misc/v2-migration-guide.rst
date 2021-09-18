@@ -178,6 +178,23 @@ The following modules have been moved inside ``_misc``:
 // TODO review telethon/__init__.py isn't exposing more than it should
 
 
+Support for bot-API style file_id has been removed
+--------------------------------------------------
+
+They have been half-broken for a while now, so this is just making an existing reality official.
+See `issue #1613 <https://github.com/LonamiWebs/Telethon/issues/1613>`__ for details.
+
+An alternative solution to re-use files may be provided in the future. For the time being, you
+should either upload the file as needed, or keep a message with the media somewhere you can
+later fetch it (by storing the chat and message identifier).
+
+Additionally, the ``custom.File.id`` property is gone (which used to provide access to this
+"bot-API style" file identifier.
+
+// TODO could probably provide an in-memory cache for uploads to temporarily reuse old InputFile.
+// this should lessen the impact of the removal of this feature
+
+
 The custom.Message class and the way it is used has changed
 -----------------------------------------------------------
 
