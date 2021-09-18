@@ -428,6 +428,13 @@ However, most likely, you were already doing the right thing (or else you would'
 "why is this not being edited", which you would most likely consider a bug rather than a feature).
 
 
+Signing in no longer sends the code
+-----------------------------------
+
+``client.sign_in()`` used to run ``client.send_code_request()`` if you only provided the phone and
+not the code. It no longer does this. If you need that convenience, use ``client.start()`` instead.
+
+
 The client.disconnected property has been removed
 -------------------------------------------------
 

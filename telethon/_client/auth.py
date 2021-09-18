@@ -225,9 +225,7 @@ async def sign_in(
     if me:
         return me
 
-    if phone and not code and not password:
-        return await self.send_code_request(phone)
-    elif code:
+    if phone and code:
         phone, phone_code_hash = \
             _parse_phone_and_hash(self, phone, phone_code_hash)
 
@@ -247,10 +245,7 @@ async def sign_in(
             api_id=self.api_id, api_hash=self.api_hash
         )
     else:
-        raise ValueError(
-            'You must provide a phone and a code the first time, '
-            'and a password only if an RPCError was raised before.'
-        )
+        raise ValueError('You must provide either phone and code, password, or bot_token.')
 
     result = await self(request)
     if isinstance(result, _tl.auth.AuthorizationSignUpRequired):
