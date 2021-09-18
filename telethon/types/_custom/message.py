@@ -762,9 +762,6 @@ class Message(ChatGetter, SenderGetter):
         `telethon.client.messages.MessageMethods.edit_message`
         with both ``entity`` and ``message`` already set.
 
-        Returns `None` if the message was incoming,
-        or the edited `Message` otherwise.
-
         .. note::
 
             This is different from `client.edit_message
@@ -777,9 +774,6 @@ class Message(ChatGetter, SenderGetter):
             This is generally the most desired and convenient behaviour,
             and will work for link previews and message buttons.
         """
-        if self.fwd_from or not self.out or not self._client:
-            return None  # We assume self.out was patched for our chat
-
         if 'link_preview' not in kwargs:
             kwargs['link_preview'] = bool(self.web_preview)
 

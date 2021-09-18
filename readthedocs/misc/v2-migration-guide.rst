@@ -362,6 +362,17 @@ perform a separate request with no filter to fetch the total without filter (thi
 library used to do).
 
 
+Using message.edit will now raise an error if the message cannot be edited
+--------------------------------------------------------------------------
+
+Before, calling ``message.edit()`` would completely ignore your attempt to edit a message if the
+message had a forward header or was not outgoing. This is no longer the case. It is now the user's
+responsibility to check for this.
+
+However, most likely, you were already doing the right thing (or else you would've experienced a
+"why is this not being edited", which you would most likely consider a bug rather than a feature).
+
+
 The TelegramClient is no longer made out of mixins
 --------------------------------------------------
 
