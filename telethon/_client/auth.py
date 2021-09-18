@@ -4,6 +4,7 @@ import os
 import sys
 import typing
 import warnings
+import functools
 
 from .._misc import utils, helpers, password as pwd_mod
 from .. import errors, _tl
@@ -13,7 +14,23 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-async def start(
+class StartingClient:
+    def __init__(self, client, start_fn):
+        self.client = client
+        self.start_fn = start_fn
+
+    async def __aenter__(self):
+        await self.start_fn()
+        return self.client
+
+    async def __aexit__(self, *args):
+        await self.client.__aexit__(*args)
+
+    def __await__(self):
+        return self.__aenter__().__await__()
+
+
+def start(
         self: 'TelegramClient',
         phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
         password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
@@ -40,7 +57,7 @@ async def start(
         raise ValueError('Both a phone and a bot token provided, '
                             'must only provide one of either')
 
-    return await _start(
+    return StartingClient(self, functools.partial(_start,
         self=self,
         phone=phone,
         password=password,
@@ -50,7 +67,7 @@ async def start(
         first_name=first_name,
         last_name=last_name,
         max_attempts=max_attempts
-    )
+    ))
 
 async def _start(
         self: 'TelegramClient', phone, password, bot_token, force_sms,

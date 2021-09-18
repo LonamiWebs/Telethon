@@ -178,6 +178,38 @@ The following modules have been moved inside ``_misc``:
 // TODO review telethon/__init__.py isn't exposing more than it should
 
 
+Using the client in a context-manager no longer calls start automatically
+-------------------------------------------------------------------------
+
+
+The following code no longer automatically calls ``client.start()``:
+
+.. code-block:: python
+
+    async with TelegramClient(...) as client:
+        ...
+
+    # or
+
+    async with client:
+        ...
+
+
+This means the context-manager will only call ``client.connect()`` and ``client.disconnect()``.
+The rationale for this change is that it could be strange for this to ask for the login code if
+the session ever was invalid. If you want the old behaviour, you now need to be explicit:
+
+
+.. code-block:: python
+
+    async with TelegramClient(...).start() as client:
+        ...  #                    ++++++++
+
+
+Note that you do not need to ``await`` the call to ``.start()`` if you are going to use the result
+in a context-manager (but it's okay if you put the ``await``).
+
+
 Support for bot-API style file_id has been removed
 --------------------------------------------------
 

@@ -281,7 +281,7 @@ class TelegramClient:
 
     # region Auth
 
-    async def start(
+    def start(
             self: 'TelegramClient',
             phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
             password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
@@ -304,9 +304,8 @@ class TelegramClient:
         will be banned otherwise.** See https://telegram.org/tos
         and https://core.telegram.org/api/terms.
 
-        If the event loop is already running, this method returns a
-        coroutine that you should await on your own code; otherwise
-        the loop is ran until said coroutine completes.
+        Even though this method is not marked as ``async``, you still need to
+        ``await`` its result for it to do anything useful.
 
         Arguments
             phone (`str` | `int` | `callable`):
@@ -363,11 +362,11 @@ class TelegramClient:
                 # Please enter your password: *******
                 # (You are now logged in)
 
-                # Starting using a context manager (this calls start()):
-                with client:
+                # Starting using a context manager (note the lack of await):
+                async with client.start():
                     pass
         """
-        return await auth.start(**locals())
+        return auth.start(**locals())
 
     async def sign_in(
             self: 'TelegramClient',
@@ -621,7 +620,8 @@ class TelegramClient:
         return await auth.edit_2fa(**locals())
 
     async def __aenter__(self):
-        return await self.start()
+        await self.connect()
+        return self
 
     async def __aexit__(self, *args):
         await self.disconnect()
