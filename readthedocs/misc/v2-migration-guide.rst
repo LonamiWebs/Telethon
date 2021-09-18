@@ -240,6 +240,25 @@ The following ``utils`` methods no longer exist or have been made private:
 // TODO provide the new clean utils
 
 
+Changes on how to configure filters for certain client methods
+--------------------------------------------------------------
+
+Before, ``client.iter_participants`` (and ``get_participants``) would expect a type or instance
+of the raw Telegram definition as a ``filter``. Now, this ``filter`` expects a string.
+The supported values are:
+
+* ``'admin'``
+* ``'bot'``
+* ``'kicked'``
+* ``'banned'``
+* ``'contact'``
+
+If you prefer to avoid hardcoding strings, you may use ``telethon.enums.Participant``.
+
+// TODO maintain support for the old way of doing it?
+// TODO now that there's a custom filter, filter client-side for small chats?
+
+
 The custom.Message class and the way it is used has changed
 -----------------------------------------------------------
 
@@ -345,11 +364,13 @@ actually using. Now it returns an ``int`` value indicating the number of message
 and were deleted.
 
 
-The aggressive parameter hack has been removed
-----------------------------------------------
+Changes to the methods to retrieve participants
+-----------------------------------------------
 
 The "aggressive" hack in ``get_participants`` (and ``iter_participants``) is now gone.
 It was not reliable, and was a cause of flood wait errors.
+
+The ``search`` parameter is no longer ignored when ``filter`` is specified.
 
 
 The total value when getting participants has changed

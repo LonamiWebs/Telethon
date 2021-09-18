@@ -729,7 +729,7 @@ class TelegramClient:
             limit: float = (),
             *,
             search: str = '',
-            filter: '_tl.TypeChannelParticipantsFilter' = None) -> chats._ParticipantsIter:
+            filter: typing.Union[str, enums.Participant] = ()) -> chats._ParticipantsIter:
         """
         Iterator over the participants belonging to the specified chat.
 
@@ -749,16 +749,22 @@ class TelegramClient:
             search (`str`, optional):
                 Look for participants with this string in name/username.
 
-            filter (:tl:`ChannelParticipantsFilter`, optional):
+                Note that the search is only compatible with some ``filter``
+                when fetching members from a channel or megagroup. This may
+                change in the future.
+
+            filter (`str`, optional):
                 The filter to be used, if you want e.g. only admins
                 Note that you might not have permissions for some filter.
                 This has no effect for normal chats or users.
 
-                .. note::
+                The available filters are:
 
-                    The filter :tl:`ChannelParticipantsBanned` will return
-                    *restricted* users. If you want *banned* users you should
-                    use :tl:`ChannelParticipantsKicked` instead.
+                * ``'admin'``
+                * ``'bot'``
+                * ``'kicked'``
+                * ``'banned'``
+                * ``'contact'``
 
         Yields
             The :tl:`User` objects returned by :tl:`GetParticipants`

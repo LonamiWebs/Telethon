@@ -5,7 +5,7 @@ import string
 import typing
 
 from .. import hints, errors, _tl
-from .._misc import helpers, utils, requestiter, tlobject
+from .._misc import helpers, utils, requestiter, tlobject, enums
 from ..types import _custom
 
 if typing.TYPE_CHECKING:
@@ -95,15 +95,25 @@ class _ChatAction:
 
 class _ParticipantsIter(requestiter.RequestIter):
     async def _init(self, entity, filter, search):
-        if isinstance(filter, type):
-            if filter in (_tl.ChannelParticipantsBanned,
-                          _tl.ChannelParticipantsKicked,
-                          _tl.ChannelParticipantsSearch,
-                          _tl.ChannelParticipantsContacts):
-                # These require a `q` parameter (support types for convenience)
-                filter = filter('')
+        if not filter:
+            if search:
+                filter = _tl.ChannelParticipantsSearch(search)
             else:
-                filter = filter()
+                filter = _tl.ChannelParticipantsRecent()
+        else:
+            filter = enums.parse_participant(filter)
+            if filter == enums.Participant.ADMIN:
+                filter = _tl.ChannelParticipantsAdmins()
+            elif filter == enums.Participant.BOT:
+                filter = _tl.ChannelParticipantsBots()
+            elif filter == enums.Participant.KICKED:
+                filter = _tl.ChannelParticipantsKicked(search)
+            elif filter == enums.Participant.BANNED:
+                filter = _tl.ChannelParticipantsBanned(search)
+            elif filter == enums.Participant.CONTACT:
+                filter = _tl.ChannelParticipantsContacts(search)
+            else:
+                raise RuntimeError('unhandled enum variant')
 
         entity = await self.client.get_input_entity(entity)
         ty = helpers._entity_type(entity)

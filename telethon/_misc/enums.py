@@ -9,14 +9,29 @@ class ConnectionMode(Enum):
     HTTP = 'http'
 
 
-def parse_conn_mode(mode):
-    if isinstance(mode, ConnectionMode):
-        return mode
-    elif isinstance(mode, str):
-        for cm in ConnectionMode:
-            if mode == cm.value:
-                return cm
+class Participant(Enum):
+    ADMIN = 'admin'
+    BOT = 'bot'
+    KICKED = 'kicked'
+    BANNED = 'banned'
+    CONTACT = 'contact'
 
-        raise ValueError(f'unknown connection mode: {mode!r}')
-    else:
-        raise TypeError(f'not a valid connection mode: {type(mode).__name__!r}')
+
+def _mk_parser(cls):
+    def parser(value):
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, str):
+            for variant in cls:
+                if value == variant.value:
+                    return variant
+
+            raise ValueError(f'unknown {cls.__name__}: {value!r}')
+        else:
+            raise TypeError(f'not a valid {cls.__name__}: {type(value).__name__!r}')
+
+    return parser
+
+
+parse_conn_mode = _mk_parser(ConnectionMode)
+parse_participant = _mk_parser(Participant)
