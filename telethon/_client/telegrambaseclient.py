@@ -9,8 +9,8 @@ import typing
 
 from .. import version, helpers, __name__ as __base_name__, _tl
 from .._crypto import rsa
-from .._misc import markdown, entitycache, statecache
-from .._network import MTProtoSender, Connection, ConnectionTcpFull, TcpMTProxy
+from .._misc import markdown, entitycache, statecache, enums
+from .._network import MTProtoSender, Connection, ConnectionTcpFull, connection as conns
 from ..sessions import Session, SQLiteSession, MemorySession
 
 DEFAULT_DC_ID = 2
@@ -191,10 +191,19 @@ def init(
     self._timeout = timeout
     self._auto_reconnect = auto_reconnect
 
-    assert isinstance(connection, type)
-    self._connection = connection
-    init_proxy = None if not issubclass(connection, TcpMTProxy) else \
-        _tl.InputClientProxy(*connection.address_info(proxy))
+    if connection == ():
+        # For now the current default remains TCP Full; may change to be "smart" if proxies are specified
+        connection = enums.ConnectionMode.FULL
+
+    self._connection = {
+        enums.ConnectionMode.FULL: conns.ConnectionTcpFull,
+        enums.ConnectionMode.INTERMEDIATE: conns.ConnectionTcpIntermediate,
+        enums.ConnectionMode.ABRIDGED: conns.ConnectionTcpAbridged,
+        enums.ConnectionMode.OBFUSCATED: conns.ConnectionTcpObfuscated,
+        enums.ConnectionMode.HTTP: conns.ConnectionHttp,
+    }[enums.parse_conn_mode(connection)]
+    init_proxy = None if not issubclass(self._connection, conns.TcpMTProxy) else \
+        _tl.InputClientProxy(*self._connection.address_info(proxy))
 
     # Used on connection. Capture the variables in a lambda since
     # exporting clients need to create this InvokeWithLayer.
@@ -334,7 +343,7 @@ async def disconnect(self: 'TelegramClient'):
     return await _disconnect_coro(self)
 
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
-    init_proxy = None if not issubclass(self._connection, TcpMTProxy) else \
+    init_proxy = None if not issubclass(self._connection, conns.TcpMTProxy) else \
         _tl.InputClientProxy(*self._connection.address_info(proxy))
 
     self._init_request.proxy = init_proxy
@@ -347,7 +356,7 @@ def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
 
     connection = getattr(self._sender, "_connection", None)
     if connection:
-        if isinstance(connection, TcpMTProxy):
+        if isinstance(connection, conns.TcpMTProxy):
             connection._ip = proxy[0]
             connection._port = proxy[1]
         else:

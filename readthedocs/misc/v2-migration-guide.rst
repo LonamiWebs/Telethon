@@ -231,6 +231,36 @@ If you still want the old behaviour, wrap the list inside another list:
     #+
 
 
+Changes on how to configure a different connection mode
+-------------------------------------------------------
+
+The ``connection`` parameter of the ``TelegramClient`` now expects a string, and not a type.
+The supported values are:
+
+* ``'full'``
+* ``'intermediate'``
+* ``'abridged'``
+* ``'obfuscated'``
+* ``'http'``
+
+The value chosen by the library is left as an implementation detail which may change. However,
+you can force a certain mode by explicitly configuring it. If you don't want to hardcode the
+string, you can import these values from the new ``telethon.enums`` module:
+
+.. code-block:: python
+
+    client = TelegramClient(..., connection='tcp')
+
+    # or
+
+    from telethon.enums import ConnectionMode
+    client = TelegramClient(..., connection=ConnectionMode.TCP)
+
+You may have noticed there's currently no alternative for ``TcpMTProxy``. This mode has been
+broken for some time now (see `issue #1319 <https://github.com/LonamiWebs/Telethon/issues/1319>`__)
+anyway, so until there's a working solution, the mode is not supported. Pull Requests are welcome!
+
+
 The Conversation API has been removed
 -------------------------------------
 

@@ -12,6 +12,7 @@ from .. import helpers, version, _tl
 from ..types import _custom
 from .._network import ConnectionTcpFull
 from ..events.common import EventBuilder, EventCommon
+from .._misc import enums
 
 
 class TelegramClient:
@@ -37,9 +38,15 @@ class TelegramClient:
         api_hash (`str`):
             The API hash you obtained from https://my.telegram.org.
 
-        connection (`telethon.network.connection.common.Connection`, optional):
-            The connection instance to be used when creating a new connection
-            to the servers. It **must** be a type.
+        connection (`str`, optional):
+            The connection mode to be used when creating a new connection
+            to the servers. The available modes are:
+
+            * ``'full'``
+            * ``'intermediate'``
+            * ``'abridged'``
+            * ``'obfuscated'``
+            * ``'http'``
 
             Defaults to `telethon.network.connection.tcpfull.ConnectionTcpFull`.
 
@@ -2768,7 +2775,7 @@ class TelegramClient:
             api_id: int,
             api_hash: str,
             *,
-            connection: 'typing.Type[Connection]' = ConnectionTcpFull,
+            connection: typing.Union[str, enums.ConnectionMode] = (),
             use_ipv6: bool = False,
             proxy: typing.Union[tuple, dict] = None,
             local_addr: typing.Union[str, tuple] = None,
