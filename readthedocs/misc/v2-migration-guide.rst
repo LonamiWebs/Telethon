@@ -394,6 +394,12 @@ However, most likely, you were already doing the right thing (or else you would'
 "why is this not being edited", which you would most likely consider a bug rather than a feature).
 
 
+The client.disconnected property has been removed
+-------------------------------------------------
+
+``client.run_until_disconnected()`` should be used instead.
+
+
 The TelegramClient is no longer made out of mixins
 --------------------------------------------------
 

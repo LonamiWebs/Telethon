@@ -301,9 +301,6 @@ def init(
 def get_loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
     return asyncio.get_event_loop()
 
-def get_disconnected(self: 'TelegramClient') -> asyncio.Future:
-    return self._sender.disconnected
-
 def get_flood_sleep_threshold(self):
     return self._flood_sleep_threshold
 

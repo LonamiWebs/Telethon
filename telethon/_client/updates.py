@@ -18,23 +18,15 @@ if typing.TYPE_CHECKING:
 Callback = typing.Callable[[typing.Any], typing.Any]
 
 
-async def _run_until_disconnected(self: 'TelegramClient'):
-    try:
-        # Make a high-level request to notify that we want updates
-        await self(_tl.fn.updates.GetState())
-        return await self.disconnected
-    except KeyboardInterrupt:
-        pass
-    finally:
-        await self.disconnect()
-
 async def set_receive_updates(self: 'TelegramClient', receive_updates):
     self._no_updates = not receive_updates
     if receive_updates:
         await self(_tl.fn.updates.GetState())
 
 async def run_until_disconnected(self: 'TelegramClient'):
-    return await _run_until_disconnected(self)
+    # Make a high-level request to notify that we want updates
+    await self(_tl.fn.updates.GetState())
+    return await self._sender.disconnected
 
 def on(self: 'TelegramClient', event: EventBuilder):
     def decorator(f):

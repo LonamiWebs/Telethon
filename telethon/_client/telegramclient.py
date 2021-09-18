@@ -2824,22 +2824,6 @@ class TelegramClient:
         return telegrambaseclient.get_loop(**locals())
 
     @property
-    def disconnected(self: 'TelegramClient') -> asyncio.Future:
-        """
-        Property with a ``Future`` that resolves upon disconnection.
-
-        Example
-            .. code-block:: python
-
-                # Wait for a disconnection to occur
-                try:
-                    await client.disconnected
-                except OSError:
-                    print('Error on disconnect')
-        """
-        return telegrambaseclient.get_disconnected(**locals())
-
-    @property
     def flood_sleep_threshold(self):
         return telegrambaseclient.get_flood_sleep_threshold(**locals())
 
@@ -2928,29 +2912,25 @@ class TelegramClient:
 
     def run_until_disconnected(self: 'TelegramClient'):
         """
-        Runs the event loop until the library is disconnected.
+        Wait until the library is disconnected.
 
         It also notifies Telegram that we want to receive updates
         as described in https://core.telegram.org/api/updates.
 
+        Event handlers will continue to run while the method awaits for a
+        disconnection to occur. Essentially, this method "blocks" until a
+        disconnection occurs, and keeps your code running if you have nothing
+        else to do.
+
         Manual disconnections can be made by calling `disconnect()
         <telethon.client.telegrambaseclient.TelegramBaseClient.disconnect>`
-        or sending a ``KeyboardInterrupt`` (e.g. by pressing ``Ctrl+C`` on
-        the console window running the script).
+        or exiting the context-manager using the client (for example, a
+        ``KeyboardInterrupt`` by pressing ``Ctrl+C`` on the console window
+        would propagate the error, exit the ``with`` block and disconnect).
 
         If a disconnection error occurs (i.e. the library fails to reconnect
         automatically), said error will be raised through here, so you have a
         chance to ``except`` it on your own code.
-
-        If the loop is already running, this method returns a coroutine
-        that you should await on your own code.
-
-        .. note::
-
-            If you want to handle ``KeyboardInterrupt`` in your code,
-            simply run the event loop in your code too in any way, such as
-            ``loop.run_forever()`` or ``await client.disconnected`` (e.g.
-            ``loop.run_until_complete(client.disconnected)``).
 
         Example
             .. code-block:: python
