@@ -243,7 +243,12 @@ async def download_profile_photo(
     )
 
     try:
-        result = await self.download_file(loc, file, dc_id=dc_id)
+        result = await _download_file(
+            self=self,
+            input_location=loc,
+            file=file,
+            dc_id=dc_id
+        )
         return result if file is bytes else file
     except errors.LocationInvalidError:
         # See issue #500, Android app fails as of v4.6.0 (1155).
@@ -308,29 +313,6 @@ async def download_media(
             self, media, file, progress_callback
         )
 
-async def download_file(
-        self: 'TelegramClient',
-        input_location: 'hints.FileLike',
-        file: 'hints.OutFileLike' = None,
-        *,
-        part_size_kb: float = None,
-        file_size: int = None,
-        progress_callback: 'hints.ProgressCallback' = None,
-        dc_id: int = None,
-        key: bytes = None,
-        iv: bytes = None) -> typing.Optional[bytes]:
-    return await _download_file(
-        self,
-        input_location,
-        file,
-        part_size_kb=part_size_kb,
-        file_size=file_size,
-        progress_callback=progress_callback,
-        dc_id=dc_id,
-        key=key,
-        iv=iv,
-    )
-
 async def _download_file(
         self: 'TelegramClient',
         input_location: 'hints.FileLike',
@@ -343,6 +325,46 @@ async def _download_file(
         key: bytes = None,
         iv: bytes = None,
         msg_data: tuple = None) -> typing.Optional[bytes]:
+    """
+    Low-level method to download files from their input location.
+
+    Arguments
+        input_location (:tl:`InputFileLocation`):
+            The file location from which the file will be downloaded.
+            See `telethon.utils.get_input_location` source for a complete
+            list of supported _tl.
+
+        file (`str` | `file`, optional):
+            The output file path, directory, or stream-like object.
+            If the path exists and is a file, it will be overwritten.
+
+            If the file path is `None` or `bytes`, then the result
+            will be saved in memory and returned as `bytes`.
+
+        part_size_kb (`int`, optional):
+            Chunk size when downloading files. The larger, the less
+            requests will be made (up to 512KB maximum).
+
+        file_size (`int`, optional):
+            The file size that is about to be downloaded, if known.
+            Only used if ``progress_callback`` is specified.
+
+        progress_callback (`callable`, optional):
+            A callback function accepting two parameters:
+            ``(downloaded bytes, total)``. Note that the
+            ``total`` is the provided ``file_size``.
+
+        dc_id (`int`, optional):
+            The data center the library should connect to in order
+            to download the file. You shouldn't worry about this.
+
+        key ('bytes', optional):
+            In case of an encrypted upload (secret chats) a key is supplied
+
+        iv ('bytes', optional):
+            In case of an encrypted upload (secret chats) an iv is supplied
+    """
+
     if not part_size_kb:
         if not file_size:
             part_size_kb = 64  # Reasonable default
@@ -568,14 +590,15 @@ async def _download_photo(self: 'TelegramClient', photo, file, date, thumb, prog
     else:
         file_size = size.size
 
-    result = await self.download_file(
-        _tl.InputPhotoFileLocation(
+    result = await _download_file(
+        self=self,
+        input_location=_tl.InputPhotoFileLocation(
             id=photo.id,
             access_hash=photo.access_hash,
             file_reference=photo.file_reference,
             thumb_size=size.type
         ),
-        file,
+        file=file,
         file_size=file_size,
         progress_callback=progress_callback
     )
@@ -626,13 +649,14 @@ async def _download_document(
             return _download_cached_photo_size(self, size, file)
 
     result = await _download_file(
-        _tl.InputDocumentFileLocation(
+        self=self,
+        input_location=_tl.InputDocumentFileLocation(
             id=document.id,
             access_hash=document.access_hash,
             file_reference=document.file_reference,
             thumb_size=size.type if size else ''
         ),
-        file,
+        file=file,
         file_size=size.size if size else document.size,
         progress_callback=progress_callback,
         msg_data=msg_data,

@@ -181,7 +181,6 @@ The following modules have been moved inside ``_misc``:
 Using the client in a context-manager no longer calls start automatically
 -------------------------------------------------------------------------
 
-
 The following code no longer automatically calls ``client.start()``:
 
 .. code-block:: python
@@ -208,6 +207,15 @@ the session ever was invalid. If you want the old behaviour, you now need to be 
 
 Note that you do not need to ``await`` the call to ``.start()`` if you are going to use the result
 in a context-manager (but it's okay if you put the ``await``).
+
+
+download_file has been removed from the client
+----------------------------------------------
+
+Instead, ``client.download_media`` should be used.
+
+The now-removed ``client.download_file`` method was a lower level implementation which should
+have not been exposed at all.
 
 
 Support for bot-API style file_id has been removed
