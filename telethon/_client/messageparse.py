@@ -140,7 +140,9 @@ def _get_response_message(self: 'TelegramClient', request, result, input_chat):
                     media=_tl.MessageMediaPoll(
                         poll=update.poll,
                         results=update.results
-                    )
+                    ),
+                    date=None,
+                    message=''
                 ), entities, input_chat)
 
     if request is None:
