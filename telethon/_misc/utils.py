@@ -961,10 +961,7 @@ def get_inner_text(text, entities):
 
 def get_peer(peer):
     try:
-        if isinstance(peer, int):
-            pid, cls = resolve_id(peer)
-            return cls(pid)
-        elif peer.SUBCLASS_OF_ID == 0x2d45687:
+        if peer.SUBCLASS_OF_ID == 0x2d45687:
             return peer
         elif isinstance(peer, (
                 _tl.contacts.ResolvedPeer, _tl.InputNotifyPeer,
@@ -993,24 +990,13 @@ def get_peer(peer):
     _raise_cast_fail(peer, 'Peer')
 
 
-def get_peer_id(peer, add_mark=True):
+def get_peer_id(peer):
     """
-    Convert the given peer into its marked ID by default.
-
-    This "mark" comes from the "bot api" format, and with it the peer type
-    can be identified back. User ID is left unmodified, chat ID is negated,
-    and channel ID is "prefixed" with -100:
-
-    * ``user_id``
-    * ``-chat_id``
-    * ``-100channel_id``
-
-    The original ID and the peer type class can be returned with
-    a call to :meth:`resolve_id(marked_id)`.
+    Extract the integer ID from the given peer.
     """
     # First we assert it's a Peer TLObject, or early return for integers
     if isinstance(peer, int):
-        return peer if add_mark else resolve_id(peer)[0]
+        return peer
 
     # Tell the user to use their client to resolve InputPeerSelf if we got one
     if isinstance(peer, _tl.InputPeerSelf):
@@ -1024,34 +1010,9 @@ def get_peer_id(peer, add_mark=True):
     if isinstance(peer, _tl.PeerUser):
         return peer.user_id
     elif isinstance(peer, _tl.PeerChat):
-        # Check in case the user mixed things up to avoid blowing up
-        if not (0 < peer.chat_id <= 0x7fffffff):
-            peer.chat_id = resolve_id(peer.chat_id)[0]
-
-        return -peer.chat_id if add_mark else peer.chat_id
+        return peer.chat_id
     else:  # if isinstance(peer, _tl.PeerChannel):
-        # Check in case the user mixed things up to avoid blowing up
-        if not (0 < peer.channel_id <= 0x7fffffff):
-            peer.channel_id = resolve_id(peer.channel_id)[0]
-
-        if not add_mark:
-            return peer.channel_id
-
-        # Growing backwards from -100_0000_000_000 indicates it's a channel
-        return -(1000000000000 + peer.channel_id)
-
-
-def resolve_id(marked_id):
-    """Given a marked ID, returns the original ID and its :tl:`Peer` type."""
-    if marked_id >= 0:
-        return marked_id, _tl.PeerUser
-
-    marked_id = -marked_id
-    if marked_id > 1000000000000:
-        marked_id -= 1000000000000
-        return marked_id, _tl.PeerChannel
-    else:
-        return marked_id, _tl.PeerChat
+        return peer.channel_id
 
 
 def _rle_decode(data):

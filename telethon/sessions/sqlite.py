@@ -316,16 +316,8 @@ class SQLiteSession(MemorySession):
             'select id, hash from entities where name = ?', name)
 
     def get_entity_rows_by_id(self, id, exact=True):
-        if exact:
-            return self._execute(
-                'select id, hash from entities where id = ?', id)
-        else:
-            return self._execute(
-                'select id, hash from entities where id in (?,?,?)',
-                utils.get_peer_id(_tl.PeerUser(id)),
-                utils.get_peer_id(_tl.PeerChat(id)),
-                utils.get_peer_id(_tl.PeerChannel(id))
-            )
+        return self._execute(
+            'select id, hash from entities where id = ?', id)
 
     # File processing
 

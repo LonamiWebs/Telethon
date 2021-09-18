@@ -31,6 +31,29 @@ will need to migrate that to support the new size requirement of 8 bytes.
 For the full list of types changed, please review the above link.
 
 
+Peer IDs, including chat_id and sender_id, no longer follow bot API conventions
+-------------------------------------------------------------------------------
+
+Both the ``utils.get_peer_id`` and ``client.get_peer_id`` methods no longer have an ``add_mark``
+parameter. Both will always return the original ID as given by Telegram. This should lead to less
+confusion. However, it also means that an integer ID on its own no longer embeds the information
+about the type (did it belong to a user, chat, or channel?), so ``utils.get_peer`` can no longer
+guess the type from just a number.
+
+Because it's not possible to know what other changes Telegram will do with identifiers, it's
+probably best to get used to transparently storing whatever value they send along with the type
+separatedly.
+
+As far as I can tell, user, chat and channel identifiers are globally unique, meaning a channel
+and a user cannot share the same identifier. The library currently makes this assumption. However,
+this is merely an observation (I have never heard of such a collision exist), and Telegram could
+change at any time. If you want to be on the safe side, you're encouraged to save a pair of type
+and identifier, rather than just the number.
+
+// TODO we DEFINITELY need to provide a way to "upgrade" old ids
+// TODO and storing type+number by hand is a pain, provide better alternative
+
+
 Synchronous compatibility mode has been removed
 -----------------------------------------------
 
@@ -244,6 +267,9 @@ The following ``utils`` methods no longer exist or have been made private:
 * ``utils.pack_bot_file_id``. It was half-broken.
 * ``utils.resolve_invite_link``. It has been broken for a while, so this just makes its removal
   official (see `issue #1723 <https://github.com/LonamiWebs/Telethon/issues/1723>`__).
+* ``utils.resolve_id``. Marked IDs are no longer used thorough the library. The removal of this
+  method also means ``utils.get_peer`` can no longer get a ``Peer`` from just a number, as the
+  type is no longer embedded inside the ID.
 
 // TODO provide the new clean utils
 

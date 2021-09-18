@@ -3541,16 +3541,12 @@ class TelegramClient:
 
     async def get_peer_id(
             self: 'TelegramClient',
-            peer: 'hints.EntityLike',
-            add_mark: bool = True) -> int:
+            peer: 'hints.EntityLike') -> int:
         """
         Gets the ID for the given entity.
 
         This method needs to be ``async`` because `peer` supports usernames,
         invite-links, phone numbers (from people in your contact list), etc.
-
-        If ``add_mark is False``, then a positive ID will be returned
-        instead. By default, bot-API style IDs (signed) are returned.
 
         Example
             .. code-block:: python

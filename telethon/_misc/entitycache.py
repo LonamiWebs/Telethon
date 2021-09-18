@@ -119,12 +119,10 @@ class EntityCache:
                 update.user_id not in dct:
             return False
 
-        if cid in has_chat_id and \
-                utils.get_peer_id(_tl.PeerChat(update.chat_id)) not in dct:
+        if cid in has_chat_id and update.chat_id not in dct:
             return False
 
-        if cid in has_channel_id and \
-                utils.get_peer_id(_tl.PeerChannel(update.channel_id)) not in dct:
+        if cid in has_channel_id and update.channel_id not in dct:
             return False
 
         if cid in has_peer and \

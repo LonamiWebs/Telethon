@@ -317,10 +317,9 @@ async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
 
 async def get_peer_id(
         self: 'TelegramClient',
-        peer: 'hints.EntityLike',
-        add_mark: bool = True) -> int:
+        peer: 'hints.EntityLike') -> int:
     if isinstance(peer, int):
-        return utils.get_peer_id(peer, add_mark=add_mark)
+        return utils.get_peer_id(peer)
 
     try:
         if peer.SUBCLASS_OF_ID not in (0x2d45687, 0xc91c90b6):
@@ -332,7 +331,7 @@ async def get_peer_id(
     if isinstance(peer, _tl.InputPeerSelf):
         peer = await self.get_me(input_peer=True)
 
-    return utils.get_peer_id(peer, add_mark=add_mark)
+    return utils.get_peer_id(peer)
 
 
 async def _get_entity_from_string(self: 'TelegramClient', string):
@@ -381,7 +380,7 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
                                     .format(username)) from e
 
             try:
-                pid = utils.get_peer_id(result.peer, add_mark=False)
+                pid = utils.get_peer_id(result.peer)
                 if isinstance(result.peer, _tl.PeerUser):
                     return next(x for x in result.users if x.id == pid)
                 else:

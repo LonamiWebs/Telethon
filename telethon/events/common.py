@@ -18,14 +18,7 @@ async def _into_id_set(client, chats):
     result = set()
     for chat in chats:
         if isinstance(chat, int):
-            if chat < 0:
-                result.add(chat)  # Explicitly marked IDs are negative
-            else:
-                result.update({  # Support all valid types of peers
-                    utils.get_peer_id(_tl.PeerUser(chat)),
-                    utils.get_peer_id(_tl.PeerChat(chat)),
-                    utils.get_peer_id(_tl.PeerChannel(chat)),
-                })
+            result.add(chat)
         elif isinstance(chat, tlobject.TLObject) and chat.SUBCLASS_OF_ID == 0x2d45687:
             # 0x2d45687 == crc32(b'Peer')
             result.add(utils.get_peer_id(chat))

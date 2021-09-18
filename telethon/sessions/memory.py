@@ -165,17 +165,8 @@ class MemorySession(Session):
 
     def get_entity_rows_by_id(self, id, exact=True):
         try:
-            if exact:
-                return next((id, hash) for found_id, hash, _, _, _
-                            in self._entities if found_id == id)
-            else:
-                ids = (
-                    utils.get_peer_id(_tl.PeerUser(id)),
-                    utils.get_peer_id(_tl.PeerChat(id)),
-                    utils.get_peer_id(_tl.PeerChannel(id))
-                )
-                return next((id, hash) for found_id, hash, _, _, _
-                            in self._entities if found_id in ids)
+            return next((id, hash) for found_id, hash, _, _, _
+                        in self._entities if found_id == id)
         except StopIteration:
             pass
 
