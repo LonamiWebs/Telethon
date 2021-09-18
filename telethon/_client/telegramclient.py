@@ -2397,7 +2397,7 @@ class TelegramClient:
     async def edit_message(
             self: 'TelegramClient',
             entity: 'typing.Union[hints.EntityLike, _tl.Message]',
-            message: 'hints.MessageLike' = None,
+            message: 'hints.MessageLike',
             text: str = None,
             *,
             parse_mode: str = (),
@@ -2519,7 +2519,7 @@ class TelegramClient:
                 # or
                 await client.edit_message(chat, message.id, 'hello!!')
                 # or
-                await client.edit_message(message, 'hello!!!')
+                await message.edit('hello!!!')
         """
         return await messages.edit_message(**locals())
 

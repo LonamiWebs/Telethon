@@ -570,14 +570,6 @@ async def edit_message(
         supports_streaming: bool = False,
         schedule: 'hints.DateLike' = None
 ) -> '_tl.Message':
-    if isinstance(entity, _tl.InputBotInlineMessageID):
-        text = text or message
-        message = entity
-    elif isinstance(entity, _tl.Message):
-        text = message  # Shift the parameters to the right
-        message = entity
-        entity = entity.peer_id
-
     if formatting_entities is None:
         text, formatting_entities = await self._parse_message_text(text, parse_mode)
     file_handle, media, image = await self._file_to_media(file,
@@ -586,9 +578,9 @@ async def edit_message(
             attributes=attributes,
             force_document=force_document)
 
-    if isinstance(entity, _tl.InputBotInlineMessageID):
+    if isinstance(message, _tl.InputBotInlineMessageID):
         request = _tl.fn.messages.EditInlineBotMessage(
-            id=entity,
+            id=message,
             message=text,
             no_webpage=not link_preview,
             entities=formatting_entities,

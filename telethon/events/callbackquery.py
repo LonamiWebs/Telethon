@@ -314,7 +314,7 @@ class CallbackQuery(EventBuilder):
             self._client.loop.create_task(self.answer())
             if isinstance(self.query.msg_id, _tl.InputBotInlineMessageID):
                 return await self._client.edit_message(
-                    self.query.msg_id, *args, **kwargs
+                    None, self.query.msg_id, *args, **kwargs
                 )
             else:
                 return await self._client.edit_message(

@@ -417,8 +417,8 @@ perform a separate request with no filter to fetch the total without filter (thi
 library used to do).
 
 
-Using message.edit will now raise an error if the message cannot be edited
---------------------------------------------------------------------------
+Changes to editing messages
+---------------------------
 
 Before, calling ``message.edit()`` would completely ignore your attempt to edit a message if the
 message had a forward header or was not outgoing. This is no longer the case. It is now the user's
@@ -426,6 +426,23 @@ responsibility to check for this.
 
 However, most likely, you were already doing the right thing (or else you would've experienced a
 "why is this not being edited", which you would most likely consider a bug rather than a feature).
+
+When using ``client.edit_message``, you now must always specify the chat and the message (or
+message identifier). This should be less "magic". As an example, if you were doing this before:
+
+.. code-block:: python
+
+    await client.edit_message(message, 'new text')
+
+You now have to do the following:
+
+.. code-block:: python
+
+    await client.edit_message(message.input_chat, message.id, 'new text')
+
+    # or
+
+    await message.edit('new text')
 
 
 Signing in no longer sends the code
