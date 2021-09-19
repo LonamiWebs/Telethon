@@ -271,19 +271,18 @@ async def get_input_entity(
 
     # No InputPeer, cached peer, or known string. Fetch from session cache
     try:
-        peer = utils.get_peer(peer)
-        if isinstance(peer, _tl.PeerUser):
-            entity = await self.session.get_entity(Entity.USER, peer.user_id)
-            if entity:
-                return _tl.InputPeerUser(entity.id, entity.access_hash)
-        elif isinstance(peer, _tl.PeerChat):
-            return _tl.InputPeerChat(peer.chat_id)
-        elif isinstance(peer, _tl.PeerChannel):
-            entity = await self.session.get_entity(Entity.CHANNEL, peer.user_id)
-            if entity:
-                return _tl.InputPeerChannel(entity.id, entity.access_hash)
-    except ValueError:
+        peer_id = utils.get_peer_id(peer)
+    except TypeError:
         pass
+    else:
+        entity = await self.session.get_entity(None, peer_id)
+        if entity:
+            if entity.ty in (Entity.USER, Entity.BOT):
+                return _tl.InputPeerUser(entity.id, entity.access_hash)
+            elif entity.ty in (Entity.GROUP):
+                return _tl.InputPeerChat(peer.chat_id)
+            elif entity.ty in (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP):
+                return _tl.InputPeerChannel(entity.id, entity.access_hash)
 
     # Only network left to try
     if isinstance(peer, str):

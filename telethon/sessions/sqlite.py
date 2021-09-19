@@ -55,13 +55,17 @@ class SQLiteSession(Session):
                 self._upgrade_database(old=version)
                 c.execute("delete from version")
                 c.execute("insert into version values (?)", (CURRENT_VERSION,))
-                self.save()
+                self._conn.commit()
         else:
             # Tables don't exist, create new ones
+            self._create_table(c, 'version (version integer primary key)')
             self._mk_tables(c)
             c.execute("insert into version values (?)", (CURRENT_VERSION,))
-            c.close()
-            self.save()
+            self._conn.commit()
+
+        # Must have committed or else the version will not have been updated while new tables
+        # exist, leading to a half-upgraded state.
+        c.close()
 
     def _upgrade_database(self, old):
         c = self._cursor()
@@ -146,9 +150,6 @@ class SQLiteSession(Session):
     def _mk_tables(self, c):
         self._create_table(
             c,
-            '''version (
-                version integer primary key
-            )''',
             '''datacenter (
                 id integer primary key,
                 ip text not null,
@@ -243,7 +244,7 @@ class SQLiteSession(Session):
         finally:
             c.close()
 
-    async def get_entity(self, ty: int, id: int) -> Optional[Entity]:
+    async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
         row = self._execute('select ty, id, access_hash from entity where id = ?', id)
         return Entity(*row) if row else None
 

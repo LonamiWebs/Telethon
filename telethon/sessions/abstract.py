@@ -59,7 +59,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_entity(self, ty: int, id: int) -> Optional[Entity]:
+    async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
         """
         Get the `Entity` with matching ``ty`` and ``id``.
 
@@ -75,6 +75,8 @@ class Session(ABC):
         the corresponding ``access_hash`` should still be returned.
 
         You may use `types.canonical_entity_type` to find out the canonical type.
+
+        A ``ty`` with the value of ``None`` should be treated as "any entity with matching ID".
         """
         raise NotImplementedError
 

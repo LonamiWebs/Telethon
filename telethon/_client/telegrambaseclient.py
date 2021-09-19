@@ -319,6 +319,9 @@ async def connect(self: 'TelegramClient') -> None:
     # TODO Get state from channels too
     self._state_cache = statecache.StateCache(state, self._log)
 
+    # Use known key, if any
+    self._sender.auth_key.key = dc.auth
+
     if not await self._sender.connect(self._connection(
         str(ipaddress.ip_address(dc.ipv6 or dc.ipv4)),
         dc.port,
@@ -330,8 +333,8 @@ async def connect(self: 'TelegramClient') -> None:
         # We don't want to init or modify anything if we were already connected
         return
 
-    if self._sender.auth_key.key != dc.key:
-        dc.key = self._sender.auth_key.key
+    if self._sender.auth_key.key != dc.auth:
+        dc.auth = self._sender.auth_key.key
         await self.session.insert_dc(dc)
         await self.session.save()
 
