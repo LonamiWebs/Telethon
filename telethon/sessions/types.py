@@ -15,7 +15,7 @@ class DataCenter:
     def __init__(
         self,
         id: int,
-        ipv4: Optional[int],
+        ipv4: int,
         ipv6: Optional[int],
         port: int,
         auth: bytes

@@ -323,7 +323,7 @@ async def connect(self: 'TelegramClient') -> None:
     self._sender.auth_key.key = dc.auth
 
     if not await self._sender.connect(self._connection(
-        str(ipaddress.ip_address(dc.ipv6 or dc.ipv4)),
+        str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
         dc.port,
         dc.id,
         loggers=self._log,

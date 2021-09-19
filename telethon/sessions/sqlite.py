@@ -107,8 +107,8 @@ class SQLiteSession(Session):
         if old == 7:
             self._mk_tables(c)
             c.execute('''
-                insert into datacenter (id, ip, port, auth)
-                select dc_id, server_address, port, auth_key
+                insert into datacenter (id, ipv4, ipv6, port, auth)
+                select dc_id, server_address, server_address, port, auth_key
                 from sessions
             ''')
             c.execute('''
@@ -152,7 +152,8 @@ class SQLiteSession(Session):
             c,
             '''datacenter (
                 id integer primary key,
-                ip text not null,
+                ipv4 text not null,
+                ipv6 text,
                 port integer not null,
                 auth blob not null
             )''',
@@ -179,9 +180,10 @@ class SQLiteSession(Session):
 
     async def insert_dc(self, dc: DataCenter):
         self._execute(
-            'insert or replace into datacenter values (?,?,?,?)',
+            'insert or replace into datacenter values (?,?,?,?,?)',
             dc.id,
-            str(ipaddress.ip_address(dc.ipv6 or dc.ipv4)),
+            str(ipaddress.ip_address(dc.ipv4)),
+            str(ipaddress.ip_address(dc.ipv6)) if dc.ipv6 else None,
             dc.port,
             dc.auth
         )
@@ -189,12 +191,11 @@ class SQLiteSession(Session):
     async def get_all_dc(self) -> List[DataCenter]:
         c = self._cursor()
         res = []
-        for (id, ip, port, auth) in c.execute('select * from datacenter'):
-            ip = ipaddress.ip_address(ip)
+        for (id, ipv4, ipv6, port, auth) in c.execute('select * from datacenter'):
             res.append(DataCenter(
                 id=id,
-                ipv4=int(ip) if ip.version == 4 else None,
-                ipv6=int(ip) if ip.version == 6 else None,
+                ipv4=int(ipaddress.ip_address(ipv4)),
+                ipv6=int(ipaddress.ip_address(ipv6)) if ipv6 else None,
                 port=port,
                 auth=auth,
             ))
