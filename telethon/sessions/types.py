@@ -63,6 +63,7 @@ class SessionState:
         self.qts = qts
         self.date = date
         self.seq = seq
+        self.takeout_id = takeout_id
 
 
 class ChannelState:
