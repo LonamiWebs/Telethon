@@ -281,10 +281,6 @@ def init(
     self._phone = None
     self._tos = None
 
-    # Sometimes we need to know who we are, cache the self peer
-    self._self_input_peer = None
-    self._bot = None
-
     # A place to store if channels are a megagroup or not (see `edit_admin`)
     self._megagroup_cache = {}
 

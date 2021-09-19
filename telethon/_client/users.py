@@ -135,37 +135,14 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
 
 async def get_me(self: 'TelegramClient', input_peer: bool = False) \
         -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
-    if input_peer and self._self_input_peer:
-        return self._self_input_peer
-
     try:
-        me = (await self(
-            _tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
-
-        self._bot = me.bot
-        if not self._self_input_peer:
-            self._self_input_peer = utils.get_input_peer(
-                me, allow_self=False
-            )
-
-        return self._self_input_peer if input_peer else me
+        me = (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
+        return utils.get_input_peer(me, allow_self=False) if input_peer else me
     except errors.UnauthorizedError:
         return None
 
-def _self_id(self: 'TelegramClient') -> typing.Optional[int]:
-    """
-    Returns the ID of the logged-in user, if known.
-
-    This property is used in every update, and some like `updateLoginToken`
-    occur prior to login, so it gracefully handles when no ID is known yet.
-    """
-    return self._self_input_peer.user_id if self._self_input_peer else None
-
 async def is_bot(self: 'TelegramClient') -> bool:
-    if self._bot is None:
-        self._bot = (await self.get_me()).bot
-
-    return self._bot
+    return self._session_state.bot if self._session_state else False
 
 async def is_user_authorized(self: 'TelegramClient') -> bool:
     if self._authorized is None:

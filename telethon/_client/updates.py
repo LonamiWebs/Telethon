@@ -255,18 +255,6 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
                 # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
                 pass
 
-    if not self._self_input_peer:
-        # Some updates require our own ID, so we must make sure
-        # that the event builder has offline access to it. Calling
-        # `get_me()` will cache it under `self._self_input_peer`.
-        #
-        # It will return `None` if we haven't logged in yet which is
-        # fine, we will just retry next time anyway.
-        try:
-            await self.get_me(input_peer=True)
-        except OSError:
-            pass  # might not have connection
-
     built = EventBuilderDict(self, update, others)
 
     for builder, callback in self._event_builders:
@@ -452,7 +440,7 @@ class EventBuilderDict:
             return self.__dict__[builder]
         except KeyError:
             event = self.__dict__[builder] = builder.build(
-                self.update, self.others, self.client._self_id)
+                self.update, self.others, self.client._session_state.user_id)
 
             if isinstance(event, EventCommon):
                 event.original_update = self.update

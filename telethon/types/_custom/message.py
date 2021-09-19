@@ -255,7 +255,7 @@ class Message(ChatGetter, SenderGetter):
 
         # Make messages sent to ourselves outgoing unless they're forwarded.
         # This makes it consistent with official client's appearance.
-        if self.peer_id == _tl.PeerUser(client._self_id) and not self.fwd_from:
+        if self.peer_id == _tl.PeerUser(client._session_state.user_id) and not self.fwd_from:
             self.out = True
 
         cache = client._entity_cache
@@ -644,7 +644,7 @@ class Message(ChatGetter, SenderGetter):
         # If the client wasn't set we can't emulate the behaviour correctly,
         # so as a best-effort simply return the chat peer.
         if self._client and not self.out and self.is_private:
-            return _tl.PeerUser(self._client._self_id)
+            return _tl.PeerUser(self._client._session_state.user_id)
 
         return self.peer_id
 
