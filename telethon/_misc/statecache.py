@@ -36,7 +36,7 @@ class StateCache:
         # each update in case they need to fetch missing entities.
         self._logger = loggers[__name__]
         if initial:
-            self._pts_date = initial.pts, initial.date
+            self._pts_date = initial.pts or None, initial.date or None
         else:
             self._pts_date = None, None
 

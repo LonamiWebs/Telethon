@@ -597,10 +597,7 @@ async def edit_message(
         )
         # Invoke `messages.editInlineBotMessage` from the right datacenter.
         # Otherwise, Telegram will error with `MESSAGE_ID_INVALID` and do nothing.
-        # TODO should cache current session state
-        state = await self.session.get_state()
-
-        exported = state.dc_id != entity.dc_id
+        exported = self._session_state.dc_id != entity.dc_id
         if exported:
             try:
                 sender = await self._borrow_exported_sender(entity.dc_id)

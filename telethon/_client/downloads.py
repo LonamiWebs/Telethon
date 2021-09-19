@@ -39,10 +39,7 @@ class _DirectDownloadIter(requestiter.RequestIter):
         self._msg_data = msg_data
         self._timed_out = False
 
-        # TODO should cache current session state
-        state = await self.client.session.get_state()
-
-        self._exported = dc_id and state.dc_id != dc_id
+        self._exported = dc_id and self.client._session_state.dc_id != dc_id
         if not self._exported:
             # The used sender will also change if ``FileMigrateError`` occurs
             self._sender = self.client._sender

@@ -2704,9 +2704,6 @@ class TelegramClient:
     # Current TelegramClient version
     __version__ = version.__version__
 
-    # Cached server configuration (with .dc_options), can be "global"
-    _config = None
-
     def __init__(
             self: 'TelegramClient',
             session: 'typing.Union[str, Session]',
