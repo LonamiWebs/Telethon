@@ -3598,8 +3598,8 @@ class TelegramClient:
     async def _handle_auto_reconnect(self: 'TelegramClient'):
         return await updates._handle_auto_reconnect(**locals())
 
-    def _self_id(self: 'TelegramClient') -> typing.Optional[int]:
-        return users._self_id(**locals())
+    async def _update_session_state(self, user, save=True):
+        return await auth._update_session_state(**locals())
 
     # endregion Private
 

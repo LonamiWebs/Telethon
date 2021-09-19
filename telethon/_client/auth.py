@@ -253,7 +253,7 @@ async def sign_in(
         self._tos = result.terms_of_service
         raise errors.PhoneNumberUnoccupiedError(request=request)
 
-    return _on_login(self, result.user)
+    return await _update_session_state(self, result.user)
 
 async def sign_up(
         self: 'TelegramClient',
@@ -306,16 +306,27 @@ async def sign_up(
         await self(
             _tl.fn.help.AcceptTermsOfService(self._tos.id))
 
-    return _on_login(self, result.user)
+    return await _update_session_state(self, result.user)
 
-def _on_login(self, user):
+async def _update_session_state(self, user, save=True):
     """
     Callback called whenever the login or sign up process completes.
     Returns the input user parameter.
     """
-    self._bot = bool(user.bot)
-    self._self_input_peer = utils.get_input_peer(user, allow_self=False)
     self._authorized = True
+
+    self._session_state.user_id = user.id
+    self._session_state.bot = user.bot
+
+    state = await self(_tl.fn.updates.GetState())
+    self._session_state.pts = state.pts
+    self._session_state.qts = state.qts
+    self._session_state.date = int(state.date.timestamp())
+    self._session_state.seq = state.seq
+
+    await self.session.set_state(self._session_state)
+    if save:
+        await self.session.save()
 
     return user
 

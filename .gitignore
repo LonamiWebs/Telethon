@@ -6,6 +6,7 @@
 
 # User session
 *.session
+sessions/
 /usermedia/
 
 # Builds and testing

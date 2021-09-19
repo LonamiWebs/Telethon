@@ -385,16 +385,7 @@ async def connect(self: 'TelegramClient') -> None:
         # logged in). Attempt to fetch the user now. If it works, also get the update state.
         me = await self.get_me()
         if me:
-            self._session_state.user_id = me.id
-            self._session_state.bot = me.bot
-
-            state = await self(_tl.fn.updates.GetState())
-            self._session_state.pts = state.pts
-            self._session_state.qts = state.qts
-            self._session_state.date = int(state.date.timestamp())
-            self._session_state.seq = state.seq
-
-            await self.session.set_state(self._session_state)
+            await self._update_session_state(me, save=False)
 
     await self.session.save()
 
