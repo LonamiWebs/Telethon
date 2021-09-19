@@ -173,16 +173,17 @@ async def _update_loop(self: 'TelegramClient'):
     rnd = lambda: random.randrange(-2**63, 2**63)
     while self.is_connected():
         try:
-            await asyncio.wait_for(
-                self.disconnected, timeout=60
-            )
+            await asyncio.wait_for(self.run_until_disconnected(), timeout=60)
             continue  # We actually just want to act upon timeout
         except asyncio.TimeoutError:
             pass
         except asyncio.CancelledError:
             return
-        except Exception:
-            continue  # Any disconnected exception should be ignored
+        except Exception as e:
+            # Any disconnected exception should be ignored (or it may hint at
+            # another problem, leading to an infinite loop, hence the logging call)
+            self._log[__name__].info('Exception waiting on a disconnect: %s', e)
+            continue
 
         # Check if we have any exported senders to clean-up periodically
         await self._clean_exported_senders()
