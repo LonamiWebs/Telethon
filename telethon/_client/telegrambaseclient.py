@@ -302,16 +302,22 @@ def set_flood_sleep_threshold(self, value):
 
 async def connect(self: 'TelegramClient') -> None:
     self._all_dcs = {dc.id: dc for dc in await self.session.get_all_dc()}
-    self._session_state = await self.session.get_state() or SessionState(
-        user_id=0,
-        dc_id=DEFAULT_DC_ID,
-        bot=False,
-        pts=0,
-        qts=0,
-        date=0,
-        seq=0,
-        takeout_id=None,
-    )
+    self._session_state = await self.session.get_state()
+
+    if self._session_state is None:
+        try_fetch_user = False
+        self._session_state = SessionState(
+            user_id=0,
+            dc_id=DEFAULT_DC_ID,
+            bot=False,
+            pts=0,
+            qts=0,
+            date=0,
+            seq=0,
+            takeout_id=None,
+        )
+    else:
+        try_fetch_user = self._session_state.user_id == 0
 
     dc = self._all_dcs.get(self._session_state.dc_id)
     if dc is None:
@@ -372,6 +378,23 @@ async def connect(self: 'TelegramClient') -> None:
 
     for dc in self._all_dcs.values():
         await self.session.insert_dc(dc)
+
+    if try_fetch_user:
+        # If there was a previous session state, but the current user ID is 0, it means we've
+        # migrated and not yet populated the current user (or the client connected but never
+        # logged in). Attempt to fetch the user now. If it works, also get the update state.
+        me = await self.get_me()
+        if me:
+            self._session_state.user_id = me.id
+            self._session_state.bot = me.bot
+
+            state = await self(_tl.fn.updates.GetState())
+            self._session_state.pts = state.pts
+            self._session_state.qts = state.qts
+            self._session_state.date = int(state.date.timestamp())
+            self._session_state.seq = state.seq
+
+            await self.session.set_state(self._session_state)
 
     await self.session.save()
 
