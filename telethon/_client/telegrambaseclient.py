@@ -480,7 +480,7 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
     self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
     auth = await self(_tl.fn.auth.ExportAuthorization(dc_id))
     self._init_request.query = _tl.fn.auth.ImportAuthorization(id=auth.id, bytes=auth.bytes)
-    req = _tl.fn.InvokeWithLayer(LAYER, self._init_request)
+    req = _tl.fn.InvokeWithLayer(_tl.LAYER, self._init_request)
     await sender.send(req)
     return sender
 
