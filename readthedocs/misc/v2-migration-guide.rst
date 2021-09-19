@@ -73,6 +73,72 @@ removed. This implies:
 // TODO provide standalone alternative for this?
 
 
+Complete overhaul of session files
+----------------------------------
+
+If you were using third-party libraries to deal with sessions, you will need to wait for those to
+be updated. The library will automatically upgrade the SQLite session files to the new version,
+and the ``StringSession`` remains backward-compatible. The sessions can now be async.
+
+In case you were relying on the tables used by SQLite (even though these should have been, and
+will still need to be, treated as an implementation detail), here are the changes:
+
+* The ``sessions`` table is now correctly split into ``datacenter`` and ``session``.
+  ``datacenter`` contains information about a Telegram datacenter, along with its corresponding
+  authorization key, and ``session`` contains information about the update state and user.
+* The ``entities`` table is now called ``entity`` and stores the ``type`` separatedly.
+* The ``update_state`` table is now split into ``session`` and ``channel``, which can contain
+  a per-channel ``pts``.
+
+Because **the new version does not cache usernames, phone numbers and display names**, using these
+in method calls is now quite expensive. You *should* migrate your code to do the Right Thing and
+start using identifiers rather than usernames, phone numbers or invite links. This is both simpler
+and more reliable, because while a user identifier won't change, their username could.
+
+You can use the following snippet to make a JSON backup (alternatively, you could just copy the
+``.session`` file and keep it around) in case you want to preserve the cached usernames:
+
+.. code-block:: python
+
+    import sqlite, json
+    with sqlite3.connect('your.session') as conn, open('entities.json', 'w', encoding='utf-8') as fp:
+        json.dump([
+            {'id': id, 'hash': hash, 'username': username, 'phone': phone, 'name': name, 'date': date}
+            for (id, hash, username, phone, name, date)
+            in conn.execute('select id, hash, username, phone, name, date from entities')
+        ], fp)
+
+The following public methods or properties have also been removed from ``SQLiteSession`` because
+they no longer make sense:
+
+* ``list_sessions``. You can ``glob.glob('*.session')`` instead.
+* ``clone``.
+
+And the following, which were inherited from ``MemorySession``:
+
+* ``delete``. You can ``os.remove`` the file instead (preferably after ``client.log_out()``).
+* ``set_dc``.
+* ``dc_id``.
+* ``server_address``.
+* ``port``.
+* ``auth_key``.
+* ``takeout_id``.
+* ``get_update_state``.
+* ``set_update_state``.
+* ``process_entities``.
+* ``get_entity_rows_by_phone``.
+* ``get_entity_rows_by_username``.
+* ``get_entity_rows_by_name``.
+* ``get_entity_rows_by_id``.
+* ``get_input_entity``.
+* ``cache_file``.
+* ``get_file``.
+
+You also can no longer set ``client.session.save_entities = False``. The entities must be saved
+for the library to work properly. If you still don't want it, you should subclass the session and
+override the methods to do nothing.
+
+
 The "iter" variant of the client methods have been removed
 ----------------------------------------------------------
 

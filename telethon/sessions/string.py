@@ -4,7 +4,7 @@ import struct
 
 from .abstract import Session
 from .memory import MemorySession
-from .._crypto import AuthKey
+from .types import DataCenter, ChannelState, SessionState, Entity
 
 _STRUCT_PREFORMAT = '>B{}sH256s'
 
@@ -34,12 +34,33 @@ class StringSession(MemorySession):
 
             string = string[1:]
             ip_len = 4 if len(string) == 352 else 16
-            self._dc_id, ip, self._port, key = struct.unpack(
+            dc_id, ip, port, key = struct.unpack(
                 _STRUCT_PREFORMAT.format(ip_len), StringSession.decode(string))
 
-            self._server_address = ipaddress.ip_address(ip).compressed
-            if any(key):
-                self._auth_key = AuthKey(key)
+            self.state = SessionState(
+                dc_id=dc_id,
+                user_id=0,
+                bot=False,
+                pts=0,
+                qts=0,
+                date=0,
+                seq=0,
+                takeout_id=0
+            )
+            if ip_len == 4:
+                ipv4 = int.from_bytes(ip, 'big', False)
+                ipv6 = None
+            else:
+                ipv4 = None
+                ipv6 = int.from_bytes(ip, 'big', signed=False)
+
+            self.dcs[dc_id] = DataCenter(
+                id=dc_id,
+                ipv4=ipv4,
+                ipv6=ipv6,
+                port=port,
+                auth=key
+            )
 
     @staticmethod
     def encode(x: bytes) -> str:
@@ -50,14 +71,18 @@ class StringSession(MemorySession):
         return base64.urlsafe_b64decode(x)
 
     def save(self: Session):
-        if not self.auth_key:
+        if not self.state:
             return ''
 
-        ip = ipaddress.ip_address(self.server_address).packed
+        if self.state.ipv6 is not None:
+            ip = self.state.ipv6.to_bytes(16, 'big', signed=False)
+        else:
+            ip = self.state.ipv6.to_bytes(4, 'big', signed=False)
+
         return CURRENT_VERSION + StringSession.encode(struct.pack(
             _STRUCT_PREFORMAT.format(len(ip)),
-            self.dc_id,
+            self.state.dc_id,
             ip,
-            self.port,
-            self.auth_key.key
+            self.state.port,
+            self.dcs[self.state.dc_id].auth
         ))

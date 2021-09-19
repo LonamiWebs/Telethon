@@ -1,167 +1,90 @@
+from .types import DataCenter, ChannelState, SessionState, Entity
+
 from abc import ABC, abstractmethod
+from typing import List, Optional
 
 
 class Session(ABC):
-    def __init__(self):
-        pass
-
-    def clone(self, to_instance=None):
-        """
-        Creates a clone of this session file.
-        """
-        return to_instance or self.__class__()
-
     @abstractmethod
-    def set_dc(self, dc_id, server_address, port):
+    async def insert_dc(self, dc: DataCenter):
         """
-        Sets the information of the data center address and port that
-        the library should connect to, as well as the data center ID,
-        which is currently unused.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def dc_id(self):
-        """
-        Returns the currently-used data center ID.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def server_address(self):
-        """
-        Returns the server address where the library should connect to.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def port(self):
-        """
-        Returns the port to which the library should connect to.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def auth_key(self):
-        """
-        Returns an ``AuthKey`` instance associated with the saved
-        data center, or `None` if a new one should be generated.
-        """
-        raise NotImplementedError
-
-    @auth_key.setter
-    @abstractmethod
-    def auth_key(self, value):
-        """
-        Sets the ``AuthKey`` to be used for the saved data center.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def takeout_id(self):
-        """
-        Returns an ID of the takeout process initialized for this session,
-        or `None` if there's no were any unfinished takeout requests.
-        """
-        raise NotImplementedError
-
-    @takeout_id.setter
-    @abstractmethod
-    def takeout_id(self, value):
-        """
-        Sets the ID of the unfinished takeout process for this session.
+        Store a new or update an existing `DataCenter` with matching ``id``.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_update_state(self, entity_id):
+    async def get_all_dc(self) -> List[DataCenter]:
         """
-        Returns the ``UpdateState`` associated with the given `entity_id`.
-        If the `entity_id` is 0, it should return the ``UpdateState`` for
-        no specific channel (the "general" state). If no state is known
-        it should ``return None``.
+        Get a list of all currently-stored `DataCenter`. Should not contain duplicate ``id``.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def set_update_state(self, entity_id, state):
+    async def set_state(self, state: SessionState):
         """
-        Sets the given ``UpdateState`` for the specified `entity_id`, which
-        should be 0 if the ``UpdateState`` is the "general" state (and not
-        for any specific channel).
+        Set the state about the current session.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def close(self):
+    async def get_state(self) -> Optional[SessionState]:
         """
-        Called on client disconnection. Should be used to
-        free any used resources. Can be left empty if none.
-        """
-
-    @abstractmethod
-    def save(self):
-        """
-        Called whenever important properties change. It should
-        make persist the relevant session information to disk.
+        Get the state about the current session.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self):
+    async def insert_channel_state(self, state: ChannelState):
         """
-        Called upon client.log_out(). Should delete the stored
-        information from disk since it's not valid anymore.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def list_sessions(cls):
-        """
-        Lists available sessions. Not used by the library itself.
-        """
-        return []
-
-    @abstractmethod
-    def process_entities(self, tlo):
-        """
-        Processes the input ``TLObject`` or ``list`` and saves
-        whatever information is relevant (e.g., ID or access hash).
+        Store a new or update an existing `ChannelState` with matching ``id``.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_input_entity(self, key):
+    async def get_all_channel_states(self) -> List[ChannelState]:
         """
-        Turns the given key into an ``InputPeer`` (e.g. ``InputPeerUser``).
-        The library uses this method whenever an ``InputPeer`` is needed
-        to suit several purposes (e.g. user only provided its ID or wishes
-        to use a cached username to avoid extra RPC).
+        Get a list of all currently-stored `ChannelState`. Should not contain duplicate ``id``.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def cache_file(self, md5_digest, file_size, instance):
+    async def insert_entities(self, entities: List[Entity]):
         """
-        Caches the given file information persistently, so that it
-        doesn't need to be re-uploaded in case the file is used again.
+        Store new or update existing `Entity` with matching ``id``.
 
-        The ``instance`` will be either an ``InputPhoto`` or ``InputDocument``,
-        both with an ``.id`` and ``.access_hash`` attributes.
+        Entities should be saved on a best-effort. It is okay to not save them, although the
+        library may need to do extra work if a previously-saved entity is missing, or even be
+        unable to continue without the entity.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_file(self, md5_digest, file_size, cls):
+    async def get_entity(self, ty: int, id: int) -> Optional[Entity]:
         """
-        Returns an instance of ``cls`` if the ``md5_digest`` and ``file_size``
-        match an existing saved record. The class will either be an
-        ``InputPhoto`` or ``InputDocument``, both with two parameters
-        ``id`` and ``access_hash`` in that order.
+        Get the `Entity` with matching ``ty`` and ``id``.
+
+        The following groups of ``ty`` should be treated to be equivalent, that is, for a given
+        ``ty`` and ``id``, if the ``ty`` is in a given group, a matching ``access_hash`` with
+        that ``id`` from within any ``ty`` in that group should be returned.
+
+        * ``'U'`` and ``'B'`` (user and bot).
+        * ``'G'`` (small group chat).
+        * ``'C'``, ``'M'`` and ``'E'`` (broadcast channel, megagroup channel, and gigagroup channel).
+
+        For example, if a ``ty`` representing a bot is stored but the asking ``ty`` is a user,
+        the corresponding ``access_hash`` should still be returned.
+
+        You may use `types.canonical_entity_type` to find out the canonical type.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def save(self):
+        """
+        Save the session.
+
+        May do nothing if the other methods already saved when they were called.
+
+        May return custom data when manual saving is intended.
         """
         raise NotImplementedError
