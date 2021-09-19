@@ -323,10 +323,6 @@ async def get_input_entity(
         .format(peer, type(peer).__name__)
     )
 
-async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
-    i, cls = utils.resolve_id(await self.get_peer_id(peer))
-    return cls(i)
-
 async def get_peer_id(
         self: 'TelegramClient',
         peer: 'hints.EntityLike') -> int:

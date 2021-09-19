@@ -293,7 +293,7 @@ class _IDsIter(requestiter.RequestIter):
         else:
             r = await self.client(_tl.fn.messages.GetMessages(ids))
             if self._entity:
-                from_id = await self.client._get_peer(self._entity)
+                from_id = await _get_peer(self.client, self._entity)
 
         if isinstance(r, _tl.messages.MessagesNotModified):
             self.buffer.extend(None for _ in ids)
@@ -316,6 +316,14 @@ class _IDsIter(requestiter.RequestIter):
                 self.buffer.append(None)
             else:
                 self.buffer.append(_custom.Message._new(self.client, message, entities, self._entity))
+
+
+async def _get_peer(self: 'TelegramClient', input_peer: 'hints.EntityLike'):
+    try:
+        return utils.get_peer(input_peer)
+    except TypeError:
+        # Can only be self by now
+        return _tl.PeerUser(await self.get_peer_id(input_peer))
 
 
 def get_messages(
@@ -480,7 +488,7 @@ async def send_message(
     if isinstance(result, _tl.UpdateShortSentMessage):
         return _custom.Message._new(self, _tl.Message(
             id=result.id,
-            peer_id=await self._get_peer(entity),
+            peer_id=await _get_peer(self, entity),
             message=message,
             date=result.date,
             out=result.out,

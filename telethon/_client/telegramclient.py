@@ -3573,9 +3573,6 @@ class TelegramClient:
             ttl=None):
         return await uploads._file_to_media(**locals())
 
-    async def _get_peer(self: 'TelegramClient', peer: 'hints.EntityLike'):
-        return await users._get_peer(**locals())
-
     def _get_response_message(self: 'TelegramClient', request, result, input_chat):
         return messageparse._get_response_message(**locals())
 
