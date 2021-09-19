@@ -202,17 +202,22 @@ class SQLiteSession(Session):
         return res
 
     async def set_state(self, state: SessionState):
-        self._execute(
-            'insert or replace into session values (?,?,?,?,?,?,?,?)',
-            state.user_id,
-            state.dc_id,
-            int(state.bot),
-            state.pts,
-            state.qts,
-            state.date,
-            state.seq,
-            state.takeout_id,
-        )
+        c = self._cursor()
+        try:
+            self._execute('delete from session')
+            self._execute(
+                'insert into session values (?,?,?,?,?,?,?,?)',
+                state.user_id,
+                state.dc_id,
+                int(state.bot),
+                state.pts,
+                state.qts,
+                state.date,
+                state.seq,
+                state.takeout_id,
+            )
+        finally:
+            c.close()
 
     async def get_state(self) -> Optional[SessionState]:
         row = self._execute('select * from session')
