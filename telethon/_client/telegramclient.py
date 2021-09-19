@@ -206,8 +206,7 @@ class TelegramClient:
         it's `True` then the takeout will be finished, and if no exception
         occurred during it, then `True` will be considered as a result.
         Otherwise, the takeout will not be finished and its ID will be
-        preserved for future usage as `client.session.takeout_id
-        <telethon.sessions.abstract.Session.takeout_id>`.
+        preserved for future usage in the session.
 
         Arguments
             finalize (`bool`):
@@ -3598,9 +3597,6 @@ class TelegramClient:
 
     async def _clean_exported_senders(self: 'TelegramClient'):
         return await telegrambaseclient._clean_exported_senders(**locals())
-
-    def _auth_key_callback(self: 'TelegramClient', auth_key):
-        return telegrambaseclient._auth_key_callback
 
     def _handle_update(self: 'TelegramClient', update):
         return updates._handle_update(**locals())

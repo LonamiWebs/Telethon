@@ -34,9 +34,8 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, auth_key, *, loggers,
+    def __init__(self, *, loggers,
                  retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
-                 auth_key_callback=None,
                  update_callback=None, auto_reconnect_callback=None):
         self._connection = None
         self._loggers = loggers
@@ -45,7 +44,6 @@ class MTProtoSender:
         self._delay = delay
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
-        self._auth_key_callback = auth_key_callback
         self._update_callback = update_callback
         self._auto_reconnect_callback = auto_reconnect_callback
         self._connect_lock = asyncio.Lock()
@@ -67,7 +65,7 @@ class MTProtoSender:
         self._recv_loop_handle = None
 
         # Preserving the references of the AuthKey and state is important
-        self.auth_key = auth_key or AuthKey(None)
+        self.auth_key = AuthKey(None)
         self._state = MTProtoState(self.auth_key, loggers=self._loggers)
 
         # Outgoing messages are put in a queue and sent in a batch.
@@ -283,13 +281,6 @@ class MTProtoSender:
             self.auth_key.key, self._state.time_offset = \
                 await authenticator.do_authentication(plain)
 
-            # This is *EXTREMELY* important since we don't control
-            # external references to the authorization key, we must
-            # notify whenever we change it. This is crucial when we
-            # switch to different data centers.
-            if self._auth_key_callback:
-                self._auth_key_callback(self.auth_key)
-
             self._log.debug('auth_key generation success!')
             return True
         except (SecurityError, AssertionError) as e:
@@ -372,8 +363,6 @@ class MTProtoSender:
                 if isinstance(e, InvalidBufferError) and e.code == 404:
                     self._log.info('Broken authorization key; resetting')
                     self.auth_key.key = None
-                    if self._auth_key_callback:
-                        self._auth_key_callback(None)
 
                     ok = False
                     break
@@ -516,8 +505,6 @@ class MTProtoSender:
                 if isinstance(e, InvalidBufferError) and e.code == 404:
                     self._log.info('Broken authorization key; resetting')
                     self.auth_key.key = None
-                    if self._auth_key_callback:
-                        self._auth_key_callback(None)
 
                     await self._disconnect(error=e)
                 else:

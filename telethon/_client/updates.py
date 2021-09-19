@@ -79,7 +79,7 @@ async def catch_up(self: 'TelegramClient'):
     if not pts:
         return
 
-    self.session.catching_up = True
+    self._catching_up = True
     try:
         while True:
             d = await self(_tl.fn.updates.GetDifference(
@@ -129,16 +129,13 @@ async def catch_up(self: 'TelegramClient'):
     finally:
         # TODO Save new pts to session
         self._state_cache._pts_date = (pts, date)
-        self.session.catching_up = False
+        self._catching_up = False
 
 
 # It is important to not make _handle_update async because we rely on
 # the order that the updates arrive in to update the pts and date to
 # be always-increasing. There is also no need to make this async.
 def _handle_update(self: 'TelegramClient', update):
-    self.session.process_entities(update)
-    self._entity_cache.add(update)
-
     if isinstance(update, (_tl.Updates, _tl.UpdatesCombined)):
         entities = {utils.get_peer_id(x): x for x in
                     itertools.chain(update.users, update.chats)}
@@ -203,11 +200,10 @@ async def _update_loop(self: 'TelegramClient'):
         except (ConnectionError, asyncio.CancelledError):
             return
 
-        # Entities and cached files are not saved when they are
-        # inserted because this is a rather expensive operation
-        # (default's sqlite3 takes ~0.1s to commit changes). Do
-        # it every minute instead. No-op if there's nothing new.
-        self.session.save()
+        # Entities are not saved when they are inserted because this is a rather expensive
+        # operation (default's sqlite3 takes ~0.1s to commit changes). Do it every minute
+        # instead. No-op if there's nothing new.
+        await self.session.save()
 
         # We need to send some content-related request at least hourly
         # for Telegram to keep delivering updates, otherwise they will
@@ -232,6 +228,10 @@ async def _dispatch_queue_updates(self: 'TelegramClient'):
     self._dispatching_updates_queue.clear()
 
 async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, pts_date):
+    entities = self._entity_cache.add(list((update._entities or {}).values()))
+    if entities:
+        await self.session.insert_entities(entities)
+
     if not self._entity_cache.ensure_cached(update):
         # We could add a lock to not fetch the same pts twice if we are
         # already fetching it. However this does not happen in practice,

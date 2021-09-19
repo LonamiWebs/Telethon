@@ -117,6 +117,7 @@ they no longer make sense:
 And the following, which were inherited from ``MemorySession``:
 
 * ``delete``. You can ``os.remove`` the file instead (preferably after ``client.log_out()``).
+  ``client.log_out()`` also no longer deletes the session file (it can't as there's no method).
 * ``set_dc``.
 * ``dc_id``.
 * ``server_address``.

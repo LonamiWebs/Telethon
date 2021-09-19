@@ -372,7 +372,6 @@ async def log_out(self: 'TelegramClient') -> bool:
     self._state_cache.reset()
 
     await self.disconnect()
-    self.session.delete()
     return True
 
 async def edit_2fa(

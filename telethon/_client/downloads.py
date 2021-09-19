@@ -39,26 +39,17 @@ class _DirectDownloadIter(requestiter.RequestIter):
         self._msg_data = msg_data
         self._timed_out = False
 
-        self._exported = dc_id and self.client.session.dc_id != dc_id
+        # TODO should cache current session state
+        state = await self.client.session.get_state()
+
+        self._exported = dc_id and state.dc_id != dc_id
         if not self._exported:
             # The used sender will also change if ``FileMigrateError`` occurs
             self._sender = self.client._sender
         else:
-            try:
-                self._sender = await self.client._borrow_exported_sender(dc_id)
-            except errors.DcIdInvalidError:
-                # Can't export a sender for the ID we are currently in
-                config = await self.client(_tl.fn.help.GetConfig())
-                for option in config.dc_options:
-                    if option.ip_address == self.client.session.server_address:
-                        self.client.session.set_dc(
-                            option.id, option.ip_address, option.port)
-                        self.client.session.save()
-                        break
-
-                # TODO Figure out why the session may have the wrong DC ID
-                self._sender = self.client._sender
-                self._exported = False
+            # If this raises DcIdInvalidError, it means we tried exporting the same DC we're in.
+            # This should not happen, but if it does, it's a bug.
+            self._sender = await self.client._borrow_exported_sender(dc_id)
 
     async def _load_next_chunk(self):
         cur = await self._request()

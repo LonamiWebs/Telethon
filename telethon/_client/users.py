@@ -7,6 +7,7 @@ import typing
 from .. import errors, hints, _tl
 from .._misc import helpers, utils
 from ..errors import MultiError, RPCError
+from ..sessions.types import Entity
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
@@ -70,8 +71,9 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                         exceptions.append(e)
                         results.append(None)
                         continue
-                    self.session.process_entities(result)
-                    self._entity_cache.add(result)
+                    entities = self._entity_cache.add(result)
+                    if entities:
+                        await self.session.insert_entities(entities)
                     exceptions.append(None)
                     results.append(result)
                     request_index += 1
@@ -81,8 +83,9 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                     return results
             else:
                 result = await future
-                self.session.process_entities(result)
-                self._entity_cache.add(result)
+                entities = self._entity_cache.add(result)
+                if entities:
+                    await self.session.insert_entities(entities)
                 return result
         except (errors.ServerError, errors.RpcCallFailError,
                 errors.RpcMcgetFailError, errors.InterdcCallErrorError,
@@ -266,9 +269,19 @@ async def get_input_entity(
     if peer in ('me', 'self'):
         return _tl.InputPeerSelf()
 
-    # No InputPeer, cached peer, or known string. Fetch from disk cache
+    # No InputPeer, cached peer, or known string. Fetch from session cache
     try:
-        return self.session.get_input_entity(peer)
+        peer = utils.get_peer(peer)
+        if isinstance(peer, _tl.PeerUser):
+            entity = await self.session.get_entity(Entity.USER, peer.user_id)
+            if entity:
+                return _tl.InputPeerUser(entity.id, entity.access_hash)
+        elif isinstance(peer, _tl.PeerChat):
+            return _tl.InputPeerChat(peer.chat_id)
+        elif isinstance(peer, _tl.PeerChannel):
+            entity = await self.session.get_entity(Entity.CHANNEL, peer.user_id)
+            if entity:
+                return _tl.InputPeerChannel(entity.id, entity.access_hash)
     except ValueError:
         pass
 
@@ -387,12 +400,6 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
                     return next(x for x in result.chats if x.id == pid)
             except StopIteration:
                 pass
-        try:
-            # Nobody with this username, maybe it's an exact name/title
-            return await self.get_entity(
-                self.session.get_input_entity(string))
-        except ValueError:
-            pass
 
     raise ValueError(
         'Cannot find any entity corresponding to "{}"'.format(string)
