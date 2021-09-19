@@ -146,6 +146,7 @@ def init(
     # Cache session data for convenient access
     self._session_state = None
     self._all_dcs = None
+    self._state_cache = statecache.StateCache(None, self._log)
 
     self._entity_cache = entitycache.EntityCache()
     self.api_id = int(api_id)
