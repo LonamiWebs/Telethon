@@ -296,16 +296,10 @@ def set_flood_sleep_threshold(self, value):
 
 
 async def connect(self: 'TelegramClient') -> None:
-    all_dc = await self.session.get_all_dc()
+    all_dc = {dc.id: dc for dc in await self.session.get_all_dc()}
     state = await self.session.get_state()
 
-    dc = None
-    if state:
-        for d in all_dc:
-            if d.id == state.dc_id:
-                dc = d
-                break
-
+    dc = all_dc.get(state.dc_id) if state else None
     if dc is None:
         dc = DataCenter(
             id=DEFAULT_DC_ID,
@@ -314,6 +308,7 @@ async def connect(self: 'TelegramClient') -> None:
             port=DEFAULT_PORT,
             auth=b'',
         )
+        all_dc[dc.id] = dc
 
     # Update state (for catching up after a disconnection)
     # TODO Get state from channels too
@@ -335,14 +330,36 @@ async def connect(self: 'TelegramClient') -> None:
 
     if self._sender.auth_key.key != dc.auth:
         dc.auth = self._sender.auth_key.key
-        await self.session.insert_dc(dc)
-        await self.session.save()
 
+    # Need to send invokeWithLayer for things to work out.
+    # Make the most out of this opportunity by also refreshing our state.
+    # During the v1 to v2 migration, this also correctly sets the IPv* columns.
     self._init_request.query = _tl.fn.help.GetConfig()
 
-    await self._sender.send(_tl.fn.InvokeWithLayer(
+    config = await self._sender.send(_tl.fn.InvokeWithLayer(
         _tl.LAYER, self._init_request
     ))
+
+    for dc in config.dc_options:
+        if dc.media_only or dc.tcpo_only or dc.cdn:
+            continue
+
+        ip = int(ipaddress.ip_address(dc.ip_address))
+        if dc.id in all_dc:
+            all_dc[dc.id].port = dc.port
+            if dc.ipv6:
+                all_dc[dc.id].ipv6 = ip
+            else:
+                all_dc[dc.id].ipv4 = ip
+        elif dc.ipv6:
+            all_dc[dc.id] = DataCenter(dc.id, None, ip, dc.port, b'')
+        else:
+            all_dc[dc.id] = DataCenter(dc.id, ip, None, dc.port, b'')
+
+    for dc in all_dc.values():
+        await self.session.insert_dc(dc)
+
+    await self.session.save()
 
     self._updates_handle = self.loop.create_task(self._update_loop())
 
