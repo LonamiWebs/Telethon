@@ -286,6 +286,7 @@ PUBLIC_KEY_REQUIRED,400,
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
 QUERY_TOO_SHORT,400,The query string is too short
+QUIZ_ANSWER_MISSING,400,
 QUIZ_CORRECT_ANSWERS_EMPTY,400,A quiz must specify one correct answer
 QUIZ_CORRECT_ANSWERS_TOO_MUCH,400,There can only be one correct answer
 QUIZ_CORRECT_ANSWER_INVALID,400,The correct answer is not an existing answer
