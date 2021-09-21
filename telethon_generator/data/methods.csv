@@ -91,7 +91,7 @@ bots.setBotCommands,bot,BOT_COMMAND_DESCRIPTION_INVALID BOT_COMMAND_INVALID LANG
 channels.checkUsername,user,CHANNEL_INVALID CHAT_ID_INVALID USERNAME_INVALID
 channels.convertToGigagroup,user,PARTICIPANTS_TOO_FEW
 channels.createChannel,user,CHAT_TITLE_EMPTY USER_RESTRICTED
-channels.deleteChannel,user,CHANNEL_INVALID CHANNEL_PRIVATE
+channels.deleteChannel,user,CHANNEL_INVALID CHANNEL_PRIVATE CHANNEL_TOO_LARGE
 channels.deleteHistory,user,
 channels.deleteMessages,both,CHANNEL_INVALID CHANNEL_PRIVATE MESSAGE_DELETE_FORBIDDEN
 channels.deleteUserHistory,user,CHANNEL_INVALID CHAT_ADMIN_REQUIRED
