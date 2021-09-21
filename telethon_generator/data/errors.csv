@@ -61,6 +61,7 @@ CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PRIVATE,400,The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it
 CHANNEL_PUBLIC_GROUP_NA,403,channel/supergroup not available
+CHANNEL_TOO_LARGE,406,
 CHAT_ABOUT_NOT_MODIFIED,400,About text has not changed
 CHAT_ABOUT_TOO_LONG,400,Chat about too long
 CHAT_ADMIN_INVITE_REQUIRED,403,You do not have the rights to do this
