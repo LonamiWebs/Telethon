@@ -8,7 +8,8 @@ import traceback
 import typing
 import logging
 
-from .. import events, utils, errors, _tl
+from .. import events, utils, _tl
+from ..errors._rpcbase import RpcError
 from ..events.common import EventBuilder, EventCommon
 
 if typing.TYPE_CHECKING:
@@ -244,7 +245,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
                 await _get_difference(self, update, channel_id, pts_date)
             except OSError:
                 pass  # We were disconnected, that's okay
-            except errors.RPCError:
+            except RpcError:
                 # There's a high chance the request fails because we lack
                 # the channel. Because these "happen sporadically" (#1428)
                 # we should be okay (no flood waits) even if more occur.
@@ -418,7 +419,7 @@ async def _handle_auto_reconnect(self: 'TelegramClient'):
         await self.catch_up()
 
         self._log[__name__].info('Successfully fetched missed updates')
-    except errors.RPCError as e:
+    except RpcError as e:
         self._log[__name__].warning('Failed to get missed updates after '
                                     'reconnect: %r', e)
     except Exception:

@@ -6,7 +6,7 @@ from .messagebutton import MessageButton
 from .forward import Forward
 from .file import File
 from ..._misc import utils, tlobject
-from ... import errors, _tl
+from ... import _tl
 
 
 def _fwd(field, doc):

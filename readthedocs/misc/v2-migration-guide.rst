@@ -140,6 +140,72 @@ for the library to work properly. If you still don't want it, you should subclas
 override the methods to do nothing.
 
 
+Complete overhaul of errors
+---------------------------
+
+The following error name have changed to follow a better naming convention (clearer acronyms):
+
+* ``RPCError`` is now ``RpcError``.
+* ``InvalidDCError`` is now ``InvalidDcError`` (lowercase ``c``).
+
+The base errors no longer have a ``.message`` field at the class-level. Instead, it is now an
+attribute at the instance level (meaning you cannot do ``BadRequestError.message``, it must be
+``bad_request_err.message`` where ``isinstance(bad_request_err, BadRequestError)``).
+
+The ``.message`` will gain its value at the time the error is constructed, rather than being
+known beforehand.
+
+The parameter order for ``RpcError`` and all its subclasses are now ``(code, message, request)``,
+as opposed to ``(message, request, code)``.
+
+Because Telegram errors can be added at any time, the library no longer generate a fixed set of
+them. This means you can no longer use ``dir`` to get a full list of them. Instead, the errors
+are automatically generated depending on the name you use for the error, with the following rules:
+
+* Numbers are removed from the name. The Telegram error ``FLOOD_WAIT_42`` is transformed into
+  ``FLOOD_WAIT_``.
+* Underscores are removed from the name. ``FLOOD_WAIT_`` becomes ``FLOODWAIT``.
+* Everything is lowercased. ``FLOODWAIT`` turns into ``floodwait``.
+* While the name ends with ``error``, this suffix is removed.
+
+The only exception to this rule is ``2FA_CONFIRM_WAIT_0``, which is transformed as
+``twofaconfirmwait`` (read as ``TwoFaConfirmWait``).
+
+What all this means is that, if Telegram raises a ``FLOOD_WAIT_42``, you can write the following:
+
+.. code-block:: python
+
+    from telethon.errors import FloodWaitError
+
+    try:
+        await client.send_message(chat, message)
+    except FloodWaitError as e:
+        print(f'Flood! wait for {e.seconds} seconds')
+
+Essentially, old code will keep working, but now you have the freedom to define even yet-to-be
+discovered errors. This makes use of `PEP 562 <https://www.python.org/dev/peps/pep-0562/>`__ on
+Python 3.7 and above and a more-hacky approach below (which your IDE may not love).
+
+Given the above rules, you could also write ``except errors.FLOOD_WAIT`` if you prefer to match
+Telegram's naming conventions. We recommend Camel-Case naming with the "Error" suffix, but that's
+up to you.
+
+All errors will include a list of ``.values`` (the extracted number) and ``.value`` (the first
+number extracted, or ``None`` if ``values`` is empty). In addition to that, certain errors have
+a more-recognizable alias (such as ``FloodWait`` which has ``.seconds`` for its ``.value``).
+
+The ``telethon.errors`` module continues to provide certain predefined ``RpcError`` to match on
+the *code* of the error and not its message (for instance, match all errors with code 403 with
+``ForbiddenError``). Note that a certain error message can appear with different codes too, this
+is decided by Telegram.
+
+The ``telethon.errors`` module continues to provide custom errors used by the library such as
+``TypeNotFoundError``.
+
+// TODO keep RPCError around? eh idk how much it's used
+// TODO should RpcError subclass ValueError? technically the values used in the request somehow were wrong…
+// TODO provide a way to see which errors are known in the docs or at tl.telethon.dev
+
 The "iter" variant of the client methods have been removed
 ----------------------------------------------------------
 
@@ -384,6 +450,8 @@ of ``.message``, and ``.text`` will still be the text formatted through the ``cl
 However, you're encouraged to change uses of ``.raw_text`` with ``.message``, and ``.text`` with
 either ``.md_text`` or ``.html_text`` as needed. This is because both ``.text`` and ``.raw_text``
 may disappear in future versions, and their behaviour is not immediately obvious.
+
+// TODO actually provide the things mentioned here
 
 
 Using a flat list to define buttons will now create rows and not columns

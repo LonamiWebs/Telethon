@@ -4,6 +4,7 @@ import struct
 
 from . import authenticator
 from .._misc.messagepacker import MessagePacker
+from ..errors._rpcbase import _mk_error_type
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
 from .mtprotostate import MTProtoState
@@ -585,12 +586,19 @@ class MTProtoSender:
             return
 
         if rpc_result.error:
-            error = rpc_message_to_error(rpc_result.error, state.request)
             self._send_queue.append(
                 RequestState(_tl.MsgsAck([state.msg_id])))
 
             if not state.future.cancelled():
-                state.future.set_exception(error)
+                err_ty = _mk_error_type(
+                    name=rpc_result.error.error_message,
+                    code=rpc_result.error.error_code,
+                )
+                state.future.set_exception(err_ty(
+                    rpc_result.error.error_code,
+                    rpc_result.error.error_message,
+                    state.request
+                ))
         else:
             try:
                 with BinaryReader(rpc_result.body) as reader:

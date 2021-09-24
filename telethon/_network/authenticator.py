@@ -8,7 +8,7 @@ from hashlib import sha1
 
 from .. import helpers, _tl
 from .._crypto import AES, AuthKey, Factorization, rsa
-from ..errors import SecurityError
+from ..errors._custom import SecurityError
 from .._misc.binaryreader import BinaryReader
 
 

@@ -5,7 +5,7 @@ in plain text, when no authorization key has been created yet.
 import struct
 
 from .mtprotostate import MTProtoState
-from ..errors import InvalidBufferError
+from ..errors._custom import InvalidBufferError
 from .._misc.binaryreader import BinaryReader
 
 

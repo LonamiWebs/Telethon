@@ -2,7 +2,7 @@
 /telethon/_tl/fn/
 /telethon/_tl/*.py
 /telethon/_tl/alltlobjects.py
-/telethon/errors/rpcerrorlist.py
+/telethon/errors/_generated.py
 
 # User session
 *.session

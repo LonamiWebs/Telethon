@@ -47,7 +47,7 @@ GENERATOR_DIR = Path('telethon_generator')
 LIBRARY_DIR = Path('telethon')
 
 ERRORS_IN = GENERATOR_DIR / 'data/errors.csv'
-ERRORS_OUT = LIBRARY_DIR / 'errors/rpcerrorlist.py'
+ERRORS_OUT = LIBRARY_DIR / 'errors/_generated.py'
 
 METHODS_IN = GENERATOR_DIR / 'data/methods.csv'
 

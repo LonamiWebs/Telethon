@@ -232,7 +232,7 @@ async def delete_dialog(
             result = await self(_tl.fn.messages.DeleteChatUser(
                 entity.chat_id, _tl.InputUserSelf(), revoke_history=revoke
             ))
-        except errors.PeerIdInvalidError:
+        except errors.PEER_ID_INVALID:
             # Happens if we didn't have the deactivated information
             result = None
     else:

@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from struct import unpack
 
-from ..errors import TypeNotFoundError
+from ..errors._custom import TypeNotFoundError
 from .. import _tl
 from ..types import _core
 

@@ -2,7 +2,7 @@ import struct
 from zlib import crc32
 
 from .connection import Connection, PacketCodec
-from ...errors import InvalidChecksumError
+from ...errors._custom import InvalidChecksumError
 
 
 class FullPacketCodec(PacketCodec):

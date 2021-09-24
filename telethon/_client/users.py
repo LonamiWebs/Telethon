@@ -4,10 +4,11 @@ import itertools
 import time
 import typing
 
+from ..errors._custom import MultiError
+from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError, UnauthorizedError
 from .. import errors, hints, _tl
 from .._misc import helpers, utils
-from ..errors import MultiError, RPCError
-from ..sessions.types import Entity
+from .._sessions.types import Entity
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
@@ -49,7 +50,7 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 await asyncio.sleep(diff)
                 self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
             else:
-                raise errors.FloodWaitError(request=r, capture=diff)
+                raise errors.FLOOD_WAIT(420, f'FLOOD_WAIT_{diff}', request=r)
 
         if self._no_updates:
             r = _tl.fn.InvokeWithoutUpdates(r)
@@ -67,7 +68,7 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 for f in future:
                     try:
                         result = await f
-                    except RPCError as e:
+                    except RpcError as e:
                         exceptions.append(e)
                         results.append(None)
                         continue
@@ -87,22 +88,20 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 if entities:
                     await self.session.insert_entities(entities)
                 return result
-        except (errors.ServerError, errors.RpcCallFailError,
-                errors.RpcMcgetFailError, errors.InterdcCallErrorError,
-                errors.InterdcCallRichErrorError) as e:
+        except ServerError as e:
             last_error = e
             self._log[__name__].warning(
                 'Telegram is having internal issues %s: %s',
                 e.__class__.__name__, e)
 
             await asyncio.sleep(2)
-        except (errors.FloodWaitError, errors.SlowModeWaitError, errors.FloodTestPhoneWaitError) as e:
+        except FloodError as e:
             last_error = e
             if utils.is_list_like(request):
                 request = request[request_index]
 
-            # SLOW_MODE_WAIT is chat-specific, not request-specific
-            if not isinstance(e, errors.SlowModeWaitError):
+            # SLOWMODE_WAIT is chat-specific, not request-specific
+            if not isinstance(e, errors.SLOWMODE_WAIT):
                 self._flood_waited_requests\
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
@@ -116,12 +115,11 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 await asyncio.sleep(e.seconds)
             else:
                 raise
-        except (errors.PhoneMigrateError, errors.NetworkMigrateError,
-                errors.UserMigrateError) as e:
+        except InvalidDcError as e:
             last_error = e
             self._log[__name__].info('Phone migrated to %d', e.new_dc)
             should_raise = isinstance(e, (
-                errors.PhoneMigrateError, errors.NetworkMigrateError
+                errors.PHONE_MIGRATE, errors.NETWORK_MIGRATE
             ))
             if should_raise and await self.is_user_authorized():
                 raise
@@ -138,7 +136,7 @@ async def get_me(self: 'TelegramClient', input_peer: bool = False) \
     try:
         me = (await self(_tl.fn.users.GetUsers([_tl.InputUserSelf()])))[0]
         return utils.get_input_peer(me, allow_self=False) if input_peer else me
-    except errors.UnauthorizedError:
+    except UnauthorizedError:
         return None
 
 async def is_bot(self: 'TelegramClient') -> bool:
@@ -150,7 +148,7 @@ async def is_user_authorized(self: 'TelegramClient') -> bool:
             # Any request that requires authorization will work
             await self(_tl.fn.updates.GetState())
             self._authorized = True
-        except errors.RPCError:
+        except RpcError:
             self._authorized = False
 
     return self._authorized
@@ -290,7 +288,7 @@ async def get_input_entity(
             channels = await self(_tl.fn.channels.GetChannels([
                 _tl.InputChannel(peer.channel_id, access_hash=0)]))
             return utils.get_input_peer(channels.chats[0])
-        except errors.ChannelInvalidError:
+        except errors.CHANNEL_INVALID:
             pass
 
     raise ValueError(
@@ -338,7 +336,7 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
                     _tl.fn.contacts.GetContacts(0))).users:
                 if user.phone == phone:
                     return user
-        except errors.BotMethodInvalidError:
+        except errors.BOT_METHOD_INVALID:
             raise ValueError('Cannot get entity by phone number as a '
                                 'bot (try using integer IDs, not strings)')
     elif string.lower() in ('me', 'self'):
@@ -360,7 +358,7 @@ async def _get_entity_from_string(self: 'TelegramClient', string):
             try:
                 result = await self(
                     _tl.fn.contacts.ResolveUsername(username))
-            except errors.UsernameNotOccupiedError as e:
+            except errors.USERNAME_NOT_OCCUPIED as e:
                 raise ValueError('No user has "{}" as username'
                                     .format(username)) from e
 

@@ -1,7 +1,7 @@
 import datetime
 
 from ... import _tl
-from ...errors import RPCError
+from ...errors._rpcbase import RpcError
 from ..._misc import markdown, tlobject
 from ..._misc.utils import get_input_peer, get_peer
 
@@ -169,7 +169,7 @@ class Draft:
     def to_dict(self):
         try:
             entity = self.entity
-        except RPCError as e:
+        except RpcError as e:
             entity = e
 
         return {

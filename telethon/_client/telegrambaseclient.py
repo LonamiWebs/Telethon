@@ -12,8 +12,8 @@ from .. import version, helpers, __name__ as __base_name__, _tl
 from .._crypto import rsa
 from .._misc import markdown, entitycache, statecache, enums
 from .._network import MTProtoSender, Connection, ConnectionTcpFull, connection as conns
-from ..sessions import Session, SQLiteSession, MemorySession
-from ..sessions.types import DataCenter, SessionState
+from .._sessions import Session, SQLiteSession, MemorySession
+from .._sessions.types import DataCenter, SessionState
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'

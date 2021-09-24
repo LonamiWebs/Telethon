@@ -676,7 +676,7 @@ async def get_permissions(
         for participant in chat.full_chat.participants.participants:
             if participant.user_id == user.user_id:
                 return _custom.ParticipantPermissions(participant, True)
-        raise errors.UserNotParticipantError(None)
+        raise errors.USER_NOT_PARTICIPANT(400, 'USER_NOT_PARTICIPANT')
 
     raise ValueError('You must pass either a channel or a chat')
 
@@ -694,7 +694,7 @@ async def get_stats(
         try:
             req = _tl.fn.stats.GetMessageStats(entity, message)
             return await self(req)
-        except errors.StatsMigrateError as e:
+        except errors.STATS_MIGRATE as e:
             dc = e.dc
     else:
         # Don't bother fetching the Channel entity (costs a request), instead
@@ -703,13 +703,13 @@ async def get_stats(
         try:
             req = _tl.fn.stats.GetBroadcastStats(entity)
             return await self(req)
-        except errors.StatsMigrateError as e:
+        except errors.STATS_MIGRATE as e:
             dc = e.dc
-        except errors.BroadcastRequiredError:
+        except errors.BROADCAST_REQUIRED:
             req = _tl.fn.stats.GetMegagroupStats(entity)
             try:
                 return await self(req)
-            except errors.StatsMigrateError as e:
+            except errors.STATS_MIGRATE as e:
                 dc = e.dc
 
     sender = await self._borrow_exported_sender(dc)

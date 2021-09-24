@@ -4,7 +4,7 @@ import time
 from hashlib import sha256
 
 from .._crypto import AES
-from ..errors import SecurityError, InvalidBufferError
+from ..errors._custom import SecurityError, InvalidBufferError
 from .._misc.binaryreader import BinaryReader
 from ..types._core import TLMessage, GzipPacked
 from .._misc.tlobject import TLRequest

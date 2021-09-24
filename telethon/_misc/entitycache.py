@@ -3,7 +3,7 @@ import itertools
 
 from .._misc import utils
 from .. import _tl
-from ..sessions.types import Entity
+from .._sessions.types import Entity
 
 # Which updates have the following fields?
 _has_field = {

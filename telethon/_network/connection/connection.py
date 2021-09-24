@@ -13,7 +13,7 @@ try:
 except ImportError:
     python_socks = None
 
-from ...errors import InvalidChecksumError
+from ...errors._custom import InvalidChecksumError
 from ... import helpers
 
 
