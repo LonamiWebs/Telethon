@@ -100,7 +100,7 @@ class EntityCache:
                 if id not in self.__dict__:
                     if ty in (Entity.USER, Entity.BOT):
                         self.__dict__[id] = _tl.InputPeerUser(id, access_hash)
-                    elif ty in (Entity.GROUP):
+                    elif ty in (Entity.GROUP,):
                         self.__dict__[id] = _tl.InputPeerChat(id)
                     elif ty in (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP):
                         self.__dict__[id] = _tl.InputPeerChannel(id, access_hash)
