@@ -1,13 +1,4 @@
 from .raw import Raw
-from .album import Album
-from .chataction import ChatAction
-from .messagedeleted import MessageDeleted
-from .messageedited import MessageEdited
-from .messageread import MessageRead
-from .newmessage import NewMessage
-from .userupdate import UserUpdate
-from .callbackquery import CallbackQuery
-from .inlinequery import InlineQuery
 
 
 _HANDLERS_ATTRIBUTE = '__tl.handlers'

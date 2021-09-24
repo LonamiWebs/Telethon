@@ -11,7 +11,7 @@ from . import (
 from .. import helpers, version, _tl
 from ..types import _custom
 from .._network import ConnectionTcpFull
-from ..events.common import EventBuilder, EventCommon
+from .._events.common import EventBuilder, EventCommon
 from .._misc import enums
 
 

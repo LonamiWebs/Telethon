@@ -2,7 +2,8 @@ import asyncio
 import base64
 import datetime
 
-from ... import events, _tl
+from ... import _tl
+from ..._events.raw import Raw
 
 
 class QRLogin:
@@ -94,7 +95,7 @@ class QRLogin:
         async def handler(_update):
             event.set()
 
-        self._client.add_event_handler(handler, events.Raw(_tl.UpdateLoginToken))
+        self._client.add_event_handler(handler, Raw(_tl.UpdateLoginToken))
 
         try:
             # Will raise timeout error if it doesn't complete quick enough,

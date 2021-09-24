@@ -8,9 +8,11 @@ import traceback
 import typing
 import logging
 
-from .. import events, utils, _tl
+from .. import utils, _tl
 from ..errors._rpcbase import RpcError
-from ..events.common import EventBuilder, EventCommon
+from .._events.common import EventBuilder, EventCommon
+from .._events.raw import Raw
+from .._events.base import StopPropagation, _get_handlers
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
@@ -40,7 +42,7 @@ def add_event_handler(
         self: 'TelegramClient',
         callback: Callback,
         event: EventBuilder = None):
-    builders = events._get_handlers(callback)
+    builders = _get_handlers(callback)
     if builders is not None:
         for event in builders:
             self._event_builders.append((event, callback))
@@ -49,7 +51,7 @@ def add_event_handler(
     if isinstance(event, type):
         event = event()
     elif not event:
-        event = events.Raw()
+        event = Raw()
 
     self._event_builders.append((event, callback))
 
@@ -274,7 +276,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
 
         try:
             await callback(event)
-        except events.StopPropagation:
+        except StopPropagation:
             name = getattr(callback, '__name__', repr(callback))
             self._log[__name__].debug(
                 'Event handler "%s" stopped chain of propagation '
@@ -294,7 +296,7 @@ async def _dispatch_event(self: 'TelegramClient', event):
     # the name of speed; we don't want to make it worse for all updates
     # just because albums may need it.
     for builder, callback in self._event_builders:
-        if isinstance(builder, events.Raw):
+        if isinstance(builder, Raw):
             continue
         if not isinstance(event, builder.Event):
             continue
@@ -310,7 +312,7 @@ async def _dispatch_event(self: 'TelegramClient', event):
 
         try:
             await callback(event)
-        except events.StopPropagation:
+        except StopPropagation:
             name = getattr(callback, '__name__', repr(callback))
             self._log[__name__].debug(
                 'Event handler "%s" stopped chain of propagation '
