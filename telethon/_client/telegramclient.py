@@ -15,6 +15,12 @@ from ..events.common import EventBuilder, EventCommon
 from .._misc import enums
 
 
+def forward_call(to_func):
+    def decorator(from_func):
+        return functools.wraps(from_func)(to_func)
+    return decorator
+
+
 class TelegramClient:
     """
     Arguments
@@ -165,6 +171,7 @@ class TelegramClient:
 
     # region Account
 
+    @forward_call(account.takeout)
     def takeout(
             self: 'TelegramClient',
             finalize: bool = True,
@@ -256,8 +263,8 @@ class TelegramClient:
                 except errors.TakeoutInitDelayError as e:
                     print('Must wait', e.seconds, 'before takeout')
         """
-        return account.takeout(**locals())
 
+    @forward_call(account.end_takeout)
     async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
         """
         Finishes the current takeout session.
@@ -274,12 +281,12 @@ class TelegramClient:
 
                 await client.end_takeout(success=False)
         """
-        return await account.end_takeout(**locals())
 
     # endregion Account
 
     # region Auth
 
+    @forward_call(auth.start)
     def start(
             self: 'TelegramClient',
             phone: typing.Callable[[], str] = lambda: input('Please enter your phone (or bot token): '),
@@ -365,8 +372,8 @@ class TelegramClient:
                 async with client.start():
                     pass
         """
-        return auth.start(**locals())
 
+    @forward_call(auth.sign_in)
     async def sign_in(
             self: 'TelegramClient',
             phone: str = None,
@@ -422,8 +429,8 @@ class TelegramClient:
                 code = input('enter code: ')
                 await client.sign_in(phone, code)
         """
-        return await auth.sign_in(**locals())
 
+    @forward_call(auth.sign_up)
     async def sign_up(
             self: 'TelegramClient',
             code: typing.Union[str, int],
@@ -474,8 +481,8 @@ class TelegramClient:
                 code = input('enter code: ')
                 await client.sign_up(code, first_name='Anna', last_name='Banana')
         """
-        return await auth.sign_up(**locals())
 
+    @forward_call(auth.send_code_request)
     async def send_code_request(
             self: 'TelegramClient',
             phone: str,
@@ -501,8 +508,8 @@ class TelegramClient:
                 sent = await client.send_code_request(phone)
                 print(sent)
         """
-        return await auth.send_code_request(**locals())
 
+    @forward_call(auth.qr_login)
     async def qr_login(self: 'TelegramClient', ignored_ids: typing.List[int] = None) -> _custom.QRLogin:
         """
         Initiates the QR login procedure.
@@ -536,8 +543,8 @@ class TelegramClient:
                 # Important! You need to wait for the login to complete!
                 await qr_login.wait()
         """
-        return await auth.qr_login(**locals())
 
+    @forward_call(auth.log_out)
     async def log_out(self: 'TelegramClient') -> bool:
         """
         Logs out Telegram and deletes the current ``*.session`` file.
@@ -551,8 +558,8 @@ class TelegramClient:
                 # Note: you will need to login again!
                 await client.log_out()
         """
-        return await auth.log_out(**locals())
 
+    @forward_call(auth.edit_2fa)
     async def edit_2fa(
             self: 'TelegramClient',
             current_password: str = None,
@@ -614,7 +621,6 @@ class TelegramClient:
                 # Removing the password
                 await client.edit_2fa(current_password='I_<3_Telethon')
         """
-        return await auth.edit_2fa(**locals())
 
     async def __aenter__(self):
         await self.connect()
@@ -627,6 +633,7 @@ class TelegramClient:
 
     # region Bots
 
+    @forward_call(bots.inline_query)
     async def inline_query(
             self: 'TelegramClient',
             bot: 'hints.EntityLike',
@@ -674,7 +681,6 @@ class TelegramClient:
                 # Send the first result to some chat
                 message = await results[0].click('TelethonOffTopic')
         """
-        return await bots.inline_query(**locals())
 
     # endregion Bots
 
@@ -720,6 +726,7 @@ class TelegramClient:
 
     # region Chats
 
+    @forward_call(chats.get_participants)
     def get_participants(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -789,8 +796,8 @@ class TelegramClient:
                 users = await client.get_participants(chat, limit=0)
                 print(users.total)
         """
-        return chats.get_participants(**locals())
 
+    @forward_call(chats.get_admin_log)
     def get_admin_log(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -924,8 +931,8 @@ class TelegramClient:
                 # Print the old message before it was deleted
                 print(events[-1].old)
         """
-        return chats.get_admin_log(**locals())
 
+    @forward_call(chats.get_profile_photos)
     def get_profile_photos(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -972,8 +979,8 @@ class TelegramClient:
                 photos = await client.get_profile_photos(channel, limit=None)
                 await client.download_media(photos[-1])
         """
-        return chats.get_profile_photos(**locals())
 
+    @forward_call(chats.action)
     def action(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1050,8 +1057,8 @@ class TelegramClient:
                 async with client.action(chat, 'document') as action:
                     await client.send_file(chat, zip_file, progress_callback=action.progress)
         """
-        return chats.action(**locals())
 
+    @forward_call(chats.edit_admin)
     async def edit_admin(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1156,8 +1163,8 @@ class TelegramClient:
                 # Granting all permissions except for `add_admins`
                 await client.edit_admin(chat, user, is_admin=True, add_admins=False)
         """
-        return await chats.edit_admin(**locals())
 
+    @forward_call(chats.edit_permissions)
     async def edit_permissions(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1273,8 +1280,8 @@ class TelegramClient:
                 await client.edit_permissions(chat, user, view_messages=False)
                 await client.edit_permissions(chat, user)
         """
-        return await chats.edit_permissions(**locals())
 
+    @forward_call(chats.kick_participant)
     async def kick_participant(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1312,8 +1319,8 @@ class TelegramClient:
                 # Leaving chat
                 await client.kick_participant(chat, 'me')
         """
-        return await chats.kick_participant(**locals())
 
+    @forward_call(chats.get_permissions)
     async def get_permissions(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1350,8 +1357,8 @@ class TelegramClient:
                 # Get Banned Permissions of Chat
                 await client.get_permissions(chat)
         """
-        return await chats.get_permissions(**locals())
 
+    @forward_call(chats.get_stats)
     async def get_stats(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1396,12 +1403,12 @@ class TelegramClient:
 
         .. _`at least 500 members`: https://telegram.org/blog/profile-videos-people-nearby-and-more
         """
-        return await chats.get_stats(**locals())
 
     # endregion Chats
 
     # region Dialogs
 
+    @forward_call(dialogs.get_dialogs)
     def get_dialogs(
             self: 'TelegramClient',
             limit: float = (),
@@ -1497,8 +1504,8 @@ class TelegramClient:
                 archived = await client.get_dialogs(folder=1, limit=None)
                 archived = await client.get_dialogs(archived=True, limit=None)
         """
-        return dialogs.get_dialogs(**locals())
 
+    @forward_call(dialogs.get_drafts)
     def get_drafts(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike' = None
@@ -1531,8 +1538,8 @@ class TelegramClient:
                 draft = await client.get_drafts('me')
                 print(draft.text)
         """
-        return dialogs.get_drafts(**locals())
 
+    @forward_call(dialogs.edit_folder)
     async def edit_folder(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike' = None,
@@ -1590,8 +1597,8 @@ class TelegramClient:
                 # Un-archiving all dialogs
                 await client.edit_folder(unpack=1)
         """
-        return await dialogs.edit_folder(**locals())
 
+    @forward_call(dialogs.delete_dialog)
     async def delete_dialog(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1635,12 +1642,12 @@ class TelegramClient:
                 # Leaving a channel by username
                 await client.delete_dialog('username')
         """
-        return await dialogs.delete_dialog(**locals())
 
     # endregion Dialogs
 
     # region Downloads
 
+    @forward_call(downloads.download_profile_photo)
     async def download_profile_photo(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -1684,8 +1691,8 @@ class TelegramClient:
                 path = await client.download_profile_photo('me')
                 print(path)
         """
-        return await downloads.download_profile_photo(**locals())
 
+    @forward_call(downloads.download_media)
     async def download_media(
             self: 'TelegramClient',
             message: 'hints.MessageLike',
@@ -1760,8 +1767,8 @@ class TelegramClient:
 
                 await client.download_media(message, progress_callback=callback)
         """
-        return await downloads.download_media(**locals())
 
+    @forward_call(downloads.iter_download)
     def iter_download(
             self: 'TelegramClient',
             file: 'hints.FileLike',
@@ -1857,7 +1864,6 @@ class TelegramClient:
                 await stream.close()
                 assert len(header) == 32
         """
-        return downloads.iter_download(**locals())
 
     # endregion Downloads
 
@@ -1907,6 +1913,7 @@ class TelegramClient:
 
     # region Messages
 
+    @forward_call(messages.get_messages)
     def get_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2104,8 +2111,8 @@ class TelegramClient:
                 # Get a single message given an ID:
                 message_1337 = await client.get_messages(chat, ids=1337)
         """
-        return messages.get_messages(**locals())
 
+    @forward_call(messages.send_message)
     async def send_message(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2298,8 +2305,8 @@ class TelegramClient:
                 from datetime import timedelta
                 await client.send_message(chat, 'Hi, future!', schedule=timedelta(minutes=5))
         """
-        return await messages.send_message(**locals())
 
+    @forward_call(messages.forward_messages)
     async def forward_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2380,19 +2387,8 @@ class TelegramClient:
                 # Forwarding as a copy
                 await client.send_message(chat, message)
         """
-        from . import messages as m
-        return await m.forward_messages(
-            self=self,
-            entity=entity,
-            messages=messages,
-            from_peer=from_peer,
-            background=background,
-            with_my_score=with_my_score,
-            silent=silent,
-            as_album=as_album,
-            schedule=schedule
-        )
 
+    @forward_call(messages.edit_message)
     async def edit_message(
             self: 'TelegramClient',
             entity: 'typing.Union[hints.EntityLike, _tl.Message]',
@@ -2520,8 +2516,8 @@ class TelegramClient:
                 # or
                 await message.edit('hello!!!')
         """
-        return await messages.edit_message(**locals())
 
+    @forward_call(messages.delete_messages)
     async def delete_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2572,8 +2568,8 @@ class TelegramClient:
 
                 await client.delete_messages(chat, messages)
         """
-        return await messages.delete_messages(**locals())
 
+    @forward_call(messages.send_read_acknowledge)
     async def send_read_acknowledge(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2624,8 +2620,8 @@ class TelegramClient:
                 # ...or passing a list of messages to mark as read
                 await client.send_read_acknowledge(chat, messages)
         """
-        return await messages.send_read_acknowledge(**locals())
 
+    @forward_call(messages.pin_message)
     async def pin_message(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2665,8 +2661,8 @@ class TelegramClient:
                 message = await client.send_message(chat, 'Pinotifying is fun!')
                 await client.pin_message(chat, message, notify=True)
         """
-        return await messages.pin_message(**locals())
 
+    @forward_call(messages.unpin_message)
     async def unpin_message(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -2695,7 +2691,6 @@ class TelegramClient:
                 # Unpin all messages from a chat
                 await client.unpin_message(chat)
         """
-        return await messages.unpin_message(**locals())
 
     # endregion Messages
 
@@ -2731,7 +2726,7 @@ class TelegramClient:
             base_logger: typing.Union[str, logging.Logger] = None,
             receive_updates: bool = True
     ):
-        return telegrambaseclient.init(**locals())
+        telegrambaseclient.init(**locals())
 
     @property
     def loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
@@ -2760,6 +2755,7 @@ class TelegramClient:
     def flood_sleep_threshold(self, value):
         return telegrambaseclient.set_flood_sleep_threshold(**locals())
 
+    @forward_call(telegrambaseclient.connect)
     async def connect(self: 'TelegramClient') -> None:
         """
         Connects to Telegram.
@@ -2782,8 +2778,8 @@ class TelegramClient:
                 except OSError:
                     print('Failed to connect')
         """
-        return await telegrambaseclient.connect(**locals())
 
+    @forward_call(telegrambaseclient.is_connected)
     def is_connected(self: 'TelegramClient') -> bool:
         """
         Returns `True` if the user has connected.
@@ -2796,8 +2792,8 @@ class TelegramClient:
                 while client.is_connected():
                     await asyncio.sleep(1)
         """
-        return telegrambaseclient.is_connected(**locals())
 
+    @forward_call(telegrambaseclient.disconnect)
     def disconnect(self: 'TelegramClient'):
         """
         Disconnects from Telegram.
@@ -2812,8 +2808,8 @@ class TelegramClient:
                 # You don't need to use this if you used "with client"
                 await client.disconnect()
         """
-        return telegrambaseclient.disconnect(**locals())
 
+    @forward_call(telegrambaseclient.set_proxy)
     def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
         """
         Changes the proxy which will be used on next (re)connection.
@@ -2824,12 +2820,12 @@ class TelegramClient:
             - on a call `await client.connect()` (after complete disconnect)
             - on auto-reconnect attempt (e.g, after previous connection was lost)
         """
-        return telegrambaseclient.set_proxy(**locals())
 
     # endregion Base
 
     # region Updates
 
+    @forward_call(updates.set_receive_updates)
     async def set_receive_updates(self: 'TelegramClient', receive_updates):
         """
         Change the value of `receive_updates`.
@@ -2837,8 +2833,8 @@ class TelegramClient:
         This is an `async` method, because in order for Telegram to start
         sending updates again, a request must be made.
         """
-        return await updates.set_receive_updates(**locals())
 
+    @forward_call(updates.run_until_disconnected)
     def run_until_disconnected(self: 'TelegramClient'):
         """
         Wait until the library is disconnected.
@@ -2870,8 +2866,8 @@ class TelegramClient:
                 # script from exiting.
                 await client.run_until_disconnected()
         """
-        return updates.run_until_disconnected(**locals())
 
+    @forward_call(updates.on)
     def on(self: 'TelegramClient', event: EventBuilder):
         """
         Decorator used to `add_event_handler` more conveniently.
@@ -2893,8 +2889,8 @@ class TelegramClient:
                 async def handler(event):
                     ...
         """
-        return updates.on(**locals())
 
+    @forward_call(updates.add_event_handler)
     def add_event_handler(
             self: 'TelegramClient',
             callback: updates.Callback,
@@ -2931,8 +2927,8 @@ class TelegramClient:
 
                 client.add_event_handler(handler, events.NewMessage)
         """
-        return updates.add_event_handler(**locals())
 
+    @forward_call(updates.remove_event_handler)
     def remove_event_handler(
             self: 'TelegramClient',
             callback: updates.Callback,
@@ -2958,8 +2954,8 @@ class TelegramClient:
                 # "handler" will stop receiving anything
                 client.remove_event_handler(handler)
         """
-        return updates.remove_event_handler(**locals())
 
+    @forward_call(updates.list_event_handlers)
     def list_event_handlers(self: 'TelegramClient')\
             -> 'typing.Sequence[typing.Tuple[Callback, EventBuilder]]':
         """
@@ -2979,8 +2975,8 @@ class TelegramClient:
                 for callback, event in client.list_event_handlers():
                     print(id(callback), type(event))
         """
-        return updates.list_event_handlers(**locals())
 
+    @forward_call(updates.catch_up)
     async def catch_up(self: 'TelegramClient'):
         """
         "Catches up" on the missed updates while the client was offline.
@@ -2994,12 +2990,12 @@ class TelegramClient:
 
                 await client.catch_up()
         """
-        return await updates.catch_up(**locals())
 
     # endregion Updates
 
     # region Uploads
 
+    @forward_call(uploads.send_file)
     async def send_file(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
@@ -3239,8 +3235,8 @@ class TelegramClient:
                     vcard=''
                 ))
         """
-        return await uploads.send_file(**locals())
 
+    @forward_call(uploads.upload_file)
     async def upload_file(
             self: 'TelegramClient',
             file: 'hints.FileLike',
@@ -3326,12 +3322,12 @@ class TelegramClient:
                 await client.send_file(chat, file)                   # sends as song
                 await client.send_file(chat, file, voice_note=True)  # sends as voice note
         """
-        return await uploads.upload_file(**locals())
 
     # endregion Uploads
 
     # region Users
 
+    @forward_call(users.call)
     async def __call__(self: 'TelegramClient', request, ordered=False, flood_sleep_threshold=None):
         """
         Invokes (sends) one or more MTProtoRequests and returns (receives)
@@ -3355,8 +3351,8 @@ class TelegramClient:
             The result of the request (often a `TLObject`) or a list of
             results if more than one request was given.
         """
-        return await users.call(**locals())
 
+    @forward_call(users.get_me)
     async def get_me(self: 'TelegramClient', input_peer: bool = False) \
             -> 'typing.Union[_tl.User, _tl.InputPeerUser]':
         """
@@ -3379,8 +3375,8 @@ class TelegramClient:
                 me = await client.get_me()
                 print(me.username)
         """
-        return await users.get_me(**locals())
 
+    @forward_call(users.is_bot)
     async def is_bot(self: 'TelegramClient') -> bool:
         """
         Return `True` if the signed-in user is a bot, `False` otherwise.
@@ -3393,8 +3389,8 @@ class TelegramClient:
                 else:
                     print('Hello')
         """
-        return await users.is_bot(**locals())
 
+    @forward_call(users.is_user_authorized)
     async def is_user_authorized(self: 'TelegramClient') -> bool:
         """
         Returns `True` if the user is authorized (logged in).
@@ -3407,8 +3403,8 @@ class TelegramClient:
                     code = input('enter code: ')
                     await client.sign_in(phone, code)
         """
-        return await users.is_user_authorized(**locals())
 
+    @forward_call(users.get_entity)
     async def get_entity(
             self: 'TelegramClient',
             entity: 'hints.EntitiesLike') -> 'hints.Entity':
@@ -3465,8 +3461,8 @@ class TelegramClient:
                 # Note that for this to work the phone number must be in your contacts
                 some_id = await client.get_peer_id('+34123456789')
         """
-        return await users.get_entity(**locals())
 
+    @forward_call(users.get_input_entity)
     async def get_input_entity(
             self: 'TelegramClient',
             peer: 'hints.EntityLike') -> '_tl.TypeInputPeer':
@@ -3531,8 +3527,8 @@ class TelegramClient:
                 # The same applies to IDs, chats or channels.
                 chat = await client.get_input_entity(-123456789)
         """
-        return await users.get_input_entity(**locals())
 
+    @forward_call(users.get_peer_id)
     async def get_peer_id(
             self: 'TelegramClient',
             peer: 'hints.EntityLike') -> int:
@@ -3547,60 +3543,70 @@ class TelegramClient:
 
                 print(await client.get_peer_id('me'))
         """
-        return await users.get_peer_id(**locals())
 
     # endregion Users
 
     # region Private
 
+    @forward_call(users._call)
     async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sleep_threshold=None):
-        return await users._call(**locals())
+        pass
 
+    @forward_call(updates._update_loop)
     async def _update_loop(self: 'TelegramClient'):
-        return await updates._update_loop(**locals())
+        pass
 
+    @forward_call(messageparse._parse_message_text)
     async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
-        return await messageparse._parse_message_text(**locals())
+        pass
 
+    @forward_call(uploads._file_to_media)
     async def _file_to_media(
             self, file, force_document=False, file_size=None,
             progress_callback=None, attributes=None, thumb=None,
             allow_cache=True, voice_note=False, video_note=False,
             supports_streaming=False, mime_type=None, as_image=None,
             ttl=None):
-        return await uploads._file_to_media(**locals())
+        pass
 
+    @forward_call(messageparse._get_response_message)
     def _get_response_message(self: 'TelegramClient', request, result, input_chat):
-        return messageparse._get_response_message(**locals())
+        pass
 
+    @forward_call(messages._get_comment_data)
     async def _get_comment_data(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             message: 'typing.Union[int, _tl.Message]'
     ):
-        return await messages._get_comment_data(**locals())
+        pass
 
+    @forward_call(telegrambaseclient._switch_dc)
     async def _switch_dc(self: 'TelegramClient', new_dc):
-        return await telegrambaseclient._switch_dc(**locals())
+        pass
 
+    @forward_call(telegrambaseclient._borrow_exported_sender)
     async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
-        return await telegrambaseclient._borrow_exported_sender(**locals())
+        pass
 
+    @forward_call(telegrambaseclient._return_exported_sender)
     async def _return_exported_sender(self: 'TelegramClient', sender):
-        return await telegrambaseclient._return_exported_sender(**locals())
+        pass
 
+    @forward_call(telegrambaseclient._clean_exported_senders)
     async def _clean_exported_senders(self: 'TelegramClient'):
-        return await telegrambaseclient._clean_exported_senders(**locals())
+        pass
 
+    @forward_call(updates._handle_update)
     def _handle_update(self: 'TelegramClient', update):
-        return updates._handle_update(**locals())
+        pass
 
+    @forward_call(updates._handle_auto_reconnect)
     async def _handle_auto_reconnect(self: 'TelegramClient'):
-        return await updates._handle_auto_reconnect(**locals())
+        pass
 
+    @forward_call(auth._update_session_state)
     async def _update_session_state(self, user, save=True):
-        return await auth._update_session_state(**locals())
+        pass
 
     # endregion Private
-
-# TODO re-patch everything to remove the intermediate calls
