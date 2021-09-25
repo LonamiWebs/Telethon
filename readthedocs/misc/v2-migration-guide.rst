@@ -206,6 +206,27 @@ The ``telethon.errors`` module continues to provide custom errors used by the li
 // TODO should RpcError subclass ValueError? technically the values used in the request somehow were wrong…
 // TODO provide a way to see which errors are known in the docs or at tl.telethon.dev
 
+
+The default markdown parse mode now conforms to the commonmark specification
+----------------------------------------------------------------------------
+
+The old markdown parser (which was used as the default ``client.parse_mode``) used to emulate
+Telegram Desktop's behaviour. Now `<markdown-it-py https://github.com/executablebooks/markdown-it-py>`__
+is used instead, which fixes certain parsing bugs but also means the formatting will be different.
+
+Most notably, ``__`` will now make text bold. If you want the old behaviour, use a single
+underscore instead (such as ``_``). You can also use a single asterisk (``*``) for italics.
+Because now there's proper parsing, you also gain:
+
+* Headings (``# text``) will now be underlined.
+* Certain HTML tags will now also be recognized in markdown (including ``<u>`` for underlining text).
+* Line breaks behave properly now. For a single-line break, end your line with ``\\``.
+* Inline links should no longer behave in a strange manner.
+* Pre-blocks can now have a language. Official clients don't syntax highlight code yet, though.
+
+// TODO provide a way to get back the old behaviour?
+
+
 The "iter" variant of the client methods have been removed
 ----------------------------------------------------------
 

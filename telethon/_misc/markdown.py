@@ -5,177 +5,152 @@ since they seem to count as two characters and it's a bit strange.
 """
 import re
 import warnings
+import markdown_it
 
 from .helpers import add_surrogate, del_surrogate, within_surrogate, strip_text
 from .. import _tl
 from .._misc import tlobject
 
-DEFAULT_DELIMITERS = {
-    '**': _tl.MessageEntityBold,
-    '__': _tl.MessageEntityItalic,
-    '~~': _tl.MessageEntityStrike,
-    '`': _tl.MessageEntityCode,
-    '```': _tl.MessageEntityPre
+
+MARKDOWN = markdown_it.MarkdownIt().enable('strikethrough')
+DELIMITERS = {
+    _tl.MessageEntityBlockquote: ('> ', ''),
+    _tl.MessageEntityBold: ('**', '**'),
+    _tl.MessageEntityCode: ('`', '`'),
+    _tl.MessageEntityItalic: ('_', '_'),
+    _tl.MessageEntityStrike: ('~~', '~~'),
+    _tl.MessageEntityUnderline: ('# ', ''),
 }
 
-DEFAULT_URL_RE = re.compile(r'\[([\S\s]+?)\]\((.+?)\)')
-DEFAULT_URL_FORMAT = '[{0}]({1})'
+# Not trying to be complete; just enough to have an alternative (mostly for inline underline).
+# The fact headings are treated as underline is an implementation detail.
+TAG_PATTERN = re.compile(r'<\s*(/?)\s*(\w+)')
+HTML_TO_TYPE = {
+    'i': ('em_close', 'em_open'),
+    'em': ('em_close', 'em_open'),
+    'b': ('strong_close', 'strong_open'),
+    'strong': ('strong_close', 'strong_open'),
+    's': ('s_close', 's_open'),
+    'del': ('s_close', 's_open'),
+    'u': ('heading_open', 'heading_close'),
+    'mark': ('heading_open', 'heading_close'),
+}
 
 
-def overlap(a, b, x, y):
-    return max(a, x) < min(b, y)
+def expand_inline_and_html(tokens):
+    for token in tokens:
+        if token.type == 'inline':
+            yield from expand_inline_and_html(token.children)
+        elif token.type == 'html_inline':
+            match = TAG_PATTERN.match(token.content)
+            if match:
+                close, tag = match.groups()
+                tys = HTML_TO_TYPE.get(tag.lower())
+                if tys:
+                    token.type = tys[bool(close)]
+                    token.nesting = -1 if close else 1
+                    yield token
+        else:
+            yield token
 
 
-def parse(message, delimiters=None, url_re=None):
+def parse(message):
     """
     Parses the given markdown message and returns its stripped representation
     plus a list of the _tl.MessageEntity's that were found.
-
-    :param message: the message with markdown-like syntax to be parsed.
-    :param delimiters: the delimiters to be used, {delimiter: type}.
-    :param url_re: the URL bytes regex to be used. Must have two groups.
-    :return: a tuple consisting of (clean message, [message entities]).
     """
     if not message:
         return message, []
 
-    if url_re is None:
-        url_re = DEFAULT_URL_RE
-    elif isinstance(url_re, str):
-        url_re = re.compile(url_re)
+    def push(ty, **extra):
+        nonlocal message, entities, token
+        if token.nesting > 0:
+            entities.append(ty(offset=len(message), length=0, **extra))
+        else:
+            for entity in reversed(entities):
+                if isinstance(entity, ty):
+                    entity.length = len(message) - entity.offset
+                    break
 
-    if not delimiters:
-        if delimiters is not None:
-            return message, []
-        delimiters = DEFAULT_DELIMITERS
+    parsed = MARKDOWN.parse(add_surrogate(message.strip()))
+    message = ''
+    entities = []
+    last_map = [0, 0]
+    for token in expand_inline_and_html(parsed):
+        if token.map is not None and token.map != last_map:
+            # paragraphs, quotes fences have a line mapping. Use it to determine how many newlines to insert.
+            # But don't inssert any (leading) new lines if we're yet to reach the first textual content, or
+            # if the mappings are the same (e.g. a quote then opens a paragraph but the mapping is equal).
+            if message:
+                message += '\n' + '\n' * (token.map[0] - last_map[-1])
+            last_map = token.map
 
-    # Build a regex to efficiently test all delimiters at once.
-    # Note that the largest delimiter should go first, we don't
-    # want ``` to be interpreted as a single back-tick in a code block.
-    delim_re = re.compile('|'.join('({})'.format(re.escape(k))
-                                   for k in sorted(delimiters, key=len, reverse=True)))
+        if token.type in ('blockquote_close', 'blockquote_open'):
+            push(_tl.MessageEntityBlockquote)
+        elif token.type == 'code_block':
+            entities.append(_tl.MessageEntityPre(offset=len(message), length=len(token.content), language=''))
+            message += token.content
+        elif token.type == 'code_inline':
+            entities.append(_tl.MessageEntityCode(offset=len(message), length=len(token.content)))
+            message += token.content
+        elif token.type in ('em_close', 'em_open'):
+            push(_tl.MessageEntityItalic)
+        elif token.type == 'fence':
+            entities.append(_tl.MessageEntityPre(offset=len(message), length=len(token.content), language=token.info))
+            message += token.content[:-1]  # remove a single trailing newline
+        elif token.type == 'hardbreak':
+            message += '\n'
+        elif token.type in ('heading_close', 'heading_open'):
+            push(_tl.MessageEntityUnderline)
+        elif token.type == 'hr':
+            message += '\u2015\n\n'
+        elif token.type in ('link_close', 'link_open'):
+            if token.markup != 'autolink':  # telegram already picks up on these automatically
+                push(_tl.MessageEntityTextUrl, url=token.attrs.get('href'))
+        elif token.type in ('s_close', 's_open'):
+            push(_tl.MessageEntityStrike)
+        elif token.type == 'softbreak':
+            message += ' '
+        elif token.type in ('strong_close', 'strong_open'):
+            push(_tl.MessageEntityBold)
+        elif token.type == 'text':
+            message += token.content
 
-    # Cannot use a for loop because we need to skip some indices
-    i = 0
-    result = []
-
-    # Work on byte level with the utf-16le encoding to get the offsets right.
-    # The offset will just be half the index we're at.
-    message = add_surrogate(message)
-    while i < len(message):
-        m = delim_re.match(message, pos=i)
-
-        # Did we find some delimiter here at `i`?
-        if m:
-            delim = next(filter(None, m.groups()))
-
-            # +1 to avoid matching right after (e.g. "****")
-            end = message.find(delim, i + len(delim) + 1)
-
-            # Did we find the earliest closing tag?
-            if end != -1:
-
-                # Remove the delimiter from the string
-                message = ''.join((
-                        message[:i],
-                        message[i + len(delim):end],
-                        message[end + len(delim):]
-                ))
-
-                # Check other affected entities
-                for ent in result:
-                    # If the end is after our start, it is affected
-                    if ent.offset + ent.length > i:
-                        # If the old start is also before ours, it is fully enclosed
-                        if ent.offset <= i:
-                            ent.length -= len(delim) * 2
-                        else:
-                            ent.length -= len(delim)
-
-                # Append the found entity
-                ent = delimiters[delim]
-                if ent == _tl.MessageEntityPre:
-                    result.append(ent(i, end - i - len(delim), ''))  # has 'lang'
-                else:
-                    result.append(ent(i, end - i - len(delim)))
-
-                # No nested entities inside code blocks
-                if ent in (_tl.MessageEntityCode, _tl.MessageEntityPre):
-                    i = end - len(delim)
-
-                continue
-
-        elif url_re:
-            m = url_re.match(message, pos=i)
-            if m:
-                # Replace the whole match with only the inline URL text.
-                message = ''.join((
-                    message[:m.start()],
-                    m.group(1),
-                    message[m.end():]
-                ))
-
-                delim_size = m.end() - m.start() - len(m.group())
-                for ent in result:
-                    # If the end is after our start, it is affected
-                    if ent.offset + ent.length > m.start():
-                        ent.length -= delim_size
-
-                result.append(_tl.MessageEntityTextUrl(
-                    offset=m.start(), length=len(m.group(1)),
-                    url=del_surrogate(m.group(2))
-                ))
-                i += len(m.group(1))
-                continue
-
-        i += 1
-
-    message = strip_text(message, result)
-    return del_surrogate(message), result
+    return del_surrogate(message), entities
 
 
-def unparse(text, entities, delimiters=None, url_fmt=None):
+def unparse(text, entities):
     """
     Performs the reverse operation to .parse(), effectively returning
     markdown-like syntax given a normal text and its _tl.MessageEntity's.
 
-    :param text: the text to be reconverted into markdown.
-    :param entities: the _tl.MessageEntity's applied to the text.
-    :return: a markdown-like text representing the combination of both inputs.
+    Because there are many possible ways for markdown to produce a certain
+    output, this function cannot invert .parse() perfectly.
     """
     if not text or not entities:
         return text
-
-    if not delimiters:
-        if delimiters is not None:
-            return text
-        delimiters = DEFAULT_DELIMITERS
-
-    if url_fmt is not None:
-        warnings.warn('url_fmt is deprecated')  # since it complicates everything *a lot*
 
     if isinstance(entities, tlobject.TLObject):
         entities = (entities,)
 
     text = add_surrogate(text)
-    delimiters = {v: k for k, v in delimiters.items()}
     insert_at = []
     for entity in entities:
         s = entity.offset
         e = entity.offset + entity.length
-        delimiter = delimiters.get(type(entity), None)
+        delimiter = DELIMITERS.get(type(entity), None)
         if delimiter:
-            insert_at.append((s, delimiter))
-            insert_at.append((e, delimiter))
-        else:
-            url = None
-            if isinstance(entity, _tl.MessageEntityTextUrl):
-                url = entity.url
-            elif isinstance(entity, _tl.MessageEntityMentionName):
-                url = 'tg://user?id={}'.format(entity.user_id)
-            if url:
-                insert_at.append((s, '['))
-                insert_at.append((e, ']({})'.format(url)))
+            insert_at.append((s, delimiter[0]))
+            insert_at.append((e, delimiter[1]))
+        elif isinstance(entity, _tl.MessageEntityPre):
+            insert_at.append((s, f'```{entity.language}\n'))
+            insert_at.append((e, '```\n'))
+        elif isinstance(entity, _tl.MessageEntityTextUrl):
+            insert_at.append((s, '['))
+            insert_at.append((e, f']({entity.url})'))
+        elif isinstance(entity, _tl.MessageEntityMentionName):
+            insert_at.append((s, '['))
+            insert_at.append((e, f'](tg://user?id={entity.user_id})'))
 
     insert_at.sort(key=lambda t: t[0])
     while insert_at:
