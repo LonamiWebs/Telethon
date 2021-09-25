@@ -386,13 +386,16 @@ Note that you do not need to ``await`` the call to ``.start()`` if you are going
 in a context-manager (but it's okay if you put the ``await``).
 
 
-download_file has been removed from the client
-----------------------------------------------
+Several methods have been removed from the client
+-------------------------------------------------
 
-Instead, ``client.download_media`` should be used.
-
+``client.download_file`` has been removed. Instead, ``client.download_media`` should be used.
 The now-removed ``client.download_file`` method was a lower level implementation which should
 have not been exposed at all.
+
+``client.build_reply_markup`` has been removed. Manually calling this method was purely an
+optimization (the buttons won't need to be transformed into a reply markup every time they're
+used). This means you can just remove any calls to this method and things will continue to work.
 
 
 Support for bot-API style file_id has been removed

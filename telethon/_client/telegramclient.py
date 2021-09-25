@@ -5,7 +5,7 @@ import typing
 import logging
 
 from . import (
-    account, auth, bots, buttons, chats, dialogs, downloads, messageparse, messages,
+    account, auth, bots, chats, dialogs, downloads, messageparse, messages,
     telegrambaseclient, updates, uploads, users
 )
 from .. import helpers, version, _tl
@@ -683,46 +683,6 @@ class TelegramClient:
         """
 
     # endregion Bots
-
-    # region Buttons
-
-    @staticmethod
-    def build_reply_markup(
-            buttons: 'typing.Optional[hints.MarkupLike]',
-            inline_only: bool = False) -> 'typing.Optional[_tl.TypeReplyMarkup]':
-        """
-        Builds a :tl:`ReplyInlineMarkup` or :tl:`ReplyKeyboardMarkup` for
-        the given buttons.
-
-        Does nothing if either no buttons are provided or the provided
-        argument is already a reply markup.
-
-        You should consider using this method if you are going to reuse
-        the markup very often. Otherwise, it is not necessary.
-
-        This method is **not** asynchronous (don't use ``await`` on it).
-
-        Arguments
-            buttons (`hints.MarkupLike`):
-                The button, list of buttons, array of buttons or markup
-                to convert into a markup.
-
-            inline_only (`bool`, optional):
-                Whether the buttons **must** be inline buttons only or not.
-
-        Example
-            .. code-block:: python
-
-                from telethon import Button
-
-                markup = client.build_reply_markup(Button.inline('hi'))
-                # later
-                await client.send_message(chat, 'click me', buttons=markup)
-        """
-        from . import buttons as b
-        return b.build_reply_markup(buttons=buttons, inline_only=inline_only)
-
-    # endregion Buttons
 
     # region Chats
 

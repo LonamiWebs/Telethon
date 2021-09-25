@@ -2,6 +2,7 @@ import hashlib
 
 from ... import _tl
 from ..._misc import utils
+from ...types import _custom
 
 _TYPE_TO_MIMES = {
     'gif': ['image/gif'],  # 'video/mp4' too, but that's used for video
@@ -391,7 +392,7 @@ class InlineBuilder:
                     'text geo contact game'.split(), args) if x[1]) or 'none')
             )
 
-        markup = self._client.build_reply_markup(buttons, inline_only=True)
+        markup = _custom.button.build_reply_markup(buttons, inline_only=True)
         if text is not None:
             text, msg_entities = await self._client._parse_message_text(
                 text, parse_mode

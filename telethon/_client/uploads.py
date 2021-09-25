@@ -182,7 +182,7 @@ async def send_file(
     if not media:
         raise TypeError('Cannot use {!r} as file'.format(file))
 
-    markup = self.build_reply_markup(buttons)
+    markup = _custom.button.build_reply_markup(buttons)
     request = _tl.fn.messages.SendMedia(
         entity, media, reply_to_msg_id=reply_to, message=caption,
         entities=msg_entities, reply_markup=markup, silent=silent,

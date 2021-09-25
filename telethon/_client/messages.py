@@ -430,7 +430,7 @@ async def send_message(
         if buttons is None:
             markup = message.reply_markup
         else:
-            markup = self.build_reply_markup(buttons)
+            markup = _custom.button.build_reply_markup(buttons)
 
         if silent is None:
             silent = message.silent
@@ -480,7 +480,7 @@ async def send_message(
             clear_draft=clear_draft,
             silent=silent,
             background=background,
-            reply_markup=self.build_reply_markup(buttons),
+            reply_markup=_custom.button.build_reply_markup(buttons),
             schedule_date=schedule
         )
 
@@ -593,7 +593,7 @@ async def edit_message(
             no_webpage=not link_preview,
             entities=formatting_entities,
             media=media,
-            reply_markup=self.build_reply_markup(buttons)
+            reply_markup=_custom.button.build_reply_markup(buttons)
         )
         # Invoke `messages.editInlineBotMessage` from the right datacenter.
         # Otherwise, Telegram will error with `MESSAGE_ID_INVALID` and do nothing.
@@ -615,7 +615,7 @@ async def edit_message(
         no_webpage=not link_preview,
         entities=formatting_entities,
         media=media,
-        reply_markup=self.build_reply_markup(buttons),
+        reply_markup=_custom.button.build_reply_markup(buttons),
         schedule_date=schedule
     )
     msg = self._get_response_message(request, await self(request), entity)
