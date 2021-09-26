@@ -26,7 +26,8 @@ class Forward(ChatGetter, SenderGetter):
         # Copy all the fields, not reference! It would cause memory cycles:
         #   self.original_fwd.original_fwd.original_fwd.original_fwd
         # ...would be valid if we referenced.
-        self.__dict__.update(original.__dict__)
+        for slot in original.__slots__:
+            setattr(self, slot, getattr(original, slot))
         self.original_fwd = original
 
         sender_id = sender = input_sender = peer = chat = input_chat = None
