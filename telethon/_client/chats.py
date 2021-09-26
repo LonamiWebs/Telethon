@@ -374,7 +374,7 @@ class _ProfilePhotoIter(requestiter.RequestIter):
 def get_participants(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        limit: float = None,
+        limit: float = (),
         *,
         search: str = '',
         filter: '_tl.TypeChannelParticipantsFilter' = None) -> _ParticipantsIter:
@@ -390,7 +390,7 @@ def get_participants(
 def get_admin_log(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        limit: float = None,
+        limit: float = (),
         *,
         max_id: int = 0,
         min_id: int = 0,
@@ -440,7 +440,7 @@ def get_admin_log(
 def get_profile_photos(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        limit: int = None,
+        limit: int = (),
         *,
         offset: int = 0,
         max_id: int = 0) -> _ProfilePhotoIter:

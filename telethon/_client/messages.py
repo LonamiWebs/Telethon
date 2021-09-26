@@ -329,7 +329,7 @@ async def _get_peer(self: 'TelegramClient', input_peer: 'hints.EntityLike'):
 def get_messages(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        limit: float = None,
+        limit: float = (),
         *,
         offset_date: 'hints.DateLike' = None,
         offset_id: int = 0,

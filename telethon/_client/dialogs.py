@@ -138,7 +138,7 @@ class _DraftsIter(requestiter.RequestIter):
 
 def get_dialogs(
         self: 'TelegramClient',
-        limit: float = None,
+        limit: float = (),
         *,
         offset_date: 'hints.DateLike' = None,
         offset_id: int = 0,

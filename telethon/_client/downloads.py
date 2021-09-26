@@ -407,7 +407,7 @@ def iter_download(
         *,
         offset: int = 0,
         stride: int = None,
-        limit: int = None,
+        limit: int = (),
         chunk_size: int = None,
         request_size: int = MAX_CHUNK_SIZE,
         file_size: int = None,
