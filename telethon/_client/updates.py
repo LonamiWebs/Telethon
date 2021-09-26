@@ -143,22 +143,20 @@ def _handle_update(self: 'TelegramClient', update):
         entities = {utils.get_peer_id(x): x for x in
                     itertools.chain(update.users, update.chats)}
         for u in update.updates:
-            _process_update(self, u, update.updates, entities=entities)
+            _process_update(self, u, entities, update.updates)
     elif isinstance(update, _tl.UpdateShort):
-        _process_update(self, update.update, None)
+        _process_update(self, update.update, {}, None)
     else:
-        _process_update(self, update, None)
+        _process_update(self, update, {}, None)
 
     self._state_cache.update(update)
 
-def _process_update(self: 'TelegramClient', update, others, entities=None):
-    update._entities = entities or {}
-
+def _process_update(self: 'TelegramClient', update, entities, others):
     # This part is somewhat hot so we don't bother patching
     # update with channel ID/its state. Instead we just pass
     # arguments which is faster.
     channel_id = self._state_cache.get_channel_id(update)
-    args = (update, others, channel_id, self._state_cache[channel_id])
+    args = (update, entities, others, channel_id, self._state_cache[channel_id])
     if self._dispatching_updates_queue is None:
         task = self.loop.create_task(_dispatch_update(self, *args))
         self._updates_queue.add(task)
@@ -231,10 +229,11 @@ async def _dispatch_queue_updates(self: 'TelegramClient'):
 
     self._dispatching_updates_queue.clear()
 
-async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, pts_date):
-    entities = self._entity_cache.add(list((update._entities or {}).values()))
+async def _dispatch_update(self: 'TelegramClient', update, entities, others, channel_id, pts_date):
     if entities:
-        await self.session.insert_entities(entities)
+        rows = self._entity_cache.add(list(entities.values()))
+        if rows:
+            await self.session.insert_entities(rows)
 
     if not self._entity_cache.ensure_cached(update):
         # We could add a lock to not fetch the same pts twice if we are
@@ -244,7 +243,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
             # If the update doesn't have pts, fetching won't do anything.
             # For example, UpdateUserStatus or UpdateChatUserTyping.
             try:
-                await _get_difference(self, update, channel_id, pts_date)
+                await _get_difference(self, update, entities, channel_id, pts_date)
             except OSError:
                 pass  # We were disconnected, that's okay
             except RpcError:
@@ -258,7 +257,7 @@ async def _dispatch_update(self: 'TelegramClient', update, others, channel_id, p
                 # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
                 pass
 
-    built = EventBuilderDict(self, update, others)
+    built = EventBuilderDict(self, update, entities, others)
 
     for builder, callback in self._event_builders:
         event = built[type(builder)]
@@ -324,7 +323,7 @@ async def _dispatch_event(self: 'TelegramClient', event):
                 name = getattr(callback, '__name__', repr(callback))
                 self._log[__name__].exception('Unhandled exception on %s', name)
 
-async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
+async def _get_difference(self: 'TelegramClient', update, entities, channel_id, pts_date):
     """
     Get the difference for this `channel_id` if any, then load entities.
 
@@ -380,7 +379,7 @@ async def _get_difference(self: 'TelegramClient', update, channel_id, pts_date):
                             _tl.updates.DifferenceSlice,
                             _tl.updates.ChannelDifference,
                             _tl.updates.ChannelDifferenceTooLong)):
-        update._entities.update({
+        entities.update({
             utils.get_peer_id(x): x for x in
             itertools.chain(result.users, result.chats)
         })
@@ -433,9 +432,10 @@ class EventBuilderDict:
     """
     Helper "dictionary" to return events from types and cache them.
     """
-    def __init__(self, client: 'TelegramClient', update, others):
+    def __init__(self, client: 'TelegramClient', update, entities, others):
         self.client = client
         self.update = update
+        self.entities = entities
         self.others = others
 
     def __getitem__(self, builder):
@@ -447,9 +447,7 @@ class EventBuilderDict:
 
             if isinstance(event, EventCommon):
                 event.original_update = self.update
-                event._entities = self.update._entities
+                event._entities = self.entities or {}
                 event._set_client(self.client)
-            elif event:
-                event._client = self.client
 
             return event

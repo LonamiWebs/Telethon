@@ -189,6 +189,15 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     builder.writeln()
     builder.writeln('class {}({}):', tlobject.class_name, kind)
 
+    # Define slots to help reduce the size of the objects a little bit.
+    # It's also good for knowing what fields an object has.
+    builder.write('__slots__ = (')
+    sep = ''
+    for arg in tlobject.real_args:
+        builder.write('{}{!r},', sep, arg.name)
+        sep = ' '
+    builder.writeln(')')
+
     # Class-level variable to store its Telegram's constructor ID
     builder.writeln('CONSTRUCTOR_ID = {:#x}', tlobject.id)
     builder.writeln('SUBCLASS_OF_ID = {:#x}',

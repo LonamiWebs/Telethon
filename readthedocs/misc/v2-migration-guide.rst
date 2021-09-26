@@ -286,8 +286,8 @@ results into a list:
 // TODO does the download really need to be special? get download is kind of weird though
 
 
-Raw API methods have been renamed and are now considered private
-----------------------------------------------------------------
+Raw API has been renamed and is now considered private
+------------------------------------------------------
 
 The subpackage holding the raw API methods has been renamed from ``tl`` to ``_tl`` in order to
 signal that these are prone to change across minor version bumps (the ``y`` in version ``x.y.z``).
@@ -324,7 +324,14 @@ This serves multiple goals:
   identify which parts are making use of it.
 * The name is shorter, but remains recognizable.
 
+Because *a lot* of these objects are created, they now define ``__slots__``. This means you can
+no longer monkey-patch them to add new attributes at runtime. You have to create a subclass if you
+want to define new attributes.
+
+This also means that the updates from ``events.Raw`` **no longer have** ``update._entities``.
+
 // TODO this definitely generated files mapping from the original name to this new one...
+// TODO what's the alternative to update._entities? and update._client??
 
 
 Many subpackages and modules are now private

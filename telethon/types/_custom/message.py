@@ -11,13 +11,10 @@ from ... import _tl
 
 def _fwd(field, doc):
     def fget(self):
-        try:
-            return self._message.__dict__[field]
-        except KeyError:
-            return None
+        return getattr(self._message, field, None)
 
     def fset(self, value):
-        self._message.__dict__[field] = value
+        setattr(self._message, field, value)
 
     return property(fget, fset, None, doc)
 

@@ -13,7 +13,7 @@ def _datetime_to_timestamp(dt):
     # If no timezone is specified, it is assumed to be in utc zone
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    # We use .total_seconds() method instead of simply dt.timestamp(), 
+    # We use .total_seconds() method instead of simply dt.timestamp(),
     # because on Windows the latter raises OSError on datetimes ~< datetime(1970,1,1)
     secs = int((dt - _EPOCH).total_seconds())
     # Make sure it's a valid signed 32 bit integer, as used by Telegram.
@@ -32,6 +32,7 @@ def _json_default(value):
 
 
 class TLObject:
+    __slots__ = ()
     CONSTRUCTOR_ID = None
     SUBCLASS_OF_ID = None
 
