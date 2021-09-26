@@ -330,6 +330,17 @@ want to define new attributes.
 
 This also means that the updates from ``events.Raw`` **no longer have** ``update._entities``.
 
+``tlobject.to_dict()`` has changed and is now generated dynamically based on the ``__slots__`.
+This may incur a small performance hit (but you shouldn't really be using ``.to_dict()`` when
+you can just use attribute access and ``getattr``). In general, this should handle ill-defined
+objects more gracefully (for instance, those where you're using a ``tuple`` and not a ``list``
+or using a list somewhere it shouldn't be), and have no other observable effects. As an extra
+benefit, this slightly cuts down on the amount of bloat.
+
+In ``tlobject.to_dict()``, the special ``_`` key is now also contains the module (so you can
+actually distinguish between equally-named classes). If you want the old behaviour, use
+``tlobject.__class__.__name__` instead (and add ``Request`` for functions).
+
 // TODO this definitely generated files mapping from the original name to this new one...
 // TODO what's the alternative to update._entities? and update._client??
 

@@ -171,7 +171,22 @@ class TLObject:
         return TLObject.pretty_format(self, indent=0)
 
     def to_dict(self):
-        raise NotImplementedError
+        res = {}
+        pre = ('', 'fn.')[isinstance(self, TLRequest)]
+        mod = self.__class__.__module__[self.__class__.__module__.rfind('.') + 1:]
+        if mod in ('_tl', 'fn'):
+            res['_'] = f'{pre}{self.__class__.__name__}'
+        else:
+            res['_'] = f'{pre}{mod}.{self.__class__.__name__}'
+
+        for slot in self.__slots__:
+            attr = getattr(self, slot)
+            if isinstance(attr, list):
+                res[slot] = [val.to_dict() if hasattr(val, 'to_dict') else val for val in attr]
+            else:
+                res[slot] = attr.to_dict() if hasattr(attr, 'to_dict') else attr
+
+        return res
 
     def to_json(self, fp=None, default=_json_default, **kwargs):
         """

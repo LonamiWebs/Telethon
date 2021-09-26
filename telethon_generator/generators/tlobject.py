@@ -178,7 +178,6 @@ def _write_source_code(tlobject, kind, builder, type_constructors):
     """
     _write_class_init(tlobject, kind, type_constructors, builder)
     _write_resolve(tlobject, builder)
-    _write_to_dict(tlobject, builder)
     _write_to_bytes(tlobject, builder)
     _write_from_reader(tlobject, builder)
     _write_read_result(tlobject, builder)
@@ -299,42 +298,6 @@ def _write_resolve(tlobject, builder):
             if arg.is_flag:
                 builder.end_block()
         builder.end_block()
-
-
-def _write_to_dict(tlobject, builder):
-    builder.writeln('def to_dict(self):')
-    builder.writeln('return {')
-    builder.current_indent += 1
-
-    builder.write("'_': '{}'", tlobject.class_name)
-    for arg in tlobject.real_args:
-        builder.writeln(',')
-        builder.write("'{}': ", arg.name)
-        if arg.type in BASE_TYPES:
-            if arg.is_vector:
-                builder.write('[] if self.{0} is None else self.{0}[:]',
-                              arg.name)
-            else:
-                builder.write('self.{}', arg.name)
-        else:
-            if arg.is_vector:
-                builder.write(
-                    '[] if self.{0} is None else [x.to_dict() '
-                    'if isinstance(x, TLObject) else x for x in self.{0}]',
-                    arg.name
-                )
-            else:
-                builder.write(
-                    'self.{0}.to_dict() '
-                    'if isinstance(self.{0}, TLObject) else self.{0}',
-                    arg.name
-                )
-
-    builder.writeln()
-    builder.current_indent -= 1
-    builder.writeln("}")
-
-    builder.end_block()
 
 
 def _write_to_bytes(tlobject, builder):
