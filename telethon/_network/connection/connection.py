@@ -14,7 +14,7 @@ except ImportError:
     python_socks = None
 
 from ...errors._custom import InvalidChecksumError
-from ... import helpers
+from ..._misc import helpers
 
 
 class Connection(abc.ABC):

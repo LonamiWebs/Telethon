@@ -6,7 +6,8 @@ import os
 import time
 from hashlib import sha1
 
-from .. import helpers, _tl
+from .. import _tl
+from .._misc import helpers
 from .._crypto import AES, AuthKey, Factorization, rsa
 from ..errors._custom import SecurityError
 from .._misc.binaryreader import BinaryReader

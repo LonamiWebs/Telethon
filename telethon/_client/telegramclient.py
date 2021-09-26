@@ -8,7 +8,7 @@ from . import (
     account, auth, bots, chats, dialogs, downloads, messageparse, messages,
     telegrambaseclient, updates, uploads, users
 )
-from .. import helpers, version, _tl
+from .. import version, _tl
 from ..types import _custom
 from .._network import ConnectionTcpFull
 from .._events.common import EventBuilder, EventCommon

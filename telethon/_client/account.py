@@ -3,7 +3,8 @@ import inspect
 import typing
 
 from .users import _NOT_A_REQUEST
-from .. import helpers, utils, _tl
+from .._misc import helpers, utils
+from .. import _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient

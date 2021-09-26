@@ -2,8 +2,9 @@ import itertools
 import re
 import typing
 
-from .. import helpers, utils, _tl
+from .._misc import helpers, utils
 from ..types import _custom
+from .. import _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient

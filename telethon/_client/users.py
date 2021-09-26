@@ -6,9 +6,9 @@ import typing
 
 from ..errors._custom import MultiError
 from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError, UnauthorizedError
-from .. import errors, hints, _tl
-from .._misc import helpers, utils
+from .._misc import helpers, utils, hints
 from .._sessions.types import Entity
+from .. import errors, _tl
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 

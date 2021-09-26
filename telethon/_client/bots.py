@@ -1,7 +1,8 @@
 import typing
 
-from .. import hints, _tl
 from ..types import _custom
+from .._misc import hints
+from .. import _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient

@@ -1,6 +1,7 @@
 import abc
 
-from ... import errors, utils, _tl
+from ..._misc import utils
+from ... import errors, _tl
 
 
 class ChatGetter(abc.ABC):

@@ -9,9 +9,9 @@ from io import BytesIO
 
 from .._crypto import AES
 
-from .._misc import utils, helpers
-from .. import hints, _tl
+from .._misc import utils, helpers, hints
 from ..types import _custom
+from .. import _tl
 
 try:
     import PIL

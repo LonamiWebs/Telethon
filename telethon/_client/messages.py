@@ -3,9 +3,9 @@ import itertools
 import typing
 import warnings
 
-from .. import errors, hints, _tl
-from .._misc import helpers, utils, requestiter
+from .._misc import helpers, utils, requestiter, hints
 from ..types import _custom
+from .. import errors, _tl
 
 _MAX_CHUNK_SIZE = 100
 

@@ -4,8 +4,8 @@ import itertools
 import string
 import typing
 
-from .. import hints, errors, _tl
-from .._misc import helpers, utils, requestiter, tlobject, enums
+from .. import errors, _tl
+from .._misc import helpers, utils, requestiter, tlobject, enums, hints
 from ..types import _custom
 
 if typing.TYPE_CHECKING:

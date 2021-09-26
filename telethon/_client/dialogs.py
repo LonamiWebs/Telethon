@@ -3,8 +3,8 @@ import inspect
 import itertools
 import typing
 
-from .. import  hints, errors, _tl
-from .._misc import helpers, utils, requestiter
+from .. import errors, _tl
+from .._misc import helpers, utils, requestiter, hints
 from ..types import _custom
 
 _MAX_CHUNK_SIZE = 100

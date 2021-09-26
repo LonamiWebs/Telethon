@@ -7,7 +7,8 @@ from html import escape
 from html.parser import HTMLParser
 from typing import Iterable, Optional, Tuple, List
 
-from .. import helpers, _tl
+from .._misc import helpers
+from .. import _tl
 
 
 # Helpers from markdown.py

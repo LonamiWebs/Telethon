@@ -8,7 +8,6 @@ from ..errors._rpcbase import _mk_error_type
 from .mtprotoplainsender import MTProtoPlainSender
 from .requeststate import RequestState
 from .mtprotostate import MTProtoState
-from .. import helpers, utils, _tl
 from ..errors import (
     BadMessageError, InvalidBufferError, SecurityError,
     TypeNotFoundError, rpc_message_to_error
@@ -17,7 +16,8 @@ from .._misc.binaryreader import BinaryReader
 from .._misc.tlobject import TLRequest
 from ..types._core import RpcResult, MessageContainer, GzipPacked
 from .._crypto import AuthKey
-from .._misc.helpers import retry_range
+from .._misc import helpers, utils
+from .. import _tl
 
 
 class MTProtoSender:
@@ -214,7 +214,7 @@ class MTProtoSender:
 
         connected = False
 
-        for attempt in retry_range(self._retries):
+        for attempt in helpers.retry_range(self._retries):
             if not connected:
                 connected = await self._try_connect(attempt)
                 if not connected:
@@ -351,7 +351,7 @@ class MTProtoSender:
         attempt = 0
         ok = True
         # We're already "retrying" to connect, so we don't want to force retries
-        for attempt in retry_range(retries, force_retry=False):
+        for attempt in helpers.retry_range(retries, force_retry=False):
             try:
                 await self._connect()
             except (IOError, asyncio.TimeoutError) as e:

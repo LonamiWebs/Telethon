@@ -341,6 +341,9 @@ In ``tlobject.to_dict()``, the special ``_`` key is now also contains the module
 actually distinguish between equally-named classes). If you want the old behaviour, use
 ``tlobject.__class__.__name__` instead (and add ``Request`` for functions).
 
+Because the string representation of an object used ``tlobject.to_dict()``, it is now also
+affected by these changes.
+
 // TODO this definitely generated files mapping from the original name to this new one...
 // TODO what's the alternative to update._entities? and update._client??
 

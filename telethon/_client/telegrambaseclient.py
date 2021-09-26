@@ -8,9 +8,9 @@ import time
 import typing
 import ipaddress
 
-from .. import version, helpers, __name__ as __base_name__, _tl
+from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
-from .._misc import markdown, entitycache, statecache, enums
+from .._misc import markdown, entitycache, statecache, enums, helpers
 from .._network import MTProtoSender, Connection, ConnectionTcpFull, connection as conns
 from .._sessions import Session, SQLiteSession, MemorySession
 from .._sessions.types import DataCenter, SessionState

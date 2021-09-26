@@ -8,11 +8,12 @@ import traceback
 import typing
 import logging
 
-from .. import utils, _tl
 from ..errors._rpcbase import RpcError
 from .._events.common import EventBuilder, EventCommon
 from .._events.raw import Raw
 from .._events.base import StopPropagation, _get_handlers
+from .._misc import utils
+from .. import _tl
 
 if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
