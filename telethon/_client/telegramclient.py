@@ -731,10 +731,7 @@ class TelegramClient:
                 * ``'contact'``
 
         Yields
-            The :tl:`User` objects returned by :tl:`GetParticipants`
-            with an additional ``.participant`` attribute which is the
-            matched :tl:`ChannelParticipant` type for channels/megagroups
-            or :tl:`ChatParticipants` for normal chats.
+            The :tl:`User` objects returned by :tl:`GetParticipants`.
 
         Example
             .. code-block:: python

@@ -167,7 +167,6 @@ class _ParticipantsIter(requestiter.RequestIter):
                     continue
 
                 user = users[user_id]
-                user.participant = participant
                 self.buffer.append(user)
 
             return True
@@ -176,7 +175,6 @@ class _ParticipantsIter(requestiter.RequestIter):
             if self.limit != 0:
                 user = await self.client.get_entity(entity)
                 if self.filter_entity(user):
-                    user.participant = None
                     self.buffer.append(user)
 
             return True
@@ -213,7 +211,6 @@ class _ParticipantsIter(requestiter.RequestIter):
                 continue
             self.seen.add(user_id)
             user = users[user_id]
-            user.participant = participant
             self.buffer.append(user)
 
 
