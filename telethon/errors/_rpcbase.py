@@ -17,6 +17,10 @@ _NESTS_QUERY = (
 
 class RpcError(Exception):
     def __init__(self, code, message, request=None):
+        # Special-case '2fa' to exclude the 2 from values
+        self.values = [int(x) for x in re.findall(r'-?\d+', re.sub(r'^2fa', '', message, flags=re.IGNORECASE))]
+        self.value = self.values[0] if self.values else None
+
         doc = self.__doc__
         if doc is None:
             doc = (
@@ -25,14 +29,13 @@ class RpcError(Exception):
             )
         elif not doc:
             doc = '(no description available)'
+        elif self.value:
+            doc = re.sub(r'{(\w+)}', str(self.value), doc)
 
         super().__init__(f'{message}, code={code}{self._fmt_request(request)}: {doc}')
         self.code = code
         self.message = message
         self.request = request
-        # Special-case '2fa' to exclude the 2 from values
-        self.values = [int(x) for x in re.findall(r'-?\d+', re.sub(r'^2fa', '', self.message, flags=re.IGNORECASE))]
-        self.value = self.values[0] if self.values else None
 
     @staticmethod
     def _fmt_request(request):
