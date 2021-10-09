@@ -1,12 +1,20 @@
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
+import mimetypes
 from .chatgetter import ChatGetter
 from .sendergetter import SenderGetter
 from .messagebutton import MessageButton
 from .forward import Forward
 from .file import File
+from .inputfile import InputFile
+from .inputmessage import InputMessage
+from .button import build_reply_markup
 from ..._misc import utils, tlobject
-from ... import _tl
+from ... import _tl, _misc
+
+
+if TYPE_CHECKING:
+    from ..._misc import hints
 
 
 def _fwd(field, doc):
@@ -23,13 +31,19 @@ def _fwd(field, doc):
 # Maybe parsing the init function alone if that's possible.
 class Message(ChatGetter, SenderGetter):
     """
-    This custom class aggregates both :tl:`Message` and
-    :tl:`MessageService` to ease accessing their members.
+    Represents a :tl:`Message` (or :tl:`MessageService`) from the API.
 
     Remember that this class implements `ChatGetter
     <telethon.tl.custom.chatgetter.ChatGetter>` and `SenderGetter
     <telethon.tl.custom.sendergetter.SenderGetter>` which means you
     have access to all their sender and chat properties and methods.
+
+    You can also create your own instance of this type to customize how a
+    message should be sent (rather than just plain text). For example, you
+    can create an instance with a text to be used for the caption of an audio
+    file with a certain performer, duration and thumbnail. However, most
+    properties and methods won't work (since messages you create have not yet
+    been sent).
     """
 
     # region Forwarded properties
@@ -150,7 +164,10 @@ class Message(ChatGetter, SenderGetter):
 
     @media.setter
     def media(self, value):
-        self._message.media = value
+        try:
+            self._message.media = value
+        except AttributeError:
+            pass
 
     reply_markup = _fwd('reply_markup', """
         The reply markup for this message (which was sent
@@ -211,12 +228,230 @@ class Message(ChatGetter, SenderGetter):
 
     # region Initialization
 
-    def __init__(self, client, message):
+    _default_parse_mode = None
+    _default_link_preview = True
+
+    def __init__(
+            self,
+            text: str = None,
+            *,
+            # Formatting
+            markdown: str = None,
+            html: str = None,
+            formatting_entities: list = None,
+            link_preview: bool = (),
+            # Media
+            file: Optional[hints.FileLike] = None,
+            file_name: str = None,
+            mime_type: str = None,
+            thumb: str = False,
+            force_file: bool = False,
+            file_size: int = None,
+            # Media attributes
+            duration: int = None,
+            width: int = None,
+            height: int = None,
+            title: str = None,
+            performer: str = None,
+            supports_streaming: bool = False,
+            video_note: bool = False,
+            voice_note: bool = False,
+            waveform: bytes = None,
+            # Additional parametrization
+            silent: bool = False,
+            buttons: list = None,
+            ttl: int = None,
+    ):
+        """
+        The input parameters when creating a new message for sending are:
+
+        :param text: The message text (also known as caption when including media).
+        This will be parsed according to the default parse mode, which can be changed with
+        ``set_default_parse_mode``.
+
+        By default it's markdown if the ``markdown-it-py`` package is installed, or none otherwise.
+        Cannot be used in conjunction with ``text`` or ``html``.
+
+        :param markdown: Sets the text, but forces the parse mode to be markdown.
+        Cannot be used in conjunction with ``text`` or ``html``.
+
+        :param html: Sets the text, but forces the parse mode to be HTML.
+        Cannot be used in conjunction with ``text`` or ``markdown``.
+
+        :param formatting_entities: Manually specifies the formatting entities.
+        Neither of ``text``, ``markdown`` or ``html`` will be processed.
+
+        :param link_preview: Whether to include a link preview media in the message.
+        The default is to show it, but this can be changed with ``set_default_link_preview``.
+        Has no effect if the message contains other media (such as photos).
+
+        :param file: Send a file. The library will automatically determine whether to send the
+        file as a photo or as a document based on the extension. You can force a specific type
+        by using ``photo`` or ``document`` instead. The file can be one of:
+
+        * A local file path to an in-disk file. The file name will default to the path's base name.
+
+        * A `bytes` byte array with the file's data to send (for example, by using
+          ``text.encode('utf-8')``). A default file name will be used.
+
+        * A bytes `io.IOBase` stream over the file to send (for example, by using
+          ``open(file, 'rb')``). Its ``.name`` property will be used for the file name, or a
+          default if it doesn't have one.
+
+        * An external URL to a file over the internet. This will send the file as "external"
+          media, and Telegram is the one that will fetch the media and send it. This means
+          the library won't download the file to send it first, but Telegram may fail to access
+          the media. The URL must start with either ``'http://'`` or ``https://``.
+
+        * A handle to an existing file (for example, if you sent a message with media before,
+          you can use its ``message.media`` as a file here).
+
+        * A :tl:`InputMedia` instance. For example, if you want to send a dice use
+          :tl:`InputMediaDice`, or if you want to send a contact use :tl:`InputMediaContact`.
+
+        :param file_name: Forces a specific file name to be used, rather than an automatically
+        determined one. Has no effect with previously-sent media.
+
+        :param mime_type: Sets a fixed mime type for the file, rather than having the library
+        guess it from the final file name. Useful when an URL does not contain an extension.
+        The mime-type will be used to determine which media attributes to include (for instance,
+        whether to send a video, an audio, or a photo).
+
+        * For an image to contain an image size, you must specify width and height.
+        * For an audio, you must specify the duration.
+        * For a video, you must specify width, height and duration.
+
+        :param thumb: A file to be used as the document's thumbnail. Only has effect on uploaded
+        documents.
+
+        :param force_file: Forces whatever file was specified to be sent as a file.
+        Has no effect with previously-sent media.
+
+        :param file_size: The size of the file to be uploaded if it needs to be uploaded, which
+        will be determined automatically if not specified. If the file size can't be determined
+        beforehand, the entire file will be read in-memory to find out how large it is. Telegram
+        requires the file size to be known before-hand (except for external media).
+
+        :param duration: Specifies the duration, in seconds, of the audio or video file. Only has
+        effect on uploaded documents.
+
+        :param width: Specifies the photo or video width, in pixels. Only has an effect on uploaded
+        documents.
+
+        :param height: Specifies the photo or video height, in pixels. Only has an effect on
+        uploaded documents.
+
+        :param title: Specifies the title of the song being sent. Only has effect on uploaded
+        documents. You must specify the audio duration.
+
+        :param performer: Specifies the performer of the song being sent. Only has effect on
+        uploaded documents. You must specify the audio duration.
+
+        :param supports_streaming: Whether the video has been recorded in such a way that it
+        supports streaming. Note that not all format can support streaming. Only has effect on
+        uploaded documents. You must specify the video duration, width and height.
+
+        :param video_note: Whether the video should be a "video note" and render inside a circle.
+        Only has effect on uploaded documents. You must specify the video duration, width and
+        height.
+
+        :param voice_note: Whether the audio should be a "voice note" and render with a waveform.
+        Only has effect on uploaded documents. You must specify the audio duration.
+
+        :param waveform: The waveform. You must specify the audio duration.
+
+        :param silent: Whether the message should notify people with sound or not. By default, a
+        notification with sound is sent unless the person has the chat muted).
+
+        :param buttons: The matrix (list of lists), column list or button to be shown after
+        sending the message. This parameter will only work if you have signed in as a bot.
+
+        :param schedule: If set, the message won't send immediately, and instead it will be
+        scheduled to be automatically sent at a later time.
+
+        :param ttl: The Time-To-Live of the file (also known as "self-destruct timer" or
+        "self-destructing media"). If set, files can only be viewed for a short period of time
+        before they disappear from the message history automatically.
+
+        The value must be at least 1 second, and at most 60 seconds, otherwise Telegram will
+        ignore this parameter.
+
+        Not all types of media can be used with this parameter, such as text documents, which
+        will fail with ``TtlMediaInvalidError``.
+        """
+        if (text and markdown) or (text and html) or (markdown and html):
+            raise ValueError('can only set one of: text, markdown, html')
+
+        if formatting_entities:
+            text = text or markdown or html
+        elif text:
+            text, formatting_entities = self._default_parse_mode[0](text)
+        elif markdown:
+            text, formatting_entities = _misc.markdown.parse(markdown)
+        elif html:
+            text, formatting_entities = _misc.html.parse(html)
+
+        reply_markup = build_reply_markup(buttons) if buttons else None
+
+        if not text:
+            text = ''
+        if not formatting_entities:
+            formatting_entities = None
+
+        if link_preview == ():
+            link_preview = self._default_link_preview
+
+        if file:
+            file = InputFile(
+                file=file,
+                file_name=file_name,
+                mime_type=mime_type,
+                thumb=thumb,
+                force_file=force_file,
+                file_size=file_size,
+                duration=duration,
+                width=width,
+                height=height,
+                title=title,
+                performer=performer,
+                supports_streaming=supports_streaming,
+                video_note=video_note,
+                voice_note=voice_note,
+                waveform=waveform,
+            )
+
+        self._message = InputMessage(
+            text=text,
+            link_preview=link_preview,
+            silent=silent,
+            reply_markup=reply_markup,
+            fmt_entities=formatting_entities,
+            file=file,
+        )
+
+    @classmethod
+    def _new(cls, client, message, entities, input_chat):
+        self = cls.__new__(cls)
+
+        sender_id = None
+        if isinstance(message, _tl.Message):
+            if message.from_id is not None:
+                sender_id = utils.get_peer_id(message.from_id)
+        if sender_id is None and message.peer_id and not isinstance(message, _tl.MessageEmpty):
+            # If the message comes from a Channel, let the sender be it
+            # ...or...
+            # incoming messages in private conversations no longer have from_id
+            # (layer 119+), but the sender can only be the chat we're in.
+            if message.post or (not message.out and isinstance(message.peer_id, _tl.PeerUser)):
+                sender_id = utils.get_peer_id(message.peer_id)
+
+        # Note that these calls would reset the client
+        ChatGetter.__init__(self, self.peer_id, broadcast=self.post)
+        SenderGetter.__init__(self, sender_id)
         self._client = client
         self._message = message
 
         # Convenient storage for custom functions
-        self._client = None
         self._text = None
         self._file = None
         self._reply_message = None
@@ -227,28 +462,7 @@ class Message(ChatGetter, SenderGetter):
         self._via_input_bot = None
         self._action_entities = None
         self._linked_chat = None
-
-        sender_id = None
-        if self.from_id is not None:
-            sender_id = utils.get_peer_id(self.from_id)
-        elif self.peer_id:
-            # If the message comes from a Channel, let the sender be it
-            # ...or...
-            # incoming messages in private conversations no longer have from_id
-            # (layer 119+), but the sender can only be the chat we're in.
-            if self.post or (not self.out and isinstance(self.peer_id, _tl.PeerUser)):
-                sender_id = utils.get_peer_id(self.peer_id)
-
-        # Note that these calls would reset the client
-        ChatGetter.__init__(self, self.peer_id, broadcast=self.post)
-        SenderGetter.__init__(self, sender_id)
-
         self._forward = None
-
-    @classmethod
-    def _new(cls, client, message, entities, input_chat):
-        self = cls(client, message)
-        self._client = client
 
         # Make messages sent to ourselves outgoing unless they're forwarded.
         # This makes it consistent with official client's appearance.
@@ -295,6 +509,49 @@ class Message(ChatGetter, SenderGetter):
                     _tl.PeerChannel(self.replies.channel_id)))
 
         return self
+
+
+    @classmethod
+    def set_default_parse_mode(cls, mode):
+        """
+        Change the default parse mode when creating messages. The ``mode`` can be:
+
+        * ``None``, to disable parsing.
+        * A string equal to ``'md'`` or ``'markdown`` for parsing with commonmark,
+          ``'htm'`` or ``'html'`` for parsing HTML.
+        * A ``callable``, which accepts a ``str`` as input and returns a tuple of
+          ``(parsed str, formatting entities)``.
+        * A ``tuple`` of two ``callable``. The first must accept a ``str`` as input and return
+          a tuple of ``(parsed str, list of formatting entities)``. The second must accept two
+          parameters, a parsed ``str`` and a ``list`` of formatting entities, and must return
+          an "unparsed" ``str``.
+
+        If it's not one of these values or types, the method fails accordingly.
+        """
+        if isinstance(mode, str):
+            mode = mode.lower()
+            if mode in ('md', 'markdown'):
+                cls._default_parse_mode = (_misc.markdown.parse, _misc.markdown.unparse)
+            elif mode in ('htm', 'html'):
+                cls._default_parse_mode = (_misc.html.parse, _misc.html.unparse)
+            else:
+                raise ValueError(f'mode must be one of md, markdown, htm or html, but was {mode!r}')
+        elif callable(mode):
+            cls._default_parse_mode = (mode, lambda t, e: t)
+        elif isinstance(mode, tuple):
+            if len(mode) == 2 and callable(mode[0]) and callable(mode[1]):
+                cls._default_parse_mode = mode
+            else:
+                raise ValueError(f'mode must be a tuple of exactly two callables')
+        else:
+            raise TypeError(f'mode must be either a str, callable or tuple, but was {mode!r}')
+
+    @classmethod
+    def set_default_link_preview(cls, enabled):
+        """
+        Change the default value for link preview (either ``True`` or ``False``).
+        """
+        cls._default_link_preview = enabled
 
     # endregion Initialization
 
@@ -1121,3 +1378,6 @@ class Message(ChatGetter, SenderGetter):
                     return None
 
     # endregion Private Methods
+
+
+# TODO set md by default if commonmark is installed else nothing
