@@ -1,0 +1,237 @@
+{
+
+  "name": "reko",
+
+  "description": "Welcome to Arab Telethon Source Arabic Language Modifier Follow our official channel @ IQTHON",
+
+  "logo": "https://telegra.ph/file/686c46e34b1a5fa4ef467.jpg",
+
+  "keywords": [
+
+    "plugin",
+
+    "modular",
+
+    "productivity"
+
+  ],
+
+  "repository": "https://github.com/MPMMPP/K4KK44/",
+
+  "website": "#TODO",
+
+  "success_url": "#TODO",
+
+  "env": {
+
+    "ALIVE_NAME": {
+
+      "description": "اكتب اسمك⁦",
+
+      "value": "⁦⁦"
+
+    },
+
+    "APP_ID": {
+
+      "description": "اكتب هنا الايبي ايدي",
+
+      "value": ""
+
+    },
+
+    "API_HASH": {
+
+      "description": "اكتب هنا ألايبي هاش",
+
+      "value": ""
+
+    },
+
+    "STRING_SESSION": {
+
+      "description": "ضع هنا كود تيرمكس",
+
+      "value": ""
+
+    },
+
+    "TG_BOT_USERNAME": {
+
+      "description": "ضع هنا معرف البوت بدون @",
+
+      "value": ""
+
+    },
+
+    "TG_BOT_TOKEN": {
+
+      "description": "ضع هنا توكن البوت الخاص بك",
+
+      "value": ""
+
+    },
+
+    "COMMAND_HAND_LER": {
+
+      "description": "أتركة كما هوة",
+
+      "value": ".",
+
+      "required": false
+
+    },
+
+    "ENV": {
+
+      "description": "حط كود تيرمكس ايضا",
+
+      "value": "ANYTHING",
+
+      "required": false
+
+    },
+
+    "HEROKU_API_KEY": {
+
+      "description": "أتركة فارغ",
+
+      "value": "",
+
+      "required": false
+
+    },
+
+    "HEROKU_APP_NAME": {
+
+      "description": "أتركة فارغ",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+      "PRIVATE_GROUP_BOT_API_ID": {
+
+      "description": "حط ايدي كروبك مهم جدا",
+
+      "value": "",
+
+      "required": false
+
+    },
+
+     "PRIVATE_GROUP_ID": {
+
+      "description": "حط ايدي كروبك ايضا مهم جدا",
+
+      "value": "",
+
+      "required": false
+
+    },
+
+    "PMPERMIT_PIC": {
+
+      "description": "حط رابط صورتك اذا ماتعرف اتركه فارغ",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+     "CUSTOM_PMPERMIT_TEXT": {
+
+      "description": "اكتب كليشتك الي تريدها تضهر ببوت الحمايه",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+    "DEFAULT_BIO": {
+
+      "description": "خلي كتابه الي تريدها من تفعل بايو الوقتي اذا ماتعرفه اتركه",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+     "AUTONAME": {
+
+      "description": "خلي كتابه الي تريدها من تفعل الاسم الوقتي اذا ماتعرفه اتركه",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+    "DEFAULT_PIC": {
+
+      "description": "ضع رابط الصوره التي تريدها عند تفعيل الصوره الوقتيه اذا ماعرفتها اتركها فارغه",
+
+      "value": "",
+
+      "required": false
+
+      },
+
+    "TZ": {
+
+      "description": "موقعك الحالي فقط امسح كلمه بغداد وحط عاصمه بلدك فقط",
+
+      "value": "Asia/Baghdad",
+
+      "required": false
+
+  },
+
+  "addons": [{
+
+    "plan": "heroku-postgresql",
+
+    "options": {
+
+      "version": "12"
+
+    }
+
+  }],
+
+  "buildpacks": [{
+
+    "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest"
+
+  },{
+
+    "url":"https://github.com/heroku/heroku-buildpack-google-chrome"
+
+  },{
+
+    "url":"https://github.com/heroku/heroku-buildpack-chromedriver"
+
+  },{
+
+    "url": "https://github.com/opendoor-labs/heroku-buildpack-p7zip"
+
+  },{
+
+    "url": "https://github.com/heroku/heroku-buildpack-apt.git"
+
+  },{
+
+    "url": "https://github.com/chrismytton/heroku-buildpack-jq"
+
+  },{
+
+    "url": "heroku/python"
+
+  }]
+
+}
