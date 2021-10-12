@@ -1277,7 +1277,11 @@ class Message(ChatGetter, SenderGetter):
             return self._message
 
         return InputMessage(
-
+            text=self.message,
+            formatting_entities=self.entities,
+            file=self.media,
+            silent=self.silent,
+            buttons=self.reply_markup,
         )
 
     async def _reload_message(self):
