@@ -650,3 +650,18 @@ CdnDecrypter has been removed
 -----------------------------
 
 It was not really working and was more intended to be an implementation detail than anything else.
+
+
+---
+
+you can no longer pass an attributes list because the constructor is now nice.
+use raw api if you really need it.
+goal is to hide raw api from high level api. sorry.
+
+no parsemode. use the correct parameter. it's more convenient than setting two.
+
+formatting_entities stays because otherwise it's the only feasible way to manually specify it.
+
+todo update send_message and send_file docs (well review all functions)
+
+album overhaul. use a list of Message instead.

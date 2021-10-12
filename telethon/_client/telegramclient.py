@@ -2075,31 +2075,46 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             message: 'hints.MessageLike' = '',
             *,
-            reply_to: 'typing.Union[int, _tl.Message]' = None,
-            attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
-            parse_mode: typing.Optional[str] = (),
-            formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
-            link_preview: bool = True,
-            file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
-            thumb: 'hints.FileLike' = None,
-            force_document: bool = False,
-            clear_draft: bool = False,
-            buttons: 'hints.MarkupLike' = None,
-            silent: bool = None,
-            background: bool = None,
+            # - Message contents
+            # Formatting
+            markdown: str = None,
+            html: str = None,
+            formatting_entities: list = None,
+            link_preview: bool = (),
+            # Media
+            file: 'typing.Optional[hints.FileLike]' = None,
+            file_name: str = None,
+            mime_type: str = None,
+            thumb: str = False,
+            force_file: bool = False,
+            file_size: int = None,
+            # Media attributes
+            duration: int = None,
+            width: int = None,
+            height: int = None,
+            title: str = None,
+            performer: str = None,
             supports_streaming: bool = False,
+            video_note: bool = False,
+            voice_note: bool = False,
+            waveform: bytes = None,
+            # Additional parametrization
+            silent: bool = False,
+            buttons: list = None,
+            ttl: int = None,
+            # - Send options
+            reply_to: 'typing.Union[int, _tl.Message]' = None,
+            clear_draft: bool = False,
+            background: bool = None,
             schedule: 'hints.DateLike' = None,
-            comment_to: 'typing.Union[int, _tl.Message]' = None
+            comment_to: 'typing.Union[int, _tl.Message]' = None,
     ) -> '_tl.Message':
         """
-        Sends a message to the specified user, chat or channel.
+        Sends a Message to the specified user, chat or channel.
 
-        The default parse mode is the same as the official applications
-        (a _custom flavour of markdown). ``**bold**, `code` or __italic__``
-        are available. In addition you can send ``[links](https://example.com)``
-        and ``[mentions](@username)`` (or using IDs like in the Bot API:
-        ``[mention](tg://user?id=123456789)``) and ``pre`` blocks with three
-        backticks.
+        The message can be either a string or a previous Message instance.
+        If it's a previous Message instance, the rest of parameters will be ignored.
+        If it's not, a Message instance will be constructed, and send_to used.
 
         Sending a ``/start`` command with a parameter (like ``?start=data``)
         is also done through this method. Simply send ``'/start data'`` to
@@ -3515,15 +3530,6 @@ class TelegramClient:
 
     @forward_call(messageparse._parse_message_text)
     async def _parse_message_text(self: 'TelegramClient', message, parse_mode):
-        pass
-
-    @forward_call(uploads._file_to_media)
-    async def _file_to_media(
-            self, file, force_document=False, file_size=None,
-            progress_callback=None, attributes=None, thumb=None,
-            allow_cache=True, voice_note=False, video_note=False,
-            supports_streaming=False, mime_type=None, as_image=None,
-            ttl=None):
         pass
 
     @forward_call(messageparse._get_response_message)

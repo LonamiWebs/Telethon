@@ -92,104 +92,73 @@ def _resize_photo_if_needed(
 async def send_file(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]',
+        file: typing.Optional[hints.FileLike] = None,
         *,
-        caption: typing.Union[str, typing.Sequence[str]] = None,
-        force_document: bool = False,
+        # - Message contents
+        # Formatting
+        caption: 'hints.MessageLike' = '',
+        markdown: str = None,
+        html: str = None,
+        formatting_entities: list = None,
+        link_preview: bool = (),
+        # Media
+        file_name: str = None,
+        mime_type: str = None,
+        thumb: str = False,
+        force_file: bool = False,
         file_size: int = None,
-        clear_draft: bool = False,
-        progress_callback: 'hints.ProgressCallback' = None,
-        reply_to: 'hints.MessageIDLike' = None,
-        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
-        thumb: 'hints.FileLike' = None,
-        allow_cache: bool = True,
-        parse_mode: str = (),
-        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
-        voice_note: bool = False,
-        video_note: bool = False,
-        buttons: 'hints.MarkupLike' = None,
-        silent: bool = None,
-        background: bool = None,
+        # Media attributes
+        duration: int = None,
+        width: int = None,
+        height: int = None,
+        title: str = None,
+        performer: str = None,
         supports_streaming: bool = False,
+        video_note: bool = False,
+        voice_note: bool = False,
+        waveform: bytes = None,
+        # Additional parametrization
+        silent: bool = False,
+        buttons: list = None,
+        ttl: int = None,
+        # - Send options
+        reply_to: 'typing.Union[int, _tl.Message]' = None,
+        clear_draft: bool = False,
+        background: bool = None,
         schedule: 'hints.DateLike' = None,
         comment_to: 'typing.Union[int, _tl.Message]' = None,
-        ttl: int = None,
-        **kwargs) -> '_tl.Message':
-    # TODO Properly implement allow_cache to reuse the sha256 of the file
-    # i.e. `None` was used
-    if not file:
-        raise TypeError('Cannot use {!r} as file'.format(file))
-
-    if not caption:
-        caption = ''
-
-    entity = await self.get_input_entity(entity)
-    if comment_to is not None:
-        entity, reply_to = await _get_comment_data(self, entity, comment_to)
-    else:
-        reply_to = utils.get_message_id(reply_to)
-
-    # First check if the user passed an iterable, in which case
-    # we may want to send grouped.
-    if utils.is_list_like(file):
-        if utils.is_list_like(caption):
-            captions = caption
-        else:
-            captions = [caption]
-
-        result = []
-        while file:
-            result += await _send_album(
-                self, entity, file[:10], caption=captions[:10],
-                progress_callback=progress_callback, reply_to=reply_to,
-                parse_mode=parse_mode, silent=silent, schedule=schedule,
-                supports_streaming=supports_streaming, clear_draft=clear_draft,
-                force_document=force_document, background=background,
-            )
-            file = file[10:]
-            captions = captions[10:]
-
-        for doc, cap in zip(file, captions):
-            result.append(await self.send_file(
-                entity, doc, allow_cache=allow_cache,
-                caption=cap, force_document=force_document,
-                progress_callback=progress_callback, reply_to=reply_to,
-                attributes=attributes, thumb=thumb, voice_note=voice_note,
-                video_note=video_note, buttons=buttons, silent=silent,
-                supports_streaming=supports_streaming, schedule=schedule,
-                clear_draft=clear_draft, background=background,
-                **kwargs
-            ))
-
-        return result
-
-    if formatting_entities is not None:
-        msg_entities = formatting_entities
-    else:
-        caption, msg_entities =\
-            await self._parse_message_text(caption, parse_mode)
-
-    file_handle, media, image = await _file_to_media(
-        self, file, force_document=force_document,
+) -> '_tl.Message':
+    self.send_message(
+        entity=entity,
+        message=caption,
+        markdown=markdown,
+        html=html,
+        formatting_entities=formatting_entities,
+        link_preview=link_preview,
+        file=file,
+        file_name=file_name,
+        mime_type=mime_type,
+        thumb=thumb,
+        force_file=force_file,
         file_size=file_size,
-        progress_callback=progress_callback,
-        attributes=attributes,  allow_cache=allow_cache, thumb=thumb,
-        voice_note=voice_note, video_note=video_note,
-        supports_streaming=supports_streaming, ttl=ttl
+        duration=duration,
+        width=width,
+        height=height,
+        title=title,
+        performer=performer,
+        supports_streaming=supports_streaming,
+        video_note=video_note,
+        voice_note=voice_note,
+        waveform=waveform,
+        silent=silent,
+        buttons=buttons,
+        ttl=ttl,
+        reply_to=reply_to,
+        clear_draft=clear_draft,
+        background=background,
+        schedule=schedule,
+        comment_to=comment_to,
     )
-
-    # e.g. invalid cast from :tl:`MessageMediaWebPage`
-    if not media:
-        raise TypeError('Cannot use {!r} as file'.format(file))
-
-    markup = _custom.button.build_reply_markup(buttons)
-    request = _tl.fn.messages.SendMedia(
-        entity, media, reply_to_msg_id=reply_to, message=caption,
-        entities=msg_entities, reply_markup=markup, silent=silent,
-        schedule_date=schedule, clear_draft=clear_draft,
-        background=background
-    )
-    return self._get_response_message(request, await self(request), entity)
 
 async def _send_album(self: 'TelegramClient', entity, files, caption='',
                         progress_callback=None, reply_to=None,
@@ -368,98 +337,3 @@ async def upload_file(
         )
 
 
-async def _file_to_media(
-        self, file, force_document=False, file_size=None,
-        progress_callback=None, attributes=None, thumb=None,
-        allow_cache=True, voice_note=False, video_note=False,
-        supports_streaming=False, mime_type=None, as_image=None,
-        ttl=None):
-    if not file:
-        return None, None, None
-
-    if isinstance(file, pathlib.Path):
-        file = str(file.absolute())
-
-    is_image = utils.is_image(file)
-    if as_image is None:
-        as_image = is_image and not force_document
-
-    # `aiofiles` do not base `io.IOBase` but do have `read`, so we
-    # just check for the read attribute to see if it's file-like.
-    if not isinstance(file, (str, bytes, _tl.InputFile, _tl.InputFileBig))\
-            and not hasattr(file, 'read'):
-        # The user may pass a Message containing media (or the media,
-        # or anything similar) that should be treated as a file. Try
-        # getting the input media for whatever they passed and send it.
-        #
-        # We pass all attributes since these will be used if the user
-        # passed :tl:`InputFile`, and all information may be relevant.
-        try:
-            return (None, utils.get_input_media(
-                file,
-                is_photo=as_image,
-                attributes=attributes,
-                force_document=force_document,
-                voice_note=voice_note,
-                video_note=video_note,
-                supports_streaming=supports_streaming,
-                ttl=ttl
-            ), as_image)
-        except TypeError:
-            # Can't turn whatever was given into media
-            return None, None, as_image
-
-    media = None
-    file_handle = None
-
-    if isinstance(file, (_tl.InputFile, _tl.InputFileBig)):
-        file_handle = file
-    elif not isinstance(file, str) or os.path.isfile(file):
-        file_handle = await self.upload_file(
-            _resize_photo_if_needed(file, as_image),
-            file_size=file_size,
-            progress_callback=progress_callback
-        )
-    elif re.match('https?://', file):
-        if as_image:
-            media = _tl.InputMediaPhotoExternal(file, ttl_seconds=ttl)
-        else:
-            media = _tl.InputMediaDocumentExternal(file, ttl_seconds=ttl)
-
-    if media:
-        pass  # Already have media, don't check the rest
-    elif not file_handle:
-        raise ValueError(
-            'Failed to convert {} to media. Not an existing file or '
-            'HTTP URL'.format(file)
-        )
-    elif as_image:
-        media = _tl.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)
-    else:
-        attributes, mime_type = utils.get_attributes(
-            file,
-            mime_type=mime_type,
-            attributes=attributes,
-            force_document=force_document and not is_image,
-            voice_note=voice_note,
-            video_note=video_note,
-            supports_streaming=supports_streaming,
-            thumb=thumb
-        )
-
-        if not thumb:
-            thumb = None
-        else:
-            if isinstance(thumb, pathlib.Path):
-                thumb = str(thumb.absolute())
-            thumb = await self.upload_file(thumb, file_size=file_size)
-
-        media = _tl.InputMediaUploadedDocument(
-            file=file_handle,
-            mime_type=mime_type,
-            attributes=attributes,
-            thumb=thumb,
-            force_file=force_document and not is_image,
-            ttl_seconds=ttl
-        )
-    return file_handle, media, as_image

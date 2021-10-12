@@ -228,9 +228,6 @@ class Message(ChatGetter, SenderGetter):
 
     # region Initialization
 
-    _default_parse_mode = None
-    _default_link_preview = True
-
     def __init__(
             self,
             text: str = None,
@@ -241,7 +238,7 @@ class Message(ChatGetter, SenderGetter):
             formatting_entities: list = None,
             link_preview: bool = (),
             # Media
-            file: Optional[hints.FileLike] = None,
+            file: 'Optional[hints.FileLike]' = None,
             file_name: str = None,
             mime_type: str = None,
             thumb: str = False,
@@ -379,54 +376,30 @@ class Message(ChatGetter, SenderGetter):
         Not all types of media can be used with this parameter, such as text documents, which
         will fail with ``TtlMediaInvalidError``.
         """
-        if (text and markdown) or (text and html) or (markdown and html):
-            raise ValueError('can only set one of: text, markdown, html')
-
-        if formatting_entities:
-            text = text or markdown or html
-        elif text:
-            text, formatting_entities = self._default_parse_mode[0](text)
-        elif markdown:
-            text, formatting_entities = _misc.markdown.parse(markdown)
-        elif html:
-            text, formatting_entities = _misc.html.parse(html)
-
-        reply_markup = build_reply_markup(buttons) if buttons else None
-
-        if not text:
-            text = ''
-        if not formatting_entities:
-            formatting_entities = None
-
-        if link_preview == ():
-            link_preview = self._default_link_preview
-
-        if file:
-            file = InputFile(
-                file=file,
-                file_name=file_name,
-                mime_type=mime_type,
-                thumb=thumb,
-                force_file=force_file,
-                file_size=file_size,
-                duration=duration,
-                width=width,
-                height=height,
-                title=title,
-                performer=performer,
-                supports_streaming=supports_streaming,
-                video_note=video_note,
-                voice_note=voice_note,
-                waveform=waveform,
-            )
-
         self._message = InputMessage(
             text=text,
+            markdown=markdown,
+            html=html,
+            formatting_entities=formatting_entities,
             link_preview=link_preview,
+            file =file,
+            file_name=file_name,
+            mime_type=mime_type,
+            thumb=thumb,
+            force_file=force_file,
+            file_size=file_size,
+            duration=duration,
+            width=width,
+            height=height,
+            title=title,
+            performer=performer,
+            supports_streaming=supports_streaming,
+            video_note=video_note,
+            voice_note=voice_note,
+            waveform=waveform,
             silent=silent,
-            reply_markup=reply_markup,
-            fmt_entities=formatting_entities,
-            file=file,
+            buttons=buttons,
+            ttl=ttl,
         )
 
     @classmethod
@@ -446,7 +419,7 @@ class Message(ChatGetter, SenderGetter):
                 sender_id = utils.get_peer_id(message.peer_id)
 
         # Note that these calls would reset the client
-        ChatGetter.__init__(self, self.peer_id, broadcast=self.post)
+        ChatGetter.__init__(self, message.peer_id, broadcast=message.post)
         SenderGetter.__init__(self, sender_id)
         self._client = client
         self._message = message
@@ -511,8 +484,8 @@ class Message(ChatGetter, SenderGetter):
         return self
 
 
-    @classmethod
-    def set_default_parse_mode(cls, mode):
+    @staticmethod
+    def set_default_parse_mode(mode):
         """
         Change the default parse mode when creating messages. The ``mode`` can be:
 
@@ -531,27 +504,29 @@ class Message(ChatGetter, SenderGetter):
         if isinstance(mode, str):
             mode = mode.lower()
             if mode in ('md', 'markdown'):
-                cls._default_parse_mode = (_misc.markdown.parse, _misc.markdown.unparse)
+                mode = (_misc.markdown.parse, _misc.markdown.unparse)
             elif mode in ('htm', 'html'):
-                cls._default_parse_mode = (_misc.html.parse, _misc.html.unparse)
+                mode = (_misc.html.parse, _misc.html.unparse)
             else:
                 raise ValueError(f'mode must be one of md, markdown, htm or html, but was {mode!r}')
         elif callable(mode):
-            cls._default_parse_mode = (mode, lambda t, e: t)
+            mode = (mode, lambda t, e: t)
         elif isinstance(mode, tuple):
             if len(mode) == 2 and callable(mode[0]) and callable(mode[1]):
-                cls._default_parse_mode = mode
+                mode = mode
             else:
                 raise ValueError(f'mode must be a tuple of exactly two callables')
         else:
             raise TypeError(f'mode must be either a str, callable or tuple, but was {mode!r}')
+
+        InputMessage._default_parse_mode = mode
 
     @classmethod
     def set_default_link_preview(cls, enabled):
         """
         Change the default value for link preview (either ``True`` or ``False``).
         """
-        cls._default_link_preview = enabled
+        InputMessage._default_link_preview = enabled
 
     # endregion Initialization
 
@@ -1296,6 +1271,14 @@ class Message(ChatGetter, SenderGetter):
     # endregion Public Methods
 
     # region Private Methods
+
+    def _as_input(self):
+        if isinstance(self._message, InputMessage):
+            return self._message
+
+        return InputMessage(
+
+        )
 
     async def _reload_message(self):
         """

@@ -1,10 +1,12 @@
 import inspect
 import itertools
+import time
 import typing
 import warnings
 
 from .._misc import helpers, utils, requestiter, hints
 from ..types import _custom
+from ..types._custom.inputmessage import InputMessage
 from .. import errors, _tl
 
 _MAX_CHUNK_SIZE = 100
@@ -395,82 +397,95 @@ async def send_message(
         entity: 'hints.EntityLike',
         message: 'hints.MessageLike' = '',
         *,
-        reply_to: 'typing.Union[int, _tl.Message]' = None,
-        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
-        parse_mode: typing.Optional[str] = (),
-        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
-        link_preview: bool = True,
-        file: 'typing.Union[hints.FileLike, typing.Sequence[hints.FileLike]]' = None,
-        thumb: 'hints.FileLike' = None,
-        force_document: bool = False,
-        clear_draft: bool = False,
-        buttons: 'hints.MarkupLike' = None,
-        silent: bool = None,
-        background: bool = None,
+        # - Message contents
+        # Formatting
+        markdown: str = None,
+        html: str = None,
+        formatting_entities: list = None,
+        link_preview: bool = (),
+        # Media
+        file: typing.Optional[hints.FileLike] = None,
+        file_name: str = None,
+        mime_type: str = None,
+        thumb: str = False,
+        force_file: bool = False,
+        file_size: int = None,
+        # Media attributes
+        duration: int = None,
+        width: int = None,
+        height: int = None,
+        title: str = None,
+        performer: str = None,
         supports_streaming: bool = False,
+        video_note: bool = False,
+        voice_note: bool = False,
+        waveform: bytes = None,
+        # Additional parametrization
+        silent: bool = False,
+        buttons: list = None,
+        ttl: int = None,
+        # - Send options
+        reply_to: 'typing.Union[int, _tl.Message]' = None,
+        clear_draft: bool = False,
+        background: bool = None,
         schedule: 'hints.DateLike' = None,
-        comment_to: 'typing.Union[int, _tl.Message]' = None
+        comment_to: 'typing.Union[int, _tl.Message]' = None,
 ) -> '_tl.Message':
-    if file is not None:
-        return await self.send_file(
-            entity, file, caption=message, reply_to=reply_to,
-            attributes=attributes, parse_mode=parse_mode,
-            force_document=force_document, thumb=thumb,
-            buttons=buttons, clear_draft=clear_draft, silent=silent,
-            schedule=schedule, supports_streaming=supports_streaming,
+    if isinstance(message, str):
+        message = InputMessage(
+            text=message,
+            markdown=markdown,
+            html=html,
             formatting_entities=formatting_entities,
-            comment_to=comment_to, background=background
+            link_preview=link_preview,
+            file=file,
+            file_name=file_name,
+            mime_type=mime_type,
+            thumb=thumb,
+            force_file=force_file,
+            file_size=file_size,
+            duration=duration,
+            width=width,
+            height=height,
+            title=title,
+            performer=performer,
+            supports_streaming=supports_streaming,
+            video_note=video_note,
+            voice_note=voice_note,
+            waveform=waveform,
+            silent=silent,
+            buttons=buttons,
+            ttl=ttl,
         )
+    elif isinstance(message, _custom.Message):
+        message = message._as_input()
+    elif not isinstance(message, InputMessage):
+        raise TypeError(f'message must be either str, Message or InputMessage, but got: {message!r}')
 
     entity = await self.get_input_entity(entity)
     if comment_to is not None:
         entity, reply_to = await _get_comment_data(self, entity, comment_to)
+    elif reply_to:
+        reply_to = utils.get_message_id(reply_to)
 
-    if isinstance(message, _tl.Message):
-        if buttons is None:
-            markup = message.reply_markup
-        else:
-            markup = _custom.button.build_reply_markup(buttons)
+    if message._file:
+        # TODO Properly implement allow_cache to reuse the sha256 of the file
+        # i.e. `None` was used
 
-        if silent is None:
-            silent = message.silent
+        # TODO album
+        if message._file._should_upload_thumb():
+            message._file._set_uploaded_thumb(await self.upload_file(message._file._thumb))
 
-        if (message.media and not isinstance(
-                message.media, _tl.MessageMediaWebPage)):
-            return await self.send_file(
-                entity,
-                message.media,
-                caption=message.message,
-                silent=silent,
-                background=background,
-                reply_to=reply_to,
-                buttons=markup,
-                formatting_entities=message.entities,
-                schedule=schedule
-            )
+        if message._file._should_upload_file():
+            message._file._set_uploaded_file(await self.upload_file(message._file._file))
 
-        request = _tl.fn.messages.SendMessage(
-            peer=entity,
-            message=message.message or '',
-            silent=silent,
-            background=background,
-            reply_to_msg_id=utils.get_message_id(reply_to),
-            reply_markup=markup,
-            entities=message.entities,
-            clear_draft=clear_draft,
-            no_webpage=not isinstance(
-                message.media, _tl.MessageMediaWebPage),
-            schedule_date=schedule
+        request = _tl.fn.messages.SendMedia(
+            entity, message._file._media, reply_to_msg_id=reply_to, message=message._text,
+            entities=message._fmt_entities, reply_markup=message._reply_markup, silent=message._silent,
+            schedule_date=schedule, clear_draft=clear_draft,
+            background=background
         )
-        message = message.message
     else:
-        if formatting_entities is None:
-            message, formatting_entities = await self._parse_message_text(message, parse_mode)
-        if not message:
-            raise ValueError(
-                'The message cannot be empty unless a file is provided'
-            )
-
         request = _tl.fn.messages.SendMessage(
             peer=entity,
             message=message,
@@ -489,7 +504,7 @@ async def send_message(
         return _custom.Message._new(self, _tl.Message(
             id=result.id,
             peer_id=await _get_peer(self, entity),
-            message=message,
+            message=message._text,
             date=result.date,
             out=result.out,
             media=result.media,
