@@ -310,12 +310,12 @@ class Album(EventBuilder):
         async def mark_read(self):
             """
             Marks the entire album as read. Shorthand for
-            `client.send_read_acknowledge()
-            <telethon.client.messages.MessageMethods.send_read_acknowledge>`
+            `client.mark_read()
+            <telethon.client.messages.MessageMethods.mark_read>`
             with both ``entity`` and ``message`` already set.
             """
             if self._client:
-                await self._client.send_read_acknowledge(
+                await self._client.mark_read(
                     await self.get_input_chat(), max_id=self.messages[-1].id)
 
         async def pin(self, *, notify=False):

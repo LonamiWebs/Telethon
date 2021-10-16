@@ -716,3 +716,5 @@ size selector for download_profile_photo and download_media is now different
 still thumb because otherwise documents are weird.
 
 keep support for explicit size instance?
+
+renamed send_read_acknowledge. add send_read_acknowledge as alias for mark_read?

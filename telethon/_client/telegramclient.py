@@ -2490,8 +2490,8 @@ class TelegramClient:
                 await client.delete_messages(chat, messages)
         """
 
-    @forward_call(messages.send_read_acknowledge)
-    async def send_read_acknowledge(
+    @forward_call(messages.mark_read)
+    async def mark_read(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
             message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = None,
@@ -2535,11 +2535,11 @@ class TelegramClient:
             .. code-block:: python
 
                 # using a Message object
-                await client.send_read_acknowledge(chat, message)
+                await client.mark_read(chat, message)
                 # ...or using the int ID of a Message
-                await client.send_read_acknowledge(chat, message_id)
+                await client.mark_read(chat, message_id)
                 # ...or passing a list of messages to mark as read
-                await client.send_read_acknowledge(chat, messages)
+                await client.mark_read(chat, messages)
         """
 
     @forward_call(messages.pin_message)

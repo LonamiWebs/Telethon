@@ -667,7 +667,7 @@ async def delete_messages(
 
     return sum(r.pts_count for r in res)
 
-async def send_read_acknowledge(
+async def mark_read(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
         message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = None,
