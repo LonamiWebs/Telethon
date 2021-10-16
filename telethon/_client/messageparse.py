@@ -10,16 +10,6 @@ if typing.TYPE_CHECKING:
     from .telegramclient import TelegramClient
 
 
-def get_parse_mode(self: 'TelegramClient'):
-    return self._parse_mode
-
-def set_parse_mode(self: 'TelegramClient', mode: str):
-    self._parse_mode = utils.sanitize_parse_mode(mode)
-
-# endregion
-
-# region Private methods
-
 async def _replace_with_mention(self: 'TelegramClient', entities, i, user):
     """
     Helper method to replace ``entities[i]`` to mention ``user``,

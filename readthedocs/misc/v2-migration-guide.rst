@@ -207,8 +207,10 @@ The ``telethon.errors`` module continues to provide custom errors used by the li
 // TODO provide a way to see which errors are known in the docs or at tl.telethon.dev
 
 
-The default markdown parse mode now conforms to the commonmark specification
-----------------------------------------------------------------------------
+Changes to the default parse mode
+---------------------------------
+
+The default markdown parse mode now conforms to the commonmark specification.
 
 The old markdown parser (which was used as the default ``client.parse_mode``) used to emulate
 Telegram Desktop's behaviour. Now `<markdown-it-py https://github.com/executablebooks/markdown-it-py>`__
@@ -223,6 +225,8 @@ Because now there's proper parsing, you also gain:
 * Line breaks behave properly now. For a single-line break, end your line with ``\\``.
 * Inline links should no longer behave in a strange manner.
 * Pre-blocks can now have a language. Official clients don't syntax highlight code yet, though.
+
+Furthermore, the parse mode is no longer client-dependant. It is now configured through ``Message``.
 
 // TODO provide a way to get back the old behaviour?
 
