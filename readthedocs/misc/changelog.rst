@@ -13,6 +13,18 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+
+Complete overhaul of the library (v2.0)
+=======================================
+
++------------------------+
+| Scheme layer used: 133 |
++------------------------+
+
+(inc and link all of migration guide)
+properly-typed enums for filters and actions
+
+
 New schema and bug fixes (v1.23)
 ================================
 

@@ -17,6 +17,27 @@ class Participant(Enum):
     CONTACT = 'contact'
 
 
+class Action(Enum):
+    TYPING = 'typing'
+    CONTACT = 'contact'
+    GAME = 'game'
+    LOCATION = 'location'
+    STICKER = 'sticker'
+    RECORD_AUDIO = 'record-audio'
+    RECORD_VOICE = RECORD_AUDIO
+    RECORD_ROUND = 'record-round'
+    RECORD_VIDEO = 'record-video'
+    AUDIO = 'audio'
+    VOICE = AUDIO
+    SONG = AUDIO
+    ROUND = 'round'
+    VIDEO = 'video'
+    PHOTO = 'photo'
+    DOCUMENT = 'document'
+    FILE = DOCUMENT
+    CANCEL = 'cancel'
+
+
 def _mk_parser(cls):
     def parser(value):
         if isinstance(value, cls):
@@ -35,3 +56,4 @@ def _mk_parser(cls):
 
 parse_conn_mode = _mk_parser(ConnectionMode)
 parse_participant = _mk_parser(Participant)
+parse_typing_action = _mk_parser(Action)

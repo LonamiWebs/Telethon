@@ -17,31 +17,6 @@ _MAX_PROFILE_PHOTO_CHUNK_SIZE = 100
 
 
 class _ChatAction:
-    _str_mapping = {
-        'typing': _tl.SendMessageTypingAction(),
-        'contact': _tl.SendMessageChooseContactAction(),
-        'game': _tl.SendMessageGamePlayAction(),
-        'location': _tl.SendMessageGeoLocationAction(),
-        'sticker': _tl.SendMessageChooseStickerAction(),
-
-        'record-audio': _tl.SendMessageRecordAudioAction(),
-        'record-voice': _tl.SendMessageRecordAudioAction(),  # alias
-        'record-round': _tl.SendMessageRecordRoundAction(),
-        'record-video': _tl.SendMessageRecordVideoAction(),
-
-        'audio': _tl.SendMessageUploadAudioAction(1),
-        'voice': _tl.SendMessageUploadAudioAction(1),  # alias
-        'song': _tl.SendMessageUploadAudioAction(1),  # alias
-        'round': _tl.SendMessageUploadRoundAction(1),
-        'video': _tl.SendMessageUploadVideoAction(1),
-
-        'photo': _tl.SendMessageUploadPhotoAction(1),
-        'document': _tl.SendMessageUploadDocumentAction(1),
-        'file': _tl.SendMessageUploadDocumentAction(1),  # alias
-
-        'cancel': _tl.SendMessageCancelAction()
-    }
-
     def __init__(self, client, chat, action, *, delay, auto_cancel):
         self._client = client
         self._chat = chat
@@ -87,6 +62,28 @@ class _ChatAction:
             if self._auto_cancel:
                 await self._client(_tl.fn.messages.SetTyping(
                     self._chat, _tl.SendMessageCancelAction()))
+
+    @staticmethod
+    def _parse(action):
+        if isinstance(action, tlobject.TLObject) and action.SUBCLASS_OF_ID != 0x20b2cc21:
+            return action
+
+        return {
+            enums.TYPING: _tl.SendMessageTypingAction(),
+            enums.CONTACT: _tl.SendMessageChooseContactAction(),
+            enums.GAME: _tl.SendMessageGamePlayAction(),
+            enums.LOCATION: _tl.SendMessageGeoLocationAction(),
+            enums.STICKER: _tl.SendMessageChooseStickerAction(),
+            enums.RECORD_AUDIO: _tl.SendMessageRecordAudioAction(),
+            enums.RECORD_ROUND: _tl.SendMessageRecordRoundAction(),
+            enums.RECORD_VIDEO: _tl.SendMessageRecordVideoAction(),
+            enums.AUDIO: _tl.SendMessageUploadAudioAction(1),
+            enums.ROUND: _tl.SendMessageUploadRoundAction(1),
+            enums.VIDEO: _tl.SendMessageUploadVideoAction(1),
+            enums.PHOTO: _tl.SendMessageUploadPhotoAction(1),
+            enums.DOCUMENT: _tl.SendMessageUploadDocumentAction(1),
+            enums.CANCEL: _tl.SendMessageCancelAction(),
+        }[enums.parse_typing_action(action)]
 
     def progress(self, current, total):
         if hasattr(self._action, 'progress'):
@@ -457,18 +454,7 @@ def action(
         *,
         delay: float = 4,
         auto_cancel: bool = True) -> 'typing.Union[_ChatAction, typing.Coroutine]':
-    if isinstance(action, str):
-        try:
-            action = _ChatAction._str_mapping[action.lower()]
-        except KeyError:
-            raise ValueError(
-                'No such action "{}"'.format(action)) from None
-    elif not isinstance(action, tlobject.TLObject) or action.SUBCLASS_OF_ID != 0x20b2cc21:
-        # 0x20b2cc21 = crc32(b'SendMessageAction')
-        if isinstance(action, type):
-            raise ValueError('You must pass an instance, not the class')
-        else:
-            raise ValueError('Cannot use {} as action'.format(action))
+    action = _ChatAction._parse(action)
 
     if isinstance(action, _tl.SendMessageCancelAction):
         # ``SetTyping.resolve`` will get input peer of ``entity``.
