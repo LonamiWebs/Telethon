@@ -200,6 +200,73 @@ def _entity_type(entity):
     # 'Empty' in name or not found, we don't care, not a valid entity.
     raise TypeError('{} does not have any entity type'.format(entity))
 
+
+def pretty_print(obj, indent=None, max_depth=float('inf')):
+    max_depth -= 1
+    if max_depth < 0:
+        return '...'
+
+    to_d = getattr(obj, '_to_dict', None) or getattr(obj, 'to_dict', None)
+    if callable(to_d):
+        obj = to_d()
+
+    if indent is None:
+        if isinstance(obj, dict):
+            return '{}({})'.format(obj.get('_', 'dict'), ', '.join(
+                '{}={}'.format(k, pretty_print(v, indent, max_depth))
+                for k, v in obj.items() if k != '_'
+            ))
+        elif isinstance(obj, str) or isinstance(obj, bytes):
+            return repr(obj)
+        elif hasattr(obj, '__iter__'):
+            return '[{}]'.format(
+                ', '.join(pretty_print(x, indent, max_depth) for x in obj)
+            )
+        else:
+            return repr(obj)
+    else:
+        result = []
+
+        if isinstance(obj, dict):
+            result.append(obj.get('_', 'dict'))
+            result.append('(')
+            if obj:
+                result.append('\n')
+                indent += 1
+                for k, v in obj.items():
+                    if k == '_':
+                        continue
+                    result.append('\t' * indent)
+                    result.append(k)
+                    result.append('=')
+                    result.append(pretty_print(v, indent, max_depth))
+                    result.append(',\n')
+                result.pop()  # last ',\n'
+                indent -= 1
+                result.append('\n')
+                result.append('\t' * indent)
+            result.append(')')
+
+        elif isinstance(obj, str) or isinstance(obj, bytes):
+            result.append(repr(obj))
+
+        elif hasattr(obj, '__iter__'):
+            result.append('[\n')
+            indent += 1
+            for x in obj:
+                result.append('\t' * indent)
+                result.append(pretty_print(x, indent, max_depth))
+                result.append(',\n')
+            indent -= 1
+            result.append('\t' * indent)
+            result.append(']')
+
+        else:
+            result.append(repr(obj))
+
+        return ''.join(result)
+
+
 # endregion
 
 # region Cryptographic related utils

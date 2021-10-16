@@ -9,7 +9,7 @@ from .file import File
 from .inputfile import InputFile
 from .inputmessage import InputMessage
 from .button import build_reply_markup
-from ..._misc import utils, tlobject
+from ..._misc import utils, helpers, tlobject
 from ... import _tl, _misc
 
 
@@ -1365,6 +1365,51 @@ class Message(ChatGetter, SenderGetter):
                     return None
 
     # endregion Private Methods
+
+    def to_dict(self):
+        return self._message.to_dict()
+
+    def _to_dict(self):
+        return {
+            '_': 'Message',
+            'id': self.id,
+            'out': self.out,
+            'date': self.date,
+            'text': self.text,
+            'sender': self.sender,
+            'chat': self.chat,
+            'mentioned': self.mentioned,
+            'media_unread': self.media_unread,
+            'silent': self.silent,
+            'post': self.post,
+            'from_scheduled': self.from_scheduled,
+            'legacy': self.legacy,
+            'edit_hide': self.edit_hide,
+            'pinned': self.pinned,
+            'forward': self.forward,
+            'via_bot': self.via_bot,
+            'reply_to': self.reply_to,
+            'reply_markup': self.reply_markup,
+            'views': self.views,
+            'forwards': self.forwards,
+            'replies': self.replies,
+            'edit_date': self.edit_date,
+            'post_author': self.post_author,
+            'grouped_id': self.grouped_id,
+            'ttl_period': self.ttl_period,
+            'action': self.action,
+            'media': self.media,
+            'action_entities': self.action_entities,
+        }
+
+    def __repr__(self):
+        return helpers.pretty_print(self)
+
+    def __str__(self):
+        return helpers.pretty_print(self, max_depth=2)
+
+    def stringify(self):
+        return helpers.pretty_print(self, indent=0)
 
 
 # TODO set md by default if commonmark is installed else nothing

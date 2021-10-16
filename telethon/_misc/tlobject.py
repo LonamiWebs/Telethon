@@ -3,6 +3,7 @@ import json
 import struct
 from datetime import datetime, date, timedelta, timezone
 import time
+from .helpers import pretty_print
 
 _EPOCH_NAIVE = datetime(*time.gmtime(0)[:6])
 _EPOCH_NAIVE_LOCAL = datetime(*time.localtime(0)[:6])
@@ -35,73 +36,6 @@ class TLObject:
     __slots__ = ()
     CONSTRUCTOR_ID = None
     SUBCLASS_OF_ID = None
-
-    @staticmethod
-    def pretty_format(obj, indent=None):
-        """
-        Pretty formats the given object as a string which is returned.
-        If indent is None, a single line will be returned.
-        """
-        if indent is None:
-            if isinstance(obj, TLObject):
-                obj = obj.to_dict()
-
-            if isinstance(obj, dict):
-                return '{}({})'.format(obj.get('_', 'dict'), ', '.join(
-                    '{}={}'.format(k, TLObject.pretty_format(v))
-                    for k, v in obj.items() if k != '_'
-                ))
-            elif isinstance(obj, str) or isinstance(obj, bytes):
-                return repr(obj)
-            elif hasattr(obj, '__iter__'):
-                return '[{}]'.format(
-                    ', '.join(TLObject.pretty_format(x) for x in obj)
-                )
-            else:
-                return repr(obj)
-        else:
-            result = []
-            if isinstance(obj, TLObject):
-                obj = obj.to_dict()
-
-            if isinstance(obj, dict):
-                result.append(obj.get('_', 'dict'))
-                result.append('(')
-                if obj:
-                    result.append('\n')
-                    indent += 1
-                    for k, v in obj.items():
-                        if k == '_':
-                            continue
-                        result.append('\t' * indent)
-                        result.append(k)
-                        result.append('=')
-                        result.append(TLObject.pretty_format(v, indent))
-                        result.append(',\n')
-                    result.pop()  # last ',\n'
-                    indent -= 1
-                    result.append('\n')
-                    result.append('\t' * indent)
-                result.append(')')
-
-            elif isinstance(obj, str) or isinstance(obj, bytes):
-                result.append(repr(obj))
-
-            elif hasattr(obj, '__iter__'):
-                result.append('[\n')
-                indent += 1
-                for x in obj:
-                    result.append('\t' * indent)
-                    result.append(TLObject.pretty_format(x, indent))
-                    result.append(',\n')
-                indent -= 1
-                result.append('\t' * indent)
-                result.append(']')
-
-            else:
-                result.append(repr(obj))
-
-            return ''.join(result)
 
     @staticmethod
     def serialize_bytes(data):
@@ -164,11 +98,14 @@ class TLObject:
     def __ne__(self, o):
         return not isinstance(o, type(self)) or self.to_dict() != o.to_dict()
 
+    def __repr__(self):
+        return pretty_print(self)
+
     def __str__(self):
-        return TLObject.pretty_format(self)
+        return pretty_print(self, max_depth=2)
 
     def stringify(self):
-        return TLObject.pretty_format(self, indent=0)
+        return pretty_print(self, indent=0)
 
     def to_dict(self):
         res = {}

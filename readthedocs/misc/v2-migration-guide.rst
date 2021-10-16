@@ -526,6 +526,39 @@ If you still want the old behaviour, wrap the list inside another list:
     #+
 
 
+Changes to the string and to_dict representation
+------------------------------------------------
+
+The string representation of raw API objects will now have its "printing depth" limited, meaning
+very large and nested objects will be easier to read.
+
+If you want to see the full object's representation, you should instead use Python's builtin
+``repr`` method.
+
+The ``.stringify`` method remains unchanged.
+
+Here's a comparison table for a convenient overview:
+
++-------------------+---------------------------------------------+---------------------------------------------+
+|                   |               Telethon v1.x                 |                 Telethon v2.x               |
++-------------------+-------------+--------------+----------------+-------------+--------------+----------------+
+|                   | ``__str__`` | ``__repr__`` | ``.stringify`` | ``__str__`` | ``__repr__`` | ``.stringify`` |
++-------------------+-------------+--------------+----------------+-------------+--------------+----------------+
+|           Useful? |      ✅     |      ❌      |        ✅      |      ✅     |       ✅     |        ✅      |
++-------------------+-------------+--------------+----------------+-------------+--------------+----------------+
+|        Multiline? |      ❌     |      ❌      |        ✅      |      ❌     |       ❌     |        ✅      |
++-------------------+-------------+--------------+----------------+-------------+--------------+----------------+
+| Shows everything? |      ✅     |      ❌      |        ✅      |      ❌     |       ✅     |        ✅      |
++-------------------+-------------+--------------+----------------+-------------+--------------+----------------+
+
+Both of the string representations may still change in the future without warning, as Telegram
+adds, changes or removes fields. It should only be used for debugging. If you need a persistent
+string representation, it is your job to decide which fields you care about and their format.
+
+The ``Message`` representation now contains different properties, which should be more useful and
+less confusing.
+
+
 Changes on how to configure a different connection mode
 -------------------------------------------------------
 
