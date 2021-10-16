@@ -589,6 +589,14 @@ broken for some time now (see `issue #1319 <https://github.com/LonamiWebs/Teleth
 anyway, so until there's a working solution, the mode is not supported. Pull Requests are welcome!
 
 
+The to_json method on objects has been removed
+----------------------------------------------
+
+This was not very useful, as most of the time, you'll probably be having other data along with the
+object's JSON. It simply saved you an import (and not even always, in case you wanted another
+encoder). Use ``json.dumps(obj.to_dict())`` instead.
+
+
 The Conversation API has been removed
 -------------------------------------
 

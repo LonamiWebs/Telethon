@@ -125,23 +125,6 @@ class TLObject:
 
         return res
 
-    def to_json(self, fp=None, default=_json_default, **kwargs):
-        """
-        Represent the current `TLObject` as JSON.
-
-        If ``fp`` is given, the JSON will be dumped to said
-        file pointer, otherwise a JSON string will be returned.
-
-        Note that bytes and datetimes cannot be represented
-        in JSON, so if those are found, they will be base64
-        encoded and ISO-formatted, respectively, by default.
-        """
-        d = self.to_dict()
-        if fp:
-            return json.dump(d, fp, default=default, **kwargs)
-        else:
-            return json.dumps(d, default=default, **kwargs)
-
     def __bytes__(self):
         try:
             return self._bytes()
