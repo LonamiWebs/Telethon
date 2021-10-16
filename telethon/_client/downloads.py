@@ -7,7 +7,7 @@ import inspect
 import asyncio
 
 from .._crypto import AES
-from .._misc import utils, helpers, requestiter, tlobject, hints
+from .._misc import utils, helpers, requestiter, tlobject, hints, enums
 from .. import errors, _tl
 
 try:
@@ -180,7 +180,7 @@ async def download_profile_photo(
         entity: 'hints.EntityLike',
         file: 'hints.FileLike' = None,
         *,
-        download_big: bool = True) -> typing.Optional[str]:
+        thumb) -> typing.Optional[str]:
     # hex(crc32(x.encode('ascii'))) for x in
     # ('User', 'Chat', 'UserFull', 'ChatFull')
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
@@ -188,8 +188,6 @@ async def download_profile_photo(
     INPUTS = (0xc91c90b6, 0xe669bf46, 0x40f202fd)
     if not isinstance(entity, tlobject.TLObject) or entity.SUBCLASS_OF_ID in INPUTS:
         entity = await self.get_entity(entity)
-
-    thumb = -1 if download_big else 0
 
     possible_names = []
     if entity.SUBCLASS_OF_ID not in ENTITIES:
@@ -212,11 +210,13 @@ async def download_profile_photo(
         photo = entity.photo
 
     if isinstance(photo, (_tl.UserProfilePhoto, _tl.ChatPhoto)):
+        thumb = enums.Size.ORIGINAL if thumb == () else enums.parse_photo_size(thumb)
+
         dc_id = photo.dc_id
         loc = _tl.InputPeerPhotoFileLocation(
             peer=await self.get_input_entity(entity),
             photo_id=photo.photo_id,
-            big=download_big
+            big=thumb >= enums.Size.LARGE
         )
     else:
         # It doesn't make any sense to check if `photo` can be used
@@ -259,7 +259,7 @@ async def download_media(
         message: 'hints.MessageLike',
         file: 'hints.FileLike' = None,
         *,
-        thumb: 'typing.Union[int, _tl.TypePhotoSize]' = None,
+        size = (),
         progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
     # Downloading large documents may be slow enough to require a new file reference
     # to be obtained mid-download. Store (input chat, message id) so that the message
@@ -292,11 +292,11 @@ async def download_media(
         return await _download_document(
             self, media, file, date, thumb, progress_callback, msg_data
         )
-    elif isinstance(media, _tl.MessageMediaContact) and thumb is None:
+    elif isinstance(media, _tl.MessageMediaContact):
         return _download_contact(
             self, media, file
         )
-    elif isinstance(media, (_tl.WebDocument, _tl.WebDocumentNoProxy)) and thumb is None:
+    elif isinstance(media, (_tl.WebDocument, _tl.WebDocumentNoProxy)):
         return await _download_web_document(
             self, media, file, progress_callback
         )
@@ -491,44 +491,15 @@ def _iter_download(
 
 
 def _get_thumb(thumbs, thumb):
-    # Seems Telegram has changed the order and put `PhotoStrippedSize`
-    # last while this is the smallest (layer 116). Ensure we have the
-    # sizes sorted correctly with a custom function.
-    def sort_thumbs(thumb):
-        if isinstance(thumb, _tl.PhotoStrippedSize):
-            return 1, len(thumb.bytes)
-        if isinstance(thumb, _tl.PhotoCachedSize):
-            return 1, len(thumb.bytes)
-        if isinstance(thumb, _tl.PhotoSize):
-            return 1, thumb.size
-        if isinstance(thumb, _tl.PhotoSizeProgressive):
-            return 1, max(thumb.sizes)
-        if isinstance(thumb, _tl.VideoSize):
-            return 2, thumb.size
-
-        # Empty size or invalid should go last
-        return 0, 0
-
-    thumbs = list(sorted(thumbs, key=sort_thumbs))
-
-    for i in reversed(range(len(thumbs))):
-        # :tl:`PhotoPathSize` is used for animated stickers preview, and the thumb is actually
-        # a SVG path of the outline. Users expect thumbnails to be JPEG files, so pretend this
-        # thumb size doesn't actually exist (#1655).
-        if isinstance(thumbs[i], _tl.PhotoPathSize):
-            thumbs.pop(i)
-
-    if thumb is None:
-        return thumbs[-1]
-    elif isinstance(thumb, int):
-        return thumbs[thumb]
-    elif isinstance(thumb, str):
-        return next((t for t in thumbs if t.type == thumb), None)
-    elif isinstance(thumb, (_tl.PhotoSize, _tl.PhotoCachedSize,
-                            _tl.PhotoStrippedSize, _tl.VideoSize)):
+    if isinstance(thumb, tlobject.TLObject):
         return thumb
-    else:
-        return None
+
+    thumb = enums.parse_photo_size(thumb)
+    return min(
+        thumbs,
+        default=None,
+        key=lambda t: abs(thumb - enums.parse_photo_size(t.type))
+    )
 
 def _download_cached_photo_size(self: 'TelegramClient', size, file):
     # No need to download anything, simply write the bytes
@@ -623,7 +594,7 @@ async def _download_document(
     if not isinstance(document, _tl.Document):
         return
 
-    if thumb is None:
+    if thumb == ():
         kind, possible_names = _get_kind_and_names(document.attributes)
         file = _get_proper_filename(
             file, kind, utils.get_extension(document),

@@ -706,3 +706,9 @@ formatting_entities stays because otherwise it's the only feasible way to manual
 todo update send_message and send_file docs (well review all functions)
 
 album overhaul. use a list of Message instead.
+
+size selector for download_profile_photo and download_media is now different
+
+still thumb because otherwise documents are weird.
+
+keep support for explicit size instance?

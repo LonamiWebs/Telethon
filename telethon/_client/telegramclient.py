@@ -1610,7 +1610,7 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             file: 'hints.FileLike' = None,
             *,
-            download_big: bool = True) -> typing.Optional[str]:
+            thumb: typing.Union[str, enums.Size] = ()) -> typing.Optional[str]:
         """
         Downloads the profile photo from the given user, chat or channel.
 
@@ -1634,8 +1634,15 @@ class TelegramClient:
                 If file is the type `bytes`, it will be downloaded in-memory
                 as a bytestring (e.g. ``file=bytes``).
 
-            download_big (`bool`, optional):
-                Whether to use the big version of the available photos.
+            thumb (optional):
+                The thumbnail size to download. A different size may be chosen
+                if the specified size doesn't exist. The category of the size
+                you choose will be respected when possible (e.g. if you
+                specify a cropped size, a cropped variant of similar size will
+                be preferred over a boxed variant of similar size). Cropped
+                images are considered to be smaller than boxed images.
+
+                By default, the largest size (original) is downloaded.
 
         Returns
             `None` if no photo was provided, or if it was Empty. On success
@@ -1655,7 +1662,7 @@ class TelegramClient:
             message: 'hints.MessageLike',
             file: 'hints.FileLike' = None,
             *,
-            thumb: 'typing.Union[int, _tl.TypePhotoSize]' = None,
+            thumb: typing.Union[str, enums.Size] = (),
             progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[typing.Union[str, bytes]]:
         """
         Downloads the given media from a message object.
@@ -1680,29 +1687,15 @@ class TelegramClient:
                 A callback function accepting two parameters:
                 ``(received bytes, total)``.
 
-            thumb (`int` | :tl:`PhotoSize`, optional):
-                Which thumbnail size from the document or photo to download,
-                instead of downloading the document or photo itself.
+            thumb (optional):
+                The thumbnail size to download. A different size may be chosen
+                if the specified size doesn't exist. The category of the size
+                you choose will be respected when possible (e.g. if you
+                specify a cropped size, a cropped variant of similar size will
+                be preferred over a boxed variant of similar size). Cropped
+                images are considered to be smaller than boxed images.
 
-                If it's specified but the file does not have a thumbnail,
-                this method will return `None`.
-
-                The parameter should be an integer index between ``0`` and
-                ``len(sizes)``. ``0`` will download the smallest thumbnail,
-                and ``len(sizes) - 1`` will download the largest thumbnail.
-                You can also use negative indices, which work the same as
-                they do in Python's `list`.
-
-                You can also pass the :tl:`PhotoSize` instance to use.
-                Alternatively, the thumb size type `str` may be used.
-
-                In short, use ``thumb=0`` if you want the smallest thumbnail
-                and ``thumb=-1`` if you want the largest thumbnail.
-
-                .. note::
-                    The largest thumbnail may be a video instead of a photo,
-                    as they are available since layer 116 and are bigger than
-                    any of the photos.
+                By default, the original media is downloaded.
 
         Returns
             `None` if no media was provided, or if it was Empty. On success
