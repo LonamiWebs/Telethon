@@ -41,6 +41,7 @@ BOT_MISSING,400,This method can only be run by a bot
 BOT_PAYMENTS_DISABLED,400,This method can only be run by a bot
 BOT_POLLS_DISABLED,400,You cannot create polls under a bot account
 BOT_RESPONSE_TIMEOUT,400,The bot did not answer to the callback query in time
+BOT_SCORE_NOT_MODIFIED,400,
 BROADCAST_CALLS_DISABLED,400,
 BROADCAST_FORBIDDEN,403,The request cannot be used in broadcast channels
 BROADCAST_ID_INVALID,400,The channel is invalid
@@ -55,6 +56,7 @@ CALL_OCCUPY_FAILED,500,The call failed because the user is already making anothe
 CALL_PEER_INVALID,400,The provided call peer object is invalid
 CALL_PROTOCOL_FLAGS_INVALID,400,Call protocol flags invalid
 CDN_METHOD_INVALID,400,This method cannot be invoked on a CDN server. Refer to https://core.telegram.org/cdn#schema for available methods
+CHANNELS_ADMIN_LOCATED_TOO_MUCH,400,
 CHANNELS_ADMIN_PUBLIC_TOO_MUCH,400,"You're admin of too many public channels, make some channels private to change the username of this channel"
 CHANNELS_TOO_MUCH,400,You have joined too many channels/supergroups
 CHANNEL_BANNED,400,The channel is banned
@@ -137,6 +139,7 @@ FILE_REFERENCE_EMPTY,400,The file reference must exist to access the media and i
 FILE_REFERENCE_EXPIRED,400,The file reference has expired and is no longer valid or it belongs to self-destructing media and cannot be resent
 FILE_REFERENCE_INVALID,400,The file reference is invalid or you can't do that operation on such message
 FILE_TITLE_EMPTY,400,
+FILTER_NOT_SUPPORTED,400,
 FIRSTNAME_INVALID,400,The first name is invalid
 FLOOD_TEST_PHONE_WAIT_X,420,A wait of {seconds} seconds is required in the test servers
 FLOOD_WAIT_X,420,A wait of {seconds} seconds is required
@@ -270,6 +273,7 @@ PHOTO_SAVE_FILE_INVALID,400,The photo you tried to send cannot be saved by Teleg
 PHOTO_THUMB_URL_EMPTY,400,The URL used as a thumbnail appears to be empty or has caused another HTTP error
 PIN_RESTRICTED,400,You can't pin messages in private chats with other people
 PINNED_DIALOGS_TOO_MUCH,400,
+POLL_ANSWER_INVALID,400,
 POLL_ANSWERS_INVALID,400,The poll did not have enough answers or had too many
 POLL_OPTION_DUPLICATE,400,A duplicate option was sent in the same poll
 POLL_OPTION_INVALID,400,A poll option used invalid data (the data may be too long)
@@ -285,6 +289,7 @@ PUBLIC_KEY_REQUIRED,400,
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
 QUERY_TOO_SHORT,400,The query string is too short
+QUIZ_ANSWER_MISSING,400,
 QUIZ_CORRECT_ANSWERS_EMPTY,400,A quiz must specify one correct answer
 QUIZ_CORRECT_ANSWERS_TOO_MUCH,400,There can only be one correct answer
 QUIZ_CORRECT_ANSWER_INVALID,400,The correct answer is not an existing answer
@@ -315,6 +320,7 @@ SCHEDULE_DATE_INVALID,400,
 SCHEDULE_DATE_TOO_LATE,400,The date you tried to schedule is too far in the future (last known limit of 1 year and a few hours)
 SCHEDULE_STATUS_PRIVATE,400,You cannot schedule a message until the person comes online if their privacy does not show this information
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
+SCORE_INVALID,400,
 SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slow mode only supports certain values (e.g. 0, 10s, 30s, 1m, 5m, 15m and 1h)"
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
