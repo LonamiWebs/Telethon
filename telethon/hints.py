@@ -16,8 +16,9 @@ EntityLike = typing.Union[
     PeerID,
     types.TypePeer,
     types.TypeInputPeer,
+    types.TypeInputUser,
     Entity,
-    FullEntity
+    FullEntity,
 ]
 EntitiesLike = typing.Union[EntityLike, typing.Sequence[EntityLike]]
 
