@@ -962,7 +962,7 @@ class DownloadMethods:
             f = file
 
         try:
-            with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession() as session:
                 # TODO Use progress_callback; get content length from response
                 # https://github.com/telegramdesktop/tdesktop/blob/c7e773dd9aeba94e2be48c032edc9a78bb50234e/Telegram/SourceFiles/ui/images.cpp#L1318-L1319
                 async with session.get(web.url) as response:
