@@ -1029,13 +1029,13 @@ def get_peer_id(peer, add_mark=True):
         return peer.user_id
     elif isinstance(peer, types.PeerChat):
         # Check in case the user mixed things up to avoid blowing up
-        if not (0 < peer.chat_id <= 0x7fffffff):
+        if not (0 < peer.chat_id <= 9999999999):
             peer.chat_id = resolve_id(peer.chat_id)[0]
 
         return -peer.chat_id if add_mark else peer.chat_id
     else:  # if isinstance(peer, types.PeerChannel):
         # Check in case the user mixed things up to avoid blowing up
-        if not (0 < peer.channel_id <= 0x7fffffff):
+        if not (0 < peer.channel_id <= 9999999999):
             peer.channel_id = resolve_id(peer.channel_id)[0]
 
         if not add_mark:
