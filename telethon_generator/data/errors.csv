@@ -61,6 +61,7 @@ CHANNEL_BANNED,400,The channel is banned
 CHANNEL_INVALID,400,"Invalid channel object. Make sure to pass the right types, for instance making sure that the request is designed for channels or otherwise look for a different one more suited"
 CHANNEL_PRIVATE,400,The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it
 CHANNEL_PUBLIC_GROUP_NA,403,channel/supergroup not available
+CHANNEL_TOO_LARGE,406,
 CHAT_ABOUT_NOT_MODIFIED,400,About text has not changed
 CHAT_ABOUT_TOO_LONG,400,Chat about too long
 CHAT_ADMIN_INVITE_REQUIRED,403,You do not have the rights to do this
@@ -177,6 +178,7 @@ INPUT_REQUEST_TOO_LONG,400,The input request was too long. This may be a bug in 
 INPUT_USER_DEACTIVATED,400,The specified user was deleted
 INTERDC_X_CALL_ERROR,500,An error occurred while communicating with DC {dc}
 INTERDC_X_CALL_RICH_ERROR,500,A rich error occurred while communicating with DC {dc}
+INVITE_FORBIDDEN_WITH_JOINAS,400,
 INVITE_HASH_EMPTY,400,The invite hash is empty
 INVITE_HASH_EXPIRED,400,The chat the user tried to join has expired and is not valid anymore
 INVITE_HASH_INVALID,400,The invite hash is invalid
@@ -285,6 +287,7 @@ PUBLIC_KEY_REQUIRED,400,
 QUERY_ID_EMPTY,400,The query ID is empty
 QUERY_ID_INVALID,400,The query ID is invalid
 QUERY_TOO_SHORT,400,The query string is too short
+QUIZ_ANSWER_MISSING,400,
 QUIZ_CORRECT_ANSWERS_EMPTY,400,A quiz must specify one correct answer
 QUIZ_CORRECT_ANSWERS_TOO_MUCH,400,There can only be one correct answer
 QUIZ_CORRECT_ANSWER_INVALID,400,The correct answer is not an existing answer
@@ -376,6 +379,7 @@ USERNAME_OCCUPIED,400,The username is already taken
 USERS_TOO_FEW,400,"Not enough users (to create a chat, for example)"
 USERS_TOO_MUCH,400,"The maximum number of users has been exceeded (to create a chat, for example)"
 USER_ADMIN_INVALID,400,Either you're not an admin or you tried to ban an admin that you didn't promote
+USER_ALREADY_INVITED,400,
 USER_ALREADY_PARTICIPANT,400,The authenticated user is already a participant of the chat
 USER_BANNED_IN_CHANNEL,400,You're banned from sending messages in supergroups/channels
 USER_BLOCKED,400,User blocked
