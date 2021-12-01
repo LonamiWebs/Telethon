@@ -13,6 +13,30 @@ it can take advantage of new goodies!
 
 .. contents:: List of All Versions
 
+Rushed release to fix login (v1.24)
+===================================
+
++------------------------+
+| Scheme layer used: 133 |
++------------------------+
+
+This is a rushed release. It contains a layer recent enough to not fail with
+``UPDATE_APP_TO_LOGIN``, but still not the latest, to avoid breaking more
+than necessary.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+
+* The biggest change is user identifiers (and chat identifiers, and others)
+  **now use up to 64 bits**, rather than 32. If you were storing them in some
+  storage with fixed size, you may need to update (such as database tables
+  storing only integers).
+
+There have been other changes which I currently don't have the time to document.
+You can refer to the following link to see them early:
+https://github.com/LonamiWebs/Telethon/compare/v1.23.0...v1.24.0
+
+
 New schema and bug fixes (v1.23)
 ================================
 
