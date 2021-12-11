@@ -444,9 +444,10 @@ class EventBuilderDict:
             return self.__dict__[builder]
         except KeyError:
             event = self.__dict__[builder] = builder.build(
-                self.update, self.others, self.client._session_state.user_id)
+                self.update, self.others, self.client._session_state.user_id, self.entities or {}, self.client)
 
             if isinstance(event, EventCommon):
+                # TODO eww
                 event.original_update = self.update
                 event._entities = self.entities or {}
                 event._set_client(self.client)

@@ -35,7 +35,7 @@ class MessageRead(EventBuilder):
         self.inbox = inbox
 
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others=None, self_id=None, *todo, **todo2):
         if isinstance(update, _tl.UpdateReadHistoryInbox):
             return cls.Event(update.peer, update.max_id, False)
         elif isinstance(update, _tl.UpdateReadHistoryOutbox):

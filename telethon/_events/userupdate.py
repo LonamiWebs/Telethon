@@ -49,7 +49,7 @@ class UserUpdate(EventBuilder):
                     await client.send_message(event.user_id, 'What are you sending?')
     """
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others=None, self_id=None, *todo, **todo2):
         if isinstance(update, _tl.UpdateUserStatus):
             return cls.Event(_tl.PeerUser(update.user_id),
                              status=update.status)
