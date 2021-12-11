@@ -488,7 +488,7 @@ async def send_message(
     else:
         request = _tl.fn.messages.SendMessage(
             peer=entity,
-            message=message,
+            message=message._text,
             entities=formatting_entities,
             no_webpage=not link_preview,
             reply_to_msg_id=utils.get_message_id(reply_to),
