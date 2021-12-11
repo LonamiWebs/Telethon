@@ -208,8 +208,6 @@ class ChatAction(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            if self.action_message:
-                self.action_message._finish_init(client, self._entities, None)
 
         async def respond(self, *args, **kwargs):
             """
