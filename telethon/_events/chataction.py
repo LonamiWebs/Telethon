@@ -33,7 +33,7 @@ class ChatAction(EventBuilder):
     """
 
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others=None, self_id=None, *todo, **todo2):
         # Rely on specific pin updates for unpins, but otherwise ignore them
         # for new pins (we'd rather handle the new service message with pin,
         # so that we can act on that message').
@@ -205,9 +205,6 @@ class ChatAction(EventBuilder):
             self.new_title = new_title
             self.new_score = new_score
             self.unpin = not pin
-
-        def _set_client(self, client):
-            super()._set_client(client)
 
         async def respond(self, *args, **kwargs):
             """

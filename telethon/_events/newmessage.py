@@ -95,14 +95,14 @@ class NewMessage(EventBuilder):
         self.from_users = await _into_id_set(client, self.from_users)
 
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others, self_id, entities, client):
         if isinstance(update,
                       (_tl.UpdateNewMessage, _tl.UpdateNewChannelMessage)):
             if not isinstance(update.message, _tl.Message):
                 return  # We don't care about MessageService's here
-            event = cls.Event(update.message)
+            msg = update.message
         elif isinstance(update, _tl.UpdateShortMessage):
-            event = cls.Event(_tl.Message(
+            msg = _tl.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
@@ -117,9 +117,9 @@ class NewMessage(EventBuilder):
                 reply_to=update.reply_to,
                 entities=update.entities,
                 ttl_period=update.ttl_period
-            ))
+            )
         elif isinstance(update, _tl.UpdateShortChatMessage):
-            event = cls.Event(_tl.Message(
+            msg = _tl.Message(
                 out=update.out,
                 mentioned=update.mentioned,
                 media_unread=update.media_unread,
@@ -134,11 +134,11 @@ class NewMessage(EventBuilder):
                 reply_to=update.reply_to,
                 entities=update.entities,
                 ttl_period=update.ttl_period
-            ))
+            )
         else:
             return
 
-        return event
+        return cls.Event(_custom.Message._new(client, msg, entities, None))
 
     def filter(self, event):
         if self._no_check:

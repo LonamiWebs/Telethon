@@ -36,7 +36,7 @@ class MessageDeleted(EventBuilder):
                     print('Message', msg_id, 'was deleted in', event.chat_id)
     """
     @classmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others=None, self_id=None, *todo, **todo2):
         if isinstance(update, _tl.UpdateDeleteMessages):
             return cls.Event(
                 deleted_ids=update.messages,

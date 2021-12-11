@@ -67,7 +67,7 @@ class EventBuilder(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def build(cls, update, others=None, self_id=None):
+    def build(cls, update, others, self_id, entities, client):
         """
         Builds an event for the given update if possible, or returns None.
 
@@ -144,6 +144,7 @@ class EventCommon(ChatGetter, abc.ABC):
         """
         Setter so subclasses can act accordingly when the client is set.
         """
+        # TODO Nuke
         self._client = client
         if self._chat_peer:
             self._chat, self._input_chat = utils._get_entity_pair(
