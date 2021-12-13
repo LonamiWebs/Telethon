@@ -7,7 +7,7 @@ import typing
 from ..errors._custom import MultiError
 from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError, UnauthorizedError
 from .._misc import helpers, utils, hints
-from .._sessions.types import Entity
+from .._sessions.types import Entity, get_peer_canonical_entity_type
 from .. import errors, _tl
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
@@ -235,8 +235,10 @@ async def get_input_entity(
     # Next in priority is having a peer (or its ID) cached in-memory
     try:
         # 0x2d45687 == crc32(b'Peer')
-        if isinstance(peer, int) or peer.SUBCLASS_OF_ID == 0x2d45687:
-            return self._entity_cache[peer]
+        # TODO: FIXME: This logic is incorrect - Peers are unhashable and the cache should be sorted by Entity.ty
+        # if isinstance(peer, int) or peer.SUBCLASS_OF_ID == 0x2d45687:
+        #     return self._entity_cache[peer]
+        pass
     except (AttributeError, KeyError):
         pass
 
@@ -250,13 +252,14 @@ async def get_input_entity(
     except TypeError:
         pass
     else:
-        entity = await self.session.get_entity(None, peer_id)
+        entity_type = get_peer_canonical_entity_type(peer)
+        entity = await self.session.get_entity(entity_type, peer_id)
         if entity:
-            if entity.ty in (Entity.USER, Entity.BOT):
+            if entity_type == Entity.USER:
                 return _tl.InputPeerUser(entity.id, entity.access_hash)
-            elif entity.ty in (Entity.GROUP):
+            elif entity_type == Entity.GROUP:
                 return _tl.InputPeerChat(peer.chat_id)
-            elif entity.ty in (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP):
+            elif entity_type == Entity.CHANNEL:
                 return _tl.InputPeerChannel(entity.id, entity.access_hash)
 
     # Only network left to try

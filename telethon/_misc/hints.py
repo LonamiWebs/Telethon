@@ -7,14 +7,12 @@ from ..types import _custom
 
 Phone = str
 Username = str
-PeerID = int
 Entity = typing.Union[_tl.User, _tl.Chat, _tl.Channel]
 FullEntity = typing.Union[_tl.UserFull, _tl.messages.ChatFull, _tl.ChatFull, _tl.ChannelFull]
 
 EntityLike = typing.Union[
     Phone,
     Username,
-    PeerID,
     _tl.TypePeer,
     _tl.TypeInputPeer,
     Entity,

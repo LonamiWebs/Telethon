@@ -90,8 +90,9 @@ class InputFile:
         elif isinstance(thumb, (_tl.InputFile, _tl.InputFileBig)):
             self._uploaded_thumb = (thumb, time.time())
 
-        else:
+        elif thumb:
             raise TypeError(f'thumb must be a file to upload, but got: {thumb!r}')
+        # else: it's falsey, ignore it
 
         # document parameters (only if it's our file, i.e. there's no media ready yet)
         if self._media:

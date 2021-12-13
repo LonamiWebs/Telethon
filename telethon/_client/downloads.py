@@ -8,6 +8,7 @@ import asyncio
 
 from .._crypto import AES
 from .._misc import utils, helpers, requestiter, tlobject, hints
+from ..types._custom import Message
 from .. import errors, _tl
 
 try:
@@ -267,7 +268,8 @@ async def download_media(
     msg_data = None
 
     # TODO This won't work for messageService
-    if isinstance(message, _tl.Message):
+    # TODO Handle _tl.Message
+    if isinstance(message, Message):
         date = message.date
         media = message.media
         msg_data = (message.input_chat, message.id) if message.input_chat else None

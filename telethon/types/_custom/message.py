@@ -160,7 +160,7 @@ class Message(ChatGetter, SenderGetter):
         except AttributeError:
             return None
 
-        return None if media.CONSTRUCTOR_ID == 0x3ded6320 else media
+        return None if media is None or media.CONSTRUCTOR_ID == 0x3ded6320 else media
 
     @media.setter
     def media(self, value):

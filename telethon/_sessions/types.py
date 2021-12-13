@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
+from .. import _tl
+from .._misc import hints, utils
 
 
 class DataCenter:
@@ -155,3 +157,21 @@ def get_entity_type_group(ty: int, *, _mapping={
     except KeyError:
         ty = chr(ty) if isinstance(ty, int) else ty
         raise ValueError(f'entity type {ty!r} is not valid')
+
+
+def get_peer_canonical_entity_type(peer: Union[
+    _tl.TypePeer,
+    _tl.TypeInputPeer,
+    hints.Entity,
+    hints.FullEntity,
+], *, _mapping={
+    _tl.PeerUser: Entity.USER,
+    _tl.PeerChat: Entity.GROUP,
+    _tl.PeerChannel: Entity.CHANNEL,
+}) -> int:
+    peer = utils.get_peer(peer)
+    try:
+        return _mapping[type(peer)]
+    except KeyError:
+        # Safe to log full peer since only contains the ID
+        raise ValueError(f'Unexpected peer {peer!r}')

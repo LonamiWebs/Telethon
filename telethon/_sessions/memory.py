@@ -1,4 +1,4 @@
-from .types import DataCenter, ChannelState, SessionState, Entity
+from .types import DataCenter, ChannelState, SessionState, Entity, get_entity_type_group
 from .abstract import Session
 from .._misc import utils, tlobject
 from .. import _tl
@@ -34,11 +34,11 @@ class MemorySession(Session):
         return list(self.channel_states.values())
 
     async def insert_entities(self, entities: List[Entity]):
-        self.entities.update((e.id, (e.ty, e.access_hash)) for e in entities)
+        self.entities.update(((get_peer_canonical_entity_type(e.ty), e.id), e.access_hash) for e in entities)
 
-    async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
+    async def get_entity(self, ty: int, id: int) -> Optional[Entity]:
         try:
-            ty, access_hash = self.entities[id]
+            access_hash = self.entities[get_peer_canonical_entity_type(ty), id]
             return Entity(ty, id, access_hash)
         except KeyError:
             return None

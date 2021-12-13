@@ -489,7 +489,7 @@ async def send_message(
         request = _tl.fn.messages.SendMessage(
             peer=entity,
             message=message._text,
-            entities=formatting_entities,
+            entities=message._fmt_entities,
             no_webpage=not link_preview,
             reply_to_msg_id=utils.get_message_id(reply_to),
             clear_draft=clear_draft,
@@ -508,7 +508,7 @@ async def send_message(
             date=result.date,
             out=result.out,
             media=result.media,
-            entities=result.entities,
+            entities=result._fmt_entities,
             reply_markup=request.reply_markup,
             ttl_period=result.ttl_period
         ), {}, entity)
@@ -579,35 +579,88 @@ async def forward_messages(
 async def edit_message(
         self: 'TelegramClient',
         entity: 'typing.Union[hints.EntityLike, _tl.Message]',
-        message: 'hints.MessageLike' = None,
+        message_id: 'hints.MessageLike' = None,
         text: str = None,
         *,
-        parse_mode: str = (),
-        attributes: 'typing.Sequence[_tl.TypeDocumentAttribute]' = None,
-        formatting_entities: typing.Optional[typing.List[_tl.TypeMessageEntity]] = None,
-        link_preview: bool = True,
-        file: 'hints.FileLike' = None,
-        thumb: 'hints.FileLike' = None,
-        force_document: bool = False,
-        buttons: 'hints.MarkupLike' = None,
+        # - Message contents
+        # Formatting
+        markdown: str = None,
+        html: str = None,
+        formatting_entities: list = None,
+        link_preview: bool = (),
+        # Media
+        file: typing.Optional[hints.FileLike] = None,
+        file_name: str = None,
+        mime_type: str = None,
+        thumb: str = False,
+        force_file: bool = False,
+        file_size: int = None,
+        # Media attributes
+        duration: int = None,
+        width: int = None,
+        height: int = None,
+        title: str = None,
+        performer: str = None,
         supports_streaming: bool = False,
-        schedule: 'hints.DateLike' = None
+        video_note: bool = False,
+        voice_note: bool = False,
+        waveform: bytes = None,
+        # Additional parametrization
+        buttons: list = None,
+        ttl: int = None,
+        # - Send options
+        schedule: 'hints.DateLike' = None,
 ) -> '_tl.Message':
-    if formatting_entities is None:
-        text, formatting_entities = await self._parse_message_text(text, parse_mode)
-    file_handle, media, image = await self._file_to_media(file,
-            supports_streaming=supports_streaming,
+    if isinstance(text, str) or text is None:
+        message = InputMessage(
+            text=text,
+            markdown=markdown,
+            html=html,
+            formatting_entities=formatting_entities,
+            link_preview=link_preview,
+            file=file,
+            file_name=file_name,
+            mime_type=mime_type,
             thumb=thumb,
-            attributes=attributes,
-            force_document=force_document)
+            force_file=force_file,
+            file_size=file_size,
+            duration=duration,
+            width=width,
+            height=height,
+            title=title,
+            performer=performer,
+            supports_streaming=supports_streaming,
+            video_note=video_note,
+            voice_note=voice_note,
+            waveform=waveform,
+            silent=False,
+            buttons=buttons,
+            ttl=ttl,
+        )
+    elif isinstance(text, _custom.Message):
+        # TODO accept this as the first and only parameter
+        message = message._as_input()
+    elif not isinstance(text, InputMessage):
+        raise TypeError(f'text must be either str, Message or InputMessage, but got: {text!r}')
+
+    if message._file:
+        # TODO Properly implement allow_cache to reuse the sha256 of the file
+        # i.e. `None` was used
+
+        # TODO album
+        if message._file._should_upload_thumb():
+            message._file._set_uploaded_thumb(await self.upload_file(message._file._thumb))
+
+        if message._file._should_upload_file():
+            message._file._set_uploaded_file(await self.upload_file(message._file._file))
 
     if isinstance(message, _tl.InputBotInlineMessageID):
         request = _tl.fn.messages.EditInlineBotMessage(
-            id=message,
-            message=text,
+            id=message_id,
+            message=message._text,
             no_webpage=not link_preview,
-            entities=formatting_entities,
-            media=media,
+            entities=message._fmt_entities,
+            media=message._file._media,
             reply_markup=_custom.button.build_reply_markup(buttons)
         )
         # Invoke `messages.editInlineBotMessage` from the right datacenter.
@@ -622,17 +675,13 @@ async def edit_message(
         else:
             return await self(request)
 
-    entity = await self.get_input_entity(entity)
+    message_id = utils.get_message_id(message_id)
+
     request = _tl.fn.messages.EditMessage(
-        peer=entity,
-        id=utils.get_message_id(message),
-        message=text,
-        no_webpage=not link_preview,
-        entities=formatting_entities,
-        media=media,
-        reply_markup=_custom.button.build_reply_markup(buttons),
-        schedule_date=schedule
+        entity, message_id, no_webpage=not link_preview, message=message._text,
+        media=message._file._media if message._file else None, reply_markup=message._reply_markup, entities=message._fmt_entities, schedule_date=schedule
     )
+
     msg = self._get_response_message(request, await self(request), entity)
     return msg
 
