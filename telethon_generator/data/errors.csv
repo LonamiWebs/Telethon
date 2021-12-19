@@ -67,6 +67,7 @@ CHAT_ABOUT_TOO_LONG,400,Chat about too long
 CHAT_ADMIN_INVITE_REQUIRED,403,You do not have the rights to do this
 CHAT_ADMIN_REQUIRED,400,"Chat admin privileges are required to do that in the specified chat (for example, to send a message in a channel which is not yours), or invalid permissions used for the channel or group"
 CHAT_FORBIDDEN,403,You cannot write in this chat
+CHAT_FORWARDS_RESTRICTED,400,The group/channel has restricted forwarding
 CHAT_ID_EMPTY,400,The provided chat ID is empty
 CHAT_ID_INVALID,400,"Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead"
 CHAT_INVALID,400,The chat is invalid for this request
