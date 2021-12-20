@@ -412,10 +412,7 @@ class TelegramBaseClient(abc.ABC):
 
         self._authorized = None  # None = unknown, False = no, True = yes
 
-        # Update state (for catching up after a disconnection)
-        # TODO Get state from channels too
-        self._state_cache = StateCache(
-            self.session.get_update_state(0), self._log)
+        self._state_cache = StateCache(None, self._log)
 
         # Some further state for subclasses
         self._event_builders = []
@@ -522,6 +519,11 @@ class TelegramBaseClient(abc.ABC):
                 except OSError:
                     print('Failed to connect')
         """
+        # Update state (for catching up after a disconnection)
+        # TODO Get state from channels too
+        self._state_cache = StateCache(
+            await self.session.get_update_state(0), self._log)
+
         if not await self._sender.connect(self._connection(
             self.session.server_address,
             self.session.port,
@@ -534,7 +536,7 @@ class TelegramBaseClient(abc.ABC):
             return
 
         self.session.auth_key = self._sender.auth_key
-        self.session.save()
+        await self.session.save()
 
         self._init_request.query = functions.help.GetConfigRequest()
 
@@ -644,7 +646,7 @@ class TelegramBaseClient(abc.ABC):
 
         pts, date = self._state_cache[None]
         if pts and date:
-            self.session.set_update_state(0, types.updates.State(
+            await self.session.set_update_state(0, types.updates.State(
                 pts=pts,
                 qts=0,
                 date=date,
@@ -652,7 +654,7 @@ class TelegramBaseClient(abc.ABC):
                 unread_count=0
             ))
 
-        self.session.close()
+        await self.session.close()
 
     async def _disconnect(self: 'TelegramClient'):
         """
@@ -677,17 +679,17 @@ class TelegramBaseClient(abc.ABC):
         # so it's not valid anymore. Set to None to force recreating it.
         self._sender.auth_key.key = None
         self.session.auth_key = None
-        self.session.save()
+        await self.session.save()
         await self._disconnect()
         return await self.connect()
 
-    def _auth_key_callback(self: 'TelegramClient', auth_key):
+    async def _auth_key_callback(self: 'TelegramClient', auth_key):
         """
         Callback from the sender whenever it needed to generate a
         new authorization key. This means we are not authorized.
         """
         self.session.auth_key = auth_key
-        self.session.save()
+        await self.session.save()
 
     # endregion
 
@@ -812,7 +814,7 @@ class TelegramBaseClient(abc.ABC):
         if not session:
             dc = await self._get_dc(cdn_redirect.dc_id, cdn=True)
             session = self.session.clone()
-            await session.set_dc(dc.id, dc.ip_address, dc.port)
+            session.set_dc(dc.id, dc.ip_address, dc.port)
             self._exported_sessions[cdn_redirect.dc_id] = session
 
         self._log[__name__].info('Creating new CDN client')

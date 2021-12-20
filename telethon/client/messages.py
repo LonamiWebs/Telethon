@@ -1019,7 +1019,7 @@ class MessageMethods:
     async def edit_message(
             self: 'TelegramClient',
             entity: 'typing.Union[hints.EntityLike, types.Message]',
-            message: 'hints.MessageLike' = None,
+            message: 'hints.MessageIDLike' = None,
             text: str = None,
             *,
             parse_mode: str = (),

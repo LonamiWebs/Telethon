@@ -295,7 +295,7 @@ class MTProtoSender:
             # notify whenever we change it. This is crucial when we
             # switch to different data centers.
             if self._auth_key_callback:
-                self._auth_key_callback(self.auth_key)
+                await self._auth_key_callback(self.auth_key)
 
             self._log.debug('auth_key generation success!')
             return True
@@ -380,7 +380,7 @@ class MTProtoSender:
                     self._log.info('Broken authorization key; resetting')
                     self.auth_key.key = None
                     if self._auth_key_callback:
-                        self._auth_key_callback(None)
+                        await self._auth_key_callback(None)
 
                     ok = False
                     break
@@ -524,7 +524,7 @@ class MTProtoSender:
                     self._log.info('Broken authorization key; resetting')
                     self.auth_key.key = None
                     if self._auth_key_callback:
-                        self._auth_key_callback(None)
+                        await self._auth_key_callback(None)
 
                     await self._disconnect(error=e)
                 else:
@@ -653,7 +653,7 @@ class MTProtoSender:
 
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
         if self._update_callback:
-            self._update_callback(message.obj)
+            await self._update_callback(message.obj)
 
     async def _handle_pong(self, message):
         """

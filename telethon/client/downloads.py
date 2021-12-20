@@ -55,7 +55,7 @@ class _DirectDownloadIter(RequestIter):
                     if option.ip_address == self.client.session.server_address:
                         self.client.session.set_dc(
                             option.id, option.ip_address, option.port)
-                        self.client.session.save()
+                        await self.client.session.save()
                         break
 
                 # TODO Figure out why the session may have the wrong DC ID
@@ -402,7 +402,7 @@ class DownloadMethods:
             if isinstance(message.action,
                           types.MessageActionChatEditPhoto):
                 media = media.photo
-       
+
         if isinstance(media, types.MessageMediaWebPage):
             if isinstance(media.webpage, types.WebPage):
                 media = media.webpage.document or media.webpage.photo
