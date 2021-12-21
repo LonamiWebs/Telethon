@@ -233,6 +233,10 @@ class _ParticipantsIter(RequestIter):
             users = {user.id: user for user in participants.users}
             for participant in participants.participants:
 
+                if isinstance(participant, types.ChannelParticipantLeft):
+                    # These participants should be ignored. See #3231.
+                    continue
+
                 if isinstance(participant, types.ChannelParticipantBanned):
                     if not isinstance(participant.peer, types.PeerUser):
                         # May have the entire channel banned. See #3105.
