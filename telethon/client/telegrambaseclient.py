@@ -362,7 +362,9 @@ class TelegramBaseClient(abc.ABC):
             default_device_model = 'Telethon 32bit'
         else:
             default_device_model = system.machine
-        default_system_version = re.sub(r'-.+','',system.release)
+
+        # default_system_version = re.sub(r'-.+', '', system.release)
+        default_system_version = system.version
 
         self._init_request = functions.InitConnectionRequest(
             api_id=self.api_id,
