@@ -27,7 +27,6 @@ if typing.TYPE_CHECKING:
 
 _base_log = logging.getLogger(__base_name__)
 
-
 # In seconds, how long to wait before disconnecting a exported sender.
 _DISCONNECT_EXPORTED_AFTER = 60
 
@@ -358,9 +357,9 @@ class TelegramBaseClient(abc.ABC):
         system = platform.uname()
 
         if system.machine in ('x86_64', 'AMD64'):
-            default_device_model = 'PC 64bit'
-        elif system.machine in ('i386','i686','x86'):
-            default_device_model = 'PC 32bit'
+            default_device_model = 'Telethon 64bit'
+        elif system.machine in ('i386', 'i686', 'x86'):
+            default_device_model = 'Telethon 32bit'
         else:
             default_device_model = system.machine
         default_system_version = re.sub(r'-.+','',system.release)
@@ -523,12 +522,12 @@ class TelegramBaseClient(abc.ABC):
                     print('Failed to connect')
         """
         if not await self._sender.connect(self._connection(
-            self.session.server_address,
-            self.session.port,
-            self.session.dc_id,
-            loggers=self._log,
-            proxy=self._proxy,
-            local_addr=self._local_addr
+                self.session.server_address,
+                self.session.port,
+                self.session.dc_id,
+                loggers=self._log,
+                proxy=self._proxy,
+                local_addr=self._local_addr
         )):
             # We don't want to init or modify anything if we were already connected
             return
