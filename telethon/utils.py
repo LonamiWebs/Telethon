@@ -1265,10 +1265,10 @@ def pack_bot_file_id(file):
         if not size:
             return None
 
-        size = size.location
+        # Location is depricated since layer 128. See #3242
         return _encode_telegram_base64(_rle_encode(struct.pack(
             '<iiqqqqib', 2, file.dc_id, file.id, file.access_hash,
-            size.volume_id, 0, size.local_id, 2  # 0 = old `secret`
+            0, 0, 0, 2  # 0 = old `secret`
         )))
     else:
         return None
