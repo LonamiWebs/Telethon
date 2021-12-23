@@ -297,7 +297,7 @@ RANDOM_ID_INVALID,400,A provided random ID is invalid
 RANDOM_LENGTH_INVALID,400,Random length invalid
 RANGES_INVALID,400,Invalid range provided
 REACTION_EMPTY,400,No reaction provided
-REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed)
+REACTION_INVALID,400,Invalid reaction provided (only emoji are allowed) or you cannot use the reaction in the specified chat
 REFLECTOR_NOT_AVAILABLE,400,Invalid call reflector server
 REG_ID_GENERATE_FAILED,500,Failure while generating registration ID
 REPLY_MARKUP_GAME_EMPTY,400,The provided reply markup for the game is empty
