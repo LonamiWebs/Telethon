@@ -1,4 +1,5 @@
 import abc
+from ..._misc import utils
 
 
 class SenderGetter(abc.ABC):
@@ -8,7 +9,7 @@ class SenderGetter(abc.ABC):
     methods.
     """
     def __init__(self, sender_id=None, *, sender=None, input_sender=None):
-        self._sender_id = sender_id
+        self._sender_id = utils.get_peer(sender_id)
         self._sender = sender
         self._input_sender = input_sender
         self._client = None
@@ -84,7 +85,7 @@ class SenderGetter(abc.ABC):
     @property
     def sender_id(self):
         """
-        Returns the marked sender integer ID, if present.
+        Returns the sender peer, if present.
 
         If there is a sender in the object, `sender_id` will *always* be set,
         which is why you should use it instead of `sender.id <sender>`.

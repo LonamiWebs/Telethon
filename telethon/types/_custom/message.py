@@ -409,14 +409,23 @@ class Message(ChatGetter, SenderGetter):
         sender_id = None
         if isinstance(message, _tl.Message):
             if message.from_id is not None:
-                sender_id = utils.get_peer_id(message.from_id)
+                sender_id = message.from_id
         if sender_id is None and message.peer_id and not isinstance(message, _tl.MessageEmpty):
             # If the message comes from a Channel, let the sender be it
             # ...or...
             # incoming messages in private conversations no longer have from_id
             # (layer 119+), but the sender can only be the chat we're in.
+            print("a", message.peer_id, message.out, isinstance(message.peer_id, _tl.PeerUser))
             if message.post or (not message.out and isinstance(message.peer_id, _tl.PeerUser)):
-                sender_id = utils.get_peer_id(message.peer_id)
+                sender_id = message.peer_id
+            if message.post:
+                sender_id = message.peer_id
+            if isinstance(message.peer_id, _tl.PeerUser):
+                if message.out:
+                    sender_id = _tl.PeerUser(client._session_state.user_id)
+                else:
+                    sender_id = message.peer_id
+            print("b", sender_id)
 
         # Note that these calls would reset the client
         ChatGetter.__init__(self, message.peer_id, broadcast=message.post)
@@ -444,8 +453,8 @@ class Message(ChatGetter, SenderGetter):
 
         cache = client._entity_cache
 
-        self._sender, self._input_sender = utils._get_entity_pair(
-            self.sender_id, entities, cache)
+#        self._sender, self._input_sender = utils._get_entity_pair(
+#            self.sender_id, entities, cache)
 
         self._chat, self._input_chat = utils._get_entity_pair(
             self.chat_id, entities, cache)

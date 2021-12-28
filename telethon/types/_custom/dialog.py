@@ -37,9 +37,6 @@ class Dialog:
         input_entity (:tl:`InputPeer`):
             Input version of the entity.
 
-        id (`int`):
-            The marked ID of the entity, which is guaranteed to be unique.
-
         name (`str`):
             Display name for this dialog. For chats and channels this is
             their title, and for users it's "First-Name Last-Name".
@@ -81,7 +78,6 @@ class Dialog:
 
         self.entity = entities[utils.get_peer_id(dialog.peer)]
         self.input_entity = utils.get_input_peer(self.entity)
-        self.id = utils.get_peer_id(self.entity)  # ^ May be InputPeerSelf()
         self.name = self.title = utils.get_display_name(self.entity)
 
         self.unread_count = dialog.unread_count

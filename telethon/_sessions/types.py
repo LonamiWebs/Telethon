@@ -123,7 +123,7 @@ class Entity:
         self.access_hash = access_hash
 
 
-def canonical_entity_type(ty: int, *, _mapping={
+def get_canonical_entity_type(ty: int, *, _mapping={
     Entity.USER: Entity.USER,
     Entity.BOT: Entity.USER,
     Entity.GROUP: Entity.GROUP,

@@ -73,6 +73,21 @@ class TelegramClient:
             You only need to use this if you have multiple network cards and
             want to use a specific one.
 
+        default_dc_id (`int`, optional):
+            The DC ID to connect to, if not already provided by the session.
+
+        default_ipv4_ip (`str`, optional):
+            The default IPv4 address to connect to, if not already provided by
+            the session.
+
+        default_ipv6_ip (`str`, optional):
+            The default IPv6 address to connect to, if not already provided by
+            the session.
+
+        default_port (`int`, optional):
+            The default port to connect to, if not already provided by
+            the session. This is used whether the connection is IPv4 or IPv6.
+
         timeout (`int` | `float`, optional):
             The timeout in seconds to be used when connecting.
             This is **not** the timeout to be used when ``await``'ing for
@@ -2681,6 +2696,10 @@ class TelegramClient:
             use_ipv6: bool = False,
             proxy: typing.Union[tuple, dict] = None,
             local_addr: typing.Union[str, tuple] = None,
+            default_dc_id: int = None,
+            default_ipv4_ip: str = None,
+            default_ipv6_ip: str = None,
+            default_port: int = None,
             timeout: int = 10,
             request_retries: int = 5,
             connection_retries: int = 5,

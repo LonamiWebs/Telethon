@@ -102,17 +102,17 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
 
             # SLOWMODE_WAIT is chat-specific, not request-specific
             if not isinstance(e, errors.SLOWMODE_WAIT):
-                self._flood_waited_requests\
+                # TODO reconsider use of time.time() - maybe monotonic or server time is better.
+                self._flood_waited_requests \
                     [request.CONSTRUCTOR_ID] = time.time() + e.seconds
 
             # In test servers, FLOOD_WAIT_0 has been observed, and sleeping for
             # such a short amount will cause retries very fast leading to issues.
-            if e.seconds == 0:
-                e.seconds = 1
+            seconds = e.seconds or 1
 
-            if e.seconds <= self.flood_sleep_threshold:
-                self._log[__name__].info(*_fmt_flood(e.seconds, request))
-                await asyncio.sleep(e.seconds)
+            if seconds <= self.flood_sleep_threshold:
+                self._log[__name__].info(*_fmt_flood(seconds, request))
+                await asyncio.sleep(seconds)
             else:
                 raise
         except InvalidDcError as e:

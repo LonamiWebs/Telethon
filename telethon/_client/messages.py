@@ -508,7 +508,7 @@ async def send_message(
             date=result.date,
             out=result.out,
             media=result.media,
-            entities=result._fmt_entities,
+            entities=result.entities,
             reply_markup=request.reply_markup,
             ttl_period=result.ttl_period
         ), {}, entity)

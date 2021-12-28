@@ -74,7 +74,7 @@ class Session(ABC):
         For example, if a ``ty`` representing a bot is stored but the asking ``ty`` is a user,
         the corresponding ``access_hash`` should still be returned.
 
-        You may use `types.canonical_entity_type` to find out the canonical type.
+        You may use `types.get_canonical_entity_type` to find out the canonical type.
 
         A ``ty`` with the value of ``None`` should be treated as "any entity with matching ID".
         """

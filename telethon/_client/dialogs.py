@@ -82,7 +82,8 @@ class _DialogsIter(requestiter.RequestIter):
 
                 cd = _custom.Dialog(self.client, d, entities, message)
                 if cd.dialog.pts:
-                    self.client._channel_pts[cd.id] = cd.dialog.pts
+                    # TODO probably a bad idea to change pts around as a side effect - add a .discard_pending_updates() method?
+                    self.client._channel_pts[cd.entity.id] = cd.dialog.pts
 
                 if not self.ignore_migrated or getattr(
                         cd.entity, 'migrated_to', None) is None:

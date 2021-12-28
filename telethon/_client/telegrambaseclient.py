@@ -74,6 +74,10 @@ def init(
         use_ipv6: bool = False,
         proxy: typing.Union[tuple, dict] = None,
         local_addr: typing.Union[str, tuple] = None,
+        default_dc_id: int = None,
+        default_ipv4_ip: str = None,
+        default_ipv6_ip: str = None,
+        default_port: int = None,
         timeout: int = 10,
         request_retries: int = 5,
         connection_retries: int = 5,
@@ -179,6 +183,15 @@ def init(
             raise TypeError(
                 '`use_ipv6=True` must only be used with a local IPv6 address.'
             )
+
+    self._default_dc_id = default_dc_id or DEFAULT_DC_ID
+    if not isinstance(self._default_dc_id, int):
+        raise TypeError('`default_dc_id` must be an int or None.')
+    self._default_ipv4_ip = int(ipaddress.ip_address(default_ipv4_ip or DEFAULT_IPV4_IP))
+    self._default_ipv6_ip = int(ipaddress.ip_address(default_ipv6_ip or DEFAULT_IPV6_IP))
+    self._default_port = default_port or DEFAULT_PORT
+    if not isinstance(self._default_port, int):
+        raise TypeError('`default_port` must be an int or None')
 
     self._raise_last_call_error = raise_last_call_error
 
@@ -305,7 +318,7 @@ async def connect(self: 'TelegramClient') -> None:
         try_fetch_user = False
         self._session_state = SessionState(
             user_id=0,
-            dc_id=DEFAULT_DC_ID,
+            dc_id=self._default_dc_id,
             bot=False,
             pts=0,
             qts=0,
@@ -319,10 +332,10 @@ async def connect(self: 'TelegramClient') -> None:
     dc = self._all_dcs.get(self._session_state.dc_id)
     if dc is None:
         dc = DataCenter(
-            id=DEFAULT_DC_ID,
-            ipv4=None if self._use_ipv6 else int(ipaddress.ip_address(DEFAULT_IPV4_IP)),
-            ipv6=int(ipaddress.ip_address(DEFAULT_IPV6_IP)) if self._use_ipv6 else None,
-            port=DEFAULT_PORT,
+            id=self._default_dc_id,
+            ipv4=None if self._use_ipv6 else self._default_ipv4_ip,
+            ipv6=self._default_ipv6_ip if self._use_ipv6 else None,
+            port=self._default_port,
             auth=b'',
         )
         self._all_dcs[dc.id] = dc
