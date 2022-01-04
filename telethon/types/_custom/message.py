@@ -415,7 +415,6 @@ class Message(ChatGetter, SenderGetter):
             # ...or...
             # incoming messages in private conversations no longer have from_id
             # (layer 119+), but the sender can only be the chat we're in.
-            print("a", message.peer_id, message.out, isinstance(message.peer_id, _tl.PeerUser))
             if message.post or (not message.out and isinstance(message.peer_id, _tl.PeerUser)):
                 sender_id = message.peer_id
             if message.post:
@@ -425,7 +424,6 @@ class Message(ChatGetter, SenderGetter):
                     sender_id = _tl.PeerUser(client._session_state.user_id)
                 else:
                     sender_id = message.peer_id
-            print("b", sender_id)
 
         # Note that these calls would reset the client
         ChatGetter.__init__(self, message.peer_id, broadcast=message.post)
