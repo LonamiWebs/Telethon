@@ -202,8 +202,8 @@ is decided by Telegram.
 The ``telethon.errors`` module continues to provide custom errors used by the library such as
 ``TypeNotFoundError``.
 
-Errors are all now immutable - you can't modify them. This means the library will not correct
-weird errors such as FLOOD_WAIT_0 (which was previously modified to FLOOD_WAIT_1). When the
+Errors are all now immutable - you can't modify them. This means the library will not patch
+errors such as FLOOD_WAIT_0 (which was previously modified to FLOOD_WAIT_1). When the
 library does automatic flood sleeping, it will still make this correction, but if the
 ``flood_sleep_threshold`` is in the range [0,1) then you may get FLOOD_WAIT_0 raised to your
 application code. This must be handled manually.
