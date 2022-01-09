@@ -1,4 +1,4 @@
-from .types import DataCenter, ChannelState, SessionState, Entity
+from .types import DataCenter, ChannelState, SessionState, EntityType, Entity
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
@@ -59,7 +59,7 @@ class Session(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_entity(self, ty: Optional[int], id: int) -> Optional[Entity]:
+    async def get_entity(self, ty: Optional[EntityType], id: int) -> Optional[Entity]:
         """
         Get the `Entity` with matching ``ty`` and ``id``.
 
@@ -67,14 +67,14 @@ class Session(ABC):
         ``ty`` and ``id``, if the ``ty`` is in a given group, a matching ``access_hash`` with
         that ``id`` from within any ``ty`` in that group should be returned.
 
-        * ``'U'`` and ``'B'`` (user and bot).
-        * ``'G'`` (small group chat).
-        * ``'C'``, ``'M'`` and ``'E'`` (broadcast channel, megagroup channel, and gigagroup channel).
+        * `EntityType.USER` and `EntityType.BOT`.
+        * `EntityType.GROUP`.
+        * `EntityType.CHANNEL`, `EntityType.MEGAGROUP` and `EntityType.GIGAGROUP`.
 
         For example, if a ``ty`` representing a bot is stored but the asking ``ty`` is a user,
         the corresponding ``access_hash`` should still be returned.
 
-        You may use `types.canonical_entity_type` to find out the canonical type.
+        You may use ``EntityType.canonical`` to find out the canonical type.
 
         A ``ty`` with the value of ``None`` should be treated as "any entity with matching ID".
         """

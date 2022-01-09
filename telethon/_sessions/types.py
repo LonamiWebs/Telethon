@@ -1,6 +1,9 @@
 from typing import Optional, Tuple
+from dataclasses import dataclass
+from enum import IntEnum
 
 
+@dataclass(frozen=True)
 class DataCenter:
     """
     Stores the information needed to connect to a datacenter.
@@ -12,21 +15,14 @@ class DataCenter:
     """
     __slots__ = ('id', 'ipv4', 'ipv6', 'port', 'auth')
 
-    def __init__(
-        self,
-        id: int,
-        ipv4: int,
-        ipv6: Optional[int],
-        port: int,
-        auth: bytes
-    ):
-        self.id = id
-        self.ipv4 = ipv4
-        self.ipv6 = ipv6
-        self.port = port
-        self.auth = auth
+    id: int
+    ipv4: int
+    ipv6: Optional[int]
+    port: int
+    auth: bytes
 
 
+@dataclass(frozen=True)
 class SessionState:
     """
     Stores the information needed to fetch updates and about the current user.
@@ -45,27 +41,17 @@ class SessionState:
     """
     __slots__ = ('user_id', 'dc_id', 'bot', 'pts', 'qts', 'date', 'seq', 'takeout_id')
 
-    def __init__(
-        self,
-        user_id: int,
-        dc_id: int,
-        bot: bool,
-        pts: int,
-        qts: int,
-        date: int,
-        seq: int,
-        takeout_id: Optional[int],
-    ):
-        self.user_id = user_id
-        self.dc_id = dc_id
-        self.bot = bot
-        self.pts = pts
-        self.qts = qts
-        self.date = date
-        self.seq = seq
-        self.takeout_id = takeout_id
+    user_id: int
+    dc_id: int
+    bot: bool
+    pts: int
+    qts: int
+    date: int
+    seq: int
+    takeout_id: Optional[int]
 
 
+@dataclass(frozen=True)
 class ChannelState:
     """
     Stores the information needed to fetch updates from a channel.
@@ -75,24 +61,13 @@ class ChannelState:
     """
     __slots__ = ('channel_id', 'pts')
 
-    def __init__(
-        self,
-        channel_id: int,
-        pts: int
-    ):
-        self.channel_id = channel_id
-        self.pts = pts
+    channel_id: int
+    pts: int
 
 
-class Entity:
+class EntityType(IntEnum):
     """
-    Stores the information needed to use a certain user, chat or channel with the API.
-
-    * ty: 8-bit number indicating the type of the entity.
-    * id: 64-bit number uniquely identifying the entity among those of the same type.
-    * access_hash: 64-bit number needed to use this entity with the API.
-
-    You can rely on the ``ty`` value to be equal to the ASCII character one of:
+    You can rely on the type value to be equal to the ASCII character one of:
 
     * 'U' (85): this entity belongs to a :tl:`User` who is not a ``bot``.
     * 'B' (66): this entity belongs to a :tl:`User` who is a ``bot``.
@@ -101,8 +76,6 @@ class Entity:
     * 'M' (77): this entity belongs to a megagroup :tl:`Channel`.
     * 'E' (69): this entity belongs to an "enormous" "gigagroup" :tl:`Channel`.
     """
-    __slots__ = ('ty', 'id', 'access_hash')
-
     USER = ord('U')
     BOT = ord('B')
     GROUP = ord('G')
@@ -110,48 +83,34 @@ class Entity:
     MEGAGROUP = ord('M')
     GIGAGROUP = ord('E')
 
-    def __init__(
-        self,
-        ty: int,
-        id: int,
-        access_hash: int
-    ):
-        self.ty = ty
-        self.id = id
-        self.access_hash = access_hash
+    def canonical(self):
+        """
+        Return the canonical version of this type.
+        """
+        return _canon_entity_types[self]
 
 
-def canonical_entity_type(ty: int, *, _mapping={
-    Entity.USER: Entity.USER,
-    Entity.BOT: Entity.USER,
-    Entity.GROUP: Entity.GROUP,
-    Entity.CHANNEL: Entity.CHANNEL,
-    Entity.MEGAGROUP: Entity.CHANNEL,
-    Entity.GIGAGROUP: Entity.CHANNEL,
-}) -> int:
-    """
-    Return the canonical version of an entity type.
-    """
-    try:
-        return _mapping[ty]
-    except KeyError:
-        ty = chr(ty) if isinstance(ty, int) else ty
-        raise ValueError(f'entity type {ty!r} is not valid')
+_canon_entity_types = {
+    EntityType.USER: EntityType.USER,
+    EntityType.BOT: EntityType.USER,
+    EntityType.GROUP: EntityType.GROUP,
+    EntityType.CHANNEL: EntityType.CHANNEL,
+    EntityType.MEGAGROUP: EntityType.CHANNEL,
+    EntityType.GIGAGROUP: EntityType.CHANNEL,
+}
 
 
-def get_entity_type_group(ty: int, *, _mapping={
-    Entity.USER: (Entity.USER, Entity.BOT),
-    Entity.BOT: (Entity.USER, Entity.BOT),
-    Entity.GROUP: (Entity.GROUP,),
-    Entity.CHANNEL: (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP),
-    Entity.MEGAGROUP: (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP),
-    Entity.GIGAGROUP: (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP),
-}) -> Tuple[int]:
+@dataclass(frozen=True)
+class Entity:
     """
-    Return the group where an entity type belongs to.
+    Stores the information needed to use a certain user, chat or channel with the API.
+
+    * ty: 8-bit number indicating the type of the entity.
+    * id: 64-bit number uniquely identifying the entity among those of the same type.
+    * access_hash: 64-bit number needed to use this entity with the API.
     """
-    try:
-        return _mapping[ty]
-    except KeyError:
-        ty = chr(ty) if isinstance(ty, int) else ty
-        raise ValueError(f'entity type {ty!r} is not valid')
+    __slots__ = ('ty', 'id', 'access_hash')
+
+    ty: EntityType
+    id: int
+    access_hash: int
