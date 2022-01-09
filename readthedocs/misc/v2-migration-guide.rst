@@ -701,6 +701,12 @@ CdnDecrypter has been removed
 It was not really working and was more intended to be an implementation detail than anything else.
 
 
+URL buttons no longer open the web-browser
+------------------------------------------
+
+Now the URL is returned. You can still use ``webbrowser.open`` to get the old behaviour.
+
+
 ---
 
 you can no longer pass an attributes list because the constructor is now nice.

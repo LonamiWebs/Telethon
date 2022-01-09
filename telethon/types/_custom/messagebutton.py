@@ -112,7 +112,7 @@ class MessageButton:
                 bot=self._bot, peer=self._chat, start_param=self.button.query
             ))
         elif isinstance(self.button, _tl.KeyboardButtonUrl):
-            return webbrowser.open(self.button.url)
+            return self.button.url
         elif isinstance(self.button, _tl.KeyboardButtonGame):
             req = _tl.fn.messages.GetBotCallbackAnswer(
                 peer=self._chat, msg_id=self._msg_id, game=True
