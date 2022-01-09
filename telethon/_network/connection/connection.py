@@ -263,15 +263,14 @@ class Connection(abc.ABC):
 
         if self._writer:
             self._writer.close()
-            if sys.version_info >= (3, 7):
-                try:
-                    await self._writer.wait_closed()
-                except Exception as e:
-                    # Disconnecting should never raise. Seen:
-                    # * OSError: No route to host and
-                    # * OSError: [Errno 32] Broken pipe
-                    # * ConnectionResetError
-                    self._log.info('%s during disconnect: %s', type(e), e)
+            try:
+                await self._writer.wait_closed()
+            except Exception as e:
+                # Disconnecting should never raise. Seen:
+                # * OSError: No route to host and
+                # * OSError: [Errno 32] Broken pipe
+                # * ConnectionResetError
+                self._log.info('%s during disconnect: %s', type(e), e)
 
     def send(self, data):
         """
