@@ -697,6 +697,24 @@ If you were relying on any of the individual mixins that made up the client, suc
 There is a single ``TelegramClient`` class now, containing everything you need.
 
 
+The takeout context-manager has changed
+---------------------------------------
+
+It no longer has a finalize. All the requests made by the client in the same task will be wrapped,
+not only those made through the proxy client returned by the context-manager.
+
+This cleans up the (rather hacky) implementation, making use of Python's ``contextvar``. If you
+still need the takeout session to persist, you should manually use the ``begin_takeout`` and
+``end_takeout`` method.
+
+If you want to ignore the currently-active takeout session in a task, toggle the following context
+variable:
+
+.. code-block:: python
+
+    telethon.ignore_takeout.set(True)
+
+
 CdnDecrypter has been removed
 -----------------------------
 

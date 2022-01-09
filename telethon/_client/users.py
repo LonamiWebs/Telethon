@@ -9,6 +9,7 @@ from ..errors._rpcbase import RpcError, ServerError, FloodError, InvalidDcError,
 from .._misc import helpers, utils, hints
 from .._sessions.types import Entity
 from .. import errors, _tl
+from .account import ignore_takeout
 
 _NOT_A_REQUEST = lambda: TypeError('You can only invoke requests, not types!')
 
@@ -51,6 +52,9 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 self._flood_waited_requests.pop(r.CONSTRUCTOR_ID, None)
             else:
                 raise errors.FLOOD_WAIT(420, f'FLOOD_WAIT_{diff}', request=r)
+
+        if self._session_state.takeout_id and not ignore_takeout.get():
+            r = _tl.fn.InvokeWithTakeout(self._session_state.takeout_id, r)
 
         if self._no_updates:
             r = _tl.fn.InvokeWithoutUpdates(r)

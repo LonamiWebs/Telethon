@@ -174,7 +174,6 @@ class TelegramClient:
     @forward_call(account.takeout)
     def takeout(
             self: 'TelegramClient',
-            finalize: bool = True,
             *,
             contacts: bool = None,
             users: bool = None,
@@ -184,14 +183,39 @@ class TelegramClient:
             files: bool = None,
             max_file_size: bool = None) -> 'TelegramClient':
         """
-        Returns a :ref:`telethon-client` which calls methods behind a takeout session.
+        Returns a context-manager which calls `TelegramClient.begin_takeout`
+        on enter and `TelegramClient.end_takeout` on exit. The same errors
+        and conditions apply.
 
-        It does so by creating a proxy object over the current client through
-        which making requests will use :tl:`InvokeWithTakeout` to wrap
-        them. In other words, returns the current client modified so that
-        requests are done as a takeout:
+        This is useful for the common case of not wanting the takeout to
+        persist (although it still might if a disconnection occurs before it
+        can be ended).
 
-        Some of the calls made through the takeout session will have lower
+        Example
+            .. code-block:: python
+
+                async with client.takeout():
+                    async for message in client.iter_messages(chat, wait_time=0):
+                        ...  # Do something with the message
+        """
+
+    @forward_call(account.begin_takeout)
+    def begin_takeout(
+            self: 'TelegramClient',
+            *,
+            contacts: bool = None,
+            users: bool = None,
+            chats: bool = None,
+            megagroups: bool = None,
+            channels: bool = None,
+            files: bool = None,
+            max_file_size: bool = None) -> 'TelegramClient':
+        """
+        Begin a takeout session. All subsequent requests made by the client
+        will be behind a takeout session. The takeout session will persist
+        in the session file, until `TelegramClient.end_takeout` is used.
+
+        When the takeout session is enabled, some requests will have lower
         flood limits. This is useful if you want to export the data from
         conversations or mass-download media, since the rate limits will
         be lower. Only some requests will be affected, and you will need
@@ -206,20 +230,16 @@ class TelegramClient:
         can then access ``e.seconds`` to know how long you should wait for
         before calling the method again.
 
-        There's also a `success` property available in the takeout proxy
-        object, so from the `with` body you can set the boolean result that
-        will be sent back to Telegram. But if it's left `None` as by
-        default, then the action is based on the `finalize` parameter. If
-        it's `True` then the takeout will be finished, and if no exception
-        occurred during it, then `True` will be considered as a result.
-        Otherwise, the takeout will not be finished and its ID will be
-        preserved for future usage in the session.
+        If you want to ignore the currently-active takeout session in a task,
+        toggle the following context variable:
+
+        .. code-block:: python
+
+            telethon.ignore_takeout.set(True)
+
+        An error occurs if ``TelegramClient.takeout_active`` was already ``True``.
 
         Arguments
-            finalize (`bool`):
-                Whether the takeout session should be finalized upon
-                exit or not.
-
             contacts (`bool`):
                 Set to `True` if you plan on downloading contacts.
 
@@ -253,16 +273,25 @@ class TelegramClient:
                 from telethon import errors
 
                 try:
-                    async with client.takeout() as takeout:
-                        await client.get_messages('me')  # normal call
-                        await takeout.get_messages('me')  # wrapped through takeout (less limits)
+                    await client.begin_takeout()
 
-                        async for message in takeout.iter_messages(chat, wait_time=0):
-                            ...  # Do something with the message
+                    await client.get_messages('me')  # wrapped through takeout (less limits)
+
+                    async for message in client.iter_messages(chat, wait_time=0):
+                        ...  # Do something with the message
+
+                    await client.end_takeout(success=True)
 
                 except errors.TakeoutInitDelayError as e:
                     print('Must wait', e.seconds, 'before takeout')
+
+                except Exception:
+                    await client.end_takeout(success=False)
         """
+
+    @property
+    def takeout_active(self: 'TelegramClient') -> bool:
+        return account.takeout_active(self)
 
     @forward_call(account.end_takeout)
     async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
