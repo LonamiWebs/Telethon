@@ -122,11 +122,9 @@ with `@BotFather <https://t.me/BotFather>`_.
 Signing In behind a Proxy
 =========================
 
-If you need to use a proxy to access Telegram,
-you will need to either:
+If you need to use a proxy to access Telegram, you will need to:
 
-* For Python >= 3.6 : `install python-socks[asyncio]`__
-* For Python <= 3.5 : `install PySocks`__
+`install python-socks[asyncio]`__
 
 and then change
 
@@ -147,16 +145,9 @@ consisting of parameters described `in PySocks usage`__.
 
 The allowed values for the argument ``proxy_type`` are:
 
-* For Python <= 3.5:
-    * ``socks.SOCKS5`` or ``'socks5'``
-    * ``socks.SOCKS4`` or ``'socks4'``
-    * ``socks.HTTP`` or ``'http'``
-
-* For Python >= 3.6:
-    * All of the above
-    * ``python_socks.ProxyType.SOCKS5``
-    * ``python_socks.ProxyType.SOCKS4``
-    * ``python_socks.ProxyType.HTTP``
+* ``python_socks.ProxyType.SOCKS5``
+* ``python_socks.ProxyType.SOCKS4``
+* ``python_socks.ProxyType.HTTP``
 
 
 Example:

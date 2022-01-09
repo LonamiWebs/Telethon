@@ -16,7 +16,9 @@ good chance you were not relying on this to begin with".
 Python 3.5 is no longer supported
 ---------------------------------
 
-The library will no longer attempt to support Python 3.5. The minimum version is now Python 3.6.
+The library will no longer attempt to support Python 3.5. The minimum version is now Python 3.7.
+
+This also means workarounds for 3.6 and below have been dropped.
 
 
 User, chat and channel identifiers are now 64-bit numbers

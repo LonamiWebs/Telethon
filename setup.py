@@ -208,7 +208,7 @@ def main(argv):
             # See https://stackoverflow.com/a/40300957/4759433
             # -> https://www.python.org/dev/peps/pep-0345/#requires-python
             # -> http://setuptools.readthedocs.io/en/latest/setuptools.html
-            python_requires='>=3.5',
+            python_requires='>=3.7',
 
             # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
             classifiers=[
@@ -223,10 +223,10 @@ def main(argv):
                 'License :: OSI Approved :: MIT License',
 
                 'Programming Language :: Python :: 3',
-                'Programming Language :: Python :: 3.5',
-                'Programming Language :: Python :: 3.6',
                 'Programming Language :: Python :: 3.7',
                 'Programming Language :: Python :: 3.8',
+                'Programming Language :: Python :: 3.9',
+                'Programming Language :: Python :: 3.10',
             ],
             keywords='telegram api chat client library messaging mtproto',
             packages=find_packages(exclude=[

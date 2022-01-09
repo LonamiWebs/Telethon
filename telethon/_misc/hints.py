@@ -48,19 +48,11 @@ FileLike = typing.Union[
     _tl.TypeInputFileLocation
 ]
 
-# Can't use `typing.Type` in Python 3.5.2
-# See https://github.com/python/typing/issues/266
-try:
-    OutFileLike = typing.Union[
-        str,
-        typing.Type[bytes],
-        typing.BinaryIO
-    ]
-except TypeError:
-    OutFileLike = typing.Union[
-        str,
-        typing.BinaryIO
-    ]
+OutFileLike = typing.Union[
+    str,
+    typing.Type[bytes],
+    typing.BinaryIO
+]
 
 MessageLike = typing.Union[str, _tl.Message]
 MessageIDLike = typing.Union[int, _tl.Message, _tl.TypeInputMessage]
