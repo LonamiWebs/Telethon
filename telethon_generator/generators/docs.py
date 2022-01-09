@@ -370,7 +370,7 @@ def _write_html_pages(tlobjects, methods, layer, input_res):
                     ))
                     docs.begin_table(column_count=2)
                     for error in errors:
-                        docs.add_row('<code>{}</code>'.format(error.name))
+                        docs.add_row('<code>{}</code>'.format(error.canonical_name))
                         docs.add_row('{}.'.format(error.description))
                     docs.end_table()
                     docs.write_text('You can import these from '
