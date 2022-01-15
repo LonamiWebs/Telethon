@@ -4,7 +4,6 @@ import typing
 import dataclasses
 from contextvars import ContextVar
 
-from .users import _NOT_A_REQUEST
 from .._misc import helpers, utils
 from .. import _tl
 
