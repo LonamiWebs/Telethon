@@ -1,6 +1,7 @@
 import functools
 import inspect
 import typing
+import dataclasses
 from contextvars import ContextVar
 
 from .users import _NOT_A_REQUEST
@@ -47,7 +48,7 @@ async def begin_takeout(
     if takeout_active():
         raise ValueError('a previous takeout session was already active')
 
-    self._session_state.takeout_id = (await client(
+    await self._replace_session_state(takeout_id=(await client(
         contacts=contacts,
         message_users=users,
         message_chats=chats,
@@ -55,7 +56,7 @@ async def begin_takeout(
         message_channels=channels,
         files=files,
         file_max_size=max_file_size
-    )).id
+    )).id)
 
 
 def takeout_active(self: 'TelegramClient') -> bool:
@@ -70,4 +71,4 @@ async def end_takeout(self: 'TelegramClient', success: bool) -> bool:
     if not result:
         raise ValueError("could not end the active takeout session")
 
-    self._session_state.takeout_id = None
+    await self._replace_session_state(takeout_id=None)

@@ -3547,7 +3547,11 @@ class TelegramClient:
         pass
 
     @forward_call(auth._update_session_state)
-    async def _update_session_state(self, user, save=True):
+    async def _update_session_state(self, user, *, save=True):
+        pass
+
+    @forward_call(auth._replace_session_state)
+    async def _replace_session_state(self, *, save=True, **changes):
         pass
 
     # endregion Private

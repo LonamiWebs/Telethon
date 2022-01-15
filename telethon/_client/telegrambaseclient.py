@@ -445,10 +445,7 @@ async def _disconnect_coro(self: 'TelegramClient'):
     pts, date = self._state_cache[None]
     if pts and date:
         if self._session_state:
-            self._session_state.pts = pts
-            self._session_state.date = date
-            await self.session.set_state(self._session_state)
-            await self.session.save()
+            await self._replace_session_state(pts=pts, date=date)
 
 async def _disconnect(self: 'TelegramClient'):
     """
@@ -467,10 +464,7 @@ async def _switch_dc(self: 'TelegramClient', new_dc):
     """
     self._log[__name__].info('Reconnecting to new data center %s', new_dc)
 
-    self._session_state.dc_id = new_dc
-    await self.session.set_state(self._session_state)
-    await self.session.save()
-
+    await self._replace_session_state(dc_id=new_dc)
     await _disconnect(self)
     return await self.connect()
 

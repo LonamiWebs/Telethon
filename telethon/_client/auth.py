@@ -5,6 +5,7 @@ import sys
 import typing
 import warnings
 import functools
+import dataclasses
 
 from .._misc import utils, helpers, password as pwd_mod
 from .. import errors, _tl
@@ -308,6 +309,7 @@ async def sign_up(
 
     return await _update_session_state(self, result.user)
 
+
 async def _update_session_state(self, user, save=True):
     """
     Callback called whenever the login or sign up process completes.
@@ -315,20 +317,29 @@ async def _update_session_state(self, user, save=True):
     """
     self._authorized = True
 
-    self._session_state.user_id = user.id
-    self._session_state.bot = user.bot
-
     state = await self(_tl.fn.updates.GetState())
-    self._session_state.pts = state.pts
-    self._session_state.qts = state.qts
-    self._session_state.date = int(state.date.timestamp())
-    self._session_state.seq = state.seq
+    await _replace_session_state(
+        self,
+        save=save,
+        user_id=user.id,
+        bot=user.bot,
+        pts=state.pts,
+        qts=state.qts,
+        date=int(state.date.timestamp()),
+        seq=state.seq,
+    )
 
-    await self.session.set_state(self._session_state)
+    return user
+
+
+async def _replace_session_state(self, *, save=True, **changes):
+    new = dataclasses.replace(self._session_state, **changes)
+    await self.session.set_state(new)
+    self._session_state = new
+
     if save:
         await self.session.save()
 
-    return user
 
 async def send_code_request(
         self: 'TelegramClient',
