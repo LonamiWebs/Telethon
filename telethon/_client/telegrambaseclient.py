@@ -7,6 +7,7 @@ import platform
 import time
 import typing
 import ipaddress
+import dataclasses
 
 from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
@@ -342,7 +343,7 @@ async def connect(self: 'TelegramClient') -> None:
         return
 
     if self._sender.auth_key.key != dc.auth:
-        dc.auth = self._sender.auth_key.key
+        dc = dataclasses.replace(dc, auth=self._sender.auth_key.key)
 
     # Need to send invokeWithLayer for things to work out.
     # Make the most out of this opportunity by also refreshing our state.
@@ -359,11 +360,10 @@ async def connect(self: 'TelegramClient') -> None:
 
         ip = int(ipaddress.ip_address(dc.ip_address))
         if dc.id in self._all_dcs:
-            self._all_dcs[dc.id].port = dc.port
             if dc.ipv6:
-                self._all_dcs[dc.id].ipv6 = ip
+                self._all_dcs[dc.id] = dataclasses.replace(self._all_dcs[dc.id], port=dc.port, ipv6=ip)
             else:
-                self._all_dcs[dc.id].ipv4 = ip
+                self._all_dcs[dc.id] = dataclasses.replace(self._all_dcs[dc.id], port=dc.port, ipv4=ip)
         elif dc.ipv6:
             self._all_dcs[dc.id] = DataCenter(dc.id, None, ip, dc.port, b'')
         else:
