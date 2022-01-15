@@ -15,8 +15,6 @@ class ConnectionMode(Enum):
     FULL = 'full'
     INTERMEDIATE = 'intermediate'
     ABRIDGED = 'abridged'
-    OBFUSCATED = 'obfuscated'
-    HTTP = 'http'
 
 
 class Participant(Enum):

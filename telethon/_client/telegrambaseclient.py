@@ -11,7 +11,7 @@ import ipaddress
 from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
 from .._misc import markdown, entitycache, statecache, enums, helpers
-from .._network import MTProtoSender, Connection, ConnectionTcpFull, connection as conns
+from .._network import MTProtoSender, Connection, transports
 from .._sessions import Session, SQLiteSession, MemorySession
 from .._sessions.types import DataCenter, SessionState
 
@@ -70,7 +70,7 @@ def init(
         api_id: int,
         api_hash: str,
         *,
-        connection: 'typing.Type[Connection]' = ConnectionTcpFull,
+        connection: 'typing.Type[Connection]' = (),
         use_ipv6: bool = False,
         proxy: typing.Union[tuple, dict] = None,
         local_addr: typing.Union[str, tuple] = None,
@@ -194,15 +194,12 @@ def init(
         # For now the current default remains TCP Full; may change to be "smart" if proxies are specified
         connection = enums.ConnectionMode.FULL
 
-    self._connection = {
-        enums.ConnectionMode.FULL: conns.ConnectionTcpFull,
-        enums.ConnectionMode.INTERMEDIATE: conns.ConnectionTcpIntermediate,
-        enums.ConnectionMode.ABRIDGED: conns.ConnectionTcpAbridged,
-        enums.ConnectionMode.OBFUSCATED: conns.ConnectionTcpObfuscated,
-        enums.ConnectionMode.HTTP: conns.ConnectionHttp,
+    self._transport = {
+        enums.ConnectionMode.FULL: transports.Full(),
+        enums.ConnectionMode.INTERMEDIATE: transports.Intermediate(),
+        enums.ConnectionMode.ABRIDGED: transports.Abridged(),
     }[enums.parse_conn_mode(connection)]
-    init_proxy = None if not issubclass(self._connection, conns.TcpMTProxy) else \
-        _tl.InputClientProxy(*self._connection.address_info(proxy))
+    init_proxy = None
 
     # Used on connection. Capture the variables in a lambda since
     # exporting clients need to create this InvokeWithLayer.
@@ -334,13 +331,12 @@ async def connect(self: 'TelegramClient') -> None:
     # Use known key, if any
     self._sender.auth_key.key = dc.auth
 
-    if not await self._sender.connect(self._connection(
-        str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
-        dc.port,
-        dc.id,
+    if not await self._sender.connect(Connection(
+        ip=str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
+        port=dc.port,
+        transport=self._transport.recreate_fresh(),
         loggers=self._log,
-        proxy=self._proxy,
-        local_addr=self._local_addr
+        local_addr=self._local_addr,
     )):
         # We don't want to init or modify anything if we were already connected
         return
@@ -396,8 +392,7 @@ async def disconnect(self: 'TelegramClient'):
     return await _disconnect_coro(self)
 
 def set_proxy(self: 'TelegramClient', proxy: typing.Union[tuple, dict]):
-    init_proxy = None if not issubclass(self._connection, conns.TcpMTProxy) else \
-        _tl.InputClientProxy(*self._connection.address_info(proxy))
+    init_proxy = None
 
     self._init_request.proxy = init_proxy
     self._proxy = proxy
@@ -481,13 +476,12 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
     # If one were to do that, Telegram would reset the connection
     # with no further clues.
     sender = MTProtoSender(loggers=self._log)
-    await sender.connect(self._connection(
-        str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
-        dc.port,
-        dc.id,
+    await self._sender.connect(Connection(
+        ip=str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
+        port=dc.port,
+        transport=self._transport.recreate_fresh(),
         loggers=self._log,
-        proxy=self._proxy,
-        local_addr=self._local_addr
+        local_addr=self._local_addr,
     ))
     self._log[__name__].info('Exporting auth for new borrowed sender in %s', dc)
     auth = await self(_tl.fn.auth.ExportAuthorization(dc_id))
@@ -516,13 +510,13 @@ async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
 
         elif state.need_connect():
             dc = self._all_dcs[dc_id]
-            await sender.connect(self._connection(
-                str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
-                dc.port,
-                dc.id,
+
+            await self._sender.connect(Connection(
+                ip=str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
+                port=dc.port,
+                transport=self._transport.recreate_fresh(),
                 loggers=self._log,
-                proxy=self._proxy,
-                local_addr=self._local_addr
+                local_addr=self._local_addr,
             ))
 
         state.add_borrow()

@@ -10,7 +10,6 @@ from . import (
 )
 from .. import version, _tl
 from ..types import _custom
-from .._network import ConnectionTcpFull
 from .._events.common import EventBuilder, EventCommon
 from .._misc import enums
 
