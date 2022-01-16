@@ -750,3 +750,5 @@ keep support for explicit size instance?
 renamed send_read_acknowledge. add send_read_acknowledge as alias for mark_read?
 
 force sms removed as it was broken anyway and not very reliable
+
+you can now await client.action for a one-off any action not just cancel

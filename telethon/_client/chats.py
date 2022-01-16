@@ -27,6 +27,9 @@ class _ChatAction:
         self._task = None
         self._running = False
 
+    def __await__(self):
+        return self._once().__await__()
+
     async def __aenter__(self):
         self._chat = await self._client.get_input_entity(self._chat)
 
@@ -50,6 +53,10 @@ class _ChatAction:
                 pass
 
             self._task = None
+
+    async def _once(self):
+        self._chat = await self._client.get_input_entity(self._chat)
+        await self._client(_tl.fn.messages.SetTyping(self._chat, self._action))
 
     async def _update(self):
         try:
@@ -455,11 +462,6 @@ def action(
         delay: float = 4,
         auto_cancel: bool = True) -> 'typing.Union[_ChatAction, typing.Coroutine]':
     action = _ChatAction._parse(action)
-
-    if isinstance(action, _tl.SendMessageCancelAction):
-        # ``SetTyping.resolve`` will get input peer of ``entity``.
-        return self(_tl.fn.messages.SetTyping(
-            entity, _tl.SendMessageCancelAction()))
 
     return _ChatAction(
         self, entity, action, delay=delay, auto_cancel=auto_cancel)
