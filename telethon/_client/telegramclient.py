@@ -2254,7 +2254,7 @@ class TelegramClient:
     async def forward_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            messages: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
+            messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
             from_peer: 'hints.EntityLike' = None,
             *,
             background: bool = None,
@@ -2276,8 +2276,8 @@ class TelegramClient:
             entity (`entity`):
                 To which entity the message(s) will be forwarded.
 
-            messages (`list` | `int` | `Message <telethon.tl._custom.message.Message>`):
-                The message(s) to forward, or their integer IDs.
+            messages (`list`):
+                The messages to forward, or their integer IDs.
 
             from_peer (`entity`):
                 If the given messages are integer IDs and not instances
@@ -2465,7 +2465,7 @@ class TelegramClient:
     async def delete_messages(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            message_ids: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
+            messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
             *,
             revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
         """
@@ -2486,8 +2486,8 @@ class TelegramClient:
                 be `None` for normal chats, but **must** be present
                 for channels and megagroups.
 
-            message_ids (`list` | `int` | `Message <telethon.tl._custom.message.Message>`):
-                The IDs (or ID) or messages to be deleted.
+            messages (`list`):
+                The messages to delete, or their integer IDs.
 
             revoke (`bool`, optional):
                 Whether the message should be deleted for everyone or not.
@@ -2517,9 +2517,8 @@ class TelegramClient:
     async def mark_read(
             self: 'TelegramClient',
             entity: 'hints.EntityLike',
-            message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = None,
+            message: 'hints.MessageIDLike' = None,
             *,
-            max_id: int = None,
             clear_mentions: bool = False) -> bool:
         """
         Marks messages as read and optionally clears mentions.
@@ -2527,8 +2526,8 @@ class TelegramClient:
         This effectively marks a message as read (or more than one) in the
         given conversation.
 
-        If neither message nor maximum ID are provided, all messages will be
-        marked as read by assuming that ``max_id = 0``.
+        If no message or maximum ID is provided, all messages will be
+        marked as read.
 
         If a message or maximum ID is provided, all the messages up to and
         including such ID will be marked as read (for all messages whose ID
@@ -2540,8 +2539,9 @@ class TelegramClient:
             entity (`entity`):
                 The chat where these messages are located.
 
-            message (`list` | `Message <telethon.tl._custom.message.Message>`):
-                Either a list of messages or a single message.
+            message (`Message <telethon.tl._custom.message.Message>`):
+                The last (most-recent) message which was read, or its ID.
+                This is only useful if you want to mark a chat as partially read.
 
             max_id (`int`):
                 Until which message should the read acknowledge be sent for.

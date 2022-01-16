@@ -518,7 +518,7 @@ async def send_message(
 async def forward_messages(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        messages: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
+        messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
         from_peer: 'hints.EntityLike' = None,
         *,
         background: bool = None,
@@ -529,10 +529,6 @@ async def forward_messages(
 ) -> 'typing.Sequence[_tl.Message]':
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
-
-    single = not utils.is_list_like(messages)
-    if single:
-        messages = (messages,)
 
     entity = await self.get_input_entity(entity)
 
@@ -639,16 +635,13 @@ async def edit_message(
 async def delete_messages(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        message_ids: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]',
+        messages: 'typing.Union[typing.Sequence[hints.MessageIDLike]]',
         *,
         revoke: bool = True) -> 'typing.Sequence[_tl.messages.AffectedMessages]':
-    if not utils.is_list_like(message_ids):
-        message_ids = (message_ids,)
-
-    message_ids = (
+    messages = (
         m.id if isinstance(m, (
             _tl.Message, _tl.MessageService, _tl.MessageEmpty))
-        else int(m) for m in message_ids
+        else int(m) for m in messages
     )
 
     if entity:
@@ -660,42 +653,36 @@ async def delete_messages(
 
     if ty == helpers._EntityType.CHANNEL:
         res = await self([_tl.fn.channels.DeleteMessages(
-                entity, list(c)) for c in utils.chunks(message_ids)])
+                entity, list(c)) for c in utils.chunks(messages)])
     else:
         res = await self([_tl.fn.messages.DeleteMessages(
-            list(c), revoke) for c in utils.chunks(message_ids)])
+            list(c), revoke) for c in utils.chunks(messages)])
 
     return sum(r.pts_count for r in res)
 
 async def mark_read(
         self: 'TelegramClient',
         entity: 'hints.EntityLike',
-        message: 'typing.Union[hints.MessageIDLike, typing.Sequence[hints.MessageIDLike]]' = None,
+        message: 'hints.MessageIDLike' = None,
         *,
-        max_id: int = None,
         clear_mentions: bool = False) -> bool:
-    if max_id is None:
-        if not message:
-            max_id = 0
-        else:
-            if utils.is_list_like(message):
-                max_id = max(msg.id for msg in message)
-            else:
-                max_id = message.id
+    if not message:
+        max_id = 0
+    elif isinstance(message, int):
+        max_id = message
+    else:
+        max_id = message.id
 
     entity = await self.get_input_entity(entity)
     if clear_mentions:
         await self(_tl.fn.messages.ReadMentions(entity))
-        if max_id is None:
-            return True
 
-    if max_id is not None:
-        if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
-            return await self(_tl.fn.channels.ReadHistory(
-                utils.get_input_channel(entity), max_id=max_id))
-        else:
-            return await self(_tl.fn.messages.ReadHistory(
-                entity, max_id=max_id))
+    if helpers._entity_type(entity) == helpers._EntityType.CHANNEL:
+        return await self(_tl.fn.channels.ReadHistory(
+            utils.get_input_channel(entity), max_id=max_id))
+    else:
+        return await self(_tl.fn.messages.ReadHistory(
+            entity, max_id=max_id))
 
     return False
 

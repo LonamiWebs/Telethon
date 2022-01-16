@@ -752,3 +752,10 @@ renamed send_read_acknowledge. add send_read_acknowledge as alias for mark_read?
 force sms removed as it was broken anyway and not very reliable
 
 you can now await client.action for a one-off any action not just cancel
+
+fwd msg and delete msg now mandate a list rather than a single int or msg
+(since there's msg.delete and msg.forward_to this should be no issue).
+they are meant to work on lists.
+
+also mark read only supports single now. a list would just be max anyway.
+removed max id since it's not really of much use.
