@@ -1628,7 +1628,8 @@ class TelegramClient:
             entity: 'hints.EntityLike',
             file: 'hints.FileLike' = None,
             *,
-            thumb: typing.Union[str, enums.Size] = ()) -> typing.Optional[str]:
+            thumb: typing.Union[str, enums.Size] = (),
+            progress_callback: 'hints.ProgressCallback' = None) -> typing.Optional[str]:
         """
         Downloads the profile photo from the given user, chat or channel.
 
@@ -1661,6 +1662,10 @@ class TelegramClient:
                 images are considered to be smaller than boxed images.
 
                 By default, the largest size (original) is downloaded.
+
+            progress_callback (`callable`, optional):
+                A callback function accepting two parameters:
+                ``(received bytes, total)``.
 
         Returns
             `None` if no photo was provided, or if it was Empty. On success

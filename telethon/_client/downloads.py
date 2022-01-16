@@ -180,7 +180,8 @@ async def download_profile_photo(
         entity: 'hints.EntityLike',
         file: 'hints.FileLike' = None,
         *,
-        thumb) -> typing.Optional[str]:
+        thumb,
+        progress_callback) -> typing.Optional[str]:
     # hex(crc32(x.encode('ascii'))) for x in
     # ('User', 'Chat', 'UserFull', 'ChatFull')
     ENTITIES = (0x2da17977, 0xc5af5d94, 0x1f4661b9, 0xd49a2697)
@@ -201,7 +202,7 @@ async def download_profile_photo(
 
             return await _download_photo(
                 self, entity.chat_photo, file, date=None,
-                thumb=thumb, progress_callback=None
+                thumb=thumb, progress_callback=progress_callback
             )
 
         for attr in ('username', 'first_name', 'title'):
@@ -247,7 +248,7 @@ async def download_profile_photo(
             full = await self(_tl.fn.channels.GetFullChannel(ie))
             return await _download_photo(
                 self, full.full_chat.chat_photo, file,
-                date=None, progress_callback=None,
+                date=None, progress_callback=progress_callback,
                 thumb=thumb
             )
         else:
