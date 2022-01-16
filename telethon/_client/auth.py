@@ -37,7 +37,6 @@ def start(
         password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
         *,
         bot_token: str = None,
-        force_sms: bool = False,
         code_callback: typing.Callable[[], typing.Union[str, int]] = None,
         first_name: str = 'New User',
         last_name: str = '',
@@ -63,7 +62,6 @@ def start(
         phone=phone,
         password=password,
         bot_token=bot_token,
-        force_sms=force_sms,
         code_callback=code_callback,
         first_name=first_name,
         last_name=last_name,
@@ -71,7 +69,7 @@ def start(
     ))
 
 async def _start(
-        self: 'TelegramClient', phone, password, bot_token, force_sms,
+        self: 'TelegramClient', phone, password, bot_token,
         code_callback, first_name, last_name, max_attempts):
     if not self.is_connected():
         await self.connect()
@@ -123,7 +121,7 @@ async def _start(
     attempts = 0
     two_step_detected = False
 
-    await self.send_code_request(phone, force_sms=force_sms)
+    await self.send_code_request(phone)
     sign_up = False  # assume login
     while attempts < max_attempts:
         try:
@@ -343,37 +341,28 @@ async def _replace_session_state(self, *, save=True, **changes):
 
 async def send_code_request(
         self: 'TelegramClient',
-        phone: str,
-        *,
-        force_sms: bool = False) -> '_tl.auth.SentCode':
+        phone: str) -> '_tl.auth.SentCode':
     result = None
     phone = utils.parse_phone(phone) or self._phone
     phone_hash = self._phone_code_hash.get(phone)
 
-    if not phone_hash:
-        try:
-            result = await self(_tl.fn.auth.SendCode(
-                phone, self.api_id, self.api_hash, _tl.CodeSettings()))
-        except errors.AuthRestartError:
-            return await self.send_code_request(phone, force_sms=force_sms)
-
-        # If we already sent a SMS, do not resend the code (hash may be empty)
-        if isinstance(result.type, _tl.auth.SentCodeTypeSms):
-            force_sms = False
-
-        # phone_code_hash may be empty, if it is, do not save it (#1283)
-        if result.phone_code_hash:
-            self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
-    else:
-        force_sms = True
-
-    self._phone = phone
-
-    if force_sms:
+    if phone_hash:
         result = await self(
             _tl.fn.auth.ResendCode(phone, phone_hash))
 
         self._phone_code_hash[phone] = result.phone_code_hash
+    else:
+        try:
+            result = await self(_tl.fn.auth.SendCode(
+                phone, self.api_id, self.api_hash, _tl.CodeSettings()))
+        except errors.AuthRestartError:
+            return await self.send_code_request(phone)
+
+        # phone_code_hash may be empty, if it is, do not save it (#1283)
+        if result.phone_code_hash:
+            self._phone_code_hash[phone] = phone_hash = result.phone_code_hash
+
+    self._phone = phone
 
     return result
 

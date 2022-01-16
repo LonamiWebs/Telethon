@@ -321,7 +321,6 @@ class TelegramClient:
             password: typing.Callable[[], str] = lambda: getpass.getpass('Please enter your password: '),
             *,
             bot_token: str = None,
-            force_sms: bool = False,
             code_callback: typing.Callable[[], typing.Union[str, int]] = None,
             first_name: str = 'New User',
             last_name: str = '',
@@ -357,10 +356,6 @@ class TelegramClient:
                 Bot Token obtained by `@BotFather <https://t.me/BotFather>`_
                 to log in as a bot. Cannot be specified with ``phone`` (only
                 one of either allowed).
-
-            force_sms (`bool`, optional):
-                Whether to force sending the code request as SMS.
-                This only makes sense when signing in with a `phone`.
 
             code_callback (`callable`, optional):
                 A callable that will be used to retrieve the Telegram
@@ -513,18 +508,13 @@ class TelegramClient:
     @forward_call(auth.send_code_request)
     async def send_code_request(
             self: 'TelegramClient',
-            phone: str,
-            *,
-            force_sms: bool = False) -> '_tl.auth.SentCode':
+            phone: str) -> '_tl.auth.SentCode':
         """
         Sends the Telegram code needed to login to the given phone number.
 
         Arguments
             phone (`str` | `int`):
                 The phone to which the code will be sent.
-
-            force_sms (`bool`, optional):
-                Whether to force sending as SMS.
 
         Returns
             An instance of :tl:`SentCode`.
