@@ -7,8 +7,6 @@ import os
 import time
 import sys
 
-loop = asyncio.get_event_loop()
-
 """
 Provider token can be obtained via @BotFather. more info at https://core.telegram.org/bots/payments#getting-a-token
 
@@ -180,4 +178,4 @@ if __name__ == '__main__':
     if not provider_token:
         logger.error("No provider token supplied.")
         exit(1)
-    loop.run_until_complete(main())
+    asyncio.run(main())

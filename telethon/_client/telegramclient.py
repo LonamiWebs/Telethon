@@ -148,10 +148,6 @@ class TelegramClient:
             "System lang code"  to be sent when creating the initial connection.
             Defaults to `lang_code`.
 
-        loop (`asyncio.AbstractEventLoop`, optional):
-            Asyncio event loop to use. Defaults to `asyncio.get_event_loop()`.
-            This argument is ignored.
-
         base_logger (`str` | `logging.Logger`, optional):
             Base logger name or instance to use.
             If a `str` is given, it'll be passed to `logging.getLogger()`. If a
@@ -2666,30 +2662,10 @@ class TelegramClient:
             app_version: str = None,
             lang_code: str = 'en',
             system_lang_code: str = 'en',
-            loop: asyncio.AbstractEventLoop = None,
             base_logger: typing.Union[str, logging.Logger] = None,
             receive_updates: bool = True
     ):
         telegrambaseclient.init(**locals())
-
-    @property
-    def loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
-        """
-        Property with the ``asyncio`` event loop used by this client.
-
-        Example
-            .. code-block:: python
-
-                # Download media in the background
-                task = client.loop.create_task(message.download_media())
-
-                # Do some work
-                ...
-
-                # Join the task (wait for it to complete)
-                await task
-        """
-        return telegrambaseclient.get_loop(**locals())
 
     @property
     def flood_sleep_threshold(self):

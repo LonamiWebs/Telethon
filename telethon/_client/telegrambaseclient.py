@@ -88,7 +88,6 @@ def init(
         app_version: str = None,
         lang_code: str = 'en',
         system_lang_code: str = 'en',
-        loop: asyncio.AbstractEventLoop = None,
         base_logger: typing.Union[str, logging.Logger] = None,
         receive_updates: bool = True
 ):
@@ -152,24 +151,6 @@ def init(
     self._entity_cache = entitycache.EntityCache()
     self.api_id = int(api_id)
     self.api_hash = api_hash
-
-    # Current proxy implementation requires `sock_connect`, and some
-    # event loops lack this method. If the current loop is missing it,
-    # bail out early and suggest an alternative.
-    #
-    # TODO A better fix is obviously avoiding the use of `sock_connect`
-    #
-    # See https://github.com/LonamiWebs/Telethon/issues/1337 for details.
-    if not callable(getattr(self.loop, 'sock_connect', None)):
-        raise TypeError(
-            'Event loop of type {} lacks `sock_connect`, which is needed to use proxies.\n\n'
-            'Change the event loop in use to use proxies:\n'
-            '# https://github.com/LonamiWebs/Telethon/issues/1337\n'
-            'import asyncio\n'
-            'asyncio.set_event_loop(asyncio.SelectorEventLoop())'.format(
-                self.loop.__class__.__name__
-            )
-        )
 
     if local_addr is not None:
         if use_ipv6 is False and ':' in local_addr:
@@ -283,10 +264,6 @@ def init(
     # A place to store if channels are a megagroup or not (see `edit_admin`)
     self._megagroup_cache = {}
 
-
-def get_loop(self: 'TelegramClient') -> asyncio.AbstractEventLoop:
-    return asyncio.get_event_loop()
-
 def get_flood_sleep_threshold(self):
     return self._flood_sleep_threshold
 
@@ -382,7 +359,7 @@ async def connect(self: 'TelegramClient') -> None:
 
     await self.session.save()
 
-    self._updates_handle = self.loop.create_task(self._update_loop())
+    self._updates_handle = asyncio.create_task(self._update_loop())
 
 def is_connected(self: 'TelegramClient') -> bool:
     sender = getattr(self, '_sender', None)

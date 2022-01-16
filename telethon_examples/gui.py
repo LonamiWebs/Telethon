@@ -132,7 +132,7 @@ class App(tkinter.Tk):
                        command=self.send_message).grid(row=3, column=2)
 
         # Post-init (async, connect client)
-        self.cl.loop.create_task(self.post_init())
+        asyncio.create_task(self.post_init())
 
     async def post_init(self):
         """
@@ -369,10 +369,4 @@ async def main(interval=0.05):
 
 
 if __name__ == "__main__":
-    # Some boilerplate code to set up the main method
-    aio_loop = asyncio.get_event_loop()
-    try:
-        aio_loop.run_until_complete(main())
-    finally:
-        if not aio_loop.is_closed():
-            aio_loop.close()
+    asyncio.run(main())

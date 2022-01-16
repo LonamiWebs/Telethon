@@ -74,7 +74,7 @@ Or we call `client.get_input_entity()
     async def main():
         peer = await client.get_input_entity('someone')
 
-    client.loop.run_until_complete(main())
+    asyncio.run(main())
 
 .. note::
 

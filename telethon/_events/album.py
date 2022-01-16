@@ -37,15 +37,15 @@ class AlbumHack:
         # very short-lived but might as well try to do "the right thing".
         self._client = weakref.ref(client)
         self._event = event  # parent event
-        self._due = client.loop.time() + _HACK_DELAY
+        self._due = asyncio.get_running_loop().time() + _HACK_DELAY
 
-        client.loop.create_task(self.deliver_event())
+        asyncio.create_task(self.deliver_event())
 
     def extend(self, messages):
         client = self._client()
         if client:  # weakref may be dead
             self._event.messages.extend(messages)
-            self._due = client.loop.time() + _HACK_DELAY
+            self._due = asyncio.get_running_loop().time() + _HACK_DELAY
 
     async def deliver_event(self):
         while True:
@@ -53,7 +53,7 @@ class AlbumHack:
             if client is None:
                 return  # weakref is dead, nothing to deliver
 
-            diff = self._due - client.loop.time()
+            diff = self._due - asyncio.get_running_loop().time()
             if diff <= 0:
                 # We've hit our due time, deliver event. It won't respect
                 # sequential updates but fixing that would just worsen this.

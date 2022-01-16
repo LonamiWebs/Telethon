@@ -759,3 +759,5 @@ they are meant to work on lists.
 
 also mark read only supports single now. a list would just be max anyway.
 removed max id since it's not really of much use.
+
+client loop has been removed. embrace implicit loop as asyncio does now

@@ -1,10 +1,26 @@
 import re
 import struct
+import asyncio
+import functools
 
 from .common import EventBuilder, EventCommon, name_inner_event
 from .._misc import utils
 from .. import _tl
 from ..types import _custom
+
+
+def auto_answer(func):
+    @functools.wraps(func)
+    async def wrapped(self, *args, **kwargs):
+        if self._answered:
+            return await func(*args, **kwargs)
+        else:
+            return (await asyncio.gather(
+                self._answer(),
+                func(*args, **kwargs),
+            ))[1]
+
+    return wrapped
 
 
 @name_inner_event
@@ -240,16 +256,15 @@ class CallbackQuery(EventBuilder):
             if self._answered:
                 return
 
+            res = await self._client(_tl.fn.messages.SetBotCallbackAnswer(
+                query_id=self.query.query_id,
+                cache_time=cache_time,
+                alert=alert,
+                message=message,
+                url=url,
+            ))
             self._answered = True
-            return await self._client(
-                _tl.fn.messages.SetBotCallbackAnswer(
-                    query_id=self.query.query_id,
-                    cache_time=cache_time,
-                    alert=alert,
-                    message=message,
-                    url=url
-                )
-            )
+            return res
 
         @property
         def via_inline(self):
@@ -266,35 +281,36 @@ class CallbackQuery(EventBuilder):
             """
             return isinstance(self.query, _tl.UpdateInlineBotCallbackQuery)
 
+        @auto_answer
         async def respond(self, *args, **kwargs):
             """
             Responds to the message (not as a reply). Shorthand for
             `telethon.client.messages.MessageMethods.send_message` with
             ``entity`` already set.
 
-            This method also creates a task to `answer` the callback.
+            This method will also `answer` the callback if necessary.
 
             This method will likely fail if `via_inline` is `True`.
             """
-            self._client.loop.create_task(self.answer())
             return await self._client.send_message(
                 await self.get_input_chat(), *args, **kwargs)
 
+        @auto_answer
         async def reply(self, *args, **kwargs):
             """
             Replies to the message (as a reply). Shorthand for
             `telethon.client.messages.MessageMethods.send_message` with
             both ``entity`` and ``reply_to`` already set.
 
-            This method also creates a task to `answer` the callback.
+            This method will also `answer` the callback if necessary.
 
             This method will likely fail if `via_inline` is `True`.
             """
-            self._client.loop.create_task(self.answer())
             kwargs['reply_to'] = self.query.msg_id
             return await self._client.send_message(
                 await self.get_input_chat(), *args, **kwargs)
 
+        @auto_answer
         async def edit(self, *args, **kwargs):
             """
             Edits the message. Shorthand for
@@ -303,7 +319,7 @@ class CallbackQuery(EventBuilder):
 
             Returns `True` if the edit was successful.
 
-            This method also creates a task to `answer` the callback.
+            This method will also `answer` the callback if necessary.
 
             .. note::
 
@@ -311,7 +327,6 @@ class CallbackQuery(EventBuilder):
                 `Message.edit <telethon.tl._custom.message.Message.edit>`,
                 since the message object is normally not present.
             """
-            self._client.loop.create_task(self.answer())
             if isinstance(self.query.msg_id, _tl.InputBotInlineMessageID):
                 return await self._client.edit_message(
                     None, self.query.msg_id, *args, **kwargs
@@ -322,6 +337,7 @@ class CallbackQuery(EventBuilder):
                     *args, **kwargs
                 )
 
+        @auto_answer
         async def delete(self, *args, **kwargs):
             """
             Deletes the message. Shorthand for
@@ -332,11 +348,10 @@ class CallbackQuery(EventBuilder):
             this `delete` method. Use a
             `telethon.client.telegramclient.TelegramClient` instance directly.
 
-            This method also creates a task to `answer` the callback.
+            This method will also `answer` the callback if necessary.
 
             This method will likely fail if `via_inline` is `True`.
             """
-            self._client.loop.create_task(self.answer())
             return await self._client.delete_messages(
                 await self.get_input_chat(), [self.query.msg_id],
                 *args, **kwargs

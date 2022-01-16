@@ -58,7 +58,7 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._disconnected = asyncio.get_event_loop().create_future()
+        self._disconnected = asyncio.get_running_loop().create_future()
         self._disconnected.set_result(None)
 
         # We need to join the loops upon disconnection
@@ -248,18 +248,17 @@ class MTProtoSender:
             await self._disconnect(error=e)
             raise e
 
-        loop = asyncio.get_event_loop()
         self._log.debug('Starting send loop')
-        self._send_loop_handle = loop.create_task(self._send_loop())
+        self._send_loop_handle = asyncio.create_task(self._send_loop())
 
         self._log.debug('Starting receive loop')
-        self._recv_loop_handle = loop.create_task(self._recv_loop())
+        self._recv_loop_handle = asyncio.create_task(self._recv_loop())
 
         # _disconnected only completes after manual disconnection
         # or errors after which the sender cannot continue such
         # as failing to reconnect or any unexpected error.
         if self._disconnected.done():
-            self._disconnected = loop.create_future()
+            self._disconnected = asyncio.get_running_loop().create_future()
 
         self._log.info('Connection to %s complete!', self._connection)
 
@@ -381,7 +380,7 @@ class MTProtoSender:
                 self._pending_state.clear()
 
                 if self._auto_reconnect_callback:
-                    asyncio.get_event_loop().create_task(self._auto_reconnect_callback())
+                    asyncio.create_task(self._auto_reconnect_callback())
 
                 break
         else:
@@ -406,7 +405,7 @@ class MTProtoSender:
             # gets stuck.
             # TODO It still gets stuck? Investigate where and why.
             self._reconnecting = True
-            asyncio.get_event_loop().create_task(self._reconnect(error))
+            asyncio.create_task(self._reconnect(error))
 
     def _keepalive_ping(self, rnd_id):
         """

@@ -159,14 +159,14 @@ def _process_update(self: 'TelegramClient', update, entities, others):
     channel_id = self._state_cache.get_channel_id(update)
     args = (update, entities, others, channel_id, self._state_cache[channel_id])
     if self._dispatching_updates_queue is None:
-        task = self.loop.create_task(_dispatch_update(self, *args))
+        task = asyncio.create_task(_dispatch_update(self, *args))
         self._updates_queue.add(task)
         task.add_done_callback(lambda _: self._updates_queue.discard(task))
     else:
         self._updates_queue.put_nowait(args)
         if not self._dispatching_updates_queue.is_set():
             self._dispatching_updates_queue.set()
-            self.loop.create_task(_dispatch_queue_updates(self))
+            asyncio.create_task(_dispatch_queue_updates(self))
 
     self._state_cache.update(update)
 

@@ -49,6 +49,7 @@ We can finally write some code to log into our account!
 
 .. code-block:: python
 
+    import asyncio
     from telethon import TelegramClient
 
     # Use your own values from my.telegram.org
@@ -57,10 +58,10 @@ We can finally write some code to log into our account!
 
     async def main():
         # The first parameter is the .session file name (absolute paths allowed)
-        async with TelegramClient('anon', api_id, api_hash) as client:
+        async with TelegramClient('anon', api_id, api_hash).start() as client:
             await client.send_message('me', 'Hello, myself!')
 
-    client.loop.run_until_complete(main())
+    asyncio.run(main())
 
 
 In the first line, we import the class name so we can create an instance
@@ -98,21 +99,19 @@ You will still need an API ID and hash, but the process is very similar:
 
 .. code-block:: python
 
+    import asyncio
     from telethon import TelegramClient
 
     api_id = 12345
     api_hash = '0123456789abcdef0123456789abcdef'
     bot_token = '12345:0123456789abcdef0123456789abcdef'
 
-    # We have to manually call "start" if we want an explicit bot token
-    bot = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
-
     async def main():
         # But then we can use the client instance as usual
-        async with bot:
-            ...
+        async with TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token) as bot:
+            ...  # bot is your client
 
-    client.loop.run_until_complete(main())
+    asyncio.run(main())
 
 
 To get a bot account, you need to talk

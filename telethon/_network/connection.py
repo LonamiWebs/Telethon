@@ -23,13 +23,15 @@ class Connection:
         """
         Establishes a connection with the server.
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
         if self._local_addr:
             sock.bind(self._local_addr)
 
+        # TODO https://github.com/LonamiWebs/Telethon/issues/1337 may be an issue again
+        # perhaps we just need to ignore async connect on windows and block?
         await asyncio.wait_for(loop.sock_connect(sock, (self._ip, self._port)), timeout)
         self._sock = sock
 
@@ -41,14 +43,14 @@ class Connection:
         if not self._sock:
             raise ConnectionError('not connected')
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         await loop.sock_sendall(self._sock, self._transport.pack(data))
 
     async def recv(self):
         if not self._sock:
             raise ConnectionError('not connected')
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         while True:
             try:
                 length, body = self._transport.unpack(self._in_buffer)
