@@ -30,7 +30,7 @@ async def set_receive_updates(self: 'TelegramClient', receive_updates):
 async def run_until_disconnected(self: 'TelegramClient'):
     # Make a high-level request to notify that we want updates
     await self(_tl.fn.updates.GetState())
-    return await self._sender.disconnected
+    await self._sender.wait_disconnected()
 
 def on(self: 'TelegramClient', event: EventBuilder):
     def decorator(f):

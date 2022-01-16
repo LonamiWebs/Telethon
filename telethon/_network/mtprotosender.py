@@ -58,8 +58,8 @@ class MTProtoSender:
         # pending futures should be cancelled.
         self._user_connected = False
         self._reconnecting = False
-        self._disconnected = asyncio.get_running_loop().create_future()
-        self._disconnected.set_result(None)
+        self._disconnected = asyncio.Queue(1)
+        self._disconnected.put_nowait(None)
 
         # We need to join the loops upon disconnection
         self._send_loop_handle = None
@@ -191,16 +191,14 @@ class MTProtoSender:
             self._send_queue.extend(states)
             return futures
 
-    @property
-    def disconnected(self):
+    async def wait_disconnected(self):
         """
-        Future that resolves when the connection to Telegram
-        ends, either by user action or in the background.
-
-        Note that it may resolve in either a ``ConnectionError``
-        or any other unexpected error that could not be handled.
+        Wait until the client is disconnected.
+        Raise if the disconnection finished with error.
         """
-        return asyncio.shield(self._disconnected)
+        res = await self._disconnected.get()
+        if isinstance(res, BaseException):
+            raise res
 
     # Private methods
 
@@ -257,8 +255,8 @@ class MTProtoSender:
         # _disconnected only completes after manual disconnection
         # or errors after which the sender cannot continue such
         # as failing to reconnect or any unexpected error.
-        if self._disconnected.done():
-            self._disconnected = asyncio.get_running_loop().create_future()
+        while not self._disconnected.empty():
+            self._disconnected.get_nowait()
 
         self._log.info('Connection to %s complete!', self._connection)
 
@@ -316,11 +314,8 @@ class MTProtoSender:
             self._log.info('Disconnection from %s complete!', self._connection)
             self._connection = None
 
-        if self._disconnected and not self._disconnected.done():
-            if error:
-                self._disconnected.set_exception(error)
-            else:
-                self._disconnected.set_result(None)
+        if not self._disconnected.full():
+            self._disconnected.put_nowait(error)
 
     async def _reconnect(self, last_error):
         """
