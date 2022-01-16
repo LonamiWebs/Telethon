@@ -69,21 +69,21 @@ class _ChatAction:
             return action
 
         return {
-            enums.TYPING: _tl.SendMessageTypingAction(),
-            enums.CONTACT: _tl.SendMessageChooseContactAction(),
-            enums.GAME: _tl.SendMessageGamePlayAction(),
-            enums.LOCATION: _tl.SendMessageGeoLocationAction(),
-            enums.STICKER: _tl.SendMessageChooseStickerAction(),
-            enums.RECORD_AUDIO: _tl.SendMessageRecordAudioAction(),
-            enums.RECORD_ROUND: _tl.SendMessageRecordRoundAction(),
-            enums.RECORD_VIDEO: _tl.SendMessageRecordVideoAction(),
-            enums.AUDIO: _tl.SendMessageUploadAudioAction(1),
-            enums.ROUND: _tl.SendMessageUploadRoundAction(1),
-            enums.VIDEO: _tl.SendMessageUploadVideoAction(1),
-            enums.PHOTO: _tl.SendMessageUploadPhotoAction(1),
-            enums.DOCUMENT: _tl.SendMessageUploadDocumentAction(1),
-            enums.CANCEL: _tl.SendMessageCancelAction(),
-        }[enums.parse_typing_action(action)]
+            enums.Action.TYPING: _tl.SendMessageTypingAction(),
+            enums.Action.CONTACT: _tl.SendMessageChooseContactAction(),
+            enums.Action.GAME: _tl.SendMessageGamePlayAction(),
+            enums.Action.LOCATION: _tl.SendMessageGeoLocationAction(),
+            enums.Action.STICKER: _tl.SendMessageChooseStickerAction(),
+            enums.Action.RECORD_AUDIO: _tl.SendMessageRecordAudioAction(),
+            enums.Action.RECORD_ROUND: _tl.SendMessageRecordRoundAction(),
+            enums.Action.RECORD_VIDEO: _tl.SendMessageRecordVideoAction(),
+            enums.Action.AUDIO: _tl.SendMessageUploadAudioAction(1),
+            enums.Action.ROUND: _tl.SendMessageUploadRoundAction(1),
+            enums.Action.VIDEO: _tl.SendMessageUploadVideoAction(1),
+            enums.Action.PHOTO: _tl.SendMessageUploadPhotoAction(1),
+            enums.Action.DOCUMENT: _tl.SendMessageUploadDocumentAction(1),
+            enums.Action.CANCEL: _tl.SendMessageCancelAction(),
+        }[enums.Action(action)]
 
     def progress(self, current, total):
         if hasattr(self._action, 'progress'):
@@ -98,7 +98,7 @@ class _ParticipantsIter(requestiter.RequestIter):
             else:
                 filter = _tl.ChannelParticipantsRecent()
         else:
-            filter = enums.parse_participant(filter)
+            filter = enums.Participant(filter)
             if filter == enums.Participant.ADMIN:
                 filter = _tl.ChannelParticipantsAdmins()
             elif filter == enums.Participant.BOT:

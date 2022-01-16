@@ -199,7 +199,7 @@ def init(
         enums.ConnectionMode.FULL: transports.Full(),
         enums.ConnectionMode.INTERMEDIATE: transports.Intermediate(),
         enums.ConnectionMode.ABRIDGED: transports.Abridged(),
-    }[enums.parse_conn_mode(connection)]
+    }[enums.ConnectionMode(connection)]
     init_proxy = None
 
     # Used on connection. Capture the variables in a lambda since

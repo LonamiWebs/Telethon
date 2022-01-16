@@ -129,25 +129,3 @@ class Size(Enum):
             Size.ANIMATED: 7,
             Size.VIDEO: 6,
         }[self]
-
-
-def _mk_parser(cls):
-    def parser(value):
-        if isinstance(value, cls):
-            return value
-        elif isinstance(value, str):
-            for variant in cls:
-                if value == variant.value:
-                    return variant
-
-            raise ValueError(f'unknown {cls.__name__}: {value!r}')
-        else:
-            raise TypeError(f'not a valid {cls.__name__}: {type(value).__name__!r}')
-
-    return parser
-
-
-parse_conn_mode = _mk_parser(ConnectionMode)
-parse_participant = _mk_parser(Participant)
-parse_typing_action = _mk_parser(Action)
-parse_photo_size = _mk_parser(Size)

@@ -210,7 +210,7 @@ async def download_profile_photo(
         photo = entity.photo
 
     if isinstance(photo, (_tl.UserProfilePhoto, _tl.ChatPhoto)):
-        thumb = enums.Size.ORIGINAL if thumb == () else enums.parse_photo_size(thumb)
+        thumb = enums.Size.ORIGINAL if thumb == () else enums.Size(thumb)
 
         dc_id = photo.dc_id
         loc = _tl.InputPeerPhotoFileLocation(
@@ -494,11 +494,11 @@ def _get_thumb(thumbs, thumb):
     if isinstance(thumb, tlobject.TLObject):
         return thumb
 
-    thumb = enums.parse_photo_size(thumb)
+    thumb = enums.Size(thumb)
     return min(
         thumbs,
         default=None,
-        key=lambda t: abs(thumb - enums.parse_photo_size(t.type))
+        key=lambda t: abs(thumb - enums.Size(t.type))
     )
 
 def _download_cached_photo_size(self: 'TelegramClient', size, file):
