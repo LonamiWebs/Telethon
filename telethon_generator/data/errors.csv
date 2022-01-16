@@ -66,6 +66,7 @@ CHAT_ABOUT_TOO_LONG,400,Chat about too long
 CHAT_ADMIN_INVITE_REQUIRED,403,You do not have the rights to do this
 CHAT_ADMIN_REQUIRED,400,"Chat admin privileges are required to do that in the specified chat (for example, to send a message in a channel which is not yours), or invalid permissions used for the channel or group"
 CHAT_FORBIDDEN,403,You cannot write in this chat
+CHAT_FORWARDS_RESTRICTED,,
 CHAT_ID_EMPTY,400,The provided chat ID is empty
 CHAT_ID_INVALID,400,"Invalid object ID for a chat. Make sure to pass the right types, for instance making sure that the request is designed for chats (not channels/megagroups) or otherwise look for a different one more suited\nAn example working with a megagroup and AddChatUserRequest, it will fail because megagroups are channels. Use InviteToChannelRequest instead"
 CHAT_INVALID,400,The chat is invalid for this request
@@ -116,6 +117,7 @@ ENCRYPTION_OCCUPY_FAILED,500,TDLib developer claimed it is not an error while ac
 ENTITIES_TOO_LONG,400,It is no longer possible to send such long data inside entity tags (for example inline text URLs)
 ENTITY_MENTION_USER_INVALID,400,You can't use this entity
 ERROR_TEXT_EMPTY,400,The provided error message is empty
+EXPIRE_DATE_INVALID,400,
 EXPIRE_FORBIDDEN,400,
 EXPORT_CARD_INVALID,400,Provided card is invalid
 EXTERNAL_URL_INVALID,400,External URL invalid
@@ -230,6 +232,7 @@ PACK_SHORT_NAME_OCCUPIED,400,A stickerpack with this name already exists
 PARTICIPANTS_TOO_FEW,400,Not enough participants
 PARTICIPANT_CALL_FAILED,500,Failure while making call
 PARTICIPANT_JOIN_MISSING,403,
+PARTICIPANT_ID_INVALID,,
 PARTICIPANT_VERSION_OUTDATED,400,The other participant does not use an up to date telegram client with support for calls
 PASSWORD_EMPTY,400,The provided password is empty
 PASSWORD_HASH_INVALID,400,The password (and thus its hash value) you entered is invalid
@@ -315,6 +318,8 @@ SCHEDULE_STATUS_PRIVATE,400,You cannot schedule a message until the person comes
 SCHEDULE_TOO_MUCH,400,You cannot schedule more messages in this chat (last known limit of 100 per chat)
 SEARCH_QUERY_EMPTY,400,The search query is empty
 SECONDS_INVALID,400,"Slow mode only supports certain values (e.g. 0, 10s, 30s, 1m, 5m, 15m and 1h)"
+SEND_AS_PEER_INVALID,,
+SEND_CODE_UNAVAILABLE,406,
 SEND_MESSAGE_MEDIA_INVALID,400,The message media was invalid or not specified
 SEND_MESSAGE_TYPE_INVALID,400,The message type is invalid
 SENSITIVE_CHANGE_FORBIDDEN,403,Your sensitive content settings cannot be changed at this time
@@ -366,6 +371,7 @@ TYPE_CONSTRUCTOR_INVALID,400,The type constructor is invalid
 UNKNOWN_ERROR,400,
 UNKNOWN_METHOD,500,The method you tried to call cannot be called on non-CDN DCs
 UNTIL_DATE_INVALID,400,That date cannot be specified in this request (try using None)
+UPDATE_APP_TO_LOGIN,406,
 URL_INVALID,400,The URL used was invalid (e.g. when answering a callback with a URL that's not t.me/yourbot or your game's URL)
 USER_VOLUME_INVALID,400,
 USERNAME_INVALID,400,"Nobody is using this username, or the username is unacceptable. If the latter, it must match r""[a-zA-Z][\w\d]{3,30}[a-zA-Z\d]"""
