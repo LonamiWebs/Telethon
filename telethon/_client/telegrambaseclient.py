@@ -320,7 +320,7 @@ async def connect(self: 'TelegramClient') -> None:
         return
 
     if self._sender.auth_key.key != dc.auth:
-        dc = dataclasses.replace(dc, auth=self._sender.auth_key.key)
+        self._all_dcs[dc.id] = dc = dataclasses.replace(dc, auth=self._sender.auth_key.key)
 
     # Need to send invokeWithLayer for things to work out.
     # Make the most out of this opportunity by also refreshing our state.
