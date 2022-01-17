@@ -3,7 +3,7 @@ import itertools
 
 from .._misc import utils
 from .. import _tl
-from .._sessions.types import Entity
+from .._sessions.types import EntityType, Entity
 
 # Which updates have the following fields?
 _has_field = {
@@ -53,18 +53,18 @@ class EntityCache:
     In-memory input entity cache, defaultdict-like behaviour.
     """
     def add(self, entities, _mappings={
-        _tl.User.CONSTRUCTOR_ID: lambda e: (Entity.BOT if e.bot else Entity.USER, e.id, e.access_hash),
-        _tl.UserFull.CONSTRUCTOR_ID: lambda e: (Entity.BOT if e.user.bot else Entity.USER, e.user.id, e.user.access_hash),
-        _tl.Chat.CONSTRUCTOR_ID: lambda e: (Entity.GROUP, e.id, 0),
-        _tl.ChatFull.CONSTRUCTOR_ID: lambda e: (Entity.GROUP, e.id, 0),
-        _tl.ChatEmpty.CONSTRUCTOR_ID: lambda e: (Entity.GROUP, e.id, 0),
-        _tl.ChatForbidden.CONSTRUCTOR_ID: lambda e: (Entity.GROUP, e.id, 0),
+        _tl.User.CONSTRUCTOR_ID: lambda e: (EntityType.BOT if e.bot else EntityType.USER, e.id, e.access_hash),
+        _tl.UserFull.CONSTRUCTOR_ID: lambda e: (EntityType.BOT if e.user.bot else EntityType.USER, e.user.id, e.user.access_hash),
+        _tl.Chat.CONSTRUCTOR_ID: lambda e: (EntityType.GROUP, e.id, 0),
+        _tl.ChatFull.CONSTRUCTOR_ID: lambda e: (EntityType.GROUP, e.id, 0),
+        _tl.ChatEmpty.CONSTRUCTOR_ID: lambda e: (EntityType.GROUP, e.id, 0),
+        _tl.ChatForbidden.CONSTRUCTOR_ID: lambda e: (EntityType.GROUP, e.id, 0),
         _tl.Channel.CONSTRUCTOR_ID: lambda e: (
-            Entity.MEGAGROUP if e.megagroup else (Entity.GIGAGROUP if e.gigagroup else Entity.CHANNEL),
+            EntityType.MEGAGROUP if e.megagroup else (EntityType.GIGAGROUP if e.gigagroup else EntityType.CHANNEL),
             e.id,
             e.access_hash,
         ),
-        _tl.ChannelForbidden.CONSTRUCTOR_ID: lambda e: (Entity.MEGAGROUP if e.megagroup else Entity.CHANNEL, e.id, e.access_hash),
+        _tl.ChannelForbidden.CONSTRUCTOR_ID: lambda e: (EntityType.MEGAGROUP if e.megagroup else EntityType.CHANNEL, e.id, e.access_hash),
     }):
         """
         Adds the given entities to the cache, if they weren't saved before.
@@ -98,11 +98,11 @@ class EntityCache:
             if not getattr(e, 'min', False) and (access_hash or ty == Entity.GROUP):
                 rows.append(Entity(ty, id, access_hash))
                 if id not in self.__dict__:
-                    if ty in (Entity.USER, Entity.BOT):
+                    if ty in (EntityType.USER, EntityType.BOT):
                         self.__dict__[id] = _tl.InputPeerUser(id, access_hash)
-                    elif ty in (Entity.GROUP,):
+                    elif ty in (EntityType.GROUP,):
                         self.__dict__[id] = _tl.InputPeerChat(id)
-                    elif ty in (Entity.CHANNEL, Entity.MEGAGROUP, Entity.GIGAGROUP):
+                    elif ty in (EntityType.CHANNEL, EntityType.MEGAGROUP, EntityType.GIGAGROUP):
                         self.__dict__[id] = _tl.InputPeerChannel(id, access_hash)
 
         return rows
