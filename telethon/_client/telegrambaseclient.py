@@ -210,7 +210,7 @@ def set_flood_sleep_threshold(self, value):
 
 
 async def connect(self: 'TelegramClient') -> None:
-    self._all_dcs = {dc.id: dc for dc in await self._session.get_all_dc()}
+    all_dcs = {dc.id: dc for dc in await self._session.get_all_dc()}
     self._session_state = await self._session.get_state()
 
     if self._session_state is None:
@@ -228,7 +228,7 @@ async def connect(self: 'TelegramClient') -> None:
     else:
         try_fetch_user = self._session_state.user_id == 0
 
-    dc = self._all_dcs.get(self._session_state.dc_id)
+    dc = all_dcs.get(self._session_state.dc_id)
     if dc is None:
         dc = DataCenter(
             id=DEFAULT_DC_ID,
@@ -237,7 +237,7 @@ async def connect(self: 'TelegramClient') -> None:
             port=DEFAULT_PORT,
             auth=b'',
         )
-        self._all_dcs[dc.id] = dc
+        all_dcs[dc.id] = dc
 
     # Update state (for catching up after a disconnection)
     # TODO Get state from channels too
@@ -257,7 +257,7 @@ async def connect(self: 'TelegramClient') -> None:
         return
 
     if self._sender.auth_key.key != dc.auth:
-        self._all_dcs[dc.id] = dc = dataclasses.replace(dc, auth=self._sender.auth_key.key)
+        all_dcs[dc.id] = dc = dataclasses.replace(dc, auth=self._sender.auth_key.key)
 
     # Need to send invokeWithLayer for things to work out.
     # Make the most out of this opportunity by also refreshing our state.
@@ -273,17 +273,17 @@ async def connect(self: 'TelegramClient') -> None:
             continue
 
         ip = int(ipaddress.ip_address(dc.ip_address))
-        if dc.id in self._all_dcs:
+        if dc.id in all_dcs:
             if dc.ipv6:
-                self._all_dcs[dc.id] = dataclasses.replace(self._all_dcs[dc.id], port=dc.port, ipv6=ip)
+                all_dcs[dc.id] = dataclasses.replace(all_dcs[dc.id], port=dc.port, ipv6=ip)
             else:
-                self._all_dcs[dc.id] = dataclasses.replace(self._all_dcs[dc.id], port=dc.port, ipv4=ip)
+                all_dcs[dc.id] = dataclasses.replace(all_dcs[dc.id], port=dc.port, ipv4=ip)
         elif dc.ipv6:
-            self._all_dcs[dc.id] = DataCenter(dc.id, None, ip, dc.port, b'')
+            all_dcs[dc.id] = DataCenter(dc.id, None, ip, dc.port, b'')
         else:
-            self._all_dcs[dc.id] = DataCenter(dc.id, ip, None, dc.port, b'')
+            all_dcs[dc.id] = DataCenter(dc.id, ip, None, dc.port, b'')
 
-    for dc in self._all_dcs.values():
+    for dc in all_dcs.values():
         await self._session.insert_dc(dc)
 
     if try_fetch_user:
@@ -384,7 +384,7 @@ async def _create_exported_sender(self: 'TelegramClient', dc_id):
     """
     # Thanks badoualy/kotlogram on /telegram/api/DefaultTelegramClient.kt
     # for clearly showing how to export the authorization
-    dc = self._all_dcs[dc_id]
+    dc = next(dc for dc in await self._session.get_all_dc() if dc.id == dc_id)
     # Can't reuse self._sender._connection as it has its own seqno.
     #
     # If one were to do that, Telegram would reset the connection
@@ -423,7 +423,7 @@ async def _borrow_exported_sender(self: 'TelegramClient', dc_id):
             self._borrowed_senders[dc_id] = (state, sender)
 
         elif state.need_connect():
-            dc = self._all_dcs[dc_id]
+            dc = next(dc for dc in await self._session.get_all_dc() if dc.id == dc_id)
 
             await self._sender.connect(Connection(
                 ip=str(ipaddress.ip_address((self._use_ipv6 and dc.ipv6) or dc.ipv4)),
