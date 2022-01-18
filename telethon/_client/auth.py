@@ -375,8 +375,6 @@ async def log_out(self: 'TelegramClient') -> bool:
     except errors.RPCError:
         return False
 
-    self._state_cache.reset()
-
     await self.disconnect()
     return True
 

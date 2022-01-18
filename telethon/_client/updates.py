@@ -79,10 +79,7 @@ def list_event_handlers(self: 'TelegramClient')\
     return [(callback, event) for event, callback in self._event_builders]
 
 async def catch_up(self: 'TelegramClient'):
-    pts, date = self._state_cache[None]
-    if not pts:
-        return
-
+    return
     self._catching_up = True
     try:
         while True:
@@ -131,8 +128,6 @@ async def catch_up(self: 'TelegramClient'):
     except (ConnectionError, asyncio.CancelledError):
         pass
     finally:
-        # TODO Save new pts to session
-        self._state_cache._pts_date = (pts, date)
         self._catching_up = False
 
 
@@ -150,14 +145,12 @@ def _handle_update(self: 'TelegramClient', update):
     else:
         _process_update(self, update, {}, None)
 
-    self._state_cache.update(update)
 
 def _process_update(self: 'TelegramClient', update, entities, others):
     # This part is somewhat hot so we don't bother patching
     # update with channel ID/its state. Instead we just pass
     # arguments which is faster.
-    channel_id = self._state_cache.get_channel_id(update)
-    args = (update, entities, others, channel_id, self._state_cache[channel_id])
+    args = (update, entities, others, channel_id, None)
     if self._dispatching_updates_queue is None:
         task = asyncio.create_task(_dispatch_update(self, *args))
         self._updates_queue.add(task)
@@ -167,8 +160,6 @@ def _process_update(self: 'TelegramClient', update, entities, others):
         if not self._dispatching_updates_queue.is_set():
             self._dispatching_updates_queue.set()
             asyncio.create_task(_dispatch_queue_updates(self))
-
-    self._state_cache.update(update)
 
 async def _update_loop(self: 'TelegramClient'):
     # Pings' ID don't really need to be secure, just "random"
@@ -326,7 +317,6 @@ async def _get_difference(self: 'TelegramClient', update, entities, channel_id, 
             result = await self(_tl.fn.channels.GetFullChannel(
                 utils.get_input_channel(where)
             ))
-            self._state_cache[channel_id] = result.full_chat.pts
             return
 
         result = await self(_tl.fn.updates.GetChannelDifference(
@@ -340,7 +330,6 @@ async def _get_difference(self: 'TelegramClient', update, entities, channel_id, 
         if not pts_date[0]:
             # First-time, can't get difference. Get pts instead.
             result = await self(_tl.fn.updates.GetState())
-            self._state_cache[None] = result.pts, result.date
             return
 
         result = await self(_tl.fn.updates.GetDifference(

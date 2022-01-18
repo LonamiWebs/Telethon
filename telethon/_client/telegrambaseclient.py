@@ -239,10 +239,6 @@ async def connect(self: 'TelegramClient') -> None:
         )
         all_dcs[dc.id] = dc
 
-    # Update state (for catching up after a disconnection)
-    # TODO Get state from channels too
-    self._state_cache = statecache.StateCache(self._session_state, self._log)
-
     # Use known key, if any
     self._sender.auth_key.key = dc.auth
 
@@ -351,10 +347,6 @@ async def _disconnect_coro(self: 'TelegramClient'):
         await asyncio.wait(self._updates_queue)
         self._updates_queue.clear()
 
-    pts, date = self._state_cache[None]
-    if pts and date:
-        if self._session_state:
-            await self._replace_session_state(pts=pts, date=date)
 
 async def _disconnect(self: 'TelegramClient'):
     """
