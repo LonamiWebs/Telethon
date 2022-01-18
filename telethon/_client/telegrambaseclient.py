@@ -190,7 +190,6 @@ def init(
         auto_reconnect=self._auto_reconnect,
         connect_timeout=self._connect_timeout,
         update_callback=self._handle_update,
-        auto_reconnect_callback=self._handle_auto_reconnect
     )
 
     # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders.

@@ -347,50 +347,6 @@ async def _get_difference(self: 'TelegramClient', update, entities, channel_id, 
             itertools.chain(result.users, result.chats)
         })
 
-async def _handle_auto_reconnect(self: 'TelegramClient'):
-    # TODO Catch-up
-    # For now we make a high-level request to let Telegram
-    # know we are still interested in receiving more updates.
-    try:
-        await self.get_me()
-    except Exception as e:
-        self._log[__name__].warning('Error executing high-level request '
-                                    'after reconnect: %s: %s', type(e), e)
-
-    return
-    try:
-        self._log[__name__].info(
-            'Asking for the current state after reconnect...')
-
-        # TODO consider:
-        # If there aren't many updates while the client is disconnected
-        # (I tried with up to 20), Telegram seems to send them without
-        # asking for them (via updates.getDifference).
-        #
-        # On disconnection, the library should probably set a "need
-        # difference" or "catching up" flag so that any new updates are
-        # ignored, and then the library should call updates.getDifference
-        # itself to fetch them.
-        #
-        # In any case (either there are too many updates and Telegram
-        # didn't send them, or there isn't a lot and Telegram sent them
-        # but we dropped them), we fetch the new difference to get all
-        # missed updates. I feel like this would be the best solution.
-
-        # If a disconnection occurs, the old known state will be
-        # the latest one we were aware of, so we can catch up since
-        # the most recent state we were aware of.
-        await self.catch_up()
-
-        self._log[__name__].info('Successfully fetched missed updates')
-    except RpcError as e:
-        self._log[__name__].warning('Failed to get missed updates after '
-                                    'reconnect: %r', e)
-    except Exception:
-        self._log[__name__].exception(
-            'Unhandled exception while getting update difference after reconnect')
-
-
 class EventBuilderDict:
     """
     Helper "dictionary" to return events from types and cache them.

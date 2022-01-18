@@ -3513,10 +3513,6 @@ class TelegramClient:
     def _handle_update(self: 'TelegramClient', update):
         pass
 
-    @forward_call(updates._handle_auto_reconnect)
-    async def _handle_auto_reconnect(self: 'TelegramClient'):
-        pass
-
     @forward_call(auth._update_session_state)
     async def _update_session_state(self, user, *, save=True):
         pass

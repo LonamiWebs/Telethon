@@ -37,7 +37,7 @@ class MTProtoSender:
     """
     def __init__(self, *, loggers,
                  retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
-                 update_callback=None, auto_reconnect_callback=None):
+                 update_callback=None):
         self._connection = None
         self._loggers = loggers
         self._log = loggers[__name__]
@@ -46,7 +46,6 @@ class MTProtoSender:
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
         self._update_callback = update_callback
-        self._auto_reconnect_callback = auto_reconnect_callback
         self._connect_lock = asyncio.Lock()
         self._ping = None
 
@@ -373,10 +372,6 @@ class MTProtoSender:
             else:
                 self._send_queue.extend(self._pending_state.values())
                 self._pending_state.clear()
-
-                if self._auto_reconnect_callback:
-                    asyncio.create_task(self._auto_reconnect_callback())
-
                 break
         else:
             ok = False
