@@ -206,7 +206,7 @@ async def _update_loop(self: 'TelegramClient'):
         # Entities are not saved when they are inserted because this is a rather expensive
         # operation (default's sqlite3 takes ~0.1s to commit changes). Do it every minute
         # instead. No-op if there's nothing new.
-        await self.session.save()
+        await self._session.save()
 
         # We need to send some content-related request at least hourly
         # for Telegram to keep delivering updates, otherwise they will
@@ -231,33 +231,6 @@ async def _dispatch_queue_updates(self: 'TelegramClient'):
     self._dispatching_updates_queue.clear()
 
 async def _dispatch_update(self: 'TelegramClient', update, entities, others, channel_id, pts_date):
-    if entities:
-        rows = self._entity_cache.add(list(entities.values()))
-        if rows:
-            await self.session.insert_entities(rows)
-
-    if not self._entity_cache.ensure_cached(update):
-        # We could add a lock to not fetch the same pts twice if we are
-        # already fetching it. However this does not happen in practice,
-        # which makes sense, because different updates have different pts.
-        if self._state_cache.update(update, check_only=True):
-            # If the update doesn't have pts, fetching won't do anything.
-            # For example, UpdateUserStatus or UpdateChatUserTyping.
-            try:
-                await _get_difference(self, update, entities, channel_id, pts_date)
-            except OSError:
-                pass  # We were disconnected, that's okay
-            except RpcError:
-                # There's a high chance the request fails because we lack
-                # the channel. Because these "happen sporadically" (#1428)
-                # we should be okay (no flood waits) even if more occur.
-                pass
-            except ValueError:
-                # There is a chance that GetFullChannel and GetDifference
-                # inside the _get_difference() function will end up with
-                # ValueError("Request was unsuccessful N time(s)") for whatever reasons.
-                pass
-
     built = EventBuilderDict(self, update, entities, others)
 
     for builder, callback in self._event_builders:

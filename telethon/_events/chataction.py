@@ -401,18 +401,11 @@ class ChatAction(EventBuilder):
             if self._input_users is None and self._user_ids:
                 self._input_users = []
                 for user_id in self._user_ids:
-                    # First try to get it from our entities
+                    # Try to get it from our entities
                     try:
                         self._input_users.append(utils.get_input_peer(self._entities[user_id]))
                         continue
                     except (KeyError, TypeError):
-                        pass
-
-                    # If missing, try from the entity cache
-                    try:
-                        self._input_users.append(self._client._entity_cache[user_id])
-                        continue
-                    except KeyError:
                         pass
 
             return self._input_users or []

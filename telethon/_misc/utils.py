@@ -578,20 +578,16 @@ def get_input_group_call(call):
         _raise_cast_fail(call, 'InputGroupCall')
 
 
-def _get_entity_pair(entity_id, entities, cache,
+def _get_entity_pair(entity_id, entities,
                      get_input_peer=get_input_peer):
     """
     Returns ``(entity, input_entity)`` for the given entity ID.
     """
     entity = entities.get(entity_id)
     try:
-        input_entity = cache[entity_id]
-    except KeyError:
-        # KeyError is unlikely, so another TypeError won't hurt
-        try:
-            input_entity = get_input_peer(entity)
-        except TypeError:
-            input_entity = None
+        input_entity = get_input_peer(entity)
+    except TypeError:
+        input_entity = None
 
     return entity, input_entity
 

@@ -761,3 +761,13 @@ also mark read only supports single now. a list would just be max anyway.
 removed max id since it's not really of much use.
 
 client loop has been removed. embrace implicit loop as asyncio does now
+
+renamed some client params, and made other privates
+    timeout -> connect_timeout
+    connection_retries -> connect_retries
+    retry_delay -> connect_retry_delay
+
+sequential_updates is gone
+connection type is gone
+
+raise_last_call_error is now the default rather than ValueError

@@ -11,7 +11,7 @@ import dataclasses
 
 from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
-from .._misc import markdown, entitycache, statecache, enums, helpers
+from .._misc import markdown, statecache, enums, helpers
 from .._network import MTProtoSender, Connection, transports
 from .._sessions import Session, SQLiteSession, MemorySession
 from .._sessions.types import DataCenter, SessionState
@@ -71,33 +71,28 @@ def init(
         api_id: int,
         api_hash: str,
         *,
-        connection: 'typing.Type[Connection]' = (),
+        # Logging.
+        base_logger: typing.Union[str, logging.Logger] = None,
+        # Connection parameters.
         use_ipv6: bool = False,
         proxy: typing.Union[tuple, dict] = None,
         local_addr: typing.Union[str, tuple] = None,
-        timeout: int = 10,
-        request_retries: int = 5,
-        connection_retries: int = 5,
-        retry_delay: int = 1,
-        auto_reconnect: bool = True,
-        sequential_updates: bool = False,
-        flood_sleep_threshold: int = 60,
-        raise_last_call_error: bool = False,
         device_model: str = None,
         system_version: str = None,
         app_version: str = None,
         lang_code: str = 'en',
         system_lang_code: str = 'en',
-        base_logger: typing.Union[str, logging.Logger] = None,
-        receive_updates: bool = True
+        # Nice-to-have.
+        auto_reconnect: bool = True,
+        connect_timeout: int = 10,
+        connect_retries: int = 4,
+        connect_retry_delay: int = 1,
+        request_retries: int = 4,
+        flood_sleep_threshold: int = 60,
+        # Update handling.
+        receive_updates: bool = True,
 ):
-    if not api_id or not api_hash:
-        raise ValueError(
-            "Your API ID or Hash cannot be empty or None. "
-            "Refer to telethon.rtfd.io for more information.")
-
-    self._use_ipv6 = use_ipv6
-
+    # Logging.
     if isinstance(base_logger, str):
         base_logger = logging.getLogger(base_logger)
     elif not isinstance(base_logger, logging.Logger):
@@ -112,7 +107,7 @@ def init(
 
     self._log = _Loggers()
 
-    # Determine what session object we have
+    # Sessions.
     if isinstance(session, str) or session is None:
         try:
             session = SQLiteSession(session)
@@ -131,57 +126,38 @@ def init(
             'The given session must be a str or a Session instance.'
         )
 
-    self.flood_sleep_threshold = flood_sleep_threshold
-
-    # TODO Use AsyncClassWrapper(session)
-    # ChatGetter and SenderGetter can use the in-memory _entity_cache
-    # to avoid network access and the need for await in session files.
-    #
-    # The session files only wants the entities to persist
-    # them to disk, and to save additional useful information.
-    # TODO Session should probably return all cached
-    #      info of entities, not just the input versions
-    self.session = session
-
-    # Cache session data for convenient access
+    self._session = session
+    # In-memory copy of the session's state to avoid a roundtrip as it contains commonly-accessed values.
     self._session_state = None
-    self._all_dcs = None
-    self._state_cache = statecache.StateCache(None, self._log)
 
-    self._entity_cache = entitycache.EntityCache()
-    self.api_id = int(api_id)
-    self.api_hash = api_hash
+    # Nice-to-have.
+    self._request_retries = request_retries
+    self._connect_retries = connect_retries
+    self._connect_retry_delay = connect_retry_delay or 0
+    self._connect_timeout = connect_timeout
+    self.flood_sleep_threshold = flood_sleep_threshold
+    self._flood_waited_requests = {}  # prevent calls that would floodwait entirely
+    self._parse_mode = markdown
+
+    # Connection parameters.
+    if not api_id or not api_hash:
+        raise ValueError(
+            "Your API ID or Hash cannot be empty or None. "
+            "Refer to telethon.rtfd.io for more information.")
 
     if local_addr is not None:
         if use_ipv6 is False and ':' in local_addr:
-            raise TypeError(
-                'A local IPv6 address must only be used with `use_ipv6=True`.'
-            )
+            raise TypeError('A local IPv6 address must only be used with `use_ipv6=True`.')
         elif use_ipv6 is True and ':' not in local_addr:
-            raise TypeError(
-                '`use_ipv6=True` must only be used with a local IPv6 address.'
-            )
+            raise TypeError('`use_ipv6=True` must only be used with a local IPv6 address.')
 
-    self._raise_last_call_error = raise_last_call_error
-
-    self._request_retries = request_retries
-    self._connection_retries = connection_retries
-    self._retry_delay = retry_delay or 0
-    self._proxy = proxy
+    self._transport = transports.Full()
+    self._use_ipv6 = use_ipv6
     self._local_addr = local_addr
-    self._timeout = timeout
+    self._proxy = proxy
     self._auto_reconnect = auto_reconnect
-
-    if connection == ():
-        # For now the current default remains TCP Full; may change to be "smart" if proxies are specified
-        connection = enums.ConnectionMode.FULL
-
-    self._transport = {
-        enums.ConnectionMode.FULL: transports.Full(),
-        enums.ConnectionMode.INTERMEDIATE: transports.Intermediate(),
-        enums.ConnectionMode.ABRIDGED: transports.Abridged(),
-    }[enums.ConnectionMode(connection)]
-    init_proxy = None
+    self._api_id = int(api_id)
+    self._api_hash = api_hash
 
     # Used on connection. Capture the variables in a lambda since
     # exporting clients need to create this InvokeWithLayer.
@@ -196,7 +172,7 @@ def init(
     default_system_version = re.sub(r'-.+','',system.release)
 
     self._init_request = _tl.fn.InitConnection(
-        api_id=self.api_id,
+        api_id=self._api_id,
         device_model=device_model or default_device_model or 'Unknown',
         system_version=system_version or default_system_version or '1.0',
         app_version=app_version or self.__version__,
@@ -204,65 +180,26 @@ def init(
         system_lang_code=system_lang_code,
         lang_pack='',  # "langPacks are for official apps only"
         query=None,
-        proxy=init_proxy
+        proxy=None
     )
 
     self._sender = MTProtoSender(
         loggers=self._log,
-        retries=self._connection_retries,
-        delay=self._retry_delay,
+        retries=self._connect_retries,
+        delay=self._connect_retry_delay,
         auto_reconnect=self._auto_reconnect,
-        connect_timeout=self._timeout,
+        connect_timeout=self._connect_timeout,
         update_callback=self._handle_update,
         auto_reconnect_callback=self._handle_auto_reconnect
     )
 
-    # Remember flood-waited requests to avoid making them again
-    self._flood_waited_requests = {}
-
-    # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders
+    # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders.
     self._borrowed_senders = {}
     self._borrow_sender_lock = asyncio.Lock()
 
-    self._updates_handle = None
-    self._last_request = time.time()
-    self._channel_pts = {}
+    # Update handling.
     self._no_updates = not receive_updates
 
-    if sequential_updates:
-        self._updates_queue = asyncio.Queue()
-        self._dispatching_updates_queue = asyncio.Event()
-    else:
-        # Use a set of pending instead of a queue so we can properly
-        # terminate all pending updates on disconnect.
-        self._updates_queue = set()
-        self._dispatching_updates_queue = None
-
-    self._authorized = None  # None = unknown, False = no, True = yes
-
-    # Some further state for subclasses
-    self._event_builders = []
-
-    # Hack to workaround the fact Telegram may send album updates as
-    # different Updates when being sent from a different data center.
-    # {grouped_id: AlbumHack}
-    #
-    # FIXME: We don't bother cleaning this up because it's not really
-    #        worth it, albums are pretty rare and this only holds them
-    #        for a second at most.
-    self._albums = {}
-
-    # Default parse mode
-    self._parse_mode = markdown
-
-    # Some fields to easy signing in. Let {phone: hash} be
-    # a dictionary because the user may change their mind.
-    self._phone_code_hash = {}
-    self._phone = None
-    self._tos = None
-
-    # A place to store if channels are a megagroup or not (see `edit_admin`)
-    self._megagroup_cache = {}
 
 def get_flood_sleep_threshold(self):
     return self._flood_sleep_threshold
@@ -273,8 +210,8 @@ def set_flood_sleep_threshold(self, value):
 
 
 async def connect(self: 'TelegramClient') -> None:
-    self._all_dcs = {dc.id: dc for dc in await self.session.get_all_dc()}
-    self._session_state = await self.session.get_state()
+    self._all_dcs = {dc.id: dc for dc in await self._session.get_all_dc()}
+    self._session_state = await self._session.get_state()
 
     if self._session_state is None:
         try_fetch_user = False
@@ -347,7 +284,7 @@ async def connect(self: 'TelegramClient') -> None:
             self._all_dcs[dc.id] = DataCenter(dc.id, ip, None, dc.port, b'')
 
     for dc in self._all_dcs.values():
-        await self.session.insert_dc(dc)
+        await self._session.insert_dc(dc)
 
     if try_fetch_user:
         # If there was a previous session state, but the current user ID is 0, it means we've
@@ -357,7 +294,7 @@ async def connect(self: 'TelegramClient') -> None:
         if me:
             await self._update_session_state(me, save=False)
 
-    await self.session.save()
+    await self._session.save()
 
     self._updates_handle = asyncio.create_task(self._update_loop())
 

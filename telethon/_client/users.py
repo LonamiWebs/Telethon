@@ -76,9 +76,6 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                         exceptions.append(e)
                         results.append(None)
                         continue
-                    entities = self._entity_cache.add(result)
-                    if entities:
-                        await self.session.insert_entities(entities)
                     exceptions.append(None)
                     results.append(result)
                     request_index += 1
@@ -88,9 +85,6 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                     return results
             else:
                 result = await future
-                entities = self._entity_cache.add(result)
-                if entities:
-                    await self.session.insert_entities(entities)
                 return result
         except ServerError as e:
             last_error = e
@@ -129,10 +123,7 @@ async def _call(self: 'TelegramClient', sender, request, ordered=False, flood_sl
                 raise
             await self._switch_dc(e.new_dc)
 
-    if self._raise_last_call_error and last_error is not None:
-        raise last_error
-    raise ValueError('Request was unsuccessful {} time(s)'
-                        .format(attempt))
+    raise last_error
 
 
 async def get_me(self: 'TelegramClient', input_peer: bool = False) \
@@ -147,15 +138,12 @@ async def is_bot(self: 'TelegramClient') -> bool:
     return self._session_state.bot if self._session_state else False
 
 async def is_user_authorized(self: 'TelegramClient') -> bool:
-    if self._authorized is None:
-        try:
-            # Any request that requires authorization will work
-            await self(_tl.fn.updates.GetState())
-            self._authorized = True
-        except RpcError:
-            self._authorized = False
-
-    return self._authorized
+    try:
+        # Any request that requires authorization will work
+        await self(_tl.fn.updates.GetState())
+        return True
+    except RpcError:
+        return False
 
 async def get_entity(
         self: 'TelegramClient',
@@ -236,14 +224,6 @@ async def get_input_entity(
     except TypeError:
         pass
 
-    # Next in priority is having a peer (or its ID) cached in-memory
-    try:
-        # 0x2d45687 == crc32(b'Peer')
-        if isinstance(peer, int) or peer.SUBCLASS_OF_ID == 0x2d45687:
-            return self._entity_cache[peer]
-    except (AttributeError, KeyError):
-        pass
-
     # Then come known strings that take precedence
     if peer in ('me', 'self'):
         return _tl.InputPeerSelf()
@@ -254,7 +234,7 @@ async def get_input_entity(
     except TypeError:
         pass
     else:
-        entity = await self.session.get_entity(None, peer_id)
+        entity = await self._session.get_entity(None, peer_id)
         if entity:
             if entity.ty in (Entity.USER, Entity.BOT):
                 return _tl.InputPeerUser(entity.id, entity.access_hash)

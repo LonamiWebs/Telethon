@@ -64,12 +64,6 @@ class SenderGetter(abc.ABC):
         Note that this might not be available if the library can't
         find the input chat, or if the message a broadcast on a channel.
         """
-        if self._input_sender is None and self._sender_id and self._client:
-            try:
-                self._input_sender = \
-                    self._client._entity_cache[self._sender_id]
-            except KeyError:
-                pass
         return self._input_sender
 
     async def get_input_sender(self):

@@ -2645,25 +2645,26 @@ class TelegramClient:
             api_id: int,
             api_hash: str,
             *,
-            connection: typing.Union[str, enums.ConnectionMode] = (),
+            # Logging.
+            base_logger: typing.Union[str, logging.Logger] = None,
+            # Connection parameters.
             use_ipv6: bool = False,
             proxy: typing.Union[tuple, dict] = None,
             local_addr: typing.Union[str, tuple] = None,
-            timeout: int = 10,
-            request_retries: int = 5,
-            connection_retries: int = 5,
-            retry_delay: int = 1,
-            auto_reconnect: bool = True,
-            sequential_updates: bool = False,
-            flood_sleep_threshold: int = 60,
-            raise_last_call_error: bool = False,
             device_model: str = None,
             system_version: str = None,
             app_version: str = None,
             lang_code: str = 'en',
             system_lang_code: str = 'en',
-            base_logger: typing.Union[str, logging.Logger] = None,
-            receive_updates: bool = True
+            # Nice-to-have.
+            auto_reconnect: bool = True,
+            connect_timeout: int = 10,
+            connect_retries: int = 4,
+            connect_retry_delay: int = 1,
+            request_retries: int = 4,
+            flood_sleep_threshold: int = 60,
+            # Update handling.
+            receive_updates: bool = True,
     ):
         telegrambaseclient.init(**locals())
 

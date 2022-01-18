@@ -35,13 +35,11 @@ class Forward(ChatGetter, SenderGetter):
             ty = helpers._entity_type(original.from_id)
             if ty == helpers._EntityType.USER:
                 sender_id = utils.get_peer_id(original.from_id)
-                sender, input_sender = utils._get_entity_pair(
-                    sender_id, entities, client._entity_cache)
+                sender, input_sender = utils._get_entity_pair(sender_id, entities)
 
             elif ty in (helpers._EntityType.CHAT, helpers._EntityType.CHANNEL):
                 peer = original.from_id
-                chat, input_chat = utils._get_entity_pair(
-                    utils.get_peer_id(peer), entities, client._entity_cache)
+                chat, input_chat = utils._get_entity_pair(utils.get_peer_id(peer), entities)
 
         # This call resets the client
         ChatGetter.__init__(self, peer, chat=chat, input_chat=input_chat)

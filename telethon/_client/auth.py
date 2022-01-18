@@ -241,7 +241,7 @@ async def sign_in(
     elif bot_token:
         request = _tl.fn.auth.ImportBotAuthorization(
             flags=0, bot_auth_token=bot_token,
-            api_id=self.api_id, api_hash=self.api_hash
+            api_id=self._api_id, api_hash=self._api_hash
         )
     else:
         raise ValueError('You must provide either phone and code, password, or bot_token.')
@@ -313,8 +313,6 @@ async def _update_session_state(self, user, save=True):
     Callback called whenever the login or sign up process completes.
     Returns the input user parameter.
     """
-    self._authorized = True
-
     state = await self(_tl.fn.updates.GetState())
     await _replace_session_state(
         self,
@@ -332,11 +330,11 @@ async def _update_session_state(self, user, save=True):
 
 async def _replace_session_state(self, *, save=True, **changes):
     new = dataclasses.replace(self._session_state, **changes)
-    await self.session.set_state(new)
+    await self._session.set_state(new)
     self._session_state = new
 
     if save:
-        await self.session.save()
+        await self._session.save()
 
 
 async def send_code_request(
@@ -354,7 +352,7 @@ async def send_code_request(
     else:
         try:
             result = await self(_tl.fn.auth.SendCode(
-                phone, self.api_id, self.api_hash, _tl.CodeSettings()))
+                phone, self._api_id, self._api_hash, _tl.CodeSettings()))
         except errors.AuthRestartError:
             return await self.send_code_request(phone)
 
@@ -377,7 +375,6 @@ async def log_out(self: 'TelegramClient') -> bool:
     except errors.RPCError:
         return False
 
-    self._authorized = False
     self._state_cache.reset()
 
     await self.disconnect()

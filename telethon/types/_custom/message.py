@@ -435,20 +435,15 @@ class Message(ChatGetter, SenderGetter):
         if self.peer_id == _tl.PeerUser(client._session_state.user_id) and not self.fwd_from:
             self.out = True
 
-        cache = client._entity_cache
+        self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, entities)
 
-        self._sender, self._input_sender = utils._get_entity_pair(
-            self.sender_id, entities, cache)
-
-        self._chat, self._input_chat = utils._get_entity_pair(
-            self.chat_id, entities, cache)
+        self._chat, self._input_chat = utils._get_entity_pair(self.chat_id, entities)
 
         if input_chat:  # This has priority
             self._input_chat = input_chat
 
         if self.via_bot_id:
-            self._via_bot, self._via_input_bot = utils._get_entity_pair(
-                self.via_bot_id, entities, cache)
+            self._via_bot, self._via_input_bot = utils._get_entity_pair(self.via_bot_id, entities)
 
         if self.fwd_from:
             self._forward = Forward(self._client, self.fwd_from, entities)
@@ -1339,10 +1334,7 @@ class Message(ChatGetter, SenderGetter):
                             raise ValueError('No input sender')
                         return bot
                     else:
-                        try:
-                            return self._client._entity_cache[self.via_bot_id]
-                        except KeyError:
-                            raise ValueError('No input sender') from None
+                        raise ValueError('No input sender') from None
 
     def _document_by_attribute(self, kind, condition=None):
         """

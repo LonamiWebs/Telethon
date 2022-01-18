@@ -165,8 +165,7 @@ class Album(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            self._sender, self._input_sender = utils._get_entity_pair(
-                self.sender_id, self._entities, client._entity_cache)
+            self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, self._entities)
 
             self.messages = [
                 _custom.Message._new(client, m, self._entities, None)

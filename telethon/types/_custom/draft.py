@@ -49,12 +49,6 @@ class Draft:
         """
         Input version of the entity.
         """
-        if not self._input_entity:
-            try:
-                self._input_entity = self._client._entity_cache[self._peer]
-            except KeyError:
-                pass
-
         return self._input_entity
 
     async def get_entity(self):

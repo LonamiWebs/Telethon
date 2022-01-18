@@ -166,8 +166,7 @@ class CallbackQuery(EventBuilder):
 
         def _set_client(self, client):
             super()._set_client(client)
-            self._sender, self._input_sender = utils._get_entity_pair(
-                self.sender_id, self._entities, client._entity_cache)
+            self._sender, self._input_sender = utils._get_entity_pair(self.sender_id, self._entities)
 
         @property
         def id(self):
@@ -223,13 +222,10 @@ class CallbackQuery(EventBuilder):
             self._input_sender = utils.get_input_peer(self._chat)
             if not getattr(self._input_sender, 'access_hash', True):
                 # getattr with True to handle the InputPeerSelf() case
-                try:
-                    self._input_sender = self._client._entity_cache[self._sender_id]
-                except KeyError:
-                    m = await self.get_message()
-                    if m:
-                        self._sender = m._sender
-                        self._input_sender = m._input_sender
+                m = await self.get_message()
+                if m:
+                    self._sender = m._sender
+                    self._input_sender = m._input_sender
 
         async def answer(
                 self, message=None, cache_time=0, *, url=None, alert=False):
