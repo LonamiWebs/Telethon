@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import struct
+import logging
 
 from . import authenticator
 from .._misc.messagepacker import MessagePacker
@@ -20,6 +21,9 @@ from .._misc import helpers, utils
 from .. import _tl
 
 
+UPDATE_BUFFER_FULL_WARN_DELAY = 15 * 60
+
+
 class MTProtoSender:
     """
     MTProto Mobile Protocol sender
@@ -35,9 +39,8 @@ class MTProtoSender:
     A new authorization key will be generated on connection if no other
     key exists yet.
     """
-    def __init__(self, *, loggers,
-                 retries=5, delay=1, auto_reconnect=True, connect_timeout=None,
-                 update_callback=None):
+    def __init__(self, *, loggers, updates_queue,
+                 retries=5, delay=1, auto_reconnect=True, connect_timeout=None,):
         self._connection = None
         self._loggers = loggers
         self._log = loggers[__name__]
@@ -45,7 +48,7 @@ class MTProtoSender:
         self._delay = delay
         self._auto_reconnect = auto_reconnect
         self._connect_timeout = connect_timeout
-        self._update_callback = update_callback
+        self._updates_queue = updates_queue
         self._connect_lock = asyncio.Lock()
         self._ping = None
 
@@ -82,6 +85,9 @@ class MTProtoSender:
         # These can't go in pending_messages because no acknowledge for them
         # is received, but we may still need to resend their state on bad salts.
         self._last_acks = collections.deque(maxlen=10)
+
+        # Last time we warned about the update buffer being full
+        self._last_update_warn = -UPDATE_BUFFER_FULL_WARN_DELAY
 
         # Jump table from response ID to method that handles it
         self._handlers = {
@@ -629,8 +635,16 @@ class MTProtoSender:
             return
 
         self._log.debug('Handling update %s', message.obj.__class__.__name__)
-        if self._update_callback:
-            self._update_callback(message.obj)
+        try:
+            self._updates_queue.put_nowait(message.obj)
+        except asyncio.QueueFull:
+            now = asyncio.get_running_loop().time()
+            if now - self._last_update_warn >= UPDATE_BUFFER_FULL_WARN_DELAY:
+                self._log.warning(
+                    'Cannot dispatch update because the buffer capacity of %d was reached',
+                    self._updates_queue.maxsize
+                )
+                self._last_update_warn = now
 
     async def _handle_pong(self, message):
         """

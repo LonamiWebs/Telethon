@@ -11,10 +11,11 @@ import dataclasses
 
 from .. import version, __name__ as __base_name__, _tl
 from .._crypto import rsa
-from .._misc import markdown, statecache, enums, helpers
+from .._misc import markdown, enums, helpers
 from .._network import MTProtoSender, Connection, transports
 from .._sessions import Session, SQLiteSession, MemorySession
 from .._sessions.types import DataCenter, SessionState
+from .._updates import EntityCache, MessageBox
 
 DEFAULT_DC_ID = 2
 DEFAULT_IPV4_IP = '149.154.167.51'
@@ -91,6 +92,7 @@ def init(
         flood_sleep_threshold: int = 60,
         # Update handling.
         receive_updates: bool = True,
+        max_queued_updates: int = 100,
 ):
     # Logging.
     if isinstance(base_logger, str):
@@ -138,6 +140,13 @@ def init(
     self.flood_sleep_threshold = flood_sleep_threshold
     self._flood_waited_requests = {}  # prevent calls that would floodwait entirely
     self._parse_mode = markdown
+
+    # Update handling.
+    self._no_updates = not receive_updates
+    self._updates_queue = asyncio.Queue(maxsize=max_queued_updates)
+    self._updates_handle = None
+    self._message_box = MessageBox()
+    self._entity_cache = EntityCache()  # required for proper update handling (to know when to getDifference)
 
     # Connection parameters.
     if not api_id or not api_hash:
@@ -189,15 +198,12 @@ def init(
         delay=self._connect_retry_delay,
         auto_reconnect=self._auto_reconnect,
         connect_timeout=self._connect_timeout,
-        update_callback=self._handle_update,
+        updates_queue=self._updates_queue,
     )
 
     # Cache ``{dc_id: (_ExportState, MTProtoSender)}`` for all borrowed senders.
     self._borrowed_senders = {}
     self._borrow_sender_lock = asyncio.Lock()
-
-    # Update handling.
-    self._no_updates = not receive_updates
 
 
 def get_flood_sleep_threshold(self):
@@ -337,15 +343,6 @@ async def _disconnect_coro(self: 'TelegramClient'):
         # If any was borrowed
         self._borrowed_senders.clear()
 
-    # trio's nurseries would handle this for us, but this is asyncio.
-    # All tasks spawned in the background should properly be terminated.
-    if self._dispatching_updates_queue is None and self._updates_queue:
-        for task in self._updates_queue:
-            task.cancel()
-
-        await asyncio.wait(self._updates_queue)
-        self._updates_queue.clear()
-
 
 async def _disconnect(self: 'TelegramClient'):
     """
@@ -355,8 +352,11 @@ async def _disconnect(self: 'TelegramClient'):
     their job with the client is complete and we should clean it up all.
     """
     await self._sender.disconnect()
-    await helpers._cancel(self._log[__name__],
-                            updates_handle=self._updates_handle)
+    await helpers._cancel(self._log[__name__], updates_handle=self._updates_handle)
+    try:
+        await self._updates_handle
+    except asyncio.CancelledError:
+        pass
 
 async def _switch_dc(self: 'TelegramClient', new_dc):
     """

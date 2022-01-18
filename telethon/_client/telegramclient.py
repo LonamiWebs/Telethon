@@ -2665,6 +2665,7 @@ class TelegramClient:
             flood_sleep_threshold: int = 60,
             # Update handling.
             receive_updates: bool = True,
+            max_queued_updates: int = 100,
     ):
         telegrambaseclient.init(**locals())
 
@@ -3507,10 +3508,6 @@ class TelegramClient:
 
     @forward_call(telegrambaseclient._clean_exported_senders)
     async def _clean_exported_senders(self: 'TelegramClient'):
-        pass
-
-    @forward_call(updates._handle_update)
-    def _handle_update(self: 'TelegramClient', update):
         pass
 
     @forward_call(auth._update_session_state)
