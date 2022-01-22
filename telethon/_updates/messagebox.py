@@ -19,6 +19,7 @@ to get the difference.
 import asyncio
 from dataclasses import dataclass, field
 from .._sessions.types import SessionState, ChannelState
+from .. import _tl
 
 
 # Telegram sends `seq` equal to `0` when "it doesn't matter", so we use that value too.
@@ -194,7 +195,7 @@ class MessageBox:
 
         # Most of the time there will be zero or one gap in flight so finding the minimum is cheap.
         if self.possible_gaps:
-            deadline = min(deadline, *self.possible_gaps.values())
+            deadline = min(deadline, *(gap.deadline for gap in self.possible_gaps.values()))
         elif self.next_deadline in self.map:
             deadline = min(deadline, self.map[self.next_deadline])
 
@@ -272,7 +273,10 @@ class MessageBox:
     #
     # It also resets the deadline.
     def end_get_diff(self, entry):
-        self.getting_diff_for.pop(entry, None)
+        try:
+            self.getting_diff_for.remove(entry)
+        except KeyError:
+            pass
         self.reset_deadline(entry, next_updates_deadline())
         assert entry not in self.possible_gaps, "gaps shouldn't be created while getting difference"
 
@@ -298,36 +302,39 @@ class MessageBox:
         chat_hashes,
         result,  # out list of updates; returns list of user, chat, or raise if gap
     ):
-        # XXX adapt updates and chat hashes into updatescombined, raise gap on too long
-        date = updates.date
-        seq_start = updates.seq_start
-        seq = updates.seq
-        updates = updates.updates
-        users = updates.users
-        chats = updates.chats
+        date = getattr(updates, 'date', None)
+        if date is None:
+            # updatesTooLong is the only one with no date (we treat it as a gap)
+            raise GapError
+
+        seq = getattr(updates, 'seq', None) or NO_SEQ
+        seq_start = getattr(updates, 'seq_start', None) or seq
+        users = getattr(updates, 'users') or []
+        chats = getattr(updates, 'chats') or []
+        updates = getattr(updates, 'updates', None) or [updates]
 
         # > For all the other [not `updates` or `updatesCombined`] `Updates` type constructors
         # > there is no need to check `seq` or change a local state.
-        if updates.seq_start != NO_SEQ:
-            if self.seq + 1 > updates.seq_start:
+        if seq_start != NO_SEQ:
+            if self.seq + 1 > seq_start:
                 # Skipping updates that were already handled
-                return (updates.users, updates.chats)
-            elif self.seq + 1 < updates.seq_start:
+                return (users, chats)
+            elif self.seq + 1 < seq_start:
                 # Gap detected
                 self.begin_get_diff(ENTRY_ACCOUNT)
                 raise GapError
             # else apply
 
-            self.date = updates.date
-            if updates.seq != NO_SEQ:
-                self.seq = updates.seq
+            self.date = date
+            if seq != NO_SEQ:
+                self.seq = seq
 
-        result.extend(filter(None, (self.apply_pts_info(u, reset_deadline=True) for u in updates.updates)))
+        result.extend(filter(None, (self.apply_pts_info(u, reset_deadline=True) for u in updates)))
 
         self.apply_deadlines_reset()
 
         def _sort_gaps(update):
-            pts = PtsInfo.from_update(u)
+            pts = PtsInfo.from_update(update)
             return pts.pts - pts.pts_count if pts else 0
 
         if self.possible_gaps:
@@ -345,9 +352,9 @@ class MessageBox:
                         result.append(update)
 
             # Clear now-empty gaps.
-            self.possible_gaps = {entry: gap for entry, gap in self.possible_gaps if gap.updates}
+            self.possible_gaps = {entry: gap for entry, gap in self.possible_gaps.items() if gap.updates}
 
-        return (updates.users, updates.chats)
+        return (users, chats)
 
     # Tries to apply the input update if its `PtsInfo` follows the correct order.
     #
@@ -370,7 +377,7 @@ class MessageBox:
         #
         # Build the `HashSet` to avoid calling `reset_deadline` more than once for the same entry.
         if reset_deadline:
-            self.reset_deadlines_for.insert(pts.entry)
+            self.reset_deadlines_for.add(pts.entry)
 
         if pts.entry in self.getting_diff_for:
             # Note: early returning here also prevents gap from being inserted (which they should
@@ -425,10 +432,10 @@ class MessageBox:
         if entry in self.getting_diff_for:
             if entry in self.map:
                 return _tl.fn.updates.GetDifference(
-                    pts=state.pts,
+                    pts=self.map[ENTRY_ACCOUNT].pts,
                     pts_total_limit=None,
                     date=self.date,
-                    qts=self.map[ENTRY_SECRET].pts,
+                    qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else NO_SEQ,
                 )
             else:
                 # TODO investigate when/why/if this can happen
@@ -465,26 +472,23 @@ class MessageBox:
         diff,
     ):
         state = getattr(diff, 'intermediate_state', None) or diff.state
-        self.map[ENTRY_ACCOUNT].pts = state.pts
-        self.map[ENTRY_SECRET].pts = state.qts
-        self.date = state.date
-        self.seq = state.seq
+        self.set_state(state)
 
-        for u in diff.updates:
+        for u in diff.other_updates:
             if isinstance(u, _tl.UpdateChannelTooLong):
                 self.begin_get_diff(u.channel_id)
 
-        updates.extend(_tl.UpdateNewMessage(
+        diff.other_updates.extend(_tl.UpdateNewMessage(
             message=m,
             pts=NO_SEQ,
             pts_count=NO_SEQ,
         ) for m in diff.new_messages)
-        updates.extend(_tl.UpdateNewEncryptedMessage(
+        diff.other_updates.extend(_tl.UpdateNewEncryptedMessage(
             message=m,
             qts=NO_SEQ,
         ) for m in diff.new_encrypted_messages)
 
-        return diff.updates, diff.users, diff.chats
+        return diff.other_updates, diff.users, diff.chats
 
     # endregion Getting and applying account difference.
 
