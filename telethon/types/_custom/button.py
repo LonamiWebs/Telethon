@@ -1,6 +1,8 @@
+import typing
+
 from .messagebutton import MessageButton
 from ... import _tl
-from ..._misc import utils
+from ..._misc import utils, hints
 
 
 class Button:
@@ -54,6 +56,7 @@ class Button:
             _tl.KeyboardButtonCallback,
             _tl.KeyboardButtonGame,
             _tl.KeyboardButtonSwitchInline,
+            _tl.KeyboardButtonUserProfile,
             _tl.KeyboardButtonUrl,
             _tl.InputKeyboardButtonUrlAuth
         ))
@@ -165,6 +168,29 @@ class Button:
             request_write_access=write_access,
             fwd_text=fwd_text
         )
+
+    @staticmethod
+    def mention(text, input_entity):
+        """
+        Creates a new inline button linked to the profile of user.
+
+        Args:
+            input_entity:
+                Input entity of :tl:User to use for profile button.
+                By default, this is the logged in user (itself), although
+                you may pass a different input peer.
+
+                .. note::
+
+                    For now, you cannot use ID or username for this argument.
+                    If you want to use different user, you must manually use
+                    `client.get_input_entity() <telethon.client.users.UserMethods.get_input_entity>`.
+        """
+        return _tl.InputKeyboardButtonUserProfile(
+            text,
+            utils.get_input_user(input_entity or _tl.InputUserSelf())
+        )
+
 
     @classmethod
     def text(cls, text, *, resize=None, single_use=None, selective=None):
