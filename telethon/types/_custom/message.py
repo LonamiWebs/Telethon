@@ -189,6 +189,10 @@ class Message(ChatGetter, SenderGetter):
         The number of times this message has been forwarded.
     """)
 
+    noforwards = _fwd('noforwards', """
+        does the message was sent with noforwards restriction.
+    """)
+
     replies = _fwd('replies', """
         The number of times another message has replied to this message.
     """)
@@ -210,6 +214,10 @@ class Message(ChatGetter, SenderGetter):
     restriction_reason = _fwd('restriction_reason', """
         An optional list of reasons why this message was restricted.
         If the list is `None`, this message has not been restricted.
+    """)
+
+    reactions = _fwd('reactions', """
+        emoji reactions attached to the message.
     """)
 
     ttl_period = _fwd('ttl_period', """
