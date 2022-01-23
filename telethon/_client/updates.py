@@ -96,6 +96,7 @@ async def _update_loop(self: 'TelegramClient'):
                 self._log[__name__].info('Getting difference for account updates')
                 diff = await self(get_diff)
                 updates, users, chats = self._message_box.apply_difference(diff, self._entity_cache)
+                self._entity_cache.extend(users, chats)
                 updates_to_dispatch.extend(updates)
                 continue
 
@@ -103,7 +104,8 @@ async def _update_loop(self: 'TelegramClient'):
             if get_diff:
                 self._log[__name__].info('Getting difference for channel updates')
                 diff = await self(get_diff)
-                updates, users, chats = self._message_box.apply_channel_difference(diff, self._entity_cache)
+                updates, users, chats = self._message_box.apply_channel_difference(get_diff, diff, self._entity_cache)
+                self._entity_cache.extend(users, chats)
                 updates_to_dispatch.extend(updates)
                 continue
 
@@ -119,6 +121,7 @@ async def _update_loop(self: 'TelegramClient'):
 
             processed = []
             users, chats = self._message_box.process_updates(updates, self._entity_cache, processed)
+            self._entity_cache.extend(users, chats)
             updates_to_dispatch.extend(processed)
     except Exception:
         self._log[__name__].exception('Fatal error handling updates (this is a bug in Telethon, please report it)')

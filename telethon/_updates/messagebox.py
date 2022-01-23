@@ -232,7 +232,7 @@ class MessageBox:
 
     # Convenience to reset a channel's deadline, with optional timeout.
     def reset_channel_deadline(self, channel_id, timeout):
-        self.reset_deadlines(channel_id, asyncio.get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
+        self.reset_deadline(channel_id, asyncio.get_running_loop().time() + (timeout or NO_UPDATES_TIMEOUT))
 
     # Reset all the deadlines in `reset_deadlines_for` and then empty the set.
     def apply_deadlines_reset(self):
@@ -524,10 +524,10 @@ class MessageBox:
 
         return _tl.fn.updates.GetChannelDifference(
             force=False,
-            channel=channel,
+            channel=packed.try_to_input_channel(),
             filter=_tl.ChannelMessagesFilterEmpty(),
             pts=state.pts,
-            limit=BOT_CHANNEL_DIFF_LIMIT if chat_hashes.is_self_bot() else USER_CHANNEL_DIFF_LIMIT
+            limit=BOT_CHANNEL_DIFF_LIMIT if chat_hashes.self_bot else USER_CHANNEL_DIFF_LIMIT
         )
 
     # Similar to [`MessageBox::process_updates`], but using the result from getting difference.
@@ -538,7 +538,7 @@ class MessageBox:
         chat_hashes,
     ):
         entry = request.channel.channel_id
-        self.possible_gaps.remove(entry)
+        self.possible_gaps.pop(entry, None)
 
         if isinstance(diff, _tl.updates.ChannelDifferenceEmpty):
             assert diff.final
@@ -549,7 +549,7 @@ class MessageBox:
             assert diff.final
             self.map[entry].pts = diff.dialog.pts
             chat_hashes.extend(diff.users, diff.chats)
-            self.reset_channel_deadline(channel_id, diff.timeout)
+            self.reset_channel_deadline(entry, diff.timeout)
             # This `diff` has the "latest messages and corresponding chats", but it would
             # be strange to give the user only partial changes of these when they would
             # expect all updates to be fetched. Instead, nothing is returned.
@@ -558,15 +558,15 @@ class MessageBox:
             if diff.final:
                 self.end_get_diff(entry)
 
-            self.map[entry].pts = pts
-            updates.extend(_tl.UpdateNewMessage(
+            self.map[entry].pts = diff.pts
+            diff.other_updates.extend(_tl.UpdateNewMessage(
                 message=m,
                 pts=NO_SEQ,
                 pts_count=NO_SEQ,
             ) for m in diff.new_messages)
-            chat_hashes.extend(diff.users, diff.chats);
-            self.reset_channel_deadline(channel_id, timeout)
+            chat_hashes.extend(diff.users, diff.chats)
+            self.reset_channel_deadline(entry, None)
 
-            (diff.updates, diff.users, diff.chats)
+            return diff.other_updates, diff.users, diff.chats
 
     # endregion Getting and applying channel difference.
