@@ -47,6 +47,8 @@ class HTMLToTelegramParser(HTMLParser):
             EntityType = _tl.MessageEntityUnderline
         elif tag == 'del' or tag == 's':
             EntityType = _tl.MessageEntityStrike
+        elif tag == 'tg-spoiler':
+            EntityType = _tl.MessageEntitySpoiler
         elif tag == 'blockquote':
             EntityType = _tl.MessageEntityBlockquote
         elif tag == 'code':
