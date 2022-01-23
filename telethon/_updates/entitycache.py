@@ -95,3 +95,6 @@ class EntityCache:
             for c in chats
             if getattr(c, 'access_hash', None) and not getattr(c, 'min', None)
         )
+
+    def get_all_entities(self):
+        return [Entity(ty, id, hash) for id, (hash, ty) in self.hash_map.items()]

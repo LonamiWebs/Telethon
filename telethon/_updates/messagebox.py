@@ -141,46 +141,38 @@ class MessageBox:
 
     # region Creation, querying, and setting base state.
 
-    @classmethod
-    def load(cls, session_state, channel_states):
+    def load(self, session_state, channel_states):
         """
         Create a [`MessageBox`] from a previously known update state.
         """
         deadline = next_updates_deadline()
-        return cls(
-            map={
-                ENTRY_ACCOUNT: State(pts=session_state.pts, deadline=deadline),
-                ENTRY_SECRET: State(pts=session_state.qts, deadline=deadline),
-                **{s.channel_id: s.pts for s in channel_states}
-            },
-            date=session_state.date,
-            seq=session_state.seq,
-            next_deadline=ENTRY_ACCOUNT,
-        )
+        self.map = {
+            ENTRY_ACCOUNT: State(pts=session_state.pts, deadline=deadline),
+            ENTRY_SECRET: State(pts=session_state.qts, deadline=deadline),
+            **{s.channel_id: State(pts=s.pts, deadline=deadline) for s in channel_states}
+        }
+        self.date = session_state.date
+        self.seq = session_state.seq
+        self.next_deadline = ENTRY_ACCOUNT
 
-    @classmethod
     def session_state(self):
         """
-        Return the current state in a format that sessions understand.
+        Return the current state.
 
         This should be used for persisting the state.
         """
-        return SessionState(
-            user_id=0,
-            dc_id=0,
-            bot=False,
-            pts=self.map.get(ENTRY_ACCOUNT, 0),
-            qts=self.map.get(ENTRY_SECRET, 0),
+        return dict(
+            pts=self.map[ENTRY_ACCOUNT].pts if ENTRY_ACCOUNT in self.map else 0,
+            qts=self.map[ENTRY_SECRET].pts if ENTRY_SECRET in self.map else 0,
             date=self.date,
             seq=self.seq,
-            takeout_id=None,
-        ), [ChannelState(channel_id=id, pts=pts) for id, pts in self.map.items() if isinstance(id, int)]
+        ), {id: state.pts for id, state in self.map.items() if isinstance(id, int)}
 
     def is_empty(self) -> bool:
         """
         Return true if the message box is empty and has no state yet.
         """
-        return self.map.get(ENTRY_ACCOUNT, NO_SEQ) == NO_SEQ
+        return ENTRY_ACCOUNT not in self.map or self.map[ENTRY_ACCOUNT] == NO_SEQ
 
     def check_deadlines(self):
         """
@@ -200,7 +192,7 @@ class MessageBox:
         if self.possible_gaps:
             deadline = min(deadline, *(gap.deadline for gap in self.possible_gaps.values()))
         elif self.next_deadline in self.map:
-            deadline = min(deadline, self.map[self.next_deadline])
+            deadline = min(deadline, self.map[self.next_deadline].deadline)
 
         if now > deadline:
             # Check all expired entries and add them to the list that needs getting difference.

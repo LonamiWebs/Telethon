@@ -91,6 +91,7 @@ def init(
         request_retries: int = 4,
         flood_sleep_threshold: int = 60,
         # Update handling.
+        catch_up: bool = False,
         receive_updates: bool = True,
         max_queued_updates: int = 100,
 ):
@@ -142,6 +143,7 @@ def init(
     self._parse_mode = markdown
 
     # Update handling.
+    self._catch_up = catch_up
     self._no_updates = not receive_updates
     self._updates_queue = asyncio.Queue(maxsize=max_queued_updates)
     self._updates_handle = None
@@ -232,6 +234,8 @@ async def connect(self: 'TelegramClient') -> None:
         )
     else:
         try_fetch_user = self._session_state.user_id == 0
+        if self._catch_up:
+            self._message_box.load(self._session_state, await self._session.get_all_channel_states())
 
     dc = all_dcs.get(self._session_state.dc_id)
     if dc is None:
@@ -357,6 +361,15 @@ async def _disconnect(self: 'TelegramClient'):
         await self._updates_handle
     except asyncio.CancelledError:
         pass
+
+    await self._session.insert_entities(self._entity_cache.get_all_entities())
+
+    session_state, channel_states = self._message_box.session_state()
+    for channel_id, pts in channel_states.items():
+        await self._session.insert_channel_state(channel_id, pts)
+
+    await self._replace_session_state(**session_state)
+
 
 async def _switch_dc(self: 'TelegramClient', new_dc):
     """
