@@ -634,13 +634,8 @@ async def get_permissions(
     entity = await self.get_entity(entity)
 
     if not user:
-        if isinstance(entity, _tl.Channel):
-            FullChat = await self(_tl.fn.channels.GetFullChannel(entity))
-        elif isinstance(entity, _tl.Chat):
-            FullChat = await self(_tl.fn.messages.GetFullChat(entity))
-        else:
-            return
-        return FullChat.chats[0].default_banned_rights
+        if helpers._entity_type(entity) != helpers._EntityType.USER:
+            return entity.default_banned_rights
 
     entity = await self.get_input_entity(entity)
     user = await self.get_input_entity(user)
