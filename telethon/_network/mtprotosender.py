@@ -603,6 +603,7 @@ class MTProtoSender:
                 if not state.future.cancelled():
                     state.future.set_exception(e)
             else:
+                self._store_own_updates(result)
                 if not state.future.cancelled():
                     state.future.set_result(result)
 
@@ -645,6 +646,20 @@ class MTProtoSender:
                     self._updates_queue.maxsize
                 )
                 self._last_update_warn = now
+
+    def _store_own_updates(self, obj, *, _update_ids=frozenset((
+        _tl.UpdateShortMessage.CONSTRUCTOR_ID,
+        _tl.UpdateShortChatMessage.CONSTRUCTOR_ID,
+        _tl.UpdateShort.CONSTRUCTOR_ID,
+        _tl.UpdatesCombined.CONSTRUCTOR_ID,
+        _tl.Updates.CONSTRUCTOR_ID,
+        _tl.UpdateShortSentMessage.CONSTRUCTOR_ID,
+    ))):
+        try:
+            if obj.CONSTRUCTOR_ID in _update_ids:
+                self._updates_queue.put_nowait(obj)
+        except AttributeError:
+            pass
 
     async def _handle_pong(self, message):
         """

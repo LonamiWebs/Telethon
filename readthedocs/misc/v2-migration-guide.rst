@@ -771,3 +771,5 @@ sequential_updates is gone
 connection type is gone
 
 raise_last_call_error is now the default rather than ValueError
+
+self-produced updates like getmessage now also trigger a handler
