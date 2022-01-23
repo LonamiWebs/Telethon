@@ -205,9 +205,9 @@ class Message(ChatGetter, SenderGetter):
     grouped_id = _fwd('grouped_id', """
         If this message belongs to a group of messages
         (photo albums or video albums), all of them will
-        have the same value here.
+        have the same value here."""
 
-    restriction_reason (List[:tl:`RestrictionReason`])
+    restriction_reason = _fwd('restriction_reason', """
         An optional list of reasons why this message was restricted.
         If the list is `None`, this message has not been restricted.
     """)
