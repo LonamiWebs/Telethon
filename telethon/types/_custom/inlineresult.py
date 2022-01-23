@@ -104,7 +104,7 @@ class InlineResult:
 
     async def click(self, entity=None, reply_to=None, comment_to=None,
                     silent=False, clear_draft=False, hide_via=False,
-                    background=None):
+                    background=None, send_as=None):
         """
         Clicks this result and sends the associated `message`.
 
@@ -137,6 +137,9 @@ class InlineResult:
             background (`bool`, optional):
                 Whether the message should be send in background.
 
+            send_as (`entity`, optional):
+                The channel entity on behalf of which, message should be send.
+
         """
         if entity:
             entity = await self._client.get_input_entity(entity)
@@ -158,7 +161,8 @@ class InlineResult:
             background=background,
             clear_draft=clear_draft,
             hide_via=hide_via,
-            reply_to_msg_id=reply_id
+            reply_to_msg_id=reply_id,
+            send_as=send_as
         )
         return self._client._get_response_message(
             req, await self._client(req), entity)

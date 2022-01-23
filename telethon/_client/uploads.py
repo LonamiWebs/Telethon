@@ -113,6 +113,8 @@ async def send_file(
         reply_to: 'typing.Union[int, _tl.Message]' = None,
         clear_draft: bool = False,
         background: bool = None,
+        noforwards: bool = None,
+        send_as: 'hints.EntityLike' = None,
         schedule: 'hints.DateLike' = None,
         comment_to: 'typing.Union[int, _tl.Message]' = None,
 ) -> '_tl.Message':
@@ -146,13 +148,16 @@ async def send_file(
         background=background,
         schedule=schedule,
         comment_to=comment_to,
+        noforwards=noforwards,
+        send_as=send_as
     )
 
 async def _send_album(self: 'TelegramClient', entity, files, caption='',
                         progress_callback=None, reply_to=None,
                         parse_mode=(), silent=None, schedule=None,
                         supports_streaming=None, clear_draft=None,
-                        force_document=False, background=None, ttl=None):
+                        force_document=False, background=None, ttl=None,
+                        send_as=None, noforwards=None):
     """Specialized version of .send_file for albums"""
     # We don't care if the user wants to avoid cache, we will use it
     # anyway. Why? The cached version will be exactly the same thing
@@ -212,7 +217,7 @@ async def _send_album(self: 'TelegramClient', entity, files, caption='',
     request = _tl.fn.messages.SendMultiMedia(
         entity, reply_to_msg_id=reply_to, multi_media=media,
         silent=silent, schedule_date=schedule, clear_draft=clear_draft,
-        background=background
+        background=background, noforwards=noforwards, send_as=send_as
     )
     result = await self(request)
 

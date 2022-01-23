@@ -426,8 +426,10 @@ async def send_message(
         ttl: int = None,
         # - Send options
         reply_to: 'typing.Union[int, _tl.Message]' = None,
+        send_as: 'hints.EntityLike' = None,
         clear_draft: bool = False,
         background: bool = None,
+        noforwards: bool = None,
         schedule: 'hints.DateLike' = None,
         comment_to: 'typing.Union[int, _tl.Message]' = None,
 ) -> '_tl.Message':
@@ -483,7 +485,7 @@ async def send_message(
             entity, message._file._media, reply_to_msg_id=reply_to, message=message._text,
             entities=message._fmt_entities, reply_markup=message._reply_markup, silent=message._silent,
             schedule_date=schedule, clear_draft=clear_draft,
-            background=background
+            background=background, noforwards=noforwards, send_as=send_as
         )
     else:
         request = _tl.fn.messages.SendMessage(
@@ -496,7 +498,9 @@ async def send_message(
             silent=silent,
             background=background,
             reply_markup=_custom.button.build_reply_markup(buttons),
-            schedule_date=schedule
+            schedule_date=schedule,
+            noforwards=noforwards,
+            send_as=send_as
         )
 
     result = await self(request)
@@ -525,7 +529,9 @@ async def forward_messages(
         with_my_score: bool = None,
         silent: bool = None,
         as_album: bool = None,
-        schedule: 'hints.DateLike' = None
+        schedule: 'hints.DateLike' = None,
+        noforwards: bool = None,
+        send_as: 'hints.EntityLike' = None
 ) -> 'typing.Sequence[_tl.Message]':
     if as_album is not None:
         warnings.warn('the as_album argument is deprecated and no longer has any effect')
@@ -565,7 +571,9 @@ async def forward_messages(
             silent=silent,
             background=background,
             with_my_score=with_my_score,
-            schedule_date=schedule
+            schedule_date=schedule,
+            noforwards=noforwards,
+            send_as=send_as
         )
         result = await self(req)
         sent.extend(self._get_response_message(req, result, entity))
