@@ -80,7 +80,10 @@ def list_event_handlers(self: 'TelegramClient')\
     return [(callback, event) for event, callback in self._event_builders]
 
 async def catch_up(self: 'TelegramClient'):
-    pass
+    # The update loop is probably blocked on either timeout or an update to arrive.
+    # Unblock the loop by pushing a dummy update which will always trigger a gap.
+    # This, in return, causes the update loop to catch up.
+    await self._updates_queue.put(_tl.UpdatesTooLong())
 
 async def _update_loop(self: 'TelegramClient'):
     try:

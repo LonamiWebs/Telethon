@@ -2901,11 +2901,9 @@ class TelegramClient:
     @forward_call(updates.catch_up)
     async def catch_up(self: 'TelegramClient'):
         """
-        "Catches up" on the missed updates while the client was offline.
-        You should call this method after registering the event handlers
-        so that the updates it loads can by processed by your script.
+        Forces the client to "catch-up" on missed updates.
 
-        This can also be used to forcibly fetch new updates if there are any.
+        The method does not wait for all updates to be received.
 
         Example
             .. code-block:: python
