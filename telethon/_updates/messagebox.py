@@ -69,7 +69,10 @@ class PtsInfo:
         pts = getattr(update, 'pts', None)
         if pts:
             pts_count = getattr(update, 'pts_count', None) or 0
-            entry = getattr(update, 'channel_id', None) or ENTRY_ACCOUNT
+            try:
+                entry = update.message.peer_id.channel_id
+            except AttributeError:
+                entry = getattr(update, 'channel_id', None) or ENTRY_ACCOUNT
             return cls(pts=pts, pts_count=pts_count, entry=entry)
 
         qts = getattr(update, 'qts', None)
