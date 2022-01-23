@@ -625,8 +625,16 @@ class MTProtoSender:
         """
         self._log.debug('Handling gzipped data')
         with BinaryReader(message.obj.data) as reader:
-            message.obj = reader.tgread_object()
-            await self._process_message(message)
+            try:
+                message.obj = reader.tgread_object()
+            except TypeNotFoundError as e:
+                # Received object which we don't know how to deserialize.
+                # This is somewhat expected while receiving updates, which
+                # will eventually trigger a gap error to recover from.
+                self._log.info('Type %08x not found, remaining data %r',
+                               e.invalid_constructor_id, e.remaining)
+            else:
+                await self._process_message(message)
 
     async def _handle_update(self, message):
         try:
