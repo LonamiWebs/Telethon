@@ -76,6 +76,11 @@ class ChatAction(EventBuilder):
                 return cls.Event(msg,
                                  added_by=added_by,
                                  users=action.users)
+            elif isinstance(action, _tl.MessageActionChatJoinedByRequest):
+                # user joined from join request (after getting admin approval)
+                return cls.Event(msg,
+                                 from_approval=True,
+                                 users=msg.from_id)
             elif isinstance(action, _tl.MessageActionChatDeleteUser):
                 return cls.Event(msg,
                                  kicked_by=utils.get_peer_id(msg.from_id) if msg.from_id else True,
@@ -138,6 +143,10 @@ class ChatAction(EventBuilder):
             user_kicked (`bool`):
                 `True` if the user was kicked by some other.
 
+            user_approved (`bool`):
+                `True` if the user's join request was approved.
+                 along with `user_joined` will be also True.
+
             created (`bool`, optional):
                 `True` if this chat was just created.
 
@@ -152,7 +161,7 @@ class ChatAction(EventBuilder):
         """
 
         def __init__(self, where, new_photo=None,
-                     added_by=None, kicked_by=None, created=None,
+                     added_by=None, kicked_by=None, created=None, from_approval=None,
                      users=None, new_title=None, pin_ids=None, pin=None, new_score=None):
             if isinstance(where, _tl.MessageService):
                 self.action_message = where
@@ -177,11 +186,12 @@ class ChatAction(EventBuilder):
             self.user_added = self.user_joined = self.user_left = \
                 self.user_kicked = self.unpin = False
 
-            if added_by is True:
+            if added_by is True or from_approval is True:
                 self.user_joined = True
             elif added_by:
                 self.user_added = True
                 self._added_by = added_by
+            self.user_approved = from_approval
 
             # If `from_id` was not present (it's `True`) or the affected
             # user was "kicked by itself", then it left. Else it was kicked.
