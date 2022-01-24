@@ -1,3 +1,4 @@
+import builtins
 import functools
 import os
 import re
@@ -213,7 +214,7 @@ def _write_class_init(tlobject, kind, type_constructors, builder):
     if not tlobject.real_args:
         return
 
-    if any(a.name in __builtins__ for a in tlobject.real_args):
+    if any(a.name in dir(builtins) for a in tlobject.real_args):
         builder.writeln('# noinspection PyShadowingBuiltins')
 
     builder.writeln("def __init__({}):", ', '.join(['self'] + args))
