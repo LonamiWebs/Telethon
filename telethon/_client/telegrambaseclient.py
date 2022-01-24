@@ -14,7 +14,7 @@ from .._crypto import rsa
 from .._misc import markdown, enums, helpers
 from .._network import MTProtoSender, Connection, transports
 from .._sessions import Session, SQLiteSession, MemorySession
-from .._sessions.types import DataCenter, SessionState
+from .._sessions.types import DataCenter, SessionState, EntityType, ChannelState
 from .._updates import EntityCache, MessageBox
 
 DEFAULT_DC_ID = 2
@@ -235,7 +235,12 @@ async def connect(self: 'TelegramClient') -> None:
     else:
         try_fetch_user = self._session_state.user_id == 0
         if self._catch_up:
-            self._message_box.load(self._session_state, await self._session.get_all_channel_states())
+            channel_states = await self._session.get_all_channel_states()
+            self._message_box.load(self._session_state, channel_states)
+            for state in channel_states:
+                entity = await self._session.get_entity(EntityType.CHANNEL, state.channel_id)
+                if entity:
+                    self._entity_cache.put(entity)
 
     dc = all_dcs.get(self._session_state.dc_id)
     if dc is None:
@@ -366,7 +371,7 @@ async def _disconnect(self: 'TelegramClient'):
 
     session_state, channel_states = self._message_box.session_state()
     for channel_id, pts in channel_states.items():
-        await self._session.insert_channel_state(channel_id, pts)
+        await self._session.insert_channel_state(ChannelState(channel_id=channel_id, pts=pts))
 
     await self._replace_session_state(**session_state)
 
