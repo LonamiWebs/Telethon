@@ -738,3 +738,41 @@ async def _pin(self, entity, message, *, unpin, notify=False, pm_oneside=False):
 
     # Pinning a message that doesn't exist would RPC-error earlier
     return self._get_response_message(request, result, entity)
+
+async def send_reaction(
+    self: 'TelegramClient',
+    entity: 'hints.EntityLike',
+    message: 'hints.MessageIDLike',
+    reaction: str = None
+):
+    message = utils.get_message_id(message) or 0
+    if not reaction:
+        get_default_request = _tl.fn.help.GetAppConfig()
+        app_config = await self(get_default_request)
+        reaction = (
+            next(
+                (
+                    y for y in app_config.value
+                    if "reactions_default" in y.key
+                )
+            )
+        ).value.value
+    request = _tl.fn.messages.SendReaction(
+        peer=entity,
+        msg_id=message,
+        reaction=reaction
+    )
+    result = await self(request)
+    for update in result.updates:
+        if isinstance(update, _tl.UpdateMessageReactions):
+            return update.reactions
+    return reaction
+
+async def set_quick_reaction(
+    self: 'TelegramClient',
+    reaction: str
+):
+    request = _tl.fn.messages.SetDefaultReaction(
+        reaction=reaction
+    )
+    return await self(request)
