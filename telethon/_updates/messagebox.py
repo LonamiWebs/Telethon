@@ -220,7 +220,7 @@ class MessageBox:
         if self.next_deadline == entry:
             # If the updated deadline was the closest one, recalculate the new minimum.
             self.next_deadline = min(self.map.items(), key=lambda entry_state: entry_state[1].deadline)[0]
-        elif deadline < self.map.get(self.next_deadline, 0):
+        elif self.next_deadline in self.map and deadline < self.map[self.next_deadline].deadline:
             # If the updated deadline is smaller than the next deadline, change the next deadline to be the new one.
             self.next_deadline = entry
         # else an unrelated deadline was updated, so the closest one remains unchanged.
